@@ -26,6 +26,9 @@ namespace engrave {
 
 Result<EditResult> Document::edit(const Batch& batch, std::optional<std::uint64_t> expected_revision) {
     impl_->engine->check_thread();
+    // An edit may consult or update layout, so it must not run against text
+    // geometry from a font generation that the Engine has already replaced.
+    if (!impl_->poisoned) impl_->refresh_fonts();
     return api::BatchGuard(*this).edit(batch, expected_revision);
 }
 

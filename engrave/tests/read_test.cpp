@@ -50,6 +50,7 @@
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/property.h"
 #include "engraving/dom/score.h"
+#include "engraving/dom/text.h"
 #include "engraving/dom/textbase.h"
 #include "engraving/editing/transaction/undostack.h"
 #include "engraving/types/constants.h"
@@ -321,6 +322,28 @@ std::unique_ptr<engrave::Document> open_with(std::string_view type) {
 }
 
 // --- the tests -----------------------------------------------------------
+
+TEST(Read, EditRefreshesLayoutAfterAFontIsAdded) {
+    const auto it = std::ranges::find_if(g_corpus, [](const auto& path) { return path.filename() == "linked_parts.mscx"; });
+    ASSERT_NE(it, g_corpus.end());
+    std::string xml = read_text(*it);
+    const auto frame = xml.find("<height>10</height>");
+    ASSERT_NE(frame, std::string::npos);
+    xml.insert(frame, "<Text><style>title</style><text><font face=\"Petaluma Script\"/>MMMWWWiii012345</text></Text>");
+    auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::Mscx});
+    ASSERT_TRUE(opened);
+    auto& document = **opened;
+    auto* title = master_of(document).getText(mu::engraving::TextStyleType::TITLE);
+    ASSERT_NE(title, nullptr);
+    const double before = title->ldata()->bbox().width();
+    ASSERT_GT(before, 0.0);
+    const auto revision = document.revision();
+    ASSERT_TRUE(g_engine->add_font(g_assets / "fonts/petaluma/PetalumaScript.otf"));
+    EXPECT_EQ(document.revision(), revision);
+    ASSERT_TRUE(document.edit({}));
+    EXPECT_NE(title->ldata()->bbox().width(), before);
+    EXPECT_EQ(document.revision(), revision);
+}
 
 TEST(Read, PositionsExpandRepeatsInRawPageUnitsWithoutEditing) {
     constexpr std::string_view xml = R"(<score-partwise version="4.0">
