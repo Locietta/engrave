@@ -19,6 +19,7 @@
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/sniff.h"
 #include "engrave/src/api/state.h"
+#include "engrave/src/audio/engine_audio.h"
 #include "engrave/src/runtime/runtime_assets.h"
 
 namespace engrave {
@@ -127,6 +128,45 @@ Result<std::unique_ptr<Engine>> Engine::create(const EngineOptions& options) {
         }
     }
     return engine;
+}
+
+Result<void> Engine::add_font(const std::filesystem::path& file) {
+    impl_->state.check_thread();
+    std::error_code ec;
+    if (!std::filesystem::is_regular_file(file, ec)) return fail(ErrorCode::NotFound, "no font file '" + utf8(file) + "'");
+    try {
+        // addFont publishes a new registry and replaces the font engine, discarding
+        // its cached FreeType faces and glyph metrics before documents relayout.
+        impl_->state.context->assets().addFont(utf8(std::filesystem::absolute(file)));
+    } catch (const std::runtime_error& error) {
+        return fail(ErrorCode::InvalidInput, error.what());
+    }
+    ++impl_->state.font_generation;
+    return {};
+}
+
+Result<void> Engine::set_soundfonts(const std::vector<std::filesystem::path>& files) {
+    impl_->state.check_thread();
+    std::vector<std::filesystem::path> retained;
+    for (const auto& file : files) {
+        std::error_code ec;
+        if (!std::filesystem::is_regular_file(file, ec)) return fail(ErrorCode::NotFound, "no SoundFont file '" + utf8(file) + "'");
+        try {
+            retained.push_back(path_from_utf8(impl_->state.context->assets().freezeSoundFont(utf8(std::filesystem::absolute(file))).path));
+        } catch (const std::runtime_error& error) {
+            return fail(ErrorCode::InvalidInput, error.what());
+        }
+    }
+    if (!retained.empty()) {
+        music::EngineAudioSetup setup;
+        setup.sample_rate = impl_->state.audio_sample_rate;
+        for (const auto& file : retained) setup.soundfonts.push_back(utf8(file));
+        std::string error;
+        if (!music::initialize_engine_audio(impl_->state.context->audio(), setup, &error))
+            return fail(ErrorCode::InvalidInput, error);
+    }
+    impl_->state.soundfonts.swap(retained);
+    return {};
 }
 
 Engine::~Engine() {

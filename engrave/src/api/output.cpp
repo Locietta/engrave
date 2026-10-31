@@ -51,6 +51,8 @@ const char* backend_name(RenderFormat format) {
 
 Result<std::int32_t> Document::page_count(const ScoreSel& selection) {
     impl_->engine->check_thread();
+    if (impl_->poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
+    impl_->refresh_fonts();
     const Result<mu::engraving::Score*> selected = select_score(*impl_->project->masterScore(), selection);
     if (!selected) return std::unexpected(selected.error());
     prepare_layout(**selected);
@@ -59,6 +61,8 @@ Result<std::int32_t> Document::page_count(const ScoreSel& selection) {
 
 Result<RenderOutput> Document::render(const RenderOptions& options) {
     impl_->engine->check_thread();
+    if (impl_->poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
+    impl_->refresh_fonts();
     const Result<mu::engraving::Score*> selected = select_score(*impl_->project->masterScore(), options.score);
     if (!selected) return std::unexpected(selected.error());
     mu::engraving::Score& score = **selected;

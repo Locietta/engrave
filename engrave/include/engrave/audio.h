@@ -52,8 +52,8 @@ struct AudioTracks {
 };
 
 // Which SoundFont a track plays: nothing for the Engine's default (the first of
-// EngineOptions::soundfonts), an index into that list, or a name (the file's
-// stem, e.g. "FluidR3Mono_GM").
+// current SoundFont list), an index into that list, a current file's stem, or
+// its path from Engine::capabilities() encoded as UTF-8 with '/' separators.
 using SoundFontSelection = std::variant<std::monostate, std::int32_t, std::string>;
 
 // One track's overrides. A field that is unset keeps the document's default, as
