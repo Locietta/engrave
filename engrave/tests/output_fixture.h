@@ -17,6 +17,7 @@ namespace music::test {
 extern std::unique_ptr<engrave::Engine> g_engine;
 extern std::vector<std::filesystem::path> g_corpus;
 extern std::vector<std::filesystem::path> g_soundfonts;
+extern std::vector<std::filesystem::path> g_retained_for_cleanup;
 extern std::filesystem::path g_assets;
 extern std::filesystem::path g_self;
 

@@ -47,7 +47,7 @@ struct Capabilities {
     // Render formats and audio encoders this build has.
     std::vector<RenderFormat> render_formats;
     std::vector<AudioFormat> audio_formats;
-    std::vector<std::filesystem::path> soundfonts; // EngineOptions::soundfonts, in order
+    std::vector<std::filesystem::path> soundfonts; // current ordered selection
     std::int32_t audio_sample_rate = 0;
 };
 
@@ -100,6 +100,19 @@ struct Engine {
     Engine& operator=(const Engine&) = delete;
 
     Capabilities capabilities() const;
+
+    // Register an immutable copy of a text font. NotFound for a missing file,
+    // InvalidInput for an unusable font. Existing documents keep their revision;
+    // their next layout-dependent call relays out all scores.
+    Result<void> add_font(const std::filesystem::path& file);
+
+    // Replace the ordered SoundFont list, validating and retaining file copies.
+    // Empty disables audio. Existing documents use it on their next audio render;
+    // layout, revision and mix defaults are unchanged. Indices refer to this list.
+    // capabilities().soundfonts returns the retained paths usable in AudioOptions.
+    // NotFound for missing files, InvalidInput for malformed files. Failure keeps
+    // the previous selection (validated copies may remain cached until shutdown).
+    Result<void> set_soundfonts(const std::vector<std::filesystem::path>& files);
 
     // The templates listed in resources/templates/categories.json, in that
     // file's order.

@@ -25,7 +25,9 @@
 #include <exception>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <set>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -46,6 +48,7 @@ namespace music::test {
 std::unique_ptr<engrave::Engine> g_engine;
 std::vector<std::filesystem::path> g_corpus;
 std::vector<std::filesystem::path> g_soundfonts;
+std::vector<std::filesystem::path> g_retained_for_cleanup;
 std::filesystem::path g_assets;
 std::filesystem::path g_self;
 
@@ -348,6 +351,56 @@ TEST(Output, SelectionsNameTheScoreOrOneOfItsExcerpts) {
 
 } // namespace
 
+TEST(RuntimeAssets, FontRegistrationRelayoutsExistingScoresWithoutAnEdit) {
+    using namespace music::test;
+    std::ifstream input(corpus_file("linked_parts.mscx"), std::ios::binary);
+    ASSERT_TRUE(input);
+    std::string xml((std::istreambuf_iterator<char>(input)), {});
+    const auto frame = xml.find("<height>10</height>");
+    ASSERT_NE(frame, std::string::npos);
+    xml.insert(frame, "<Text><style>title</style><text><font face=\"Petaluma Script\"/>MMMWWWiii012345</text></Text>");
+    const auto excerpt_text = xml.find("<text>Flute</text>");
+    ASSERT_NE(excerpt_text, std::string::npos);
+    xml.replace(excerpt_text, std::string("<text>Flute</text>").size(),
+                "<text><font face=\"Petaluma Script\"/>MMMWWWiii012345</text>");
+    const auto* bytes = reinterpret_cast<const std::byte*>(xml.data());
+    auto opened = g_engine->open(std::span<const std::byte>(bytes, xml.size()), {.format = engrave::Format::Mscx});
+    ASSERT_TRUE(opened);
+    auto& document = **opened;
+    const auto outline = document.outline();
+    ASSERT_TRUE(outline);
+    ASSERT_FALSE(outline->excerpts.empty());
+    const engrave::ScoreSel excerpt{outline->excerpts.front().id};
+    ASSERT_TRUE(document.page_count(excerpt));
+    const auto text_width = [&](engrave::ScoreSel score) {
+        const auto result = document.query({.score = score, .types = {"Text"}, .layout_boxes = true});
+        if (!result || result->elements.empty() || !result->elements.front().box) return 0.0;
+        return result->elements.front().box->width;
+    };
+    const double master_before = text_width({});
+    const double excerpt_before = text_width(excerpt);
+    ASSERT_GT(master_before, 0.0);
+    ASSERT_GT(excerpt_before, 0.0);
+    const auto revision = document.revision();
+    const auto missing = g_engine->add_font(g_assets / "missing-font.ttf");
+    ASSERT_FALSE(missing);
+    EXPECT_EQ(missing.error().code, engrave::ErrorCode::NotFound);
+    const auto invalid = g_engine->add_font(g_assets / "engraving/instruments/instruments.xml");
+    ASSERT_FALSE(invalid);
+    EXPECT_EQ(invalid.error().code, engrave::ErrorCode::InvalidInput);
+
+    const auto source = g_assets / "fonts/petaluma/PetalumaScript.otf";
+    const auto copy = std::filesystem::temp_directory_path() / "engrave-runtime-test-petaluma.otf";
+    std::filesystem::copy_file(source, copy, std::filesystem::copy_options::overwrite_existing);
+    ASSERT_TRUE(g_engine->add_font(copy));
+    std::filesystem::remove(copy);
+    // The first layout-dependent call refreshes master and excerpt together.
+    ASSERT_TRUE(document.page_count());
+    EXPECT_NE(text_width({}), master_before);
+    EXPECT_NE(text_width(excerpt), excerpt_before);
+    EXPECT_EQ(document.revision(), revision);
+}
+
 int main(int argc, char** argv) {
     testing::InitGoogleTest(&argc, argv);
     std::filesystem::path assets;
@@ -384,7 +437,13 @@ int main(int argc, char** argv) {
         return 1;
     }
     music::test::g_engine = std::move(*engine);
-    const int result = RUN_ALL_TESTS();
+    int result = RUN_ALL_TESTS();
     music::test::g_engine.reset();
+    for (const auto& path : music::test::g_retained_for_cleanup) {
+        if (std::filesystem::exists(path)) {
+            std::fprintf(stderr, "retained SoundFont survived Engine teardown: %s\n", path.string().c_str());
+            result = 1;
+        }
+    }
     return result;
 }

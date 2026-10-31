@@ -42,23 +42,30 @@ struct SoundFontCache : public std::map<std::string, SoundFontData> {
         return &s;
     }
 
+    // Called only after all synthesizers owned by the engine have gone away.
+    // A font still in use stays cached and can be released on a later attempt.
+    void clearUnused()
+    {
+        for (auto it = begin(); it != end();) {
+            SoundFontData& data = it->second;
+            if (data.soundFontPtr) {
+                auto* defsFont = static_cast<fluid_defsfont_t*>(fluid_sfont_get_data(data.soundFontPtr));
+                if (delete_fluid_defsfont(defsFont) != FLUID_OK) {
+                    ++it;
+                    continue;
+                }
+                delete_fluid_sfont(data.soundFontPtr);
+            }
+            if (data.fileStream) std::fclose(data.fileStream);
+            it = erase(it);
+        }
+    }
+
 private:
     SoundFontCache() = default;
     ~SoundFontCache()
     {
-        for (const auto& pair : *this) {
-            fluid_defsfont_t* defsFont = static_cast<fluid_defsfont_t*>(fluid_sfont_get_data(pair.second.soundFontPtr));
-
-            if (delete_fluid_defsfont(defsFont) != FLUID_OK) {
-                continue;
-            }
-
-            delete_fluid_sfont(pair.second.soundFontPtr);
-
-            if (pair.second.fileStream) {
-                std::fclose(pair.second.fileStream);
-            }
-        }
+        clearUnused();
     }
 };
 

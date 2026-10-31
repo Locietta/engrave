@@ -9,6 +9,7 @@
 
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/masterscore.h"
+#include "engraving/dom/textbase.h"
 #include "engraving/engravingproject.h"
 
 namespace engrave {
@@ -29,6 +30,7 @@ std::unique_ptr<Document> Document::Impl::make(EngineState& engine, music::Score
                                                std::vector<Diagnostic> diagnostics) {
     auto impl = std::make_unique<Impl>();
     impl->engine = &engine;
+    impl->font_generation = engine.font_generation;
     impl->project = std::move(project);
     impl->audio_defaults = std::move(audio_defaults);
     impl->diagnostics = std::move(diagnostics);
@@ -37,6 +39,21 @@ std::unique_ptr<Document> Document::Impl::make(EngineState& engine, music::Score
     assign_missing_ids(*impl->project->masterScore());
     ++engine.live_documents;
     return std::unique_ptr<Document>(new Document(std::move(impl)));}
+
+void Document::Impl::refresh_fonts() {
+    if (font_generation == engine->font_generation) return;
+    for (auto* score : project->masterScore()->scoreList()) {
+        // Rebuild text blocks as well as geometry: justified text can retain
+        // font-dependent fragment splits from an earlier layout.
+        score->scanElements([](mu::engraving::EngravingItem* item) {
+            if (item->isTextBase()) mu::engraving::toTextBase(item)->mutldata()->layoutInvalid = true;
+        });
+        score->setLayoutAll();
+        score->doLayout();
+        score->update();
+    }
+    font_generation = engine->font_generation;
+}
 
 Document::Document(std::unique_ptr<Impl> impl) : impl_(std::move(impl)) {}
 
@@ -74,6 +91,7 @@ const std::vector<Diagnostic>& Document::diagnostics() const {
 Result<std::vector<std::byte>> Document::export_score(const ExportOptions& options) {
     impl_->engine->check_thread();
     if (impl_->poisoned) return std::unexpected(Error{ErrorCode::Poisoned, "an earlier edit left the document unusable"});
+    impl_->refresh_fonts();
     const char* name = nullptr;
     switch (options.format) {
     case Format::Mscz: name = "mscz"; break;

@@ -35,6 +35,8 @@
 #include "fluidsequencer.h"
 
 namespace muse::audio::synth {
+// Release cached fonts after the engine's synthesizers have been destroyed.
+void releaseSoundFontCache();
 struct Fluid;
 class FluidSynth : public AbstractSynthesizer
 {
