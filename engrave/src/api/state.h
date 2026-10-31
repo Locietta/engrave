@@ -34,6 +34,7 @@ struct EngineState {
     std::vector<std::filesystem::path> soundfonts;
     std::int32_t audio_sample_rate = 44100;
     std::size_t live_documents = 0;
+    std::uint64_t font_generation = 0;
     unsigned audio_render_index = 0; // names the temporary files of one process
     // The engine's services; destroyed with the Engine, after its last Document.
     std::unique_ptr<music::EngineContext> context;
@@ -57,6 +58,8 @@ struct Document::Impl {
     std::vector<Diagnostic> diagnostics;
     // A failed edit could not restore the score: only destruction is left.
     bool poisoned = false;
+    std::uint64_t font_generation = 0;
+    void refresh_fonts();
     api::EditHooks edit_hooks;
 
     static std::unique_ptr<Document> make(EngineState& engine, music::ScoreProject project,
@@ -68,6 +71,7 @@ struct Document::Impl {
 // and the engine's MSCX export through it until the read and edit API exist (see
 // engrave/tests/handles_test.cpp).
 struct DocumentAccess {
+    static Document::Impl& impl(Document& document) { return *document.impl_; }
     static mu::engraving::MasterScore* master_score(Document& document);
     static music::ScoreProject& project(Document& document);
     static api::EditHooks& edit_hooks(Document& document);

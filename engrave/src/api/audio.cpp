@@ -100,7 +100,7 @@ Result<int> soundfont_index(const SoundFontSelection& selection, const std::vect
     }
     const std::string& name = std::get<std::string>(selection);
     for (std::size_t index = 0; index < fonts.size(); ++index) {
-        if (utf8(fonts[index].stem()) == name) return static_cast<int>(index);
+        if (utf8(fonts[index].stem()) == name || utf8(fonts[index]) == name) return static_cast<int>(index);
     }
     std::string available;
     for (const auto& font : fonts) available += (available.empty() ? "" : ", ") + utf8(font.stem());

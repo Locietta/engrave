@@ -28,6 +28,8 @@
 #include "audio/engine/internal/export/soundtrackwriter.h"
 #include "audio/engine/internal/offlinerendersession.h"
 #include "audio/engine/internal/audiofactory.h"
+#include "audio/engine/internal/synthesizers/fluidsynth/fluidsoundfontparser.h"
+#include "audio/engine/internal/synthesizers/fluidsynth/fluidsynth.h"
 #include "audio/engine/internal/nodes/automationcontrolnode.h"
 #include "audio/engine/internal/nodes/signalnode.h"
 #include "audio/engine/internal/nodes/trackchain.h"
@@ -131,7 +133,12 @@ EngineAudio::EngineAudio(const muse::mpe::IArticulationProfilesRepository& profi
 {
 }
 
-EngineAudio::~EngineAudio() = default;
+EngineAudio::~EngineAudio()
+{
+    const bool initialized = m_state && m_state->servicesInitialized;
+    m_state.reset();
+    if (initialized) synth::releaseSoundFontCache();
+}
 
 namespace {
 OutputSpec output_spec(int sampleRate)
@@ -363,10 +370,7 @@ bool initialize_engine_audio(EngineAudio& audio, const EngineAudioSetup& setup, 
             && state.sampleRate == setup.sample_rate) {
             return true;
         }
-        if (state.soundfontId.empty()) {
-            return fail("audio engine initialisation failed earlier; restart the process");
-        }
-        return fail("audio engine is already initialised with another SoundFont list or sample rate");
+        if (state.sampleRate != setup.sample_rate) return fail("audio sample rate is fixed");
     }
 
     if (setup.sample_rate < 8000 || setup.sample_rate > 192000) {
@@ -386,25 +390,6 @@ bool initialize_engine_audio(EngineAudio& audio, const EngineAudioSetup& setup, 
         return fail("native runtime (IFileSystem) is not initialised; create the EngineContext first");
     }
 
-    // The factory, configuration, SoundFont repository and synth/effect
-    // resolvers; synthesizers send their events to the capturing MIDI output.
-    state.services = std::make_unique<engine::AudioServices>(&state.midiOutPort);
-
-    state.servicesInitialized = true;
-    AudioEngineConfig config;
-    config.useSoundFontLowPassFilter = true;
-    state.sampleRate = setup.sample_rate;
-    engine::AudioEngineConfiguration& configuration = state.services->configuration();
-    configuration.setConfig(config);
-    state.services->synthResolver().init(configuration.defaultAudioInputParams(), output_spec(state.sampleRate));
-    state.factory = &state.services->factory();
-    state.factory->setOutputSpec(output_spec(state.sampleRate));
-
-    // 4. SoundFonts. addSoundFont() is synchronous for file: URIs
-    // (soundfontrepository.cpp:68-77, 117-168) and refreshes FluidResolver
-    // through soundFontsChanged (fluidresolver.cpp:44-50, 102-145).
-    auto* repository = &state.services->soundFontRepository();
-
     // The pinned FluidSynth default sink writes parser errors to stdout, which
     // corrupts a JSON CLI's output. FluidSynth::init() installs its own
     // per-synth callbacks later, so this only covers parsing here.
@@ -413,10 +398,44 @@ bool initialize_engine_audio(EngineAudio& audio, const EngineAudioSetup& setup, 
     fluid_set_log_function(FLUID_WARN, fluid_log_to_logger, nullptr);
     fluid_set_log_function(FLUID_INFO, fluid_log_to_logger, nullptr);
 
+    // Parse every candidate before changing the live repository. The retained
+    // files are immutable, so a later repository load reads the same bytes.
+    std::map<std::string, std::string> names;
     for (const std::string& path : soundfont_paths) {
-        state.soundfontPaths.push_back(path);
-        repository->addSoundFont(Uri::fromLocalFile(io::path_t(path)));
+        const auto parsed = synth::FluidSoundFontParser::parseSoundFont(io::path_t(path));
+        if (!parsed.ret) return fail("failed to load SoundFont '" + path + "'");
+        const auto [it, inserted] = names.emplace(parsed.val.name, path);
+        if (!inserted && it->second != path)
+            return fail("SoundFonts have the same resource name: " + parsed.val.name);
     }
+
+    if (!state.servicesInitialized) {
+        // The factory, repository and synth/effect resolvers are kept for the
+        // EngineContext lifetime; each render creates fresh synthesizer tracks.
+        state.services = std::make_unique<engine::AudioServices>(&state.midiOutPort);
+        state.servicesInitialized = true;
+        AudioEngineConfig config;
+        config.useSoundFontLowPassFilter = true;
+        state.sampleRate = setup.sample_rate;
+        engine::AudioEngineConfiguration& configuration = state.services->configuration();
+        configuration.setConfig(config);
+        state.services->synthResolver().init(configuration.defaultAudioInputParams(), output_spec(state.sampleRate));
+        state.factory = &state.services->factory();
+        state.factory->setOutputSpec(output_spec(state.sampleRate));
+    }
+    auto* repository = &state.services->soundFontRepository();
+    const auto uris = [](const std::vector<std::string>& paths) {
+        std::vector<Uri> result;
+        for (const auto& path : paths) result.push_back(Uri::fromLocalFile(io::path_t(path)));
+        return result;
+    };
+    // loadSoundFonts replaces the repository and notifies FluidResolver, which
+    // clears and rebuilds its resource cache. If loading fails, restore the
+    // previous repository before returning without publishing the new selection.
+    repository->loadSoundFonts(uris(soundfont_paths));
+    const auto restore = [&]() {
+        if (!state.soundfontPaths.empty()) repository->loadSoundFonts(uris(state.soundfontPaths));
+    };
 
     // 6. Explicit source resource for every track, taken from the engine's own
     // resource list (FluidResolver::refresh, fluidresolver.cpp:102-145). Without
@@ -424,12 +443,15 @@ bool initialize_engine_audio(EngineAudio& audio, const EngineAudioSetup& setup, 
     // audioengineconfiguration.cpp:35-41, 103-109), which is absent from this
     // process, and the track would be silent.
     const AudioResourceMetaList resources = state.factory->availableInputResources();
+    std::vector<AudioInputParams> inputs;
+    std::string defaultId, defaultUri;
     for (std::size_t index = 0; index < soundfont_paths.size(); ++index) {
         const std::string& path = soundfont_paths[index];
         const Uri uri = Uri::fromLocalFile(io::path_t(path));
         const synth::SoundFontsMap& soundfonts = repository->soundFonts();
         auto it = soundfonts.find(uri);
         if (it == soundfonts.end()) {
+            restore();
             return fail("failed to load SoundFont '" + path + "'");
         }
 
@@ -441,18 +463,24 @@ bool initialize_engine_audio(EngineAudio& audio, const EngineAudioSetup& setup, 
             }
         }
         if (!found) {
+            restore();
             return fail("SoundFont '" + path + "' is not available as an audio input resource");
         }
 
         AudioInputParams input;
         input.resourceMeta = *found;
-        state.fontInputs.push_back(input);
+        inputs.push_back(input);
         if (index == 0) {
-            state.soundfontPath = path;
-            state.soundfontUri = uri.toString();
-            state.soundfontId = it->second.name;
+            defaultUri = uri.toString();
+            defaultId = it->second.name;
         }
     }
+
+    state.fontInputs = std::move(inputs);
+    state.soundfontPaths = soundfont_paths;
+    state.soundfontPath = soundfont_paths.front();
+    state.soundfontUri = std::move(defaultUri);
+    state.soundfontId = std::move(defaultId);
 
     return true;
 }

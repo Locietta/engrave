@@ -100,15 +100,17 @@ void Writer::write(Score* score, XmlWriter& xml, WriteContext& ctx, compat::Writ
             xml.tag("name", e->name());
         }
 
-        const TracksMap& tracks = e->tracksMapping();
-        if (!(tracks.size() == e->nstaves() * VOICES) && !tracks.empty()) {
-            for (auto it = tracks.begin(); it != tracks.end(); ++it) {
-                xml.tag("Tracklist", { { "sTrack", it->first }, { "dstTrack", it->second } });
+        if (!ctx.standalone()) {
+            const TracksMap& tracks = e->tracksMapping();
+            if (!(tracks.size() == e->nstaves() * VOICES) && !tracks.empty()) {
+                for (auto it = tracks.begin(); it != tracks.end(); ++it) {
+                    xml.tag("Tracklist", { { "sTrack", it->first }, { "dstTrack", it->second } });
+                }
             }
-        }
 
-        if (e->initialPartId().isValid()) {
-            xml.tag("initialPartId", e->initialPartId().toUint64());
+            if (e->initialPartId().isValid()) {
+                xml.tag("initialPartId", e->initialPartId().toUint64());
+            }
         }
     }
 
@@ -129,7 +131,7 @@ void Writer::write(Score* score, XmlWriter& xml, WriteContext& ctx, compat::Writ
     xml.tag("Division", Constants::DIVISION);
     ctx.setCurTrack(muse::nidx);
 
-    hook.onWriteStyle302(score, xml);
+    hook.onWriteStyle302(score, xml, ctx.inlineStyle());
 
     xml.tag("showInvisible", score->m_showInvisible);
     xml.tag("showUnprintable", score->m_showUnprintable);

@@ -15,10 +15,6 @@
 
 namespace engrave {
 
-namespace api {
-class BatchGuard;
-}
-
 // One open score. Every call must come from the thread that created the
 // Engine, and the Document must be destroyed before the Engine; destroying it
 // closes the score.
@@ -35,8 +31,15 @@ struct Document {
     const std::vector<Diagnostic>& diagnostics() const;
 
     // Unsupported for a format the engine does not write (see Capabilities).
+    // Score selection errors are the same as outline(). Excerpts are standalone
+    // scores in every supported format, including MSCX and compressed MusicXML.
     // Throws std::runtime_error if the engine's writer fails.
     Result<std::vector<std::byte>> export_score(const ExportOptions& options);
+
+    // Exact legacy measurePositions / segmentPositions data, including expanded
+    // repeat event times. Selection errors are the same as outline(); Poisoned
+    // after failed recovery. Ensures layout before reading; does not edit revision.
+    Result<Positions> positions(PositionKind kind, const ScoreSel& score = {});
 
     // How many pages the selected score has. NotFound, StaleHandle and
     // InvalidArgument as outline() reports them; an excerpt that has never been
@@ -101,7 +104,6 @@ struct Document {
 private:
     friend struct Engine;
     friend struct DocumentAccess;
-    friend class api::BatchGuard;
     struct Impl;
     explicit Document(std::unique_ptr<Impl> impl);
     std::unique_ptr<Impl> impl_;

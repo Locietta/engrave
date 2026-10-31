@@ -12,6 +12,7 @@
 #include "engrave/src/api/state.h"
 #include "engrave/src/render/score_render.h"
 #include "engrave/src/score/export_options.h"
+#include "engrave/src/score/score_positions.h"
 
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/score.h"
@@ -51,6 +52,8 @@ const char* backend_name(RenderFormat format) {
 
 Result<std::int32_t> Document::page_count(const ScoreSel& selection) {
     impl_->engine->check_thread();
+    if (impl_->poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
+    impl_->refresh_fonts();
     const Result<mu::engraving::Score*> selected = select_score(*impl_->project->masterScore(), selection);
     if (!selected) return std::unexpected(selected.error());
     prepare_layout(**selected);
@@ -59,6 +62,8 @@ Result<std::int32_t> Document::page_count(const ScoreSel& selection) {
 
 Result<RenderOutput> Document::render(const RenderOptions& options) {
     impl_->engine->check_thread();
+    if (impl_->poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
+    impl_->refresh_fonts();
     const Result<mu::engraving::Score*> selected = select_score(*impl_->project->masterScore(), options.score);
     if (!selected) return std::unexpected(selected.error());
     mu::engraving::Score& score = **selected;
@@ -105,6 +110,28 @@ Result<RenderOutput> Document::render(const RenderOptions& options) {
     } catch (const std::invalid_argument& error) {
         return fail(ErrorCode::InvalidArgument, error.what());
     }
+}
+
+Result<Positions> Document::positions(PositionKind kind, const ScoreSel& selection) {
+    impl_->engine->check_thread();
+    if (impl_->poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
+    if (kind != PositionKind::Measure && kind != PositionKind::Segment)
+        return fail(ErrorCode::InvalidArgument, "unknown position kind");
+    const auto selected = select_score(*impl_->project->masterScore(), selection);
+    if (!selected) return std::unexpected(selected.error());
+    impl_->refresh_fonts();
+    prepare_layout(**selected);
+    if ((*selected)->npages() == 0) return fail(ErrorCode::InvalidArgument, "the score has no pages");
+    const auto data = music::score_positions(*selected, kind == PositionKind::Segment);
+    Positions result;
+    result.page_width = data.at("pageSize").at("width").get<double>();
+    result.page_height = data.at("pageSize").at("height").get<double>();
+    for (const auto& el : data.at("elements"))
+        result.elements.push_back({el.at("id").get<int>(), el.at("x").get<double>(), el.at("y").get<double>(),
+                                   el.at("sx").get<double>(), el.at("sy").get<double>(), el.at("page").get<int>()});
+    for (const auto& event : data.at("events"))
+        result.events.push_back({event.at("elid").get<int>(), event.at("position").get<int>()});
+    return result;
 }
 
 } // namespace engrave

@@ -26,6 +26,9 @@ namespace engrave {
 
 Result<EditResult> Document::edit(const Batch& batch, std::optional<std::uint64_t> expected_revision) {
     impl_->engine->check_thread();
+    // An edit may consult or update layout, so it must not run against text
+    // geometry from a font generation that the Engine has already replaced.
+    if (!impl_->poisoned) impl_->refresh_fonts();
     return api::BatchGuard(*this).edit(batch, expected_revision);
 }
 
@@ -168,10 +171,10 @@ struct BatchGuard::Snapshot {
 };
 
 BatchGuard::BatchGuard(Document& document)
-    : m_document(document), m_context(*document.impl_->project->masterScore()) {}
+    : m_document(document), m_context(*DocumentAccess::impl(document).project->masterScore()) {}
 
 Result<void> BatchGuard::admit(std::optional<std::uint64_t> expected_revision) const {
-    const Document::Impl& document = *m_document.impl_;
+    const auto& document = DocumentAccess::impl(m_document);
     if (document.poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
     if (expected_revision && *expected_revision != document.revision) {
         return fail(ErrorCode::RevisionConflict,
@@ -217,7 +220,7 @@ Result<EditResult> BatchGuard::run(std::vector<Step> steps, Policy policy, std::
 }
 
 Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, std::vector<bool> snapshot_step) {
-    Document::Impl& document = *m_document.impl_;
+    auto& document = DocumentAccess::impl(m_document);
     EditResult result{.revision = document.revision};
     if (steps.empty()) return result;
     const EditHooks& hooks = document.edit_hooks;
@@ -325,7 +328,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
 // Brings the score back to where it was before the batch. A failure here leaves the
 // document poisoned and is thrown.
 void BatchGuard::roll_back(const Snapshot* snapshot, std::size_t history, bool unwind_unsafe) {
-    Document::Impl& document = *m_document.impl_;
+    auto& document = DocumentAccess::impl(m_document);
     MasterScore& master = m_context.master();
     UndoStack* stack = master.undoStack();
     try {
@@ -372,7 +375,7 @@ void BatchGuard::roll_back(const Snapshot* snapshot, std::size_t history, bool u
 }
 
 void BatchGuard::restore(const Snapshot& snapshot) {
-    Document::Impl& document = *m_document.impl_;
+    auto& document = DocumentAccess::impl(m_document);
     if (document.edit_hooks.fail_restore) throw std::runtime_error("the snapshot restore failed (test hook)");
     music::ScoreProject project = music::load_native_score(*document.engine->context, snapshot.mscz, "mscz");
     // The reload reads the version the writer stamped; the scores keep their own, and
