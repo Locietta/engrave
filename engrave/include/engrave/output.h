@@ -29,6 +29,28 @@ struct ExportOptions {
     bool midi_rpns = true;
 };
 
+// Exact position export in raw 1200-DPI layout units. Coordinates are page-local;
+// y and height span the system for measures, and height spans it for segments.
+// Segment x/y preserve the legacy truncation to integer units. IDs are local to
+// this result, unrelated to ElementId. Page indices are zero-based.
+enum struct PositionKind { Measure, Segment };
+struct PositionElement {
+    std::int32_t id = 0;
+    double x = 0, y = 0, sx = 0, sy = 0;
+    std::int32_t page = 0;
+};
+struct PositionEvent {
+    std::int32_t elid = 0;
+    // Repeat-expanded playback time in milliseconds, rounded as the legacy writer.
+    std::int32_t position = 0;
+};
+struct Positions {
+    // Size of the first page, matching the legacy pageSize field.
+    double page_width = 0, page_height = 0;
+    std::vector<PositionElement> elements;
+    std::vector<PositionEvent> events;
+};
+
 // What render() draws.
 enum struct RenderFormat {
     Pdf, // one document holding the requested pages

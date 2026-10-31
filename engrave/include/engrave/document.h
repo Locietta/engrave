@@ -38,6 +38,11 @@ struct Document {
     // Throws std::runtime_error if the engine's writer fails.
     Result<std::vector<std::byte>> export_score(const ExportOptions& options);
 
+    // Exact legacy measurePositions / segmentPositions data, including expanded
+    // repeat event times. Selection errors are the same as outline(); Poisoned
+    // after failed recovery. Ensures layout before reading; does not edit revision.
+    Result<Positions> positions(PositionKind kind, const ScoreSel& score = {});
+
     // How many pages the selected score has. NotFound, StaleHandle and
     // InvalidArgument as outline() reports them; an excerpt that has never been
     // laid out is laid out first.
