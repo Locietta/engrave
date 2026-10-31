@@ -37,6 +37,11 @@ using namespace muse::audio;
 using namespace muse::audio::synth;
 using namespace muse::mpe;
 
+void muse::audio::synth::releaseSoundFontCache()
+{
+    SoundFontCache::instance()->clearUnused();
+}
+
 static constexpr bool FLUID_DEBUG = false;
 
 static constexpr double FLUID_GLOBAL_VOLUME_GAIN = 4.8;

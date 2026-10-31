@@ -311,7 +311,7 @@ TEST(Audio, TheSoundFontListSelectsTheDefaultAndPerTrack) {
     EXPECT_NE(alternate.bytes, defaults.bytes) << "the per-track SoundFont did not reach the render";
 
     engrave::AudioTrackOptions by_name = choice;
-    by_name.soundfont = g_soundfonts[1].stem().string();
+    by_name.soundfont = music::test::g_engine->capabilities().soundfonts[1].stem().string();
     per_track.tracks.front() = by_name;
     const detail::Rendered named = detail::render_audio(*document, per_track);
     ASSERT_FALSE(named.bytes.empty());
@@ -536,3 +536,66 @@ TEST(Audio, AnEngineWithoutSoundFontsCannotRender) {
 }
 
 } // namespace
+
+TEST(RuntimeAssets, SoundFontReplacementChangesTheNextRenderAndIsAtomic) {
+    using namespace music::test;
+    if (g_soundfonts.size() < 2) GTEST_SKIP() << "pass two different SoundFonts";
+    auto document = detail::open_score(detail::audio_score());
+    ASSERT_TRUE(document);
+    const auto revision = document->revision();
+    const auto mix_before = document->audio_tracks();
+    ASSERT_TRUE(mix_before);
+
+    // This also exercises setting a font before the first audio render has
+    // created the live audio services.
+    ASSERT_TRUE(g_engine->set_soundfonts({g_soundfonts[0]}));
+    const auto first = detail::render_audio(*document, {});
+    ASSERT_FALSE(first.bytes.empty());
+    const auto copy = detail::temp_file("replacement.sf2");
+    std::filesystem::copy_file(g_soundfonts[1], copy, std::filesystem::copy_options::overwrite_existing);
+    ASSERT_TRUE(g_engine->set_soundfonts({copy}));
+    const auto selection = g_engine->capabilities().soundfonts;
+    ASSERT_EQ(selection.size(), 1u);
+    g_retained_for_cleanup = selection;
+    EXPECT_NE(selection[0], copy);
+    std::filesystem::remove(copy);
+    const auto second = detail::render_audio(*document, {});
+    ASSERT_FALSE(second.bytes.empty());
+    EXPECT_NE(first.bytes, second.bytes);
+    engrave::AudioOptions by_path;
+    engrave::AudioTrackOptions track;
+    track.track = 0;
+    const auto path_u8 = selection[0].generic_u8string();
+    track.soundfont = std::string(path_u8.begin(), path_u8.end());
+    by_path.tracks.push_back(track);
+    EXPECT_EQ(detail::render_audio(*document, by_path).bytes, second.bytes);
+
+    auto missing = g_engine->set_soundfonts({g_soundfonts[0], copy});
+    ASSERT_FALSE(missing);
+    EXPECT_EQ(missing.error().code, engrave::ErrorCode::NotFound);
+    const auto bad = detail::temp_file("malformed.sf2");
+    { std::ofstream out(bad, std::ios::binary); out.write("RIFF\x04\0\0\0sfbk", 12); }
+    auto invalid = g_engine->set_soundfonts({bad});
+    std::filesystem::remove(bad);
+    ASSERT_FALSE(invalid);
+    EXPECT_EQ(invalid.error().code, engrave::ErrorCode::InvalidInput);
+    EXPECT_EQ(g_engine->capabilities().soundfonts, selection);
+    EXPECT_EQ(detail::render_audio(*document, {}).bytes, second.bytes);
+    ASSERT_TRUE(g_engine->set_soundfonts({}));
+    auto disabled = document->render_audio({}, [](std::span<const std::byte>) {});
+    ASSERT_FALSE(disabled);
+    EXPECT_EQ(disabled.error().code, engrave::ErrorCode::Unsupported);
+    ASSERT_TRUE(g_engine->set_soundfonts(g_soundfonts));
+    EXPECT_EQ(document->revision(), revision);
+    const auto mix_after = document->audio_tracks();
+    ASSERT_TRUE(mix_after);
+    ASSERT_EQ(mix_after->tracks.size(), mix_before->tracks.size());
+    EXPECT_EQ(mix_after->master.volume_db, mix_before->master.volume_db);
+    EXPECT_EQ(mix_after->master.balance, mix_before->master.balance);
+    for (std::size_t i = 0; i < mix_after->tracks.size(); ++i) {
+        EXPECT_EQ(mix_after->tracks[i].mix.volume_db, mix_before->tracks[i].mix.volume_db);
+        EXPECT_EQ(mix_after->tracks[i].mix.balance, mix_before->tracks[i].mix.balance);
+        EXPECT_EQ(mix_after->tracks[i].mix.mute, mix_before->tracks[i].mix.mute);
+        EXPECT_EQ(mix_after->tracks[i].mix.solo, mix_before->tracks[i].mix.solo);
+    }
+}
