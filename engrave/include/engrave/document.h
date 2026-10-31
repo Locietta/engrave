@@ -15,10 +15,6 @@
 
 namespace engrave {
 
-namespace api {
-class BatchGuard;
-}
-
 // One open score. Every call must come from the thread that created the
 // Engine, and the Document must be destroyed before the Engine; destroying it
 // closes the score.
@@ -108,7 +104,6 @@ struct Document {
 private:
     friend struct Engine;
     friend struct DocumentAccess;
-    friend class api::BatchGuard;
     struct Impl;
     explicit Document(std::unique_ptr<Impl> impl);
     std::unique_ptr<Impl> impl_;

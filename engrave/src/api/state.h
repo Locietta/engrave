@@ -71,6 +71,7 @@ struct Document::Impl {
 // and the engine's MSCX export through it until the read and edit API exist (see
 // engrave/tests/handles_test.cpp).
 struct DocumentAccess {
+    static Document::Impl& impl(Document& document) { return *document.impl_; }
     static mu::engraving::MasterScore* master_score(Document& document);
     static music::ScoreProject& project(Document& document);
     static api::EditHooks& edit_hooks(Document& document);
