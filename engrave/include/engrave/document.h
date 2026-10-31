@@ -35,6 +35,8 @@ struct Document {
     const std::vector<Diagnostic>& diagnostics() const;
 
     // Unsupported for a format the engine does not write (see Capabilities).
+    // Score selection errors are the same as outline(). Excerpts are standalone
+    // scores in every supported format, including MSCX and compressed MusicXML.
     // Throws std::runtime_error if the engine's writer fails.
     Result<std::vector<std::byte>> export_score(const ExportOptions& options);
 

@@ -180,7 +180,7 @@ Capabilities Engine::capabilities() const {
     return {
         .engine_version = music::engine_version(),
         .import_formats = {Format::Mscz, Format::Mscx, Format::MusicXml, Format::Mxl, Format::Midi, Format::GuitarPro, Format::Mnx},
-        .export_formats = {Format::Mscz, Format::MusicXml, Format::Mxl, Format::Midi},
+        .export_formats = {Format::Mscx, Format::Mscz, Format::MusicXml, Format::Mxl, Format::Midi},
         .render_formats = {RenderFormat::Pdf, RenderFormat::Png, RenderFormat::Svg},
         .audio_formats = {AudioFormat::Wav, AudioFormat::Flac, AudioFormat::Opus, AudioFormat::Mp3, AudioFormat::Aac},
         .soundfonts = impl_->state.soundfonts,

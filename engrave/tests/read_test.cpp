@@ -460,6 +460,147 @@ TEST(Read, PositionsRefuseAPoisonedDocument) {
     expect_code(document->positions(engrave::PositionKind::Measure), ErrorCode::Poisoned, "poisoned document");
 }
 
+TEST(Read, ExcerptExportsReopenAsIndependentScores) {
+    const auto it = std::ranges::find_if(g_corpus, [](const auto& path) { return path.filename() == "chordline_path.mscx"; });
+    ASSERT_NE(it, g_corpus.end());
+    auto document = open_path(*it);
+    ASSERT_TRUE(document);
+    const auto full = document->outline();
+    ASSERT_TRUE(full);
+    ASSERT_GE(full->parts.size(), 2u);
+    const engrave::Batch create{{engrave::GenerateExcerpts{{full->parts[1].id}}}};
+    ASSERT_TRUE(document->edit(create));
+    const auto with_excerpt = document->outline();
+    ASSERT_TRUE(with_excerpt);
+    ASSERT_EQ(with_excerpt->excerpts.size(), 1u);
+    const engrave::ScoreSel selection{with_excerpt->excerpts.front().id};
+    ASSERT_TRUE(document->edit({{engrave::SetStyle{selection, "staffDistance", 9.0}}}));
+    const auto source = document->outline(selection);
+    ASSERT_TRUE(source);
+    ASSERT_EQ(source->parts.size(), 1u);
+    const auto source_notes = document->query({.score = selection, .types = {"Note"}, .props = {"pitch"}});
+    ASSERT_TRUE(source_notes);
+    ASSERT_FALSE(source_notes->elements.empty());
+    const auto pitches = [](const engrave::QueryResult& notes) {
+        std::vector<std::int64_t> result;
+        for (const auto& note : notes.elements) {
+            if (!note.props.empty()) result.push_back(std::get<std::int64_t>(note.props.front().value));
+        }
+        std::ranges::sort(result);
+        return result;
+    };
+    const auto revision = document->revision();
+    for (const auto format : {engrave::Format::Mscx, engrave::Format::Mscz, engrave::Format::MusicXml,
+                              engrave::Format::Mxl, engrave::Format::Midi}) {
+        SCOPED_TRACE(engrave::to_string(format));
+        const auto exported = document->export_score({.format = format, .score = selection});
+        ASSERT_TRUE(exported);
+        if (format == engrave::Format::Mscx) {
+            const std::string xml(reinterpret_cast<const char*>(exported->data()), exported->size());
+            EXPECT_EQ(xml.find("<linkedTo>"), std::string::npos)
+                << "this one-staff excerpt must not refer to master-score elements";
+        }
+        const auto reopened = g_engine->open(*exported, {.format = format});
+        ASSERT_TRUE(reopened) << reopened.error().message;
+        const auto part = (*reopened)->outline();
+        ASSERT_TRUE(part);
+        EXPECT_EQ(part->parts.size(), 1u);
+        EXPECT_TRUE(part->excerpts.empty());
+        if (format != engrave::Format::Midi) {
+            EXPECT_EQ(part->parts.front().name, source->parts.front().name);
+            EXPECT_EQ(part->measure_count, source->measure_count);
+            EXPECT_EQ(part->title, source->title);
+        }
+        const auto notes = (*reopened)->query({.types = {"Note"}, .props = {"pitch"}});
+        ASSERT_TRUE(notes);
+        EXPECT_EQ(pitches(*notes), pitches(*source_notes));
+        if (format == engrave::Format::Mscx || format == engrave::Format::Mscz) {
+            EXPECT_DOUBLE_EQ(master_of(**reopened).style().styleS(mu::engraving::Sid::staffDistance).val(), 9.0);
+            EXPECT_EQ(master_of(**reopened).metaTag(u"workTitle"), master_of(*document).metaTag(u"workTitle"));
+            EXPECT_EQ(master_of(**reopened).metaTag(u"partName").toStdString(), with_excerpt->excerpts.front().name);
+        }
+    }
+    EXPECT_EQ(document->revision(), revision);
+    const ElementId missing{0x1234, 0x5678};
+    expect_code(document->export_score({.format = engrave::Format::Mscz, .score = {missing}}),
+                ErrorCode::NotFound, "missing excerpt export");
+    const auto master_notes = document->query({.types = {"Note"}, .limit = 1});
+    ASSERT_TRUE(master_notes);
+    ASSERT_FALSE(master_notes->elements.empty());
+    expect_code(document->export_score({.format = engrave::Format::MusicXml,
+                                        .score = {master_notes->elements.front().id}}),
+                ErrorCode::InvalidArgument, "note is not an excerpt");
+    auto* removed = master_of(*document).excerpts().front();
+    master_of(*document).removeExcerpt(removed);
+    expect_code(document->export_score({.format = engrave::Format::Mscz, .score = selection}),
+                ErrorCode::StaleHandle, "stale excerpt export");
+    master_of(*document).addExcerpt(removed);
+}
+
+TEST(Read, MscxMasterExportRetainsStyle) {
+    const auto it = std::ranges::find_if(g_corpus, [](const auto& path) { return path.filename() == "linked_parts.mscx"; });
+    ASSERT_NE(it, g_corpus.end());
+    auto document = open_path(*it);
+    ASSERT_TRUE(document);
+    const auto original = document->outline();
+    ASSERT_TRUE(original);
+    ASSERT_FALSE(original->excerpts.empty());
+    ASSERT_TRUE(document->edit({{engrave::SetStyle{{}, "staffDistance", 9.0}}}));
+    const auto exported = document->export_score({.format = engrave::Format::Mscx});
+    ASSERT_TRUE(exported);
+    const auto reopened = g_engine->open(*exported, {.format = engrave::Format::Mscx});
+    ASSERT_TRUE(reopened);
+    EXPECT_DOUBLE_EQ(master_of(**reopened).style().styleS(mu::engraving::Sid::staffDistance).val(), 9.0);
+    const auto outline = (*reopened)->outline();
+    ASSERT_TRUE(outline);
+    ASSERT_EQ(outline->excerpts.size(), original->excerpts.size());
+    EXPECT_EQ(outline->excerpts.front().name, original->excerpts.front().name);
+}
+
+TEST(Read, StandaloneExcerptKeepsLinksBetweenItsOwnStaves) {
+    const auto it = std::ranges::find_if(g_corpus, [](const auto& path) { return path.filename() == "linked_parts.mscx"; });
+    ASSERT_NE(it, g_corpus.end());
+    auto document = open_path(*it);
+    ASSERT_TRUE(document);
+    const auto full = document->outline();
+    ASSERT_TRUE(full);
+    ASSERT_FALSE(full->excerpts.empty());
+    const engrave::ScoreSel selection{full->excerpts.front().id};
+    const auto exported = document->export_score({.format = engrave::Format::Mscx, .score = selection});
+    ASSERT_TRUE(exported);
+    const std::string xml(reinterpret_cast<const char*>(exported->data()), exported->size());
+    std::set<std::string> seen;
+    std::size_t cursor = 0, links = 0;
+    while (cursor < xml.size()) {
+        const auto eid = xml.find("<eid>", cursor);
+        const auto link = xml.find("<linkedTo>", cursor);
+        if (eid == std::string::npos && link == std::string::npos) break;
+        if (eid < link) {
+            const auto end = xml.find("</eid>", eid);
+            ASSERT_NE(end, std::string::npos);
+            seen.insert(xml.substr(eid + 5, end - eid - 5));
+            cursor = end + 6;
+        } else {
+            const auto end = xml.find("</linkedTo>", link);
+            ASSERT_NE(end, std::string::npos);
+            EXPECT_TRUE(seen.contains(xml.substr(link + 10, end - link - 10)))
+                << "a standalone link points outside the score or forward";
+            ++links;
+            cursor = end + 11;
+        }
+    }
+    ASSERT_GT(links, 0u);
+    const auto reopened = g_engine->open(*exported, {.format = engrave::Format::Mscx});
+    ASSERT_TRUE(reopened);
+    const auto outline = (*reopened)->outline();
+    ASSERT_TRUE(outline);
+    ASSERT_EQ(outline->parts.size(), 1u);
+    EXPECT_EQ(outline->parts.front().staves.size(), 2u);
+    const auto notes = (*reopened)->query({.types = {"Note"}});
+    ASSERT_TRUE(notes);
+    EXPECT_TRUE(std::ranges::any_of(notes->elements, [](const auto& note) { return note.links.size() >= 2; }));
+}
+
 TEST(Read, MatchesTheSemanticOracle) {
     ASSERT_FALSE(g_corpus.empty());
     int scores = 0;

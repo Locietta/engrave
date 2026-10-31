@@ -37,7 +37,7 @@ class WriteScoreHook
 public:
     WriteScoreHook() = default;
 
-    void onWriteStyle302(Score* score, XmlWriter& xml);
+    void onWriteStyle302(Score* score, XmlWriter& xml, bool inlineStyle = false);
     void onWriteExcerpts302(Score* score, XmlWriter& xml, write::WriteContext& ctx);
 };
 }

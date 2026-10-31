@@ -32,9 +32,9 @@ using namespace mu::engraving;
 using namespace mu::engraving::compat;
 using namespace mu::engraving::write;
 
-void WriteScoreHook::onWriteStyle302(Score* score, XmlWriter& xml)
+void WriteScoreHook::onWriteStyle302(Score* score, XmlWriter& xml, bool inlineStyle)
 {
-    bool isWriteStyle = false;
+    bool isWriteStyle = inlineStyle;
 
     //! NOTE If not the master score, because the Excerpts (parts) have not yet been write to separate files
     if (!score->isMaster()) {
@@ -53,7 +53,7 @@ void WriteScoreHook::onWriteStyle302(Score* score, XmlWriter& xml)
 
 void WriteScoreHook::onWriteExcerpts302(Score* score, XmlWriter& xml, WriteContext& ctx)
 {
-    bool isWriteExcerpts = false;
+    bool isWriteExcerpts = ctx.inlineExcerpts();
 
     //! NOTE If the test mode, because the tests have not yet been adapted to the new format
     if (MScore::testMode) {

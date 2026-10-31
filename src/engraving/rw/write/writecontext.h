@@ -21,6 +21,8 @@
  */
 #pragma once
 
+#include <map>
+
 #include "containers.h"
 
 #include "engraving/dom/select.h"
@@ -65,6 +67,19 @@ public:
 
     bool clipboardmode() const { return _clipboardmode; }
 
+    // For a standalone excerpt, resolve link groups to the first member that
+    // this writer actually emits, never to an absent master-score element.
+    void setStandalone(bool value) { _standalone = value; }
+    bool standalone() const { return _standalone; }
+    EID standaloneLink(const void* group, EID current)
+    {
+        return _standaloneLinks.try_emplace(group, current).first->second;
+    }
+    void setInlineStyle(bool value) { _inlineStyle = value; }
+    bool inlineStyle() const { return _inlineStyle; }
+    void setInlineExcerpts(bool value) { _inlineExcerpts = value; }
+    bool inlineExcerpts() const { return _inlineExcerpts; }
+
     const std::optional<Fraction>& firstClipboardTick() const { return _firstClipboardTick; }
     void setFirstClipboardTick(const Fraction& v) { _firstClipboardTick = v; }
 
@@ -84,6 +99,10 @@ public:
                && _curTrack == c._curTrack
                && _trackDiff == c._trackDiff
                && _clipboardmode == c._clipboardmode
+               && _standalone == c._standalone
+               && _inlineStyle == c._inlineStyle
+               && _inlineExcerpts == c._inlineExcerpts
+               && _standaloneLinks == c._standaloneLinks
                && _filter == c._filter
                && _range == c._range
                && _firstClipboardTick == c._firstClipboardTick;
@@ -101,6 +120,10 @@ private:
     int _trackDiff       { 0 };             // saved track is curTrack-trackDiff
 
     bool _clipboardmode  { false };     // used to modify write() behaviour
+    bool _standalone { false };
+    bool _inlineStyle { false };
+    bool _inlineExcerpts { false };
+    std::map<const void*, EID> _standaloneLinks;
 
     std::optional<WriteRange> _range;
     std::optional<SelectionFilter> _filter;

@@ -27,6 +27,8 @@ struct ExportOptions {
     Format format = Format::Mscz;
     bool midi_expand_repeats = true;
     bool midi_rpns = true;
+    // Master by default; an excerpt is exported as an independent score.
+    ScoreSel score;
 };
 
 // Exact position export in raw 1200-DPI layout units. Coordinates are page-local;
