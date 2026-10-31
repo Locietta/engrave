@@ -546,6 +546,9 @@ TEST(RuntimeAssets, SoundFontReplacementChangesTheNextRenderAndIsAtomic) {
     const auto mix_before = document->audio_tracks();
     ASSERT_TRUE(mix_before);
 
+    // This also exercises setting a font before the first audio render has
+    // created the live audio services.
+    ASSERT_TRUE(g_engine->set_soundfonts({g_soundfonts[0]}));
     const auto first = detail::render_audio(*document, {});
     ASSERT_FALSE(first.bytes.empty());
     const auto copy = detail::temp_file("replacement.sf2");
@@ -586,6 +589,13 @@ TEST(RuntimeAssets, SoundFontReplacementChangesTheNextRenderAndIsAtomic) {
     EXPECT_EQ(document->revision(), revision);
     const auto mix_after = document->audio_tracks();
     ASSERT_TRUE(mix_after);
-    EXPECT_EQ(mix_after->tracks.size(), mix_before->tracks.size());
+    ASSERT_EQ(mix_after->tracks.size(), mix_before->tracks.size());
     EXPECT_EQ(mix_after->master.volume_db, mix_before->master.volume_db);
+    EXPECT_EQ(mix_after->master.balance, mix_before->master.balance);
+    for (std::size_t i = 0; i < mix_after->tracks.size(); ++i) {
+        EXPECT_EQ(mix_after->tracks[i].mix.volume_db, mix_before->tracks[i].mix.volume_db);
+        EXPECT_EQ(mix_after->tracks[i].mix.balance, mix_before->tracks[i].mix.balance);
+        EXPECT_EQ(mix_after->tracks[i].mix.mute, mix_before->tracks[i].mix.mute);
+        EXPECT_EQ(mix_after->tracks[i].mix.solo, mix_before->tracks[i].mix.solo);
+    }
 }
