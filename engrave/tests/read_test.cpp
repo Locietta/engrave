@@ -15,6 +15,7 @@
 // annotations, spanners, frame elements, and everything layout builds.
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
@@ -26,6 +27,7 @@
 #include <optional>
 #include <set>
 #include <span>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -319,6 +321,144 @@ std::unique_ptr<engrave::Document> open_with(std::string_view type) {
 }
 
 // --- the tests -----------------------------------------------------------
+
+TEST(Read, PositionsExpandRepeatsInRawPageUnitsWithoutEditing) {
+    constexpr std::string_view xml = R"(<score-partwise version="4.0">
+<part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+<part id="P1"><measure number="1"><attributes><divisions>1</divisions>
+<time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef>
+</attributes><barline location="left"><repeat direction="forward"/></barline>
+<note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note>
+<barline location="right"><repeat direction="backward"/></barline></measure></part>
+</score-partwise>)";
+    auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::MusicXml});
+    ASSERT_TRUE(opened);
+    auto& document = **opened;
+    const auto revision = document.revision();
+    for (const auto kind : {engrave::PositionKind::Measure, engrave::PositionKind::Segment}) {
+        const auto positions = document.positions(kind);
+        ASSERT_TRUE(positions);
+        ASSERT_EQ(positions->elements.size(), 1u);
+        ASSERT_EQ(positions->events.size(), 2u);
+        EXPECT_EQ(positions->elements[0].id, 0);
+        EXPECT_EQ(positions->elements[0].page, 0);
+        EXPECT_EQ(positions->events[0].elid, 0);
+        EXPECT_EQ(positions->events[0].position, 0);
+        EXPECT_EQ(positions->events[1].elid, 0);
+        EXPECT_EQ(positions->events[1].position, 2000);
+        EXPECT_GT(positions->page_width, 9000.0);
+        EXPECT_LT(positions->page_width, 11000.0);
+        EXPECT_GT(positions->page_height, 12000.0);
+        EXPECT_GT(positions->elements[0].sy, 0.0);
+        if (kind == engrave::PositionKind::Segment) {
+            EXPECT_EQ(positions->elements[0].x, std::trunc(positions->elements[0].x));
+            EXPECT_EQ(positions->elements[0].y, std::trunc(positions->elements[0].y));
+        }
+    }
+    EXPECT_EQ(document.revision(), revision);
+}
+
+TEST(Read, PositionsUsePageLocalCoordinatesOnLaterPages) {
+    const auto it = std::ranges::find_if(g_corpus, [](const auto& path) { return path.filename() == "slurs.mscz"; });
+    ASSERT_NE(it, g_corpus.end());
+    auto document = open_path(*it);
+    ASSERT_TRUE(document);
+    const auto pages = document->page_count();
+    ASSERT_TRUE(pages);
+    ASSERT_GE(*pages, 2);
+    const auto positions = document->positions(engrave::PositionKind::Measure);
+    ASSERT_TRUE(positions);
+    EXPECT_NEAR(positions->page_width, 9921.264, 1.0);
+    EXPECT_NEAR(positions->page_height, 1417.32, 1.0);
+    const auto second_page = std::ranges::find_if(positions->elements, [](const auto& e) { return e.page == 1; });
+    ASSERT_NE(second_page, positions->elements.end());
+    EXPECT_NEAR(second_page->x, 708.6612, 1.0);
+    EXPECT_NEAR(second_page->y, 578.6674, 1.0);
+    EXPECT_LT(second_page->y, positions->page_height);
+    for (const auto& element : positions->elements) {
+        EXPECT_GE(element.page, 0);
+        EXPECT_LT(element.page, *pages);
+    }
+    EXPECT_EQ(document->revision(), 1u);
+}
+
+TEST(Read, ExcerptPositionsMatchTheLegacyWriterAndSelectionErrors) {
+    const auto it = std::ranges::find_if(g_corpus, [](const auto& path) { return path.filename() == "linked_parts.mscx"; });
+    ASSERT_NE(it, g_corpus.end());
+    auto document = open_path(*it);
+    ASSERT_TRUE(document);
+    const auto outline = document->outline();
+    ASSERT_TRUE(outline);
+    ASSERT_FALSE(outline->excerpts.empty());
+    const engrave::ScoreSel excerpt{outline->excerpts.front().id};
+    const auto revision = document->revision();
+    for (const auto kind : {engrave::PositionKind::Measure, engrave::PositionKind::Segment}) {
+        const auto positions = document->positions(kind, excerpt);
+        ASSERT_TRUE(positions);
+        ASSERT_FALSE(positions->elements.empty());
+        const auto pages = document->page_count(excerpt);
+        ASSERT_TRUE(pages);
+        auto selected = engrave::select_score(master_of(*document), excerpt);
+        ASSERT_TRUE(selected);
+        const auto legacy = music::score_positions(*selected, kind == engrave::PositionKind::Segment);
+        EXPECT_DOUBLE_EQ(positions->page_width, legacy.at("pageSize").at("width").get<double>());
+        EXPECT_DOUBLE_EQ(positions->page_height, legacy.at("pageSize").at("height").get<double>());
+        EXPECT_NEAR(positions->page_width, 9921.2598, 0.1);
+        EXPECT_NEAR(positions->page_height, 14031.4961, 0.1);
+        ASSERT_EQ(positions->elements.size(), legacy.at("elements").size());
+        ASSERT_EQ(positions->events.size(), legacy.at("events").size());
+        for (std::size_t i = 0; i < positions->elements.size(); ++i) {
+            const auto& element = positions->elements[i];
+            const auto& expected = legacy.at("elements")[i];
+            EXPECT_EQ(element.id, static_cast<int>(i));
+            EXPECT_GE(element.page, 0);
+            EXPECT_LT(element.page, *pages);
+            EXPECT_DOUBLE_EQ(element.x, expected.at("x").get<double>());
+            EXPECT_DOUBLE_EQ(element.y, expected.at("y").get<double>());
+            EXPECT_DOUBLE_EQ(element.sx, expected.at("sx").get<double>());
+            EXPECT_DOUBLE_EQ(element.sy, expected.at("sy").get<double>());
+            EXPECT_EQ(element.page, expected.at("page").get<int>());
+            if (kind == engrave::PositionKind::Segment) {
+                EXPECT_EQ(element.x, std::trunc(element.x));
+                EXPECT_EQ(element.y, std::trunc(element.y));
+            }
+        }
+        for (std::size_t i = 0; i < positions->events.size(); ++i) {
+            EXPECT_EQ(positions->events[i].elid, legacy.at("events")[i].at("elid").get<int>());
+            EXPECT_EQ(positions->events[i].position, legacy.at("events")[i].at("position").get<int>());
+        }
+    }
+    EXPECT_EQ(document->revision(), revision);
+    const ElementId missing{0x1234, 0x5678};
+    expect_code(document->positions(engrave::PositionKind::Measure, {missing}), ErrorCode::NotFound, "missing score");
+    const auto notes = document->query({.types = {"Note"}, .limit = 1});
+    ASSERT_TRUE(notes);
+    ASSERT_FALSE(notes->elements.empty());
+    expect_code(document->positions(engrave::PositionKind::Measure, {notes->elements.front().id}),
+                ErrorCode::InvalidArgument, "note is not a score");
+    expect_code(document->positions(static_cast<engrave::PositionKind>(99)), ErrorCode::InvalidArgument, "unknown kind");
+
+    // Keep the removed score alive in the engine's id registry while checking
+    // that it is no longer reachable from the document, then restore ownership.
+    MasterScore& master = master_of(*document);
+    auto* removed = master.excerpts().front();
+    master.removeExcerpt(removed);
+    expect_code(document->outline(excerpt), ErrorCode::StaleHandle, "stale outline");
+    expect_code(document->positions(engrave::PositionKind::Measure, excerpt), ErrorCode::StaleHandle, "stale score");
+    master.addExcerpt(removed);
+}
+
+TEST(Read, PositionsRefuseAPoisonedDocument) {
+    auto document = open_path(corpus_file({".mscx"}));
+    ASSERT_TRUE(document);
+    auto& hooks = engrave::DocumentAccess::edit_hooks(*document);
+    hooks.policy = engrave::api::Policy::Snapshot;
+    hooks.fail_restore = true;
+    hooks.before_step = [](std::size_t) { throw std::runtime_error("injected"); };
+    EXPECT_ANY_THROW((void)document->edit({{engrave::SetStyle{{}, "staffDistance", 9.0}}}));
+    hooks = {};
+    expect_code(document->positions(engrave::PositionKind::Measure), ErrorCode::Poisoned, "poisoned document");
+}
 
 TEST(Read, MatchesTheSemanticOracle) {
     ASSERT_FALSE(g_corpus.empty());
