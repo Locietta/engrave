@@ -36,6 +36,9 @@ struct ExportOptions {
     int first_page = 0;
     int last_page = -1;
     int excerpt_id = -1;
+    // Public score export: write an independent score, with no links to the
+    // source master and with an inline style for uncompressed master MSCX.
+    bool standalone_score = false;
     int png_dpi = 144;
     bool draw_page_background = false;
     bool transparent = true;

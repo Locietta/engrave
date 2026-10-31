@@ -250,48 +250,60 @@ std::string export_native_score(const EngineContext& context, const ScoreProject
             if (auto* part = excerpt->excerptScore())
                 restore_versions.fields.push_back({part, part->mscoreVersion(), part->mscoreRevision(), part->mscVersion()});
         }
-        engraving::MscWriter::Params params;
-        params.device = &buffer;
-        params.mainFileName = u"score.mscx";
-        engraving::MscWriter writer(params);
-        check(writer.open());
-        if (options.excerpt_id == -1) {
-            success = project->writeMscz(writer);
+        if (format == "mscx" && options.standalone_score && options.excerpt_id == -1) {
+            // An MSCX has no separate style file; embed the master's style in
+            // the score itself, without changing the legacy archive writer.
+            engraving::rw::WriteInOutData inout(score);
+            inout.ctx.setInlineStyle(true);
+            inout.ctx.setInlineExcerpts(true);
+            success = engraving::rw::RWRegister::writer()->writeScore(score, &buffer, &inout);
         } else {
-            // Same upstream writer/style logic as MscSaver::exportPart, without a Qt thumbnail.
-            const auto original_tags = score->metaTags();
-            struct RestoreTags {
-                engraving::Score* score;
-                std::map<String, String> tags;
-                ~RestoreTags() { score->setMetaTags(tags); }
-            } restore{score, original_tags};
-            auto effective_tags = project->masterScore()->metaTags();
-            for (const auto& [key, value] : original_tags) effective_tags.insert_or_assign(key, value);
-            score->setMetaTags(effective_tags);
-            ByteArray style_data, score_data;
-            io::Buffer style_buffer(&style_data), score_buffer(&score_data);
-            style_buffer.open(io::IODevice::WriteOnly);
-            score_buffer.open(io::IODevice::WriteOnly);
-            score->style().write(&style_buffer);
-            success = engraving::rw::RWRegister::writer()->writeScore(score, &score_buffer);
-            writer.writeStyleFile(style_data);
-            writer.writeScoreFile(score_data);
-        }
-        writer.close();
-        success = success && !writer.hasError();
-        if (format == "mscx" && success) {
-            buffer.close();
-            ByteArray msczData = std::move(data);
-            data = ByteArray();
-            io::Buffer msczBuf(&msczData);
-            engraving::MscReader::Params rparams;
-            rparams.device = &msczBuf;
-            rparams.mode = engraving::MscIoMode::Zip;
-            engraving::MscReader reader(rparams);
-            check(reader.open());
-            data = reader.readScoreFile();
-            reader.close();
-            success = !data.empty();
+            engraving::MscWriter::Params params;
+            params.device = &buffer;
+            params.mainFileName = u"score.mscx";
+            engraving::MscWriter writer(params);
+            check(writer.open());
+            if (options.excerpt_id == -1) {
+                success = project->writeMscz(writer);
+            } else {
+                // Same upstream writer/style logic as MscSaver::exportPart, without a Qt thumbnail.
+                const auto original_tags = score->metaTags();
+                struct RestoreTags {
+                    engraving::Score* score;
+                    std::map<String, String> tags;
+                    ~RestoreTags() { score->setMetaTags(tags); }
+                } restore{score, original_tags};
+                auto effective_tags = project->masterScore()->metaTags();
+                for (const auto& [key, value] : original_tags) effective_tags.insert_or_assign(key, value);
+                score->setMetaTags(effective_tags);
+                ByteArray style_data, score_data;
+                io::Buffer style_buffer(&style_data), score_buffer(&score_data);
+                style_buffer.open(io::IODevice::WriteOnly);
+                score_buffer.open(io::IODevice::WriteOnly);
+                score->style().write(&style_buffer);
+                engraving::rw::WriteInOutData inout(score);
+                inout.ctx.setStandalone(options.standalone_score);
+                success = engraving::rw::RWRegister::writer()->writeScore(
+                    score, &score_buffer, options.standalone_score ? &inout : nullptr);
+                writer.writeStyleFile(style_data);
+                writer.writeScoreFile(score_data);
+            }
+            writer.close();
+            success = success && !writer.hasError();
+            if (format == "mscx" && success) {
+                buffer.close();
+                ByteArray msczData = std::move(data);
+                data = ByteArray();
+                io::Buffer msczBuf(&msczData);
+                engraving::MscReader::Params rparams;
+                rparams.device = &msczBuf;
+                rparams.mode = engraving::MscIoMode::Zip;
+                engraving::MscReader reader(rparams);
+                check(reader.open());
+                data = reader.readScoreFile();
+                reader.close();
+                success = !data.empty();
+            }
         }
     } else if (format == "midi") {
         iex::midi::ExportMidi writer(score);

@@ -602,6 +602,12 @@ void TWrite::writeItemLink(const EngravingObject* item, XmlWriter& xml, WriteCon
         return;
     }
 
+    if (ctx.standalone()) {
+        const EID first = ctx.standaloneLink(item->links(), item->eid());
+        if (first != item->eid()) xml.tag("linkedTo", first.toStdString());
+        return;
+    }
+
     EngravingItem* mainElement = static_cast<EngravingItem*>(item->links()->mainElement());
     if (mainElement != item) {
         EID eidOfMainElement = mainElement->eid();

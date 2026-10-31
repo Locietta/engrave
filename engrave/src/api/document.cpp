@@ -95,16 +95,27 @@ Result<std::vector<std::byte>> Document::export_score(const ExportOptions& optio
     const char* name = nullptr;
     switch (options.format) {
     case Format::Mscz: name = "mscz"; break;
+    case Format::Mscx: name = "mscx"; break;
     case Format::MusicXml: name = "musicxml"; break;
     case Format::Mxl: name = "mxl"; break;
     case Format::Midi: name = "midi"; break;
-    case Format::Mscx:
     case Format::Mnx:
     case Format::GuitarPro:
+    default:
         return std::unexpected(Error{ErrorCode::Unsupported,
                                      std::format("the engine does not write {}", to_string(options.format))});
     }
+    const auto excerpt = excerpt_id_of(*impl_->project->masterScore(), options.score);
+    if (!excerpt) return std::unexpected(excerpt.error());
+    const auto selected = select_score(*impl_->project->masterScore(), options.score);
+    if (!selected) return std::unexpected(selected.error());
+    if ((*selected)->npages() == 0 && (*selected)->nmeasures() > 0) {
+        (*selected)->doLayout();
+        (*selected)->update();
+    }
     music::ExportOptions backend;
+    backend.excerpt_id = *excerpt;
+    backend.standalone_score = true;
     backend.midi_expand_repeats = options.midi_expand_repeats;
     backend.midi_export_rpns = options.midi_rpns;
     const std::string data = music::export_native_score(*impl_->engine->context, impl_->project, name, backend, {});

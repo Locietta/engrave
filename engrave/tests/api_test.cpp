@@ -76,7 +76,7 @@ TEST(Capabilities, ListsFormatsAndVersion) {
     EXPECT_FALSE(capabilities.engine_version.empty());
     EXPECT_EQ(capabilities.import_formats.size(), 7u);
     EXPECT_EQ(capabilities.export_formats,
-              (std::vector<Format>{Format::Mscz, Format::MusicXml, Format::Mxl, Format::Midi}));
+              (std::vector<Format>{Format::Mscx, Format::Mscz, Format::MusicXml, Format::Mxl, Format::Midi}));
 }
 
 TEST(Templates, ListsCategoriesJsonInOrder) {
@@ -138,6 +138,7 @@ TEST(Create, RejectsBadOptions) {
 TEST(Export, WritesEachExportFormat) {
     auto document = treble_clef();
     ASSERT_TRUE(document);
+    EXPECT_NE(exported(*document, Format::Mscx).find("<museScore"), std::string::npos);
     EXPECT_TRUE(exported(*document, Format::Mscz).starts_with("PK\x03\x04"));
     EXPECT_TRUE(exported(*document, Format::Mxl).starts_with("PK\x03\x04"));
     EXPECT_TRUE(exported(*document, Format::Midi).starts_with("MThd"));
@@ -148,7 +149,7 @@ TEST(Export, WritesEachExportFormat) {
 TEST(Export, RejectsFormatsTheEngineDoesNotWrite) {
     auto document = treble_clef();
     ASSERT_TRUE(document);
-    for (const auto format : {Format::Mscx, Format::GuitarPro, Format::Mnx}) {
+    for (const auto format : {Format::GuitarPro, Format::Mnx}) {
         const auto bytes = document->export_score({.format = format});
         ASSERT_FALSE(bytes);
         EXPECT_EQ(bytes.error().code, ErrorCode::Unsupported);
