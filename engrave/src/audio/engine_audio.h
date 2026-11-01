@@ -246,6 +246,8 @@ struct AudioRenderResult {
 // above.
 //
 // Never throws for a bad score/format/engine state; inspect AudioRenderResult.
+// Exceptions from request.cancelled are rethrown after closing/removing the
+// intermediate and idling the render graph; none unwind through codec callbacks.
 AudioRenderResult export_score_audio(EngineAudio& audio, mu::engraving::MasterScore* master,
                                      const AudioRenderRequest& request);
 
