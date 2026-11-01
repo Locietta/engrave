@@ -302,6 +302,36 @@ TEST(Output, PageRangesAndLimits) {
     music::test::expect_code(page.document->render(huge), engrave::ErrorCode::ResourceLimit, "an oversized page");
 }
 
+TEST(Output, CancellationPollsPageBoundariesAndDiscardsAllPages) {
+    // This fixture has exactly two pages on both supported platforms.
+    auto opened = music::test::open("slurs.mscz");
+    ASSERT_TRUE(opened.document);
+    auto& document = *opened.document;
+    ASSERT_EQ(*document.page_count(), 2);
+    for (auto format : {engrave::RenderFormat::Pdf, engrave::RenderFormat::Svg, engrave::RenderFormat::Png}) {
+        engrave::RenderOptions options;
+        options.format = format;
+        // PDF: 1 before page 1, 2 after drawing page 1, 3 before page 2,
+        // 4 after drawing page 2, 5 after final encoding.
+        // SVG/PNG: each page polls before draw, before encode, after encode.
+        const int total = format == engrave::RenderFormat::Pdf ? 5 : 6;
+        for (int stop = 1; stop <= total; ++stop) {
+            int polls = 0;
+            options.cancelled = [&] { return ++polls == stop; };
+            const auto result = document.render(options);
+            ASSERT_FALSE(result) << stop;
+            EXPECT_EQ(result.error().code, engrave::ErrorCode::Cancelled);
+            EXPECT_EQ(polls, stop); // no later page/encode boundary was crossed
+            options.cancelled = {};
+            ASSERT_TRUE(document.render(options));
+        }
+        int polls = 0;
+        options.cancelled = [&] { ++polls; return false; };
+        ASSERT_TRUE(document.render(options));
+        EXPECT_EQ(polls, total);
+    }
+}
+
 TEST(Output, SelectionsNameTheScoreOrOneOfItsExcerpts) {
     music::test::OpenedScore opened = music::test::open("linked_parts.mscx");
     ASSERT_TRUE(opened.document);

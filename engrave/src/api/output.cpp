@@ -91,6 +91,7 @@ Result<RenderOutput> Document::render(const RenderOptions& options) {
     backend.png_dpi = options.dpi;
     backend.draw_page_background = options.background;
     backend.transparent = options.transparent;
+    backend.cancelled = options.cancelled;
     backend.first_page = first;
     backend.last_page = last;
     const std::string format = backend_name(options.format);
@@ -106,6 +107,8 @@ Result<RenderOutput> Document::render(const RenderOptions& options) {
             output.pages.push_back(bytes_of(music::render_score(*impl_->engine->context, &score, format, backend)));
         }
         return output;
+    } catch (const music::RenderCancelled&) {
+        return fail(ErrorCode::Cancelled, "render cancelled");
     } catch (const music::RenderLimitExceeded& error) {
         return fail(ErrorCode::ResourceLimit, error.what());
     } catch (const std::invalid_argument& error) {
