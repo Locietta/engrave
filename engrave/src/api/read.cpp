@@ -87,7 +87,7 @@ Fraction whole_notes(int ticks) {
 // Whether a is before b. Inputs have positive denominators; comparisons cover
 // the full int64 range without overflowing on unreduced fractions.
 bool before(const Fraction& a, const Fraction& b) {
-    return detail::compare_fraction(a.num, a.den, b.num, b.den) < 0;
+    return a < b;
 }
 
 Fraction fraction_of(const mu::engraving::Fraction& value) {
@@ -106,7 +106,15 @@ PropertyRead read_property(const EngravingObject& object, Pid pid) {
     read.name = api::name_of(pid);
     read.value = api::to_value(type, object.getProperty(pid));
     const mu::engraving::PropertyValue fallback = object.propertyDefault(pid);
-    read.is_default = fallback.isValid() && read.value == api::to_value(type, fallback);
+    if (fallback.isValid()) {
+        const Value default_value = api::to_value(type, fallback);
+        const auto* actual_fraction = std::get_if<Fraction>(&read.value);
+        const auto* default_fraction = std::get_if<Fraction>(&default_value);
+        // A written signature can carry meaning in its unreduced terms.
+        read.is_default = actual_fraction && default_fraction
+            ? actual_fraction->num == default_fraction->num && actual_fraction->den == default_fraction->den
+            : read.value == default_value;
+    }
     read.styled = object.isStyled(pid);
     return read;
 }

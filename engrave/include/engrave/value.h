@@ -59,12 +59,26 @@ constexpr std::strong_ordering compare_fraction(std::int64_t a, std::int64_t b,
 
 } // namespace detail
 
-// A time position as a fraction of a whole note, e.g. {3, 4} for the third
-// quarter. The denominator is positive; the value is not necessarily reduced.
+// A fraction of a whole note, also used for written time signatures. The
+// denominator is positive and the terms are not necessarily reduced. Ordering
+// and equality compare values; inspect num and den to distinguish notation.
 struct Fraction {
     std::int64_t num = 0;
     std::int64_t den = 1;
-    friend auto operator<=>(const Fraction&, const Fraction&) = default;
+
+    constexpr std::strong_ordering operator<=>(const Fraction& other) const {
+        // Invalid denominators are outside the API contract. Keep them safely
+        // ordered by their stored terms, before valid fractions.
+        if (den <= 0 || other.den <= 0) {
+            if (den > 0) return std::strong_ordering::greater;
+            if (other.den > 0) return std::strong_ordering::less;
+            if (const auto by_num = num <=> other.num; by_num != 0) return by_num;
+            return den <=> other.den;
+        }
+        return detail::compare_fraction(num, den, other.num, other.den);
+    }
+
+    constexpr bool operator==(const Fraction& other) const { return (*this <=> other) == 0; }
 };
 
 struct Point {
