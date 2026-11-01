@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import os
 from pathlib import Path
 import re
@@ -56,7 +57,7 @@ def run(probe: Path, assets: Path, output: Path, fmt: str, version: str) -> None
     result = subprocess.run(command, capture_output=True, text=True, check=False)
     if result.returncode:
         raise AssertionError(f"{command}: exit {result.returncode}: {result.stderr}")
-    if result.stdout:
+    if json.loads(result.stdout) != []:
         raise AssertionError(f"unexpected 5.00 warnings: {result.stdout}")
 
 
