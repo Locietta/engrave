@@ -401,6 +401,83 @@ TEST(RuntimeAssets, FontRegistrationRelayoutsExistingScoresWithoutAnEdit) {
     EXPECT_EQ(document.revision(), revision);
 }
 
+TEST(RuntimeAssets, FontMetadataTracksRetainedCopiesAndReplacements) {
+    const auto source = music::test::g_assets / "fonts/edwin/Edwin-Roman.otf";
+#ifdef _WIN32
+    const int process = _getpid();
+#else
+    const int process = getpid();
+#endif
+    const auto copy = std::filesystem::temp_directory_path()
+                      / ("engrave-font-metadata-" + std::to_string(process) + ".otf");
+    struct Cleanup {
+        std::filesystem::path path;
+        ~Cleanup() { std::error_code ec; std::filesystem::remove(path, ec); }
+    } cleanup{copy};
+    ASSERT_TRUE(std::filesystem::copy_file(source, copy));
+    const auto read = [](const std::filesystem::path& path) {
+        std::ifstream file(path, std::ios::binary);
+        return std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+    };
+    const auto originalBytes = read(source);
+    ASSERT_FALSE(originalBytes.empty());
+    ASSERT_TRUE(g_engine->add_font(copy));
+    const auto firstSnapshot = g_engine->runtime_fonts();
+    const auto first = std::find_if(firstSnapshot.begin(), firstSnapshot.end(), [&](const auto& font) {
+        return read(font.path) == originalBytes;
+    });
+    ASSERT_NE(first, firstSnapshot.end());
+    const auto original = *first;
+    EXPECT_GT(original.id, 0);
+    EXPECT_FALSE(original.family.empty());
+    EXPECT_TRUE(original.path.is_absolute());
+    EXPECT_NE(original.path, copy);
+    EXPECT_FALSE(original.content_fingerprint.empty());
+
+    // An appended byte leaves this font usable but creates a distinct copy of
+    // the same family/style, exercising replacement without another fixture.
+    { std::ofstream file(copy, std::ios::binary | std::ios::app); file.put('\0'); ASSERT_TRUE(file); }
+    ASSERT_TRUE(g_engine->add_font(copy));
+    const auto replaced = g_engine->runtime_fonts();
+    ASSERT_EQ(replaced.size(), firstSnapshot.size());
+    const auto entry = std::find_if(replaced.begin(), replaced.end(), [&](const auto& font) {
+        return font.family == original.family && font.bold == original.bold && font.italic == original.italic;
+    });
+    ASSERT_NE(entry, replaced.end());
+    EXPECT_NE(entry->id, original.id);
+    EXPECT_NE(entry->path, original.path);
+    EXPECT_NE(entry->content_fingerprint, original.content_fingerprint);
+    EXPECT_EQ(read(original.path), originalBytes);
+    EXPECT_EQ(read(entry->path), read(copy));
+
+    ASSERT_TRUE(g_engine->add_font(source));
+    const auto restored = g_engine->runtime_fonts();
+    const auto again = std::find_if(restored.begin(), restored.end(), [&](const auto& font) { return font.id == original.id; });
+    ASSERT_NE(again, restored.end());
+    EXPECT_EQ(again->path, original.path);
+    { std::ofstream file(copy, std::ios::binary | std::ios::trunc); file << "invalid-font"; }
+    const auto invalid = g_engine->add_font(copy);
+    ASSERT_FALSE(invalid);
+    EXPECT_EQ(invalid.error().code, engrave::ErrorCode::InvalidInput);
+    const auto unchanged = g_engine->runtime_fonts();
+    EXPECT_EQ(unchanged.size(), restored.size());
+    EXPECT_NE(std::find_if(unchanged.begin(), unchanged.end(), [&](const auto& font) { return font.id == original.id; }),
+              unchanged.end());
+}
+
+TEST(RuntimeAssets, InitialEngineFontIsListedInMetadata) {
+    const auto font = music::test::g_assets / "fonts/edwin/Edwin-Roman.otf";
+    const auto score = music::test::corpus_file("ghost_note.mscx");
+    ASSERT_FALSE(score.empty());
+    const std::vector<std::string> arguments = {
+        "--assets=" + music::test::g_assets.string(),
+        "--render=" + score.string(),
+        "--out=" + std::filesystem::temp_directory_path().string(),
+        "--test-startup-font=" + font.string(),
+    };
+    EXPECT_EQ(music::test::run_probe(arguments), 0);
+}
+
 int main(int argc, char** argv) {
     testing::InitGoogleTest(&argc, argv);
     std::filesystem::path assets;
