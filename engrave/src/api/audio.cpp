@@ -261,13 +261,13 @@ Result<AudioRenderResult> Document::render_audio(const AudioOptions& options, co
 
     // The audio engine is process-global and starts on first use, never at
     // Engine::create: a caller that only reads or draws pages pays nothing.
-    if (!music::engine_audio_initialized(engine.context->audio())) {
-        music::EngineAudioSetup setup;
-        setup.sample_rate = engine.audio_sample_rate;
-        for (const auto& soundfont : engine.soundfonts) setup.soundfonts.push_back(utf8(soundfont));
-        std::string error;
-        if (!music::initialize_engine_audio(engine.context->audio(), setup, &error)) return fail(ErrorCode::InvalidInput, error);
-    }
+    music::EngineAudioSetup setup;
+    setup.sample_rate = engine.audio_sample_rate;
+    for (const auto& soundfont : engine.soundfonts) setup.soundfonts.push_back(utf8(soundfont));
+    std::string error;
+    // This is also a cheap no-op for an unchanged selection; a replacement is
+    // refreshed here rather than by set_soundfonts().
+    if (!music::initialize_engine_audio(engine.context->audio(), setup, &error)) return fail(ErrorCode::InvalidInput, error);
 
     std::error_code ec;
     std::filesystem::create_directories(engine.cache_dir, ec);

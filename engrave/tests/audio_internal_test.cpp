@@ -106,4 +106,37 @@ TEST(AudioInternal, FinalizationFailureReportsFirstErrorAndNextRenderRecovers) {
     }
 }
 
+TEST(AudioInternal, SoundFontRefreshWaitsForNextRender) {
+    using namespace music::test;
+    if (g_soundfonts.size() < 2) GTEST_SKIP() << "pass two different SoundFonts";
+    auto opened = g_engine->open(corpus_file("ghost_note.mscx"));
+    ASSERT_TRUE(opened) << opened.error().message;
+    auto& document = **opened;
+    ASSERT_TRUE(g_engine->set_soundfonts({g_soundfonts[0]}));
+    auto render = [&document] {
+        std::vector<std::byte> bytes;
+        const auto result = document.render_audio({}, [&bytes](std::span<const std::byte> chunk) {
+            bytes.insert(bytes.end(), chunk.begin(), chunk.end());
+        });
+        EXPECT_TRUE(result);
+        return bytes;
+    };
+    const auto first = render();
+    ASSERT_FALSE(first.empty());
+    auto& audio = engrave::DocumentAccess::context(document).audio();
+    const auto originalUri = music::engine_soundfont_uri(audio);
+    ASSERT_FALSE(originalUri.empty());
+
+    ASSERT_TRUE(g_engine->set_soundfonts({g_soundfonts[1]}));
+    EXPECT_EQ(music::engine_soundfont_uri(audio), originalUri);
+    const auto selection = g_engine->capabilities().soundfonts;
+    ASSERT_EQ(selection.size(), 1u);
+    EXPECT_NE(selection[0], g_soundfonts[1]);
+    const auto second = render();
+    ASSERT_FALSE(second.empty());
+    EXPECT_NE(second, first);
+    EXPECT_NE(music::engine_soundfont_uri(audio), originalUri);
+    ASSERT_TRUE(g_engine->set_soundfonts(g_soundfonts));
+}
+
 } // namespace

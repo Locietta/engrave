@@ -158,11 +158,10 @@ Result<void> Engine::set_soundfonts(const std::vector<std::filesystem::path>& fi
         }
     }
     if (!retained.empty()) {
-        music::EngineAudioSetup setup;
-        setup.sample_rate = impl_->state.audio_sample_rate;
-        for (const auto& file : retained) setup.soundfonts.push_back(utf8(file));
+        std::vector<std::string> paths;
+        for (const auto& file : retained) paths.push_back(utf8(file));
         std::string error;
-        if (!music::initialize_engine_audio(impl_->state.context->audio(), setup, &error))
+        if (!music::validate_engine_soundfonts(paths, &error))
             return fail(ErrorCode::InvalidInput, error);
     }
     impl_->state.soundfonts.swap(retained);

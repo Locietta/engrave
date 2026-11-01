@@ -107,8 +107,9 @@ struct Engine {
     Result<void> add_font(const std::filesystem::path& file);
 
     // Replace the ordered SoundFont list, validating and retaining file copies.
-    // Empty disables audio. Existing documents use it on their next audio render;
-    // layout, revision and mix defaults are unchanged. Indices refer to this list.
+    // Empty disables audio. Validation does not start audio or refresh the live
+    // SoundFont handles; existing documents use the list on their next render.
+    // Layout, revision and mix defaults are unchanged. Indices refer to this list.
     // capabilities().soundfonts returns the retained paths usable in AudioOptions.
     // NotFound for missing files, InvalidInput for malformed files. Failure keeps
     // the previous selection (validated copies may remain cached until shutdown).

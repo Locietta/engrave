@@ -347,9 +347,8 @@ void set_engine_audio_midi_event_hook(EngineAudio& audio, EngineAudioMidiEventHo
     audio.state().midiOutPort.hook = std::move(hook);
 }
 
-bool initialize_engine_audio(EngineAudio& audio, const EngineAudioSetup& setup, std::string* error)
+bool validate_engine_soundfonts(const std::vector<std::string>& soundfont_paths, std::string* error)
 {
-    EngineAudio::State& state = audio.state();
     const auto fail = [error](std::string message) {
         if (error) {
             *error = std::move(message);
@@ -357,18 +356,6 @@ bool initialize_engine_audio(EngineAudio& audio, const EngineAudioSetup& setup, 
         return false;
     };
 
-    const std::vector<std::string>& soundfont_paths = setup.soundfonts;
-    if (state.servicesInitialized) {
-        if (!state.soundfontId.empty() && state.soundfontPaths == soundfont_paths
-            && state.sampleRate == setup.sample_rate) {
-            return true;
-        }
-        if (state.sampleRate != setup.sample_rate) return fail("audio sample rate is fixed");
-    }
-
-    if (setup.sample_rate < 8000 || setup.sample_rate > 192000) {
-        return fail("audio sample rate must be between 8000 and 192000 Hz: " + std::to_string(setup.sample_rate));
-    }
     if (soundfont_paths.empty()) {
         return fail("no SoundFont was given (one .sf2 or .sf3 file is needed)");
     }
@@ -401,6 +388,25 @@ bool initialize_engine_audio(EngineAudio& audio, const EngineAudioSetup& setup, 
         if (!inserted && it->second != path)
             return fail("SoundFonts have the same resource name: " + parsed.val.name);
     }
+    return true;
+}
+
+bool initialize_engine_audio(EngineAudio& audio, const EngineAudioSetup& setup, std::string* error)
+{
+    EngineAudio::State& state = audio.state();
+    const auto fail = [error](std::string message) {
+        if (error) *error = std::move(message);
+        return false;
+    };
+    const std::vector<std::string>& soundfont_paths = setup.soundfonts;
+    if (state.servicesInitialized) {
+        if (!state.soundfontId.empty() && state.soundfontPaths == soundfont_paths
+            && state.sampleRate == setup.sample_rate) return true;
+        if (state.sampleRate != setup.sample_rate) return fail("audio sample rate is fixed");
+    }
+    if (setup.sample_rate < 8000 || setup.sample_rate > 192000)
+        return fail("audio sample rate must be between 8000 and 192000 Hz: " + std::to_string(setup.sample_rate));
+    if (!validate_engine_soundfonts(soundfont_paths, error)) return false;
 
     if (!state.servicesInitialized) {
         // The factory, repository and synth/effect resolvers are kept for the
