@@ -546,3 +546,35 @@ TEST(AudioInternal, WarmGraphRebuildTiming) {
     report("setup", setup); report("teardown", teardown); report("create", create);
     report("fonts", fonts); report("flush", flush);
 }
+
+TEST(AudioInternal, CancellationDuringPublicationCleansUpAndRecovers) {
+    auto opened = music::test::g_engine->open(music::test::corpus_file("repeat70.mscx"));
+    ASSERT_TRUE(opened);
+    auto& document = **opened;
+    const auto render = [&] {
+        std::vector<std::byte> bytes;
+        EXPECT_TRUE(document.render_audio({}, [&](auto chunk) { bytes.insert(bytes.end(), chunk.begin(), chunk.end()); }));
+        return bytes;
+    };
+    const auto baseline = render();
+    ASSERT_GT(baseline.size(), 1u << 20);
+    bool cancel = false;
+    int sinks = 0;
+    engrave::AudioOptions options;
+    const auto owner = std::this_thread::get_id();
+    options.cancelled = [&] { EXPECT_EQ(std::this_thread::get_id(), owner); return cancel; };
+    const auto result = document.render_audio(options, [&](auto) { ++sinks; cancel = true; });
+    ASSERT_FALSE(result);
+    EXPECT_EQ(result.error().code, engrave::ErrorCode::Cancelled);
+    EXPECT_EQ(sinks, 1);
+    const auto& state = *engrave::DocumentAccess::impl(document).engine;
+    const auto intermediate = state.cache_dir / ("engrave-audio-" + std::to_string(
+#ifdef _WIN32
+        _getpid()
+#else
+        getpid()
+#endif
+    ) + "-" + std::to_string(state.audio_render_index) + ".wav");
+    EXPECT_FALSE(std::filesystem::exists(intermediate));
+    EXPECT_EQ(render(), baseline);
+}
