@@ -2215,6 +2215,9 @@ static int unpin_preset_samples(fluid_defsfont_t *defsfont, fluid_preset_t *pres
 
 /* Walk through all samples used by the passed in preset and make sure that the
  * sample data is loaded for each sample. Used by dynamic sample loading. */
+/* Offline owner-thread cancellation supplied by the native adapter. */
+extern int engrave_fluid_cancelled(void);
+
 static int load_preset_samples(fluid_defsfont_t *defsfont, fluid_preset_t *preset)
 {
     fluid_defpreset_t *defpreset;
@@ -2242,7 +2245,10 @@ static int load_preset_samples(fluid_defsfont_t *defsfont, fluid_preset_t *prese
 
                 /* If this is the first time this sample has been selected,
                  * load the sampledata */
-                if(sample->preset_count == 1)
+                /* Keep selection counts balanced for destruction, but leave
+                 * unneeded samples untouched after cancellation. The graph is
+                 * discarded by the driver before any later render. */
+                if(sample->preset_count == 1 && !engrave_fluid_cancelled())
                 {
                     /* Make sure we have an open Soundfont file. Do this here
                      * to avoid having to open the file if no loading is necessary
@@ -2317,7 +2323,7 @@ static int unload_preset_samples(fluid_defsfont_t *defsfont, fluid_preset_t *pre
                  * still in use by a voice, dynamic_samples_sample_notify will
                  * take care of unloading the sample as soon as the voice is
                  * finished with it (but only on the next API call). */
-                if(sample->preset_count == 0 && sample->refcount == 0)
+                if(sample->preset_count == 0 && sample->refcount == 0 && sample->data != NULL)
                 {
                     unload_sample(sample);
                 }

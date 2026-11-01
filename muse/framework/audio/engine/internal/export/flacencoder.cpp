@@ -20,6 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "../offlinecancellation.h"
 #include "flacencoder.h"
 
 #include <algorithm>
@@ -145,6 +146,7 @@ size_t FlacEncoder::encode(const samples_t samplesPerChannel, const float* input
     std::vector<FLAC__int32> blockBuffer(static_cast<size_t>(BLOCK_FRAMES) * channels);
 
     for (samples_t frameStart = 0; frameStart < samplesPerChannel;) {
+        if (OfflineCancellation::requested()) return 0;
         const uint32_t framesCount = static_cast<uint32_t>(std::min<samples_t>(BLOCK_FRAMES, samplesPerChannel - frameStart));
 
         for (size_t frame = 0; frame < framesCount; ++frame) {
