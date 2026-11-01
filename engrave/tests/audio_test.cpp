@@ -240,6 +240,54 @@ TEST(Audio, TheSinkReceivesTheStreamInChunks) {
     EXPECT_EQ(rendered.result.bytes, rendered.bytes.size());
 }
 
+TEST(Audio, EncodedFileBudgetDoesNotPublishPartialAudio) {
+    auto document = detail::open_score(detail::audio_score());
+    ASSERT_TRUE(document);
+    for (const auto format : {engrave::AudioFormat::Wav, engrave::AudioFormat::Flac,
+                              engrave::AudioFormat::Opus, engrave::AudioFormat::Mp3,
+                              engrave::AudioFormat::Aac}) {
+        SCOPED_TRACE(engrave::to_string(format));
+        engrave::AudioOptions options;
+        options.format = format;
+        const auto original = detail::render_audio(*document, options);
+        ASSERT_FALSE(original.bytes.empty());
+        options.max_bytes = original.bytes.size() + 1;
+        const auto bounded = detail::render_audio(*document, options);
+        EXPECT_EQ(bounded.bytes, original.bytes);
+        EXPECT_EQ(bounded.result.bytes, original.bytes.size());
+
+        options.max_bytes = original.bytes.size() / 2;
+        std::size_t delivered = 0;
+        const auto failed = document->render_audio(options, [&delivered](std::span<const std::byte> chunk) {
+            delivered += chunk.size();
+        });
+        ASSERT_FALSE(failed);
+        EXPECT_EQ(failed.error().code, engrave::ErrorCode::ResourceLimit);
+        EXPECT_EQ(delivered, 0u);
+        options.max_bytes.reset();
+        EXPECT_EQ(detail::render_audio(*document, options).bytes, original.bytes);
+    }
+}
+
+TEST(Audio, TotalWriteBudgetIncludesWavHeaderPatches) {
+    auto document = detail::open_score(detail::audio_score());
+    ASSERT_TRUE(document);
+    engrave::AudioOptions options;
+    const auto original = detail::render_audio(*document, options);
+    ASSERT_FALSE(original.bytes.empty());
+    options.max_bytes = original.bytes.size();
+    options.max_write_bytes = original.bytes.size();
+    std::size_t delivered = 0;
+    const auto failed = document->render_audio(options, [&delivered](std::span<const std::byte> bytes) {
+        delivered += bytes.size();
+    });
+    ASSERT_FALSE(failed);
+    EXPECT_EQ(failed.error().code, engrave::ErrorCode::ResourceLimit);
+    EXPECT_EQ(delivered, 0u);
+    options.max_write_bytes = original.bytes.size() + 8;
+    EXPECT_EQ(detail::render_audio(*document, options).bytes, original.bytes);
+}
+
 // D4: the engine keeps state between renders (tracks, synthesizer instances,
 // reverb tails). render_audio drops it before every render, so the second
 // render in this process must equal a render in a fresh process.

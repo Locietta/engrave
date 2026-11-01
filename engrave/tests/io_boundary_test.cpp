@@ -61,6 +61,33 @@ TEST(StreamingFile, UnicodePathAndHeaderSeek)
     EXPECT_EQ(result, std::string("\x04\x02\x03\x04", 4));
 }
 
+TEST(StreamingFile, LimitsApplyBeforeWritesAndCountRewrites)
+{
+    const auto path = std::filesystem::temp_directory_path()
+        / ("engrave-stream-limit-" + std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+    struct Cleanup { std::filesystem::path p; ~Cleanup() { std::error_code ec; std::filesystem::remove(p, ec); } } cleanup{path};
+    const uint8_t data[]{1, 2, 3, 4};
+    {
+        muse::io::StreamingFileDevice out(path, 4);
+        ASSERT_TRUE(out.open(muse::io::IODevice::WriteOnly));
+        ASSERT_EQ(out.write(data, 4), 4u);
+        EXPECT_EQ(out.write(data, 1), 0u);
+        EXPECT_TRUE(out.limitExceeded());
+        out.close();
+        EXPECT_EQ(std::filesystem::file_size(path), 4u);
+    }
+    {
+        muse::io::StreamingFileDevice out(path, 4, 5);
+        ASSERT_TRUE(out.open(muse::io::IODevice::WriteOnly));
+        ASSERT_EQ(out.write(data, 4), 4u);
+        ASSERT_TRUE(out.seek(0));
+        EXPECT_EQ(out.write(data, 2), 0u);
+        EXPECT_TRUE(out.limitExceeded());
+        out.close();
+        EXPECT_EQ(std::filesystem::file_size(path), 4u);
+    }
+}
+
 #ifndef _WIN32
 TEST(StreamingFile, FinalizationFailurePropagates)
 {

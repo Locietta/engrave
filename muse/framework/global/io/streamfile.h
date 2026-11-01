@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <limits>
+#include <optional>
 #include <utility>
 #include "iodevice.h"
 #include "ioretcodes.h"
@@ -12,10 +13,14 @@ namespace muse::io {
 class StreamingFileDevice final : public IODevice
 {
 public:
-    explicit StreamingFileDevice(std::filesystem::path path)
-        : m_path(std::move(path)) {}
+    explicit StreamingFileDevice(std::filesystem::path path,
+                                 std::optional<std::uint64_t> maxBytes = {},
+                                 std::optional<std::uint64_t> maxWriteBytes = {})
+        : m_path(std::move(path)), m_maxBytes(maxBytes), m_maxWriteBytes(maxWriteBytes) {}
 
     ~StreamingFileDevice() override { close(); }
+
+    bool limitExceeded() const { return m_limitExceeded; }
 
 protected:
     bool doOpen(OpenMode mode) override
@@ -35,6 +40,8 @@ protected:
 
         m_size = 0;
         m_streamPos = 0;
+        m_written = 0;
+        m_limitExceeded = false;
         return true;
     }
 
@@ -55,6 +62,10 @@ protected:
 
     bool resizeData(size_t size) override
     {
+        if (m_limitExceeded || (m_maxBytes && size > *m_maxBytes)) {
+            m_limitExceeded = true;
+            return false;
+        }
         if (size > static_cast<size_t>(std::numeric_limits<std::streamoff>::max())) return false;
         m_size = std::max(m_size, size);
         return true;
@@ -62,6 +73,14 @@ protected:
 
     size_t writeData(const uint8_t* data, size_t len) override
     {
+        // IODevice can overwrite already allocated space without resizeData.
+        // Check both limits before touching the file, including final header
+        // rewrites and writes after a previously rejected operation.
+        if (m_limitExceeded || (m_maxBytes && (pos() > *m_maxBytes || len > *m_maxBytes - pos()))
+            || (m_maxWriteBytes && (m_written > *m_maxWriteBytes || len > *m_maxWriteBytes - m_written))) {
+            m_limitExceeded = true;
+            return 0;
+        }
         if (!m_stream.is_open() || len > static_cast<size_t>(std::numeric_limits<std::streamsize>::max())) {
             setError(static_cast<int>(io::Err::FSWriteError), "invalid stream write");
             return 0;
@@ -85,6 +104,8 @@ protected:
         }
 
         m_streamPos = pos() + len;
+        m_written = len > std::numeric_limits<std::uint64_t>::max() - m_written
+                    ? std::numeric_limits<std::uint64_t>::max() : m_written + len;
         return len;
     }
 
@@ -93,5 +114,9 @@ private:
     std::ofstream m_stream;
     size_t m_size = 0;
     size_t m_streamPos = 0;
+    std::optional<std::uint64_t> m_maxBytes;
+    std::optional<std::uint64_t> m_maxWriteBytes;
+    std::uint64_t m_written = 0;
+    bool m_limitExceeded = false;
 };
 }

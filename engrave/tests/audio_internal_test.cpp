@@ -106,6 +106,46 @@ TEST(AudioInternal, FinalizationFailureReportsFirstErrorAndNextRenderRecovers) {
     }
 }
 
+TEST(AudioInternal, BudgetFailureRemovesTheIntermediateAndAllowsRecovery) {
+    const auto path = music::test::corpus_file("ghost_note.mscx");
+    ASSERT_FALSE(path.empty());
+    auto opened = music::test::g_engine->open(path);
+    ASSERT_TRUE(opened);
+    auto& document = **opened;
+    auto render = [&document] {
+        std::vector<std::byte> bytes;
+        const auto result = document.render_audio({}, [&bytes](std::span<const std::byte> chunk) {
+            bytes.insert(bytes.end(), chunk.begin(), chunk.end());
+        });
+        EXPECT_TRUE(result);
+        return bytes;
+    };
+    const auto original = render();
+    ASSERT_FALSE(original.empty());
+    auto& audio = engrave::DocumentAccess::context(document).audio();
+    auto* master = engrave::DocumentAccess::master_score(document);
+#ifdef _WIN32
+    const int process = _getpid();
+#else
+    const int process = getpid();
+#endif
+    const auto output = std::filesystem::temp_directory_path()
+                        / ("engrave-budget-test-" + std::to_string(process) + ".wav");
+    struct Cleanup {
+        std::filesystem::path path;
+        ~Cleanup() { std::error_code ec; std::filesystem::remove(path, ec); }
+    } cleanup{output};
+    music::AudioRenderRequest request;
+    const auto outputUtf8 = output.generic_u8string();
+    request.output_path.assign(outputUtf8.begin(), outputUtf8.end());
+    request.max_bytes = original.size() / 2;
+    const auto failed = music::export_score_audio(audio, master, request);
+    EXPECT_FALSE(failed.ok);
+    EXPECT_EQ(failed.failure, music::AudioRenderResult::Failure::ResourceLimit);
+    EXPECT_FALSE(std::filesystem::exists(output));
+    EXPECT_EQ(render(), original);
+}
+
 TEST(AudioInternal, SoundFontRefreshWaitsForNextRender) {
     using namespace music::test;
     if (g_soundfonts.size() < 2) GTEST_SKIP() << "pass two different SoundFonts";

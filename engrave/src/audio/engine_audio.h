@@ -15,6 +15,7 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -174,6 +175,8 @@ struct AudioRenderRequest {
     // the format's default (128 kbps; Float32 WAV, Int16 FLAC).
     int bit_rate = 0;
     int bit_depth = 0;
+    std::optional<std::uint64_t> max_bytes;
+    std::optional<std::uint64_t> max_write_bytes;
     // The Muse Reverb aux send: on by default at 0.30, as desktop mixes; off
     // sends nothing to the reverb return and renders the dry mix.
     bool reverb = true;

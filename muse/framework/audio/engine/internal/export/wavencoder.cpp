@@ -195,7 +195,10 @@ size_t WavEncoder::encode(const samples_t samplesPerChannel, const float* input)
 
                 const int32_t sampleInt = dsp::convertFloatSamples<int32_t>(input[idx], bitsPerSample);
 
-                m_dstDevice->write(reinterpret_cast<const std::uint8_t*>(&sampleInt), bytesToWrite);
+                if (m_dstDevice->write(reinterpret_cast<const std::uint8_t*>(&sampleInt), bytesToWrite)
+                    != static_cast<size_t>(bytesToWrite)) {
+                    return 0;
+                }
             }
         }
     }
