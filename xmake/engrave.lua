@@ -438,6 +438,7 @@ end
 
 target("engrave")
     set_kind("static")
+    add_packages("muse-pugixml")
     if is_plat("windows") then add_cxxflags("/Zc:preprocessor") end
     add_deps("muse_generated", "muse_global", "muse_draw", "muse_mpe", "engraving",
         "iex_musicxml", "iex_guitarpro", "iex_midi", "iex_mnx", "muse_audio_engine", "native_fluidsynth")
