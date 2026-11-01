@@ -145,6 +145,18 @@ Result<void> Engine::add_font(const std::filesystem::path& file) {
     return {};
 }
 
+std::vector<RuntimeFontInfo> Engine::runtime_fonts() const {
+    impl_->state.check_thread();
+    const auto active = impl_->state.context->assets().fonts();
+    std::vector<RuntimeFontInfo> result;
+    result.reserve(active.size());
+    for (const auto& font : active) {
+        result.push_back({font.id, font.family, font.bold, font.italic,
+                          path_from_utf8(font.path), font.content_hash});
+    }
+    return result;
+}
+
 Result<void> Engine::set_soundfonts(const std::vector<std::filesystem::path>& files) {
     impl_->state.check_thread();
     std::vector<std::filesystem::path> retained;

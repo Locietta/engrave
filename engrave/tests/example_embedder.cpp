@@ -7,11 +7,12 @@
 // each of them to MSCZ, MusicXML, MXL and MIDI; every export is opened again.
 // Exits non-zero on the first failure.
 
+#include <engrave/engine.h>
+#include <engrave/engrave.h>
+
 #include <cstdio>
 #include <filesystem>
 #include <string>
-
-#include <engrave/engrave.h>
 
 namespace {
 
@@ -56,6 +57,7 @@ int main(int argc, char** argv) {
                 static_cast<int>(engrave::version_string.size()), engrave::version_string.data(),
                 capabilities.engine_version.c_str(), capabilities.import_formats.size(),
                 capabilities.export_formats.size());
+    std::printf("%zu runtime text fonts\n", (*engine)->runtime_fonts().size());
 
     int failures = 0;
     for (int i = 2; i < argc; ++i) {

@@ -67,6 +67,8 @@ int main(int argc, char** argv) {
         auto created = engrave::Engine::create(options);
         expect(bool(created), "Cannot create public engine for asset tests");
         auto publicEngine = std::move(*created);
+        const auto startupFonts = publicEngine->runtime_fonts();
+        expect(startupFonts.empty(), "Bundled fonts appeared as runtime registrations");
         engrave::CreateOptions create;
         create.template_path = options.resources / "templates/01-General/01-Treble_Clef/01-Treble_Clef.mscx";
         auto opened = publicEngine->create_document(create);
@@ -83,6 +85,12 @@ int main(int argc, char** argv) {
         const auto info=assets.addFont(utf8(input));
         expect(info.family==family && info.path!=utf8(input),"Font was not copied with correct family");
         expect(assets.fonts().size()==initial_count+1,"Font registry count mismatch");
+        const auto publicFonts = publicEngine->runtime_fonts();
+        expect(publicFonts.size() == initial_count + 1 && publicFonts.back().id == info.id
+                   && publicFonts.back().family == info.family && publicFonts.back().bold == info.bold
+                   && publicFonts.back().italic == info.italic && utf8(publicFonts.back().path) == info.path
+                   && publicFonts.back().content_fingerprint == info.content_hash,
+               "Public font metadata does not match the active retained font");
         const auto after=engine->horizontalAdvance(font,sample);
         expect(before>0 && after>0 && std::abs(after-before)>0.01,"Cached fallback was not invalidated; choose an unregistered font");
         // A family that only ships a Medium/Bold face (FreeType flags it bold)

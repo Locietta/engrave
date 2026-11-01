@@ -20,6 +20,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -86,7 +87,7 @@ int usage() {
 } // namespace
 
 int main(int argc, char** argv) {
-    std::filesystem::path assets, out, score;
+    std::filesystem::path assets, out, score, test_startup_font;
     std::vector<std::filesystem::path> soundfonts;
     std::string mode, format = "wav";
     bool repeats = true;
@@ -105,6 +106,7 @@ int main(int argc, char** argv) {
         else if (argument.starts_with("--sample-rate=")) sample_rate = std::atoi(value(14).c_str());
         else if (argument == "--no-repeats") repeats = false;
         else if (argument == "--test-output-open-failure") test_output_open_failure = true;
+        else if (argument.starts_with("--test-startup-font=")) test_startup_font = std::filesystem::u8path(value(20));
         else return usage();
     }
     if (assets.empty() || score.empty() || out.empty() || mode.empty()) return usage();
@@ -125,6 +127,7 @@ int main(int argc, char** argv) {
         options.resources = assets;
         options.soundfonts = soundfonts;
         options.audio_sample_rate = sample_rate;
+        if (!test_startup_font.empty()) options.fonts.push_back(test_startup_font);
         if (test_output_open_failure) {
             if (mode != "audio" || format != "wav" || !std::filesystem::create_directory(out))
                 throw std::runtime_error("test needs a new cache directory and WAV audio");
@@ -144,6 +147,23 @@ int main(int argc, char** argv) {
             std::fprintf(stderr, "error: %s: %s\n", std::string(engrave::to_string(engine.error().code)).c_str(),
                          engine.error().message.c_str());
             return 2;
+        }
+        if (!test_startup_font.empty()) {
+            const auto fonts = (*engine)->runtime_fonts();
+            if (fonts.size() != 1 || fonts[0].id <= 0 || fonts[0].family.empty()
+                || fonts[0].content_fingerprint.empty() || !fonts[0].path.is_absolute()
+                || fonts[0].path == test_startup_font)
+                throw std::runtime_error("startup font metadata is incomplete");
+            const auto read = [](const std::filesystem::path& path) {
+                std::ifstream file(path, std::ios::binary);
+                return std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+            };
+            const auto retained = fonts[0].path;
+            if (read(retained).empty() || read(retained) != read(test_startup_font))
+                throw std::runtime_error("startup font metadata did not identify the retained copy");
+            (*engine).reset();
+            if (std::filesystem::exists(retained)) throw std::runtime_error("startup font survived Engine destruction");
+            return 0;
         }
         auto document = (*engine)->open(score);
         if (!document) {
