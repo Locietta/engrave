@@ -54,6 +54,7 @@
 #include "engraving/dom/score.h"
 #include "engraving/dom/text.h"
 #include "engraving/dom/textbase.h"
+#include "engraving/dom/timesig.h"
 #include "engraving/editing/transaction/undostack.h"
 #include "engraving/types/constants.h"
 
@@ -1071,6 +1072,38 @@ TEST(Read, ExtremeTickRangesAndMeasureWindows) {
         request.measure_count = count;
         expect_code(document->query(request), ErrorCode::InvalidArgument, "out-of-range measure window");
     }
+}
+
+TEST(Read, FractionPropertyDefaultsKeepWrittenTerms) {
+    const auto fixture = std::ranges::find_if(g_corpus, [](const auto& path) {
+        return path.filename() == "linked_parts.mscx";
+    });
+    ASSERT_NE(fixture, g_corpus.end());
+    auto document = open_path(*fixture);
+    ASSERT_TRUE(document);
+    engrave::Query request;
+    request.types = {"TimeSig"};
+    const auto signatures = document->query(request);
+    ASSERT_TRUE(signatures);
+    ASSERT_FALSE(signatures->elements.empty());
+    const auto id = signatures->elements.front().id;
+    const auto found = engrave::resolve(master_of(*document), id);
+    ASSERT_TRUE(found);
+    auto* signature = static_cast<mu::engraving::TimeSig*>(found->object);
+    signature->setSig(mu::engraving::Fraction(2, 2));
+    const auto written = document->get(id, {"timesig"});
+    ASSERT_TRUE(written);
+    ASSERT_EQ(written->size(), 1u);
+    const auto actual = std::get<engrave::Fraction>(written->front().value);
+    EXPECT_EQ(actual.num, 2);
+    EXPECT_EQ(actual.den, 2);
+    EXPECT_FALSE(written->front().is_default); // the default is written as 4/4
+
+    signature->setSig(mu::engraving::Fraction(4, 4));
+    const auto default_value = document->get(id, {"timesig"});
+    ASSERT_TRUE(default_value);
+    ASSERT_EQ(default_value->size(), 1u);
+    EXPECT_TRUE(default_value->front().is_default);
 }
 
 TEST(Read, LimitsAreEnforced) {

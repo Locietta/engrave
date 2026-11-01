@@ -9,10 +9,12 @@
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <limits>
 #include <set>
 #include <string>
 #include <string_view>
 #include <thread>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -24,6 +26,17 @@ namespace {
 
 using engrave::ErrorCode;
 using engrave::Format;
+
+using F = engrave::Fraction;
+constexpr auto max_fraction_term = std::numeric_limits<std::int64_t>::max();
+constexpr auto min_fraction_term = std::numeric_limits<std::int64_t>::min();
+static_assert(F{1, 2} > F{1, 4});
+static_assert(F{1, 2} == F{2, 4});
+static_assert(F{-1, 2} < F{-1, 4});
+static_assert(F{min_fraction_term, 2} == F{min_fraction_term / 2, 1});
+static_assert(F{min_fraction_term, max_fraction_term} < F{-1, 1});
+static_assert(F{max_fraction_term - 1, max_fraction_term} > F{max_fraction_term - 2, max_fraction_term - 1});
+static_assert(F{max_fraction_term - 1, max_fraction_term} < F{1, 1});
 
 std::filesystem::path g_resources;
 std::unique_ptr<engrave::Engine> g_engine;
@@ -58,6 +71,27 @@ std::string exported(engrave::Document& document, Format format) {
     auto bytes = document.export_score({.format = format});
     EXPECT_TRUE(bytes) << bytes.error().message;
     return bytes ? text_of(*bytes) : std::string{};
+}
+
+TEST(Values, FractionsCompareByValueAndKeepWrittenTerms) {
+    std::vector<F> fractions{{1, 2}, {1, 4}, {-1, 2}, {2, 4},
+                             {max_fraction_term, 1}, {min_fraction_term, 1}, {0, max_fraction_term}};
+    std::stable_sort(fractions.begin(), fractions.end());
+    const std::vector<F> expected{{min_fraction_term, 1}, {-1, 2}, {0, 1}, {1, 4},
+                                  {1, 2}, {2, 4}, {max_fraction_term, 1}};
+    EXPECT_EQ(fractions, expected);
+    EXPECT_EQ(fractions[4].num, 1);
+    EXPECT_EQ(fractions[4].den, 2);
+    EXPECT_EQ(fractions[5].num, 2);
+    EXPECT_EQ(fractions[5].den, 4);
+
+    const F written{6, 8};
+    EXPECT_EQ(written, (F{3, 4}));
+    EXPECT_EQ(written.num, 6);
+    EXPECT_EQ(written.den, 8);
+    // Invalid denominators are outside the API contract but remain safe to sort.
+    EXPECT_LT((F{1, 0}), (F{0, 1}));
+    EXPECT_EQ((F{1, 0}), (F{1, 0}));
 }
 
 TEST(Open, RejectsPreMuseScore4) {
