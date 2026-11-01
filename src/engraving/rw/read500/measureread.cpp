@@ -493,7 +493,8 @@ void MeasureRead::readVoice(Measure* measure, XmlReader& e, ReadContext& ctx, in
                 el->setTrack(0);     // original system object always goes on top
             }
             segment->add(el);
-        } else if (tag == "Sticking"
+        } else if (tag == "StaveSharingLabel"
+                   || tag == "Sticking"
                    || tag == "SystemText"
                    || tag == "PlayTechAnnotation"
                    || tag == "Capo"
