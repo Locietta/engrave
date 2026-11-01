@@ -189,6 +189,7 @@ struct AudioRenderRequest {
     // must enforce it out of process: for the synchronous export the parent's
     // duration-derived deadline is the real limit (noqt_engine.cpp).
     std::int64_t timeout_ms = 0;
+    std::function<bool()> cancelled;
 };
 
 struct AudioRenderResult {
@@ -196,6 +197,7 @@ struct AudioRenderResult {
     // on: the engine's graph, synthesizer or encoder failed.
     enum class Failure {
         None,
+        Cancelled,
         InvalidScore,  // nothing to play, or no length to play it
         ResourceLimit, // the projected output exceeds the 1 GiB cap
         Io,            // opening, writing or closing the output failed
@@ -244,6 +246,8 @@ struct AudioRenderResult {
 // above.
 //
 // Never throws for a bad score/format/engine state; inspect AudioRenderResult.
+// Exceptions from request.cancelled are rethrown after closing/removing the
+// intermediate and idling the render graph; none unwind through codec callbacks.
 AudioRenderResult export_score_audio(EngineAudio& audio, mu::engraving::MasterScore* master,
                                      const AudioRenderRequest& request);
 

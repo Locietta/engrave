@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <limits>
 #include <optional>
 #include <utility>
@@ -15,8 +16,9 @@ class StreamingFileDevice final : public IODevice
 public:
     explicit StreamingFileDevice(std::filesystem::path path,
                                  std::optional<std::uint64_t> maxBytes = {},
-                                 std::optional<std::uint64_t> maxWriteBytes = {})
-        : m_path(std::move(path)), m_maxBytes(maxBytes), m_maxWriteBytes(maxWriteBytes) {}
+                                 std::optional<std::uint64_t> maxWriteBytes = {},
+                                 std::function<bool()> cancelled = {})
+        : m_path(std::move(path)), m_maxBytes(maxBytes), m_maxWriteBytes(maxWriteBytes), m_cancelled(std::move(cancelled)) {}
 
     ~StreamingFileDevice() override { close(); }
 
@@ -73,6 +75,7 @@ protected:
 
     size_t writeData(const uint8_t* data, size_t len) override
     {
+        if (m_cancelled && m_cancelled()) return 0;
         // IODevice can overwrite already allocated space without resizeData.
         // Check both limits before touching the file, including final header
         // rewrites and writes after a previously rejected operation.
@@ -118,5 +121,6 @@ private:
     std::optional<std::uint64_t> m_maxWriteBytes;
     std::uint64_t m_written = 0;
     bool m_limitExceeded = false;
+    std::function<bool()> m_cancelled;
 };
 }

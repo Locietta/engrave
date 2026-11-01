@@ -10,6 +10,8 @@ class EngineContext;
 // The page is larger than the renderer draws: 36..1200 dpi, 32767 pixels per
 // side and 64e6 pixels in all. A caller maps this to a resource-limit error,
 // not to an engine failure.
+struct RenderCancelled {};
+
 struct RenderLimitExceeded : std::runtime_error {
     using std::runtime_error::runtime_error;
 };

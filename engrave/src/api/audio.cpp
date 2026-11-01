@@ -177,6 +177,7 @@ Result<AudioTracks> Document::audio_tracks(const ScoreSel& selection) {
 Result<AudioRenderResult> Document::render_audio(const AudioOptions& options, const ByteSink& sink) {
     impl_->engine->check_thread();
     if (impl_->poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
+    if (options.cancelled && options.cancelled()) return fail(ErrorCode::Cancelled, "audio render cancelled");
     EngineState& engine = *impl_->engine;
     MasterScore& master = *impl_->project->masterScore();
     const Result<int> excerpt_id = excerpt_id_of(master, options.score);
@@ -242,6 +243,7 @@ Result<AudioRenderResult> Document::render_audio(const AudioOptions& options, co
     request.bit_depth = options.bit_depth;
     request.max_bytes = options.max_bytes;
     request.max_write_bytes = options.max_write_bytes;
+    request.cancelled = options.cancelled;
     request.reverb = options.reverb;
     request.reverb_send = options.reverb_send;
     request.tracks.resize(context->tracks.size());
@@ -290,6 +292,7 @@ Result<AudioRenderResult> Document::render_audio(const AudioOptions& options, co
     const music::AudioRenderResult rendered = music::export_score_audio(engine.context->audio(), &master, request);
     if (!rendered.ok) {
         switch (rendered.failure) {
+        case music::AudioRenderResult::Failure::Cancelled: return fail(ErrorCode::Cancelled, rendered.error);
         case music::AudioRenderResult::Failure::ResourceLimit: return fail(ErrorCode::ResourceLimit, rendered.error);
         case music::AudioRenderResult::Failure::InvalidScore: return fail(ErrorCode::InvalidArgument, rendered.error);
         case music::AudioRenderResult::Failure::Io: return fail(ErrorCode::Io, rendered.error);
@@ -298,6 +301,8 @@ Result<AudioRenderResult> Document::render_audio(const AudioOptions& options, co
         }
     }
 
+    // Publication starts only after the whole encoded file has succeeded.
+    if (options.cancelled && options.cancelled()) return fail(ErrorCode::Cancelled, "audio render cancelled");
     std::ifstream in(file.path, std::ios::binary);
     if (!in) return fail(ErrorCode::Io, "cannot read the rendered audio '" + utf8(file.path) + "'");
     std::uint64_t bytes = 0;

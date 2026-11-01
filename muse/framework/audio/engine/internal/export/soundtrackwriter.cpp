@@ -59,8 +59,9 @@ static encode::AbstractAudioEncoderPtr createEncoder(const SoundTrackFormat& for
 
 SoundTrackWriter::SoundTrackWriter(io::IODevice& dstDevice, const SoundTrackFormat& format,
                                    const secs_t totalDuration, IAudioNodePtr source, std::function<void(uint64_t)> blockCompleted,
-                                   std::function<encode::AbstractAudioEncoderPtr(const SoundTrackFormat&, io::IODevice&)> encoderFactory)
-    : m_source(std::move(source)), m_blockCompleted(std::move(blockCompleted))
+                                   std::function<encode::AbstractAudioEncoderPtr(const SoundTrackFormat&, io::IODevice&)> encoderFactory,
+                                   std::function<bool()> cancelled)
+    : m_cancelled(std::move(cancelled)), m_source(std::move(source)), m_blockCompleted(std::move(blockCompleted))
 {
     if (!m_source) {
         return;
@@ -91,7 +92,7 @@ SoundTrackWriter::SoundTrackWriter(io::IODevice& dstDevice, const SoundTrackForm
         return;
     }
 
-    if (!m_encoderPtr->begin(m_totalSamples)) {
+    if (pollCancellation() || !m_encoderPtr->begin(m_totalSamples)) {
         m_encoderPtr.reset();
     }
 }
@@ -100,6 +101,7 @@ Ret SoundTrackWriter::write()
 {
     TRACEFUNC;
 
+    if (pollCancellation()) return make_ret(Ret::Code::Cancel);
     if (!m_source || !m_encoderPtr) {
         return false;
     }
@@ -119,14 +121,22 @@ Ret SoundTrackWriter::write()
     };
 
     Ret ret = writeStreaming();
+    if (pollCancellation()) return make_ret(Ret::Code::Cancel);
     if (!m_isAborted) {
         finalized = true;
         OfflineTimer timer(OfflineTiming::current().encode);
         const Ret finalRet = m_encoderPtr->end();
+        if (pollCancellation()) return make_ret(Ret::Code::Cancel);
         // Encoding may already have failed; preserve that first error.
         if (ret && !finalRet) return finalRet;
     }
     return ret;
+}
+
+bool SoundTrackWriter::pollCancellation()
+{
+    if (m_cancelled && m_cancelled()) m_isAborted = true;
+    return m_isAborted;
 }
 
 void SoundTrackWriter::abort()
@@ -148,12 +158,13 @@ Ret SoundTrackWriter::writeStreaming()
 
     // Phase 1: leading silence
     const samples_t leadingEnd = m_leadingSilenceSamples;
-    while (framesWritten < leadingEnd && !m_isAborted) {
+    while (framesWritten < leadingEnd && !pollCancellation()) {
         const samples_t chunk = static_cast<samples_t>(
             std::min<uint64_t>(m_renderStep, leadingEnd - framesWritten));
 
         std::fill(m_intermBuffer.begin(), m_intermBuffer.end(), 0.f);
 
+        if (pollCancellation()) return make_ret(Ret::Code::Cancel);
         const size_t encoded = [&] {
             OfflineTimer timer(OfflineTiming::current().encode);
             return m_encoderPtr->encode(chunk, m_intermBuffer.data());
@@ -168,7 +179,7 @@ Ret SoundTrackWriter::writeStreaming()
 
     // Phase 2: actual audio data
     const samples_t audioEnd = m_leadingSilenceSamples + m_dataSamples;
-    while (framesWritten < audioEnd && !m_isAborted) {
+    while (framesWritten < audioEnd && !pollCancellation()) {
         const samples_t chunk = static_cast<samples_t>(
             std::min<uint64_t>(m_renderStep, audioEnd - framesWritten));
 
@@ -181,6 +192,7 @@ Ret SoundTrackWriter::writeStreaming()
             m_source->process(m_intermBuffer.data(), chunk);
         }
 
+        if (pollCancellation()) return make_ret(Ret::Code::Cancel);
         const size_t encoded = [&] {
             OfflineTimer timer(OfflineTiming::current().encode);
             return m_encoderPtr->encode(chunk, m_intermBuffer.data());
@@ -194,12 +206,13 @@ Ret SoundTrackWriter::writeStreaming()
     }
 
     // Phase 3: trailing silence
-    while (framesWritten < m_totalSamples && !m_isAborted) {
+    while (framesWritten < m_totalSamples && !pollCancellation()) {
         const samples_t chunk = static_cast<samples_t>(
             std::min<uint64_t>(m_renderStep, m_totalSamples - framesWritten));
 
         std::fill(m_intermBuffer.begin(), m_intermBuffer.end(), 0.f);
 
+        if (pollCancellation()) return make_ret(Ret::Code::Cancel);
         const size_t encoded = [&] {
             OfflineTimer timer(OfflineTiming::current().encode);
             return m_encoderPtr->encode(chunk, m_intermBuffer.data());
