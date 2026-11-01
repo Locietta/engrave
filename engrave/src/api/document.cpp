@@ -6,6 +6,7 @@
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/state.h"
 #include "engrave/src/score/export_options.h"
+#include "engrave/src/score/write470.h"
 #include "global/io/writebudget.h"
 
 #include "engraving/dom/excerpt.h"
@@ -90,6 +91,17 @@ const std::vector<Diagnostic>& Document::diagnostics() const {
 }
 
 Result<std::vector<std::byte>> Document::export_score(const ExportOptions& options) {
+    auto result = export_score_with_warnings(options);
+    if (!result) return std::unexpected(std::move(result.error()));
+    if (!result->warnings.empty()) {
+        Error error{ErrorCode::Unsupported, "this export has warnings; use export_score_with_warnings"};
+        error.export_warnings = std::move(result->warnings);
+        return std::unexpected(std::move(error));
+    }
+    return std::move(result->bytes);
+}
+
+Result<ExportOutput> Document::export_score_with_warnings(const ExportOptions& options) {
     impl_->engine->check_thread();
     if (impl_->poisoned) return std::unexpected(Error{ErrorCode::Poisoned, "an earlier edit left the document unusable"});
     if (options.capture.cancelled && options.capture.cancelled())
@@ -107,6 +119,12 @@ Result<std::vector<std::byte>> Document::export_score(const ExportOptions& optio
     default:
         return std::unexpected(Error{ErrorCode::Unsupported,
                                      std::format("the engine does not write {}", to_string(options.format))});
+    }
+    const bool native = options.format == Format::Mscz || options.format == Format::Mscx;
+    if (options.native_version != "5.00" && (!native || options.native_version != "4.70")) {
+        return std::unexpected(Error{ErrorCode::Unsupported,
+                                     std::format("native score version '{}' is not supported for {}",
+                                                 options.native_version, to_string(options.format))});
     }
     if (options.format == Format::Midi
         && (options.capture.max_bytes || options.capture.max_working_bytes || options.capture.cancelled)) {
@@ -127,9 +145,11 @@ Result<std::vector<std::byte>> Document::export_score(const ExportOptions& optio
     backend.midi_expand_repeats = options.midi_expand_repeats;
     backend.midi_export_rpns = options.midi_rpns;
     if (!options.capture.max_bytes && !options.capture.max_working_bytes && !options.capture.cancelled) {
+        if (options.native_version == "4.70")
+            return write470::export_score(*impl_->engine->context, impl_->project, **selected, name, backend);
         const std::string data = music::export_native_score(*impl_->engine->context, impl_->project, name, backend, {});
         const auto* bytes = reinterpret_cast<const std::byte*>(data.data());
-        return std::vector<std::byte>(bytes, bytes + data.size());
+        return ExportOutput{std::vector<std::byte>(bytes, bytes + data.size()), {}};
     }
     muse::io::WriteBudget budget;
     budget.output = options.capture.max_bytes;
@@ -146,10 +166,16 @@ Result<std::vector<std::byte>> Document::export_score(const ExportOptions& optio
         return std::unexpected(Error{ErrorCode::ResourceLimit, "score capture byte limit exceeded"});
     };
     try {
+        if (options.native_version == "4.70") {
+            auto result = write470::export_score(*impl_->engine->context, impl_->project, **selected, name, backend);
+            if (!budget.poll()) return stopped();
+            if (result && !budget.outputSize(result->bytes.size())) return stopped();
+            return result;
+        }
         const std::string data = music::export_native_score(*impl_->engine->context, impl_->project, name, backend, {});
         if (!budget.poll() || !budget.outputSize(data.size())) return stopped();
         const auto* bytes = reinterpret_cast<const std::byte*>(data.data());
-        return std::vector<std::byte>(bytes, bytes + data.size());
+        return ExportOutput{std::vector<std::byte>(bytes, bytes + data.size()), {}};
     } catch (...) {
         if (budget.failure != muse::io::WriteBudget::Failure::None) return stopped();
         throw;

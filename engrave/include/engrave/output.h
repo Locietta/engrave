@@ -5,10 +5,12 @@
 #include <functional>
 #include <limits>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <vector>
 
 #include <engrave/handle.h>
+#include <engrave/export_warning.h>
 
 namespace engrave {
 
@@ -56,6 +58,14 @@ struct ExportOptions {
     // Master by default; an excerpt is exported as an independent score.
     ScoreSel score;
     CaptureOptions capture;
+    // Native MSCX/MSCZ only. 5.00 is the current writer; 4.70 requests the
+    // restricted compatibility writer. Unknown versions are Unsupported.
+    std::string native_version = "5.00";
+};
+
+struct ExportOutput {
+    std::vector<std::byte> bytes;
+    std::vector<ExportWarning> warnings;
 };
 
 // Exact position export in raw 1200-DPI layout units. Coordinates are page-local;
