@@ -112,6 +112,45 @@ std::filesystem::path write470_fixture() {
     return std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests/data/write470/minimal.mscx";
 }
 
+TEST(Export470, SelectedExcerptIsStandaloneAndBounded) {
+    auto document = open_path(write470_fixture().parent_path() / "excerpts.mscx");
+    ASSERT_TRUE(document);
+    const auto outline = document->outline();
+    ASSERT_TRUE(outline);
+    ASSERT_FALSE(outline->excerpts.empty());
+    const engrave::ScoreSel selection{outline->excerpts.front().id};
+    auto selected = engrave::select_score(master_of(*document), selection);
+    ASSERT_TRUE(selected);
+    const auto expected = music::semantic_dump(&master_of(*document))["excerpts"][0]["score"];
+    for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+        auto default_bytes = document->export_score({.format = format, .score = selection});
+        auto explicit_bytes = document->export_score({.format = format, .score = selection, .native_version = "5.00"});
+        ASSERT_TRUE(default_bytes);
+        ASSERT_TRUE(explicit_bytes);
+        EXPECT_EQ(*default_bytes, *explicit_bytes);
+        engrave::ExportOptions options{.format = format, .score = selection, .native_version = "4.70"};
+        auto result = document->export_score_with_warnings(options);
+        ASSERT_TRUE(result) << result.error().message;
+        EXPECT_TRUE(result->warnings.empty());
+        auto reopened = g_engine->open(result->bytes, {.format = format});
+        ASSERT_TRUE(reopened) << reopened.error().message;
+        auto actual = music::semantic_dump(&master_of(**reopened));
+        for (const char* key : {"parts", "measures", "events"}) EXPECT_EQ(actual[key], expected[key]) << key;
+        EXPECT_TRUE(actual["excerpts"].empty());
+        options.capture.max_bytes = result->bytes.size() - 1;
+        const auto limited = document->export_score_with_warnings(options);
+        ASSERT_FALSE(limited);
+        EXPECT_EQ(limited.error().code, ErrorCode::ResourceLimit);
+    }
+    // Selection still goes through the structural guard.
+    ASSERT_TRUE(document->edit({{engrave::SetStyle{selection, "staffDistance", 9.0}}}));
+    auto refused = document->export_score_with_warnings({.score = selection, .native_version = "4.70"});
+    ASSERT_FALSE(refused);
+    EXPECT_EQ(refused.error().code, ErrorCode::Unsupported);
+    ASSERT_FALSE(refused.error().export_warnings.empty());
+    EXPECT_EQ(refused.error().export_warnings.front().code, "B470_UNSUPPORTED_FEATURE");
+}
+
 TEST(Export470, WarningIdentifiersAreStableAndDistinct) {
     using namespace engrave::export_warning_code;
     const std::array<std::string_view, 8> actual{shared_part, stave_sharing_label, page_lock,
