@@ -283,7 +283,7 @@ DynamicAutomationLayers PlaybackContext::dynamicLevelLayers(const track_idx_t tr
 }
 
 void PlaybackContext::update(const track_idx_t trackFrom, const track_idx_t trackTo, const int tickFrom, const int tickTo,
-                             bool expandRepeats)
+                             bool expandRepeats, const std::function<void()>& checkpoint)
 {
     TRACEFUNC;
 
@@ -298,6 +298,7 @@ void PlaybackContext::update(const track_idx_t trackFrom, const track_idx_t trac
     m_dynamicsCurveByTrack.clear();
 
     for (const RepeatSegment* repeatSegment : m_score->repeatList(expandRepeats)) {
+        if (checkpoint) checkpoint();
         const int repeatStartTick = repeatSegment->tick;
         const int repeatEndTick = repeatSegment->endTick();
 
@@ -309,6 +310,7 @@ void PlaybackContext::update(const track_idx_t trackFrom, const track_idx_t trac
         int tickPositionOffset = repeatSegment->utick - repeatSegment->tick;
 
         for (const Measure* measure : repeatSegment->measureList()) {
+            if (checkpoint) checkpoint();
             const int measureStartTick = measure->tick().ticks();
             const int measureEndTick = measure->endTick().ticks();
 
@@ -317,6 +319,7 @@ void PlaybackContext::update(const track_idx_t trackFrom, const track_idx_t trac
             }
 
             for (const Segment* segment = measure->first(); segment; segment = segment->next()) {
+                if (checkpoint) checkpoint();
                 const int segmentTick = segment->tick().ticks();
                 if (segmentTick > tickTo) {
                     break;

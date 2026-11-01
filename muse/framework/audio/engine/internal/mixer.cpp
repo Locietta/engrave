@@ -139,10 +139,12 @@ void Mixer::process(float* outBuffer, samples_t samplesPerChannel)
     const size_t outBufferSize = samplesPerChannel * m_outputSpec.audioChannelCount;
 
     processTrackChannels(outBufferSize, samplesPerChannel);
+    if (OfflineCancellation::requested()) return;
 
     prepareAuxBuffers(outBufferSize);
 
     for (auto& t : m_tracks) {
+        if (OfflineCancellation::requested()) return;
         if (!t.processed) {
             continue;
         }
