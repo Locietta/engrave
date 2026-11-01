@@ -107,7 +107,9 @@ Score, measure and note indices are zero-based in document, measure and chord
 order; tick is the absolute engine tick (480 per quarter), track is the engine
 staff/voice track. The master is score zero, followed by excerpts in source
 order. This source-revision locator is deterministic and is not a query handle.
-Other malformed/empty warning identities fail as invalid source arguments;
+Only the complete numeric tie-locator shape above is accepted (all five
+components and the final `tieFor` field are required). Other malformed/empty
+warning identities fail as invalid source arguments;
 they cannot become successful anonymous warnings. Composite range/bracket keys
 must contain valid EIDs and a nonempty numeric column where applicable.
 Host schemas must require `{kind,id}` for every B470 warning and describe both
