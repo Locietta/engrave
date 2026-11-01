@@ -22,12 +22,63 @@ enum struct Unit {
 // The shape of a property or style value.  One per Value alternative.
 enum struct ValueKind { Bool, Int, Real, String, Point, Size, Color, Fraction, Enum, IntList, Opaque };
 
-// A time position as a fraction of a whole note, e.g. {3, 4} for the third
-// quarter. The denominator is positive; the value is not necessarily reduced.
+namespace detail {
+
+// Compare positive-denominator fractions without multiplying their terms. Each
+// reciprocal reverses the order; unsigned magnitudes also cover INT64_MIN.
+constexpr std::strong_ordering compare_fraction(std::int64_t a, std::int64_t b,
+                                                std::int64_t c, std::int64_t d) {
+    if (a < 0 && c >= 0) return std::strong_ordering::less;
+    if (a >= 0 && c < 0) return std::strong_ordering::greater;
+    const auto magnitude = [](std::int64_t n) {
+        const auto bits = static_cast<std::uint64_t>(n);
+        return n < 0 ? std::uint64_t{0} - bits : bits;
+    };
+    std::uint64_t an = magnitude(a), ad = static_cast<std::uint64_t>(b);
+    std::uint64_t cn = magnitude(c), cd = static_cast<std::uint64_t>(d);
+    bool reversed = a < 0;
+    for (;;) {
+        const auto aq = an / ad, cq = cn / cd;
+        if (aq != cq) {
+            const bool less = (aq < cq) != reversed;
+            return less ? std::strong_ordering::less : std::strong_ordering::greater;
+        }
+        const auto ar = an % ad, cr = cn % cd;
+        if (ar == 0 || cr == 0) {
+            if (ar == cr) return std::strong_ordering::equal;
+            const bool less = (ar == 0) != reversed;
+            return less ? std::strong_ordering::less : std::strong_ordering::greater;
+        }
+        an = ad;
+        ad = ar;
+        cn = cd;
+        cd = cr;
+        reversed = !reversed;
+    }
+}
+
+} // namespace detail
+
+// A fraction of a whole note, also used for written time signatures. The
+// denominator is positive and the terms are not necessarily reduced. Ordering
+// and equality compare values; inspect num and den to distinguish notation.
 struct Fraction {
     std::int64_t num = 0;
     std::int64_t den = 1;
-    friend auto operator<=>(const Fraction&, const Fraction&) = default;
+
+    constexpr std::strong_ordering operator<=>(const Fraction& other) const {
+        // Invalid denominators are outside the API contract. Keep them safely
+        // ordered by their stored terms, before valid fractions.
+        if (den <= 0 || other.den <= 0) {
+            if (den > 0) return std::strong_ordering::greater;
+            if (other.den > 0) return std::strong_ordering::less;
+            if (const auto by_num = num <=> other.num; by_num != 0) return by_num;
+            return den <=> other.den;
+        }
+        return detail::compare_fraction(num, den, other.num, other.den);
+    }
+
+    constexpr bool operator==(const Fraction& other) const { return (*this <=> other) == 0; }
 };
 
 struct Point {

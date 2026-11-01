@@ -2,7 +2,10 @@
 
 #include <algorithm>
 #include <format>
+#include <limits>
 #include <map>
+#include <numeric>
+#include <optional>
 #include <string_view>
 #include <unordered_set>
 #include <variant>
@@ -46,12 +49,25 @@ std::unexpected<Error> fail(ErrorCode code, std::string message) {
     return std::unexpected(Error{code, std::move(message)});
 }
 
-mu::engraving::Fraction to_engine_fraction(const Fraction& value) {
-    return mu::engraving::Fraction(static_cast<int>(value.num), static_cast<int>(value.den));
-}
+std::optional<Fraction> address_tick(const mu::engraving::Fraction& value) {
+    const std::int64_t num = value.numerator64();
+    const std::int64_t den = value.denominator64();
+    const auto low = std::numeric_limits<int>::min();
+    const auto high = std::numeric_limits<int>::max();
+    if (den <= 0) return std::nullopt;
+    if (num >= low && num <= high && den <= high) return Fraction{num, den};
 
-Fraction from_engine_fraction(const mu::engraving::Fraction& value) {
-    return {value.numerator(), value.denominator()};
+    // Preserve existing representations when they fit; otherwise reduce the
+    // exact terms so an equivalent representable address can still be returned.
+    const auto bits = static_cast<std::uint64_t>(num);
+    const auto magnitude = num < 0 ? std::uint64_t{0} - bits : bits;
+    const auto divisor = std::gcd(magnitude, static_cast<std::uint64_t>(den));
+    const auto reduced_num = magnitude / divisor;
+    const auto reduced_den = static_cast<std::uint64_t>(den) / divisor;
+    const auto max_magnitude = static_cast<std::uint64_t>(high) + (num < 0 ? 1u : 0u);
+    if (reduced_num > max_magnitude || reduced_den > static_cast<std::uint64_t>(high)) return std::nullopt;
+    const auto signed_num = static_cast<std::int64_t>(reduced_num);
+    return Fraction{num < 0 ? -signed_num : signed_num, static_cast<std::int64_t>(reduced_den)};
 }
 
 // Every object of the document, each once: per score (the master first, then the
@@ -396,8 +412,25 @@ Result<Resolved> resolve(MasterScore& master, const Address& address) {
                 if (kind == SegmentType::Invalid) {
                     return fail(ErrorCode::InvalidArgument, std::format("'{}' is not a segment type", value.kind));
                 }
+                const Fraction& tick = value.tick;
+                if (tick.num < std::numeric_limits<int>::min() || tick.num > std::numeric_limits<int>::max()
+                    || tick.den <= 0 || tick.den > std::numeric_limits<int>::max()) {
+                    return fail(ErrorCode::InvalidArgument, "a segment tick must fit the engine's fraction with a positive denominator");
+                }
                 Measure* found = mu::engraving::toMeasure(measure->object);
-                Segment* segment = found->findSegment(kind, to_engine_fraction(value.tick));
+                // findSegment subtracts the measure tick before comparing. Large
+                // denominators can overflow that intermediate. Compare absolute
+                // ticks without narrowing the engine's unreduced 64-bit terms.
+                Segment* segment = nullptr;
+                for (Segment* candidate = found->first(); candidate; candidate = candidate->next()) {
+                    if (!candidate->isType(kind)) continue;
+                    const auto position = candidate->tick();
+                    if (position.denominator64() > 0
+                        && detail::compare_fraction(position.numerator64(), position.denominator64(), tick.num, tick.den) == 0) {
+                        segment = candidate;
+                        break;
+                    }
+                }
                 if (!segment) {
                     return fail(ErrorCode::StaleHandle, std::format("no {} segment at tick {}/{}", value.kind, value.tick.num,
                                                                     value.tick.den));
@@ -431,7 +464,9 @@ std::optional<Address> address_of(const EngravingObject& object) {    if (object
         if (!measure || !measure->eid().isValid()) return std::nullopt;
         SegmentAddress address;
         address.measure = from_engine(measure->eid());
-        address.tick = from_engine_fraction(segment.tick());
+        const auto tick = address_tick(segment.tick());
+        if (!tick) return std::nullopt;
+        address.tick = *tick;
         address.kind = segment_token(segment.segmentType());
         return Address{address};
     }
