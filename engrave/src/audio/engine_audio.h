@@ -105,15 +105,18 @@ void set_engine_audio_midi_event_hook(EngineAudio& audio, EngineAudioMidiEventHo
 // output spec it feeds; every render the engine writes is at that rate.
 //
 // Returns false and fills `error` (when not null) if the engine was already
-// initialised with a different list or rate, a path is not .sf2/.sf3, the
+// initialised at a different rate, a path is not .sf2/.sf3, the
 // native runtime/IFileSystem is missing, a font cannot be parsed, or a parsed
-// font does not show up as an engine input resource. A failed call after the
-// engine services were constructed leaves the process without a usable
-// engine; exit instead of retrying.
+// font does not show up as an engine input resource. A failed replacement
+// attempts to restore the previous repository. Failure during initial service
+// construction does not promise that a retry is safe.
 struct EngineAudioSetup {
     std::vector<std::string> soundfonts; // in order; the first is the default
     int sample_rate = 44100;
 };
+// Fully parse candidates without constructing audio services or refreshing live
+// SoundFont handles. The caller supplies immutable paths when retaining a list.
+bool validate_engine_soundfonts(const std::vector<std::string>& soundfonts, std::string* error = nullptr);
 bool initialize_engine_audio(EngineAudio& audio, const EngineAudioSetup& setup, std::string* error = nullptr);
 // One SoundFont at 44100 Hz.
 bool initialize_engine_audio(EngineAudio& audio, const std::string& soundfont_path, std::string* error = nullptr);
