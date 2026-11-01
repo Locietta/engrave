@@ -118,10 +118,14 @@ struct Document {
     // restored: later read, edit and output calls returning Result report Poisoned.
     //
     // After successful recovery, a failed batch restores the score's content and
-    // ids. Its layout is restored exactly too, unless the engine threw or a
-    // Snapshot-policy operation had run: the document is then reloaded from a
-    // copy and laid out as if saved and reopened, which can place elements
-    // differently. Failed recovery throws and poisons the document.
+    // ids. Its layout is kept exactly only when the batch ran in one transaction
+    // whose unwind could be trusted - the engine did not throw and no
+    // Snapshot-policy operation had run - and the unwound score then matched the
+    // saved copy; otherwise the document is reloaded from that copy (or, when no
+    // copy exists, the recorded command is undone), which lays the score out as
+    // if saved and reopened and can place elements differently. A batch that ran
+    // a Snapshot-policy operation or threw therefore does not promise bit-exact
+    // layout. Failed recovery throws and poisons the document.
     Result<EditResult> edit(const Batch& batch, std::optional<std::uint64_t> expected_revision = {});
 
 private:
