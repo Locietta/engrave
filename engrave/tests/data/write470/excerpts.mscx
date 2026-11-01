@@ -1,0 +1,339 @@
+<?xml version='1.0' encoding='utf-8'?>
+<museScore version="4.70">
+  <Score>
+    <eid>B_B</eid>
+    <Division>480</Division>
+    <Style>
+      <spatium>1.75</spatium>
+    </Style>
+    <showInvisible>1</showInvisible>
+    <showUnprintable>1</showUnprintable>
+    <showFrames>1</showFrames>
+    <showMargins>0</showMargins>
+    <open>1</open>
+    <metaTag name="arranger" />
+    <metaTag name="composer">Composer / arranger</metaTag>
+    <metaTag name="copyright" />
+    <metaTag name="lyricist" />
+    <metaTag name="movementNumber" />
+    <metaTag name="movementTitle" />
+    <metaTag name="source" />
+    <metaTag name="subtitle">Subtitle</metaTag>
+    <metaTag name="translator" />
+    <metaTag name="workNumber" />
+    <metaTag name="workTitle">Untitled score</metaTag>
+    <Part id="1">
+      <Staff>
+        <eid>C_C</eid>
+        <StaffType group="pitched">
+          <name>stdNormal</name>
+        </StaffType>
+      </Staff>
+      <Staff>
+        <eid>D_D</eid>
+        <linkedTo>C_C</linkedTo>
+        <StaffType group="pitched">
+          <name>stdNormal</name>
+        </StaffType>
+      </Staff>
+      <trackName>Flute</trackName>
+      <Instrument id="flute">
+        <longName>Flute</longName>
+        <shortName>Fl.</shortName>
+        <trackName>Flute</trackName>
+        <minPitchP>59</minPitchP>
+        <maxPitchP>98</maxPitchP>
+        <minPitchA>60</minPitchA>
+        <maxPitchA>93</maxPitchA>
+        <instrumentId>wind.flutes.flute</instrumentId>
+        <Channel>
+          <program value="73" />
+        </Channel>
+      </Instrument>
+    </Part>
+    <Staff id="1">
+      <Measure>
+        <eid>E_E</eid>
+        <voice>
+          <KeySig>
+            <eid>F_F</eid>
+            <concertKey>0</concertKey>
+          </KeySig>
+          <TimeSig>
+            <eid>G_G</eid>
+            <sigN>4</sigN>
+            <sigD>4</sigD>
+          </TimeSig>
+          <Chord>
+            <eid>H_H</eid>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>I_I</eid>
+              <Spanner type="Tie">
+                <Tie>
+                  <eid>J_J</eid>
+                </Tie>
+                <next>
+                  <location>
+                    <fractions>1/4</fractions>
+                  </location>
+                </next>
+              </Spanner>
+              <pitch>71</pitch>
+              <tpc>19</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <eid>K_K</eid>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>L_L</eid>
+              <Spanner type="Tie">
+                <prev>
+                  <location>
+                    <fractions>-1/4</fractions>
+                  </location>
+                </prev>
+              </Spanner>
+              <pitch>71</pitch>
+              <tpc>19</tpc>
+            </Note>
+          </Chord>
+          <Rest>
+            <eid>M_M</eid>
+            <durationType>half</durationType>
+          </Rest>
+        </voice>
+      </Measure>
+    </Staff>
+    <Staff id="2">
+      <Measure>
+        <voice>
+          <KeySig>
+            <eid>a_a</eid>
+            <linkedTo>F_F</linkedTo>
+            <concertKey>0</concertKey>
+          </KeySig>
+          <TimeSig>
+            <eid>b_b</eid>
+            <sigN>4</sigN>
+            <sigD>4</sigD>
+          </TimeSig>
+          <Chord>
+            <eid>c_c</eid>
+            <linkedTo>H_H</linkedTo>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>d_d</eid>
+              <linkedTo>I_I</linkedTo>
+              <Spanner type="Tie">
+                <Tie>
+                  <eid>e_e</eid>
+                  <linkedTo>J_J</linkedTo>
+                </Tie>
+                <next>
+                  <location>
+                    <fractions>1/4</fractions>
+                  </location>
+                </next>
+              </Spanner>
+              <pitch>71</pitch>
+              <tpc>19</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <eid>f_f</eid>
+            <linkedTo>K_K</linkedTo>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>g_g</eid>
+              <linkedTo>L_L</linkedTo>
+              <Spanner type="Tie">
+                <prev>
+                  <location>
+                    <fractions>-1/4</fractions>
+                  </location>
+                </prev>
+              </Spanner>
+              <pitch>71</pitch>
+              <tpc>19</tpc>
+            </Note>
+          </Chord>
+          <Rest>
+            <eid>h_h</eid>
+            <linkedTo>M_M</linkedTo>
+            <durationType>half</durationType>
+          </Rest>
+        </voice>
+      </Measure>
+    </Staff>
+    <Score>
+      <eid>v_v</eid>
+      <name>Flute</name>
+      <Division>480</Division>
+      <Style>
+        <spatium>1.75</spatium>
+      </Style>
+      <showInvisible>1</showInvisible>
+      <showUnprintable>1</showUnprintable>
+      <showFrames>1</showFrames>
+      <showMargins>0</showMargins>
+      <metaTag name="partName">Flute</metaTag>
+      <Part id="1">
+        <Staff>
+          <eid>w_w</eid>
+          <linkedTo>C_C</linkedTo>
+          <StaffType group="pitched">
+            <name>stdNormal</name>
+          </StaffType>
+        </Staff>
+        <Staff>
+          <eid>x_x</eid>
+          <linkedTo>C_C</linkedTo>
+          <StaffType group="pitched">
+            <name>stdNormal</name>
+          </StaffType>
+        </Staff>
+        <trackName>Flute</trackName>
+        <Instrument id="flute">
+          <longName>Flute</longName>
+          <shortName>Fl.</shortName>
+          <trackName>Flute</trackName>
+          <minPitchP>59</minPitchP>
+          <maxPitchP>98</maxPitchP>
+          <minPitchA>60</minPitchA>
+          <maxPitchA>93</maxPitchA>
+          <instrumentId>wind.flutes.flute</instrumentId>
+          <Channel>
+            <program value="73" />
+          </Channel>
+        </Instrument>
+      </Part>
+      <Staff id="1">
+        <Measure>
+          <eid>0_0</eid>
+          <voice>
+            <KeySig>
+              <eid>1_1</eid>
+              <linkedTo>F_F</linkedTo>
+              <concertKey>0</concertKey>
+            </KeySig>
+            <TimeSig>
+              <eid>2_2</eid>
+              <linkedTo>G_G</linkedTo>
+              <sigN>4</sigN>
+              <sigD>4</sigD>
+            </TimeSig>
+            <Chord>
+              <eid>3_3</eid>
+              <linkedTo>H_H</linkedTo>
+              <durationType>quarter</durationType>
+              <Note>
+                <eid>4_4</eid>
+                <linkedTo>I_I</linkedTo>
+                <Spanner type="Tie">
+                  <Tie>
+                    <eid>5_5</eid>
+                    <linkedTo>J_J</linkedTo>
+                  </Tie>
+                  <next>
+                    <location>
+                      <fractions>1/4</fractions>
+                    </location>
+                  </next>
+                </Spanner>
+                <pitch>71</pitch>
+                <tpc>19</tpc>
+              </Note>
+            </Chord>
+            <Chord>
+              <eid>6_6</eid>
+              <linkedTo>K_K</linkedTo>
+              <durationType>quarter</durationType>
+              <Note>
+                <eid>7_7</eid>
+                <linkedTo>L_L</linkedTo>
+                <Spanner type="Tie">
+                  <prev>
+                    <location>
+                      <fractions>-1/4</fractions>
+                    </location>
+                  </prev>
+                </Spanner>
+                <pitch>71</pitch>
+                <tpc>19</tpc>
+              </Note>
+            </Chord>
+            <Rest>
+              <eid>8_8</eid>
+              <linkedTo>M_M</linkedTo>
+              <durationType>half</durationType>
+            </Rest>
+          </voice>
+        </Measure>
+      </Staff>
+      <Staff id="2">
+        <Measure>
+          <voice>
+            <KeySig>
+              <eid>KB_KB</eid>
+              <linkedTo>F_F</linkedTo>
+              <concertKey>0</concertKey>
+            </KeySig>
+            <TimeSig>
+              <eid>LB_LB</eid>
+              <linkedTo>b_b</linkedTo>
+              <sigN>4</sigN>
+              <sigD>4</sigD>
+            </TimeSig>
+            <Chord>
+              <eid>MB_MB</eid>
+              <linkedTo>H_H</linkedTo>
+              <durationType>quarter</durationType>
+              <Note>
+                <eid>NB_NB</eid>
+                <linkedTo>I_I</linkedTo>
+                <Spanner type="Tie">
+                  <Tie>
+                    <eid>OB_OB</eid>
+                    <linkedTo>J_J</linkedTo>
+                  </Tie>
+                  <next>
+                    <location>
+                      <fractions>1/4</fractions>
+                    </location>
+                  </next>
+                </Spanner>
+                <pitch>71</pitch>
+                <tpc>19</tpc>
+              </Note>
+            </Chord>
+            <Chord>
+              <eid>PB_PB</eid>
+              <linkedTo>K_K</linkedTo>
+              <durationType>quarter</durationType>
+              <Note>
+                <eid>QB_QB</eid>
+                <linkedTo>L_L</linkedTo>
+                <Spanner type="Tie">
+                  <prev>
+                    <location>
+                      <fractions>-1/4</fractions>
+                    </location>
+                  </prev>
+                </Spanner>
+                <pitch>71</pitch>
+                <tpc>19</tpc>
+              </Note>
+            </Chord>
+            <Rest>
+              <eid>RB_RB</eid>
+              <linkedTo>M_M</linkedTo>
+              <durationType>half</durationType>
+            </Rest>
+          </voice>
+        </Measure>
+      </Staff>
+    </Score>
+  </Score>
+</museScore>

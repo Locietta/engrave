@@ -96,6 +96,39 @@ values, empty header/footer text and the legacy `$C` center-footer macro.
 All other catalog, uniqueness, attribute and value checks remain in place.
 The complete style of each excerpt is validated independently.
 
+### Warning identities and bounded identity preservation
+
+Invalid EID sentinels are never warning identities. An unequal-pitch tie uses
+its own valid EID, otherwise its start note's EID, otherwise the nearest
+addressable ancestor (with that ancestor's kind). If none exists, `kind:"tie"`
+uses the explicitly non-EID locator
+`locator:score:<s>/measure:<m>/tick:<t>/track:<k>/note:<n>/tieFor`.
+Score, measure and note indices are zero-based in document, measure and chord
+order; tick is the absolute engine tick (480 per quarter), track is the engine
+staff/voice track. The master is score zero, followed by excerpts in source
+order. This source-revision locator is deterministic and is not a query handle.
+Other malformed/empty warning identities fail as invalid source arguments;
+they cannot become successful anonymous warnings. Composite range/bracket keys
+must contain valid EIDs and a nonempty numeric column where applicable.
+Host schemas must require `{kind,id}` for every B470 warning and describe both
+EIDs and these non-EID locator/composite forms; `id` is not uniformly an EID.
+
+Enabled wind/vocal group naming is projected off by the old reader. If a score
+contains multiple parts with the same applicable instrument, each affected part
+receives the frozen `B470_INSTRUMENT_GROUP_NAME_DROPPED` message and its source
+part EID. This extends that identity's trigger to the enabled group style;
+no warning code or message is added. Potential groups are checked even when
+hidden. A single applicable instrument has no current group behavior to lose.
+
+The 4.70 identity promise is limited to the serialized musical, staff and score
+EIDs supported by the bounded mapping, plus legacy numeric part IDs. Part EIDs
+(ordinary and shared) have no interoperable 4.70 field and are omitted; current
+host reopen assigns fresh ones. A numeric part ID is not a retained part EID.
+The parent must explicitly approve this format limitation in B1's contract;
+this implementation introduces no new warning code or fixture expectation to
+authorize that product decision. If preservation of part EIDs is required,
+the current 4.70 mapping cannot satisfy it and phase acceptance remains blocked.
+
 `tests/test_write470_oracle.py` checks the parent's frozen `tests/phase_b`
 manifest and all 87 preserved oracle files, then compares complete oracle
 semantics and warning arrays for thirteen successful cases in both formats,
