@@ -393,6 +393,7 @@ TEST(AudioInternal, CancellationLatencyDistribution) {
 // Same 12 x 256 x 16 input shape as the M2 review, generated without a desktop.
 TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
     using Clock = std::chrono::steady_clock;
+    const auto ownerThread = std::this_thread::get_id();
     const std::string prefix = "engrave-dense-cancel-" + std::to_string(
 #ifdef _WIN32
         _getpid()
@@ -463,6 +464,7 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
             const auto utf8 = path.generic_u8string();
             request.output_path.assign(utf8.begin(), utf8.end());
             request.cancelled = [&] {
+                EXPECT_EQ(std::this_thread::get_id(), ownerThread);
                 if (phase == 3 && muse::audio::OfflineCancellation::phase == Phase::Encoding) cancel();
                 if (phase == 0 && muse::audio::OfflineCancellation::phase == Phase::Sequencer) cancel();
                 if (phase == 1 && muse::audio::OfflineCancellation::phase == Phase::PlaybackModel
@@ -493,8 +495,8 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
         std::sort(times.begin(), times.end());
         std::fprintf(stderr, "dense_cancel_ms phase=%s n=50 p50=%.6f p95=%.6f max=%.6f\n",
                      names[phase], times[24], times[47], times.back());
-        EXPECT_LE(times[47], 50.0);
-        EXPECT_LE(times.back(), 100.0);
+        EXPECT_LE(times[47], 30.0);
+        EXPECT_LE(times.back(), 50.0);
         EXPECT_EQ(render(), baseline);
     }
     // Exercise error translation and publication through the public API too.
