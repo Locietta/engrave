@@ -22,9 +22,11 @@
 #include "mscwriter.h"
 
 #include <vector>
+#include <exception>
 
 #include "containers.h"
 #include "io/buffer.h"
+#include "io/writebudget.h"
 #include "io/file.h"
 #include "io/fileinfo.h"
 #include "io/dir.h"
@@ -78,7 +80,13 @@ void MscWriter::close()
 {
     if (m_writer) {
         if (m_writer->isOpened()) {
-            writeMeta();
+            // A failed bounded write may unwind through this destructor. Do
+            // not build archive metadata while an exception or budget failure
+            // is already in flight: its text writer can interrupt as well.
+            if (std::uncaught_exceptions() == 0
+                && (!activeWriteBudget || activeWriteBudget->failure == WriteBudget::Failure::None)) {
+                writeMeta();
+            }
             m_writer->close();
         }
 

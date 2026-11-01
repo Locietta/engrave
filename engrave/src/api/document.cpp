@@ -6,6 +6,7 @@
 #include "engrave/src/api/handles.h"
 #include "engrave/src/api/state.h"
 #include "engrave/src/score/export_options.h"
+#include "global/io/writebudget.h"
 
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/masterscore.h"
@@ -91,6 +92,8 @@ const std::vector<Diagnostic>& Document::diagnostics() const {
 Result<std::vector<std::byte>> Document::export_score(const ExportOptions& options) {
     impl_->engine->check_thread();
     if (impl_->poisoned) return std::unexpected(Error{ErrorCode::Poisoned, "an earlier edit left the document unusable"});
+    if (options.capture.cancelled && options.capture.cancelled())
+        return std::unexpected(Error{ErrorCode::Cancelled, "score capture cancelled"});
     impl_->refresh_fonts();
     const char* name = nullptr;
     switch (options.format) {
@@ -105,6 +108,11 @@ Result<std::vector<std::byte>> Document::export_score(const ExportOptions& optio
         return std::unexpected(Error{ErrorCode::Unsupported,
                                      std::format("the engine does not write {}", to_string(options.format))});
     }
+    if (options.format == Format::Midi
+        && (options.capture.max_bytes || options.capture.max_working_bytes || options.capture.cancelled)) {
+        return std::unexpected(Error{ErrorCode::Unsupported,
+                                     "bounded MIDI capture is not supported by the playback-event builder"});
+    }
     const auto excerpt = excerpt_id_of(*impl_->project->masterScore(), options.score);
     if (!excerpt) return std::unexpected(excerpt.error());
     const auto selected = select_score(*impl_->project->masterScore(), options.score);
@@ -118,9 +126,34 @@ Result<std::vector<std::byte>> Document::export_score(const ExportOptions& optio
     backend.standalone_score = true;
     backend.midi_expand_repeats = options.midi_expand_repeats;
     backend.midi_export_rpns = options.midi_rpns;
-    const std::string data = music::export_native_score(*impl_->engine->context, impl_->project, name, backend, {});
-    const auto* bytes = reinterpret_cast<const std::byte*>(data.data());
-    return std::vector<std::byte>(bytes, bytes + data.size());
+    if (!options.capture.max_bytes && !options.capture.max_working_bytes && !options.capture.cancelled) {
+        const std::string data = music::export_native_score(*impl_->engine->context, impl_->project, name, backend, {});
+        const auto* bytes = reinterpret_cast<const std::byte*>(data.data());
+        return std::vector<std::byte>(bytes, bytes + data.size());
+    }
+    muse::io::WriteBudget budget;
+    budget.output = options.capture.max_bytes;
+    budget.working = options.capture.max_working_bytes;
+    budget.cancelled = &options.capture.cancelled;
+    if (!budget.working && budget.output) {
+        budget.working = default_score_capture_working_bytes(*budget.output);
+    }
+    muse::io::WriteBudgetScope scope(budget);
+    const auto stopped = [&]() -> std::unexpected<Error> {
+        if (budget.callback_error) std::rethrow_exception(budget.callback_error);
+        if (budget.failure == muse::io::WriteBudget::Failure::Cancelled)
+            return std::unexpected(Error{ErrorCode::Cancelled, "score capture cancelled"});
+        return std::unexpected(Error{ErrorCode::ResourceLimit, "score capture byte limit exceeded"});
+    };
+    try {
+        const std::string data = music::export_native_score(*impl_->engine->context, impl_->project, name, backend, {});
+        if (!budget.poll() || !budget.outputSize(data.size())) return stopped();
+        const auto* bytes = reinterpret_cast<const std::byte*>(data.data());
+        return std::vector<std::byte>(bytes, bytes + data.size());
+    } catch (...) {
+        if (budget.failure != muse::io::WriteBudget::Failure::None) return stopped();
+        throw;
+    }
 }
 
 } // namespace engrave

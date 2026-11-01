@@ -5,6 +5,7 @@
 #include <engrave/document.h>
 
 #include <format>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -113,25 +114,60 @@ Result<RenderOutput> Document::render(const RenderOptions& options) {
 }
 
 Result<Positions> Document::positions(PositionKind kind, const ScoreSel& selection) {
+    return positions(kind, selection, {});
+}
+
+Result<Positions> Document::positions(PositionKind kind, const ScoreSel& selection, const CaptureOptions& capture) {
     impl_->engine->check_thread();
     if (impl_->poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
     if (kind != PositionKind::Measure && kind != PositionKind::Segment)
         return fail(ErrorCode::InvalidArgument, "unknown position kind");
+    if (capture.cancelled && capture.cancelled()) return fail(ErrorCode::Cancelled, "position capture cancelled");
     const auto selected = select_score(*impl_->project->masterScore(), selection);
     if (!selected) return std::unexpected(selected.error());
     impl_->refresh_fonts();
     prepare_layout(**selected);
     if ((*selected)->npages() == 0) return fail(ErrorCode::InvalidArgument, "the score has no pages");
-    const auto data = music::score_positions(*selected, kind == PositionKind::Segment);
-    Positions result;
-    result.page_width = data.at("pageSize").at("width").get<double>();
-    result.page_height = data.at("pageSize").at("height").get<double>();
-    for (const auto& el : data.at("elements"))
-        result.elements.push_back({el.at("id").get<int>(), el.at("x").get<double>(), el.at("y").get<double>(),
-                                   el.at("sx").get<double>(), el.at("sy").get<double>(), el.at("page").get<int>()});
-    for (const auto& event : data.at("events"))
-        result.events.push_back({event.at("elid").get<int>(), event.at("position").get<int>()});
-    return result;
+    struct Stop { ErrorCode code; };
+    const auto poll = [&] {
+        if (capture.cancelled && capture.cancelled()) throw Stop{ErrorCode::Cancelled};
+    };
+    try {
+        poll();
+        std::size_t element_count = 0, event_count = 0;
+        std::uint64_t bytes = 0;
+        const auto count = [&](std::size_t amount) {
+            poll();
+            if (amount > std::numeric_limits<std::uint64_t>::max() - bytes
+                || (capture.max_bytes && (bytes > *capture.max_bytes || amount > *capture.max_bytes - bytes)))
+                throw Stop{ErrorCode::ResourceLimit};
+            bytes += amount;
+        };
+        const music::PositionVisitor estimate{
+            [&](int, double, double, double, double, int) { count(sizeof(PositionElement)); ++element_count; },
+            [&](int, int) { count(sizeof(PositionEvent)); ++event_count; }
+        };
+        const bool segments = kind == PositionKind::Segment;
+        const auto [width, height] = music::visit_score_positions(*selected, segments, estimate, false);
+        Positions result;
+        result.page_width = width;
+        result.page_height = height;
+        result.elements.reserve(element_count);
+        result.events.reserve(event_count);
+        const music::PositionVisitor emit{
+            [&](int id, double x, double y, double sx, double sy, int page) {
+                poll();
+                result.elements.push_back({id, x, y, sx, sy, page});
+            },
+            [&](int id, int time) { poll(); result.events.push_back({id, time}); }
+        };
+        music::visit_score_positions(*selected, segments, emit, true, element_count);
+        poll();
+        return result;
+    } catch (const Stop& stop) {
+        return fail(stop.code, stop.code == ErrorCode::Cancelled ? "position capture cancelled"
+                                                               : "position capture byte limit exceeded");
+    }
 }
 
 } // namespace engrave

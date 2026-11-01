@@ -18,12 +18,13 @@ enum struct ErrorCode {
     UnsupportedFormat, // the data matches no format the engine reads
     NotFound,          // a file, template or element does not exist
     StaleHandle,       // the element an id or address names is no longer part of the score
-    ResourceLimit,     // the input exceeds a size limit
+    ResourceLimit,     // an input, capture, or output exceeds a size limit
     Unsupported,       // a valid request the engine does not implement
     Io,                // a file exists but cannot be read
     RevisionConflict,  // an edit expected another revision of the document
     EditRejected,      // the engine refused an operation; the batch was rolled back
     Poisoned,          // an earlier failure left the document unusable; close it
+    Cancelled,         // the caller interrupted an in-progress capture
 };
 
 std::string_view to_string(ErrorCode code) noexcept;
