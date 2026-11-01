@@ -1,0 +1,105 @@
+<?xml version='1.0' encoding='utf-8'?>
+<museScore version="4.70">
+  <programVersion>4.5.0</programVersion>
+  <Score>
+    <eid>A_A</eid>
+    <Division>480</Division>
+    <Style>
+      <showHeader>1</showHeader>
+      <headerFirstPage>1</headerFirstPage>
+      <headerOddEven>1</headerOddEven>
+      <oddHeaderC>$v</oddHeaderC>
+      <evenHeaderC>$v</evenHeaderC>
+      <showFooter>1</showFooter>
+      <footerFirstPage>1</footerFirstPage>
+      <footerOddEven>1</footerOddEven>
+      <oddFooterL>4.5.0</oddFooterL>
+      <oddFooterC>4.7.6</oddFooterC>
+      <evenFooterL>4.5.0</evenFooterL>
+      <evenFooterC>4.7.6</evenFooterC>
+      <headerFontFace>Edwin</headerFontFace>
+      <headerFontSize>9</headerFontSize>
+      <footerFontFace>Edwin</footerFontFace>
+      <footerFontSize>9</footerFontSize>
+      <spatium>1.75</spatium>
+    </Style>
+    <showInvisible>1</showInvisible>
+    <showUnprintable>1</showUnprintable>
+    <showFrames>1</showFrames>
+    <showMargins>0</showMargins>
+    <metaTag name="composer">Composer / arranger</metaTag>
+    <metaTag name="workTitle">Version header fixture</metaTag>
+    <Part id="1">
+      <Staff>
+        <eid>B_B</eid>
+        <StaffType group="pitched">
+          <name>stdNormal</name>
+        </StaffType>
+        <barLineSpan>1</barLineSpan>
+      </Staff>
+      <trackName>Piano</trackName>
+      <Instrument id="piano">
+        <longName>Piano</longName>
+        <shortName>Pno.</shortName>
+        <trackName>Piano</trackName>
+        <instrumentId>keyboard.piano</instrumentId>
+        <Channel>
+          <program value="0" />
+        </Channel>
+      </Instrument>
+    </Part>
+    <Staff id="1">
+      <Measure>
+        <eid>C_C</eid>
+        <voice>
+          <Clef>
+            <concertClefType>G</concertClefType>
+            <transposingClefType>G</transposingClefType>
+            <isHeader>1</isHeader>
+            <eid>D_D</eid>
+          </Clef>
+          <TimeSig>
+            <sigN>4</sigN>
+            <sigD>4</sigD>
+            <eid>E_E</eid>
+          </TimeSig>
+          <Chord>
+            <eid>F_F</eid>
+            <durationType>half</durationType>
+            <Note>
+              <eid>G_G</eid>
+              <Spanner type="Tie">
+                <Tie>
+                  <eid>H_H</eid>
+                </Tie>
+                <next>
+                  <location>
+                    <fractions>1/2</fractions>
+                  </location>
+                </next>
+              </Spanner>
+              <pitch>60</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+          <Chord>
+            <eid>I_I</eid>
+            <durationType>half</durationType>
+            <Note>
+              <eid>J_J</eid>
+              <Spanner type="Tie">
+                <prev>
+                  <location>
+                    <fractions>-1/2</fractions>
+                  </location>
+                </prev>
+              </Spanner>
+              <pitch>60</pitch>
+              <tpc>14</tpc>
+            </Note>
+          </Chord>
+        </voice>
+      </Measure>
+    </Staff>
+  </Score>
+</museScore>

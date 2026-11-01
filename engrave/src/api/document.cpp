@@ -122,9 +122,12 @@ Result<ExportOutput> Document::export_score_with_warnings(const ExportOptions& o
     }
     const bool native = options.format == Format::Mscz || options.format == Format::Mscx;
     if (options.native_version != "5.00" && (!native || options.native_version != "4.70")) {
-        return std::unexpected(Error{ErrorCode::Unsupported,
-                                     std::format("native score version '{}' is not supported for {}",
-                                                 options.native_version, to_string(options.format))});
+        Error error{ErrorCode::Unsupported,
+                    std::format("native score version '{}' is not supported for {}",
+                                options.native_version, to_string(options.format))};
+        error.export_warnings.push_back({"B470_UNSUPPORTED_TARGET", "Cannot write the requested score version.",
+            ExportWarningObject{"request", "version:" + options.native_version}});
+        return std::unexpected(std::move(error));
     }
     if (options.format == Format::Midi
         && (options.capture.max_bytes || options.capture.max_working_bytes || options.capture.cancelled)) {
