@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <filesystem>
+#include <exception>
 #include <fstream>
 #include <map>
 #include <memory>
@@ -742,8 +743,19 @@ AudioRenderResult export_score_audio(EngineAudio& audio, MasterScore* master, co
     // The writer reports completed frames after each successfully encoded block.
     state.midiOutPort.renderedFrames = 0;
 
+    bool cancelled = false;
+    std::exception_ptr callbackError;
+    const auto poll = [&] {
+        // Encoder file writes may originate in C codec callbacks. Unwind only
+        // after leaving the codec, closing the file and idling the graph.
+        if (!cancelled && request.cancelled) {
+            try { cancelled = request.cancelled(); }
+            catch (...) { callbackError = std::current_exception(); cancelled = true; }
+        }
+        return cancelled;
+    };
     io::StreamingFileDevice device(std::filesystem::u8path(request.output_path), request.max_bytes,
-                                   request.max_write_bytes);
+                                   request.max_write_bytes, poll);
     if (!device.open(io::IODevice::WriteOnly)) {
         return fail(AudioRenderResult::Failure::Io,
                     std::string("cannot write ") + audio_format_name(request.format) + " output: '"
@@ -754,7 +766,7 @@ AudioRenderResult export_score_audio(EngineAudio& audio, MasterScore* master, co
     // the source to PlayingOffline, renders in 4096-frame chunks, encodes them
     // and reports the completed frame count after each one.
     soundtrack::SoundTrackWriter writer(device, make_soundtrack_format(request.format, request, output_spec(state.sampleRate)), renderSecs, masterChain,
-        [&state](uint64_t frames) { state.midiOutPort.renderedFrames = frames; }, request.encoder_factory);
+        [&state](uint64_t frames) { state.midiOutPort.renderedFrames = frames; }, request.encoder_factory, poll);
     const Ret writeRet = writer.write();
 
     // Flush before the FileSystem size check below.
@@ -763,6 +775,14 @@ AudioRenderResult export_score_audio(EngineAudio& audio, MasterScore* master, co
     // Leave the graph idle, like AudioContext::doSaveSoundTrack()
     // (audiocontext.cpp:934-940).
     masterChain->setMode(ProcessMode::Idle);
+
+    if (poll()) {
+        std::error_code removeError;
+        std::filesystem::remove(std::filesystem::u8path(request.output_path), removeError);
+        if (removeError) return fail(AudioRenderResult::Failure::Io, "cannot remove cancelled audio output: " + removeError.message());
+        if (callbackError) std::rethrow_exception(callbackError);
+        return fail(AudioRenderResult::Failure::Cancelled, "audio render cancelled");
+    }
 
     if (device.limitExceeded()) {
         std::error_code removeError;

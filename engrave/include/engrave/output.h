@@ -134,6 +134,9 @@ struct RenderOptions {
     // PNG only: leave a transparent page transparent instead of painting white
     // behind it.
     bool transparent = true;
+    // Same callback contract as CaptureOptions. Polled before drawing, between
+    // pages, before encoding, and after encoding. Cancellation returns no output.
+    std::function<bool()> cancelled;
 };
 
 // What render() produced: exactly one of the two is filled, according to the
