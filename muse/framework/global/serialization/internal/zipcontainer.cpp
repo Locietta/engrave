@@ -28,6 +28,7 @@
 #include <zlib.h>
 
 #include "global/io/dir.h"
+#include "global/io/writebudget.h"
 
 #include "log.h"
 
@@ -708,8 +709,19 @@ void ZipContainer::Impl::addEntry(EntryType type, const std::string& fileName, c
         len += (len >> 12) + (len >> 14) + 11;
         int res;
         do {
+            // ByteArray::resize detaches the shared input before allocating the
+            // deflate bound. Charge every attempt before either allocation.
+            if (io::activeWriteBudget
+                && !io::activeWriteBudget->charge(static_cast<uint64_t>(contents.size()) + len)) {
+                status = ZipContainer::FileWriteError;
+                return;
+            }
             data.resize(len);
             res = deflate((uint8_t*)data.data(), &len, (const uint8_t*)contents.constData(), (ulong)contents.size());
+            if (io::activeWriteBudget && !io::activeWriteBudget->poll()) {
+                status = ZipContainer::FileWriteError;
+                return;
+            }
 
             switch (res) {
             case Z_OK:

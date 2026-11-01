@@ -238,6 +238,8 @@ Result<AudioRenderResult> Document::render_audio(const AudioOptions& options, co
     request.master_balance = options.master_balance.value_or(context->defaults.master.balance);
     request.bit_rate = options.bitrate_kbps;
     request.bit_depth = options.bit_depth;
+    request.max_bytes = options.max_bytes;
+    request.max_write_bytes = options.max_write_bytes;
     request.reverb = options.reverb;
     request.reverb_send = options.reverb_send;
     request.tracks.resize(context->tracks.size());

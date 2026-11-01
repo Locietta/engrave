@@ -18,6 +18,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <ctime>
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -405,6 +406,41 @@ TEST(Read, PositionsUsePageLocalCoordinatesOnLaterPages) {
     EXPECT_EQ(document->revision(), 1u);
 }
 
+TEST(Read, PositionCaptureLimitsAndCancellation) {
+    auto document = open_path(corpus_file({".mscx"}));
+    ASSERT_TRUE(document);
+    for (const auto kind : {engrave::PositionKind::Measure, engrave::PositionKind::Segment}) {
+        const auto original = document->positions(kind);
+        ASSERT_TRUE(original);
+        ASSERT_FALSE(original->elements.empty());
+        const auto size = engrave::position_payload_bytes(*original);
+        ASSERT_GT(size, 0u);
+        const auto rejected = document->positions(kind, {}, {.max_bytes = size - 1});
+        expect_code(rejected, ErrorCode::ResourceLimit, "position payload limit");
+        const auto bounded = document->positions(kind, {}, {.max_bytes = size + 1});
+        ASSERT_TRUE(bounded);
+        EXPECT_EQ(bounded->page_width, original->page_width);
+        EXPECT_EQ(bounded->page_height, original->page_height);
+        ASSERT_EQ(bounded->elements.size(), original->elements.size());
+        ASSERT_EQ(bounded->events.size(), original->events.size());
+        for (std::size_t i = 0; i < bounded->elements.size(); ++i) {
+            const auto& a = bounded->elements[i];
+            const auto& b = original->elements[i];
+            EXPECT_EQ(a.id, b.id); EXPECT_EQ(a.page, b.page);
+            EXPECT_DOUBLE_EQ(a.x, b.x); EXPECT_DOUBLE_EQ(a.y, b.y);
+            EXPECT_DOUBLE_EQ(a.sx, b.sx); EXPECT_DOUBLE_EQ(a.sy, b.sy);
+        }
+        for (std::size_t i = 0; i < bounded->events.size(); ++i) {
+            EXPECT_EQ(bounded->events[i].elid, original->events[i].elid);
+            EXPECT_EQ(bounded->events[i].position, original->events[i].position);
+        }
+        int checks = 0;
+        const auto cancelled = document->positions(kind, {}, {.cancelled = [&] { return ++checks == 3; }});
+        expect_code(cancelled, ErrorCode::Cancelled, "cancelled position capture");
+        EXPECT_EQ(checks, 3);
+    }
+}
+
 TEST(Read, ExcerptPositionsMatchTheLegacyWriterAndSelectionErrors) {
     const auto it = std::ranges::find_if(g_corpus, [](const auto& path) { return path.filename() == "linked_parts.mscx"; });
     ASSERT_NE(it, g_corpus.end());
@@ -522,6 +558,13 @@ TEST(Read, ExcerptExportsReopenAsIndependentScores) {
             const std::string xml(reinterpret_cast<const char*>(exported->data()), exported->size());
             EXPECT_EQ(xml.find("<linkedTo>"), std::string::npos)
                 << "this one-staff excerpt must not refer to master-score elements";
+            const auto bounded = document->export_score({.format = format, .score = selection,
+                .capture = {.max_bytes = exported->size() + 1}});
+            ASSERT_TRUE(bounded);
+            EXPECT_EQ(*bounded, *exported);
+            expect_code(document->export_score({.format = format, .score = selection,
+                .capture = {.max_bytes = exported->size() - 1}}), ErrorCode::ResourceLimit,
+                "standalone excerpt output limit");
         }
         const auto reopened = g_engine->open(*exported, {.format = format});
         ASSERT_TRUE(reopened) << reopened.error().message;
@@ -578,6 +621,81 @@ TEST(Read, MscxMasterExportRetainsStyle) {
     ASSERT_TRUE(outline);
     ASSERT_EQ(outline->excerpts.size(), original->excerpts.size());
     EXPECT_EQ(outline->excerpts.front().name, original->excerpts.front().name);
+}
+
+TEST(Read, ScoreCaptureLimitsAndCancellation) {
+    auto document = open_path(corpus_file({".mscx"}));
+    ASSERT_TRUE(document);
+    for (const auto format : {engrave::Format::Mscx, engrave::Format::Mscz,
+                              engrave::Format::MusicXml, engrave::Format::Mxl}) {
+        SCOPED_TRACE(engrave::to_string(format));
+        auto tick = std::time(nullptr) / 2;
+        auto original = document->export_score({.format = format});
+        ASSERT_TRUE(original);
+        ASSERT_FALSE(original->empty());
+        auto bounded = document->export_score({.format = format, .capture = {.max_bytes = original->size() + 1}});
+        // ZIP stores the current time in two-second units. Retry a pair that
+        // happened to straddle that boundary, so identical writers compare
+        // exactly without masking any archive bytes.
+        for (int attempt = 0; attempt < 2 && (format == engrave::Format::Mscz || format == engrave::Format::Mxl)
+                              && tick != std::time(nullptr) / 2; ++attempt) {
+            tick = std::time(nullptr) / 2;
+            original = document->export_score({.format = format});
+            ASSERT_TRUE(original);
+            bounded = document->export_score({.format = format, .capture = {.max_bytes = original->size() + 1}});
+        }
+        ASSERT_TRUE(bounded) << bounded.error().message;
+        EXPECT_EQ(*bounded, *original);
+        const auto rejected = document->export_score({.format = format, .capture = {.max_bytes = original->size() - 1}});
+        expect_code(rejected, ErrorCode::ResourceLimit, "score output limit");
+        const auto workspace = document->export_score({.format = format, .capture = {.max_working_bytes = 64}});
+        expect_code(workspace, ErrorCode::ResourceLimit, "score workspace limit");
+        int checks = 0;
+        const auto cancelled = document->export_score({.format = format,
+            .capture = {.cancelled = [&] { return ++checks == 20; }}});
+        expect_code(cancelled, ErrorCode::Cancelled, "cancelled score capture");
+        EXPECT_EQ(checks, 20);
+    }
+    expect_code(document->export_score({.format = engrave::Format::Midi, .capture = {.max_bytes = 64}}),
+                ErrorCode::Unsupported, "bounded MIDI capture");
+    int checks = 0;
+    EXPECT_THROW((void)document->export_score({.format = engrave::Format::Mscz,
+        .capture = {.cancelled = [&]() -> bool {
+            if (++checks == 20) throw std::runtime_error("capture callback failure");
+            return false;
+        }}}), std::runtime_error);
+    EXPECT_EQ(checks, 20);
+    EXPECT_TRUE(document->export_score({.format = engrave::Format::Mscz}));
+}
+
+TEST(Read, LargeScoreCaptureStopsBeforeMaterializingTheOutput) {
+    auto document = open_path(corpus_file({".mscx"}));
+    ASSERT_TRUE(document);
+    master_of(*document).setMetaTag(u"workTitle", muse::String::fromStdString(std::string(512 * 1024, 'x')));
+    const auto rejected = document->export_score({.format = engrave::Format::Mscx,
+                                                   .capture = {.max_bytes = 1024}});
+    expect_code(rejected, ErrorCode::ResourceLimit, "large score output limit");
+    const auto success = document->export_score({.format = engrave::Format::Mscx});
+    ASSERT_TRUE(success);
+    ASSERT_GT(success->size(), 512u * 1024u);
+    const auto bounded = document->export_score({.format = engrave::Format::Mscx,
+                                                 .capture = {.max_bytes = success->size() + 1}});
+    ASSERT_TRUE(bounded);
+    EXPECT_EQ(*bounded, *success);
+    auto tick = std::time(nullptr) / 2;
+    auto archive = document->export_score({.format = engrave::Format::Mscz});
+    ASSERT_TRUE(archive);
+    auto bounded_archive = document->export_score({.format = engrave::Format::Mscz,
+        .capture = {.max_bytes = archive->size() + 1, .max_working_bytes = 16 * 1024 * 1024}});
+    for (int attempt = 0; attempt < 2 && tick != std::time(nullptr) / 2; ++attempt) {
+        tick = std::time(nullptr) / 2;
+        archive = document->export_score({.format = engrave::Format::Mscz});
+        ASSERT_TRUE(archive);
+        bounded_archive = document->export_score({.format = engrave::Format::Mscz,
+            .capture = {.max_bytes = archive->size() + 1, .max_working_bytes = 16 * 1024 * 1024}});
+    }
+    ASSERT_TRUE(bounded_archive);
+    EXPECT_EQ(*bounded_archive, *archive);
 }
 
 TEST(Read, StandaloneExcerptKeepsLinksBetweenItsOwnStaves) {

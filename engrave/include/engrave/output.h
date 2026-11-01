@@ -2,6 +2,9 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <limits>
+#include <optional>
 #include <string_view>
 #include <vector>
 
@@ -23,12 +26,36 @@ enum struct Format {
 
 std::string_view to_string(Format format) noexcept;
 
+// Default cumulative score-writer allowance when max_bytes is set without an
+// explicit max_working_bytes. Saturates instead of wrapping on large inputs.
+inline constexpr std::uint64_t default_score_capture_working_bytes(std::uint64_t max_bytes) noexcept {
+    constexpr std::uint64_t base = 1024 * 1024;
+    constexpr auto maximum = std::numeric_limits<std::uint64_t>::max();
+    return max_bytes > (maximum - base) / 128 ? maximum : base + max_bytes * 128;
+}
+
+// Limits for a capture. max_bytes counts the returned score bytes or the
+// element/event payload of Positions; an empty optional imposes no limit.
+// The callback returns true to stop and is called on the document's thread;
+// it must not call back into the engine. Exceptions from it reach the caller.
+struct CaptureOptions {
+    std::optional<std::uint64_t> max_bytes;
+    std::function<bool()> cancelled;
+    // Optional cumulative working-buffer allowance for score exports. When a
+    // score byte limit is set and this is unset, the default is 1 MiB plus 128
+    // times that limit (saturated at UINT64_MAX). It may reject an export whose
+    // final compressed bytes would fit. See Document::export_score for what is
+    // and is not covered by the workspace estimate.
+    std::optional<std::uint64_t> max_working_bytes;
+};
+
 struct ExportOptions {
     Format format = Format::Mscz;
     bool midi_expand_repeats = true;
     bool midi_rpns = true;
     // Master by default; an excerpt is exported as an independent score.
     ScoreSel score;
+    CaptureOptions capture;
 };
 
 // Exact position export in raw 1200-DPI layout units. Coordinates are page-local;
@@ -52,6 +79,19 @@ struct Positions {
     std::vector<PositionElement> elements;
     std::vector<PositionEvent> events;
 };
+
+// Dynamic result payload (not allocator overhead or the fixed Positions
+// object). The same accounting is used by CaptureOptions::max_bytes.
+inline std::uint64_t position_payload_bytes(const Positions& positions) noexcept {
+    return static_cast<std::uint64_t>(positions.elements.size()) * sizeof(PositionElement)
+           + static_cast<std::uint64_t>(positions.events.size()) * sizeof(PositionEvent);
+}
+
+// Index storage used by a bounded position capture; see Document::positions
+// for the platform and allocator assumptions behind this estimate.
+inline constexpr std::uint64_t position_capture_index_bound(std::uint64_t max_bytes) noexcept {
+    return (max_bytes / sizeof(PositionElement)) * (sizeof(void*) + sizeof(std::size_t));
+}
 
 // What render() draws.
 enum struct RenderFormat {

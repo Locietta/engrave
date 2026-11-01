@@ -34,6 +34,7 @@ std::string_view to_string(ErrorCode code) noexcept {
     case ErrorCode::RevisionConflict: return "RevisionConflict";
     case ErrorCode::EditRejected: return "EditRejected";
     case ErrorCode::Poisoned: return "Poisoned";
+    case ErrorCode::Cancelled: return "Cancelled";
     }
     return "Unknown";
 }
