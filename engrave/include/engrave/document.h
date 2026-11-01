@@ -44,8 +44,17 @@ struct Document {
     // in the writer, but cannot interrupt layout or an in-progress deflate call.
     // Bounded or cancellable MIDI is Unsupported because MIDI builds its full
     // playback-event graph before writing. Throws std::runtime_error if the
-    // engine's writer fails.
+    // engine's writer fails. The restricted 4.70 writer also charges 64 times
+    // its intermediate score and style XML sizes before parsing; this can
+    // reject a capture whose final bytes would fit. Parsing itself cannot be
+    // interrupted by the cancellation callback.
     Result<std::vector<std::byte>> export_score(const ExportOptions& options);
+
+    // Returns warnings along with the bytes. The compatibility writer refuses
+    // content it cannot convert, returning Unsupported with export_warnings on
+    // the Error. The byte-only overload refuses any successful export with
+    // warnings as well, so a caller cannot accidentally discard them.
+    Result<ExportOutput> export_score_with_warnings(const ExportOptions& options);
 
     // Exact legacy measurePositions / segmentPositions data, including expanded
     // repeat event times. Selection errors are the same as outline(); Poisoned
