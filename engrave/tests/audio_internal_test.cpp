@@ -138,11 +138,16 @@ TEST(AudioInternal, BudgetFailureRemovesTheIntermediateAndAllowsRecovery) {
     music::AudioRenderRequest request;
     const auto outputUtf8 = output.generic_u8string();
     request.output_path.assign(outputUtf8.begin(), outputUtf8.end());
-    request.max_bytes = original.size() / 2;
-    const auto failed = music::export_score_audio(audio, master, request);
-    EXPECT_FALSE(failed.ok);
-    EXPECT_EQ(failed.failure, music::AudioRenderResult::Failure::ResourceLimit);
-    EXPECT_FALSE(std::filesystem::exists(output));
+    request.max_bytes = 64;
+    for (const auto format : {music::EngineAudioFormat::Wav, music::EngineAudioFormat::Flac,
+                              music::EngineAudioFormat::Ogg, music::EngineAudioFormat::Mp3,
+                              music::EngineAudioFormat::Aac}) {
+        request.format = format;
+        const auto failed = music::export_score_audio(audio, master, request);
+        EXPECT_FALSE(failed.ok);
+        EXPECT_EQ(failed.failure, music::AudioRenderResult::Failure::ResourceLimit);
+        EXPECT_FALSE(std::filesystem::exists(output));
+    }
     EXPECT_EQ(render(), original);
 }
 

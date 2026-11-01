@@ -765,8 +765,13 @@ AudioRenderResult export_score_audio(EngineAudio& audio, MasterScore* master, co
     masterChain->setMode(ProcessMode::Idle);
 
     if (device.limitExceeded()) {
-        std::error_code ignored;
-        std::filesystem::remove(std::filesystem::u8path(request.output_path), ignored);
+        std::error_code removeError;
+        std::filesystem::remove(std::filesystem::u8path(request.output_path), removeError);
+        if (removeError) {
+            return fail(AudioRenderResult::Failure::Io,
+                        "cannot remove over-budget audio output: '" + request.output_path + "': "
+                        + removeError.message());
+        }
         return fail(AudioRenderResult::Failure::ResourceLimit, "audio intermediate byte limit exceeded");
     }
 
