@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #include "offlinerendersession.h"
+#include "offlinetiming.h"
 #include "nodes/automationcontrolnode.h"
 #include "nodes/signalnode.h"
 using namespace muse;
@@ -24,6 +25,7 @@ OfflineRenderSession::OfflineRenderSession(IAudioFactory& factory, const OutputS
 
 OfflineRenderSession::~OfflineRenderSession()
 {
+    OfflineTimer timer(OfflineTiming::current().teardown);
     m_master->setMode(ProcessMode::Idle);
     m_master->clear();
     m_master->disconnectAll();

@@ -20,6 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "../offlinecancellation.h"
 #include "aacencoder.h"
 
 #include <algorithm>
@@ -167,6 +168,7 @@ size_t AacEncoder::encode(samples_t samplesPerChannel, const float* input)
     const size_t totalSamples = samplesPerChannel * static_cast<size_t>(channels);
 
     while (inputOffset < totalSamples) {
+        if (OfflineCancellation::requested()) return 0;
         const size_t samplesToProcess = std::min(samplesPerFrame, totalSamples - inputOffset);
 
         for (size_t i = 0; i < samplesToProcess; ++i) {
@@ -270,6 +272,7 @@ muse::Ret AacEncoder::end()
     inArgs.numInSamples = -1;
 
     while (true) {
+        if (OfflineCancellation::requested()) return make_ret(Ret::Code::Cancel);
         AACENC_ERROR err = aacEncEncode(m_handler->handle, &inBufDesc, &outBufDesc, &inArgs, &outArgs);
 
         if (err == AACENC_ENCODE_EOF) {

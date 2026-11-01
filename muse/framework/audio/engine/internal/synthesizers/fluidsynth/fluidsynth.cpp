@@ -20,6 +20,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "audio/engine/internal/offlinecancellation.h"
+#include "audio/engine/internal/offlinetiming.h"
 #include "fluidsynth.h"
 
 #include <fluidsynth.h>
@@ -156,6 +158,7 @@ Ret FluidSynth::init(const OutputSpec& spec)
 
 void FluidSynth::createFluidInstance()
 {
+    OfflineTimer timer(OfflineTiming::current().create);
     m_fluid->synth = new_fluid_synth(m_fluid->settings);
 
     fluid_sfloader_t* sfloader = new_fluid_sfloader(loadSoundFont, delete_fluid_sfloader);
@@ -302,6 +305,7 @@ void FluidSynth::setOutputSpec(const OutputSpec& spec)
 
 Ret FluidSynth::addSoundFonts(const std::vector<io::path_t>& sfonts)
 {
+    OfflineTimer timer(OfflineTiming::current().fonts);
     IF_ASSERT_FAILED(m_fluid->synth) {
         return make_ret(Err::SynthNotInited);
     }
@@ -345,6 +349,7 @@ void FluidSynth::setupSound(const PlaybackSetupData& setupData)
     fluid_synth_activate_key_tuning(m_fluid->synth, 0, 0, "standard", NULL, true);
 
     auto setupChannel = [this](const midi::channel_t channelIdx, const midi::Program& program) {
+        if (OfflineCancellation::requested()) return;
         fluid_synth_set_interp_method(m_fluid->synth, channelIdx, FLUID_INTERP_DEFAULT);
         fluid_synth_pitch_wheel_sens(m_fluid->synth, channelIdx, 24);
         fluid_synth_bank_select(m_fluid->synth, channelIdx, program.bank);
@@ -422,6 +427,7 @@ samples_t FluidSynth::process(float* buffer, samples_t samplesPerChannel)
     samples_t sampleOffset = 0;
 
     for (auto it = sequences.cbegin(); it != sequences.cend(); ++it) {
+        if (OfflineCancellation::requested()) return 0;
         samples_t durationInSamples = samplesPerChannel - sampleOffset;
 
         auto nextIt = std::next(it);
@@ -446,11 +452,13 @@ samples_t FluidSynth::process(float* buffer, samples_t samplesPerChannel)
 
 bool FluidSynth::processSequence(const FluidSequencer::EventSequence& sequence, const samples_t samples, float* buffer)
 {
+    OfflineCancellation::SynthesisScope synthesisScope;
     if (!sequence.empty()) {
         m_tuning.reset();
     }
 
     for (const FluidSequencer::EventType& event : sequence) {
+        if (OfflineCancellation::requested()) return false;
         handleEvent(std::get<midi::Event>(event));
     }
 
@@ -460,11 +468,18 @@ bool FluidSynth::processSequence(const FluidSequencer::EventSequence& sequence, 
         return true;
     }
 
-    int result = fluid_synth_write_float(m_fluid->synth, samples,
-                                         buffer, 0, FLUID_AUDIO_CHANNELS_COUNT,
-                                         buffer, 1, FLUID_AUDIO_CHANNELS_COUNT);
-
-    return result == FLUID_OK;
+    // FluidSynth retains its 64-frame internal buffer across calls. Slice only
+    // the sink copy, leaving event timing and upstream 4096-frame DSP unchanged.
+    for (samples_t offset = 0; offset < samples;) {
+        if (OfflineCancellation::requested()) return false;
+        const samples_t count = std::min<samples_t>(256, samples - offset);
+        float* out = buffer + offset * FLUID_AUDIO_CHANNELS_COUNT;
+        if (fluid_synth_write_float(m_fluid->synth, count,
+                                   out, 0, FLUID_AUDIO_CHANNELS_COUNT,
+                                   out, 1, FLUID_AUDIO_CHANNELS_COUNT) != FLUID_OK) return false;
+        offset += count;
+    }
+    return true;
 }
 
 void FluidSynth::updateExpressionLevels()

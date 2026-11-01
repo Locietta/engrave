@@ -100,10 +100,16 @@ protected:
             }
         }
 
-        m_stream.write(reinterpret_cast<const char*>(data), static_cast<std::streamsize>(len));
-        if (!m_stream) {
-            setError(static_cast<int>(io::Err::FSWriteError), "cannot write output");
-            return 0;
+        // Bound each file write, including writes issued inside codec flushes.
+        for (size_t offset = 0; offset < len;) {
+            if (offset && m_cancelled && m_cancelled()) return 0;
+            const size_t count = std::min<size_t>(4096, len - offset);
+            m_stream.write(reinterpret_cast<const char*>(data + offset), static_cast<std::streamsize>(count));
+            if (!m_stream) {
+                setError(static_cast<int>(io::Err::FSWriteError), "cannot write output");
+                return 0;
+            }
+            offset += count;
         }
 
         m_streamPos = pos() + len;

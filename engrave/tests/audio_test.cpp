@@ -682,3 +682,20 @@ TEST(RuntimeAssets, SoundFontReplacementChangesTheNextRenderAndIsAtomic) {
         EXPECT_EQ(mix_after->tracks[i].mix.solo, mix_before->tracks[i].mix.solo);
     }
 }
+
+TEST(Audio, SoundFontABAIsByteIdentical) {
+    if (g_soundfonts.size() < 2) GTEST_SKIP() << "requires two distinct SoundFonts";
+    auto document = detail::open_score(detail::audio_score());
+    ASSERT_TRUE(document);
+    struct Restore { ~Restore() { music::test::g_engine->set_soundfonts(g_soundfonts); } } restore;
+    ASSERT_TRUE(music::test::g_engine->set_soundfonts({g_soundfonts[0]}));
+    const auto a = detail::render_audio(*document, {});
+    ASSERT_FALSE(a.bytes.empty());
+    ASSERT_TRUE(music::test::g_engine->set_soundfonts({g_soundfonts[1]}));
+    const auto b = detail::render_audio(*document, {});
+    ASSERT_FALSE(b.bytes.empty());
+    ASSERT_TRUE(music::test::g_engine->set_soundfonts({g_soundfonts[0]}));
+    const auto again = detail::render_audio(*document, {});
+    EXPECT_EQ(a.bytes, again.bytes);
+    EXPECT_NE(a.bytes, b.bytes);
+}
