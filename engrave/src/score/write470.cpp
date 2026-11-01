@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #include "write470.h"
+#include <engrave/testing/write470.h>
 
 #include <algorithm>
 #include <array>
@@ -35,6 +36,15 @@
 #include "global/io/buffer.h"
 #include "global/io/writebudget.h"
 
+namespace engrave::testing {
+namespace { thread_local Write470Progress progress; }
+Write470Progress write470_progress() noexcept {
+    auto result = progress;
+    if (auto* budget = muse::io::activeWriteBudget) result.working_bytes = budget->charged;
+    return result;
+}
+}
+
 namespace engrave::write470 {
 namespace {
 using namespace mu::engraving;
@@ -62,6 +72,7 @@ bool style_matches(pugi::xml_node node, const StyleEntry& entry) {
 }
 
 void poll() {
+    if (testing::progress.stage != testing::Write470Progress::Stage::None) ++testing::progress.units;
     if (muse::io::activeWriteBudget && !muse::io::activeWriteBudget->poll())
         throw muse::io::WriteBudgetStop{};
 }
@@ -96,9 +107,15 @@ class XmlOutput final : public pugi::xml_writer {
 public:
     explicit XmlOutput(muse::io::IODevice& output) : output_(output) {}
     void write(const void* data, std::size_t size) override {
-        poll();
-        if (output_.write(static_cast<const std::uint8_t*>(data), size) != size)
-            throw muse::io::WriteBudgetStop{};
+        // Bound callback latency even if the XML library supplies a large span.
+        const auto* bytes = static_cast<const std::uint8_t*>(data);
+        while (size) {
+            poll();
+            const auto chunk = std::min<std::size_t>(size, 4096);
+            if (output_.write(bytes, chunk) != chunk) throw muse::io::WriteBudgetStop{};
+            bytes += chunk;
+            size -= chunk;
+        }
     }
 private:
     muse::io::IODevice& output_;
@@ -576,6 +593,12 @@ Result<ExportOutput> export_score(const music::EngineContext& context, const mus
     if (budget) budget->output.reset();
     const std::string source = music::export_native_score(context, project, "mscx", options, {});
     if (budget) budget->output = restore.limit;
+    struct ProgressScope {
+        testing::Write470Progress previous = testing::progress;
+        ProgressScope() { testing::progress = {testing::Write470Progress::Stage::Converting}; }
+        ~ProgressScope() { testing::progress = previous; }
+    } progress_scope;
+    poll();
     charge_xml(source.size());
     pugi::xml_document xml;
     if (!xml.load_buffer(source.data(), source.size()))
@@ -762,6 +785,7 @@ Result<ExportOutput> export_score(const music::EngineContext& context, const mus
     OutputBuffer xml_buffer(&xml_data, format == "mscx");
     xml_buffer.open(muse::io::IODevice::WriteOnly);
     XmlOutput writer(xml_buffer);
+    testing::progress = {testing::Write470Progress::Stage::Serializing};
     xml.save(writer, "  ", pugi::format_default, pugi::encoding_utf8);
     xml_buffer.close();
     muse::ByteArray data;
