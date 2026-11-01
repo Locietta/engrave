@@ -146,6 +146,7 @@ std::string excerpt_name_of(const music::ScoreProject& project, int excerpt_id) 
 
 Result<AudioTracks> Document::audio_tracks(const ScoreSel& selection) {
     impl_->engine->check_thread();
+    if (impl_->poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
     MasterScore& master = *impl_->project->masterScore();
     const Result<int> excerpt_id = excerpt_id_of(master, selection);
     if (!excerpt_id) return std::unexpected(excerpt_id.error());
@@ -175,6 +176,7 @@ Result<AudioTracks> Document::audio_tracks(const ScoreSel& selection) {
 
 Result<AudioRenderResult> Document::render_audio(const AudioOptions& options, const ByteSink& sink) {
     impl_->engine->check_thread();
+    if (impl_->poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
     EngineState& engine = *impl_->engine;
     MasterScore& master = *impl_->project->masterScore();
     const Result<int> excerpt_id = excerpt_id_of(master, options.score);
