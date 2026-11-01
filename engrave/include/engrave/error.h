@@ -8,10 +8,10 @@
 
 namespace engrave {
 
-// Failures the immediate caller can act on. They are returned as Result<T>.
-// Failures inside the engine that no caller can repair at the call site
-// (an exporter that produces nothing, a broken runtime) are thrown, and
-// contract violations (a call from another thread, a second Engine) abort.
+// Failures the immediate caller can act on are returned as Result<T>. Engine
+// exceptions during an edit can become EditRejected after successful recovery;
+// allocation, callbacks, output failures and failed recovery can throw.
+// Contract violations (a call from another thread, a second Engine) abort.
 enum struct ErrorCode {
     InvalidArgument,   // an option the caller passed is invalid
     InvalidInput,      // the score data is malformed or the importer rejected it
@@ -20,7 +20,7 @@ enum struct ErrorCode {
     StaleHandle,       // the element an id or address names is no longer part of the score
     ResourceLimit,     // an input, capture, or output exceeds a size limit
     Unsupported,       // a valid request the engine does not implement
-    Io,                // a file exists but cannot be read
+    Io,                // a file I/O operation failed
     RevisionConflict,  // an edit expected another revision of the document
     EditRejected,      // the engine refused an operation; the batch was rolled back
     Poisoned,          // an earlier failure left the document unusable; close it
