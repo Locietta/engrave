@@ -26,6 +26,8 @@ inline constexpr auto& unsupported_style = unsupported_construct;
 
 struct ExportWarningObject {
     std::string kind;
+    // Source EID, documented composite key, or explicitly non-EID locator:...
+    // (see WRITE470.md). B470 producers require both nonempty fields.
     std::string id;
     bool operator==(const ExportWarningObject&) const = default;
 };
