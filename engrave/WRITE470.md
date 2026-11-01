@@ -23,15 +23,15 @@ writes a 4.70 style and header, and produces an MSCX or an MSCZ containing
 that MSCX. It accepts the checked piano, pitched standard staff, treble
 clef, 4/4, whole/half-note structures, bounded ties/pedal and ordinary braces
 described below. Other serialized nodes, attributes,
-instrument IDs and enum values are refused. It rejects excerpts, custom chord
+instrument IDs and enum values are refused. It preserves the frozen linked Flute excerpt and rejects custom chord
 lists and non-generated automation. A complete scan of the serialized score
 also identifies the named 5.00-only features, including inside structures that
 are independently refused.
 
 Styles are especially conservative. `style470_catalog.inc` records the entire
 5.00 style serialization of the independently checked 4.70 control score, and
-the style names produced by the 4.7.6 writer. This slice refuses any unknown or
-changed style value, including values that 4.70 might ultimately express. It
+the style names produced by the 4.7.6 writer. Unknown or changed style values are refused except for the individually
+bounded B5 mappings below. It
 copies the known 4.70 style fields, sets `defaultsVersion` to 470, and omits
 only the captured neutral 5.00-only fields. This is a guard, not a general
 style conversion. It must be broadened with individually specified compatibility
@@ -59,8 +59,8 @@ not a successful projection. Additional unmapped content produces
 | `B470_UNSUPPORTED_TARGET` | Cannot write the requested score version. | `request`, `version:<requested value>`; refuses output |
 
 The old `export_warning_code` C++ names remain aliases where applicable;
-all values now use the frozen identities. Excerpts, automation, custom chord
-lists, styles and other unmapped constructs use `B470_UNSUPPORTED_FEATURE`.
+all values now use the frozen identities. Automation, custom chord
+lists, unmapped styles and other unmapped constructs use `B470_UNSUPPORTED_FEATURE`.
 Detailed refusal reasons remain in `Error::message`.
 
 B2b additionally converts the checked half-note ties (including paired pitch
@@ -70,18 +70,38 @@ Unknown connection properties remain guarded and refuse output. Part names
 and numeric part IDs are retained; musical EIDs are copied. The 4.70 part
 format has no part EID and the frozen preservation fixture does not demand it.
 
-Stave-sharing labels now reach the DOM and the default 5.00 writer, including
-reopen. Downgrade identifies each label, but the genuine 5.00 fixture also
-contains non-neutral style defaults outside the checked catalog, so that
-fixture still refuses output with additional unsupported-feature warnings.
-Shared parts, page locks, group brackets, instrument group names, excerpts,
-other rhythms/instruments and custom styles still require real conversions.
+B5 converts the five frozen degradation families in `convert_degradations`:
+SharedPart becomes an ordinary Part with its staff, visibility and content;
+shared references are omitted. Labels, page-lock ranges and group brackets
+are omitted with their frozen source identities. Ordinary braces remain.
+InstrumentLabel group overrides are omitted once per owning part; ordinary
+long/short names are translated to the legacy Instrument representation.
+Only identical warning objects are deduplicated; unsupported properties still
+refuse the entire export, retaining detailed reasons in the error message.
+
+The frozen excerpt uses a pitched flute, quarter notes, half rests, C-major
+key signatures and same-voice same-measure ties. Nested scores undergo the
+same structural, connection and full-style checks as their master. Links on
+staff and musical objects (including ties) retain their source EIDs. All
+master/excerpt note graphs are checked for unequal-pitch ties before writing.
+This does not establish general instrument/rhythm/spanner compatibility.
+
+The five 5.00-only style differences have explicit projections:
+`windsNameByGroup` and `vocalsNameByGroup` boolean values are omitted with
+the group-name behavior; ordinary instrument names are retained.
+`lyricsStackingOrder`, `maskSlurs` and `maskTies` boolean values may be omitted
+only when the affected lyrics/slurs/ties are absent (or the catalog's neutral
+value already matches). Excerpts also copy legacy `headerFirstPage` boolean
+values, empty header/footer text and the legacy `$C` center-footer macro.
+All other catalog, uniqueness, attribute and value checks remain in place.
+The complete style of each excerpt is validated independently.
 
 `tests/test_write470_oracle.py` checks the parent's frozen `tests/phase_b`
 manifest and all 87 preserved oracle files, then compares complete oracle
-semantics for seven cases in both formats and an actual paired pitch edit.
-It also rejects an actual one-end pitch edit. The oracle dump cannot prove
-EIDs or brace properties: independent old-reader re-export must check those.
+semantics and warning arrays for thirteen successful cases in both formats,
+an actual paired pitch edit and the two refused cases. No warnings are
+filtered. The oracle dump cannot prove EIDs, links or brace properties:
+independent old-reader re-export must check those at phase acceptance.
 
 The control fixture in `tests/data/write470/minimal.mscx` is the preserved
 4.70 header fixture, SHA-256
@@ -103,12 +123,11 @@ default and explicit 5.00 exports, and explains the only
 normalizations: ZIP timestamps and a later build's revision stamp. At the same
 revision it hashes the raw ZIP after zeroing timestamps.
 
-Remaining work includes the actual 4.7.6 writer port and conversion rules for
-other rhythms, rests, non-piano instruments and staff types, custom and newer
-styles, excerpts and links, further ties and spanners, layout and image data, automation,
-shared parts, further stave-sharing label/style mappings, page locks, and group brackets. Every new
-accepted case needs independent expected semantics and a 4.7.6 oracle test;
-the old reader's successful open alone does not validate a 5.00 body.
+Remaining work includes general rhythms/instruments, arbitrary styles,
+further ties and spanners, layout/image data, automation and custom chords.
+Every newly accepted mapping needs independent semantics and oracle evidence.
+The following B2b evidence is historical; its refused B5 cases are superseded
+by the B5 implementation and its separately retained execution report.
 
 ## B2b executed evidence
 
@@ -138,3 +157,24 @@ matched. Label-bearing 5.00 scores deliberately change: both labels now
 survive export/reopen. No golden was updated. Full read-suite runs against the
 local historical corpus have the same three pre-4.6 fixture failures on the
 baseline and candidate; the focused tests above are separately executed.
+
+## B5 executed evidence
+
+Windows and physical Linux compiled with `engrave_tests=y`. On each, the
+focused Export470 suite passed 9/9 and the public API suite passed 21/21.
+All thirteen successful frozen cases matched complete preserved-oracle JSON
+and exact warning arrays in MSCX and MSCZ: 26 Linux and 26 Windows outputs.
+This includes preservation of `excerpts` with no warnings and all five
+warned degradations. The actual paired edit also matched its oracle JSON;
+the one-end edit and unsupported target refused with exact frozen warnings.
+The runner verified all 87 SHA256SUMS entries and the dumper digest, and
+limited each oracle subprocess's LD_LIBRARY_PATH to the preserved `lib/`.
+
+A Windows default-5.00 label-bearing export matched the baseline after only
+the documented programRevision normalization (`542d326` versus `56aabbb`);
+raw cross-build bytes therefore differ in that build stamp. Default versus
+explicit 5.00 bytes matched in both formats in the focused tests. The 5.00
+writer source was not changed. No golden or frozen expectation was changed.
+The parent owns the full engine gate, golden comparison, old-reader identity
+and brace-association checks, host/schema fixes, Terra re-review and final
+tag/pin. These focused results do not establish full phase-B acceptance.
