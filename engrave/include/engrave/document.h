@@ -33,13 +33,34 @@ struct Document {
     // Unsupported for a format the engine does not write (see Capabilities).
     // Score selection errors are the same as outline(). Excerpts are standalone
     // scores in every supported format, including MSCX and compressed MusicXML.
-    // Throws std::runtime_error if the engine's writer fails.
+    // With capture limits, the output buffer is capped while it grows and
+    // intermediate XML buffers and archive compression are charged against the
+    // cumulative working allowance. A conservative estimate for those buffers
+    // is three times that allowance plus twice max_bytes and 16 KiB, assuming
+    // vector capacity does not exceed twice its requested size and an old
+    // allocation may coexist with a new one. This excludes layout/repeat lists,
+    // archive metadata, encoder internals, and temporary strings used by the
+    // writer, so it is not a total-process memory bound. Cancellation is polled
+    // in the writer, but cannot interrupt layout or an in-progress deflate call.
+    // Bounded or cancellable MIDI is Unsupported because MIDI builds its full
+    // playback-event graph before writing. Throws std::runtime_error if the
+    // engine's writer fails.
     Result<std::vector<std::byte>> export_score(const ExportOptions& options);
 
     // Exact legacy measurePositions / segmentPositions data, including expanded
     // repeat event times. Selection errors are the same as outline(); Poisoned
     // after failed recovery. Ensures layout before reading; does not edit revision.
     Result<Positions> positions(PositionKind kind, const ScoreSel& score = {});
+    // Bounded capture of the dynamic element/event payload. A counting pass
+    // checks the limit before allocating the result; its second pass uses an
+    // additional pointer-plus-size_t index for each element. Reserve at most
+    // position_capture_index_bound(max_bytes)
+    // bytes for that index, plus fixed vector/allocator overhead. This assumes
+    // the platform's pointer and size_t have the same alignment and that vector
+    // reserve allocates the requested count; it is not a bound on layout, the
+    // repeat list, or general process memory. Cancellation is checked at each
+    // position and event, but cannot interrupt layout or repeat-list creation.
+    Result<Positions> positions(PositionKind kind, const ScoreSel& score, const CaptureOptions& capture);
 
     // How many pages the selected score has. NotFound, StaleHandle and
     // InvalidArgument as outline() reports them; an excerpt that has never been
@@ -61,7 +82,8 @@ struct Document {
     // a sample rate other than the Engine's, and for a preset; InvalidArgument for
     // an encoder setting the format does not take, a mix value out of range and a
     // track or SoundFont that does not exist; ResourceLimit when the projected
-    // output exceeds the 1 GiB cap. Throws std::runtime_error if the engine's
+    // output exceeds the 1 GiB cap or a caller-supplied audio byte limit.
+    // Throws std::runtime_error if the engine's
     // audio graph or encoder fails.
     Result<AudioRenderResult> render_audio(const AudioOptions& options, const ByteSink& sink);
 

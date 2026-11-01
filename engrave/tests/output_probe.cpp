@@ -3,6 +3,7 @@
 // exactly as scripts/golden.py does.
 //
 //   engrave_output_probe --assets=DIR --soundfont=FILE... --render=SCORE --out=DIR
+//   engrave_output_probe --assets=DIR --positions=SCORE --out=DIR
 //   engrave_output_probe --assets=DIR --soundfont=FILE... --audio=SCORE --format=wav|flac|ogg|mp3|aac
 //                        --out=FILE [--repeats=0] [--sample-rate=HZ]
 //
@@ -13,6 +14,7 @@
 // an exception.
 
 #include <engrave/engrave.h>
+#include <nlohmann/json.hpp>
 
 #include <algorithm>
 #include <sstream>
@@ -80,6 +82,7 @@ std::vector<std::string> notes(engrave::Document& doc) {
 
 int usage() {
     std::fprintf(stderr, "usage: --assets=DIR [--soundfont=FILE]... --render=SCORE --out=DIR\n"
+                         "       --assets=DIR --positions=SCORE --out=DIR\n"
                          "       --assets=DIR [--soundfont=FILE]... --audio=SCORE --format=NAME --out=FILE\n");
     return 1;
 }
@@ -100,6 +103,7 @@ int main(int argc, char** argv) {
         else if (argument.starts_with("--soundfont=")) soundfonts.push_back(std::filesystem::u8path(value(12)));
         else if (argument.starts_with("--out=")) out = std::filesystem::u8path(value(6));
         else if (argument.starts_with("--render=")) { mode = "render"; score = std::filesystem::u8path(value(9)); }
+        else if (argument.starts_with("--positions=")) { mode = "positions"; score = std::filesystem::u8path(value(12)); }
         else if (argument.starts_with("--export=")) { mode = "export"; score = std::filesystem::u8path(value(9)); }
         else if (argument.starts_with("--audio=")) { mode = "audio"; score = std::filesystem::u8path(value(8)); }
         else if (argument.starts_with("--format=")) format = value(9);
@@ -170,6 +174,29 @@ int main(int argc, char** argv) {
             std::fprintf(stderr, "error: %s: %s\n", std::string(engrave::to_string(document.error().code)).c_str(),
                          document.error().message.c_str());
             return 2;
+        }
+
+        if (mode == "positions") {
+            std::filesystem::create_directories(out);
+            for (const auto [kind, filename] : {
+                     std::pair{engrave::PositionKind::Measure, "measurePositions.json"},
+                     std::pair{engrave::PositionKind::Segment, "segmentPositions.json"}}) {
+                const auto positions = (*document)->positions(kind);
+                if (!positions) throw std::runtime_error(positions.error().message);
+                nlohmann::json result;
+                result["page_size"] = {{"width", positions->page_width}, {"height", positions->page_height}};
+                result["elements"] = nlohmann::json::array();
+                result["events"] = nlohmann::json::array();
+                for (const auto& element : positions->elements)
+                    result["elements"].push_back({{"id", element.id}, {"x", element.x}, {"y", element.y},
+                                                  {"sx", element.sx}, {"sy", element.sy}, {"page", element.page}});
+                for (const auto& event : positions->events)
+                    result["events"].push_back({{"elid", event.elid}, {"position", event.position}});
+                std::ofstream file(out / filename, std::ios::binary | std::ios::trunc);
+                file << result.dump();
+                if (!file) throw std::runtime_error("cannot write positions");
+            }
+            return 0;
         }
 
         if (mode == "export") {

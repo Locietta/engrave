@@ -9,6 +9,7 @@
 #include "engine_context.h"
 #include "global/log.h"
 #include "global/io/buffer.h"
+#include "global/io/writebudget.h"
 #include "global/serialization/zipreader.h"
 #include "global/serialization/zipwriter.h"
 #include "global/serialization/xmlstreamreader.h"
@@ -34,6 +35,15 @@ using namespace muse;
 using namespace mu;
 namespace {
 
+class CaptureOutputBuffer final : public io::Buffer {
+public:
+    explicit CaptureOutputBuffer(ByteArray* data) : Buffer(data) {}
+protected:
+    bool resizeData(size_t size) override {
+        if (io::activeWriteBudget && !io::activeWriteBudget->outputSize(size)) return false;
+        return Buffer::resizeData(size);
+    }
+};
 
 void check(const Ret& result) { if (!result) throw std::runtime_error(result.toString()); }
 std::string bytes(const ByteArray& data) { return {reinterpret_cast<const char*>(data.constData()), data.size()}; }
@@ -219,7 +229,7 @@ std::string export_native_score(const EngineContext& context, const ScoreProject
     if (format == "svg" || format == "png" || format == "pdf") return render_score(context, score, format, options);
 
     ByteArray data;
-    io::Buffer buffer(&data);
+    CaptureOutputBuffer buffer(&data);
     buffer.open(io::IODevice::WriteOnly);
     bool success = false;
     if (format == "musicxml") success = iex::musicxml::saveXml(score, &buffer, context.musicXml());
@@ -256,6 +266,23 @@ std::string export_native_score(const EngineContext& context, const ScoreProject
             engraving::rw::WriteInOutData inout(score);
             inout.ctx.setInlineStyle(true);
             inout.ctx.setInlineExcerpts(true);
+            success = engraving::rw::RWRegister::writer()->writeScore(score, &buffer, &inout);
+        } else if (format == "mscx" && options.standalone_score && options.excerpt_id >= 0
+                   && io::activeWriteBudget) {
+            // The archive path serializes this same score XML, compresses it,
+            // then inflates it again. Write that XML directly so its output
+            // cap applies before the uncompressed result is allocated.
+            const auto original_tags = score->metaTags();
+            struct RestoreTags {
+                engraving::Score* score;
+                std::map<String, String> tags;
+                ~RestoreTags() { score->setMetaTags(tags); }
+            } restore{score, original_tags};
+            auto effective_tags = project->masterScore()->metaTags();
+            for (const auto& [key, value] : original_tags) effective_tags.insert_or_assign(key, value);
+            score->setMetaTags(effective_tags);
+            engraving::rw::WriteInOutData inout(score);
+            inout.ctx.setStandalone(true);
             success = engraving::rw::RWRegister::writer()->writeScore(score, &buffer, &inout);
         } else {
             engraving::MscWriter::Params params;

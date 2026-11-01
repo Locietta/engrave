@@ -13,7 +13,8 @@
 #include <cmath>
 #include <limits>
 #include <stdexcept>
-#include <unordered_map>
+#include <functional>
+#include <vector>
 
 namespace music {
 namespace {
@@ -34,23 +35,26 @@ System* layout_system(Measure* measure) {
 }
 }
 
-nlohmann::json score_positions(mu::engraving::Score* score, bool segments) {
+std::pair<double, double> visit_score_positions(mu::engraving::Score* score, bool segments,
+                                               const PositionVisitor& visitor, bool resolve_ids,
+                                               std::size_t element_count) {
     if (!score || !score->masterScore() || score->pages().empty() || !score->pages().front())
         throw std::invalid_argument("A laid-out score with pages is required");
 
     // Cache once: repeated access can rebuild the list after upstream tie cleanup.
     // Explicit expansion leaves the master score's playback preference unchanged.
     const RepeatList& repeats = score->repeatList(true);
-    std::unordered_map<const void*, int> ids;
-    Json elements = Json::array();
+    struct IdEntry { const void* item; std::size_t id; };
+    std::vector<IdEntry> ids;
+    if (resolve_ids) ids.reserve(element_count);
+    std::size_t next_id = 0;
     const auto add_element = [&](const void* item, auto x, auto y, double width,
                                  double height, Page* page) {
-        const auto id = checked_int(static_cast<double>(ids.size()));
+        const auto id = checked_int(static_cast<double>(next_id++));
         const auto page_index = score->pageIdx(page);
         if (page_index >= score->pages().size()) throw std::runtime_error("Layout page is not in score");
-        ids.emplace(item, id);
-        elements.push_back({{"id", id}, {"x", x}, {"y", y}, {"sx", width}, {"sy", height},
-                            {"page", page_index}});
+        visitor.element(id, x, y, width, height, static_cast<int>(page_index));
+        if (resolve_ids) ids.push_back({item, static_cast<std::size_t>(id)});
     };
     // Scale 1.0 preserves webmscore's raw layout units (1200 DPI), independent of PNG DPI.
     if (segments) {
@@ -80,12 +84,23 @@ nlohmann::json score_positions(mu::engraving::Score* score, bool segments) {
         }
     }
 
-    Json events = Json::array();
+    if (resolve_ids) {
+        std::sort(ids.begin(), ids.end(), [](const IdEntry& a, const IdEntry& b) {
+            return std::less<const void*>{}(a.item, b.item);
+        });
+    }
     const auto add_event = [&](const void* item, int tick) {
-        const auto it = ids.find(item);
-        if (it == ids.end()) throw std::runtime_error("Playback element has no layout position");
+        int id = 0;
+        if (resolve_ids) {
+            const auto it = std::lower_bound(ids.begin(), ids.end(), item, [](const IdEntry& a, const void* b) {
+                return std::less<const void*>{}(a.item, b);
+            });
+            if (it == ids.end() || it->item != item)
+                throw std::runtime_error("Playback element has no layout position");
+            id = static_cast<int>(it->id);
+        }
         const auto time = checked_int(std::nearbyint(score->utick2utime(tick) * 1000.0));
-        events.push_back({{"elid", it->second}, {"position", time}});
+        visitor.event(id, time);
     };
     for (const auto* repeat : repeats) {
         if (repeat->len() <= 0) continue;
@@ -104,7 +119,25 @@ nlohmann::json score_positions(mu::engraving::Score* score, bool segments) {
         }
     }
     const auto* page = score->pages().front();
-    return {{"pageSize", {{"width", page->width()}, {"height", page->height()}}},
+    return {page->width(), page->height()};
+}
+
+nlohmann::json score_positions(mu::engraving::Score* score, bool segments) {
+    Json elements = Json::array();
+    Json events = Json::array();
+    const PositionVisitor visitor{
+        [&](int id, double x, double y, double width, double height, int page) {
+            if (segments) {
+                elements.push_back({{"id", id}, {"x", static_cast<int>(x)}, {"y", static_cast<int>(y)},
+                                    {"sx", width}, {"sy", height}, {"page", page}});
+            } else {
+                elements.push_back({{"id", id}, {"x", x}, {"y", y}, {"sx", width}, {"sy", height}, {"page", page}});
+            }
+        },
+        [&](int id, int time) { events.push_back({{"elid", id}, {"position", time}}); }
+    };
+    const auto [width, height] = visit_score_positions(score, segments, visitor, true);
+    return {{"pageSize", {{"width", width}, {"height", height}}},
             {"elements", std::move(elements)}, {"events", std::move(events)}};
 }
 }

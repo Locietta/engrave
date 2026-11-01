@@ -25,6 +25,7 @@
 #include <charconv>
 
 #include "global/io/iodevice.h"
+#include "global/io/writebudget.h"
 #include "global/types/bytearray.h"
 #include "global/types/string.h"
 
@@ -175,8 +176,10 @@ TextStream& TextStream::operator<<(const String& s)
 
 void TextStream::write(const char* ch, size_t len)
 {
+    if (io::activeWriteBudget && !io::activeWriteBudget->charge(len)) throw io::WriteBudgetStop{};
     m_buf.insert(m_buf.end(), reinterpret_cast<const uint8_t*>(ch), reinterpret_cast<const uint8_t*>(ch + len));
     if (m_device && m_buf.size() > TEXTSTREAM_BUFFERSIZE) {
         flush();
+        if (io::activeWriteBudget && !io::activeWriteBudget->poll()) throw io::WriteBudgetStop{};
     }
 }
