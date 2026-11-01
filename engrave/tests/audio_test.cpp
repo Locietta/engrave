@@ -257,6 +257,17 @@ TEST(Audio, FailedSinkDoesNotPoisonNextRender) {
     EXPECT_EQ(expected.bytes, recovered.bytes);
 }
 
+TEST(Audio, OutputOpenFailureReturnsIoAndNextRenderSucceeds) {
+    const auto cache = detail::temp_file("blocked-output-cache");
+    std::vector<std::string> arguments = { "--assets=" + music::test::g_assets.string(),
+                                           "--audio=" + music::test::corpus_file(detail::audio_score()).string(),
+                                           "--format=wav", "--out=" + cache.string(),
+                                           "--test-output-open-failure" };
+    for (const auto& soundfont : g_soundfonts) arguments.push_back("--soundfont=" + soundfont.string());
+    EXPECT_EQ(music::test::run_probe(arguments), 0);
+    EXPECT_FALSE(std::filesystem::exists(cache));
+}
+
 TEST(Audio, SecondRenderEqualsAFreshProcess) {
     auto document = detail::open_score(detail::audio_score());
     ASSERT_TRUE(document) << "the corpus has no " << detail::audio_score();

@@ -325,13 +325,6 @@ engine::TrackChainPtr make_master_chain(const IAudioNodePtr& context, const Outp
     return chain;
 }
 
-std::uint64_t file_size(const std::string& path)
-{
-    std::error_code ec;
-    const auto size = std::filesystem::file_size(std::filesystem::u8path(path), ec);
-    return ec ? 0 : static_cast<std::uint64_t>(size);
-}
-
 void fluid_log_to_logger(int level, const char* message, void*)
 {
     switch (level) {
@@ -745,7 +738,7 @@ AudioRenderResult export_score_audio(EngineAudio& audio, MasterScore* master, co
 
     io::StreamingFileDevice device(std::filesystem::u8path(request.output_path));
     if (!device.open(io::IODevice::WriteOnly)) {
-        return fail(AudioRenderResult::Failure::EngineFailure,
+        return fail(AudioRenderResult::Failure::Io,
                     std::string("cannot write ") + audio_format_name(request.format) + " output: '"
                     + request.output_path + "'");
     }
@@ -770,7 +763,7 @@ AudioRenderResult export_score_audio(EngineAudio& audio, MasterScore* master, co
         // writable, and the bare Ret has no context. Name the format and path
         // instead of reporting the raw code.
         const std::string detail = device.hasError() ? device.errorString() : writeRet.toString();
-        return fail(AudioRenderResult::Failure::EngineFailure,
+        return fail(device.hasError() ? AudioRenderResult::Failure::Io : AudioRenderResult::Failure::EngineFailure,
                     std::string(audio_format_name(request.format)) + " encoder failed (" + detail
                     + "): '" + request.output_path + "'");
     }
@@ -779,7 +772,13 @@ AudioRenderResult export_score_audio(EngineAudio& audio, MasterScore* master, co
     result.frames = totalFrames;
     result.play_time_secs = playTime;
     result.duration_secs = durationSecs;
-    result.bytes = file_size(request.output_path);
+    std::error_code sizeError;
+    const auto size = std::filesystem::file_size(std::filesystem::u8path(request.output_path), sizeError);
+    if (sizeError) {
+        return fail(AudioRenderResult::Failure::Io,
+                    "cannot determine audio output size: '" + request.output_path + "': " + sizeError.message());
+    }
+    result.bytes = static_cast<std::uint64_t>(size);
     if (result.bytes == 0) {
         result.ok = false;
         result.failure = AudioRenderResult::Failure::EngineFailure;
