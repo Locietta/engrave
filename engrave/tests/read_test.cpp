@@ -275,9 +275,11 @@ TEST(Export470, StaveLabelsSurviveDefaultExportAndReopen) {
         for (auto value : {"<StaveSharingLabel>", "<eid>H_H</eid>", "<eid>I_I</eid>", "Players 1", "Players 2"})
             EXPECT_NE(text.find(value), std::string::npos) << value;
         const auto downgraded = document->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
-        ASSERT_FALSE(downgraded); // Non-neutral 5.00 style defaults still have no checked mapping.
-        const auto& warnings = downgraded.error().export_warnings;
-        ASSERT_GE(warnings.size(), 2u);
+        ASSERT_TRUE(downgraded);
+        const auto& warnings = downgraded->warnings;
+        ASSERT_EQ(warnings.size(), 2u);
+        const std::string legacy(reinterpret_cast<const char*>(downgraded->bytes.data()), downgraded->bytes.size());
+        EXPECT_EQ(legacy.find("StaveSharingLabel"), std::string::npos);
         EXPECT_EQ(warnings[0].code, "B470_STAVE_SHARING_LABEL_DROPPED");
         EXPECT_EQ(warnings[1].code, "B470_STAVE_SHARING_LABEL_DROPPED");
         EXPECT_EQ(warnings[0].object->id, "H_H");
