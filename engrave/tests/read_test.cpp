@@ -184,7 +184,7 @@ TEST(Export470, ConvertsInstrumentNamesWithoutWarnings) {
     EXPECT_EQ(stopped.error().code, ErrorCode::Cancelled);
 }
 
-TEST(Export470, RefusesPageLocksWithStableObjectWarnings) {
+TEST(Export470, ConvertsPageLocksWithStableObjectWarnings) {
     auto source = read_text(write470_fixture());
     const auto start = source.find("<Measure>");
     const auto end = source.find("</Measure>", start);
@@ -220,15 +220,14 @@ TEST(Export470, RefusesPageLocksWithStableObjectWarnings) {
     } remove_lock{master, &lock, &next_lock};
     for (int repeat = 0; repeat != 2; ++repeat) {
         const auto result = document->export_score_with_warnings({.format = engrave::Format::Mscz, .native_version = "4.70"});
-        ASSERT_FALSE(result);
-        EXPECT_EQ(result.error().code, ErrorCode::Unsupported);
-        ASSERT_EQ(result.error().export_warnings.size(), 2u);
-        EXPECT_EQ(result.error().export_warnings[0].code, "B470_PAGE_LOCK_DROPPED");
-        ASSERT_TRUE(result.error().export_warnings[0].object);
-        EXPECT_EQ(result.error().export_warnings[0].object->id, engrave::to_string(id) + ".." + engrave::to_string(id));
-        EXPECT_EQ(result.error().export_warnings[1].code, "B470_PAGE_LOCK_DROPPED");
-        ASSERT_TRUE(result.error().export_warnings[1].object);
-        EXPECT_EQ(result.error().export_warnings[1].object->id, engrave::to_string(next_id) + ".." + engrave::to_string(next_id));
+        ASSERT_TRUE(result);
+        ASSERT_EQ(result->warnings.size(), 2u);
+        EXPECT_EQ(result->warnings[0].code, "B470_PAGE_LOCK_DROPPED");
+        ASSERT_TRUE(result->warnings[0].object);
+        EXPECT_EQ(result->warnings[0].object->id, engrave::to_string(id) + ".." + engrave::to_string(id));
+        EXPECT_EQ(result->warnings[1].code, "B470_PAGE_LOCK_DROPPED");
+        ASSERT_TRUE(result->warnings[1].object);
+        EXPECT_EQ(result->warnings[1].object->id, engrave::to_string(next_id) + ".." + engrave::to_string(next_id));
         EXPECT_EQ(master.pageLocks()->allLocks().size(), 2u);
     }
 }
@@ -238,17 +237,32 @@ TEST(Export470, RefusesANonNeutralFiveOnlyStyle) {
     ASSERT_TRUE(document);
     auto& master = master_of(*document);
     const auto score_id = engrave::from_engine(master.eid());
-    master.style().set(mu::engraving::Sid::maskSlurs, true);
+    master.style().set(mu::engraving::Sid::minSystemDistance, mu::engraving::Spatium(99.0));
     const auto result = document->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
     ASSERT_FALSE(result);
     EXPECT_EQ(result.error().code, ErrorCode::Unsupported);
     ASSERT_EQ(result.error().export_warnings.size(), 1u);
     const auto& warning = result.error().export_warnings.front();
     EXPECT_EQ(warning.code, "B470_UNSUPPORTED_FEATURE");
-    EXPECT_NE(result.error().message.find("maskSlurs"), std::string::npos);
+    EXPECT_NE(result.error().message.find("minSystemDistance"), std::string::npos);
     ASSERT_TRUE(warning.object);
     EXPECT_EQ(warning.object->id, engrave::to_string(score_id));
-    EXPECT_TRUE(master.style().styleB(mu::engraving::Sid::maskSlurs));
+    EXPECT_DOUBLE_EQ(master.style().styleS(mu::engraving::Sid::minSystemDistance).val(), 99.0);
+}
+
+TEST(Export470, DeduplicatesUnmappedStylesWithoutPublishing) {
+    auto document = open_path(write470_fixture());
+    ASSERT_TRUE(document);
+    auto& master = master_of(*document);
+    master.style().set(mu::engraving::Sid::minSystemDistance, mu::engraving::Spatium(99.0));
+    master.style().set(mu::engraving::Sid::maxSystemDistance, mu::engraving::Spatium(100.0));
+    const auto result = document->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
+    ASSERT_FALSE(result);
+    EXPECT_EQ(result.error().code, ErrorCode::Unsupported);
+    ASSERT_EQ(result.error().export_warnings.size(), 1u);
+    EXPECT_EQ(result.error().export_warnings.front().code, "B470_UNSUPPORTED_FEATURE");
+    EXPECT_NE(result.error().message.find("minSystemDistance"), std::string::npos);
+    EXPECT_NE(result.error().message.find("maxSystemDistance"), std::string::npos);
 }
 
 TEST(Export470, StaveLabelsSurviveDefaultExportAndReopen) {
