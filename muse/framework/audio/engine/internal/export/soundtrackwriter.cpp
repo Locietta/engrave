@@ -22,6 +22,7 @@
 
 #include "soundtrackwriter.h"
 #include "../offlinetiming.h"
+#include "../offlinecancellation.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -168,6 +169,7 @@ Ret SoundTrackWriter::writeStreaming()
         if (pollCancellation()) return make_ret(Ret::Code::Cancel);
         const size_t encoded = [&] {
             OfflineTimer timer(OfflineTiming::current().encode);
+            OfflineCancellation::EncodingScope phase;
             return m_encoderPtr->encode(chunk, m_intermBuffer.data());
         }();
         if (encoded == 0) {
@@ -196,6 +198,7 @@ Ret SoundTrackWriter::writeStreaming()
         if (pollCancellation()) return make_ret(Ret::Code::Cancel);
         const size_t encoded = [&] {
             OfflineTimer timer(OfflineTiming::current().encode);
+            OfflineCancellation::EncodingScope phase;
             return m_encoderPtr->encode(chunk, m_intermBuffer.data());
         }();
         if (encoded == 0) {
@@ -216,6 +219,7 @@ Ret SoundTrackWriter::writeStreaming()
         if (pollCancellation()) return make_ret(Ret::Code::Cancel);
         const size_t encoded = [&] {
             OfflineTimer timer(OfflineTiming::current().encode);
+            OfflineCancellation::EncodingScope phase;
             return m_encoderPtr->encode(chunk, m_intermBuffer.data());
         }();
         if (encoded == 0) {

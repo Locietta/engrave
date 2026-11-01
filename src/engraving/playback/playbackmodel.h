@@ -58,7 +58,9 @@ public:
     PlaybackModel(const PlaybackModel&) = delete;
     PlaybackModel& operator=(const PlaybackModel&) = delete;
 
-    void load(Score* score);
+    // Owner-thread checkpoint, called only during load. May throw to abort;
+    // discard this model after an aborted load. Never reenter the engine.
+    void load(Score* score, const std::function<void()>& checkpoint = {});
     void reload();
 
     void setSendEventsOnScoreChange(const InstrumentTrackId& trackId, bool send);
@@ -174,6 +176,8 @@ private:
     static void applyTieTickBoundaries(const Tie* tie, TickBoundaries& tickBoundaries);
 
     const muse::mpe::IArticulationProfilesRepository* m_profilesRepository = nullptr;
+    std::function<void()> m_checkpoint;
+    void checkpoint() const { if (m_checkpoint) m_checkpoint(); }
     Score* m_score = nullptr;
     // The master score this model listens to; checked with Score::isAlive before detaching.
     MasterScore* m_listenedScore = nullptr;

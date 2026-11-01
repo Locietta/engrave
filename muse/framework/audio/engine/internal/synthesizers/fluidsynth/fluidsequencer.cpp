@@ -21,6 +21,7 @@
  */
 
 #include "fluidsequencer.h"
+#include "audio/engine/internal/offlinecancellation.h"
 
 #include <set>
 
@@ -124,10 +125,12 @@ int FluidSequencer::lastStaff() const
 
 void FluidSequencer::addPlaybackEvents(EventSequenceMap& destination, const mpe::PlaybackEventsMap& events, const bool isMainStream)
 {
+    OfflineCancellation::SequencerScope phase;
     SostenutoTimeAndDurations sostenutoTimeAndDurations;
 
     for (const auto& pair : events) {
         for (const mpe::PlaybackEvent& event : pair.second) {
+            if (OfflineCancellation::requested()) return;
             if (std::holds_alternative<mpe::NoteEvent>(event)) {
                 addNoteEvent(destination, std::get<mpe::NoteEvent>(event), sostenutoTimeAndDurations, isMainStream);
             } else if (std::holds_alternative<mpe::ControllerChangeEvent>(event)) {
@@ -144,6 +147,7 @@ void FluidSequencer::addDynamicEvents(EventSequenceMap& destination, const mpe::
     constexpr mpe::timestamp_t STEP_INTERVAL_US = 30000;
 
     for (const auto& [layerIdx, curve] : layers) {
+        if (OfflineCancellation::requested()) return;
         auto voiceIt = m_channels.data().find(layerIdx);
         if (voiceIt == m_channels.data().cend()) {
             continue;
@@ -363,6 +367,7 @@ void FluidSequencer::addPitchBend(EventSequenceMap& destination, const mpe::time
 void FluidSequencer::addSostenutoEvents(EventSequenceMap& destination, const SostenutoTimeAndDurations& sostenutoTimeAndDurations)
 {
     for (const auto& channelPair : sostenutoTimeAndDurations) {
+        if (OfflineCancellation::requested()) return;
         for (size_t i = 0; i < channelPair.second.size(); ++i) {
             const TimestampAndDuration& currentTnD = channelPair.second.at(i);
             const timestamp_t timestampTo = currentTnD.timestamp + currentTnD.duration;

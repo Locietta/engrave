@@ -96,7 +96,7 @@ void PlaybackModel::detachFromScore()
     m_listenedScore = nullptr;
 }
 
-void PlaybackModel::load(Score* score)
+void PlaybackModel::load(Score* score, const std::function<void()>& checkpointCallback)
 {
     TRACEFUNC;
 
@@ -104,6 +104,9 @@ void PlaybackModel::load(Score* score)
         return;
     }
 
+    m_checkpoint = checkpointCallback;
+    DEFER { m_checkpoint = {}; };
+    checkpoint();
     m_score = score;
     m_playbackCtx = std::make_shared<PlaybackContext>(score);
 
@@ -417,7 +420,9 @@ void PlaybackModel::updateSetupData()
     std::string scoreId = scoreEID.toStdString();
 
     for (const Part* part : m_score->parts()) {
+        checkpoint();
         for (const auto& pair : part->instruments()) {
+            checkpoint();
             InstrumentTrackId trackId = idKey(part->id(), pair.second->id());
             if (!trackId.isValid() || muse::contains(m_playbackDataMap, trackId)) {
                 continue;
@@ -443,9 +448,10 @@ void PlaybackModel::updateSetupData()
 
 void PlaybackModel::updateContext(const track_idx_t trackFrom, const track_idx_t trackTo, const int tickFrom, const int tickTo)
 {
-    m_playbackCtx->update(trackFrom, trackTo, tickFrom, tickTo, m_expandRepeats);
+    m_playbackCtx->update(trackFrom, trackTo, tickFrom, tickTo, m_expandRepeats, m_checkpoint);
 
     for (const Part* part : m_score->parts()) {
+        checkpoint();
         const TrackRange trackRange = part->trackRange();
         if (trackTo <= trackRange.startTrack || trackFrom >= trackRange.endTrack) {
             continue;
@@ -468,6 +474,7 @@ void PlaybackModel::updateContext(const track_idx_t trackFrom, const track_idx_t
         };
 
         for (const InstrumentTrackId& trackId : trackIds) {
+            checkpoint();
             applyContextToTrackData(trackId, data);
         }
     }
@@ -480,8 +487,9 @@ void PlaybackModel::applyContextToTrackData(const InstrumentTrackId& trackId, co
 
     std::set<timestamp_t> newEventTimestamps;
 
-    const auto appendEvents = [&trackData, &newEventTimestamps](const auto& events) {
+    const auto appendEvents = [this, &trackData, &newEventTimestamps](const auto& events) {
         for (const auto& pair : events) {
+            checkpoint();
             PlaybackEventList& list = trackData.originEvents[pair.first];
 
             //! NOTE: this assumes that the list has already been cleared in clearExpiredEvents
@@ -502,6 +510,7 @@ void PlaybackModel::processSegment(const int tickPositionOffset, const Segment* 
                                    bool isFirstChordRestSegmentOfMeasure, ChangedTrackIdSet* trackChanges)
 {
     for (const EngravingItem* item : segment->annotations()) {
+        checkpoint();
         if (!item || !item->part()) {
             continue;
         }
@@ -537,6 +546,7 @@ void PlaybackModel::processSegment(const int tickPositionOffset, const Segment* 
     }
 
     for (const EngravingItem* item : segment->elist()) {
+        checkpoint();
         if (!item || !item->isChordRest() || !item->part()) {
             continue;
         }
@@ -613,6 +623,7 @@ void PlaybackModel::processMeasureRepeat(const int tickPositionOffset, const Mea
     int chordRestSegmentNum = -1;
 
     for (const Segment* seg = referringMeasure->first(); seg; seg = seg->next()) {
+        checkpoint();
         if (!seg->isChordRestType() && !seg->isTimeTickType()) {
             continue;
         }
@@ -638,6 +649,7 @@ void PlaybackModel::updateEvents(const int tickFrom, const int tickTo, const tra
     PlaybackEventsMap& metronomeEvents = m_playbackDataMap[METRONOME_TRACK_ID].originEvents;
 
     for (const RepeatSegment* repeatSegment : repeatList()) {
+        checkpoint();
         int tickPositionOffset = repeatSegment->utick - repeatSegment->tick;
         int repeatStartTick = repeatSegment->tick;
         int repeatEndTick = repeatSegment->endTick();
@@ -647,6 +659,7 @@ void PlaybackModel::updateEvents(const int tickFrom, const int tickTo, const tra
         }
 
         for (const Measure* measure : repeatSegment->measureList()) {
+            checkpoint();
             int measureStartTick = measure->tick().ticks();
             int measureEndTick = measure->endTick().ticks();
 
@@ -657,6 +670,7 @@ void PlaybackModel::updateEvents(const int tickFrom, const int tickTo, const tra
             int chordRestSegmentNum = -1;
 
             for (const Segment* segment = measure->first(); segment; segment = segment->next()) {
+                checkpoint();
                 if (!segment->isChordRestType() && !segment->isTimeTickType()) {
                     continue;
                 }
@@ -697,9 +711,11 @@ void PlaybackModel::reloadMetronomeEvents()
     const ArticulationsProfilePtr metronomeProfile = defaultActiculationProfile(METRONOME_TRACK_ID);
 
     for (const RepeatSegment* repeatSegment : repeatList()) {
+        checkpoint();
         int tickPositionOffset = repeatSegment->utick - repeatSegment->tick;
 
         for (const Measure* measure : repeatSegment->measureList()) {
+            checkpoint();
             m_renderer.renderMetronome(m_score, measure, tickPositionOffset, metronomeProfile, metronomeData.originEvents);
         }
     }

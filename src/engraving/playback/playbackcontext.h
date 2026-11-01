@@ -21,6 +21,7 @@
  */
 
 #pragma once
+#include <functional>
 
 #include "mpe/mpetypes.h"
 #include "mpe/events.h"
@@ -68,7 +69,8 @@ public:
 
     bool hasSoundFlags(const track_idx_t trackFrom, const track_idx_t trackTo) const;
 
-    void update(const track_idx_t trackFrom, const track_idx_t trackTo, const int tickFrom, const int tickTo, bool expandRepeats = true);
+    void update(const track_idx_t trackFrom, const track_idx_t trackTo, const int tickFrom, const int tickTo, bool expandRepeats = true,
+                const std::function<void()>& checkpoint = {});
     void clear(const track_idx_t trackFrom, const track_idx_t trackTo, const int tickFrom, const int tickTo);
 
 private:
