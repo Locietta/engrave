@@ -375,7 +375,7 @@ TEST(Export470, HiddenExcerptAndMasterStavesAreBothChecked) {
         if (!tie || !tie->endNote()) continue;
         ++ties;
         tie->endNote()->setPitch(tie->startNote()->pitch() + 2);
-        tie->startNote()->staff()->part()->setShow(false);
+        tie->startNote()->staff()->setVisible(false);
     }
     ASSERT_EQ(ties, 4u);
     for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {

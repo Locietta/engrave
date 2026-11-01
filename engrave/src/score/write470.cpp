@@ -502,8 +502,11 @@ Result<ExportOutput> export_score(const music::EngineContext& context, const mus
                 // never stringify the invalid-EID sentinel as a real handle.
                 for (auto* owner = item; owner; owner = owner->parent()) {
                     if (owner->eid().isValid()) {
-                        identity = {owner->isNote() ? "note" : owner->isChord() ? "chord" : "source",
-                                    to_string(from_engine(owner->eid()))};
+                        std::string kind = owner->typeName();
+                        std::transform(kind.begin(), kind.end(), kind.begin(), [](char c) {
+                            return c >= 'A' && c <= 'Z' ? static_cast<char>(c - 'A' + 'a') : c;
+                        });
+                        identity = {std::move(kind), to_string(from_engine(owner->eid()))};
                         break;
                     }
                 }
