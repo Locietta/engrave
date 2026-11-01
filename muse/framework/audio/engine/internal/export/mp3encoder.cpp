@@ -31,6 +31,7 @@
 #endif
 
 #include "global/io/iodevice.h"
+#include "audio/common/audioerrors.h"
 
 #include "log.h"
 
@@ -120,14 +121,15 @@ size_t Mp3Encoder::encode(const samples_t samplesPerChannel, const float* input)
     return samplesPerChannel;
 }
 
-size_t Mp3Encoder::end()
+muse::Ret Mp3Encoder::end()
 {
     const int encodedBytes = lame_encode_flush(m_handler->flags,
                                                m_outputBuffer.data(),
                                                static_cast<int>(m_outputBuffer.size()));
-    if (encodedBytes > 0) {
-        m_dstDevice->write(m_outputBuffer.data(), static_cast<size_t>(encodedBytes));
-    }
-
-    return 0;
+    if (encodedBytes < 0)
+        return make_ret(Err::ErrorEncode, "MP3 finalization failed: " + std::to_string(encodedBytes));
+    if (encodedBytes > 0 && m_dstDevice->write(m_outputBuffer.data(), static_cast<size_t>(encodedBytes))
+                            != static_cast<size_t>(encodedBytes))
+        return make_ret(Err::ErrorEncode, "MP3 finalization write failed");
+    return muse::make_ok();
 }

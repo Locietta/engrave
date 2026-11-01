@@ -25,6 +25,15 @@ namespace muse::mpe {
 class IArticulationProfilesRepository;
 }
 
+namespace muse::io {
+class IODevice;
+}
+
+namespace muse::audio {
+struct SoundTrackFormat;
+namespace encode { class AbstractAudioEncoder; }
+}
+
 namespace mu::engraving {
 class MasterScore;
 }
@@ -144,6 +153,9 @@ struct EngineAudioTrackParams {
 struct AudioRenderRequest {
     EngineAudioFormat format = EngineAudioFormat::Wav;
     std::string output_path;
+    // Internal test seam; an empty factory uses the format's built-in encoder.
+    std::function<std::unique_ptr<muse::audio::encode::AbstractAudioEncoder>(
+        const muse::audio::SoundTrackFormat&, muse::io::IODevice&)> encoder_factory;
     // -1 renders the master score. A non-negative value renders the master
     // score with every part that is absent from, or invisible in, that excerpt
     // muted, like MasterNotation::initNotationSoloMuteState

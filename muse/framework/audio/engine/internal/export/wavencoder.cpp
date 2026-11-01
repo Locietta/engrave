@@ -28,20 +28,21 @@
 
 #include "global/io/iodevice.h"
 #include "global/types/bytearray.h"
+#include "audio/common/audioerrors.h"
 
 #include "log.h"
 
 namespace muse::audio::encode {
 namespace {
 template<typename T>
-void writeTagData(io::IODevice& outDev, const T value, size_t offset = 0)
+bool writeTagData(io::IODevice& outDev, const T value, size_t offset = 0)
 {
-    if (offset != 0) {
-        outDev.seek(offset);
+    if (offset != 0 && !outDev.seek(offset)) {
+        return false;
     }
 
     // little endian
-    outDev.write(reinterpret_cast<const std::uint8_t*>(&value), sizeof(T));
+    return outDev.write(reinterpret_cast<const std::uint8_t*>(&value), sizeof(T)) == sizeof(T);
 }
 
 struct WavHeader {
@@ -131,26 +132,25 @@ bool WavEncoder::writePlaceholderHeader()
     return true;
 }
 
-void WavEncoder::patchHeaderSizes()
+bool WavEncoder::patchHeaderSizes()
 {
     const size_t endPos = m_dstDevice->pos();
     if (endPos < m_pcmStartPos || endPos < 8) {
-        return;
+        return false;
     }
 
     const uint64_t dataBytes = endPos - m_pcmStartPos;
-    if (dataBytes > std::numeric_limits<uint32_t>::max()) {
+    if (dataBytes > std::numeric_limits<uint32_t>::max() || endPos - 8 > std::numeric_limits<uint32_t>::max()) {
         LOGE() << "WAV export: file size exceeds 32-bit chunk limits";
-        return;
+        return false;
     }
 
     const uint32_t dataSize = static_cast<uint32_t>(dataBytes);
     const uint32_t riffChunkSize = static_cast<uint32_t>(endPos - 8);
 
-    writeTagData<uint32_t>(*m_dstDevice, riffChunkSize, 4); // RIFF chunk size at offset 4
-    writeTagData<uint32_t>(*m_dstDevice, dataSize, 42); // data chunk size at offset 42 (with 18-byte fmt + cbSize)
-
-    m_dstDevice->seek(endPos);
+    bool ok = writeTagData<uint32_t>(*m_dstDevice, riffChunkSize, 4); // RIFF chunk size at offset 4
+    ok = writeTagData<uint32_t>(*m_dstDevice, dataSize, 42) && ok; // data chunk size at offset 42
+    return m_dstDevice->seek(endPos) && ok;
 }
 
 size_t WavEncoder::encode(const samples_t samplesPerChannel, const float* input)
@@ -203,12 +203,10 @@ size_t WavEncoder::encode(const samples_t samplesPerChannel, const float* input)
     return static_cast<size_t>(samplesPerChannel) * static_cast<size_t>(channels);
 }
 
-size_t WavEncoder::end()
+Ret WavEncoder::end()
 {
-    if (m_headerWritten) {
-        patchHeaderSizes();
-    }
-
-    return 0;
+    if (m_headerWritten && !patchHeaderSizes())
+        return make_ret(Err::ErrorEncode, "WAV header finalization failed");
+    return make_ok();
 }
 }
