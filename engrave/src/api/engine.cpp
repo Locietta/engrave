@@ -145,6 +145,18 @@ Result<void> Engine::add_font(const std::filesystem::path& file) {
     return {};
 }
 
+std::vector<RuntimeFontInfo> Engine::runtime_fonts() const {
+    impl_->state.check_thread();
+    const auto active = impl_->state.context->assets().fonts();
+    std::vector<RuntimeFontInfo> result;
+    result.reserve(active.size());
+    for (const auto& font : active) {
+        result.push_back({font.id, font.family, font.bold, font.italic,
+                          path_from_utf8(font.path), font.content_hash});
+    }
+    return result;
+}
+
 Result<void> Engine::set_soundfonts(const std::vector<std::filesystem::path>& files) {
     impl_->state.check_thread();
     std::vector<std::filesystem::path> retained;
@@ -158,11 +170,10 @@ Result<void> Engine::set_soundfonts(const std::vector<std::filesystem::path>& fi
         }
     }
     if (!retained.empty()) {
-        music::EngineAudioSetup setup;
-        setup.sample_rate = impl_->state.audio_sample_rate;
-        for (const auto& file : retained) setup.soundfonts.push_back(utf8(file));
+        std::vector<std::string> paths;
+        for (const auto& file : retained) paths.push_back(utf8(file));
         std::string error;
-        if (!music::initialize_engine_audio(impl_->state.context->audio(), setup, &error))
+        if (!music::validate_engine_soundfonts(paths, &error))
             return fail(ErrorCode::InvalidInput, error);
     }
     impl_->state.soundfonts.swap(retained);

@@ -325,13 +325,6 @@ engine::TrackChainPtr make_master_chain(const IAudioNodePtr& context, const Outp
     return chain;
 }
 
-std::uint64_t file_size(const std::string& path)
-{
-    std::error_code ec;
-    const auto size = std::filesystem::file_size(std::filesystem::u8path(path), ec);
-    return ec ? 0 : static_cast<std::uint64_t>(size);
-}
-
 void fluid_log_to_logger(int level, const char* message, void*)
 {
     switch (level) {
@@ -354,9 +347,8 @@ void set_engine_audio_midi_event_hook(EngineAudio& audio, EngineAudioMidiEventHo
     audio.state().midiOutPort.hook = std::move(hook);
 }
 
-bool initialize_engine_audio(EngineAudio& audio, const EngineAudioSetup& setup, std::string* error)
+bool validate_engine_soundfonts(const std::vector<std::string>& soundfont_paths, std::string* error)
 {
-    EngineAudio::State& state = audio.state();
     const auto fail = [error](std::string message) {
         if (error) {
             *error = std::move(message);
@@ -364,18 +356,6 @@ bool initialize_engine_audio(EngineAudio& audio, const EngineAudioSetup& setup, 
         return false;
     };
 
-    const std::vector<std::string>& soundfont_paths = setup.soundfonts;
-    if (state.servicesInitialized) {
-        if (!state.soundfontId.empty() && state.soundfontPaths == soundfont_paths
-            && state.sampleRate == setup.sample_rate) {
-            return true;
-        }
-        if (state.sampleRate != setup.sample_rate) return fail("audio sample rate is fixed");
-    }
-
-    if (setup.sample_rate < 8000 || setup.sample_rate > 192000) {
-        return fail("audio sample rate must be between 8000 and 192000 Hz: " + std::to_string(setup.sample_rate));
-    }
     if (soundfont_paths.empty()) {
         return fail("no SoundFont was given (one .sf2 or .sf3 file is needed)");
     }
@@ -408,6 +388,25 @@ bool initialize_engine_audio(EngineAudio& audio, const EngineAudioSetup& setup, 
         if (!inserted && it->second != path)
             return fail("SoundFonts have the same resource name: " + parsed.val.name);
     }
+    return true;
+}
+
+bool initialize_engine_audio(EngineAudio& audio, const EngineAudioSetup& setup, std::string* error)
+{
+    EngineAudio::State& state = audio.state();
+    const auto fail = [error](std::string message) {
+        if (error) *error = std::move(message);
+        return false;
+    };
+    const std::vector<std::string>& soundfont_paths = setup.soundfonts;
+    if (state.servicesInitialized) {
+        if (!state.soundfontId.empty() && state.soundfontPaths == soundfont_paths
+            && state.sampleRate == setup.sample_rate) return true;
+        if (state.sampleRate != setup.sample_rate) return fail("audio sample rate is fixed");
+    }
+    if (setup.sample_rate < 8000 || setup.sample_rate > 192000)
+        return fail("audio sample rate must be between 8000 and 192000 Hz: " + std::to_string(setup.sample_rate));
+    if (!validate_engine_soundfonts(soundfont_paths, error)) return false;
 
     if (!state.servicesInitialized) {
         // The factory, repository and synth/effect resolvers are kept for the
@@ -745,7 +744,7 @@ AudioRenderResult export_score_audio(EngineAudio& audio, MasterScore* master, co
 
     io::StreamingFileDevice device(std::filesystem::u8path(request.output_path));
     if (!device.open(io::IODevice::WriteOnly)) {
-        return fail(AudioRenderResult::Failure::EngineFailure,
+        return fail(AudioRenderResult::Failure::Io,
                     std::string("cannot write ") + audio_format_name(request.format) + " output: '"
                     + request.output_path + "'");
     }
@@ -754,7 +753,7 @@ AudioRenderResult export_score_audio(EngineAudio& audio, MasterScore* master, co
     // the source to PlayingOffline, renders in 4096-frame chunks, encodes them
     // and reports the completed frame count after each one.
     soundtrack::SoundTrackWriter writer(device, make_soundtrack_format(request.format, request, output_spec(state.sampleRate)), renderSecs, masterChain,
-        [&state](uint64_t frames) { state.midiOutPort.renderedFrames = frames; });
+        [&state](uint64_t frames) { state.midiOutPort.renderedFrames = frames; }, request.encoder_factory);
     const Ret writeRet = writer.write();
 
     // Flush before the FileSystem size check below.
@@ -770,7 +769,7 @@ AudioRenderResult export_score_audio(EngineAudio& audio, MasterScore* master, co
         // writable, and the bare Ret has no context. Name the format and path
         // instead of reporting the raw code.
         const std::string detail = device.hasError() ? device.errorString() : writeRet.toString();
-        return fail(AudioRenderResult::Failure::EngineFailure,
+        return fail(device.hasError() ? AudioRenderResult::Failure::Io : AudioRenderResult::Failure::EngineFailure,
                     std::string(audio_format_name(request.format)) + " encoder failed (" + detail
                     + "): '" + request.output_path + "'");
     }
@@ -779,7 +778,13 @@ AudioRenderResult export_score_audio(EngineAudio& audio, MasterScore* master, co
     result.frames = totalFrames;
     result.play_time_secs = playTime;
     result.duration_secs = durationSecs;
-    result.bytes = file_size(request.output_path);
+    std::error_code sizeError;
+    const auto size = std::filesystem::file_size(std::filesystem::u8path(request.output_path), sizeError);
+    if (sizeError) {
+        return fail(AudioRenderResult::Failure::Io,
+                    "cannot determine audio output size: '" + request.output_path + "': " + sizeError.message());
+    }
+    result.bytes = static_cast<std::uint64_t>(size);
     if (result.bytes == 0) {
         result.ok = false;
         result.failure = AudioRenderResult::Failure::EngineFailure;

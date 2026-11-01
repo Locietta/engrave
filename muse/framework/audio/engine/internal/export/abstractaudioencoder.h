@@ -28,6 +28,7 @@
 
 
 #include "audio/common/audiotypes.h"
+#include "global/types/ret.h"
 
 namespace muse::audio::encode {
 class AbstractAudioEncoder
@@ -43,7 +44,8 @@ public:
 
     virtual bool begin(samples_t totalSamplesNumber) = 0;
     virtual size_t encode(samples_t samplesPerChannel, const float* input) = 0;
-    virtual size_t end() = 0;
+    // Finalization may successfully produce zero bytes; report status instead.
+    virtual Ret end() = 0;
 
     const SoundTrackFormat& format() const
     {
