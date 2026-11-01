@@ -5,10 +5,17 @@
 #include "engrave/src/api/state.h"
 #include "engrave/src/audio/engine_audio.h"
 #include "audio/common/audioerrors.h"
+#include "audio/engine/internal/offlinecancellation.h"
+#include "audio/engine/internal/offlinetiming.h"
 #include "audio/engine/internal/export/abstractaudioencoder.h"
 #include "global/io/iodevice.h"
 
 #include <filesystem>
+#include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <cstdio>
+#include <thread>
 #include <memory>
 #include <span>
 #include <stdexcept>
@@ -301,3 +308,102 @@ TEST(AudioInternal, SoundFontRefreshWaitsForNextRender) {
 }
 
 } // namespace
+
+// Real driver/graph teardown is included. Phase requests occur synchronously on
+// the owner thread; the separate delayed case samples arbitrary operation work.
+TEST(AudioInternal, CancellationLatencyDistribution) {
+    using Clock = std::chrono::steady_clock;
+    auto opened = music::test::g_engine->open(music::test::corpus_file("repeat70.mscx"));
+    ASSERT_TRUE(opened);
+    auto& document = **opened;
+    const auto render = [&] {
+        std::vector<std::byte> bytes;
+        EXPECT_TRUE(document.render_audio({}, [&](auto chunk) { bytes.insert(bytes.end(), chunk.begin(), chunk.end()); }));
+        return bytes;
+    };
+    const auto baseline = render();
+    ASSERT_FALSE(baseline.empty());
+    auto& audio = engrave::DocumentAccess::context(document).audio();
+    auto* master = engrave::DocumentAccess::master_score(document);
+    class LargeWriter final : public muse::audio::encode::AbstractAudioEncoder {
+        muse::io::IODevice& device;
+        bool final;
+        bool& armed;
+        std::vector<uint8_t> bytes = std::vector<uint8_t>(1024 * 1024, 42);
+    public:
+        LargeWriter(const muse::audio::SoundTrackFormat& f, muse::io::IODevice& d, bool end, bool& a)
+            : AbstractAudioEncoder(f), device(d), final(end), armed(a) {}
+        bool begin(muse::audio::samples_t) override { return true; }
+        size_t encode(muse::audio::samples_t n, const float*) override {
+            if (!final) { armed = true; return device.write(bytes.data(), bytes.size()) ? n : 0; }
+            return n;
+        }
+        muse::Ret end() override {
+            armed = true;
+            return device.write(bytes.data(), bytes.size()) ? muse::make_ok() : muse::Ret(false);
+        }
+    };
+    const auto path = std::filesystem::temp_directory_path() / "engrave-granularity.wav";
+    for (int phase = 0; phase < 4; ++phase) {
+        std::vector<double> times;
+        for (int trial = 0; trial < 50; ++trial) {
+            bool armed = false, cancelled = false;
+            int writePolls = 0;
+            std::atomic<bool> external{false};
+            Clock::time_point requested;
+            music::AudioRenderRequest request;
+            const auto utf8 = path.generic_u8string();
+            request.output_path.assign(utf8.begin(), utf8.end());
+            request.cancelled = [&] {
+                if (armed && ++writePolls == 3) { requested = Clock::now(); cancelled = true; }
+                return cancelled || external.load();
+            };
+            if (phase == 0) music::set_engine_audio_midi_event_hook(audio, [&](const auto&, uint64_t) {
+                if (!cancelled && muse::audio::OfflineCancellation::phase == muse::audio::OfflineCancellation::Phase::Synthesis) { requested = Clock::now(); cancelled = true; }
+            });
+            if (phase == 1 || phase == 2) request.encoder_factory = [&](const auto& f, auto& d) {
+                return std::make_unique<LargeWriter>(f, d, phase == 2, armed);
+            };
+            std::thread transport;
+            if (phase == 3) transport = std::thread([&] {
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                requested = Clock::now();
+                external.store(true);
+            });
+            const auto result = music::export_score_audio(audio, master, request);
+            const auto returned = Clock::now();
+            if (transport.joinable()) transport.join();
+            music::set_engine_audio_midi_event_hook(audio, {});
+            ASSERT_EQ(result.failure, music::AudioRenderResult::Failure::Cancelled);
+            ASSERT_FALSE(std::filesystem::exists(path));
+            times.push_back(std::chrono::duration<double, std::milli>(returned - requested).count());
+        }
+        std::sort(times.begin(), times.end());
+        std::fprintf(stderr, "cancel_ms phase=%d n=50 p50=%.6f p95=%.6f max=%.6f\n",
+                     phase, times[24], times[47], times.back());
+        EXPECT_LT(times[47], 50.0);
+        EXPECT_LT(times.back(), 100.0);
+        EXPECT_EQ(render(), baseline) << "cancellation poisoned the SoundFont cache";
+    }
+}
+
+TEST(AudioInternal, WarmGraphRebuildTiming) {
+    if (!muse::audio::OfflineTiming::enabled()) GTEST_SKIP() << "set ENGRAVE_AUDIO_TIMING=1";
+    auto opened = music::test::g_engine->open(music::test::corpus_file("ghost_note.mscx"));
+    ASSERT_TRUE(opened);
+    std::vector<double> setup, teardown, create, fonts, flush;
+    for (int i = 0; i < 51; ++i) {
+        ASSERT_TRUE((*opened)->render_audio({}, [](auto) {}));
+        const auto& t = muse::audio::OfflineTiming::current();
+        if (i == 0) continue;
+        setup.push_back(t.setup*1000); teardown.push_back(t.teardown*1000);
+        create.push_back(t.create*1000); fonts.push_back(t.fonts*1000); flush.push_back(t.flush*1000);
+    }
+    const auto report = [](const char* phase, auto values) {
+        std::sort(values.begin(), values.end());
+        std::fprintf(stderr, "warm_ms phase=%s n=50 p50=%.6f p95=%.6f max=%.6f\n",
+                     phase, values[24], values[47], values.back());
+    };
+    report("setup", setup); report("teardown", teardown); report("create", create);
+    report("fonts", fonts); report("flush", flush);
+}

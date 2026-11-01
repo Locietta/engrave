@@ -125,6 +125,7 @@ Ret SoundTrackWriter::write()
     if (!m_isAborted) {
         finalized = true;
         OfflineTimer timer(OfflineTiming::current().encode);
+        OfflineTimer flushTimer(OfflineTiming::current().flush);
         const Ret finalRet = m_encoderPtr->end();
         if (pollCancellation()) return make_ret(Ret::Code::Cancel);
         // Encoding may already have failed; preserve that first error.

@@ -19,6 +19,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+#include "offlinecancellation.h"
 #include "mixer.h"
 
 #include <sstream>
@@ -179,6 +180,7 @@ void Mixer::processTrackChannels(size_t outBufferSize,
     bool filterTracks = (m_mode == ProcessMode::Idle) && !m_tracksToProcessWhenIdle.empty();
 
     for (auto& t : m_tracks) {
+        if (OfflineCancellation::requested()) return;
         t.processed = false;
 
         if (filterTracks && !muse::contains(m_tracksToProcessWhenIdle, t.trackId)) {
@@ -256,6 +258,7 @@ void Mixer::processAuxChannels(float* buffer, samples_t samplesPerChannel)
     const size_t outBufferSize = samplesPerChannel * m_outputSpec.audioChannelCount;
 
     for (TrackData& aux : m_auxTracks) {
+        if (OfflineCancellation::requested()) return;
         //! NOTE Process when the aux received a signal this block (aux.processed) and/or if
         //! it's not yet silent (e.g. reverb is still ringing out)
         if (!aux.processed && isChainSilent(aux.chain)) {

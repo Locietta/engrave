@@ -5,6 +5,7 @@
 
 #include "engine_audio.h"
 #include "audio_output.h"
+#include "audio/engine/internal/offlinecancellation.h"
 #include "global/defer.h"
 #include "audio/engine/internal/offlinetiming.h"
 
@@ -528,6 +529,26 @@ AudioRenderResult export_score_audio(EngineAudio& audio, MasterScore* master, co
         return fail(AudioRenderResult::Failure::EngineFailure, "output path is empty");
     }
 
+    bool cancelled = false;
+    std::exception_ptr callbackError;
+    const auto poll = [&] {
+        // Encoder file writes may originate in C codec callbacks. Unwind only
+        // after leaving the codec, closing the file and idling the graph.
+        if (!cancelled && request.cancelled) {
+            try { cancelled = request.cancelled(); }
+            catch (...) { callbackError = std::current_exception(); cancelled = true; }
+        }
+        return cancelled;
+    };
+    const std::function<bool()> cancellationPoll = poll;
+    OfflineCancellation cancellationScope(cancellationPoll);
+    const auto abortSetup = [&]() {
+        if (callbackError) std::rethrow_exception(callbackError);
+        return fail(AudioRenderResult::Failure::Cancelled, "audio render cancelled during setup");
+    };
+    if (poll()) return abortSetup();
+
+    auto setupTimer = std::make_unique<OfflineTimer>(OfflineTiming::current().setup);
     MasterScore* masterScore = master;
     // Excerpt selection mutes every master part that is absent from, or
     // invisible in, the excerpt (masternotation.cpp:748-770).
@@ -568,7 +589,11 @@ AudioRenderResult export_score_audio(EngineAudio& audio, MasterScore* master, co
     model.setPlayRepeats(request.use_repeats);
     model.setPlayChordSymbols(false);
     model.setIsMetronomeEnabled(false);
-    model.load(masterScore);
+    {
+        OfflineTimer timer(OfflineTiming::current().model);
+        model.load(masterScore);
+    }
+    if (poll()) return abortSetup();
 
     const InstrumentTrackIdSet existingTrackIds = model.existingTrackIdSet();
     if (existingTrackIds.empty()) {
@@ -656,7 +681,9 @@ AudioRenderResult export_score_audio(EngineAudio& audio, MasterScore* master, co
     std::vector<InstrumentTrackId> orderedTrackIds(existingTrackIds.cbegin(), existingTrackIds.cend());
     std::sort(orderedTrackIds.begin(), orderedTrackIds.end());
 
+    auto tracksTimer = std::make_unique<OfflineTimer>(OfflineTiming::current().tracks);
     for (const InstrumentTrackId& trackId : orderedTrackIds) {
+        if (poll()) return abortSetup();
         const mpe::PlaybackData& playbackData = model.resolveTrackPlaybackData(trackId);
         if (!playbackData.isValid()) {
             continue;
@@ -712,6 +739,7 @@ AudioRenderResult export_score_audio(EngineAudio& audio, MasterScore* master, co
 
         const std::string name = track_name(masterScore, model, trackId);
         RetVal2<TrackId, TrackParams> added = context.addTrack(name, playbackData, params);
+        if (poll()) return abortSetup();
         if (!added.ret) {
             return fail(AudioRenderResult::Failure::EngineFailure, "addTrack failed: " + added.ret.toString());
         }
@@ -720,6 +748,8 @@ AudioRenderResult export_score_audio(EngineAudio& audio, MasterScore* master, co
     // Aux 0 is the Muse Reverb send target; aux 1 is empty (desktop adds
     // AUX_CHANNEL_NUM aux tracks, playbackcontroller.cpp:1717-1719, in
     // addAuxTrack (:1304-1360)).
+    tracksTimer.reset();
+    auto auxTimer = std::make_unique<OfflineTimer>(OfflineTiming::current().aux);
     TrackParams reverbParams;
     reverbParams.fxChain = make_reverb_fx_chain();
     RetVal2<TrackId, TrackParams> reverb = context.addAuxTrack(kReverbTrackName, reverbParams);
@@ -731,7 +761,10 @@ AudioRenderResult export_score_audio(EngineAudio& audio, MasterScore* master, co
         return fail(AudioRenderResult::Failure::EngineFailure, "addAuxTrack(aux 2) failed: " + aux2.ret.toString());
     }
 
+    auxTimer.reset();
+    if (poll()) return abortSetup();
     context.resetSources();
+    if (poll()) return abortSetup();
 
     // libopusenc dithers with rand(). 4.7.6 also relied on this for the Ogg
     // stream serial; 5.0 pins the serial itself (oggencoder.cpp:88-91), so the
@@ -743,17 +776,7 @@ AudioRenderResult export_score_audio(EngineAudio& audio, MasterScore* master, co
     // The writer reports completed frames after each successfully encoded block.
     state.midiOutPort.renderedFrames = 0;
 
-    bool cancelled = false;
-    std::exception_ptr callbackError;
-    const auto poll = [&] {
-        // Encoder file writes may originate in C codec callbacks. Unwind only
-        // after leaving the codec, closing the file and idling the graph.
-        if (!cancelled && request.cancelled) {
-            try { cancelled = request.cancelled(); }
-            catch (...) { callbackError = std::current_exception(); cancelled = true; }
-        }
-        return cancelled;
-    };
+    setupTimer.reset();
     io::StreamingFileDevice device(std::filesystem::u8path(request.output_path), request.max_bytes,
                                    request.max_write_bytes, poll);
     if (!device.open(io::IODevice::WriteOnly)) {
