@@ -12,6 +12,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <unordered_map>
 #include <vector>
 
 #include <pugixml.hpp>
@@ -21,6 +22,7 @@
 #include "engraving/dom/chordlist.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/measure.h"
+#include "engraving/dom/location.h"
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/part.h"
@@ -325,7 +327,7 @@ void convert_connections(pugi::xml_node score) {
 }
 
 void inspect(pugi::xml_node node, const std::string& path, std::optional<ElementId> inherited,
-             std::vector<ExportWarning>& warnings) {
+             std::vector<ExportWarning>& warnings, bool standalone_excerpt = false) {
     poll();
     const auto object = node_id(node, inherited);
     for (const auto attr : node.attributes()) {
@@ -359,7 +361,8 @@ void inspect(pugi::xml_node node, const std::string& path, std::optional<Element
         && std::string_view(node.child_value()) != "G") unsupported_value(node.child_value());
     if (path.ends_with("/voice/TimeSig/sigN") && std::string_view(node.child_value()) != "4") unsupported_value(node.child_value());
     if (path.ends_with("/voice/TimeSig/sigD") && std::string_view(node.child_value()) != "4") unsupported_value(node.child_value());
-    if ((path.ends_with("/voice/Chord/durationType") || path.ends_with("/voice/Rest/durationType")) && !one_of(node.child_value(), {"whole", "half", "quarter"}))
+    if ((path.ends_with("/voice/Chord/durationType") || path.ends_with("/voice/Rest/durationType")) && !one_of(node.child_value(), {"whole", "half", "quarter"})
+        && !(standalone_excerpt && std::string_view(node.child_value()) == "eighth"))
         unsupported_value(node.child_value());
     if (path.ends_with("/Spanner")) {
         const std::string_view type = node.attribute("type").value();
@@ -369,6 +372,10 @@ void inspect(pugi::xml_node node, const std::string& path, std::optional<Element
     if (path == "museScore/Score/Part/Staff/bracket" && std::string_view(node.attribute("type").value()) != "1")
         unsupported_value(node.attribute("type").value());
     if (path.ends_with("/voice/KeySig/concertKey") && std::string_view(node.child_value()) != "0") unsupported_value(node.child_value());
+    if (standalone_excerpt && path.ends_with("/VBox/Text/style") && std::string_view(node.child_value()) != "instrument_excerpt")
+        unsupported_value(node.child_value());
+    if (standalone_excerpt && (path.ends_with("/appoggiatura") || path.ends_with("/grace8after"))
+        && !std::string_view(node.child_value()).empty()) unsupported_value(node.child_value());
     for (const auto child : node.children()) {
         if (child.type() != pugi::node_element) continue;
         const std::string name = child.name();
@@ -377,12 +384,18 @@ void inspect(pugi::xml_node node, const std::string& path, std::optional<Element
         if (path == "museScore/Score" && name == "PageLocks") {
             continue;
         }
-        if (!allowed(path, name)) {
+        const bool excerpt_field = standalone_excerpt && (
+            (path == "museScore/Score/Staff" && name == "VBox")
+            || (path.ends_with("/VBox") && one_of(name, {"eid", "linkedTo", "height", "Text"}))
+            || (path.ends_with("/VBox/Text") && one_of(name, {"eid", "style", "text"}))
+            || (path.ends_with("/voice/Chord") && one_of(name, {"appoggiatura", "grace8after"}))
+            || (path.ends_with("/location") && name == "grace"));
+        if (!allowed(path, name) && !excerpt_field) {
             warnings.push_back({warning_code(name), "4.70 conversion is not implemented for " + path + "/" + name,
                                     source_object(child, object)});
             continue;
         }
-        inspect(child, name == "Score" ? "museScore/Score" : path + "/" + name, object, warnings);
+        inspect(child, name == "Score" ? "museScore/Score" : path + "/" + name, object, warnings, standalone_excerpt);
     }
 }
 
@@ -499,21 +512,22 @@ Result<ExportOutput> export_score(const music::EngineContext& context, const mus
         normalize_warnings(warnings);
     }
     const auto score_id = score.eid().isValid() ? std::optional(from_engine(score.eid())) : std::nullopt;
-    if (!score.isMaster()) {
-        warnings.push_back({"B470_UNSUPPORTED_FEATURE", "4.70 export of an excerpt is not implemented", score_id});
-        return refused(std::move(warnings));
-    }
-    auto& master = static_cast<MasterScore&>(score);
+    auto& master = *score.masterScore();
     std::vector<Score*> source_scores{&score};
-    for (auto* excerpt : master.excerpts()) if (excerpt->excerptScore()) source_scores.push_back(excerpt->excerptScore());
+    if (score.isMaster())
+        for (auto* excerpt : master.excerpts()) if (excerpt->excerptScore()) source_scores.push_back(excerpt->excerptScore());
+    // Warning locators use document order even for a standalone selection.
+    std::vector<Score*> document_scores{&master};
+    for (auto* excerpt : master.excerpts()) if (excerpt->excerptScore()) document_scores.push_back(excerpt->excerptScore());
     for (auto* item : document_objects(master)) {
         poll();
         if (!item->isNote()) continue;
+        if (std::find(source_scores.begin(), source_scores.end(), static_cast<Note*>(item)->score()) == source_scores.end()) continue;
         auto* tie = static_cast<Note*>(item)->tieFor();
         if (tie && tie->startNote() && tie->endNote()
             && tie->startNote()->ppitch() != tie->endNote()->ppitch()) {
             auto* note = static_cast<Note*>(item);
-            const auto score_index = std::find(source_scores.begin(), source_scores.end(), note->score()) - source_scores.begin();
+            const auto score_index = std::find(document_scores.begin(), document_scores.end(), note->score()) - document_scores.begin();
             std::size_t measure_index = 0;
             for (auto* measure = note->score()->firstMeasure(); measure && measure != note->chord()->measure(); measure = measure->nextMeasure()) ++measure_index;
             const auto& notes = note->chord()->notes();
@@ -593,8 +607,61 @@ Result<ExportOutput> export_score(const music::EngineContext& context, const mus
     std::vector<pugi::xml_node> score_nodes{score_node};
     for (std::size_t i = 0; i < score_nodes.size(); ++i)
         for (auto excerpt : score_nodes[i].children("Score")) score_nodes.push_back(excerpt);
+    if (!score.isMaster()) {
+        // Reuse the engine's legacy location calculation, including grace-note
+        // indices. Resolve only endpoints actually emitted by standalone 5.00.
+        const auto notes = score_node.select_nodes(".//Note");
+        std::unordered_map<std::string, Note*> source_notes;
+        std::unordered_map<std::string, pugi::xml_node> emitted_notes;
+        for (auto* object : document_objects(master)) {
+            poll();
+            if (object->isNote() && static_cast<Note*>(object)->score() == &score)
+                source_notes.emplace(object->eid().toStdString(), static_cast<Note*>(object));
+        }
+        for (auto match : notes) emitted_notes.emplace(match.node().child_value("eid"), match.node());
+        for (auto match : notes) {
+            poll();
+            auto end_xml = match.node();
+            for (auto tie = end_xml.child("Tie"); tie;) {
+                auto next = tie.next_sibling("Tie");
+                bool checked = !tie.first_attribute();
+                for (auto field : tie.children())
+                    if (!one_of(field.name(), {"startElement", "endElement", "eid", "track", "linkedTo"})) checked = false;
+                const auto found_end = source_notes.find(end_xml.child_value("eid"));
+                Note* end = found_end == source_notes.end() ? nullptr : found_end->second;
+                auto* source_tie = end ? end->tieBack() : nullptr;
+                const auto found_start = emitted_notes.find(tie.child_value("startElement"));
+                const auto start_xml = found_start == emitted_notes.end() ? pugi::xml_node{} : found_start->second;
+                if (checked && source_tie && source_tie->startNote() && start_xml
+                    && source_tie->startNote()->eid().toStdString() == tie.child_value("startElement")
+                    && std::string_view(end_xml.child_value("eid")) == tie.child_value("endElement")) {
+                    const auto connect = [](pugi::xml_node parent, const char* direction, Note* from, Note* to) {
+                        auto relative = Location::forElement(to, false);
+                        relative.toRelative(Location::forElement(from, false));
+                        auto spanner = parent.append_child("Spanner");
+                        spanner.append_attribute("type") = "Tie";
+                        auto location = spanner.append_child(direction).append_child("location");
+                        const auto integer = [&](const char* name, int value, int neutral = 0) {
+                            if (value != neutral) location.append_child(name).text().set(value);
+                        };
+                        integer("staves", relative.staff()); integer("voices", relative.voice());
+                        integer("measures", relative.measure()); integer("notes", relative.note());
+                        integer("grace", relative.graceIndex(), Location::relative().graceIndex());
+                        if (!relative.frac().isZero()) location.append_child("fractions").text().set(relative.frac().reduced().toString().toStdString().c_str());
+                        return spanner;
+                    };
+                    auto forward = connect(start_xml, "next", source_tie->startNote(), end);
+                    auto legacy = forward.prepend_child("Tie");
+                    for (const char* field : {"eid", "linkedTo"}) if (auto value = tie.child(field)) legacy.append_copy(value);
+                    connect(end_xml, "prev", end, source_tie->startNote());
+                    end_xml.remove_child(tie);
+                }
+                tie = next;
+            }
+        }
+    }
     for (auto item : score_nodes) convert_connections(item);
-    inspect(root, "museScore", {}, warnings);
+    inspect(root, "museScore", {}, warnings, !score.isMaster());
 
     if (source_scores.size() != score_nodes.size()) throw std::runtime_error("excerpt count changed during serialization");
     for (std::size_t score_index = 0; score_index < score_nodes.size(); ++score_index) {

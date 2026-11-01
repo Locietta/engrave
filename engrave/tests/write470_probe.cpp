@@ -9,7 +9,7 @@
 
 int main(int argc, char** argv) {
     if (argc != 6 && argc != 7) {
-        std::fprintf(stderr, "usage: write470_probe ASSETS INPUT OUTPUT mscx|mscz default|4.70|5.00 [paired|one-end]\n");
+        std::fprintf(stderr, "usage: write470_probe ASSETS INPUT OUTPUT mscx|mscz default|4.70|5.00 [paired|one-end|excerpt]\n");
         return 1;
     }
     engrave::EngineOptions engine_options;
@@ -18,7 +18,12 @@ int main(int argc, char** argv) {
     if (!engine) { std::fprintf(stderr, "%s\n", engine.error().message.c_str()); return 2; }
     auto document = (*engine)->open(std::filesystem::u8path(argv[2]));
     if (!document) { std::fprintf(stderr, "%s\n", document.error().message.c_str()); return 2; }
-    if (argc == 7) {
+    engrave::ScoreSel selection;
+    if (argc == 7 && std::string(argv[6]) == "excerpt") {
+        auto outline = (*document)->outline();
+        if (!outline || outline->excerpts.empty()) return 4;
+        selection = {outline->excerpts.front().id};
+    } else if (argc == 7) {
         auto notes = (*document)->query({.types = {"Note"}});
         if (!notes || notes->elements.size() != 2) return 4;
         engrave::Batch batch;
@@ -28,6 +33,7 @@ int main(int argc, char** argv) {
         if (!(*document)->edit(batch)) return 4;
     }
     engrave::ExportOptions options;
+    options.score = selection;
     const std::string format(argv[4]);
     if (format == "mscx") options.format = engrave::Format::Mscx;
     else if (format == "mscz") options.format = engrave::Format::Mscz;
