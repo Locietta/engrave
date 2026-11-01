@@ -417,6 +417,7 @@ samples_t FluidSynth::process(float* buffer, samples_t samplesPerChannel)
         return 0;
     }
 
+    if (OfflineCancellation::requested()) return 0;
     if (m_flushSoundRequested) {
         doFlushSound();
         m_flushSoundRequested = false;
@@ -462,6 +463,7 @@ bool FluidSynth::processSequence(const FluidSequencer::EventSequence& sequence, 
         handleEvent(std::get<midi::Event>(event));
     }
 
+    if (OfflineCancellation::requested()) return false;
     fluid_synth_tune_notes(m_fluid->synth, 0, 0, m_tuning.size(), m_tuning.keys.data(), m_tuning.pitches.data(), true);
 
     if (samples == 0) {
@@ -472,7 +474,7 @@ bool FluidSynth::processSequence(const FluidSequencer::EventSequence& sequence, 
     // the sink copy, leaving event timing and upstream 4096-frame DSP unchanged.
     for (samples_t offset = 0; offset < samples;) {
         if (OfflineCancellation::requested()) return false;
-        const samples_t count = std::min<samples_t>(256, samples - offset);
+        const samples_t count = std::min<samples_t>(64, samples - offset);
         float* out = buffer + offset * FLUID_AUDIO_CHANNELS_COUNT;
         if (fluid_synth_write_float(m_fluid->synth, count,
                                    out, 0, FLUID_AUDIO_CHANNELS_COUNT,
