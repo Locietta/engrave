@@ -86,6 +86,60 @@ staff and musical objects (including ties) retain their source EIDs. All
 master/excerpt note graphs are checked for unequal-pitch ties before writing.
 This does not establish general instrument/rhythm/spanner compatibility.
 
+## Selected excerpt export (engrave-25 candidate)
+
+An excerpt selected through `ExportOptions::score` is now converted from the
+same standalone 5.00 serialization used by the default native exporter. Only
+that excerpt is emitted. The serializer retains links between emitted objects
+and omits references to master objects outside the standalone file. The
+selected score supplies its own style and part names. The master export path
+and the 5.00 writer are unchanged.
+
+Selection additionally accepts the legacy instrument-excerpt title VBox,
+eighth durations, appoggiaturas and eighth after-graces used by the full
+`fixtures/golden/linked_parts.mscx` excerpt. Ties use the existing engine
+`Location` calculation, including grace indices, rather than a new musical
+timing algorithm. Unrecognized tie properties and other constructs still
+refuse output with the frozen warnings. Invalid-tie scans cover emitted
+scores; non-EID warning locators retain their document-wide score indices.
+
+`tests/test_write470_excerpts.py` captures both native formats for the parent's
+`tests/phase_b/excerpts.mscx` and full linked-parts fixture. It checks empty
+warning arrays and representable EIDs/link edges against standalone 5.00,
+then compares every field in the independently dumped source excerpt body
+with the standalone 4.70 result. `--verify-only` permits Windows captures to
+be checked on physical Linux. `Export470.SelectedExcerptIsStandaloneAndBounded`
+also checks reopening, output limits, in-process default/explicit 5.00 byte
+equality and unsupported-style refusal.
+
+EXECUTED on Windows and physical `cachy`: native builds with
+`engrave_tests=y`, 15/15 Export470 tests, 21/21 API tests, and both fixture
+selections in MSCX/MSCZ with exactly `[]` warnings. The archived 4.7.6 reader
+opens all eight Windows/Linux 4.70 captures and matches the complete source
+excerpt bodies (parts/names, measures, signatures, notes/ties and all other
+dumped fields). Each oracle run verifies all 87 SHA256SUMS entries and sets
+its subprocess LD_LIBRARY_PATH solely to the oracle's `lib/`. The full Linux
+bounded oracle suite also passes 26 exports, the real paired edit and frozen
+refusals; focused gap checks pass on both hosts. The frozen engrave-19
+default/explicit 5.00 byte checks pass on both hosts with their documented
+revision/ZIP-time normalization. The byte runner now accepts the probe's
+structured empty warning array instead of requiring empty stdout.
+
+The archive/manifest-verified Windows 4.7.6 host independently re-exported
+all four Windows selection outputs to both formats: all eight re-exports
+retain complete oracle semantics, element EIDs and serialized links. A
+separate master-with-excerpt control measures the historical MSCX limitation:
+that old host discards the separately archived nested excerpt when extracting
+its MSCX output, while its MSCZ output retains it. Standalone selections put
+their own content in the main score and retain it through both old formats.
+This does not establish general old-host MSCX excerpt retention.
+
+Retained evidence is in the parent's ignored `notes/phase-b/e25/`, with remote
+captures at `cachy:~/OSS/engrave-e25/`. The parent owns the full two-host
+engine gate, hash-pinned golden comparison, host MCP route tests, final pin/tag
+and independent Terra/Astra review. No full engine gate, pin/tag, push or
+phase acceptance is claimed here.
+
 The five 5.00-only style differences have explicit projections:
 `windsNameByGroup` and `vocalsNameByGroup` boolean values are omitted with
 the group-name behavior; ordinary instrument names are retained.

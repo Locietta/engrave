@@ -12,6 +12,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <unordered_map>
 #include <vector>
 
 #include <pugixml.hpp>
@@ -610,7 +611,14 @@ Result<ExportOutput> export_score(const music::EngineContext& context, const mus
         // Reuse the engine's legacy location calculation, including grace-note
         // indices. Resolve only endpoints actually emitted by standalone 5.00.
         const auto notes = score_node.select_nodes(".//Note");
-        const auto objects = document_objects(master);
+        std::unordered_map<std::string, Note*> source_notes;
+        std::unordered_map<std::string, pugi::xml_node> emitted_notes;
+        for (auto* object : document_objects(master)) {
+            poll();
+            if (object->isNote() && static_cast<Note*>(object)->score() == &score)
+                source_notes.emplace(object->eid().toStdString(), static_cast<Note*>(object));
+        }
+        for (auto match : notes) emitted_notes.emplace(match.node().child_value("eid"), match.node());
         for (auto match : notes) {
             poll();
             auto end_xml = match.node();
@@ -619,16 +627,11 @@ Result<ExportOutput> export_score(const music::EngineContext& context, const mus
                 bool checked = !tie.first_attribute();
                 for (auto field : tie.children())
                     if (!one_of(field.name(), {"startElement", "endElement", "eid", "track", "linkedTo"})) checked = false;
-                Note* end = nullptr;
-                for (auto* object : objects) {
-                    poll();
-                    if (object->isNote() && static_cast<Note*>(object)->score() == &score
-                        && object->eid().toStdString() == end_xml.child_value("eid")) end = static_cast<Note*>(object);
-                }
+                const auto found_end = source_notes.find(end_xml.child_value("eid"));
+                Note* end = found_end == source_notes.end() ? nullptr : found_end->second;
                 auto* source_tie = end ? end->tieBack() : nullptr;
-                pugi::xml_node start_xml;
-                for (auto candidate : notes)
-                    if (std::string_view(candidate.node().child_value("eid")) == tie.child_value("startElement")) start_xml = candidate.node();
+                const auto found_start = emitted_notes.find(tie.child_value("startElement"));
+                const auto start_xml = found_start == emitted_notes.end() ? pugi::xml_node{} : found_start->second;
                 if (checked && source_tie && source_tie->startNote() && start_xml
                     && source_tie->startNote()->eid().toStdString() == tie.child_value("startElement")
                     && std::string_view(end_xml.child_value("eid")) == tie.child_value("endElement")) {
