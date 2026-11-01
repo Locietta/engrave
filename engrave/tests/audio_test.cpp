@@ -256,15 +256,39 @@ TEST(Audio, EncodedFileBudgetDoesNotPublishPartialAudio) {
         EXPECT_EQ(bounded.bytes, original.bytes);
         EXPECT_EQ(bounded.result.bytes, original.bytes.size());
 
-        options.max_bytes = original.bytes.size() / 2;
+        for (const std::size_t limit : {original.bytes.size() / 2, original.bytes.size() - 1}) {
+            options.max_bytes = limit;
+            std::size_t delivered = 0;
+            const auto failed = document->render_audio(options, [&delivered](std::span<const std::byte> chunk) {
+                delivered += chunk.size();
+            });
+            ASSERT_FALSE(failed);
+            EXPECT_EQ(failed.error().code, engrave::ErrorCode::ResourceLimit);
+            EXPECT_EQ(delivered, 0u);
+        }
+        options.max_bytes.reset();
+        EXPECT_EQ(detail::render_audio(*document, options).bytes, original.bytes);
+    }
+}
+
+TEST(Audio, IntegerWavStopsAtTheByteLimit) {
+    auto document = detail::open_score(detail::audio_score());
+    ASSERT_TRUE(document);
+    for (const int depth : {16, 24}) {
+        engrave::AudioOptions options;
+        options.bit_depth = depth;
+        options.max_bytes = 64;
         std::size_t delivered = 0;
-        const auto failed = document->render_audio(options, [&delivered](std::span<const std::byte> chunk) {
-            delivered += chunk.size();
+        const auto failed = document->render_audio(options, [&delivered](std::span<const std::byte> bytes) {
+            delivered += bytes.size();
         });
         ASSERT_FALSE(failed);
         EXPECT_EQ(failed.error().code, engrave::ErrorCode::ResourceLimit);
         EXPECT_EQ(delivered, 0u);
         options.max_bytes.reset();
+        const auto original = detail::render_audio(*document, options);
+        ASSERT_FALSE(original.bytes.empty());
+        options.max_bytes = original.bytes.size() + 1;
         EXPECT_EQ(detail::render_audio(*document, options).bytes, original.bytes);
     }
 }
