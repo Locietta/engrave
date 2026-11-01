@@ -88,11 +88,21 @@ struct AudioOptions {
     // 0 takes the Engine's rate, which EngineOptions::audio_sample_rate fixed;
     // any other value must equal it, and is Unsupported when it does not.
     std::int32_t sample_rate = 0;
+    // Hard limits on the seekable intermediate encoded file. max_bytes limits
+    // its final extent (and therefore bytes sent to the sink); max_write_bytes
+    // separately counts every successful write, including header rewrites.
+    // Unset means unlimited apart from the engine's existing 1 GiB projection.
+    // A limit hit discards the file and calls no sink. Budget for the encoder's
+    // headers and final flush as well as the repeat-expanded score and 3 s audio
+    // tail. The engine renders stereo at sample_rate: WAV grows with rate and
+    // bit depth; FLAC also depends on compressibility; lossy formats depend on
+    // bitrate, packet/container overhead and the encoder's final flush.
+    std::optional<std::uint64_t> max_bytes;
+    std::optional<std::uint64_t> max_write_bytes;
 };
 
-// Receives the encoded stream in chunks while the render runs, so a long render
-// never has to be held in memory. An exception thrown by the sink stops the
-// render and reaches the caller.
+// Receives the finished encoded stream in chunks after the intermediate file has
+// been finalized. An exception thrown by the sink reaches the caller.
 using ByteSink = std::function<void(std::span<const std::byte> chunk)>;
 
 struct AudioRenderResult {

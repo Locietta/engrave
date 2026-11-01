@@ -742,7 +742,8 @@ AudioRenderResult export_score_audio(EngineAudio& audio, MasterScore* master, co
     // The writer reports completed frames after each successfully encoded block.
     state.midiOutPort.renderedFrames = 0;
 
-    io::StreamingFileDevice device(std::filesystem::u8path(request.output_path));
+    io::StreamingFileDevice device(std::filesystem::u8path(request.output_path), request.max_bytes,
+                                   request.max_write_bytes);
     if (!device.open(io::IODevice::WriteOnly)) {
         return fail(AudioRenderResult::Failure::Io,
                     std::string("cannot write ") + audio_format_name(request.format) + " output: '"
@@ -762,6 +763,12 @@ AudioRenderResult export_score_audio(EngineAudio& audio, MasterScore* master, co
     // Leave the graph idle, like AudioContext::doSaveSoundTrack()
     // (audiocontext.cpp:934-940).
     masterChain->setMode(ProcessMode::Idle);
+
+    if (device.limitExceeded()) {
+        std::error_code ignored;
+        std::filesystem::remove(std::filesystem::u8path(request.output_path), ignored);
+        return fail(AudioRenderResult::Failure::ResourceLimit, "audio intermediate byte limit exceeded");
+    }
 
     if (!writeRet || device.hasError()) {
         // SoundTrackWriter returns Err::ErrorEncode when an encoder could not
