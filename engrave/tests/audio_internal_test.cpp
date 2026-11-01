@@ -11,11 +11,13 @@
 #include "global/io/iodevice.h"
 
 #include <filesystem>
+#include <fstream>
 #include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <cstdio>
 #include <thread>
+#include <latch>
 #include <memory>
 #include <span>
 #include <stdexcept>
@@ -387,6 +389,143 @@ TEST(AudioInternal, CancellationLatencyDistribution) {
     }
 }
 
+
+// Same 12 x 256 x 16 input shape as the M2 review, generated without a desktop.
+TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
+    using Clock = std::chrono::steady_clock;
+    const auto ownerThread = std::this_thread::get_id();
+    const std::string prefix = "engrave-dense-cancel-" + std::to_string(
+#ifdef _WIN32
+        _getpid()
+#else
+        getpid()
+#endif
+    );
+    const auto xml = std::filesystem::temp_directory_path() / (prefix + ".musicxml");
+    {
+        std::ofstream out(xml);
+        out << "<?xml version=\"1.0\"?><score-partwise version=\"4.0\"><part-list>";
+        for (int p = 1; p <= 12; ++p)
+            out << "<score-part id=\"P" << p << "\"><part-name>Part " << p
+                << "</part-name><midi-instrument id=\"I" << p << "\"><midi-channel>" << p
+                << "</midi-channel><midi-program>1</midi-program></midi-instrument></score-part>";
+        out << "</part-list>";
+        for (int p = 1; p <= 12; ++p) {
+            out << "<part id=\"P" << p << "\">";
+            for (int m = 1; m <= 256; ++m) {
+                out << "<measure number=\"" << m << "\">";
+                if (m == 1) out << "<attributes><divisions>480</divisions><time><beats>4</beats>"
+                    "<beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes>"
+                    "<direction><direction-type><metronome><beat-unit>quarter</beat-unit>"
+                    "<per-minute>300</per-minute></metronome></direction-type><sound tempo=\"300\"/></direction>";
+                for (char step : std::string("CDEFGABCCDEFGABC"))
+                    out << "<note><pitch><step>" << step << "</step><octave>4</octave></pitch>"
+                        "<duration>120</duration><type>16th</type></note>";
+                out << "</measure>";
+            }
+            out << "</part>";
+        }
+        out << "</score-partwise>";
+    }
+    auto opened = music::test::g_engine->open(xml);
+    std::filesystem::remove(xml);
+    ASSERT_TRUE(opened);
+    auto& document = **opened;
+    const auto render = [&] {
+        std::vector<std::byte> bytes;
+        EXPECT_TRUE(document.render_audio({}, [&](auto chunk) { bytes.insert(bytes.end(), chunk.begin(), chunk.end()); }));
+        return bytes;
+    };
+    const auto baseline = render();
+    ASSERT_FALSE(baseline.empty());
+    auto& audio = engrave::DocumentAccess::context(document).audio();
+    auto* master = engrave::DocumentAccess::master_score(document);
+    const auto path = std::filesystem::temp_directory_path() / (prefix + ".wav");
+    using Phase = muse::audio::OfflineCancellation::Phase;
+    const char* names[] = {"before-synthesis", "playback-model", "synthesis", "encode"};
+    for (int phase = 0; phase < 4; ++phase) {
+        std::vector<double> times;
+        for (int trial = 0; trial < 50; ++trial) {
+            bool cancelled = false;
+            bool modelStarted = false;
+            int modelPolls = 0;
+            std::latch modelStart{1};
+            std::atomic<bool> external{false};
+            Clock::time_point requested;
+            std::thread transport;
+            if (phase == 1) transport = std::thread([&] {
+                modelStart.wait();
+                std::this_thread::sleep_for(std::chrono::milliseconds(1 + trial % 5));
+                requested = Clock::now();
+                external.store(true);
+            });
+            const auto cancel = [&] { if (!cancelled) { requested = Clock::now(); cancelled = true; } };
+            music::AudioRenderRequest request;
+            const auto utf8 = path.generic_u8string();
+            request.output_path.assign(utf8.begin(), utf8.end());
+            request.cancelled = [&] {
+                EXPECT_EQ(std::this_thread::get_id(), ownerThread);
+                if (phase == 3 && muse::audio::OfflineCancellation::phase == Phase::Encoding) cancel();
+                if (phase == 0 && muse::audio::OfflineCancellation::phase == Phase::Sequencer) cancel();
+                if (phase == 1 && muse::audio::OfflineCancellation::phase == Phase::PlaybackModel
+                    && ++modelPolls == 2000 + trial * 3000 && !modelStarted) { modelStarted = true; modelStart.count_down(); }
+                if (external.load() && !cancelled) {
+                    EXPECT_EQ(muse::audio::OfflineCancellation::phase, Phase::PlaybackModel);
+                    cancelled = true;
+                }
+                return cancelled;
+            };
+            if (phase == 2) music::set_engine_audio_midi_event_hook(audio, [&](const auto&, uint64_t) {
+                if (muse::audio::OfflineCancellation::phase == Phase::Synthesis) cancel();
+            });
+            const auto result = music::export_score_audio(audio, master, request);
+            const auto returned = Clock::now();
+            if (transport.joinable()) {
+                if (!modelStarted) modelStart.count_down();
+                transport.join();
+                ASSERT_TRUE(modelStarted);
+            }
+            music::set_engine_audio_midi_event_hook(audio, {});
+            ASSERT_TRUE(cancelled);
+            ASSERT_EQ(result.failure, music::AudioRenderResult::Failure::Cancelled);
+            ASSERT_FALSE(std::filesystem::exists(path));
+            times.push_back(std::chrono::duration<double, std::milli>(returned - requested).count());
+            std::fprintf(stderr, "dense_cancel_sample phase=%s trial=%d ms=%.6f\n", names[phase], trial, times.back());
+        }
+        std::sort(times.begin(), times.end());
+        std::fprintf(stderr, "dense_cancel_ms phase=%s n=50 p50=%.6f p95=%.6f max=%.6f\n",
+                     names[phase], times[24], times[47], times.back());
+        EXPECT_LE(times[47], 30.0);
+        EXPECT_LE(times.back(), 50.0);
+        EXPECT_EQ(render(), baseline);
+    }
+    // Exercise error translation and publication through the public API too.
+    engrave::AudioOptions options;
+    int modelPolls = 0, sinks = 0;
+    options.cancelled = [&] { return muse::audio::OfflineCancellation::phase == Phase::PlaybackModel && ++modelPolls == 3000; };
+    const auto result = document.render_audio(options, [&](auto) { ++sinks; });
+    ASSERT_FALSE(result);
+    EXPECT_EQ(result.error().code, engrave::ErrorCode::Cancelled);
+    EXPECT_EQ(sinks, 0);
+    const auto& state = *engrave::DocumentAccess::impl(document).engine;
+    const auto intermediate = state.cache_dir / ("engrave-audio-" + std::to_string(
+#ifdef _WIN32
+        _getpid()
+#else
+        getpid()
+#endif
+    ) + "-" + std::to_string(state.audio_render_index) + ".wav");
+    EXPECT_FALSE(std::filesystem::exists(intermediate));
+    modelPolls = 0;
+    options.cancelled = [&]() -> bool {
+        if (muse::audio::OfflineCancellation::phase == Phase::PlaybackModel && ++modelPolls == 3000)
+            throw std::runtime_error("model cancellation callback");
+        return false;
+    };
+    EXPECT_THROW((void)document.render_audio(options, [](auto) {}), std::runtime_error);
+    EXPECT_EQ(render(), baseline);
+}
+
 TEST(AudioInternal, WarmGraphRebuildTiming) {
     if (!muse::audio::OfflineTiming::enabled()) GTEST_SKIP() << "set ENGRAVE_AUDIO_TIMING=1";
     auto opened = music::test::g_engine->open(music::test::corpus_file("ghost_note.mscx"));
@@ -406,4 +545,36 @@ TEST(AudioInternal, WarmGraphRebuildTiming) {
     };
     report("setup", setup); report("teardown", teardown); report("create", create);
     report("fonts", fonts); report("flush", flush);
+}
+
+TEST(AudioInternal, CancellationDuringPublicationCleansUpAndRecovers) {
+    auto opened = music::test::g_engine->open(music::test::corpus_file("repeat70.mscx"));
+    ASSERT_TRUE(opened);
+    auto& document = **opened;
+    const auto render = [&] {
+        std::vector<std::byte> bytes;
+        EXPECT_TRUE(document.render_audio({}, [&](auto chunk) { bytes.insert(bytes.end(), chunk.begin(), chunk.end()); }));
+        return bytes;
+    };
+    const auto baseline = render();
+    ASSERT_GT(baseline.size(), 1u << 20);
+    bool cancel = false;
+    int sinks = 0;
+    engrave::AudioOptions options;
+    const auto owner = std::this_thread::get_id();
+    options.cancelled = [&] { EXPECT_EQ(std::this_thread::get_id(), owner); return cancel; };
+    const auto result = document.render_audio(options, [&](auto) { ++sinks; cancel = true; });
+    ASSERT_FALSE(result);
+    EXPECT_EQ(result.error().code, engrave::ErrorCode::Cancelled);
+    EXPECT_EQ(sinks, 1);
+    const auto& state = *engrave::DocumentAccess::impl(document).engine;
+    const auto intermediate = state.cache_dir / ("engrave-audio-" + std::to_string(
+#ifdef _WIN32
+        _getpid()
+#else
+        getpid()
+#endif
+    ) + "-" + std::to_string(state.audio_render_index) + ".wav");
+    EXPECT_FALSE(std::filesystem::exists(intermediate));
+    EXPECT_EQ(render(), baseline);
 }

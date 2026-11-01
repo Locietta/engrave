@@ -23,6 +23,7 @@
 #pragma once
 
 #include <functional>
+#include "offlinecancellation.h"
 #include <map>
 #include <set>
 
@@ -190,9 +191,12 @@ protected:
     {
         while (m_currentMainSequenceIt != m_mainStreamEvents.end()
                && m_currentMainSequenceIt->first <= m_playbackPosition) {
+            if (OfflineCancellation::requested()) return;
             EventSequence& sequence = result[m_currentMainSequenceIt->first];
-            sequence.insert(sequence.end(), m_currentMainSequenceIt->second.cbegin(),
-                            m_currentMainSequenceIt->second.cend());
+            for (const auto& event : m_currentMainSequenceIt->second) {
+                if (OfflineCancellation::requested()) return;
+                sequence.push_back(event);
+            }
             m_currentMainSequenceIt = std::next(m_currentMainSequenceIt);
         }
     }
@@ -205,9 +209,12 @@ protected:
 
         while (m_currentOffSequenceIt != m_offStreamEvents.end()
                && m_currentOffSequenceIt->first <= m_offstreamPosition) {
+            if (OfflineCancellation::requested()) return;
             EventSequence& sequence = result[m_currentOffSequenceIt->first];
-            sequence.insert(sequence.end(), std::make_move_iterator(m_currentOffSequenceIt->second.begin()),
-                            std::make_move_iterator(m_currentOffSequenceIt->second.end()));
+            for (auto& event : m_currentOffSequenceIt->second) {
+                if (OfflineCancellation::requested()) return;
+                sequence.push_back(std::move(event));
+            }
             m_currentOffSequenceIt = m_offStreamEvents.erase(m_currentOffSequenceIt);
         }
 

@@ -308,6 +308,7 @@ Result<AudioRenderResult> Document::render_audio(const AudioOptions& options, co
     std::uint64_t bytes = 0;
     std::vector<std::byte> chunk(audio_chunk_bytes);
     while (in) {
+        if (options.cancelled && options.cancelled()) return fail(ErrorCode::Cancelled, "audio render cancelled");
         in.read(reinterpret_cast<char*>(chunk.data()), static_cast<std::streamsize>(chunk.size()));
         const auto count = in.gcount();
         if (count <= 0) break;

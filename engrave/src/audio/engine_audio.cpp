@@ -10,6 +10,8 @@
 #include "audio/engine/internal/offlinetiming.h"
 
 #include <algorithm>
+#include <array>
+#include <thread>
 #include <cstdlib>
 #include <filesystem>
 #include <exception>
@@ -213,6 +215,42 @@ SoundTrackFormat make_soundtrack_format(EngineAudioFormat format, const AudioRen
 
     return result;
 }
+
+#ifdef _WIN32
+// Windows benefits from parallel frees; glibc arena contention makes this slower
+// on Linux, which retains synchronous event destruction.
+// Release only value-owned playback events off-thread. Score listeners, synths,
+// codecs, SoundFonts and cancellation callbacks remain on the owner thread.
+// Join before returning: cancellation never leaves deferred cleanup behind.
+void release_playback_events(PlaybackModel& model)
+{
+    const auto ids = model.existingTrackIdSet();
+    size_t count = 0;
+    for (const auto& id : ids) count += model.resolveTrackPlaybackData(id).originEvents.size();
+    if (count < 16384 || ids.size() < 2) return;
+
+    std::array<std::vector<mpe::PlaybackEventsMap>, 4> batches;
+    size_t index = 0;
+    for (const auto& id : ids) {
+        auto& events = model.resolveTrackPlaybackData(id).originEvents;
+        batches[index++ % batches.size()].push_back(std::move(events));
+        events = {};
+    }
+    std::array<std::thread, 3> workers;
+    size_t started = 0;
+    try {
+        for (; started < workers.size(); ++started) {
+            workers[started] = std::thread([&, i = started] { batches[i].clear(); });
+        }
+    } catch (const std::system_error&) {
+        // Resource exhaustion falls back to synchronous cleanup of the batches
+        // that were not handed to a worker.
+    }
+    for (size_t i = started; i < batches.size(); ++i) batches[i].clear();
+    for (size_t i = 0; i < started; ++i) workers[i].join();
+}
+
+#endif
 
 const char* audio_format_name(EngineAudioFormat format)
 {
@@ -586,12 +624,24 @@ AudioRenderResult export_score_audio(EngineAudio& audio, MasterScore* master, co
     // PlaybackModel stays alive until the render has consumed the playback data
     // streams; the audio tracks reference them.
     PlaybackModel model(&state.profiles);
+#ifdef _WIN32
+    // Declared before the graph: its references are gone before event cleanup.
+    DEFER { release_playback_events(model); };
+#endif
     model.setPlayRepeats(request.use_repeats);
     model.setPlayChordSymbols(false);
     model.setIsMetronomeEnabled(false);
     {
         OfflineTimer timer(OfflineTiming::current().model);
-        model.load(masterScore);
+        // Only this private sentinel unwinds construction; callback exceptions
+        // remain latched by poll() and are rethrown by abortSetup().
+        struct CancelledModel {};
+        OfflineCancellation::ModelScope phase;
+        try {
+            model.load(masterScore, [&] { if (poll()) throw CancelledModel{}; });
+        } catch (const CancelledModel&) {
+            return abortSetup();
+        }
     }
     if (poll()) return abortSetup();
 

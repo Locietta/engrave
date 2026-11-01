@@ -9,8 +9,23 @@ class OfflineCancellation {
     inline static thread_local const std::function<bool()>* s_poll = nullptr;
     const std::function<bool()>* m_previous;
 public:
-    enum class Phase { Other, Synthesis };
+    enum class Phase { Other, PlaybackModel, Sequencer, Synthesis, Encoding };
     inline static thread_local Phase phase = Phase::Other;
+    class SequencerScope {
+        Phase previous = std::exchange(phase, Phase::Sequencer);
+    public:
+        ~SequencerScope() { phase = previous; }
+    };
+    class EncodingScope {
+        Phase previous = std::exchange(phase, Phase::Encoding);
+    public:
+        ~EncodingScope() { phase = previous; }
+    };
+    class ModelScope {
+        Phase previous = std::exchange(phase, Phase::PlaybackModel);
+    public:
+        ~ModelScope() { phase = previous; }
+    };
     class SynthesisScope {
         Phase previous = std::exchange(phase, Phase::Synthesis);
     public:
