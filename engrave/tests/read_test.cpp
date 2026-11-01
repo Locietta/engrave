@@ -45,6 +45,7 @@
 #include "engrave/src/score/score_metadata.h"
 #include "engrave/src/score/score_positions.h"
 #include "engrave/src/score/score_semantic.h"
+#include "engrave/src/score/write470.h"
 
 #include "engraving/dom/chord.h"
 #include "engraving/dom/engravingitem.h"
@@ -342,6 +343,40 @@ TEST(Export470, HiddenPartTiesAreRefusedInBothFormats) {
         EXPECT_EQ(result.error().export_warnings[0].object, (engrave::ExportWarningObject{"tie", "H_H"}));
     }
 }
+
+class WarningIdentity : public testing::TestWithParam<std::optional<engrave::ExportWarningObject>> {};
+
+TEST_P(WarningIdentity, InvalidArgumentWithoutArtifact) {
+    auto document = open_path(write470_fixture());
+    ASSERT_TRUE(document);
+    for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+        engrave::ExportWarning warning{"B470_UNSUPPORTED_FEATURE", "test invalid identity", std::nullopt};
+        warning.object = GetParam();
+        engrave::write470::set_warning_identity_test_fault(std::move(warning));
+        const auto result = document->export_score_with_warnings({.format = format, .native_version = "4.70"});
+        // The failed Result has no ExportOutput/bytes alternative: no artifact
+        // can be passed to the host for publication, nor an anonymous warning.
+        ASSERT_FALSE(result);
+        EXPECT_EQ(result.error().code, ErrorCode::InvalidArgument);
+        EXPECT_TRUE(result.error().export_warnings.empty());
+        // Injection is consumed once; the same document still exports normally.
+        EXPECT_TRUE(document->export_score_with_warnings({.format = format, .native_version = "4.70"}));
+    }
+}
+
+INSTANTIATE_TEST_SUITE_P(Malformed, WarningIdentity, testing::Values(
+    std::nullopt,
+    engrave::ExportWarningObject{"", "H_H"},
+    engrave::ExportWarningObject{"tie", ""},
+    engrave::ExportWarningObject{"tie", engrave::to_string(engrave::ElementId{UINT64_MAX, UINT64_MAX})},
+    engrave::ExportWarningObject{"page_lock", "A.."},
+    engrave::ExportWarningObject{"group_bracket", "B:"},
+    engrave::ExportWarningObject{"group_bracket", ":1"},
+    engrave::ExportWarningObject{"tie", "not-an-identity"},
+    engrave::ExportWarningObject{"tie", "locator:score:0/measure:0/tick:0/track:0/tieFor"},
+    engrave::ExportWarningObject{"tie", "locator:garbage"},
+    engrave::ExportWarningObject{"tie", "locator:score:0/measure:0/tick:0/track:0/note:/tieFor"},
+    engrave::ExportWarningObject{"tie", "locator:score:0/measure:0/tick:0/track:0/note:0/tieFor/extra"}));
 
 TEST(Export470, MissingTieIdNamesTheStartNote) {
     auto source = read_text(write470_fixture().parent_path() / "ties_mismatched.mscx");
