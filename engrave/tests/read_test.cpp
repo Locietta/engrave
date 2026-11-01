@@ -57,6 +57,11 @@
 #include "engraving/dom/text.h"
 #include "engraving/dom/textbase.h"
 #include "engraving/dom/timesig.h"
+#include "engraving/dom/tie.h"
+#include "engraving/dom/note.h"
+#include "engraving/dom/part.h"
+#include "engraving/dom/staff.h"
+#include "engraving/infrastructure/eidregister.h"
 #include "engraving/editing/transaction/undostack.h"
 #include "engraving/types/constants.h"
 
@@ -324,6 +329,91 @@ TEST(Export470, ConvertsConnectionsAndRefusesUnequalPitches) {
     ASSERT_EQ(result.error().export_warnings.size(), 1u);
     EXPECT_EQ(result.error().export_warnings[0].code, "B470_INVALID_TIE");
     EXPECT_EQ(result.error().export_warnings[0].object->id, "H_H");
+}
+
+TEST(Export470, HiddenPartTiesAreRefusedInBothFormats) {
+    auto document = open_path(write470_fixture().parent_path() / "ties_hidden.mscx");
+    ASSERT_TRUE(document);
+    for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+        auto result = document->export_score_with_warnings({.format = format, .native_version = "4.70"});
+        ASSERT_FALSE(result);
+        ASSERT_EQ(result.error().export_warnings.size(), 1u);
+        EXPECT_EQ(result.error().export_warnings[0].code, "B470_INVALID_TIE");
+        EXPECT_EQ(result.error().export_warnings[0].object, (engrave::ExportWarningObject{"tie", "H_H"}));
+    }
+}
+
+TEST(Export470, MissingTieIdNamesTheStartNote) {
+    auto source = read_text(write470_fixture().parent_path() / "ties_mismatched.mscx");
+    source.erase(source.find("<eid>H_H</eid>"), std::string("<eid>H_H</eid>").size());
+    auto document = g_engine->open(as_bytes(source), {.format = engrave::Format::Mscx});
+    ASSERT_TRUE(document);
+    auto result = (*document)->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
+    ASSERT_FALSE(result);
+    ASSERT_EQ(result.error().export_warnings.size(), 1u);
+    EXPECT_EQ(result.error().export_warnings[0].object, (engrave::ExportWarningObject{"note", "G_G"}));
+    // Exercise the explicit non-EID locator when no owner is addressable.
+    auto& master = master_of(**document);
+    for (auto* object : engrave::document_objects(master))
+        if (object->eid().isValid()) master.eidRegister()->removeItem(object);
+    auto first = (*document)->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
+    auto second = (*document)->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
+    ASSERT_FALSE(first);
+    ASSERT_FALSE(second);
+    EXPECT_EQ(first.error().export_warnings[0].object, second.error().export_warnings[0].object);
+    EXPECT_EQ(first.error().export_warnings[0].object->id, "locator:score:0/measure:0/tick:0/track:0/note:0/tieFor");
+}
+
+TEST(Export470, HiddenExcerptAndMasterStavesAreBothChecked) {
+    auto document = open_path(write470_fixture().parent_path() / "excerpts.mscx");
+    ASSERT_TRUE(document);
+    auto& master = master_of(*document);
+    std::size_t ties = 0;
+    for (auto* object : engrave::document_objects(master)) {
+        if (!object->isNote()) continue;
+        auto* tie = static_cast<mu::engraving::Note*>(object)->tieFor();
+        if (!tie || !tie->endNote()) continue;
+        ++ties;
+        tie->endNote()->setPitch(tie->startNote()->pitch() + 2);
+        tie->startNote()->staff()->part()->setShow(false);
+    }
+    ASSERT_EQ(ties, 4u);
+    for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+        auto result = document->export_score_with_warnings({.format = format, .native_version = "4.70"});
+        ASSERT_FALSE(result);
+        ASSERT_EQ(result.error().export_warnings.size(), ties);
+        for (const auto& warning : result.error().export_warnings) EXPECT_EQ(warning.code, "B470_INVALID_TIE");
+    }
+}
+
+TEST(Export470, EnabledFluteGroupingIsWarnedAndReopensDisabled) {
+    auto document = open_path(write470_fixture().parent_path() / "four_flutes.mscx");
+    ASSERT_TRUE(document);
+    ASSERT_TRUE(master_of(*document).style().styleB(mu::engraving::Sid::windsNameByGroup));
+    for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+        auto result = document->export_score_with_warnings({.format = format, .native_version = "4.70"});
+        ASSERT_TRUE(result) << result.error().message;
+        ASSERT_EQ(result->warnings.size(), 4u);
+        for (const auto& warning : result->warnings) EXPECT_EQ(warning.code, "B470_INSTRUMENT_GROUP_NAME_DROPPED");
+        auto reopened = g_engine->open(result->bytes, {.format = format});
+        ASSERT_TRUE(reopened);
+        EXPECT_FALSE(master_of(**reopened).style().styleB(mu::engraving::Sid::windsNameByGroup));
+        auto bytes_only = document->export_score({.format = format, .native_version = "4.70"});
+        EXPECT_FALSE(bytes_only);
+    }
+}
+
+TEST(Export470, PartNumericIdsSurviveButPartEidsHaveNoLegacyField) {
+    auto document = open_path(write470_fixture().parent_path() / "shared_parts.source.mscx");
+    ASSERT_TRUE(document);
+    auto result = document->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
+    ASSERT_TRUE(result);
+    const std::string xml(reinterpret_cast<const char*>(result->bytes.data()), result->bytes.size());
+    for (const auto* id : {"1", "2", "3", "4"}) EXPECT_NE(xml.find(std::string("<Part id=\"") + id + "\">"), std::string::npos);
+    for (const auto* id : {"P_P", "Q_Q", "R_R", "S_S"}) EXPECT_EQ(xml.find(std::string("<eid>") + id + "</eid>"), std::string::npos);
+    auto reopened = g_engine->open(result->bytes, {.format = engrave::Format::Mscx});
+    ASSERT_TRUE(reopened);
+    EXPECT_EQ(master_of(**reopened).parts().size(), 4u);
 }
 
 /// Checks the error a call must fail with, without reading .error() of a success.

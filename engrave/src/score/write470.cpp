@@ -19,9 +19,12 @@
 #include "engrave/src/api/handles.h"
 #include "engraving/automation/automationdata.h"
 #include "engraving/dom/chordlist.h"
+#include "engraving/dom/chord.h"
+#include "engraving/dom/measure.h"
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/part.h"
+#include "engraving/dom/instrument.h"
 #include "engraving/dom/note.h"
 #include "engraving/dom/tie.h"
 #include "engraving/dom/score.h"
@@ -108,7 +111,7 @@ std::optional<ElementId> node_id(pugi::xml_node node, std::optional<ElementId> i
 
 ExportWarningObject source_object(pugi::xml_node node, std::optional<ElementId> inherited) {
     for (auto owner = node; owner; owner = owner.parent()) {
-        if (auto eid = owner.child("eid")) {
+        if (auto eid = owner.child("eid"); eid && element_id_from_string(eid.child_value())) {
             std::string kind;
             for (const char c : std::string_view(owner.name())) {
                 if (c >= 'A' && c <= 'Z') {
@@ -119,7 +122,8 @@ ExportWarningObject source_object(pugi::xml_node node, std::optional<ElementId> 
             return {std::move(kind), eid.child_value()};
         }
     }
-    return {"score", inherited ? to_string(*inherited) : ""};
+    if (inherited) return {"score", to_string(*inherited)};
+    throw std::invalid_argument("4.70 source warning has no addressable enclosing object");
 }
 
 std::string warning_code(std::string_view name) {
@@ -385,6 +389,21 @@ void inspect(pugi::xml_node node, const std::string& path, std::optional<Element
 void normalize_warnings(std::vector<ExportWarning>& warnings) {
     std::vector<ExportWarning> unique;
     for (auto& w : warnings) {
+        if (!w.object || w.object->kind.empty() || w.object->id.empty())
+            throw std::invalid_argument("4.70 source warning has no identity");
+        const auto& id = w.object->id;
+        bool valid = id.starts_with("locator:") || (w.object->kind == "request" && id.starts_with("version:"));
+        if (w.object->kind == "page_lock") {
+            const auto separator = id.find("..");
+            valid = separator != std::string::npos && element_id_from_string(id.substr(0, separator))
+                && element_id_from_string(id.substr(separator + 2));
+        } else if (w.object->kind == "group_bracket") {
+            const auto separator = id.find(':');
+            valid = separator != std::string::npos && element_id_from_string(id.substr(0, separator))
+                && separator + 1 < id.size()
+                && id.find_first_not_of("0123456789", separator + 1) == std::string::npos;
+        } else valid = valid || element_id_from_string(id).has_value();
+        if (!valid) throw std::invalid_argument("4.70 source warning has an invalid identity");
         if (w.code == "B470_UNSUPPORTED_FEATURE") w.message = "Cannot write 4.70: the source feature has no defined downgrade.";
         const auto same = [&](const ExportWarning& v) {
             return v.code == w.code && v.message == w.message && v.object && w.object
@@ -453,7 +472,7 @@ Result<ExportOutput> refused(std::vector<ExportWarning> warnings) {
 } // namespace
 
 Result<ExportOutput> export_score(const music::EngineContext& context, const music::ScoreProject& project,
-                                  Score& score, const std::string& format, const music::ExportOptions& options) {
+                                  Score& score, const std::string& format, const music::ExportOptions& options) try {
     std::vector<ExportWarning> warnings;
     const auto score_id = score.eid().isValid() ? std::optional(from_engine(score.eid())) : std::nullopt;
     if (!score.isMaster()) {
@@ -463,16 +482,36 @@ Result<ExportOutput> export_score(const music::EngineContext& context, const mus
     auto& master = static_cast<MasterScore&>(score);
     std::vector<Score*> source_scores{&score};
     for (auto* excerpt : master.excerpts()) if (excerpt->excerptScore()) source_scores.push_back(excerpt->excerptScore());
-    for (auto* source_score : source_scores) source_score->scanElements([&](EngravingItem* item) {
+    for (auto* item : document_objects(master)) {
         poll();
-        if (!item->isNote()) return;
-        auto* tie = toNote(item)->tieFor();
+        if (!item->isNote()) continue;
+        auto* tie = static_cast<Note*>(item)->tieFor();
         if (tie && tie->startNote() && tie->endNote()
             && tie->startNote()->ppitch() != tie->endNote()->ppitch()) {
+            auto* note = static_cast<Note*>(item);
+            const auto score_index = std::find(source_scores.begin(), source_scores.end(), note->score()) - source_scores.begin();
+            std::size_t measure_index = 0;
+            for (auto* measure = note->score()->firstMeasure(); measure && measure != note->chord()->measure(); measure = measure->nextMeasure()) ++measure_index;
+            const auto& notes = note->chord()->notes();
+            ExportWarningObject identity{"tie", "locator:score:" + std::to_string(score_index)
+                + "/measure:" + std::to_string(measure_index) + "/tick:" + std::to_string(note->tick().ticks())
+                + "/track:" + std::to_string(note->track()) + "/note:" + std::to_string(std::find(notes.begin(), notes.end(), note) - notes.begin()) + "/tieFor"};
+            if (tie->eid().isValid()) identity = {"tie", tie->eid().toStdString()};
+            else {
+                // A tie need not have an EID. Name its nearest addressable owner,
+                // never stringify the invalid-EID sentinel as a real handle.
+                for (auto* owner = item; owner; owner = owner->parent()) {
+                    if (owner->eid().isValid()) {
+                        identity = {owner->isNote() ? "note" : owner->isChord() ? "chord" : "source",
+                                    to_string(from_engine(owner->eid()))};
+                        break;
+                    }
+                }
+            }
             warnings.push_back({"B470_INVALID_TIE",
-                "Cannot write 4.70: tied notes have different pitches.", from_engine(tie->eid())});
+                "Cannot write 4.70: tied notes have different pitches.", std::move(identity)});
         }
-    });
+    }
     if (!warnings.empty()) return refused(std::move(warnings));
     if (master.chordList()->customChordList() && !master.chordList()->empty())
         warnings.push_back({"B470_UNSUPPORTED_FEATURE", "4.70 conversion of a custom chord list is not implemented", score_id});
@@ -505,6 +544,25 @@ Result<ExportOutput> export_score(const music::EngineContext& context, const mus
     if (!root || !score_node) throw std::runtime_error("engine output has no score");
     std::vector<ExportWarning> degraded;
     convert_degradations(root, degraded);
+    // The old reader forces these switches off. Warn on every applicable
+    // instrument in a potential multi-part group when enabled. Single-part
+    // scores have no group-name behavior to project in this bounded mapping.
+    for (auto* source_score : source_scores) {
+        for (auto* part : source_score->parts()) {
+            for (const auto& [tick, instrument] : part->instruments()) {
+                (void)tick;
+                const auto group = instrument->group();
+                const auto matches = std::count_if(source_score->parts().begin(), source_score->parts().end(),
+                    [&](const Part* other) { return other->instrument()->id() == instrument->id(); });
+                if (matches < 2) continue;
+                if (((group == "woodwinds" || group == "brass") && source_score->style().styleB(Sid::windsNameByGroup))
+                    || (group == "vocals" && source_score->style().styleB(Sid::vocalsNameByGroup))) {
+                    degraded.push_back({"B470_INSTRUMENT_GROUP_NAME_DROPPED", "Instrument group-name override was removed.",
+                        ExportWarningObject{"part", to_string(from_engine(part->eid()))}});
+                }
+            }
+        }
+    }
     std::vector<pugi::xml_node> score_nodes{score_node};
     for (std::size_t i = 0; i < score_nodes.size(); ++i)
         for (auto excerpt : score_nodes[i].children("Score")) score_nodes.push_back(excerpt);
@@ -631,6 +689,8 @@ Result<ExportOutput> export_score(const music::EngineContext& context, const mus
     }
     const auto* first = reinterpret_cast<const std::byte*>(data.constData());
     return ExportOutput{std::vector<std::byte>(first, first + data.size()), std::move(warnings)};
+} catch (const std::invalid_argument& error) {
+    return std::unexpected(Error{ErrorCode::InvalidArgument, error.what()});
 }
 
 } // namespace engrave::write470
