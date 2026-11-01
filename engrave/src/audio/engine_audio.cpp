@@ -591,7 +591,15 @@ AudioRenderResult export_score_audio(EngineAudio& audio, MasterScore* master, co
     model.setIsMetronomeEnabled(false);
     {
         OfflineTimer timer(OfflineTiming::current().model);
-        model.load(masterScore);
+        // Only this private sentinel unwinds construction; callback exceptions
+        // remain latched by poll() and are rethrown by abortSetup().
+        struct CancelledModel {};
+        OfflineCancellation::ModelScope phase;
+        try {
+            model.load(masterScore, [&] { if (poll()) throw CancelledModel{}; });
+        } catch (const CancelledModel&) {
+            return abortSetup();
+        }
     }
     if (poll()) return abortSetup();
 
