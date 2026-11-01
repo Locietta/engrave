@@ -24,6 +24,12 @@
 #include <string_view>
 #include <vector>
 
+#ifdef _WIN32
+#include <process.h>
+#else
+#include <unistd.h>
+#endif
+
 namespace {
 
 std::string_view extension_of(engrave::AudioFormat format) {
@@ -84,6 +90,7 @@ int main(int argc, char** argv) {
     std::vector<std::filesystem::path> soundfonts;
     std::string mode, format = "wav";
     bool repeats = true;
+    bool test_output_open_failure = false;
     int sample_rate = 44100;
     for (int i = 1; i < argc; ++i) {
         const std::string_view argument = argv[i];
@@ -97,15 +104,41 @@ int main(int argc, char** argv) {
         else if (argument.starts_with("--format=")) format = value(9);
         else if (argument.starts_with("--sample-rate=")) sample_rate = std::atoi(value(14).c_str());
         else if (argument == "--no-repeats") repeats = false;
+        else if (argument == "--test-output-open-failure") test_output_open_failure = true;
         else return usage();
     }
     if (assets.empty() || score.empty() || out.empty() || mode.empty()) return usage();
 
     try {
+        // This test-only mode runs in a fresh process, so the first render's
+        // temporary path is predictable without exposing engine internals.
+        struct CacheCleanup {
+            std::filesystem::path path;
+            std::filesystem::path blocked;
+            ~CacheCleanup() {
+                std::error_code ec;
+                if (!blocked.empty()) std::filesystem::remove(blocked, ec);
+                if (!path.empty()) std::filesystem::remove(path, ec);
+            }
+        } cache_cleanup;
         engrave::EngineOptions options;
         options.resources = assets;
         options.soundfonts = soundfonts;
         options.audio_sample_rate = sample_rate;
+        if (test_output_open_failure) {
+            if (mode != "audio" || format != "wav" || !std::filesystem::create_directory(out))
+                throw std::runtime_error("test needs a new cache directory and WAV audio");
+            cache_cleanup.path = out;
+            options.cache_dir = out;
+#ifdef _WIN32
+            const int process = _getpid();
+#else
+            const int process = getpid();
+#endif
+            const auto blocked = out / ("engrave-audio-" + std::to_string(process) + "-1.wav");
+            if (!std::filesystem::create_directory(blocked)) throw std::runtime_error("cannot block test output path");
+            cache_cleanup.blocked = blocked;
+        }
         auto engine = engrave::Engine::create(options);
         if (!engine) {
             std::fprintf(stderr, "error: %s: %s\n", std::string(engrave::to_string(engine.error().code)).c_str(),
@@ -192,6 +225,15 @@ int main(int argc, char** argv) {
         const auto rendered = (*document)->render_audio(audio, [&bytes](std::span<const std::byte> chunk) {
             bytes.insert(bytes.end(), chunk.begin(), chunk.end());
         });
+        if (test_output_open_failure) {
+            if (rendered || rendered.error().code != engrave::ErrorCode::Io || !bytes.empty())
+                throw std::runtime_error("output open failure did not return Io without calling the sink");
+            const auto recovered = (*document)->render_audio(audio, [&bytes](std::span<const std::byte> chunk) {
+                bytes.insert(bytes.end(), chunk.begin(), chunk.end());
+            });
+            if (!recovered || bytes.empty()) throw std::runtime_error("render after output failure did not recover");
+            return 0;
+        }
         if (!rendered) {
             std::fprintf(stderr, "error: %s: %s\n", std::string(engrave::to_string(rendered.error().code)).c_str(),
                          rendered.error().message.c_str());

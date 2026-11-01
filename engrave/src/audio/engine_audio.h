@@ -180,6 +180,7 @@ struct AudioRenderResult {
         None,
         InvalidScore,  // nothing to play, or no length to play it
         ResourceLimit, // the projected output exceeds the 1 GiB cap
+        Io,            // opening, writing or closing the output failed
         EngineFailure,
     };
 

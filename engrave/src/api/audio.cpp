@@ -288,6 +288,7 @@ Result<AudioRenderResult> Document::render_audio(const AudioOptions& options, co
         switch (rendered.failure) {
         case music::AudioRenderResult::Failure::ResourceLimit: return fail(ErrorCode::ResourceLimit, rendered.error);
         case music::AudioRenderResult::Failure::InvalidScore: return fail(ErrorCode::InvalidArgument, rendered.error);
+        case music::AudioRenderResult::Failure::Io: return fail(ErrorCode::Io, rendered.error);
         case music::AudioRenderResult::Failure::EngineFailure:
         case music::AudioRenderResult::Failure::None: throw std::runtime_error(rendered.error);
         }
