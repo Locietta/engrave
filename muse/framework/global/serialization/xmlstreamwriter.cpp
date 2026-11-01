@@ -22,10 +22,12 @@
 #include "xmlstreamwriter.h"
 
 #include <vector>
+#include <limits>
 
 #include <utf8.h>
 
 #include "global/containers.h"
+#include "global/io/writebudget.h"
 #include "textstream.h"
 
 #include "global/log.h"
@@ -105,9 +107,19 @@ std::string XmlStreamWriter::escapeCodePoint(const char32_t c)
 
 std::string XmlStreamWriter::escapeString(const std::string_view str)
 {
+    // XML escaping can expand one input byte to six output bytes. Account for
+    // that temporary before constructing it, and poll inside a large value.
+    if (io::activeWriteBudget) {
+        const auto max = std::numeric_limits<std::uint64_t>::max();
+        const auto amount = str.size() > max / 6 ? max : static_cast<std::uint64_t>(str.size()) * 6;
+        if (!io::activeWriteBudget->charge(amount)) throw io::WriteBudgetStop{};
+    }
     std::string escaped{};
     auto it = str.begin();
+    std::size_t checked = 0;
     while (it != str.end()) {
+        if ((checked++ & 4095u) == 0 && io::activeWriteBudget && !io::activeWriteBudget->poll())
+            throw io::WriteBudgetStop{};
         const char32_t c = utf8::next(it, str.end());
         escaped += escapeCodePoint(c);
     }

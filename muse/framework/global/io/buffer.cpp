@@ -20,6 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "buffer.h"
+#include "writebudget.h"
 
 #include <cstring>
 #include <utility>
@@ -112,12 +113,15 @@ const uint8_t* Buffer::rawData() const
 
 bool Buffer::resizeData(size_t size)
 {
+    if (activeWriteBudget && size > m_ref->size()
+        && !activeWriteBudget->charge(size - m_ref->size())) return false;
     m_ref->resize(size);
     return true;
 }
 
 size_t Buffer::writeData(const uint8_t* data, size_t len)
 {
+    if (activeWriteBudget && !activeWriteBudget->poll()) return 0;
     std::memcpy(m_ref->data() + pos(), data, len);
     return len;
 }
