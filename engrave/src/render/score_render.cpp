@@ -31,6 +31,10 @@ std::string render_score(const EngineContext& engine, mu::engraving::Score* scor
 
 std::string render_score(const EngineContext& engine, mu::engraving::Score* score, const std::string& format,
                          const ExportOptions& options) {
+    const auto poll = [&] {
+        if (options.cancelled && options.cancelled()) throw RenderCancelled{};
+    };
+    poll();
     using namespace mu::engraving;
     if (!score || !score->npages()) throw std::runtime_error("Score has no pages");
     const int npages = static_cast<int>(score->npages());
@@ -87,16 +91,23 @@ std::string render_score(const EngineContext& engine, mu::engraving::Score* scor
         paintOptions.deviceDpi = dpi;
         paintOptions.fromPage = format == "pdf" ? firstPage : options.page;
         paintOptions.toPage = format == "pdf" ? lastPage : options.page;
-        paintOptions.onNewPage = [&] { cairo_show_page(context.get()); check(cairo_status(context.get())); };
+        paintOptions.onNewPage = [&] {
+            poll(); // previous page drawn, before encoding it
+            cairo_show_page(context.get());
+            check(cairo_status(context.get()));
+            poll(); // before drawing the next page
+        };
         paintOptions.printPageBackground = format == "pdf" ? true : options.draw_page_background;
         renderer->paintScore(&painter, score, paintOptions);
         if (!painter.endDraw()) throw std::runtime_error("Painter did not finish");
     }
+    poll(); // final page drawn, before encoding
     check(cairo_status(context.get()));
     if (format == "png") check(cairo_surface_write_to_png_stream(surface.get(), append_bytes, &output));
     else cairo_show_page(context.get());
     cairo_surface_finish(surface.get());
     check(cairo_surface_status(surface.get()));
+    poll();
     return output;
 }
 }

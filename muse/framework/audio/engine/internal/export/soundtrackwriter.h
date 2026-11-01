@@ -46,7 +46,8 @@ class SoundTrackWriter
 public:
     SoundTrackWriter(io::IODevice& dstDevice, const SoundTrackFormat& format, const secs_t totalDuration, IAudioNodePtr source,
                      std::function<void(uint64_t)> blockCompleted = {},
-                     std::function<encode::AbstractAudioEncoderPtr(const SoundTrackFormat&, io::IODevice&)> encoderFactory = {});
+                     std::function<encode::AbstractAudioEncoderPtr(const SoundTrackFormat&, io::IODevice&)> encoderFactory = {},
+                     std::function<bool()> cancelled = {});
 
     Ret write();
     void abort();
@@ -54,6 +55,8 @@ public:
 
 private:
     Ret writeStreaming();
+    bool pollCancellation();
+    std::function<bool()> m_cancelled;
 
 
     IAudioNodePtr m_source;

@@ -100,6 +100,10 @@ struct AudioOptions {
     // bitrate, packet/container overhead and the encoder's final flush.
     std::optional<std::uint64_t> max_bytes;
     std::optional<std::uint64_t> max_write_bytes;
+    // Same callback contract as CaptureOptions: owner thread, no reentry;
+    // exceptions propagate. Polled per synthesis block and encoded-file write,
+    // including finalization. No sink is called when cancellation is observed.
+    std::function<bool()> cancelled;
 };
 
 // Receives the finished encoded stream in chunks after the intermediate file has
