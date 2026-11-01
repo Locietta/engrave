@@ -36,12 +36,13 @@ struct ScoreSel {
 // A position in a measure. Segments have no id of their own (layout rebuilds
 // them), so an operation that works at a position names it this way. staff and
 // voice select the element within the segment; the segment itself is found from
-// the measure, the tick and the kind.
+// the measure, the tick and the kind. A tick with unrepresentable terms or a
+// non-positive denominator is InvalidArgument.
 struct SegmentAddress {
     ElementId measure;
     std::int32_t staff = 0; // staff index, 0-based
     std::int32_t voice = 0; // voice, 0-based
-    Fraction tick;          // position in the score, not in the measure
+    Fraction tick;          // score position; components must fit int and denominator must be positive
     std::string kind;       // segment type token, e.g. "ChordRest"
 };
 

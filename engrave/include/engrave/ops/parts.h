@@ -38,9 +38,8 @@ struct RemoveStaff {
     Ref staff;
 };
 
-// Generates one excerpt per master part, as the parts panel does. The engine
-// cannot roll this back through the transaction's unwind (see api/ops/parts.cpp),
-// so the operation is refused until the guard can restore it from the snapshot.
+// Generates one excerpt per selected master part. The batch uses a snapshot
+// for rollback because this operation cannot be unwound by the transaction.
 struct GenerateExcerpts {
     std::vector<Ref> parts;
 };

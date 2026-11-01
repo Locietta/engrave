@@ -139,7 +139,7 @@ struct Query {
     std::vector<std::int32_t> voices;
 
     // The half-open tick range [from_tick, to_tick) in whole notes; an element is
-    // reported when its tick is in it.
+    // reported when its tick is in it. Denominators must be positive.
     std::optional<Fraction> from_tick;
     std::optional<Fraction> to_tick;
 

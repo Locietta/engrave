@@ -10,9 +10,8 @@ namespace engrave {
 
 // Sets one property of an element. property is the catalogue's name
 // (PropInfo::name) and must be settable on the element's type; value must have
-// the property's kind. Like an edit in the score, the change reaches the
-// element's linked copies in the other scores, and a styled property stops
-// following its style.
+// the property's kind. Propagation to linked copies depends on the property and
+// link state; a styled property stops following its style.
 struct SetProperty {
     Ref target;
     std::string property;

@@ -112,11 +112,11 @@ inline constexpr std::int64_t max_render_pixels = 64'000'000;
 struct RenderOptions {
     ScoreSel score;
     RenderFormat format = RenderFormat::Pdf;
-    // Inclusive, 0-based page range. last_page == -1 means the score's last page.
+    // Inclusive, 0-based page range. Any negative last_page means the last page.
     std::int32_t first_page = 0;
     std::int32_t last_page = -1;
-    // PNG only: 36 to 1200 dpi. The other formats are drawn at 72 dpi (PDF
-    // points, SVG units), so a dpi with them is InvalidArgument.
+    // PNG: 36 to 1200 dpi. PDF and SVG draw at 72 dpi and accept only the
+    // default 144 sentinel (which is ignored).
     std::int32_t dpi = 144;
     // Draw the page's own background (its colour from the score's style) in PNG
     // and SVG; a PDF always prints it. Off by default, like A2's export.
