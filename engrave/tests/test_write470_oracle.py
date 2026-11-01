@@ -1,8 +1,4 @@
-"""Focused B2b writer evidence; requires the parent's frozen phase_b corpus.
-
-This does not accept the entire phase-B contract: excerpts, other rhythms,
-instruments and custom styles are intentionally still refused.
-"""
+"""Frozen bounded 4.70 writer evidence against the preserved oracle."""
 import argparse
 import hashlib
 import json
@@ -35,7 +31,7 @@ def main():
             assert sha(args.corpus / case[key]) == case[key + "_sha256"]
     env = {"PATH": "/usr/bin:/bin", "LD_LIBRARY_PATH": str(args.oracle / "lib")}
     evidence = []
-    selected = ("notes", "names", "ids", "brackets", "ties", "ties_paired_edit", "spanners")
+    selected = ("notes", "names", "ids", "brackets", "ties", "ties_paired_edit", "spanners", "excerpts", "shared_parts", "stave_labels", "page_locks", "group_brackets", "instrument_group_names")
     for name in selected:
         case = cases[name]
         for fmt in ("mscx", "mscz"):
@@ -62,7 +58,7 @@ def main():
                                for b in xml.iter("bracket"))
             evidence.append(dict(case=name, format=fmt, output_sha256=sha(output),
                                  oracle_exit=oracle.returncode, semantics="equal"))
-    assert len(evidence) == 14
+    assert len(evidence) == 26
     paired = args.out / "edited-paired.mscx"
     edit = subprocess.run([str(args.probe), str(args.assets), str(args.corpus / "ties.mscx"),
                            str(paired), "mscx", "4.70", "paired"], capture_output=True)
@@ -79,8 +75,7 @@ def main():
     assert json.loads(edit.stdout) == json.loads((args.corpus / cases["ties_mismatched"]["warnings"]).read_text())
     (args.out / "edited-one-end.stderr").write_bytes(edit.stderr)
     warning_evidence = []
-    for name in ("ties_mismatched", "unsupported_target", "shared_parts", "stave_labels", "page_locks",
-                 "group_brackets", "instrument_group_names", "excerpts"):
+    for name in ("ties_mismatched", "unsupported_target"):
         case = cases[name]
         target = args.out / (name + ".refused.mscx")
         result = subprocess.run([str(args.probe), str(args.assets), str(args.corpus / case["source"]),
@@ -88,18 +83,14 @@ def main():
         assert result.returncode == 2 and not target.exists(), name
         actual = json.loads(result.stdout)
         expected = json.loads((args.corpus / case["warnings"]).read_text())
-        if name != "excerpts":
-            mapped = [w for w in actual if w["code"] != "B470_UNSUPPORTED_FEATURE"]
-            assert mapped == expected, (name, mapped, expected)
-        else:
-            assert actual and all(w["code"] == "B470_UNSUPPORTED_FEATURE" for w in actual)
+        assert actual == expected, (name, actual, expected)
         (args.out / (name + ".warnings.json")).write_text(json.dumps(actual, indent=2) + "\n")
         (args.out / (name + ".refusal.stderr")).write_bytes(result.stderr)
         warning_evidence.append(dict(case=name, exact=actual == expected, no_output=True,
                                      extra_unmapped=sum(w["code"] == "B470_UNSUPPORTED_FEATURE" for w in actual)))
     (args.out / "warning-evidence.json").write_text(json.dumps(warning_evidence, indent=2) + "\n")
     (args.out / "evidence.json").write_text(json.dumps(evidence, indent=2) + "\n")
-    print("14 file exports + paired edit: exact frozen oracle semantics; one-end edit refused; archive hashes verified")
+    print("26 file exports + paired edit: exact frozen oracle semantics; one-end edit refused; archive hashes verified")
 
 
 if __name__ == "__main__":
