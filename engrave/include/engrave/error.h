@@ -5,6 +5,9 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
+
+#include <engrave/export_warning.h>
 
 namespace engrave {
 
@@ -33,6 +36,8 @@ struct Error {
     ErrorCode code = ErrorCode::InvalidArgument;
     std::string message;
     std::optional<std::size_t> op_index; // the failing operation of an edit batch
+    // Present when an export is refused to prevent unreported loss.
+    std::vector<ExportWarning> export_warnings;
 };
 
 template <typename T>
