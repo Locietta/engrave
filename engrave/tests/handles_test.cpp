@@ -21,6 +21,7 @@
 #include <format>
 #include <fstream>
 #include <iterator>
+#include <limits>
 #include <map>
 #include <memory>
 #include <set>
@@ -1349,6 +1350,113 @@ TEST(Handles, H12Addresses) {
     const auto bad = engrave::resolve(master, engrave::Address{bad_kind});
     ASSERT_FALSE(bad);
     EXPECT_EQ(bad.error().code, ErrorCode::InvalidArgument);
+}
+
+TEST(Handles, SegmentTicksValidateBeforeResolvingOrEditing) {
+    const auto fixture = std::ranges::find_if(g_corpus, [](const auto& path) {
+        return path.filename() == "linked_parts.mscx";
+    });
+    ASSERT_NE(fixture, g_corpus.end());
+    auto document = open_path(*fixture);
+    ASSERT_TRUE(document);
+    MasterScore& master = master_of(*document);
+    Segment* segment = first_segment(master, SegmentType::ChordRest);
+    ASSERT_NE(segment, nullptr);
+    const auto resolved_address = engrave::address_of(*segment);
+    ASSERT_TRUE(resolved_address);
+    auto address = std::get<engrave::SegmentAddress>(*resolved_address);
+    ASSERT_EQ(address.tick.num, 0);
+    const std::int64_t low = std::numeric_limits<int>::min();
+    const std::int64_t high = std::numeric_limits<int>::max();
+
+    // The entire component range is accepted, including unreduced zero.
+    for (const auto tick : {engrave::Fraction{0, 1}, {0, high - 1}, {0, high}}) {
+        address.tick = tick;
+        const auto found = engrave::resolve(master, engrave::Address{address});
+        ASSERT_TRUE(found) << tick.num << '/' << tick.den << ": " << found.error().message;
+        EXPECT_EQ(found->object, segment);
+        EXPECT_TRUE(document->get(engrave::Ref{engrave::Address{address}}));
+    }
+    for (const auto tick : {engrave::Fraction{low, 1}, {low + 1, 1}, {high - 1, 1}, {high, 1}}) {
+        address.tick = tick;
+        const auto found = document->get(engrave::Ref{engrave::Address{address}});
+        ASSERT_FALSE(found);
+        EXPECT_EQ(found.error().code, ErrorCode::StaleHandle);
+    }
+    // Equivalent large fractions must still resolve a nonzero position in a
+    // later measure, without overflowing the measure-relative lookup.
+    Measure* later_measure = segment->measure()->nextMeasure();
+    ASSERT_NE(later_measure, nullptr);
+    Segment* later_segment = later_measure->first(SegmentType::ChordRest);
+    ASSERT_NE(later_segment, nullptr);
+    const auto later_address = engrave::address_of(*later_segment);
+    ASSERT_TRUE(later_address);
+    auto equivalent = std::get<engrave::SegmentAddress>(*later_address);
+    ASSERT_GT(equivalent.tick.num, 0);
+    const std::int64_t scale = std::min(high / equivalent.tick.num, high / equivalent.tick.den);
+    ASSERT_GT(scale, 1);
+    equivalent.tick.num *= scale;
+    equivalent.tick.den *= scale;
+    const auto same_position = engrave::resolve(master, engrave::Address{equivalent});
+    ASSERT_TRUE(same_position) << same_position.error().message;
+    EXPECT_EQ(same_position->object, later_segment);
+
+    // Adding two int fractions can leave 64-bit engine terms. The exact
+    // absolute position is 2/1, not the wrapped numerator -4.
+    const auto old_measure_tick = later_measure->tick();
+    const auto old_relative_tick = later_segment->rtick();
+    later_measure->setTick(mu::engraving::Fraction(static_cast<int>(high), static_cast<int>(high - 1)));
+    later_segment->setRtick(mu::engraving::Fraction(static_cast<int>(high - 2), static_cast<int>(high - 1)));
+    const auto wide_address = engrave::address_of(*later_segment);
+    equivalent.tick = {2, 1};
+    const auto wide_position = engrave::resolve(master, engrave::Address{equivalent});
+    equivalent.tick = {-4, high - 1};
+    const auto wrapped_position = engrave::resolve(master, engrave::Address{equivalent});
+    later_measure->setTick(mu::engraving::Fraction(1, static_cast<int>(high - 1)));
+    later_segment->setRtick(mu::engraving::Fraction(1, static_cast<int>(high)));
+    const auto unrepresentable_address = engrave::address_of(*later_segment);
+    later_measure->setTick(old_measure_tick);
+    later_segment->setRtick(old_relative_tick);
+    ASSERT_TRUE(wide_address);
+    const auto written_tick = std::get<engrave::SegmentAddress>(*wide_address).tick;
+    EXPECT_EQ(written_tick.num, 2);
+    EXPECT_EQ(written_tick.den, 1);
+    ASSERT_TRUE(wide_position) << wide_position.error().message;
+    EXPECT_EQ(wide_position->object, later_segment);
+    ASSERT_FALSE(wrapped_position);
+    EXPECT_EQ(wrapped_position.error().code, ErrorCode::StaleHandle);
+    EXPECT_FALSE(unrepresentable_address);
+
+    for (const auto tick : {engrave::Fraction{low - 1, 1}, {high + 1, 1}, {4294967296LL, 1},
+                            {std::numeric_limits<std::int64_t>::min(), 1},
+                            {std::numeric_limits<std::int64_t>::max(), 1},
+                            {0, high + 1}, {0, std::numeric_limits<std::int64_t>::max()},
+                            {0, 0}, {0, -1}, {0, std::numeric_limits<std::int64_t>::min()}}) {
+        address.tick = tick;
+        const auto found = document->get(engrave::Ref{engrave::Address{address}});
+        ASSERT_FALSE(found) << tick.num << '/' << tick.den;
+        EXPECT_EQ(found.error().code, ErrorCode::InvalidArgument);
+    }
+
+    // This used to wrap to tick zero and add text at the first segment.
+    address.tick = {4294967296LL, 1};
+    const auto before = document->export_score({.format = engrave::Format::Mscx});
+    ASSERT_TRUE(before);
+    const auto revision = document->revision();
+    const auto edit = document->edit({{engrave::AddText{engrave::Address{address}, "staff", "wrong position"}}});
+    ASSERT_FALSE(edit);
+    EXPECT_EQ(edit.error().code, ErrorCode::InvalidArgument);
+    EXPECT_EQ(document->revision(), revision);
+    const auto after = document->export_score({.format = engrave::Format::Mscx});
+    ASSERT_TRUE(after);
+    EXPECT_EQ(*after, *before);
+
+    // A foreign or missing measure keeps the usual handle error even if the
+    // rest of the address is malformed.
+    address.measure = {0, 0};
+    const auto missing = document->get(engrave::Ref{engrave::Address{address}});
+    ASSERT_FALSE(missing);
+    EXPECT_EQ(missing.error().code, ErrorCode::NotFound);
 }
 
 // --- H13 ------------------------------------------------------------------
