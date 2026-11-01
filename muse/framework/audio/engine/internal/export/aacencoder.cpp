@@ -29,6 +29,7 @@
 #include "FDK_audio.h"
 
 #include "global/io/iodevice.h"
+#include "audio/common/audioerrors.h"
 
 #include "../dsp/audiomathutils.h"
 
@@ -233,13 +234,11 @@ size_t AacEncoder::encode(samples_t samplesPerChannel, const float* input)
     return static_cast<size_t>(samplesPerChannel) * static_cast<size_t>(channels);
 }
 
-size_t AacEncoder::end()
+muse::Ret AacEncoder::end()
 {
     IF_ASSERT_FAILED(m_handler && m_dstDevice) {
-        return 0;
+        return make_ret(Err::ErrorEncode, "AAC encoder is not initialized");
     }
-
-    size_t totalBytesWritten = 0;
 
     AACENC_BufDesc inBufDesc = {};
     AACENC_BufDesc outBufDesc = {};
@@ -277,14 +276,15 @@ size_t AacEncoder::end()
             break;
         }
         if (err != AACENC_OK) {
-            break;
+            return make_ret(Err::ErrorEncode, "AAC finalization failed: " + std::to_string(static_cast<int>(err)));
         }
 
         if (outArgs.numOutBytes > 0) {
             const size_t written = m_dstDevice->write(m_handler->outputBuffer.data(), static_cast<size_t>(outArgs.numOutBytes));
-            totalBytesWritten += written;
+            if (written != static_cast<size_t>(outArgs.numOutBytes))
+                return make_ret(Err::ErrorEncode, "AAC finalization write failed");
         }
     }
 
-    return totalBytesWritten;
+    return muse::make_ok();
 }

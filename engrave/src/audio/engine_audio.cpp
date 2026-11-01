@@ -747,7 +747,7 @@ AudioRenderResult export_score_audio(EngineAudio& audio, MasterScore* master, co
     // the source to PlayingOffline, renders in 4096-frame chunks, encodes them
     // and reports the completed frame count after each one.
     soundtrack::SoundTrackWriter writer(device, make_soundtrack_format(request.format, request, output_spec(state.sampleRate)), renderSecs, masterChain,
-        [&state](uint64_t frames) { state.midiOutPort.renderedFrames = frames; });
+        [&state](uint64_t frames) { state.midiOutPort.renderedFrames = frames; }, request.encoder_factory);
     const Ret writeRet = writer.write();
 
     // Flush before the FileSystem size check below.

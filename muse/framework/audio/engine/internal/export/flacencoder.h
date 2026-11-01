@@ -42,7 +42,7 @@ public:
 
     bool begin(samples_t totalSamplesNumber) override;
     size_t encode(samples_t samplesPerChannel, const float* input) override;
-    size_t end() override;
+    Ret end() override;
 
 private:
     std::unique_ptr<FlacHandler> m_flac;
