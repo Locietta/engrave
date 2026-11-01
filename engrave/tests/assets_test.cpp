@@ -2,6 +2,9 @@
 #include "engrave/src/runtime/engine_context.h"
 #include "global/io/ifilesystem.h"
 #include "engrave/src/runtime/runtime_assets.h"
+#include "engrave/src/api/state.h"
+#include "engrave/src/audio/engine_audio.h"
+#include <engrave/engine.h>
 #include "draw/internal/ifontsengine.h"
 #include "draw/types/font.h"
 #include <ft2build.h>
@@ -59,8 +62,20 @@ int main(int argc, char** argv) {
         const std::string family=fixture.family;
         const auto input=out/"mutable-input.ttf";
         { std::ofstream f(input,std::ios::binary); f.write(bytes.data(),bytes.size()); expect(bool(f),"Cannot write test font"); }
-        auto context = std::make_unique<music::EngineContext>(argv[1]);
-        music::RuntimeAssets& assets=context->assets();
+        engrave::EngineOptions options;
+        options.resources = std::filesystem::u8path(argv[1]);
+        auto created = engrave::Engine::create(options);
+        expect(bool(created), "Cannot create public engine for asset tests");
+        auto publicEngine = std::move(*created);
+        const auto startupFonts = publicEngine->runtime_fonts();
+        expect(startupFonts.empty(), "Bundled fonts appeared as runtime registrations");
+        engrave::CreateOptions create;
+        create.template_path = options.resources / "templates/01-General/01-Treble_Clef/01-Treble_Clef.mscx";
+        auto opened = publicEngine->create_document(create);
+        expect(bool(opened), "Cannot create public document for asset tests");
+        auto document = std::move(*opened);
+        auto& context = engrave::DocumentAccess::context(*document);
+        music::RuntimeAssets& assets=context.assets();
         muse::draw::IFontsEngine* engine=&assets.fontsEngine();
         muse::draw::Font font(muse::draw::Font::FontFamily(family),muse::draw::Font::Type::Text);
         font.setPointSizeF(12);
@@ -70,6 +85,12 @@ int main(int argc, char** argv) {
         const auto info=assets.addFont(utf8(input));
         expect(info.family==family && info.path!=utf8(input),"Font was not copied with correct family");
         expect(assets.fonts().size()==initial_count+1,"Font registry count mismatch");
+        const auto publicFonts = publicEngine->runtime_fonts();
+        expect(publicFonts.size() == initial_count + 1 && publicFonts.back().id == info.id
+                   && publicFonts.back().family == info.family && publicFonts.back().bold == info.bold
+                   && publicFonts.back().italic == info.italic && utf8(publicFonts.back().path) == info.path
+                   && publicFonts.back().content_fingerprint == info.content_hash,
+               "Public font metadata does not match the active retained font");
         const auto after=engine->horizontalAdvance(font,sample);
         expect(before>0 && after>0 && std::abs(after-before)>0.01,"Cached fallback was not invalidated; choose an unregistered font");
         // A family that only ships a Medium/Bold face (FreeType flags it bold)
@@ -133,6 +154,26 @@ int main(int argc, char** argv) {
             result["soundfont"]={{"cachedPath",sound.path},{"contentHash",sound.content_hash},
                 {"sourceBytes",sound_bytes.size()},{"invalidRejected",true},{"immutableCopy",true}};
         }
+        if (argc == 5) {
+            auto& audio = context.audio();
+            expect(!music::engine_audio_initialized(audio), "Audio started before selecting a SoundFont");
+            const auto soundInput = out / "mutable-input.sf2";
+            const auto soundBytes = read(std::filesystem::u8path(argv[4]));
+            { std::ofstream f(soundInput, std::ios::binary | std::ios::trunc); f.write(soundBytes.data(), soundBytes.size()); }
+            expect(bool(publicEngine->set_soundfonts({soundInput})), "Cannot select valid SoundFont");
+            const auto selection = publicEngine->capabilities().soundfonts;
+            expect(selection.size() == 1 && selection[0] != soundInput, "SoundFont selection was not retained");
+            expect(!music::engine_audio_initialized(audio), "Selecting a SoundFont started audio services");
+            { std::ofstream f(soundInput, std::ios::binary | std::ios::trunc); f.write("RIFF\x04\0\0\0sfbk", 12); }
+            expect(read(selection[0]) == soundBytes, "Retained SoundFont changed with its source");
+            const auto invalid = publicEngine->set_soundfonts({soundInput});
+            expect(!invalid && invalid.error().code == engrave::ErrorCode::InvalidInput, "Invalid SoundFont was accepted");
+            expect(publicEngine->capabilities().soundfonts == selection, "Invalid selection changed capabilities");
+            expect(!music::engine_audio_initialized(audio), "Failed SoundFont selection started audio services");
+            { std::ofstream f(soundInput, std::ios::binary | std::ios::trunc); f << "invalid-soundfont"; }
+            result["soundfont"]["publicSelectionDeferredAudio"] = true;
+        }
+        document.reset();
         auto lease=assets.retain();
         assets.shutdown();
         expect(std::filesystem::exists(std::filesystem::u8path(info.path)),"Outstanding lease lost its font file");
@@ -144,7 +185,7 @@ int main(int argc, char** argv) {
         if (result.contains("soundfont"))
             expect(!std::filesystem::exists(std::filesystem::u8path(result["soundfont"]["cachedPath"].get<std::string>())),
                    "SoundFont cache survived runtime shutdown");
-        context.reset();
+        publicEngine.reset();
         expect(muse::io::fileSystem() == nullptr, "Engine teardown left the file system bound");
         result["contextTeardown"] = true;
         result["shutdownCleanup"] = true;

@@ -30,6 +30,7 @@
 #include "../dsp/audiomathutils.h"
 
 #include "global/io/iodevice.h"
+#include "audio/common/audioerrors.h"
 
 #include "log.h"
 
@@ -164,9 +165,8 @@ size_t FlacEncoder::encode(const samples_t samplesPerChannel, const float* input
     return static_cast<size_t>(samplesPerChannel) * channels;
 }
 
-size_t FlacEncoder::end()
+Ret FlacEncoder::end()
 {
-    m_flac->finish();
-    return 0;
+    return m_flac->finish() ? make_ok() : make_ret(Err::ErrorEncode, "FLAC finalization failed");
 }
 }

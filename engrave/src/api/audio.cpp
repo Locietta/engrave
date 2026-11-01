@@ -261,13 +261,13 @@ Result<AudioRenderResult> Document::render_audio(const AudioOptions& options, co
 
     // The audio engine is process-global and starts on first use, never at
     // Engine::create: a caller that only reads or draws pages pays nothing.
-    if (!music::engine_audio_initialized(engine.context->audio())) {
-        music::EngineAudioSetup setup;
-        setup.sample_rate = engine.audio_sample_rate;
-        for (const auto& soundfont : engine.soundfonts) setup.soundfonts.push_back(utf8(soundfont));
-        std::string error;
-        if (!music::initialize_engine_audio(engine.context->audio(), setup, &error)) return fail(ErrorCode::InvalidInput, error);
-    }
+    music::EngineAudioSetup setup;
+    setup.sample_rate = engine.audio_sample_rate;
+    for (const auto& soundfont : engine.soundfonts) setup.soundfonts.push_back(utf8(soundfont));
+    std::string error;
+    // This is also a cheap no-op for an unchanged selection; a replacement is
+    // refreshed here rather than by set_soundfonts().
+    if (!music::initialize_engine_audio(engine.context->audio(), setup, &error)) return fail(ErrorCode::InvalidInput, error);
 
     std::error_code ec;
     std::filesystem::create_directories(engine.cache_dir, ec);
@@ -288,6 +288,7 @@ Result<AudioRenderResult> Document::render_audio(const AudioOptions& options, co
         switch (rendered.failure) {
         case music::AudioRenderResult::Failure::ResourceLimit: return fail(ErrorCode::ResourceLimit, rendered.error);
         case music::AudioRenderResult::Failure::InvalidScore: return fail(ErrorCode::InvalidArgument, rendered.error);
+        case music::AudioRenderResult::Failure::Io: return fail(ErrorCode::Io, rendered.error);
         case music::AudioRenderResult::Failure::EngineFailure:
         case music::AudioRenderResult::Failure::None: throw std::runtime_error(rendered.error);
         }

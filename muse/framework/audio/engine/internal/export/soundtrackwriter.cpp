@@ -58,7 +58,8 @@ static encode::AbstractAudioEncoderPtr createEncoder(const SoundTrackFormat& for
 }
 
 SoundTrackWriter::SoundTrackWriter(io::IODevice& dstDevice, const SoundTrackFormat& format,
-                                   const secs_t totalDuration, IAudioNodePtr source, std::function<void(uint64_t)> blockCompleted)
+                                   const secs_t totalDuration, IAudioNodePtr source, std::function<void(uint64_t)> blockCompleted,
+                                   std::function<encode::AbstractAudioEncoderPtr(const SoundTrackFormat&, io::IODevice&)> encoderFactory)
     : m_source(std::move(source)), m_blockCompleted(std::move(blockCompleted))
 {
     if (!m_source) {
@@ -85,7 +86,7 @@ SoundTrackWriter::SoundTrackWriter(io::IODevice& dstDevice, const SoundTrackForm
     m_renderStep = outputSpec.samplesPerChannel;
 
     OfflineTimer timer(OfflineTiming::current().encode);
-    m_encoderPtr = createEncoder(format, dstDevice);
+    m_encoderPtr = encoderFactory ? encoderFactory(format, dstDevice) : createEncoder(format, dstDevice);
     if (!m_encoderPtr) {
         return;
     }
@@ -106,8 +107,10 @@ Ret SoundTrackWriter::write()
     m_source->setOutputSpec(m_encoderPtr->format().outputSpec);
     m_source->setMode(ProcessMode::PlayingOffline);
 
+    bool finalized = false;
     DEFER {
-        if (!m_isAborted) {
+        // Keep cleanup on an exception, but do not discard the normal result.
+        if (!m_isAborted && !finalized) {
             OfflineTimer timer(OfflineTiming::current().encode);
             m_encoderPtr->end();
         }
@@ -116,11 +119,14 @@ Ret SoundTrackWriter::write()
     };
 
     Ret ret = writeStreaming();
-    if (!ret) {
-        return ret;
+    if (!m_isAborted) {
+        finalized = true;
+        OfflineTimer timer(OfflineTiming::current().encode);
+        const Ret finalRet = m_encoderPtr->end();
+        // Encoding may already have failed; preserve that first error.
+        if (ret && !finalRet) return finalRet;
     }
-
-    return muse::make_ok();
+    return ret;
 }
 
 void SoundTrackWriter::abort()

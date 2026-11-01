@@ -313,10 +313,18 @@ target("engrave_output_test")
     set_default(false)
     add_deps("engrave")
     add_packages("gtest", "muse-zlib")
+    -- The public API tests remain public-only; the injected audio failure
+    -- regression also exercises the internal renderer and its lifecycle.
+    add_defines(table.unpack(ENGRAVE_DEFINES))
+    add_defines(table.unpack(ENGRAVE_GLOBAL_DEFINES))
+    add_includedirs(ENGRAVE_ADAPTER_INCLUDES)
+    add_includedirs(ENGRAVE_INTERNAL_INCLUDES)
+    add_includedirs("$(builddir)/xmake-generated")
     add_defines('ENGRAVE_TEST_SOURCE_ROOT="' .. source_root:gsub("\\", "/") .. '"')
     add_files(
         path.join(tests_dir, "output_test.cpp"),
         path.join(tests_dir, "audio_test.cpp"),
+        path.join(tests_dir, "audio_internal_test.cpp"),
         path.join(tests_dir, "digest.cpp")
     )
     if is_plat("windows") then

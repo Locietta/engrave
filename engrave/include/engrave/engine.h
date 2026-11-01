@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <memory>
 #include <optional>
@@ -49,6 +50,23 @@ struct Capabilities {
     std::vector<AudioFormat> audio_formats;
     std::vector<std::filesystem::path> soundfonts; // current ordered selection
     std::int32_t audio_sample_rate = 0;
+};
+
+// An active runtime text font, as registered by EngineOptions::fonts or add_font.
+// id identifies the retained copy within this Engine; it is reused when the
+// same bytes are registered again and must not be compared across Engines.
+struct RuntimeFontInfo {
+    int id = 0;
+    std::string family;
+    bool bold = false;
+    bool italic = false;
+    // Absolute path to the engine-owned copy, not the caller's source file.
+    // Treat it as read-only. It remains available until Engine destruction,
+    // even if another font replaces this entry. A snapshot does not extend
+    // that lifetime; copy the file while the Engine is alive if needed later.
+    std::filesystem::path path;
+    // crc32:<8 lowercase hex>:<byte size>; non-cryptographic and may collide.
+    std::string content_fingerprint;
 };
 
 struct TemplateInfo {
@@ -106,9 +124,15 @@ struct Engine {
     // their next layout-dependent call relays out all scores.
     Result<void> add_font(const std::filesystem::path& file);
 
+    // Snapshot of active runtime text fonts, excluding bundled fonts. Its size
+    // is the registration count. A replacement for the same family and style
+    // occupies the existing slot; the returned values are independent copies.
+    std::vector<RuntimeFontInfo> runtime_fonts() const;
+
     // Replace the ordered SoundFont list, validating and retaining file copies.
-    // Empty disables audio. Existing documents use it on their next audio render;
-    // layout, revision and mix defaults are unchanged. Indices refer to this list.
+    // Empty disables audio. Validation does not start audio or refresh the live
+    // SoundFont handles; existing documents use the list on their next render.
+    // Layout, revision and mix defaults are unchanged. Indices refer to this list.
     // capabilities().soundfonts returns the retained paths usable in AudioOptions.
     // NotFound for missing files, InvalidInput for malformed files. Failure keeps
     // the previous selection (validated copies may remain cached until shutdown).

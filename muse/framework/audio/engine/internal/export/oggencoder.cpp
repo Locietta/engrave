@@ -32,6 +32,7 @@
 #include <climits>
 
 #include "global/io/iodevice.h"
+#include "audio/common/audioerrors.h"
 
 #include "log.h"
 
@@ -114,13 +115,13 @@ size_t OggEncoder::encode(const samples_t samplesPerChannel, const float* input)
     return code == OPE_OK ? static_cast<size_t>(n) : 0;
 }
 
-size_t OggEncoder::end()
+muse::Ret OggEncoder::end()
 {
     IF_ASSERT_FAILED(m_opusEncoder) {
-        return 0;
+        return make_ret(Err::ErrorEncode, "Opus encoder is not initialized");
     }
 
-    ope_encoder_drain(m_opusEncoder);
-
-    return 0;
+    const int code = ope_encoder_drain(m_opusEncoder);
+    return code == OPE_OK ? muse::make_ok()
+                          : make_ret(Err::ErrorEncode, "Opus finalization failed: " + std::to_string(code));
 }
