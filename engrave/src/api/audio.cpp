@@ -185,7 +185,7 @@ Result<AudioRenderResult> Document::render_audio(const AudioOptions& options, co
     if (!selected) return std::unexpected(selected.error());
 
     if (engine.soundfonts.empty())
-        return fail(ErrorCode::Unsupported, "the Engine was created without a SoundFont");
+        return fail(ErrorCode::Unsupported, "no SoundFont is selected (an empty list disables audio)");
     if (options.sample_rate != 0 && options.sample_rate != engine.audio_sample_rate) {
         return fail(ErrorCode::Unsupported,
                     std::format("the Engine renders at {} Hz, not {}", engine.audio_sample_rate, options.sample_rate));
