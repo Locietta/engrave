@@ -9,6 +9,7 @@
 // under them repairs ids that production never would.
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
@@ -16,6 +17,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -146,12 +148,28 @@ TEST(Edit, APoisonedDocumentRefusesWork) {
     const Batch batch{{SetStyle{{}, "staffDistance", 9.0}}};
     EXPECT_ANY_THROW((void)document->edit(batch));
     hooks = {};
-    const auto again = document->edit(batch);
-    ASSERT_FALSE(again);
-    EXPECT_EQ(again.error().code, ErrorCode::Poisoned);
-    const auto saved = document->export_score({});
-    ASSERT_FALSE(saved);
-    EXPECT_EQ(saved.error().code, ErrorCode::Poisoned);
+    const auto expect_poisoned = [](const auto& result) {
+        ASSERT_FALSE(result);
+        EXPECT_EQ(result.error().code, ErrorCode::Poisoned);
+        EXPECT_EQ(result.error().message, "an earlier edit left the document unusable");
+    };
+    // Invalid inputs would normally produce other errors. Poison takes priority,
+    // and no audio sink may be called after the failed restore.
+    const engrave::ScoreSel missing{ElementId{0x1234, 0x5678}};
+    expect_poisoned(document->edit(batch, 999));
+    expect_poisoned(document->export_score({}));
+    expect_poisoned(document->outline(missing));
+    expect_poisoned(document->query({.score = missing}));
+    expect_poisoned(document->get(engrave::OpRef{0, 0}));
+    expect_poisoned(document->page_count(missing));
+    expect_poisoned(document->render({.score = missing}));
+    expect_poisoned(document->positions(engrave::PositionKind::Measure, missing));
+    expect_poisoned(document->positions(engrave::PositionKind::Segment, missing, {}));
+    expect_poisoned(document->audio_tracks(missing));
+    bool called = false;
+    const auto sink = [&called](std::span<const std::byte>) { called = true; };
+    expect_poisoned(document->render_audio({.score = missing}, sink));
+    EXPECT_FALSE(called);
 }
 
 // --- S1: the snapshot round trip ------------------------------------------------
