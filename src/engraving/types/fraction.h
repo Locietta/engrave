@@ -47,6 +47,9 @@ public:
 
     constexpr int numerator() const { return static_cast<int>(m_numerator); }
     constexpr int denominator() const { return static_cast<int>(m_denominator); }
+    // Arithmetic can leave unreduced terms wider than the int inputs.
+    constexpr int64_t numerator64() const { return m_numerator; }
+    constexpr int64_t denominator64() const { return m_denominator; }
 
     /// Use this when you need to initialize a Fraction to an arbitrary high value
     static constexpr Fraction max() { return Fraction(std::numeric_limits<int>::max(), 1); }
