@@ -15,6 +15,7 @@
 // annotations, spanners, frame elements, and everything layout builds.
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -51,6 +52,7 @@
 #include "engraving/dom/measure.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/property.h"
+#include "engraving/dom/rangelock.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/text.h"
 #include "engraving/dom/textbase.h"
@@ -98,6 +100,167 @@ MasterScore& master_of(engrave::Document& document) {
 
 std::int64_t ticks_of(const engrave::Fraction& value) {
     return value.num * whole_note_ticks / value.den;
+}
+
+std::filesystem::path write470_fixture() {
+    return std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests/data/write470/minimal.mscx";
+}
+
+TEST(Export470, WarningIdentifiersAreStableAndDistinct) {
+    using namespace engrave::export_warning_code;
+    const std::array<std::string_view, 10> actual{part_identity_omitted, page_lock, shared_part,
+        stave_sharing_label, group_bracket, excerpt, automation, custom_chord_list,
+        unsupported_style, unsupported_construct};
+    const std::array<std::string_view, 10> expected{"engrave.470.part_identity_omitted", "engrave.470.page_lock",
+        "engrave.470.shared_part", "engrave.470.stave_sharing_label", "engrave.470.group_bracket",
+        "engrave.470.excerpt", "engrave.470.automation", "engrave.470.custom_chord_list",
+        "engrave.470.unsupported_style", "engrave.470.unsupported_construct"};
+    EXPECT_EQ(actual, expected);
+    EXPECT_EQ((std::set<std::string_view>(actual.begin(), actual.end()).size()), actual.size());
+}
+
+TEST(Export470, SelectsVersionsAndPreservesTheDefaultWriter) {
+    auto document = open_path(write470_fixture());
+    ASSERT_TRUE(document);
+    for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+        auto tick = std::time(nullptr) / 2;
+        auto original = document->export_score({.format = format});
+        auto explicit_500 = document->export_score_with_warnings({.format = format, .native_version = "5.00"});
+        // ZIP timestamps have two-second precision, as in the existing capture tests.
+        for (int attempt = 0; attempt < 2 && format == engrave::Format::Mscz
+                              && tick != std::time(nullptr) / 2; ++attempt) {
+            tick = std::time(nullptr) / 2;
+            original = document->export_score({.format = format});
+            explicit_500 = document->export_score_with_warnings({.format = format, .native_version = "5.00"});
+        }
+        ASSERT_TRUE(original);
+        ASSERT_TRUE(explicit_500);
+        EXPECT_TRUE(explicit_500->warnings.empty());
+        EXPECT_EQ(*original, explicit_500->bytes);
+        const auto invalid = document->export_score_with_warnings({.format = format, .native_version = "4.71"});
+        ASSERT_FALSE(invalid);
+        EXPECT_EQ(invalid.error().code, ErrorCode::Unsupported);
+        EXPECT_NE(invalid.error().message.find("4.71"), std::string::npos);
+    }
+    const auto non_native = document->export_score_with_warnings({.format = engrave::Format::MusicXml,
+                                                                  .native_version = "4.70"});
+    ASSERT_FALSE(non_native);
+    EXPECT_EQ(non_native.error().code, ErrorCode::Unsupported);
+}
+
+TEST(Export470, ConvertsInstrumentNamesAndReportsPartIdentityLoss) {
+    auto document = open_path(write470_fixture());
+    ASSERT_TRUE(document);
+    const auto revision = document->revision();
+    const auto xml = document->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
+    if (!xml) {
+        for (const auto& w : xml.error().export_warnings) ADD_FAILURE() << w.code << ": " << w.message;
+        FAIL() << xml.error().message;
+    }
+    ASSERT_EQ(xml->warnings.size(), 1u);
+    EXPECT_EQ(xml->warnings[0].code, "engrave.470.part_identity_omitted");
+    EXPECT_TRUE(xml->warnings[0].object);
+    const std::string text(reinterpret_cast<const char*>(xml->bytes.data()), xml->bytes.size());
+    EXPECT_NE(text.find("version=\"4.70\""), std::string::npos);
+    EXPECT_EQ(text.find("<InstrumentLabel>"), std::string::npos);
+    EXPECT_NE(text.find("<longName>Piano</longName>"), std::string::npos);
+    EXPECT_NE(text.find("<shortName>Pno.</shortName>"), std::string::npos);
+    const auto archive = document->export_score_with_warnings({.format = engrave::Format::Mscz, .native_version = "4.70"});
+    if (!archive) FAIL() << archive.error().message;
+    ASSERT_EQ(archive->warnings.size(), 1u);
+    EXPECT_EQ(archive->warnings[0].code, xml->warnings[0].code);
+    EXPECT_EQ(archive->warnings[0].object, xml->warnings[0].object);
+    const auto reopened = g_engine->open(archive->bytes, {.format = engrave::Format::Mscz});
+    ASSERT_TRUE(reopened);
+    EXPECT_EQ(document->revision(), revision);
+    const auto legacy = document->export_score({.format = engrave::Format::Mscx, .native_version = "4.70"});
+    ASSERT_FALSE(legacy);
+    EXPECT_EQ(legacy.error().code, ErrorCode::Unsupported);
+    ASSERT_EQ(legacy.error().export_warnings.size(), 1u);
+    EXPECT_EQ(legacy.error().export_warnings[0].code, "engrave.470.part_identity_omitted");
+    const auto bounded = document->export_score_with_warnings({.format = engrave::Format::Mscx,
+        .capture = {.max_bytes = xml->bytes.size() + 1, .max_working_bytes = 16 * 1024 * 1024},
+        .native_version = "4.70"});
+    ASSERT_TRUE(bounded);
+    EXPECT_EQ(bounded->bytes, xml->bytes);
+    ASSERT_EQ(bounded->warnings.size(), 1u);
+    EXPECT_EQ(bounded->warnings[0].code, xml->warnings[0].code);
+    EXPECT_EQ(bounded->warnings[0].object, xml->warnings[0].object);
+    const auto too_small = document->export_score_with_warnings({.format = engrave::Format::Mscx,
+        .capture = {.max_bytes = 1024, .max_working_bytes = 16 * 1024 * 1024}, .native_version = "4.70"});
+    ASSERT_FALSE(too_small);
+    EXPECT_EQ(too_small.error().code, ErrorCode::ResourceLimit);
+    const auto stopped = document->export_score_with_warnings({.format = engrave::Format::Mscz,
+        .capture = {.cancelled = [] { return true; }}, .native_version = "4.70"});
+    ASSERT_FALSE(stopped);
+    EXPECT_EQ(stopped.error().code, ErrorCode::Cancelled);
+}
+
+TEST(Export470, RefusesPageLocksWithStableObjectWarnings) {
+    auto source = read_text(write470_fixture());
+    const auto start = source.find("<Measure>");
+    const auto end = source.find("</Measure>", start);
+    ASSERT_NE(start, std::string::npos);
+    ASSERT_NE(end, std::string::npos);
+    std::string second = source.substr(start, end + std::string_view("</Measure>").size() - start);
+    for (const auto& [from, to] : {std::pair{"C_C", "H_H"}, {"D_D", "I_I"}, {"E_E", "J_J"},
+                                  {"F_F", "K_K"}, {"G_G", "L_L"}}) {
+        const auto pos = second.find(from);
+        ASSERT_NE(pos, std::string::npos);
+        second.replace(pos, std::char_traits<char>::length(from), to);
+    }
+    source.insert(end + std::string_view("</Measure>").size(), second);
+    auto opened = g_engine->open(as_bytes(source), {.format = engrave::Format::Mscx});
+    ASSERT_TRUE(opened);
+    auto document = std::move(*opened);
+    auto& master = master_of(*document);
+    auto* measure = master.firstMeasure();
+    ASSERT_NE(measure, nullptr);
+    auto* next = measure->nextMeasure();
+    ASSERT_NE(next, nullptr);
+    const auto id = engrave::from_engine(measure->eid());
+    const auto next_id = engrave::from_engine(next->eid());
+    mu::engraving::RangeLock lock(measure, measure);
+    mu::engraving::RangeLock next_lock(next, next);
+    master.addPageLock(&lock);
+    master.addPageLock(&next_lock);
+    struct RemoveLock {
+        MasterScore& score;
+        const mu::engraving::RangeLock* first;
+        const mu::engraving::RangeLock* second;
+        ~RemoveLock() { score.removePageLock(first); score.removePageLock(second); }
+    } remove_lock{master, &lock, &next_lock};
+    for (int repeat = 0; repeat != 2; ++repeat) {
+        const auto result = document->export_score_with_warnings({.format = engrave::Format::Mscz, .native_version = "4.70"});
+        ASSERT_FALSE(result);
+        EXPECT_EQ(result.error().code, ErrorCode::Unsupported);
+        ASSERT_EQ(result.error().export_warnings.size(), 2u);
+        EXPECT_EQ(result.error().export_warnings[0].code, "engrave.470.page_lock");
+        ASSERT_TRUE(result.error().export_warnings[0].object);
+        EXPECT_EQ(*result.error().export_warnings[0].object, id);
+        EXPECT_EQ(result.error().export_warnings[1].code, "engrave.470.page_lock");
+        ASSERT_TRUE(result.error().export_warnings[1].object);
+        EXPECT_EQ(*result.error().export_warnings[1].object, next_id);
+        EXPECT_EQ(master.pageLocks()->allLocks().size(), 2u);
+    }
+}
+
+TEST(Export470, RefusesANonNeutralFiveOnlyStyle) {
+    auto document = open_path(write470_fixture());
+    ASSERT_TRUE(document);
+    auto& master = master_of(*document);
+    const auto score_id = engrave::from_engine(master.eid());
+    master.style().set(mu::engraving::Sid::maskSlurs, true);
+    const auto result = document->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
+    ASSERT_FALSE(result);
+    EXPECT_EQ(result.error().code, ErrorCode::Unsupported);
+    ASSERT_EQ(result.error().export_warnings.size(), 1u);
+    const auto& warning = result.error().export_warnings.front();
+    EXPECT_EQ(warning.code, "engrave.470.unsupported_style");
+    EXPECT_NE(warning.message.find("maskSlurs"), std::string::npos);
+    ASSERT_TRUE(warning.object);
+    EXPECT_EQ(*warning.object, score_id);
+    EXPECT_TRUE(master.style().styleB(mu::engraving::Sid::maskSlurs));
 }
 
 /// Checks the error a call must fail with, without reading .error() of a success.

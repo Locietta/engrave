@@ -1,0 +1,4 @@
+# Frozen writer captures and their control must retain their byte hashes on
+# checkouts with any core.autocrlf setting.
+*.mscx -text
+*.mscz -text
