@@ -46,6 +46,7 @@
 #include "engrave/src/score/score_positions.h"
 #include "engrave/src/score/score_semantic.h"
 #include "engrave/src/score/write470.h"
+#include <engrave/testing/write470.h>
 
 #include "engraving/dom/chord.h"
 #include "engraving/dom/engravingitem.h"
@@ -227,6 +228,52 @@ TEST(Export470, ConvertsInstrumentNamesWithoutWarnings) {
         .capture = {.cancelled = [] { return true; }}, .native_version = "4.70"});
     ASSERT_FALSE(stopped);
     EXPECT_EQ(stopped.error().code, ErrorCode::Cancelled);
+}
+
+TEST(Export470, InterruptsConversionAndSerializationAndRecovers) {
+    using Progress = engrave::testing::Write470Progress;
+    auto document = open_path(write470_fixture());
+    ASSERT_TRUE(document);
+    const auto baseline = document->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
+    ASSERT_TRUE(baseline);
+    for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+        for (auto stage : {Progress::Stage::Converting, Progress::Stage::Serializing}) {
+            Progress observed;
+            const auto result = document->export_score_with_warnings({.format = format,
+                .capture = {.cancelled = [&] {
+                    const auto progress = engrave::testing::write470_progress();
+                    if (progress.stage == stage && progress.units >= 2) { observed = progress; return true; }
+                    return false;
+                }}, .native_version = "4.70"});
+            ASSERT_FALSE(result);
+            EXPECT_EQ(result.error().code, ErrorCode::Cancelled);
+            EXPECT_EQ(observed.stage, stage);
+            EXPECT_GE(observed.units, 2u);
+            EXPECT_EQ(engrave::testing::write470_progress().stage, Progress::Stage::None);
+        }
+        // Determine a working allowance reached *inside* serialization, then
+        // replay with that allowance. Earlier phases fit; the next growth fails.
+        std::uint64_t allowance = 0;
+        const auto measured = document->export_score_with_warnings({.format = format,
+            .capture = {.cancelled = [&] {
+                const auto p = engrave::testing::write470_progress();
+                if (!allowance && p.stage == Progress::Stage::Serializing && p.units >= 2) allowance = p.working_bytes;
+                return false;
+            }, .max_working_bytes = 128 * 1024 * 1024}, .native_version = "4.70"});
+        ASSERT_TRUE(measured);
+        ASSERT_GT(allowance, 0u);
+        Progress last;
+        const auto limited = document->export_score_with_warnings({.format = format,
+            .capture = {.cancelled = [&] { last = engrave::testing::write470_progress(); return false; },
+                        .max_working_bytes = allowance}, .native_version = "4.70"});
+        ASSERT_FALSE(limited);
+        EXPECT_EQ(limited.error().code, ErrorCode::ResourceLimit);
+        EXPECT_EQ(last.stage, Progress::Stage::Serializing);
+        EXPECT_GE(last.units, 2u);
+        const auto recovery = document->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
+        ASSERT_TRUE(recovery);
+        EXPECT_EQ(recovery->bytes, baseline->bytes);
+    }
 }
 
 TEST(Export470, ConvertsPageLocksWithStableObjectWarnings) {
