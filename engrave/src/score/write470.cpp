@@ -386,13 +386,28 @@ void inspect(pugi::xml_node node, const std::string& path, std::optional<Element
     }
 }
 
+thread_local std::optional<ExportWarning> warning_identity_test_fault;
+
+bool valid_tie_locator(std::string_view id) {
+    for (const auto prefix : {"locator:score:", "measure:", "tick:", "track:", "note:"}) {
+        if (!id.starts_with(prefix)) return false;
+        id.remove_prefix(std::string_view(prefix).size());
+        const auto slash = id.find('/');
+        if (slash == std::string_view::npos || slash == 0
+            || id.substr(0, slash).find_first_not_of("0123456789") != std::string_view::npos) return false;
+        id.remove_prefix(slash + 1);
+    }
+    return id == "tieFor";
+}
+
 void normalize_warnings(std::vector<ExportWarning>& warnings) {
     std::vector<ExportWarning> unique;
     for (auto& w : warnings) {
         if (!w.object || w.object->kind.empty() || w.object->id.empty())
             throw std::invalid_argument("4.70 source warning has no identity");
         const auto& id = w.object->id;
-        bool valid = id.starts_with("locator:") || (w.object->kind == "request" && id.starts_with("version:"));
+        bool valid = (w.object->kind == "tie" && valid_tie_locator(id))
+            || (w.object->kind == "request" && id.starts_with("version:"));
         if (w.object->kind == "page_lock") {
             const auto separator = id.find("..");
             valid = separator != std::string::npos && element_id_from_string(id.substr(0, separator))
@@ -471,9 +486,18 @@ Result<ExportOutput> refused(std::vector<ExportWarning> warnings) {
 
 } // namespace
 
+void set_warning_identity_test_fault(ExportWarning warning) {
+    warning_identity_test_fault = std::move(warning);
+}
+
 Result<ExportOutput> export_score(const music::EngineContext& context, const music::ScoreProject& project,
                                   Score& score, const std::string& format, const music::ExportOptions& options) try {
     std::vector<ExportWarning> warnings;
+    if (warning_identity_test_fault) {
+        warnings.push_back(std::move(*warning_identity_test_fault));
+        warning_identity_test_fault.reset();
+        normalize_warnings(warnings);
+    }
     const auto score_id = score.eid().isValid() ? std::optional(from_engine(score.eid())) : std::nullopt;
     if (!score.isMaster()) {
         warnings.push_back({"B470_UNSUPPORTED_FEATURE", "4.70 export of an excerpt is not implemented", score_id});
