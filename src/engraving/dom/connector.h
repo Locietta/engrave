@@ -23,6 +23,8 @@
 #ifndef MU_ENGRAVING_CONNECTOR_H
 #define MU_ENGRAVING_CONNECTOR_H
 
+#include <climits>
+
 #include "global/allocator.h"
 
 #include "location.h"
