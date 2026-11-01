@@ -23,6 +23,7 @@
 #include <format>
 #include <fstream>
 #include <iterator>
+#include <limits>
 #include <map>
 #include <memory>
 #include <optional>
@@ -997,6 +998,79 @@ TEST(Read, FiltersAndPagingAgree) {
         expected += start >= 0.25 && start < 0.5;
     }
     EXPECT_EQ(in_ticks->total, expected);
+}
+
+TEST(Read, ExtremeTickRangesAndMeasureWindows) {
+    const auto fixture = std::ranges::find_if(g_corpus, [](const auto& path) {
+        return path.filename() == "linked_parts.mscx";
+    });
+    ASSERT_NE(fixture, g_corpus.end());
+    auto document = open_path(*fixture);
+    ASSERT_TRUE(document);
+    const auto max = std::numeric_limits<std::int64_t>::max();
+    const auto min = std::numeric_limits<std::int64_t>::min();
+
+    engrave::Query request;
+    request.types = {"Note"};
+    const auto all = document->query(request);
+    ASSERT_TRUE(all);
+    ASSERT_GT(all->total, 0u);
+
+    // Zero with an extreme denominator must select the same notes as zero/1.
+    request.from_tick = engrave::Fraction{0, max};
+    const auto zero = document->query(request);
+    ASSERT_TRUE(zero);
+    EXPECT_EQ(zero->total, all->total);
+    request.from_tick = engrave::Fraction{min, max};
+    request.to_tick = engrave::Fraction{max, 1};
+    const auto wide = document->query(request);
+    ASSERT_TRUE(wide);
+    EXPECT_EQ(wide->total, all->total);
+    request.from_tick = engrave::Fraction{max, 1};
+    request.to_tick.reset();
+    const auto beyond = document->query(request);
+    ASSERT_TRUE(beyond);
+    EXPECT_EQ(beyond->total, 0u);
+
+    // Bounds within one unit in the last place of 1 straddle exactly the
+    // notes at tick 1, even though cross products would require 128 bits.
+    request.from_tick = engrave::Fraction{max - 1, max};
+    request.to_tick = engrave::Fraction{max, max - 1};
+    const auto narrow = document->query(request);
+    ASSERT_TRUE(narrow);
+    const auto at_one = std::ranges::count_if(all->elements, [](const auto& element) {
+        return element.tick.num == element.tick.den;
+    });
+    ASSERT_GT(at_one, 0);
+    EXPECT_EQ(narrow->total, static_cast<std::size_t>(at_one));
+    std::swap(request.from_tick, request.to_tick);
+    expect_code(document->query(request), ErrorCode::InvalidArgument, "reversed extreme bounds");
+
+    request.from_tick = engrave::Fraction{1, 2};
+    request.to_tick.reset();
+    const auto reduced = document->query(request);
+    ASSERT_TRUE(reduced);
+    request.from_tick = engrave::Fraction{(max - 1) / 2, max - 1};
+    const auto unreduced = document->query(request);
+    ASSERT_TRUE(unreduced);
+    EXPECT_EQ(unreduced->total, reduced->total);
+
+    for (const std::int64_t denominator : {std::int64_t{0}, std::int64_t{-1}, min}) {
+        request.from_tick = engrave::Fraction{0, denominator};
+        expect_code(document->query(request), ErrorCode::InvalidArgument, "invalid lower denominator");
+        request.from_tick.reset();
+        request.to_tick = engrave::Fraction{0, denominator};
+        expect_code(document->query(request), ErrorCode::InvalidArgument, "invalid upper denominator");
+        request.to_tick.reset();
+    }
+    const auto max32 = std::numeric_limits<std::int32_t>::max();
+    const auto min32 = std::numeric_limits<std::int32_t>::min();
+    for (const auto [first, count] : {std::pair{max32, std::int32_t{1}}, std::pair{max32, max32},
+                                      std::pair{min32, min32}, std::pair{std::int32_t{0}, min32}}) {
+        request.first_measure = first;
+        request.measure_count = count;
+        expect_code(document->query(request), ErrorCode::InvalidArgument, "out-of-range measure window");
+    }
 }
 
 TEST(Read, LimitsAreEnforced) {

@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cmath>
 #include <format>
+#include <limits>
 #include <optional>
 #include <ranges>
 #include <string>
@@ -83,10 +84,10 @@ Fraction whole_notes(int ticks) {
     return {ticks, whole_note_ticks};
 }
 
-// Whether a is before b.  Cross-multiplied, because a caller's fraction is not
-// reduced either.
+// Whether a is before b. Inputs have positive denominators; comparisons cover
+// the full int64 range without overflowing on unreduced fractions.
 bool before(const Fraction& a, const Fraction& b) {
-    return a.num * b.den < b.num * a.den;
+    return detail::compare_fraction(a.num, a.den, b.num, b.den) < 0;
 }
 
 Fraction fraction_of(const mu::engraving::Fraction& value) {
@@ -364,7 +365,7 @@ struct MeasureWindow {
 
 Result<MeasureWindow> measure_window(const Query& request, Score& score, MasterScore& master) {
     const std::size_t count = score.nmeasures();
-    const auto last_index = static_cast<std::int32_t>(count);
+    const auto last_index = static_cast<std::int64_t>(count);
     MeasureWindow window;
     if ((request.first_measure || request.measure_count) && (request.from_measure || request.to_measure)) {
         return fail(ErrorCode::InvalidArgument, "a query names its measure window by index or by id, not both");
@@ -390,21 +391,23 @@ Result<MeasureWindow> measure_window(const Query& request, Score& score, MasterS
     } else {
         window.first = request.first_measure.value_or(0);
     }
+    std::int64_t last;
     if (request.to_measure) {
-        const Result<std::int32_t> last = index_of(*request.to_measure, "to_measure");
-        if (!last) return std::unexpected(last.error());
-        window.last = *last + 1;
+        const Result<std::int32_t> end = index_of(*request.to_measure, "to_measure");
+        if (!end) return std::unexpected(end.error());
+        last = std::int64_t{*end} + 1;
     } else if (request.measure_count) {
-        window.last = window.first + *request.measure_count;
+        last = std::int64_t{window.first} + *request.measure_count;
     } else {
-        window.last = last_index;
+        last = last_index;
     }
     window.given = true;
-    if (window.first < 0 || window.last < window.first || window.last > last_index) {
+    if (window.first < 0 || last < window.first || last > last_index || last > std::numeric_limits<std::int32_t>::max()) {
         return fail(ErrorCode::InvalidArgument,
                     std::format("the measure window [{}, {}) is not inside the score's {} measure(s)", window.first,
-                                window.last, count));
+                                last, count));
     }
+    window.last = static_cast<std::int32_t>(last);
     if (static_cast<std::size_t>(window.last - window.first) > max_query_measures) {
         return fail(ErrorCode::InvalidArgument,
                     std::format("a measure window is at most {} measures wide", max_query_measures));
@@ -500,6 +503,9 @@ Result<QueryResult> Document::query(const Query& request) {
             return fail(ErrorCode::InvalidArgument,
                         std::format("voice {} is not in 0..{}", voice, mu::engraving::VOICES - 1));
         }
+    }
+    if ((request.from_tick && request.from_tick->den <= 0) || (request.to_tick && request.to_tick->den <= 0)) {
+        return fail(ErrorCode::InvalidArgument, "a tick range must have positive denominators");
     }
     if (request.from_tick && request.to_tick && before(*request.to_tick, *request.from_tick)) {
         return fail(ErrorCode::InvalidArgument, "a tick range ends before it starts");
