@@ -237,3 +237,137 @@ Windows synthesis p95 miss needs further work before accepting the all-phase
 latency gate; late-phase measurements include cleanup and scheduling, and this
 slice does not isolate their individual costs. The dense measurements do not
 prove bounds for all scores, fonts, storage or competing workloads.
+
+
+# M2.3 dense-score cancellation margin
+
+2026-11-02. Base `0a2aa52ac9ab345a5d30f961ad97df7c27293a92`
+(the supplied engrave-30 candidate SHA, not a merge commit). Implementation
+`91b971cabd1a78af94c1c2bd85837793ea032ae5`; publication follow-up
+`46b0d74bfa2b000c2ad8c147e3bc7e7e1b01e70f`. Branch
+`feat/dense-audio-cancel`, existing worktree e30. No tag, pin or push.
+
+## Latency source and implementation (SOURCE-REVIEWED / EXECUTED)
+
+The old synthesis request is raised during an owner-thread MIDI callback, so it
+already measures almost entirely work after detection, rather than the time to
+reach the next 256-frame copy. An instrumented baseline run reproduced Windows
+synthesis p95 48.665 ms / max 50.909 and encode 50.576 / 56.847. Its late-phase
+graph teardown was typically 11-13 ms; total cancellation was roughly 41 ms at
+p50. The remaining model lifetime ends after graph destruction. Source review
+shows that origin events use reference-counted SharedMaps: dropping intermediate
+snapshots does not eliminate their final destruction.
+
+The driver now moves the model's origin-event stores into four batches after
+all graph references are destroyed, clears three on joined threads and one on
+the owner, then completes ordinary model destruction. This applies on Windows
+only, when at least 16,384 event timestamps and two tracks exist. Only value-owned
+MPE event stores move to workers. Score/listener access, synth and SoundFont
+teardown, codecs, callbacks, file closing and removal stay on the owner thread.
+Workers join before return, including callback-exception unwinding. Thread
+creation failure falls back to synchronous cleanup for unstarted batches.
+There is no retained graph or deferred cleanup, and no added FluidSynth reset.
+
+An exploratory four-thread Linux cleanup regressed before-synthesis p95 to
+57.175 ms and synthesis to 64.910 ms, consistent with contention freeing
+allocations from one glibc arena. That variant is disabled on Linux; its final
+measurements remain near the e30 baseline, rather than improving proportionally.
+These discarded results are not acceptance evidence.
+
+Polls now sit before FluidSynth processing, before each sequence, between MIDI
+events, before tuning, and at every 64-frame sink copy (one FluidSynth internal
+buffer). Sequence collection polls at each timestamp and each copied/moved
+event. The mixer exits immediately after a cancelled track and polls between
+mixing tracks. Existing construction, preset sample-load, encoder and 4 KiB
+file-write polls remain. Public publication additionally polls before each
+1 MiB encoded-file read/sink delivery. Event order, tuning, internal PCM cursor,
+4096-frame outer DSP blocks and codec input blocks are unchanged.
+
+No production render worker join was identified in the offline driver before
+this change. FluidSynth's destructor can join lazy SoundFont-unload timers, but
+the normal render path does not explicitly unload fonts into those timers.
+Its ordinary voice/preset cleanup and graph destruction are still synchronous.
+OS scheduling, closing/removal and native destruction have no universal bound.
+
+## Dense distributions (EXECUTED)
+
+Release builds, 50 trials per phase, timing instrumentation disabled. Same
+12-part x 256-measure x 16-note test and request points as M2.2. Nearest-rank
+p50 / p95 / maximum in milliseconds. Tests now assert p95 <=30 and max <=50.
+
+| Phase | Windows | Linux, physical cachy |
+|---|---|---|
+| before-synthesis | 11.384 / 13.677 / 14.373 | 10.220 / 10.633 / 10.696 |
+| playback-model | 5.675 / 7.883 / 8.353 | 4.007 / 7.457 / 8.186 |
+| synthesis | 23.314 / 27.388 / 30.959 | 16.589 / 17.029 / 18.405 |
+| encode | 23.098 / 25.672 / 27.704 | 16.651 / 16.879 / 18.368 |
+
+All four phases pass both stricter limits on both hosts. Windows synthesis's
+e30 p95 failure is gone. Detection-to-return includes graph/model cleanup,
+thread joins and removal; model-construction trials include flag-to-detection.
+These remain engine phase probes, not host notification-to-response timings.
+Every phase checks Cancelled, absent output and byte-identical recovery. Dense
+callbacks now assert the owner thread. The public construction cancellation and
+throwing-callback checks still require zero sink calls and no intermediate.
+
+## Validation (COMPILED / EXECUTED)
+
+Both hosts compiled release engrave_output_test and engrave_output_probe with
+--engrave_tests=y. Windows: native MSVC; Linux: native cachy conda GCC, no WSL.
+Both ran Audio.*, AudioInternal.*, RuntimeAssets.SoundFont*: 24 passed, 2 skipped.
+Skips are the unavailable excerpt fixture and opt-in graph timing test.
+The repeat70 50-trial cancellation benchmark also passes in those suites.
+
+The subsequent publication-only production change was checked on both hosts
+with Audio.* plus CancellationDuringPublicationCleansUpAndRecovers: 18 passed,
+1 skipped each. That new test cancels after the first sink chunk, requires
+Cancelled and exactly one delivered chunk, checks that this render's intermediate
+is absent, then requires byte-identical recovery. The four dense distributions
+were measured at 91b971cabd; the follow-up only adds publication polling after
+encoded rendering and leaves their measured internal paths unchanged.
+
+Windows's final probe compared all 22 golden corpus inputs in WAV, FLAC, Opus,
+MP3 and AAC against captured e30 candidate files: **110/110 byte-identical**.
+The script verifies recorded input and baseline-output SHA-256 values first.
+Explicit allowed differences: **none**. No golden files changed. The e30 files
+also matched the e29-equivalent baseline in M2.2. Both hosts' dense recovery
+renders match their own uncancelled baseline. No dense-test-named temporary files
+remained on either host after the distributions.
+
+An initial Windows build overlapped the baseline timing process, causing a
+locked test executable and an incomplete probe; after rebuilding the probe the
+final original suites passed. The publication test initially checked all old
+cache entries rather than its own intermediate; its corrected check uses this
+process and render index. Failed exploratory logs are kept separate.
+
+Raw samples, commands, build/test logs, binary hashes and hash-pinned parity
+rows are in host notes/e31/ (results.json and parity/results.json). The original
+suite's Windows binary SHA-256 was
+47d37cfbd4d6a4ae66c79b725dbc68166bda2eec828709d944333c231a1d993e;
+Linux: 0d1eaa715fed9d62f2559780bd3c159cdd9fe03278dacfb42747e35878358d75.
+Final publication-test binaries and probes are recorded in results.json.
+
+## Remaining unpolled intervals (SOURCE-REVIEWED)
+
+Engine::open -> load_native_score -> finish_load still imports, repairs and
+lays out without internal cancellation. The host audio worker explicitly calls
+Engine::open on an MSCZ before render_audio (native/worker_v2.cpp:235), so this
+interval IS reachable in an audio export job, before the audio callback scope.
+The normal loaded master has already been laid out.
+
+Audio rendering also calls engine_audio_tracks -> music::select_score ->
+ensure_layout -> Score::doLayout when the selected score has no pages. That
+conditional relayout IS reachable from the render path, including a selected
+unlaid-out excerpt; ordinary already-laid-out scores skip it. Neither import
+nor layout is covered by these four phase distributions or changed here.
+
+First-use/changed-font parsing and service setup, repeat/tempo cache updates,
+individual playback render operations, automation resampling within a layer,
+container allocations/copies, native codec/sample decompression calls, a single
+64-frame FluidSynth render, file operations, individual sink calls and final
+cleanup remain indivisible or unpolled internally. Several are reachable on the
+audio path; the fixed dense/font tests do not establish arbitrary-input bounds.
+Publication now checks between sink chunks; it cannot interrupt a running sink.
+
+No full engine gate ran. Parent owns independent review, both-host engine/host
+gates, tag and pin acceptance.
