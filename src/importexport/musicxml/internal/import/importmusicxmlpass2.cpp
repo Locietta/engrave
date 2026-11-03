@@ -22,6 +22,8 @@
 
 #include <cmath>
 #include <memory>
+#include <charconv>
+#include <cstdint>
 #include <utility>
 #include <vector>
 
@@ -916,6 +918,67 @@ static void colorItem(EngravingItem* item, const Color color)
         item->setProperty(Pid::COLOR, color);
         item->setPropertyFlags(Pid::COLOR, PropertyFlags::UNSTYLED);
     }
+}
+
+// Convert a MusicXML percentage without a locale change or an unsafe cast.
+static int musicXmlDynamicVelocity(const String& value, int minimum, int fallback)
+{
+    const std::string text = value.toStdString();
+    const auto isXmlSpace = [](char c) { return c == ' ' || c == '\t' || c == '\r' || c == '\n'; };
+    const char* first = text.data();
+    const char* last = first + text.size();
+    while (first != last && isXmlSpace(*first)) ++first;
+    while (first != last && isXmlSpace(*(last - 1))) --last;
+    if (first == last) return fallback;
+    // Floating-point from_chars accepts a minus sign, but not a leading plus.
+    if (*first == '+') {
+        if (++first == last || *first == '+' || *first == '-') return fallback;
+    }
+
+    double percent = 0.0;
+    const auto result = std::from_chars(first, last, percent, std::chars_format::general);
+    if (result.ptr != last) return fallback;
+    if (result.ec == std::errc::result_out_of_range) {
+        if (*first == '-') return minimum;
+
+        // from_chars reports both decimal overflow and underflow as out of
+        // range. The order of the first nonzero digit distinguishes them,
+        // including very long mantissas and exponents, without a regex stack.
+        int64_t integerDigits = 0;
+        int64_t digitIndex = 0;
+        int64_t firstNonzero = -1;
+        bool afterPoint = false;
+        const char* p = first;
+        for (; p != last && *p != 'e' && *p != 'E'; ++p) {
+            if (*p == '.') {
+                afterPoint = true;
+            } else {
+                if (!afterPoint) ++integerDigits;
+                if (*p != '0' && firstNonzero < 0) firstNonzero = digitIndex;
+                ++digitIndex;
+            }
+        }
+        if (firstNonzero < 0) return minimum;
+        constexpr int64_t limit = INT64_MAX / 4;
+        int64_t exponent = 0;
+        bool exponentNegative = false;
+        if (p != last) {
+            ++p;
+            if (p != last && (*p == '+' || *p == '-')) exponentNegative = *p++ == '-';
+            for (; p != last; ++p) {
+                const int digit = *p - '0';
+                if (exponent > (limit - digit) / 10) exponent = limit;
+                else exponent = exponent * 10 + digit;
+            }
+        }
+        if (exponentNegative) exponent = -exponent;
+        const int64_t order = integerDigits - firstNonzero - 1 + exponent;
+        return order > 0 ? 127 : minimum;
+    }
+    if (result.ec != std::errc{} || !std::isfinite(percent)) return fallback;
+    if (percent <= minimum / 0.9) return minimum;
+    if (percent >= 127.0 / 0.9) return 127;
+    return static_cast<int>(std::round(percent * 0.9));
 }
 
 //---------------------------------------------------------
@@ -3731,13 +3794,7 @@ void MusicXmlParserDirection::direction(const String& partId,
         }
 
         if (!m_dynaVelocity.empty()) {
-            int dynaValue = round(m_dynaVelocity.toDouble() * 0.9);
-            if (dynaValue > 127) {
-                dynaValue = 127;
-            } else if (dynaValue < 0) {
-                dynaValue = 0;
-            }
-            dynamic->setVelocity(dynaValue);
+            dynamic->setVelocity(musicXmlDynamicVelocity(m_dynaVelocity, 0, 0));
         }
 
         dynamic->setVisible(m_visible);
@@ -7028,7 +7085,7 @@ Note* MusicXmlParserPass2::note(const String& partId,
     // an explicit dynamics="0" means a silent note, which the score model can
     // only represent as velocity 1 (velocity 0 means "unset")
     const bool hasDynamics = m_e.hasAttribute("dynamics");
-    const int velocity = std::clamp(int(round(m_e.doubleAttribute("dynamics") * 0.9)), 1, 127);
+    const int velocity = hasDynamics ? musicXmlDynamicVelocity(m_e.attribute("dynamics"), 1, 1) : 1;
     bool graceSlash = false;
     double graceStealFollowing = -1.0;
     double graceStealPrevious  = -1.0;

@@ -48,6 +48,9 @@
 #include "engrave/src/score/write470.h"
 #include <engrave/testing/write470.h>
 
+#include "engraving/dom/dynamic.h"
+#include "engraving/dom/segment.h"
+#include "serialization/xmlstreamreader.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/instrument.h"
@@ -1915,6 +1918,111 @@ TEST(Read, HiddenLeadingTupletRestPreservesFollowingNotes) {
         query_rows(roundtrip->elements, actual);
         EXPECT_EQ(actual, expected);
     }
+}
+
+std::string dynamics_musicxml(std::string_view direction, std::string_view notations,
+                             std::string_view note_attributes = "") {
+    return std::format(R"xml(<score-partwise version="4.0">
+<part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
+<part id="P1"><measure number="1"><attributes><divisions>1</divisions>
+<time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef>
+</attributes>{}<note {}><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration>
+<type>whole</type><notations>{}</notations></note></measure></part></score-partwise>)xml",
+                       direction, note_attributes, notations);
+}
+
+std::vector<mu::engraving::Dynamic*> imported_dynamics(engrave::Document& document) {
+    engrave::Query query;
+    query.types = {"Dynamic"};
+    const auto result = document.query(query);
+    EXPECT_TRUE(result);
+    std::vector<mu::engraving::Dynamic*> dynamics;
+    if (!result) return dynamics;
+    for (const auto& row : result->elements) {
+        const auto element = engrave::resolve(master_of(document), row.id);
+        EXPECT_TRUE(element);
+        if (element) dynamics.push_back(static_cast<mu::engraving::Dynamic*>(element->object));
+    }
+    return dynamics;
+}
+
+// Parse the exported document before reopening it: successful import alone does
+// not establish that literal text was serialized as well-formed XML.
+std::unique_ptr<engrave::Document> dynamics_native_roundtrip(engrave::Document& document,
+                                                        std::string_view expected_text = "",
+                                                        engrave::Format format = engrave::Format::Mscx) {
+    const auto saved = document.export_score({.format = format});
+    EXPECT_TRUE(saved);
+    if (!saved) return nullptr;
+    if (format == engrave::Format::Mscx && !expected_text.empty()) {
+        const std::string xml(reinterpret_cast<const char*>(saved->data()), saved->size());
+        EXPECT_NE(xml.find(std::format("<text>{}</text>", expected_text)), std::string::npos);
+    }
+    if (format == engrave::Format::Mscx) {
+        const muse::ByteArray bytes(reinterpret_cast<const char*>(saved->data()), saved->size());
+        muse::XmlStreamReader reader(bytes);
+        while (!reader.atEnd()) reader.readNext();
+        EXPECT_FALSE(reader.isError()) << reader.errorString().toStdString();
+    }
+    auto reopened = g_engine->open(*saved, {.format = format});
+    EXPECT_TRUE(reopened);
+    return reopened ? std::move(*reopened) : nullptr;
+}
+
+TEST(Read, MusicXmlDynamicsVelocityIsBoundedBeforeConversion) {
+    struct Case { const char* value; int direction; int note; };
+    const std::string canceled = "0." + std::string(1000, '0') + "5e1001";
+    const Case cases[] = {
+        {"0", 96, 1}, {"-10", 96, 1}, {"5", 5, 5}, {"50", 45, 45}, {"100", 90, 90}, {"110", 99, 99},
+        {"+5e1", 45, 45}, {" 50 ", 45, 45}, {".5", 96, 1}, {"0.6", 1, 1}, {"50.6", 46, 46}, {"200", 127, 127},
+        {"10000000000", 127, 127}, {"1e308", 127, 127}, {"-1e308", 96, 1},
+        {"garbage", 96, 1}, {"50garbage", 96, 1}, {"", 96, 1}, {"NaN", 96, 1}, {"INF", 96, 1}, {"-INF", 96, 1}, {"1e999", 127, 127}, {"-1e999", 96, 1}, {"1e-999", 96, 1}, {"1e9999999999999999999", 127, 127}, {"1e-9999999999999999999", 96, 1}, {"1e+", 96, 1}, {"+-1", 96, 1}, {"5 0", 96, 1}, {"&#x9;50&#xA;", 45, 45}, {canceled.c_str(), 5, 5},
+    };
+    for (const auto& c : cases) {
+        SCOPED_TRACE(c.value);
+        const auto direction = std::format(R"(<direction><direction-type><dynamics><f/></dynamics></direction-type><sound dynamics="{}"/></direction>)", c.value);
+        auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "", std::format("dynamics=\"{}\"", c.value))),
+                                     {.format = engrave::Format::MusicXml});
+        ASSERT_TRUE(opened);
+        const auto check = [&](engrave::Document& document) {
+            const auto dynamics = imported_dynamics(document);
+            ASSERT_EQ(dynamics.size(), 1u);
+            EXPECT_EQ(dynamics.front()->getProperty(mu::engraving::Pid::VELOCITY).toInt(), c.direction);
+            engrave::Query query;
+            query.types = {"Note"};
+            const auto notes = document.query(query);
+            ASSERT_TRUE(notes);
+            ASSERT_EQ(notes->elements.size(), 1u);
+            const auto note = engrave::resolve(master_of(document), notes->elements.front().id);
+            ASSERT_TRUE(note);
+            EXPECT_EQ(static_cast<mu::engraving::Note*>(note->object)->userVelocity(), c.note);
+        };
+        check(**opened);
+        for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+            auto reopened = dynamics_native_roundtrip(**opened, "", format);
+            ASSERT_TRUE(reopened);
+            check(*reopened);
+        }
+    }
+    const auto plain = g_engine->open(as_bytes(dynamics_musicxml("", "")), {.format = engrave::Format::MusicXml});
+    ASSERT_TRUE(plain);
+    engrave::Query query;
+    query.types = {"Note"};
+    const auto notes = (*plain)->query(query);
+    ASSERT_TRUE(notes);
+    ASSERT_EQ(notes->elements.size(), 1u);
+    const auto note = engrave::resolve(master_of(**plain), notes->elements.front().id);
+    ASSERT_TRUE(note);
+    EXPECT_EQ(static_cast<mu::engraving::Note*>(note->object)->userVelocity(), 0);
+
+    const std::string longNumber(100000, '9');
+    const auto direction = std::format(R"(<direction><direction-type><dynamics><f/></dynamics></direction-type><sound dynamics="{}"/></direction>)", longNumber);
+    auto large = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
+    ASSERT_TRUE(large);
+    const auto dynamics = imported_dynamics(**large);
+    ASSERT_EQ(dynamics.size(), 1u);
+    EXPECT_EQ(dynamics.front()->velocity(), 127);
+
 }
 
 // --- corpus discovery ----------------------------------------------------
