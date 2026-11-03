@@ -57,6 +57,7 @@ ChordLine::ChordLine(const ChordLine& cl)
     m_wavy = cl.m_wavy;
     m_lengthX = cl.m_lengthX;
     m_lengthY = cl.m_lengthY;
+    m_playChordLine = cl.m_playChordLine;
     m_note = cl.m_note;
 
     /* The manually edited shape is "given" data which happens to live in the layout
