@@ -6,6 +6,12 @@
 #include "engrave/src/render/score_render.h"
 #include "engraving/engravingproject.h"
 #include "engraving/dom/masterscore.h"
+#include "engraving/dom/chord.h"
+#include "engraving/dom/chordline.h"
+#include "engraving/dom/measure.h"
+#include "engraving/playback/metaparsers/chordarticulationsparser.h"
+#include "engraving/playback/playbackcontext.h"
+#include "engraving/playback/renderingcontext.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/text.h"
 #include "global/io/buffer.h"
@@ -14,6 +20,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <stdexcept>
 
 namespace {
@@ -39,6 +46,88 @@ const char* fixture = R"(<score-partwise version="4.0"><part-list>
 <score-part id="P2"><part-name>Cello</part-name><midi-instrument id="I2"><midi-channel>2</midi-channel><midi-program>43</midi-program></midi-instrument></score-part>
 </part-list><part id="P1"><measure number="1"><attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef></attributes><note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note></measure></part>
 <part id="P2"><measure number="1"><attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>F</sign><line>4</line></clef></attributes><note><pitch><step>E</step><octave>3</octave></pitch><duration>4</duration><type>whole</type></note></measure></part></score-partwise>)";
+
+// Native 5.00 input, deliberately independent of the MusicXML fixture above and
+// of external files. Each case loads a fresh score with an explicit play value.
+const char* chordline_fixture = R"(<?xml version="1.0" encoding="UTF-8"?>
+<museScore version="5.00"><Score><Division>480</Division>
+<Part id="1"><Staff><StaffType group="pitched"><name>stdNormal</name></StaffType></Staff>
+<trackName>Flute</trackName><Instrument id="flute"><longName>Flute</longName>
+<trackName>Flute</trackName><instrumentId>wind.flutes.flute</instrumentId>
+<Channel><program value="73"/></Channel></Instrument></Part>
+<Staff id="1"><Measure><voice>
+<Clef><concertClefType>G</concertClefType><transposingClefType>G</transposingClefType></Clef>
+<TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>
+<Chord><durationType>whole</durationType><Note><pitch>72</pitch><tpc>14</tpc></Note>
+<ChordLine><play>0</play><subtype>1</subtype></ChordLine></Chord>
+</voice></Measure></Staff></Score></museScore>)";
+
+mu::engraving::ChordLine* check_chordline_playback(mu::engraving::Score* score, bool enabled,
+                                                const char* stage) {
+    using namespace mu::engraving;
+    using namespace muse::mpe;
+    const auto check = [=](bool value, const char* message) {
+        if (!value) throw std::runtime_error(std::string(enabled ? "Enabled " : "Disabled ")
+                                            + stage + ": " + message);
+    };
+    check(score && score->firstMeasure(), "Missing measure");
+    auto* chord = score->firstMeasure()->findChord(Fraction(0, 1), 0);
+    check(chord && chord->notes().size() == 1, "Missing fixture chord");
+    auto* line = chord->chordLine();
+    check(line && line->chordLineType() == ChordLineType::FALL, "Missing fall");
+    check(line->playChordLine() == enabled, "Playback flag changed");
+    check(line->getProperty(Pid::PLAY).toBool() == enabled, "PLAY property changed");
+
+    // Exercise the playback consumer as well as the stored property. A nonempty
+    // Fall profile ensures the enabled control cannot pass by emitting nothing.
+    auto profile = std::make_shared<ArticulationsProfile>();
+    ArticulationPattern pattern;
+    pattern.emplace(0, ArticulationPatternSegment(ArrangementPattern(HUNDRED_PERCENT, 0),
+                                                PitchPattern(2, HUNDRED_PERCENT, 0),
+                                                ExpressionPattern(2, HUNDRED_PERCENT,
+                                                                  dynamicLevelFromType(muse::mpe::DynamicType::Natural))));
+    profile->setPattern(ArticulationType::Fall, pattern);
+    auto playback = std::make_shared<PlaybackContext>(score);
+    const auto rendering = buildRenderingCtx(chord, 0, profile, playback);
+    check(rendering.isValid(), "Invalid playback rendering context");
+    ArticulationMap articulations;
+    ChordArticulationsParser::buildChordArticulationMap(chord, rendering, articulations);
+    check(articulations.contains(ArticulationType::Fall) == enabled, "Fall playback articulation changed");
+    check(articulations.size() == (enabled ? 1u : 0u), "Unexpected playback articulations");
+    return line;
+}
+
+void test_chordline_playback(const music::EngineContext& context, const std::filesystem::path& out, bool enabled) {
+    std::string input = chordline_fixture;
+    if (enabled) {
+        const std::string disabled_play = "<play>0</play>";
+        const auto play = input.find(disabled_play);
+        expect(play != std::string::npos, "Fixture missing explicit playback flag");
+        input.replace(play, disabled_play.size(), "<play>1</play>");
+    }
+    auto project = music::load_native_score(context, input, "mscx");
+    auto* master = project->masterScore();
+    expect(music::list_score_excerpts(master).empty(), "Chordline fixture already has excerpts");
+    auto* original = check_chordline_playback(master, enabled, "master before generation");
+    expect(music::generate_score_excerpts(master), "Chordline excerpt was not generated");
+    expect(music::list_score_excerpts(master).size() == 1, "Expected one chordline excerpt");
+    expect(check_chordline_playback(master, enabled, "master after generation") == original,
+           "Generation replaced the master chordline");
+    auto* excerpt = music::select_score(master, 0);
+    expect(excerpt != master, "Expected a separate excerpt score");
+    expect(check_chordline_playback(excerpt, enabled, "generated excerpt") != original,
+           "Expected a cloned chordline in excerpt");
+
+    const auto archive = music::export_native_score(context, project, "mscz", 0, "");
+    save(out / (enabled ? "chordline-enabled.mscz" : "chordline-disabled.mscz"), archive);
+    auto reopened = music::load_native_score(context, archive, "mscz");
+    auto* reopened_master = reopened->masterScore();
+    expect(music::list_score_excerpts(reopened_master).size() == 1, "Saved chordline excerpt lost");
+    expect(!music::generate_score_excerpts(reopened_master), "Saved chordline excerpt regenerated");
+    check_chordline_playback(reopened_master, enabled, "reopened master");
+    check_chordline_playback(music::select_score(reopened_master, 0), enabled, "reopened excerpt");
+}
+
 }
 int main(int argc, char** argv) {
     try {
@@ -46,6 +135,8 @@ int main(int argc, char** argv) {
         const auto out = std::filesystem::absolute(std::filesystem::u8path(argv[2]));
         std::filesystem::create_directories(out);
         music::EngineContext context(argv[1]);
+        test_chordline_playback(context, out, false);
+        test_chordline_playback(context, out, true);
         auto project = music::load_native_score(context, fixture, "musicxml");
         auto* master = project->masterScore();
         expect(music::list_score_excerpts(master).empty(), "Unexpected initial excerpts");
