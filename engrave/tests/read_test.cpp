@@ -50,6 +50,7 @@
 
 #include "engraving/dom/chord.h"
 #include "engraving/dom/engravingitem.h"
+#include "engraving/dom/instrument.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/mscore.h"
@@ -111,6 +112,65 @@ std::int64_t ticks_of(const engrave::Fraction& value) {
 
 std::filesystem::path write470_fixture() {
     return std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests/data/write470/minimal.mscx";
+}
+
+TEST(Read, InstrumentLabelNumberFlags500) {
+    const auto path = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT)
+        / "engrave/tests/data/upstream-label/show-number-short-500.mscx";
+    const std::string fixture = read_text(path);
+    constexpr std::string_view short_tag = "<showNumberShort>0</showNumberShort>";
+    const auto position = fixture.find(short_tag);
+    ASSERT_NE(position, std::string::npos);
+
+    const auto check_flags = [](engrave::Document& document, bool long_flag, bool short_flag) {
+        const auto& parts = master_of(document).parts();
+        ASSERT_EQ(parts.size(), 1u);
+        const auto* instrument = parts.front()->instrument();
+        ASSERT_NE(instrument, nullptr);
+        const auto& label = instrument->instrumentLabel();
+        EXPECT_EQ(label.number(), 1);
+        EXPECT_EQ(label.showNumberLong(), long_flag);
+        EXPECT_EQ(label.showNumberShort(), short_flag);
+    };
+    const auto check_roundtrip = [&](const std::string& xml, bool long_flag, bool short_flag) {
+        auto document = g_engine->open(as_bytes(xml), {.format = engrave::Format::Mscx});
+        ASSERT_TRUE(document) << document.error().message;
+        check_flags(**document, long_flag, short_flag);
+        for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+            SCOPED_TRACE(format == engrave::Format::Mscx ? "MSCX" : "MSCZ");
+            const auto saved = (*document)->export_score({.format = format, .native_version = "5.00"});
+            ASSERT_TRUE(saved) << saved.error().message;
+            auto reopened = g_engine->open(*saved, {.format = format});
+            ASSERT_TRUE(reopened) << reopened.error().message;
+            check_flags(**reopened, long_flag, short_flag);
+        }
+    };
+
+    // The reported file omits showNumberLong: its default must stay true.
+    {
+        SCOPED_TRACE("short only; long defaults to true");
+        check_roundtrip(fixture, true, false);
+    }
+    for (bool long_false : {false, true}) {
+        SCOPED_TRACE(long_false ? "short omitted; long false" : "both flags omitted");
+        std::string xml = fixture;
+        xml.replace(position, short_tag.size(),
+                    long_false ? "<showNumberLong>0</showNumberLong>" : "");
+        check_roundtrip(xml, !long_false, true);
+    }
+    for (bool long_flag : {false, true}) {
+        for (bool short_flag : {false, true}) {
+            for (bool short_first : {false, true}) {
+                SCOPED_TRACE(std::format("long={}, short={}, short_first={}",
+                                         long_flag, short_flag, short_first));
+                const auto long_xml = std::format("<showNumberLong>{}</showNumberLong>", int(long_flag));
+                const auto short_xml = std::format("<showNumberShort>{}</showNumberShort>", int(short_flag));
+                std::string xml = fixture;
+                xml.replace(position, short_tag.size(), short_first ? short_xml + long_xml : long_xml + short_xml);
+                check_roundtrip(xml, long_flag, short_flag);
+            }
+        }
+    }
 }
 
 TEST(Export470, SelectedExcerptIsStandaloneAndBounded) {
