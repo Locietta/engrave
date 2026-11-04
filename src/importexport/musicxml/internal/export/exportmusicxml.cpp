@@ -6084,13 +6084,15 @@ static bool writeGroupedDynamicSmufl(XmlWriter& xml, const Dynamic* source)
     Dynamic probe(source->score()->dummy());
     probe.setDynamicType(text);
     bool safeToProbe = true;
+    bool hasWhitespacePart = false;
     for (const auto& [part, isSymbol] : parts) {
         if (isSymbol) {
             continue;
         }
+        hasWhitespacePart = hasWhitespacePart || (!part.empty() && part.trimmed().empty());
         if (part.contains(u'<') || part.contains(u'>')) {
             safeToProbe = false;
-            break;
+            continue;
         }
         bool onlyLetters = !part.empty();
         for (size_t k = 0; k < part.size() && onlyLetters; ++k) {
@@ -6100,7 +6102,6 @@ static bool writeGroupedDynamicSmufl(XmlWriter& xml, const Dynamic* source)
         }
         if (onlyLetters) {
             safeToProbe = false;
-            break;
         }
     }
     if (safeToProbe && source->dynamicType() != DynamicType::OTHER
@@ -6112,7 +6113,7 @@ static bool writeGroupedDynamicSmufl(XmlWriter& xml, const Dynamic* source)
                 continue;
             }
             size_t end = begin;
-            bool hasProse = false;
+            bool hasText = false;
             bool previousSymbol = false;
             size_t symbolRuns = 0;
             String glyphs;
@@ -6123,7 +6124,7 @@ static bool writeGroupedDynamicSmufl(XmlWriter& xml, const Dynamic* source)
                 if (isSymbol && !muse::contains(letterSymbols, part)) {
                     break;
                 }
-                hasProse = hasProse || (!isSymbol && !part.trimmed().empty());
+                hasText = hasText || (!isSymbol && !part.empty());
                 if (isSymbol) {
                     symbolRuns += !previousSymbol;
                     glyphs += u"<sym>" + part + u"</sym>";
@@ -6133,7 +6134,7 @@ static bool writeGroupedDynamicSmufl(XmlWriter& xml, const Dynamic* source)
                 }
                 previousSymbol = isSymbol;
                 ++end;
-                if (hasProse && isSymbol && symbolRuns == 1
+                if (hasText && isSymbol && symbolRuns == 1
                     && glyphs == Dynamic::dynamicText(source->dynamicType())) {
                     candidateEnd = end;
                     break;
@@ -6162,7 +6163,7 @@ static bool writeGroupedDynamicSmufl(XmlWriter& xml, const Dynamic* source)
             begin = end;
         }
     }
-    if (!hasNamedSymbol && mergeBegin == muse::nidx) {
+    if (!hasNamedSymbol && mergeBegin == muse::nidx && !hasWhitespacePart) {
         return false;
     }
     size_t i = 0;
