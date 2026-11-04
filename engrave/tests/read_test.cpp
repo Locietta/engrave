@@ -2399,6 +2399,32 @@ TEST(Read, MusicXmlGroupedProseRetainsTypeWithoutNamedSymbol) {
     EXPECT_EQ(dynamics.front()->changeInVelocity(), original.front()->changeInVelocity());
 }
 
+TEST(Read, MusicXmlGroupedWhitespaceRetainsType) {
+    for (const std::string children : {
+             "<other-dynamics> sf</other-dynamics><p/>",
+             "<other-dynamics> sf</other-dynamics><p/><other-dynamics smufl=\"dynamicSforzato\"/>",
+             "<f/><other-dynamics>&#32;</other-dynamics><p/>"}) {
+        SCOPED_TRACE(children);
+        const auto direction = std::format("<direction><direction-type><dynamics>{}</dynamics></direction-type></direction>", children);
+        auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
+        ASSERT_TRUE(opened);
+        const auto original = imported_dynamics(**opened);
+        ASSERT_EQ(original.size(), 1u);
+        const auto expected = children.starts_with("<f/>") ? mu::engraving::DynamicType::F : mu::engraving::DynamicType::SF;
+        EXPECT_EQ(original.front()->dynamicType(), expected);
+        const auto saved = (*opened)->export_score({.format = engrave::Format::MusicXml});
+        ASSERT_TRUE(saved);
+        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MusicXml});
+        ASSERT_TRUE(reopened);
+        const auto dynamics = imported_dynamics(**reopened);
+        ASSERT_EQ(dynamics.size(), 1u);
+        EXPECT_EQ(dynamics.front()->dynamicType(), original.front()->dynamicType());
+        EXPECT_EQ(dynamics.front()->xmlText(), original.front()->xmlText());
+        EXPECT_EQ(dynamics.front()->velocity(), original.front()->velocity());
+        EXPECT_EQ(dynamics.front()->changeInVelocity(), original.front()->changeInVelocity());
+    }
+}
+
 TEST(Read, MusicXmlSingleOtherDynamicLettersExportText) {
     for (const std::string letter : {"m", "r", "s", "z"}) {
         const auto direction = std::format("<direction><direction-type><dynamics><other-dynamics>{}</other-dynamics></dynamics></direction-type></direction>", letter);
