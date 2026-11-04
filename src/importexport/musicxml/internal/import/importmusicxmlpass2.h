@@ -80,7 +80,6 @@ struct MusicXmlDynamic {
     engraving::Color color;
     muse::String placement;
     muse::String enclosure;
-    bool visible = true;
     bool hasTotalY = false;
     double totalY = 0.0;
 };

@@ -45,6 +45,7 @@
 #include "io/buffer.h"
 #include "io/file.h"
 #include "io/fileinfo.h"
+#include "global/serialization/xmlstreamreader.h"
 #include "global/serialization/zipwriter.h"
 
 #include "engraving/style/style.h"
@@ -6003,6 +6004,66 @@ static String singleDynamicSmufl(const String& text)
     return canonical == name ? canonical : String();
 }
 
+// Preserve named SMuFL symbols in grouped dynamics, including plain text around
+// them. Formatted or non-standard symbols still use the existing fallback.
+static bool writeGroupedDynamicSmufl(XmlWriter& xml, const String& text)
+{
+    static const std::set<String> letterSymbols {
+        u"dynamicPiano", u"dynamicMezzo", u"dynamicForte", u"dynamicRinforzando",
+        u"dynamicSforzando", u"dynamicZ", u"dynamicNiente"
+    };
+    std::vector<std::pair<String, bool>> parts;
+    bool hasNamedSymbol = false;
+    size_t cursor = 0;
+    while (cursor < text.size()) {
+        if (text.mid(cursor, 5) == u"<sym>") {
+            const size_t end = text.indexOf(u"</sym>", cursor + 5);
+            if (end == muse::nidx) {
+                return false;
+            }
+            const String name = singleDynamicSmufl(text.mid(cursor, end + 6 - cursor));
+            if (name.empty()) {
+                return false;
+            }
+            hasNamedSymbol = hasNamedSymbol || !muse::contains(letterSymbols, name);
+            parts.emplace_back(name, true);
+            cursor = end + 6;
+        } else {
+            const size_t next = text.indexOf(u"<sym>", cursor);
+            const String literal = text.mid(cursor, next == muse::nidx ? muse::nidx : next - cursor);
+            if (literal.contains(u'<') || literal.contains(u'>')) {
+                return false;
+            }
+            // Sentinels keep whitespace-only fragments from being discarded by
+            // the generic XML reader while entities are decoded.
+            XmlStreamReader reader((String(u"<text>X") + literal + u"X</text>").toUtf8());
+            String decoded;
+            while (!reader.atEnd()) {
+                reader.readNext();
+                if (reader.isCharacters()) {
+                    decoded += reader.text();
+                }
+            }
+            if (reader.isError() || decoded.size() < 2) {
+                return false;
+            }
+            parts.emplace_back(decoded.mid(1, decoded.size() - 2), false);
+            cursor = next == muse::nidx ? text.size() : next;
+        }
+    }
+    if (!hasNamedSymbol) {
+        return false;
+    }
+    for (const auto& [value, symbol] : parts) {
+        if (symbol) {
+            xml.tagRaw(u"other-dynamics smufl=\"" + value + u"\"");
+        } else if (!value.empty()) {
+            xml.tag("other-dynamics", value);
+        }
+    }
+    return true;
+}
+
 void ExportMusicXml::dynamic(Dynamic const* const dyn, staff_idx_t staff)
 {
     static const std::set<String> validMusicXmlDynamics {
@@ -6031,6 +6092,8 @@ void ExportMusicXml::dynamic(Dynamic const* const dyn, staff_idx_t staff)
         m_xml.tagRaw(dynTypeName);
     } else if (const String smufl = singleDynamicSmufl(dyn->xmlText()); !smufl.empty()) {
         m_xml.tagRaw(u"other-dynamics smufl=\"" + smufl + u"\"");
+    } else if (writeGroupedDynamicSmufl(m_xml, dyn->xmlText())) {
+        // Already written as a single MusicXML dynamics container.
     } else if (!dynTypeName.empty()) {
         static const std::map<unsigned short, Char> map = {
             { 0xE520, u'p' },
