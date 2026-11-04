@@ -2039,6 +2039,9 @@ TEST(Read, MusicXmlDynamicsContainersAndLiteralSafety) {
         {"<other-dynamics>sempre f &lt;subito&gt;</other-dynamics>", "sempre <sym>dynamicForte</sym> &lt;subito&gt;", DynamicType::F},
         {"<other-dynamics>&lt;subito&gt; f</other-dynamics>", "&lt;subito&gt; <sym>dynamicForte</sym>", DynamicType::F},
         {"<other-dynamics>p&lt;sym&gt;f&lt;/sym&gt;</other-dynamics>", "<sym>dynamicPiano</sym>&lt;sym&gt;f&lt;/sym&gt;", DynamicType::P},
+        {"<other-dynamics>&lt;subito&gt; f &lt;dolce&gt;</other-dynamics>", "&lt;subito&gt; <sym>dynamicForte</sym> &lt;dolce&gt;", DynamicType::F},
+        {"<other-dynamics>dolce &lt; f</other-dynamics>", "dolce &lt; <sym>dynamicForte</sym>", DynamicType::F},
+        {"<other-dynamics>&lt;b&gt;&lt;b&gt;x&lt;/b&gt; f &lt;/b&gt; p</other-dynamics>", "&lt;b&gt;&lt;b&gt;x&lt;/b&gt; f &lt;/b&gt; <sym>dynamicPiano</sym>", DynamicType::P},
         {"<sf/><mp/>", "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicMezzo</sym><sym>dynamicPiano</sym>", DynamicType::OTHER},
         {"<sfz/>", "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicZ</sym>", DynamicType::SFZ},
         {"<sf/><p/>", "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicPiano</sym>", DynamicType::SFP},
@@ -2314,6 +2317,8 @@ TEST(Read, MusicXmlGroupedSmuflDynamicsExportReimport) {
     for (const std::string children : {
              "<f/><other-dynamics smufl=\"dynamicSforzato\"/><p/>",
              "<other-dynamics>sempre </other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/><p/>",
+             "<other-dynamics>f </other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>",
+             "<other-dynamics>f &#x9;</other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>",
              "<other-dynamics>&lt;sym&gt;f&lt;/sym&gt; &amp; </other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>"}) {
         SCOPED_TRACE(children);
         const auto direction = std::format("<direction><direction-type><dynamics>{}</dynamics></direction-type></direction>", children);
@@ -2327,6 +2332,12 @@ TEST(Read, MusicXmlGroupedSmuflDynamicsExportReimport) {
         ASSERT_TRUE(saved);
         const std::string xml(reinterpret_cast<const char*>(saved->data()), saved->size());
         EXPECT_NE(xml.find("smufl=\"dynamicSforzato\""), std::string::npos);
+        if (children.starts_with("<f/>")) {
+            EXPECT_NE(xml.find("<f/>"), std::string::npos);
+            EXPECT_NE(xml.find("<p/>"), std::string::npos);
+            EXPECT_EQ(xml.find("smufl=\"dynamicForte\""), std::string::npos);
+            EXPECT_EQ(xml.find("smufl=\"dynamicPiano\""), std::string::npos);
+        }
         auto reopened = g_engine->open(*saved, {.format = engrave::Format::MusicXml});
         ASSERT_TRUE(reopened);
         const auto dynamics = imported_dynamics(**reopened);
