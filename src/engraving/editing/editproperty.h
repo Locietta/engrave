@@ -23,6 +23,8 @@
 #pragma once
 
 #include "transaction/undoablecommand.h"
+#include "../dom/chordline.h"
+#include <optional>
 
 #include "../dom/staff.h"
 
@@ -35,12 +37,14 @@ protected:
     Pid id;
     PropertyValue property;
     PropertyFlags flags;
+    bool resetChordLinePath = false;
+    std::optional<ChordLine::AppearanceState> chordLineAppearance;
 
     void flip() override;
 
 public:
-    ChangeProperty(EngravingObject* e, Pid i, const PropertyValue& v, PropertyFlags ps = PropertyFlags::NOSTYLE)
-        : element(e), id(i), property(v), flags(ps) {}
+    ChangeProperty(EngravingObject* e, Pid i, const PropertyValue& v, PropertyFlags ps = PropertyFlags::NOSTYLE, bool resetPath = false)
+        : element(e), id(i), property(v), flags(ps), resetChordLinePath(resetPath) {}
 
     Pid getId() const { return id; }
     EngravingObject* getElement() const { return element; }

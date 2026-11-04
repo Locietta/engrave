@@ -22,6 +22,8 @@
 
 #include "editproperty.h"
 
+#include <algorithm>
+
 #include "../dom/bracketitem.h"
 #include "../dom/score.h"
 #include "../dom/staff.h"
@@ -42,6 +44,30 @@ void ChangeProperty::flip()
 
     PropertyValue v       = element->getProperty(id);
     PropertyFlags ps = element->propertyFlags(id);
+
+    if (element->isChordLine() && (std::find(ChordLine::appearanceProperties.begin(), ChordLine::appearanceProperties.end(), id)
+            != ChordLine::appearanceProperties.end()
+        || id == Pid::APPEARANCE_LINKED_TO_MASTER)) {
+        auto* line = toChordLine(element);
+        auto restore = chordLineAppearance;
+        chordLineAppearance = line->appearanceState();
+        const auto next = property;
+        const auto nextFlags = flags;
+        property = v;
+        flags = ps;
+        if (restore) {
+            line->restoreAppearance(*restore);
+            line->setPropertyFlags(id, nextFlags);
+        } else {
+            if (resetChordLinePath && id == Pid::PATH) {
+                line->resetProperty(id);
+            } else {
+                line->setProperty(id, next);
+            }
+            line->setPropertyFlags(id, nextFlags);
+        }
+        return;
+    }
 
     element->setProperty(id, property);
     element->setPropertyFlags(id, flags);
