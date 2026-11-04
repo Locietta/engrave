@@ -23,6 +23,10 @@
 #include "chordline.h"
 
 #include <functional>
+#include <cmath>
+#include <stdexcept>
+#include "../style/style.h"
+#include "../types/constants.h"
 
 #include "types/translatablestring.h"
 
@@ -52,6 +56,8 @@ ChordLine::ChordLine(const ChordLine& cl)
     : EngravingItem(cl)
 {
     m_modified = cl.m_modified;
+    m_hasSourceOffsets = cl.m_hasSourceOffsets;
+    m_sourceOffsets = cl.m_sourceOffsets;
     m_chordLineType = cl.m_chordLineType;
     m_straight = cl.m_straight;
     m_wavy = cl.m_wavy;
@@ -115,6 +121,112 @@ void ChordLine::setNote(Note* note)
     }
 }
 
+namespace {
+constexpr double chordLineCoordinateLimit = 1000000.0;
+
+void requireChordLineCoordinate(double value)
+{
+    if (!std::isfinite(value) || std::abs(value) > chordLineCoordinateLimit) {
+        throw std::runtime_error("ChordLine coordinate exceeds supported geometry range (+/-1000000 drawing units)");
+    }
+}
+
+double chordLineProduct(double value, double factor)
+{
+    const double result = value * factor;
+    requireChordLineCoordinate(result);
+    if (value != 0.0 && result == 0.0) {
+        throw std::runtime_error("ChordLine coordinate underflows");
+    }
+    return result;
+}
+
+void requireChordLineScale(double scale)
+{
+    if (!std::isfinite(scale) || scale <= 0.0) {
+        throw std::runtime_error("ChordLine requires positive finite scale");
+    }
+}
+
+}
+
+void ChordLine::readSourceOffsets(const std::array<PointF, 4>& xml, double unit)
+{
+    // No chord tick or local staff lookup here: it may still have a dummy parent.
+    requireChordLineScale(unit);
+    auto physical = xml;
+    for (PointF& point : physical) {
+        point = PointF(chordLineProduct(point.x(), unit), chordLineProduct(point.y(), unit));
+    }
+    m_sourceOffsets = physical;
+    m_hasSourceOffsets = true;
+}
+
+std::array<PointF, 4> ChordLine::xmlSourceOffsets() const
+{
+    const double unit = offsetIsSpatiumDependent() ? style().spatium() : DPMM;
+    requireChordLineScale(unit);
+    auto xml = m_sourceOffsets;
+    for (PointF& point : xml) {
+        const PointF converted = point / unit;
+        if (!std::isfinite(converted.x()) || !std::isfinite(converted.y())
+            || (point.x() != 0.0 && converted.x() == 0.0) || (point.y() != 0.0 && converted.y() == 0.0)) {
+            throw std::runtime_error("ChordLine cannot encode its coordinates in the selected file unit");
+        }
+        point = converted;
+    }
+    return xml;
+}
+
+std::array<PointF, 4> ChordLine::offsetPoints(const std::array<PointF, 4>& offsets, double sp, double mag) const
+{
+    requireChordLineScale(sp);
+    requireChordLineScale(mag);
+    const double x = isToTheLeft() ? -1.2 : 1.2;
+    const double y = isBelow() ? 1.0 : -1.0;
+    std::array<PointF, 4> points = isToTheLeft()
+        ? std::array<PointF, 4> { PointF(), PointF(0.0, y / 2), PointF(x / 2, y), PointF(x, y) }
+        : std::array<PointF, 4> { PointF(), PointF(x / 2, 0.0), PointF(x, y / 2), PointF(x, y) };
+    for (size_t i = 0; i < points.size(); ++i) {
+        requireChordLineCoordinate(offsets[i].x());
+        requireChordLineCoordinate(offsets[i].y());
+        points[i] = (points[i] * sp + offsets[i]) * mag;
+        requireChordLineCoordinate(points[i].x());
+        requireChordLineCoordinate(points[i].y());
+    }
+    return points;
+}
+
+void ChordLine::scaleOffsets(double oldValue, double newValue)
+{
+    if (!m_hasSourceOffsets) { return; }
+    for (PointF& point : m_sourceOffsets) { point *= newValue / oldValue; }
+}
+
+void ChordLine::spatiumChanged(double oldValue, double newValue)
+{
+    EngravingItem::spatiumChanged(oldValue, newValue);
+    scaleOffsets(oldValue, newValue); // upstream also scales mm-mode controls
+}
+
+void ChordLine::localSpatiumChanged(double oldValue, double newValue)
+{
+    EngravingItem::localSpatiumChanged(oldValue, newValue);
+    scaleOffsets(oldValue, newValue);
+}
+
+PainterPath ChordLine::sourceOffsetPath(double sp, double mag) const
+{
+    const auto points = offsetPoints(m_sourceOffsets, sp, mag);
+    PainterPath path;
+    if (m_chordLineType == ChordLineType::NOTYPE || m_wavy) { return path; }
+    path.moveTo(points[0]);
+    if (m_straight) { path.lineTo(points[3]); }
+    else { path.cubicTo(points[1], points[2], points[3]); }
+    return path;
+}
+
+
 SymId ChordLine::waveSym() const
 {
     if (m_chordLineType == ChordLineType::FALL || m_chordLineType == ChordLineType::PLOP) {
@@ -174,6 +286,8 @@ bool ChordLine::setProperty(Pid propertyId, const PropertyValue& val)
     switch (propertyId) {
     case Pid::PATH:
         mutldata()->path = val.value<PainterPath>();
+        m_hasSourceOffsets = false;
+        m_sourceOffsets = {};
         setModified(true);
         break;
     case Pid::CHORD_LINE_TYPE:

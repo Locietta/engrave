@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <array>
+
 #include "engravingitem.h"
 #include "draw/types/painterpath.h"
 
@@ -84,6 +86,15 @@ public:
 
     SymId waveSym() const;
 
+    // Physical drawing-unit sources, independent of the derived layout cache.
+    bool hasSourceOffsets() const { return m_hasSourceOffsets; }
+    const std::array<PointF, 4>& sourceOffsets() const { return m_sourceOffsets; }
+    void readSourceOffsets(const std::array<PointF, 4>& xml, double unit);
+    std::array<PointF, 4> xmlSourceOffsets() const;
+    PainterPath sourceOffsetPath(double spatium, double mag) const;
+    void spatiumChanged(double oldValue, double newValue) override;
+    void localSpatiumChanged(double oldValue, double newValue) override;
+
     struct LayoutData : public EngravingItem::LayoutData {
         muse::draw::PainterPath path;
     };
@@ -95,6 +106,11 @@ private:
 
     ChordLine(DummyParentOr<Chord> parent);
     ChordLine(const ChordLine&);
+
+    std::array<PointF, 4> offsetPoints(const std::array<PointF, 4>&, double spatium, double mag) const;
+    void scaleOffsets(double oldValue, double newValue);
+    bool m_hasSourceOffsets = false;
+    std::array<PointF, 4> m_sourceOffsets {};
 
     bool m_straight = false;
     bool m_wavy = false;
