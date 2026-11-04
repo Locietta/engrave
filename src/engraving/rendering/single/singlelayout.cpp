@@ -876,7 +876,10 @@ void SingleLayout::layout(ChordLine* item, const Context& ctx)
 {
     ChordLine::LayoutData* ldata = item->mutldata();
     ldata->setMag(1.0);
-    if (!item->modified()) {
+    if (item->hasSourceOffsets()) {
+        ldata->path = item->sourceOffsetPath(item->spatium(),
+            item->ownershipParent() && item->ownershipParent()->isChord() ? item->chord()->intrinsicMag() : 1.0);
+    } else if (!item->modified()) {
         double x2 = 0;
         double y2 = 0;
         double baseLength = item->spatium();

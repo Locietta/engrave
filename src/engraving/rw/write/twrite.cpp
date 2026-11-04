@@ -21,6 +21,10 @@
  */
 #include "twrite.h"
 
+#include <charconv>
+#include <limits>
+#include <stdexcept>
+
 #include <set>
 
 #include "../../iengravingconfiguration.h" // IWYU pragma: keep
@@ -1266,6 +1270,15 @@ void TWrite::writeTupletEnd(DurationElement* item, XmlWriter& xml, WriteContext&
     }
 }
 
+static muse::String chordLineNumberText(double value)
+{
+    char buffer[64];
+    const auto result = std::to_chars(buffer, buffer + sizeof(buffer), value,
+                                     std::chars_format::general, std::numeric_limits<double>::max_digits10);
+    if (result.ec != std::errc()) { throw std::runtime_error("Native coordinate serialization failed"); }
+    return muse::String::fromStdString(std::string(buffer, result.ptr));
+}
+
 void TWrite::write(const ChordLine* item, XmlWriter& xml, WriteContext& ctx)
 {
     xml.startElement(item);
@@ -1275,8 +1288,24 @@ void TWrite::write(const ChordLine* item, XmlWriter& xml, WriteContext& ctx)
     writeProperty(item, xml, Pid::PLAY);
     xml.tag("lengthX", item->lengthX(), 0.0);
     xml.tag("lengthY", item->lengthY(), 0.0);
+    // Policy precedes generic point properties, including the user position.
+    if (!item->sizeIsSpatiumDependent()) {
+        xml.tag("sizeIsSpatiumDependent", false);
+    }
     writeItemProperties(item, xml, ctx);
-    if (item->modified()) {
+    if (item->hasSourceOffsets()) {
+        const auto offsets = item->xmlSourceOffsets();
+        // Emit all four, including zeros and dormant straight/wavy controls.
+        // Serialization never depends on whether a layout has run.
+        xml.tag("o1", { { "x", chordLineNumberText(offsets[0].x()) },
+                          { "y", chordLineNumberText(offsets[0].y()) } });
+        xml.tag("o2", { { "x", chordLineNumberText(offsets[1].x()) },
+                          { "y", chordLineNumberText(offsets[1].y()) } });
+        xml.tag("o3", { { "x", chordLineNumberText(offsets[2].x()) },
+                          { "y", chordLineNumberText(offsets[2].y()) } });
+        xml.tag("o4", { { "x", chordLineNumberText(offsets[3].x()) },
+                          { "y", chordLineNumberText(offsets[3].y()) } });
+    } else if (item->modified()) {
         //! NOTE Need separated "given" data and layout data
         const ChordLine::LayoutData* ldata = item->ldata();
         const PainterPath& path = ldata->path;
@@ -1284,7 +1313,7 @@ void TWrite::write(const ChordLine* item, XmlWriter& xml, WriteContext& ctx)
         xml.startElement("Path");
         for (size_t i = 0; i < n; ++i) {
             const PainterPath::Element& e = path.elementAt(i);
-            double spatium = item->spatium();
+            double spatium = item->style().spatium();
             double x = e.x / spatium;
             double y = e.y / spatium;
             xml.tag("Element", { { "type", int(e.type) }, { "x", x }, { "y", y } });

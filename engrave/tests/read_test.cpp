@@ -53,6 +53,11 @@
 #include "serialization/xmlstreamreader.h"
 #include "importexport/musicxml/imusicxmlconfiguration.h"
 #include "engraving/dom/chord.h"
+#include "engraving/dom/chordline.h"
+#include "global/io/buffer.h"
+#include "engraving/rw/xmlwriter.h"
+#include "engraving/rw/write/twrite.h"
+#include "engraving/rw/write/writecontext.h"
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/instrument.h"
 #include "engraving/dom/masterscore.h"
@@ -2493,6 +2498,295 @@ void collect(const std::filesystem::path& path) {
 }
 
 } // namespace
+
+namespace {
+std::string chordline_offset_fixture() {
+    return read_text(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT)
+                     / "engrave/tests/data/chordline-offsets/offsets-500.mscx");
+}
+
+std::vector<mu::engraving::ChordLine*> offset_test_lines(mu::engraving::Score& score) {
+    std::vector<mu::engraving::ChordLine*> lines;
+    score.scanElements([&](mu::engraving::EngravingItem* item) {
+        if (item->isChordLine()) lines.push_back(mu::engraving::toChordLine(item));
+    });
+    return lines;
+}
+
+std::string offset_test_write(const mu::engraving::ChordLine* line) {
+    muse::ByteArray bytes;
+    muse::io::Buffer buffer(&bytes);
+    buffer.open(muse::io::IODevice::WriteOnly);
+    {
+        mu::engraving::XmlWriter xml(&buffer);
+        mu::engraving::write::WriteContext ctx(line->score());
+        mu::engraving::write::TWrite::write(line, xml, ctx);
+    }
+    return {reinterpret_cast<const char*>(bytes.constData()), bytes.size()};
+}
+
+TEST(Read, ChordLineOffsetsEachAndCombined500) {
+    const auto fixture = chordline_offset_fixture();
+    ASSERT_FALSE(fixture.empty());
+    const auto begin = fixture.find("<o1");
+    const auto end = fixture.find("<subtype>", begin);
+    ASSERT_NE(begin, std::string::npos);
+    ASSERT_NE(end, std::string::npos);
+    const std::array<muse::PointF, 4> input = {
+        muse::PointF(0.25, -0.5), muse::PointF(0.5, 0.25),
+        muse::PointF(-0.25, 0.75), muse::PointF(1.0, 0.5)};
+    // Zero, each independently, and all together. Exercise every orientation,
+    // subtype ordering, and normal/small chord scaling.
+    for (int mask : {0, 1, 2, 4, 8, 15}) {
+        for (const std::string type : {"1", "2", "3", "4"}) {
+            for (bool small : {false, true}) {
+                for (bool before : {false, true}) {
+                    SCOPED_TRACE(std::format("mask={} type={} small={} before={}", mask, type, small, before));
+                    std::string tags;
+                    for (size_t i = 0; i < 4; ++i) {
+                        if (mask & (1 << i)) tags += std::format("<o{} x=\"{}\" y=\"{}\"/>", i + 1, input[i].x(), input[i].y());
+                    }
+                    auto xml = fixture;
+                    xml.replace(begin, end - begin, "");
+                    xml.replace(xml.find("<subtype>1</subtype>"), 20, "<subtype>" + type + "</subtype>");
+                    const auto insertion = before ? xml.find("<subtype>") : xml.find("</ChordLine>");
+                    xml.insert(insertion, tags);
+                    if (small) xml.insert(xml.find("<durationType>"), "<small>1</small>");
+                    auto document = g_engine->open(as_bytes(xml));
+                    ASSERT_TRUE(document) << document.error().message;
+                    auto& master = master_of(**document);
+                    auto lines = offset_test_lines(master);
+                    ASSERT_EQ(lines.size(), 1u);
+                    auto* line = lines[0];
+                    EXPECT_EQ(line->hasSourceOffsets(), mask != 0);
+                    const double unit = line->offsetIsSpatiumDependent() ? master.style().spatium() : mu::engraving::DPMM;
+                    const double sp = line->spatium(), mag = line->chord()->intrinsicMag();
+                    if (small) EXPECT_LT(mag, 1.0);
+                    const double x = (type == "3" || type == "4") ? -1.2 : 1.2;
+                    const double y = (type == "1" || type == "4") ? 1.0 : -1.0;
+                    const std::array<muse::PointF, 4> defaults = x < 0
+                        ? std::array<muse::PointF, 4>{muse::PointF(), muse::PointF(0, y/2), muse::PointF(x/2, y), muse::PointF(x,y)}
+                        : std::array<muse::PointF, 4>{muse::PointF(), muse::PointF(x/2, 0), muse::PointF(x, y/2), muse::PointF(x,y)};
+                    ASSERT_EQ(line->ldata()->path.elementCount(), 4u);
+                    for (size_t i = 0; i < 4; ++i) {
+                        const auto offset = (mask & (1 << i)) ? input[i] : muse::PointF();
+                        EXPECT_NEAR(line->sourceOffsets()[i].x(), offset.x() * unit, 1e-6);
+                        EXPECT_NEAR(line->sourceOffsets()[i].y(), offset.y() * unit, 1e-6);
+                        const auto& p = line->ldata()->path.elementAt(i);
+                        EXPECT_NEAR(p.x, (defaults[i].x() * sp + offset.x() * unit) * mag, 1e-6);
+                        EXPECT_NEAR(p.y, (defaults[i].y() * sp + offset.y() * unit) * mag, 1e-6);
+                    }
+                    std::unique_ptr<mu::engraving::ChordLine> copy(line->clone());
+                    EXPECT_EQ(copy->hasSourceOffsets(), mask != 0);
+                    EXPECT_EQ(copy->sourceOffsets(), line->sourceOffsets());
+                    for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+                        auto saved = (*document)->export_score({.format = format, .native_version = "5.00"});
+                        ASSERT_TRUE(saved) << saved.error().message;
+                        auto reopened = g_engine->open(*saved, {.format = format});
+                        ASSERT_TRUE(reopened) << reopened.error().message;
+                        auto roundtrip = offset_test_lines(master_of(**reopened));
+                        ASSERT_EQ(roundtrip.size(), 1u);
+                        EXPECT_EQ(roundtrip[0]->hasSourceOffsets(), mask != 0);
+                        for (size_t i = 0; i < 4; ++i) {
+                            EXPECT_NEAR(roundtrip[0]->sourceOffsets()[i].x(), line->sourceOffsets()[i].x(), 1e-6);
+                            EXPECT_NEAR(roundtrip[0]->sourceOffsets()[i].y(), line->sourceOffsets()[i].y(), 1e-6);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+TEST(Read, ChordLineOffsetsDormantControlsWriteWithoutLayout) {
+    for (const std::string mode : {"", "<straight>1</straight>", "<wavy>1</wavy>"}) {
+        auto xml = chordline_offset_fixture();
+        xml.insert(xml.find("</ChordLine>"), mode);
+        auto document = g_engine->open(as_bytes(xml));
+        ASSERT_TRUE(document);
+        auto lines = offset_test_lines(master_of(**document));
+        ASSERT_EQ(lines.size(), 1u);
+        auto* line = lines[0];
+        const auto source = line->sourceOffsets();
+        if (line->isStraight()) {
+            ASSERT_EQ(line->ldata()->path.elementCount(), 2u);
+            const double mag = line->chord()->intrinsicMag();
+            EXPECT_NEAR(line->ldata()->path.elementAt(0).x, source[0].x() * mag, 1e-6);
+            EXPECT_NEAR(line->ldata()->path.elementAt(1).x, (1.2 * line->spatium() + source[3].x()) * mag, 1e-6);
+        } else if (line->isWavy()) {
+            EXPECT_EQ(line->ldata()->path.elementCount(), 0u);
+        }
+        // Serialize a clone with no layout path. Call the writer directly, so
+        // an export helper cannot silently repair layout before this assertion.
+        std::unique_ptr<mu::engraving::ChordLine> copy(line->clone());
+        copy->mutldata()->path = muse::draw::PainterPath();
+        const auto written = offset_test_write(copy.get());
+        EXPECT_EQ(written.find("<Path"), std::string::npos);
+        for (const char* tag : {"<o1", "<o2", "<o3", "<o4"}) EXPECT_NE(written.find(tag), std::string::npos);
+        auto reload_xml = chordline_offset_fixture();
+        const auto start = reload_xml.find("<ChordLine>");
+        reload_xml.replace(start, reload_xml.find("</ChordLine>", start) + 12 - start, written);
+        auto reopened = g_engine->open(as_bytes(reload_xml));
+        ASSERT_TRUE(reopened) << reopened.error().message;
+        auto reloaded = offset_test_lines(master_of(**reopened));
+        ASSERT_EQ(reloaded.size(), 1u);
+        for (size_t i = 0; i < 4; ++i) {
+            EXPECT_NEAR(reloaded[0]->sourceOffsets()[i].x(), source[i].x(), 1e-6);
+            EXPECT_NEAR(reloaded[0]->sourceOffsets()[i].y(), source[i].y(), 1e-6);
+        }
+        EXPECT_EQ(reloaded[0]->isStraight(), line->isStraight());
+        EXPECT_EQ(reloaded[0]->isWavy(), line->isWavy());
+    }
+}
+
+TEST(Read, ChordLineOffsetMillimetreUnitsSurvivePropertyOrderingAndReopen) {
+    for (bool before : {false, true}) {
+        auto xml = chordline_offset_fixture();
+        xml.insert(before ? xml.find("<o1") : xml.find("</ChordLine>"),
+                   "<sizeIsSpatiumDependent>0</sizeIsSpatiumDependent>");
+        auto document = g_engine->open(as_bytes(xml));
+        ASSERT_TRUE(document);
+        auto lines = offset_test_lines(master_of(**document));
+        ASSERT_EQ(lines.size(), 1u);
+        ASSERT_FALSE(lines[0]->offsetIsSpatiumDependent());
+        EXPECT_NEAR(lines[0]->sourceOffsets()[3].x(), mu::engraving::DPMM, 1e-6);
+        const auto source = lines[0]->sourceOffsets();
+        for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+            auto saved = (*document)->export_score({.format = format, .native_version = "5.00"});
+            ASSERT_TRUE(saved);
+            auto reopened = g_engine->open(*saved, {.format = format});
+            ASSERT_TRUE(reopened);
+            auto again = offset_test_lines(master_of(**reopened));
+            ASSERT_EQ(again.size(), 1u);
+            EXPECT_FALSE(again[0]->offsetIsSpatiumDependent());
+            for (size_t i = 0; i < 4; ++i) {
+                EXPECT_NEAR(again[0]->sourceOffsets()[i].x(), source[i].x(), 1e-6);
+                EXPECT_NEAR(again[0]->sourceOffsets()[i].y(), source[i].y(), 1e-6);
+            }
+        }
+    }
+}
+
+TEST(Read, ChordLineMixedSourcesRejectInBothOrders) {
+    const std::string path = "<Path><Element type=\"0\" x=\"0\" y=\"0\"/><Element type=\"1\" x=\"1.5\" y=\"2.5\"/><Element type=\"1\" x=\"3\" y=\"2.5\"/></Path>";
+    for (bool first : {false, true}) {
+        auto xml = chordline_offset_fixture();
+        xml.insert(first ? xml.find("<o1") : xml.find("</ChordLine>"), path);
+        auto document = g_engine->open(as_bytes(xml));
+        ASSERT_FALSE(document);
+        EXPECT_EQ(document.error().code, ErrorCode::InvalidInput);
+        EXPECT_NE(document.error().message.find("ChordLine"), std::string::npos);
+    }
+}
+
+TEST(Read, ChordLinePhysicalOffsetsFollowBothSpatiumCallbacks) {
+    for (bool independent : {false, true}) {
+        auto xml = chordline_offset_fixture();
+        if (independent) xml.insert(xml.find("</ChordLine>"),
+            "<sizeIsSpatiumDependent>0</sizeIsSpatiumDependent>");
+        auto document = g_engine->open(as_bytes(xml));
+        ASSERT_TRUE(document);
+        auto lines = offset_test_lines(master_of(**document));
+        ASSERT_EQ(lines.size(), 1u);
+        auto* line = lines[0];
+        const auto original = line->sourceOffsets();
+        master_of(**document).spatiumChanged(1.0, 1.25);
+        line->staff()->setLocalSpatium(1.0, 0.8, mu::engraving::Fraction(0, 1));
+        for (size_t i = 0; i < 4; ++i) {
+            EXPECT_NEAR(line->sourceOffsets()[i].x(), original[i].x(), 1e-9);
+            EXPECT_NEAR(line->sourceOffsets()[i].y(), original[i].y(), 1e-9);
+        }
+        line->staff()->setLocalSpatium(1.0, 0.75, mu::engraving::Fraction(0, 1));
+        for (size_t i = 0; i < 4; ++i) {
+            EXPECT_NEAR(line->sourceOffsets()[i].x(), original[i].x() * 0.75, 1e-9);
+            EXPECT_NEAR(line->sourceOffsets()[i].y(), original[i].y() * 0.75, 1e-9);
+        }
+        auto saved = (*document)->export_score({.format = engrave::Format::Mscx, .native_version = "5.00"});
+        ASSERT_TRUE(saved);
+        auto reopened = g_engine->open(*saved);
+        ASSERT_TRUE(reopened);
+        auto again = offset_test_lines(master_of(**reopened));
+        ASSERT_EQ(again.size(), 1u);
+        for (size_t i = 0; i < 4; ++i) {
+            EXPECT_NEAR(again[0]->sourceOffsets()[i].x(), original[i].x() * 0.75, 1e-6);
+            EXPECT_NEAR(again[0]->sourceOffsets()[i].y(), original[i].y() * 0.75, 1e-6);
+        }
+    }
+}
+
+TEST(Read, ChordLineZeroMissingAndMalformedOffsets) {
+    for (const std::string tags : {"", "<o1/>", "<o4 x=\"0\" y=\"0\"/>"}) {
+        auto xml = chordline_offset_fixture();
+        const auto begin = xml.find("<o1");
+        xml.replace(begin, xml.find("<subtype>", begin) - begin, tags);
+        auto document = g_engine->open(as_bytes(xml));
+        ASSERT_TRUE(document);
+        auto lines = offset_test_lines(master_of(**document));
+        ASSERT_EQ(lines.size(), 1u);
+        EXPECT_EQ(lines[0]->hasSourceOffsets(), !tags.empty());
+        EXPECT_EQ(lines[0]->sourceOffsets(), (std::array<muse::PointF, 4>{}));
+        auto saved = (*document)->export_score({.format = engrave::Format::Mscx, .native_version = "5.00"});
+        ASSERT_TRUE(saved);
+        auto reopened = g_engine->open(*saved);
+        ASSERT_TRUE(reopened);
+        auto again = offset_test_lines(master_of(**reopened));
+        ASSERT_EQ(again.size(), 1u);
+        EXPECT_EQ(again[0]->hasSourceOffsets(), !tags.empty());
+    }
+    for (const std::string tags : {"<o1 x=\"nan\"/>", "<o1 x=\"1junk\"/>",
+         "<o1 x=\"1e999\"/>", "<o1/><o1/>", "<o1><unexpected/></o1>",
+         "<Path><Element type=\"2\" x=\"1\" y=\"1\"/></Path>",
+         "<Path/><o1/>", "<o1/><Path/>"}) {
+        SCOPED_TRACE(tags);
+        auto xml = chordline_offset_fixture();
+        const auto begin = xml.find("<o1");
+        xml.replace(begin, xml.find("<subtype>", begin) - begin, tags);
+        auto document = g_engine->open(as_bytes(xml));
+        EXPECT_FALSE(document);
+    }
+}
+TEST(Read, ChordLineActualGoldenTypedGeometry) {
+    // Run with --corpus=<host>/fixtures/golden/chordline_path.mscx.
+    const auto it = std::ranges::find_if(g_corpus, [](const auto& p) { return p.filename() == "chordline_path.mscx"; });
+    ASSERT_NE(it, g_corpus.end()) << "actual golden fixture must be supplied with --corpus";
+    auto doc = open_path(*it);
+    ASSERT_TRUE(doc);
+    auto lines = offset_test_lines(master_of(*doc));
+    ASSERT_FALSE(lines.empty());
+    auto edited = std::ranges::find_if(lines, [](const auto* l) { return l->modified(); });
+    ASSERT_NE(edited, lines.end());
+    auto* line = *edited;
+    EXPECT_FALSE(line->hasSourceOffsets());
+    const auto path = line->ldata()->path;
+    ASSERT_EQ(path.elementCount(), 3u);
+    EXPECT_EQ(path.elementAt(0).type, muse::draw::PainterPath::ElementType::MoveToElement);
+    for (size_t i = 1; i < 3; ++i) {
+        EXPECT_EQ(path.elementAt(i).type, muse::draw::PainterPath::ElementType::LineToElement);
+        EXPECT_NEAR(path.elementAt(i).x, 1.5 * i * line->spatium(), 1e-6);
+        EXPECT_NEAR(path.elementAt(i).y, 2.5 * line->spatium(), 1e-6);
+    }
+    for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+        auto saved = doc->export_score({.format = format, .native_version = "5.00"});
+        ASSERT_TRUE(saved);
+        auto reopened = g_engine->open(*saved, {.format = format});
+        ASSERT_TRUE(reopened);
+        auto again = offset_test_lines(master_of(**reopened));
+        auto found = std::ranges::find_if(again, [](const auto* l) { return l->modified(); });
+        ASSERT_NE(found, again.end());
+        ASSERT_EQ((*found)->ldata()->path.elementCount(), path.elementCount());
+        for (size_t i = 0; i < path.elementCount(); ++i) {
+            const auto& p = (*found)->ldata()->path.elementAt(i);
+            EXPECT_EQ(p.type, path.elementAt(i).type);
+            EXPECT_NEAR(p.x, path.elementAt(i).x, 1e-6);
+            EXPECT_NEAR(p.y, path.elementAt(i).y, 1e-6);
+        }
+    }
+}
+
+
+
+
+}
 
 int main(int argc, char** argv) {
     testing::InitGoogleTest(&argc, argv);

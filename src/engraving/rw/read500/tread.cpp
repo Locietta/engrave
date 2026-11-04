@@ -22,6 +22,11 @@
 
 #include "tread.h"
 
+#include <array>
+#include <charconv>
+#include <cmath>
+#include <stdexcept>
+
 #include "iengravingconfiguration.h" // IWYU pragma: keep
 
 #include "../../types/typesconv.h"
@@ -2621,14 +2626,35 @@ bool TRead::readProperties(ChordRest* ch, XmlReader& e, ReadContext& ctx)
     return true;
 }
 
+static bool chordLineNumber(const String& text, double& value)
+{
+    const auto bytes = text.toStdString();
+    if (bytes.empty() || bytes.size() > 128) { return false; }
+    const char* first = bytes.data();
+    const char* last = first + bytes.size();
+    if (*first == '+') { ++first; if (first == last || *first == '-' || *first == '+') { return false; } }
+    if (first == last) { return false; }
+    const auto result = std::from_chars(first, last, value, std::chars_format::general);
+    return result.ec == std::errc() && result.ptr == last && std::isfinite(value);
+}
+
 void TRead::read(ChordLine* l, XmlReader& e, ReadContext& ctx)
 {
     //! NOTE Need separated "given" data and layout data
     ChordLine::LayoutData* ldata = l->mutldata();
     ldata->path = PainterPath();
+    std::array<PointF, 4> offsets {};
+    bool hasOffsets = false;
+    std::array<bool, 4> seen {};
+    bool invalidOffsets = false;
+    bool hasPath = false;
+    bool hasPosition = false;
+    PointF position;
     while (e.readNextStartElement()) {
         const AsciiStringView tag(e.name());
         if (tag == "Path") {
+            if (hasPath) { invalidOffsets = true; }
+            hasPath = true;
             PainterPath path;
             PointF curveTo;
             PointF p1;
@@ -2636,12 +2662,27 @@ void TRead::read(ChordLine* l, XmlReader& e, ReadContext& ctx)
             while (e.readNextStartElement()) {
                 const AsciiStringView nextTag(e.name());
                 if (nextTag == "Element") {
-                    int type = e.intAttribute("type");
-                    double x  = e.doubleAttribute("x");
-                    double y  = e.doubleAttribute("y");
+                    double typeValue = -1.0, x = 0.0, y = 0.0;
+                    if (!chordLineNumber(e.attribute("type"), typeValue)
+                        || typeValue < 0 || typeValue > 3 || std::floor(typeValue) != typeValue
+                        || !chordLineNumber(e.attribute("x"), x)
+                        || !chordLineNumber(e.attribute("y"), y)) {
+                        invalidOffsets = true;
+                        e.skipCurrentElement();
+                        continue;
+                    }
+                    const int type = static_cast<int>(typeValue);
                     double spatium = ctx.spatium();
                     x *= spatium;
                     y *= spatium;
+                    if (!std::isfinite(x) || !std::isfinite(y) || std::abs(x) > 1000000.0 || std::abs(y) > 1000000.0) {
+                        invalidOffsets = true;
+                        e.skipCurrentElement();
+                        continue;
+                    }
+                    if (state != 0 && type != int(PainterPath::ElementType::CurveToDataElement)) {
+                        invalidOffsets = true;
+                    }
                     switch (PainterPath::ElementType(type)) {
                     case PainterPath::ElementType::MoveToElement:
                         path.moveTo(x, y);
@@ -2662,16 +2703,48 @@ void TRead::read(ChordLine* l, XmlReader& e, ReadContext& ctx)
                         } else if (state == 2) {
                             path.cubicTo(curveTo, p1, PointF(x, y));
                             state = 0;
+                        } else {
+                            invalidOffsets = true;
                         }
                         break;
                     }
                     e.skipCurrentElement();           //needed to go to next EngravingItem in Path
                 } else {
+                    invalidOffsets = true;
                     e.unknown();
                 }
             }
+            if (state != 0) { invalidOffsets = true; }
             ldata->path = path;
             l->setModified(true);
+        } else if (tag == "offset" && ctx.mscVersion() >= 500) {
+            // The policy can occur later. Preserve legacy 4.70 migration.
+            double x = 0.0, y = 0.0;
+            if ((!e.hasAttribute("x") || chordLineNumber(e.attribute("x"), x))
+                && (!e.hasAttribute("y") || chordLineNumber(e.attribute("y"), y))) {
+                position = PointF(x, y);
+                hasPosition = true;
+            } else { invalidOffsets = true; }
+            e.skipCurrentElement();
+        } else if (tag == "o1" || tag == "o2" || tag == "o3" || tag == "o4") {
+            const size_t index = tag == "o1" ? 0 : tag == "o2" ? 1 : tag == "o3" ? 2 : 3;
+            if (seen[index]) { invalidOffsets = true; }
+            seen[index] = true;
+            double x = 0.0, y = 0.0;
+            const bool valid = (!e.hasAttribute("x") || chordLineNumber(e.attribute("x"), x))
+                               && (!e.hasAttribute("y") || chordLineNumber(e.attribute("y"), y));
+            // Always finish this element and the ChordLine container. Parents may
+            // have required children after it (notably ornament cue-chord Notes).
+            while (e.readNextStartElement()) {
+                invalidOffsets = true;
+                e.skipCurrentElement();
+            }
+            if (!valid) {
+                invalidOffsets = true;
+                continue;
+            }
+            offsets[index] = PointF(x, y);
+            hasOffsets = true;
         } else if (tag == "subtype") {
             l->setChordLineType(TConv::fromXml(e.readAsciiText(), ChordLineType::NOTYPE));
         } else if (tag == "straight") {
@@ -2686,6 +2759,36 @@ void TRead::read(ChordLine* l, XmlReader& e, ReadContext& ctx)
             l->setPlayChordLine(e.readBool());
         } else if (!readItemProperties(l, e, ctx)) {
             e.unknown();
+        }
+    }
+    if (invalidOffsets) {
+        e.raiseError(String::fromUtf8("ChordLine offsets require complete finite numeric coordinates (no underflow)"));
+        return;
+    }
+    if (hasOffsets && hasPath) {
+        e.raiseError(String::fromUtf8("ChordLine cannot mix legacy Path and o1-o4 offsets"));
+        return;
+    }
+    const double pointUnit = l->offsetIsSpatiumDependent() ? ctx.spatium() : DPMM;
+    if (hasPosition && !ctx.shouldSkipProperty(Pid::OFFSET)) {
+        const PointF physical = position * pointUnit;
+        if (!std::isfinite(physical.x()) || !std::isfinite(physical.y())
+            || std::abs(physical.x()) > 1000000.0 || std::abs(physical.y()) > 1000000.0) {
+            e.raiseError(String::fromUtf8("ChordLine position exceeds supported geometry range"));
+            return;
+        }
+        l->setProperty(Pid::OFFSET, physical);
+        if (l->isStyled(Pid::OFFSET)) {
+            l->setPropertyFlags(Pid::OFFSET, PropertyFlags::UNSTYLED);
+        }
+    }
+    if (hasOffsets) {
+        // Decode using score units only. Local staff context is deliberately
+        // deferred to layout/validation after the entire document has been read.
+        try {
+            l->readSourceOffsets(offsets, pointUnit);
+        } catch (const std::runtime_error& error) {
+            e.raiseError(String::fromUtf8(error.what()));
         }
     }
 }
