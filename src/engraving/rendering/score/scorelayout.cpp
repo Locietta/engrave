@@ -39,17 +39,15 @@
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-class CmdStateLocker
-{
-    Score* m_score = nullptr;
+class CmdStateLocker {
+    Score *m_score = nullptr;
 public:
-    CmdStateLocker(Score* s)
-        : m_score(s) { m_score->cmdState().lock(); }
+    CmdStateLocker(Score *s) : m_score(s) { m_score->cmdState().lock(); }
+
     ~CmdStateLocker() { m_score->cmdState().unlock(); }
 };
 
-void ScoreLayout::layoutRange(Score* score, const Fraction& st, const Fraction& et)
-{
+void ScoreLayout::layoutRange(Score *score, const Fraction &st, const Fraction &et) {
     TRACEFUNC;
 
     CmdStateLocker cmdStateLocker(score);
@@ -83,17 +81,11 @@ void ScoreLayout::layoutRange(Score* score, const Fraction& st, const Fraction& 
 
     // Init context and layout
     switch (ctx.conf().viewMode()) {
-    case LayoutMode::PAGE:
-    case LayoutMode::FLOAT:
-        ScorePageViewLayout::layoutPageView(score, ctx, stick, etick);
-        break;
-    case LayoutMode::LINE:
-    case LayoutMode::HORIZONTAL_FIXED:
-        ScoreHorizontalViewLayout::layoutHorizontalView(score, ctx, stick, etick);
-        break;
-    case LayoutMode::SYSTEM:
-        ScoreVerticalViewLayout::layoutVerticalView(score, ctx, stick, etick);
-        break;
+        case LayoutMode::PAGE:
+        case LayoutMode::FLOAT: ScorePageViewLayout::layoutPageView(score, ctx, stick, etick); break;
+        case LayoutMode::LINE:
+        case LayoutMode::HORIZONTAL_FIXED: ScoreHorizontalViewLayout::layoutHorizontalView(score, ctx, stick, etick); break;
+        case LayoutMode::SYSTEM: ScoreVerticalViewLayout::layoutVerticalView(score, ctx, stick, etick); break;
     }
 
     //LOGDA() << DumpLayoutData::dump(score);

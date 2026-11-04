@@ -22,10 +22,8 @@
 
 #pragma once
 
-
 namespace mu::engraving {
-class IEngravingContextConfiguration
-{
+class IEngravingContextConfiguration {
 public:
     virtual ~IEngravingContextConfiguration() = default;
 
@@ -33,4 +31,4 @@ public:
 
     virtual bool isAccessibleEnabled() const = 0;
 };
-}
+} // namespace mu::engraving

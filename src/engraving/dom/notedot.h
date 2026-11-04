@@ -34,24 +34,26 @@ class Rest;
 //   @@ NoteDot
 //---------------------------------------------------------
 
-class NoteDot final : public EngravingItem
-{
+class NoteDot final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, NoteDot)
     DECLARE_CLASSOF(ElementType::NOTEDOT)
 
 public:
 
-    NoteDot* clone() const override { return new NoteDot(*this); }
+    NoteDot *clone() const override { return new NoteDot(*this); }
+
     double mag() const override;
 
-    Note* note() const { return ownershipParent()->isNote() ? toNote(ownershipParent()) : 0; }
-    Rest* rest() const { return ownershipParent()->isRest() ? toRest(ownershipParent()) : 0; }
-    EngravingItem* elementBase() const override;
+    Note *note() const { return ownershipParent()->isNote() ? toNote(ownershipParent()) : 0; }
+
+    Rest *rest() const { return ownershipParent()->isRest() ? toRest(ownershipParent()) : 0; }
+
+    EngravingItem *elementBase() const override;
 
 private:
     friend class Factory;
     NoteDot(DummyParentOr<Note> parent);
-    NoteDot(Rest* parent);
+    NoteDot(Rest *parent);
 };
 } // namespace mu::engraving
 #endif

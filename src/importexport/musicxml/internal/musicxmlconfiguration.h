@@ -24,8 +24,7 @@
 #include "../imusicxmlconfiguration.h"
 
 namespace mu::iex::musicxml {
-class MusicXmlConfiguration : public IMusicXmlConfiguration
-{
+class MusicXmlConfiguration : public IMusicXmlConfiguration {
 public:
     void init();
 
@@ -61,6 +60,5 @@ public:
 private:
     std::optional<bool> m_needUseDefaultFontOverride;
     std::optional<bool> m_inferTextTypeOverride;
-
 };
-}
+} // namespace mu::iex::musicxml

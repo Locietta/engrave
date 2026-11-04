@@ -54,23 +54,13 @@ namespace mu::engraving {
 //   TieSegment
 //---------------------------------------------------------
 
-TieSegment::TieSegment(Tie* sp)
-    : SlurTieSegment(ElementType::TIE_SEGMENT, sp)
-{
-}
+TieSegment::TieSegment(Tie *sp) : SlurTieSegment(ElementType::TIE_SEGMENT, sp) {}
 
-TieSegment::TieSegment(const ElementType& type, Tie* sp)
-    : SlurTieSegment(type, sp)
-{
-}
+TieSegment::TieSegment(const ElementType &type, Tie *sp) : SlurTieSegment(type, sp) {}
 
-TieSegment::TieSegment(const TieSegment& s)
-    : SlurTieSegment(s)
-{
-}
+TieSegment::TieSegment(const TieSegment &s) : SlurTieSegment(s) {}
 
-void TieSegment::consolidateAdjustmentOffsetIntoUserOffset()
-{
+void TieSegment::consolidateAdjustmentOffsetIntoUserOffset() {
     for (size_t i = 0; i < m_adjustmentOffsets.size(); ++i) {
         Grip grip = static_cast<Grip>(i);
         PointF adjustOffset = m_adjustmentOffsets[i];
@@ -82,8 +72,7 @@ void TieSegment::consolidateAdjustmentOffsetIntoUserOffset()
     resetAdjustmentOffset();
 }
 
-bool TieSegment::isEdited() const
-{
+bool TieSegment::isEdited() const {
     for (int i = 0; i < int(Grip::GRIPS); ++i) {
         if (!m_ups[i].off.isNull()) {
             return true;
@@ -92,74 +81,52 @@ bool TieSegment::isEdited() const
     return false;
 }
 
-double TieSegment::minShoulderHeight() const
-{
-    return style().styleAbsolute(Sid::tieMinShoulderHeight);
-}
+double TieSegment::minShoulderHeight() const { return style().styleAbsolute(Sid::tieMinShoulderHeight); }
 
-double TieSegment::maxShoulderHeight() const
-{
-    return style().styleAbsolute(Sid::tieMaxShoulderHeight);
-}
+double TieSegment::maxShoulderHeight() const { return style().styleAbsolute(Sid::tieMaxShoulderHeight); }
 
-double TieSegment::endWidth() const
-{
-    return style().styleAbsolute(Sid::tieEndWidth);
-}
+double TieSegment::endWidth() const { return style().styleAbsolute(Sid::tieEndWidth); }
 
-double TieSegment::midWidth() const
-{
-    return style().styleAbsolute(Sid::tieMidWidth);
-}
+double TieSegment::midWidth() const { return style().styleAbsolute(Sid::tieMidWidth); }
 
-double TieSegment::dottedWidth() const
-{
-    return style().styleAbsolute(Sid::tieDottedWidth);
-}
+double TieSegment::dottedWidth() const { return style().styleAbsolute(Sid::tieDottedWidth); }
 
 //---------------------------------------------------------
 //   Tie
 //---------------------------------------------------------
 
-Tie::Tie(const ElementType& type, EngravingObject* parent)
-    : SlurTie(type, parent)
-{
-}
+Tie::Tie(const ElementType &type, EngravingObject *parent) : SlurTie(type, parent) {}
 
-TieJumpPointList* Tie::startTieJumpPoints() const
-{
-    return m_jumpPoint ? m_jumpPoint->jumpPointList() : nullptr;
-}
+TieJumpPointList *Tie::startTieJumpPoints() const { return m_jumpPoint ? m_jumpPoint->jumpPointList() : nullptr; }
 
-void Tie::updatePossibleJumpPoints()
-{
+void Tie::updatePossibleJumpPoints() {
     if (!tieJumpPoints()) {
         return;
     }
 
     tieJumpPoints()->clear();
 
-    const Note* note = toNote(ownershipParent());
-    const Chord* chord = note ? note->chord() : nullptr;
-    const Measure* measure = chord ? chord->measure() : nullptr;
+    const Note *note = toNote(ownershipParent());
+    const Chord *chord = note ? note->chord() : nullptr;
+    const Measure *measure = chord ? chord->measure() : nullptr;
     if (!measure) {
         return;
     }
 
-    const Segment* segment = chord ? chord->segment() : nullptr;
+    const Segment *segment = chord ? chord->segment() : nullptr;
 
     // Check ties starting in this measure and ending in another
     // If they cross a repeat, add jump points
     const bool hasFollowingJumpItem = chord->hasFollowingJumpItem();
 
     if (!hasFollowingJumpItem) {
-        const Note* tieEndNote = endNote();
-        const Chord* endChord = tieEndNote ? tieEndNote->chord() : nullptr;
+        const Note *tieEndNote = endNote();
+        const Chord *endChord = tieEndNote ? tieEndNote->chord() : nullptr;
         if (!endChord) {
             return;
         }
-        const Segment* endNoteSegment = endChord ? endChord->segment() : nullptr;
-        const ChordRest* finalCROfMeasure = measure->lastChordRest(track());
+        const Segment *endNoteSegment = endChord ? endChord->segment() : nullptr;
+        const ChordRest *finalCROfMeasure = measure->lastChordRest(track());
         const bool finalCRHasFollowingJump = finalCROfMeasure ? finalCROfMeasure->hasFollowingJumpItem() : false;
         const bool segsAreAdjacent = segmentsAreAdjacent(segment, endNoteSegment);
         const bool segsAreInDifferentRepeatSegments = segmentsAreInDifferentRepeatSegments(segment, endNoteSegment);
@@ -171,18 +138,18 @@ void Tie::updatePossibleJumpPoints()
 
     int jumpPointIdx = 0;
 
-    Note* nextNote = searchTieNote(note);
+    Note *nextNote = searchTieNote(note);
     nextNote = nextNote ? nextNote : endNote();
 
     if (nextNote) {
         const bool hasTie = nextNote->tieBack();
-        TieJumpPoint* jumpPoint = new TieJumpPoint(nextNote, hasTie, jumpPointIdx, true);
+        TieJumpPoint *jumpPoint = new TieJumpPoint(nextNote, hasTie, jumpPointIdx, true);
         tieJumpPoints()->add(jumpPoint);
         jumpPointIdx++;
     }
 
-    for (Measure* jumpMeasure : findFollowingRepeatMeasures(measure)) {
-        const Segment* firstCrSeg = jumpMeasure ? jumpMeasure->first(SegmentType::ChordRest) : nullptr;
+    for (Measure *jumpMeasure : findFollowingRepeatMeasures(measure)) {
+        const Segment *firstCrSeg = jumpMeasure ? jumpMeasure->first(SegmentType::ChordRest) : nullptr;
         if (!firstCrSeg) {
             continue;
         }
@@ -191,7 +158,7 @@ void Tie::updatePossibleJumpPoints()
 
         if (nextNote) {
             bool hasIncomingTie = nextNote->tieBack();
-            TieJumpPoint* jumpPoint = new TieJumpPoint(nextNote, hasIncomingTie, jumpPointIdx, false);
+            TieJumpPoint *jumpPoint = new TieJumpPoint(nextNote, hasIncomingTie, jumpPointIdx, false);
             tieJumpPoints()->add(jumpPoint);
             jumpPointIdx++;
         }
@@ -202,15 +169,14 @@ void Tie::updatePossibleJumpPoints()
     }
 }
 
-void Tie::addTiesToJumpPoints()
-{
+void Tie::addTiesToJumpPoints() {
     updatePossibleJumpPoints();
-    TieJumpPointList* jumpPoints = tieJumpPoints();
+    TieJumpPointList *jumpPoints = tieJumpPoints();
     if (!jumpPoints) {
         return;
     }
 
-    for (TieJumpPoint* jumpPoint : *jumpPoints) {
+    for (TieJumpPoint *jumpPoint : *jumpPoints) {
         if (jumpPoint->followingNote()) {
             jumpPoint->undoSetActive(true);
             continue;
@@ -219,7 +185,7 @@ void Tie::addTiesToJumpPoints()
     }
 
     // Update jump points for linked ties
-    for (EngravingObject* linkedTie : linkList()) {
+    for (EngravingObject *linkedTie : linkList()) {
         if (!linkedTie || !linkedTie->isTie() || linkedTie == this) {
             continue;
         }
@@ -227,13 +193,12 @@ void Tie::addTiesToJumpPoints()
     }
 }
 
-void Tie::undoRemoveTiesFromJumpPoints()
-{
-    TieJumpPointList* jumpPoints = tieJumpPoints();
+void Tie::undoRemoveTiesFromJumpPoints() {
+    TieJumpPointList *jumpPoints = tieJumpPoints();
     if (!jumpPoints) {
         return;
     }
-    for (TieJumpPoint* jumpPoint : *jumpPoints) {
+    for (TieJumpPoint *jumpPoint : *jumpPoints) {
         if (jumpPoint->followingNote() || !jumpPoint->active()) {
             jumpPoint->undoSetActive(false);
             continue;
@@ -243,8 +208,7 @@ void Tie::undoRemoveTiesFromJumpPoints()
     }
 }
 
-bool Tie::allJumpPointsInactive() const
-{
+bool Tie::allJumpPointsInactive() const {
     if (endNote()) {
         return false;
     }
@@ -252,7 +216,7 @@ bool Tie::allJumpPointsInactive() const
         return true;
     }
 
-    for (const TieJumpPoint* jumpPoint : *tieJumpPoints()) {
+    for (const TieJumpPoint *jumpPoint : *tieJumpPoints()) {
         if (jumpPoint->active()) {
             return false;
         }
@@ -261,69 +225,47 @@ bool Tie::allJumpPointsInactive() const
     return true;
 }
 
-TieJumpPointList* Tie::tieJumpPoints()
-{
-    return startNote() ? startNote()->tieJumpPoints() : nullptr;
-}
+TieJumpPointList *Tie::tieJumpPoints() { return startNote() ? startNote()->tieJumpPoints() : nullptr; }
 
-const TieJumpPointList* Tie::tieJumpPoints() const
-{
-    return startNote() ? startNote()->tieJumpPoints() : nullptr;
-}
+const TieJumpPointList *Tie::tieJumpPoints() const { return startNote() ? startNote()->tieJumpPoints() : nullptr; }
 
-Tie::Tie(EngravingObject* parent)
-    : SlurTie(ElementType::TIE, parent)
-{
-}
+Tie::Tie(EngravingObject *parent) : SlurTie(ElementType::TIE, parent) {}
 
-Tie::Tie(const Tie& t)
-    : SlurTie(t)
-{
+Tie::Tie(const Tie &t) : SlurTie(t) {
     m_isInside = t.m_isInside;
     m_tiePlacement = t.m_tiePlacement;
     // Jump points must be recalculated for this tie
     m_jumpPoint = nullptr;
 }
 
-PropertyValue Tie::getProperty(Pid propertyId) const
-{
+PropertyValue Tie::getProperty(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::TIE_PLACEMENT:
-        return tiePlacement();
-    default:
-        return SlurTie::getProperty(propertyId);
+        case Pid::TIE_PLACEMENT: return tiePlacement();
+        default: return SlurTie::getProperty(propertyId);
     }
 }
 
-PropertyValue Tie::propertyDefault(Pid id) const
-{
+PropertyValue Tie::propertyDefault(Pid id) const {
     switch (id) {
-    case Pid::TIE_PLACEMENT:
-        return TiePlacement::AUTO;
-    default:
-        return SlurTie::propertyDefault(id);
+        case Pid::TIE_PLACEMENT: return TiePlacement::AUTO;
+        default: return SlurTie::propertyDefault(id);
     }
 }
 
-bool Tie::setProperty(Pid propertyId, const PropertyValue& v)
-{
+bool Tie::setProperty(Pid propertyId, const PropertyValue &v) {
     switch (propertyId) {
-    case Pid::TIE_PLACEMENT:
-        setTiePlacement(v.value<TiePlacement>());
-        break;
-    default:
-        return SlurTie::setProperty(propertyId, v);
+        case Pid::TIE_PLACEMENT: setTiePlacement(v.value<TiePlacement>()); break;
+        default: return SlurTie::setProperty(propertyId, v);
     }
     triggerLayout();
     return true;
 }
 
-double Tie::scalingFactor() const
-{
+double Tie::scalingFactor() const {
     const bool hasBothNotes = startNote() && endNote();
 
-    const Note* primaryNote = startNote() ? startNote() : endNote();
-    const Note* secondaryNote = hasBothNotes ? endNote() : nullptr;
+    const Note *primaryNote = startNote() ? startNote() : endNote();
+    const Note *secondaryNote = hasBothNotes ? endNote() : nullptr;
 
     if (!primaryNote) {
         return 1.0;
@@ -340,52 +282,45 @@ double Tie::scalingFactor() const
     return primaryNote->chord()->intrinsicMag();
 }
 
-void Tie::setStartNote(Note* note)
-{
+void Tie::setStartNote(Note *note) {
     setStartElement(note);
     setOwnershipParent(note);
 }
 
-Note* Tie::startNote() const
-{
+Note *Tie::startNote() const {
     assert(!startElement() || startElement()->isNote());
     return toNote(startElement());
 }
 
-Note* Tie::endNote() const
-{
-    return toNote(endElement());
-}
+Note *Tie::endNote() const { return toNote(endElement()); }
 
-bool Tie::isOuterTieOfChord(Grip startOrEnd) const
-{
+bool Tie::isOuterTieOfChord(Grip startOrEnd) const {
     if (m_isInside) {
         return false;
     }
 
     const bool start = startOrEnd == Grip::START;
-    const Note* note = start ? startNote() : endNote();
+    const Note *note = start ? startNote() : endNote();
     if (!note) {
         return false;
     }
 
-    const Chord* chord = note->chord();
+    const Chord *chord = note->chord();
 
     return (note == chord->upNote() && up()) || (note == chord->downNote() && !up());
 }
 
-bool Tie::hasTiedSecondInside() const
-{
-    const Note* note = startNote();
+bool Tie::hasTiedSecondInside() const {
+    const Note *note = startNote();
     if (!note) {
         return false;
     }
 
-    const Chord* chord = note->chord();
+    const Chord *chord = note->chord();
     const int line = note->line();
     const int secondInsideLine = up() ? line + 1 : line - 1;
 
-    for (const Note* otherNote : chord->notes()) {
+    for (const Note *otherNote : chord->notes()) {
         if (otherNote->line() == secondInsideLine && otherNote->tieFor() && otherNote->tieFor()->up() == up()) {
             return true;
         }
@@ -394,29 +329,27 @@ bool Tie::hasTiedSecondInside() const
     return false;
 }
 
-bool Tie::isCrossStaff() const
-{
-    const Note* startN = startNote();
-    const Note* endN = endNote();
-    const Chord* startChord = startN ? startN->chord() : nullptr;
-    const Chord* endChord = endN ? endN->chord() : nullptr;
+bool Tie::isCrossStaff() const {
+    const Note *startN = startNote();
+    const Note *endN = endNote();
+    const Chord *startChord = startN ? startN->chord() : nullptr;
+    const Chord *endChord = endN ? endN->chord() : nullptr;
     const staff_idx_t staff = staffIdx();
 
-    return (startChord && (startChord->staffMove() != 0 || startChord->vStaffIdx() != staff))
-           || (endChord && (endChord->staffMove() != 0 || endChord->vStaffIdx() != staff));
+    return (startChord && (startChord->staffMove() != 0 || startChord->vStaffIdx() != staff)) ||
+           (endChord && (endChord->staffMove() != 0 || endChord->vStaffIdx() != staff));
 }
 
-void Tie::changeTieType(Tie* oldTie, Note* endNote)
-{
+void Tie::changeTieType(Tie *oldTie, Note *endNote) {
     // Replaces oldTie with an outgoing partial tie if no endNote is specified.  Otherwise replaces oldTie with a regular tie
-    Note* startNote = oldTie->startNote();
+    Note *startNote = oldTie->startNote();
     bool addPartialTie = !endNote;
-    Score* score = startNote ? startNote->score() : nullptr;
+    Score *score = startNote ? startNote->score() : nullptr;
     if (!score) {
         return;
     }
 
-    Tie* newTie = addPartialTie ? Factory::createPartialTie(startNote) : Factory::createTie(startNote);
+    Tie *newTie = addPartialTie ? Factory::createPartialTie(startNote) : Factory::createTie(startNote);
 
     score->undoRemoveElement(oldTie);
 
@@ -439,20 +372,16 @@ void Tie::changeTieType(Tie* oldTie, Note* endNote)
     score->undoAddElement(newTie);
 }
 
-void Tie::updateStartTieOnRemoval()
-{
+void Tie::updateStartTieOnRemoval() {
     if (!jumpPoint() || !startTie() || !startTieJumpPoints()) {
         return;
     }
     jumpPoint()->undoSetActive(false);
-    Tie* _startTie = startTie();
+    Tie *_startTie = startTie();
     if (startTieJumpPoints()->size() <= 1 || _startTie->allJumpPointsInactive()) {
         score()->undoRemoveElement(_startTie);
     }
 }
 
-Tie* Tie::startTie() const
-{
-    return startTieJumpPoints() ? startTieJumpPoints()->startTie() : nullptr;
-}
-}
+Tie *Tie::startTie() const { return startTieJumpPoints() ? startTieJumpPoints()->startTie() : nullptr; }
+} // namespace mu::engraving

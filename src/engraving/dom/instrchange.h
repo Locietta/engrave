@@ -34,32 +34,35 @@ class Clef;
 //   @@ InstrumentChange
 //---------------------------------------------------------
 
-class InstrumentChange final : public TextBase
-{
+class InstrumentChange final : public TextBase {
     OBJECT_ALLOCATOR(engraving, InstrumentChange)
     DECLARE_CLASSOF(ElementType::INSTRUMENT_CHANGE)
 
 public:
-    InstrumentChange(EngravingObject* parent);
-    InstrumentChange(const Instrument&, EngravingObject* parent);
-    InstrumentChange(const InstrumentChange&);
+    InstrumentChange(EngravingObject *parent);
+    InstrumentChange(const Instrument &, EngravingObject *parent);
+    InstrumentChange(const InstrumentChange &);
     ~InstrumentChange();
 
-    InstrumentChange* clone() const override { return new InstrumentChange(*this); }
+    InstrumentChange *clone() const override { return new InstrumentChange(*this); }
 
-    Instrument* instrument() const { return m_instrument; }
-    void setInstrument(Instrument* i) { m_instrument = i; }
-    void setInstrument(Instrument&& i) { *m_instrument = i; }
-    void setInstrument(const Instrument& i);
-    void setupInstrument(const Instrument* instrument, bool updateText = true);
+    Instrument *instrument() const { return m_instrument; }
 
-    std::vector<KeySig*> keySigs(bool all=false) const;
-    std::vector<Clef*> clefs() const;
+    void setInstrument(Instrument *i) { m_instrument = i; }
+
+    void setInstrument(Instrument &&i) { *m_instrument = i; }
+
+    void setInstrument(const Instrument &i);
+    void setupInstrument(const Instrument *instrument, bool updateText = true);
+
+    std::vector<KeySig *> keySigs(bool all = false) const;
+    std::vector<Clef *> clefs() const;
 
     bool init() const { return m_init; }
+
     void setInit(bool init) { m_init = init; }
 
-    Segment* segment() const { return toSegment(ownershipParent()); }
+    Segment *segment() const { return toSegment(ownershipParent()); }
 
     PropertyValue propertyDefault(Pid) const override;
 
@@ -69,8 +72,8 @@ public:
 
 private:
 
-    Instrument* m_instrument = nullptr;     // Staff holds ownership if part of score
-    bool m_init = false;                    // Set if the instrument has been set by the user, as there is no other way to tell.
+    Instrument *m_instrument = nullptr; // Staff holds ownership if part of score
+    bool m_init = false;                // Set if the instrument has been set by the user, as there is no other way to tell.
 };
 } // namespace mu::engraving
 #endif

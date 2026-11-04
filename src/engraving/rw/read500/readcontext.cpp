@@ -32,15 +32,11 @@
 using namespace mu::engraving;
 using namespace mu::engraving::read500;
 
-ReadContext::ReadContext(Score* score, bool pasteMode)
-    : m_score(score), _pasteMode(pasteMode)
-{
-}
+ReadContext::ReadContext(Score *score, bool pasteMode) : m_score(score), _pasteMode(pasteMode) {}
 
-ReadContext::~ReadContext()
-{
+ReadContext::~ReadContext() {
     IF_ASSERT_FAILED(m_incompleteNoteAnchoredSpanners.empty()) {
-        for (auto& [spanner, startEndEIDs] : m_incompleteNoteAnchoredSpanners) {
+        for (auto &[spanner, startEndEIDs] : m_incompleteNoteAnchoredSpanners) {
             delete spanner;
         }
 
@@ -48,91 +44,46 @@ ReadContext::~ReadContext()
     }
 }
 
-Score* ReadContext::score() const
-{
-    return m_score;
-}
+Score *ReadContext::score() const { return m_score; }
 
-void ReadContext::setScore(Score* score)
-{
-    m_score = score;
-}
+void ReadContext::setScore(Score *score) { m_score = score; }
 
-const MStyle& ReadContext::style() const
-{
-    return score()->style();
-}
+const MStyle &ReadContext::style() const { return score()->style(); }
 
-std::shared_ptr<IEngravingFontsProvider> ReadContext::engravingFonts() const
-{
-    return score()->engravingFonts();
-}
+std::shared_ptr<IEngravingFontsProvider> ReadContext::engravingFonts() const { return score()->engravingFonts(); }
 
-String ReadContext::mscoreVersion() const
-{
-    return m_score->mscoreVersion();
-}
+String ReadContext::mscoreVersion() const { return m_score->mscoreVersion(); }
 
-int ReadContext::mscVersion() const
-{
-    return m_score->mscVersion();
-}
+int ReadContext::mscVersion() const { return m_score->mscVersion(); }
 
-int ReadContext::fileDivision() const
-{
-    return m_score->fileDivision();
-}
+int ReadContext::fileDivision() const { return m_score->fileDivision(); }
 
-int ReadContext::fileDivision(int t) const
-{
-    return m_score->fileDivision(t);
-}
+int ReadContext::fileDivision(int t) const { return m_score->fileDivision(t); }
 
-double ReadContext::spatium() const
-{
-    return m_score->style().spatium();
-}
+double ReadContext::spatium() const { return m_score->style().spatium(); }
 
-void ReadContext::setSpatium(double v)
-{
-    m_score->style().set(Sid::spatium, v);
-}
+void ReadContext::setSpatium(double v) { m_score->style().set(Sid::spatium, v); }
 
-DummyParent* ReadContext::dummy() const
-{
-    return m_score->dummy();
-}
+DummyParent *ReadContext::dummy() const { return m_score->dummy(); }
 
-Staff* ReadContext::staff(staff_idx_t n)
-{
-    return m_score->staff(n);
-}
+Staff *ReadContext::staff(staff_idx_t n) { return m_score->staff(n); }
 
-bool ReadContext::isSameScore(const EngravingObject* obj) const
-{
-    return obj->score() == m_score;
-}
+bool ReadContext::isSameScore(const EngravingObject *obj) const { return obj->score() == m_score; }
 
-Fraction ReadContext::rtick() const
-{
-    return _curMeasure ? _tick - _curMeasure->tick() : _tick;
-}
+Fraction ReadContext::rtick() const { return _curMeasure ? _tick - _curMeasure->tick() : _tick; }
 
-void ReadContext::setTick(const Fraction& f)
-{
+void ReadContext::setTick(const Fraction &f) {
     _tick = f.reduced();
     _intTick = _tick.ticks();
 }
 
-void ReadContext::incTick(const Fraction& f)
-{
+void ReadContext::incTick(const Fraction &f) {
     _tick += f;
     _tick.reduce();
     _intTick += f.ticks();
 }
 
-Location ReadContext::location(bool forceAbsFrac) const
-{
+Location ReadContext::location(bool forceAbsFrac) const {
     Location l = Location::absolute();
     fillLocation(l, forceAbsFrac);
     return l;
@@ -147,8 +98,7 @@ Location ReadContext::location(bool forceAbsFrac) const
 //    zero.
 //---------------------------------------------------------
 
-void ReadContext::fillLocation(Location& l, bool forceAbsFrac) const
-{
+void ReadContext::fillLocation(Location &l, bool forceAbsFrac) const {
     constexpr Location defaults = Location::absolute();
     const bool absFrac = (pasteMode() || forceAbsFrac);
     if (l.track() == defaults.track()) {
@@ -168,8 +118,7 @@ void ReadContext::fillLocation(Location& l, bool forceAbsFrac) const
 //    type (absolute or relative).
 //---------------------------------------------------------
 
-void ReadContext::setLocation(const Location& l)
-{
+void ReadContext::setLocation(const Location &l) {
     if (l.isRelative()) {
         Location newLoc = l;
         newLoc.toAbsolute(location());
@@ -190,56 +139,46 @@ void ReadContext::setLocation(const Location& l)
     }
 }
 
-void ReadContext::addPartAudioSettingCompat(PartAudioSettingsCompat partAudioSetting)
-{
+void ReadContext::addPartAudioSettingCompat(PartAudioSettingsCompat partAudioSetting) {
     if (_settingsCompat.audioSettings.count(partAudioSetting.instrumentId.partId) == 0) {
-        _settingsCompat.audioSettings.insert({ partAudioSetting.instrumentId.partId, partAudioSetting });
+        _settingsCompat.audioSettings.insert({partAudioSetting.instrumentId.partId, partAudioSetting});
     }
 }
 
-void ReadContext::addMMRestEndMeasureEID(Measure* mmrest, EID lastMeasureEID)
-{
+void ReadContext::addMMRestEndMeasureEID(Measure *mmrest, EID lastMeasureEID) {
     DO_ASSERT(lastMeasureEID.isValid());
     m_mmRestEndMeasures.emplace(mmrest, lastMeasureEID);
 }
 
-void ReadContext::setMMRestEndMeasures()
-{
-    EIDRegister* eidRegister = score()->masterScore()->eidRegister();
-    for (auto& [mmrest, lastMeasureEID] : m_mmRestEndMeasures) {
-        EngravingObject* linkedElement = eidRegister->itemFromEID(lastMeasureEID);
+void ReadContext::setMMRestEndMeasures() {
+    EIDRegister *eidRegister = score()->masterScore()->eidRegister();
+    for (auto &[mmrest, lastMeasureEID] : m_mmRestEndMeasures) {
+        EngravingObject *linkedElement = eidRegister->itemFromEID(lastMeasureEID);
         IF_ASSERT_FAILED(linkedElement && linkedElement->isMeasure()) {
             LOGE() << "No valid end measure found for MMRest at " << mmrest->tick().toString();
             continue;
         }
 
-        Measure* lastMeasure = toMeasure(linkedElement);
-        MeasureBase* nextMB = lastMeasure->next();
+        Measure *lastMeasure = toMeasure(linkedElement);
+        MeasureBase *nextMB = lastMeasure->next();
         mmrest->setNext(nextMB);
     }
 }
 
-void ReadContext::registerPastedEID(const EID& clipboardEid, const EID& fileEid)
-{
-    m_pastedEIDs.emplace(clipboardEid, fileEid);
-}
+void ReadContext::registerPastedEID(const EID &clipboardEid, const EID &fileEid) { m_pastedEIDs.emplace(clipboardEid, fileEid); }
 
-EID ReadContext::resolvePastedEID(const EID& clipboardEid) const
-{
+EID ReadContext::resolvePastedEID(const EID &clipboardEid) const {
     if (!_pasteMode) {
         return clipboardEid;
     }
 
     auto it = m_pastedEIDs.find(clipboardEid);
-    IF_ASSERT_FAILED(it != m_pastedEIDs.end()) {
-        return clipboardEid;
-    }
+    IF_ASSERT_FAILED(it != m_pastedEIDs.end()) { return clipboardEid; }
 
     return it->second;
 }
 
-void ReadContext::addNoteAnchoredSpannerStartEl(Spanner* spanner, EID startElementEID)
-{
+void ReadContext::addNoteAnchoredSpannerStartEl(Spanner *spanner, EID startElementEID) {
     auto it = m_incompleteNoteAnchoredSpanners.find(spanner);
     if (it != m_incompleteNoteAnchoredSpanners.end()) {
         it->second.first = startElementEID;
@@ -248,8 +187,7 @@ void ReadContext::addNoteAnchoredSpannerStartEl(Spanner* spanner, EID startEleme
     }
 }
 
-void ReadContext::addNoteAnchoredSpannerEndEl(Spanner* spanner, EID endElementEID)
-{
+void ReadContext::addNoteAnchoredSpannerEndEl(Spanner *spanner, EID endElementEID) {
     auto it = m_incompleteNoteAnchoredSpanners.find(spanner);
     if (it != m_incompleteNoteAnchoredSpanners.end()) {
         it->second.second = endElementEID;
@@ -258,14 +196,13 @@ void ReadContext::addNoteAnchoredSpannerEndEl(Spanner* spanner, EID endElementEI
     }
 }
 
-void ReadContext::connectNoteAnchoredSpanners()
-{
-    EIDRegister* eidRegister = score()->masterScore()->eidRegister();
-    for (auto& [spanner, startEndEIDs] : m_incompleteNoteAnchoredSpanners) {
+void ReadContext::connectNoteAnchoredSpanners() {
+    EIDRegister *eidRegister = score()->masterScore()->eidRegister();
+    for (auto &[spanner, startEndEIDs] : m_incompleteNoteAnchoredSpanners) {
         EID startElementEID = startEndEIDs.first;
         EID endElementEID = startEndEIDs.second;
-        EngravingItem* startElement = toEngravingItem(eidRegister->itemFromEID(startElementEID));
-        EngravingItem* endElement = toEngravingItem(eidRegister->itemFromEID(endElementEID));
+        EngravingItem *startElement = toEngravingItem(eidRegister->itemFromEID(startElementEID));
+        EngravingItem *endElement = toEngravingItem(eidRegister->itemFromEID(endElementEID));
         IF_ASSERT_FAILED(startElement && startElement->isNote()) {
             LOGD() << "Could not find note element for " << spanner->typeName();
             delete spanner;
@@ -277,12 +214,12 @@ void ReadContext::connectNoteAnchoredSpanners()
             continue;
         }
 
-        Note* startNote = toNote(startElement);
-        Note* endNote = toNote(endElement);
+        Note *startNote = toNote(startElement);
+        Note *endNote = toNote(endElement);
         spanner->setNoteSpan(startNote, endNote);
 
         if (spanner->isTie()) {
-            Tie* tie = toTie(spanner);
+            Tie *tie = toTie(spanner);
             startNote->setTieFor(tie);
             endNote->setTieBack(tie);
         } else {

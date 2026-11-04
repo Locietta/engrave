@@ -31,8 +31,7 @@
 using namespace mu::engraving;
 using namespace mu::engraving::rw;
 
-IReaderPtr RWRegister::reader(int version)
-{
+IReaderPtr RWRegister::reader(int version) {
     if (version < 0) {
         version = Constants::MSC_VERSION;
     }
@@ -46,7 +45,4 @@ IReaderPtr RWRegister::reader(int version)
     return std::make_shared<read500::Read500>();
 }
 
-IWriterPtr RWRegister::writer()
-{
-    return std::make_shared<write::Writer>();
-}
+IWriterPtr RWRegister::writer() { return std::make_shared<write::Writer>(); }

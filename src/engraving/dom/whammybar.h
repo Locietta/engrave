@@ -32,17 +32,16 @@ class WhammyBar;
 //   @@ WhammyBarSegment
 //---------------------------------------------------------
 
-class WhammyBarSegment final : public TextLineBaseSegment
-{
+class WhammyBarSegment final : public TextLineBaseSegment {
     OBJECT_ALLOCATOR(engraving, WhammyBarSegment)
     DECLARE_CLASSOF(ElementType::WHAMMY_BAR_SEGMENT)
 
 public:
-    WhammyBarSegment(WhammyBar* sp);
+    WhammyBarSegment(WhammyBar *sp);
 
-    WhammyBarSegment* clone() const override { return new WhammyBarSegment(*this); }
+    WhammyBarSegment *clone() const override { return new WhammyBarSegment(*this); }
 
-    WhammyBar* whammyBar() const { return (WhammyBar*)spanner(); }
+    WhammyBar *whammyBar() const { return (WhammyBar *) spanner(); }
 
     friend class WhammyBar;
 };
@@ -51,19 +50,18 @@ public:
 //   @@ WhammyBar
 //---------------------------------------------------------
 
-class WhammyBar final : public ChordTextLineBase
-{
+class WhammyBar final : public ChordTextLineBase {
     OBJECT_ALLOCATOR(engraving, WhammyBar)
     DECLARE_CLASSOF(ElementType::WHAMMY_BAR)
 
 public:
     WhammyBar(DummyParentOr<EngravingItem> parent);
 
-    WhammyBar* clone() const override { return new WhammyBar(*this); }
+    WhammyBar *clone() const override { return new WhammyBar(*this); }
 
     Anchor anchor() const override { return Anchor::SEGMENT; }
 
-    LineSegment* createLineSegment() override;
+    LineSegment *createLineSegment() override;
 
     PropertyValue propertyDefault(Pid propertyId) const override;
     Sid getPropertyStyle(Pid) const override;

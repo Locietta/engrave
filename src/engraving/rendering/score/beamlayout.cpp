@@ -56,23 +56,20 @@
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-void BeamLayout::layout(Beam* item, const LayoutContext& ctx)
-{
+void BeamLayout::layout(Beam *item, const LayoutContext &ctx) {
     TRACEFUNC;
 
-    Beam::LayoutData* ldata = item->mutldata();
+    Beam::LayoutData *ldata = item->mutldata();
     // all of the beam layout code depends on _elements being in order by tick
     // this may not be the case if two cr's were recently swapped.
     std::sort(item->elements().begin(), item->elements().end(),
-              [](const ChordRest* a, const ChordRest* b) -> bool {
-        return a->tick() < b->tick();
-    });
-    System* system = item->system();
+              [](const ChordRest *a, const ChordRest *b) -> bool { return a->tick() < b->tick(); });
+    System *system = item->system();
 
-    std::vector<ChordRest*> crl;
+    std::vector<ChordRest *> crl;
 
     size_t n = 0;
-    for (ChordRest* cr : item->elements()) {
+    for (ChordRest *cr : item->elements()) {
         auto newSystem = cr->measure()->system();
         if (newSystem && newSystem != system) {
             SpannerSegmentType st;
@@ -106,7 +103,7 @@ void BeamLayout::layout(Beam* item, const LayoutContext& ctx)
         }
         layout2(item, ctx, crl, st, static_cast<int>(n));
 
-        for (const BeamSegment* bs : item->beamSegments()) {
+        for (const BeamSegment *bs : item->beamSegments()) {
             beamShape.add(bs->shape());
         }
     }
@@ -114,7 +111,7 @@ void BeamLayout::layout(Beam* item, const LayoutContext& ctx)
     ldata->setShape(beamShape);
 
     // The beam may have changed shape. one-note trems within this beam need to be layed out here
-    for (ChordRest* cr : item->elements()) {
+    for (ChordRest *cr : item->elements()) {
         ChordLayout::computeUp(cr, ctx);
         if (cr->isChord() && toChord(cr)->tremoloSingleChord()) {
             TremoloLayout::layout(toChord(cr)->tremoloSingleChord(), ctx);
@@ -122,8 +119,7 @@ void BeamLayout::layout(Beam* item, const LayoutContext& ctx)
     }
 }
 
-void BeamLayout::layoutIfNeed(Beam* item, const LayoutContext& ctx)
-{
+void BeamLayout::layoutIfNeed(Beam *item, const LayoutContext &ctx) {
     if (!item->ldata()->isValid()) {
         BeamLayout::layout(item, ctx);
     }
@@ -134,11 +130,10 @@ void BeamLayout::layoutIfNeed(Beam* item, const LayoutContext& ctx)
 //    - detach from system
 //    - calculate stem direction and set chord
 //---------------------------------------------------------
-void BeamLayout::layout1(Beam* item, LayoutContext& ctx)
-{
-    Beam::LayoutData* ldata = item->mutldata();
+void BeamLayout::layout1(Beam *item, LayoutContext &ctx) {
+    Beam::LayoutData *ldata = item->mutldata();
 
-    const StaffType* staffType = item->staffType();
+    const StaffType *staffType = item->staffType();
     item->setTab((staffType && staffType->isTabStaff()) ? staffType : nullptr);
     item->setIsBesideTabStaff(item->tab() && !item->tab()->stemless() && !item->tab()->stemThrough());
 
@@ -149,7 +144,7 @@ void BeamLayout::layout1(Beam* item, LayoutContext& ctx)
         item->setCross(false);
         item->setMinMove(0);
         item->setMaxMove(0);
-        for (ChordRest* cr : item->elements()) {
+        for (ChordRest *cr : item->elements()) {
             if (cr->isChord()) {
                 item->setUp(cr->up());
                 break;
@@ -168,28 +163,28 @@ void BeamLayout::layout1(Beam* item, LayoutContext& ctx)
             // if there is no explicit stem direction, default to the direction of the first stem.
             bool firstUp = false;
             bool firstChord = true;
-            for (ChordRest* cr : item->elements()) {
+            for (ChordRest *cr : item->elements()) {
                 if (!cr->isChord()) {
                     item->setUp(firstUp);
                     continue;
                 }
-                Chord* chord = toChord(cr);
+                Chord *chord = toChord(cr);
                 DirectionV crDirection = toChord(cr)->stemDirection();
                 if (crDirection != DirectionV::AUTO) {
                     item->setUp(crDirection == DirectionV::UP);
                     break;
                 }
                 if (firstChord) {
-                    const Staff* staff = item->staff();
-                    const Part* part = staff ? staff->part() : nullptr;
-                    const Drumset* ds = part ? part->instrument(item->tick())->drumset() : nullptr;
+                    const Staff *staff = item->staff();
+                    const Part *part = staff ? staff->part() : nullptr;
+                    const Drumset *ds = part ? part->instrument(item->tick())->drumset() : nullptr;
                     firstUp = ds ? ds->stemDirection(chord->upNote()->pitch()) == DirectionV::UP : chord->up();
                     firstChord = false;
                 }
                 item->setUp(firstUp);
             }
         }
-        for (ChordRest* cr : item->elements()) {
+        for (ChordRest *cr : item->elements()) {
             ChordLayout::computeUp(cr, ctx);
             if (cr->isChord()) {
                 ChordLayout::layoutStem(toChord(cr), ctx);
@@ -204,11 +199,11 @@ void BeamLayout::layout1(Beam* item, LayoutContext& ctx)
 
     item->notePositions().clear();
     staff_idx_t staffIdx = muse::nidx;
-    for (ChordRest* cr : item->elements()) {
+    for (ChordRest *cr : item->elements()) {
         double m = cr->isSmall() ? ctx.conf().styleD(Sid::smallNoteMag) : 1.0;
         mag = std::max(mag, m);
         if (cr->isChord()) {
-            Chord* chord = toChord(cr);
+            Chord *chord = toChord(cr);
             staffIdx = chord->vStaffIdx();
             int i = chord->staffMove();
             item->setMinMove(std::min(item->minCRMove(), i));
@@ -231,8 +226,8 @@ void BeamLayout::layout1(Beam* item, LayoutContext& ctx)
     if (item->elements().empty()) {
         return;
     }
-    ChordRest* firstNote = item->elements().front();
-    Measure* measure = firstNote->measure();
+    ChordRest *firstNote = item->elements().front();
+    Measure *measure = firstNote->measure();
     bool hasMultipleVoices = measure->hasVoices(firstNote->staffIdx(), item->tick(), item->ticks());
     if (computeUpForMovedCross(item)) {
     } else if (item->direction() != DirectionV::AUTO) {
@@ -251,7 +246,7 @@ void BeamLayout::layout1(Beam* item, LayoutContext& ctx)
         if (hasMultipleVoices) {
             item->setUp(firstNote->track() % 2 == 0);
         } else {
-            if (const Chord* chord = item->findChordWithCustomStemDirection()) {
+            if (const Chord *chord = item->findChordWithCustomStemDirection()) {
                 item->setUp(chord->stemDirection() == DirectionV::UP);
             } else {
                 std::set<BeamBase::NotePosition> notePosSet(item->notePositions().begin(), item->notePositions().end());
@@ -286,7 +281,7 @@ void BeamLayout::layout1(Beam* item, LayoutContext& ctx)
 
     item->setSlope(0.0);
 
-    for (ChordRest* cr : item->elements()) {
+    for (ChordRest *cr : item->elements()) {
         bool prevUp = cr->up();
         ChordLayout::computeUp(cr, ctx);
         if (cr->isChord() && cr->up() != prevUp) {
@@ -299,17 +294,16 @@ void BeamLayout::layout1(Beam* item, LayoutContext& ctx)
     }
 }
 
-void BeamLayout::layout2(Beam* item, const LayoutContext& ctx, const std::vector<ChordRest*>& chordRests, SpannerSegmentType, int frag)
-{
+void BeamLayout::layout2(Beam *item, const LayoutContext &ctx, const std::vector<ChordRest *> &chordRests, SpannerSegmentType, int frag) {
     TRACEFUNC;
 
     BeamTremoloLayout::setupLData(item, item->mutldata(), ctx);
-    Chord* startChord = nullptr;
-    Chord* endChord = nullptr;
+    Chord *startChord = nullptr;
+    Chord *endChord = nullptr;
     if (chordRests.empty()) {
         return;
     }
-    for (ChordRest* chordRest : chordRests) {
+    for (ChordRest *chordRest : chordRests) {
         if (chordRest->isChord()) {
             if (!startChord) {
                 startChord = toChord(chordRest);
@@ -371,8 +365,8 @@ void BeamLayout::layout2(Beam* item, const LayoutContext& ctx, const std::vector
         item->setBeamDist(item->ldata()->beamDist);
     } else {
         item->setSlope(0.0);
-        Chord* startChord2 = nullptr;
-        for (ChordRest* cr : chordRests) {
+        Chord *startChord2 = nullptr;
+        for (ChordRest *cr : chordRests) {
             if (cr->isChord()) {
                 startChord2 = toChord(cr);
                 break;
@@ -394,9 +388,8 @@ void BeamLayout::layout2(Beam* item, const LayoutContext& ctx, const std::vector
     setTremAnchors(item, ctx);
 }
 
-bool BeamLayout::isStartOfNonCrossBeam(ChordRest* cr)
-{
-    Beam* b = cr->beam();
+bool BeamLayout::isStartOfNonCrossBeam(ChordRest *cr) {
+    Beam *b = cr->beam();
     if (b && b->elements().front() == cr) {
         if (b->cross()) {
             return false;
@@ -408,9 +401,8 @@ bool BeamLayout::isStartOfNonCrossBeam(ChordRest* cr)
     return false;
 }
 
-bool BeamLayout::isStartOfCrossBeam(ChordRest* cr)
-{
-    Beam* b = cr->beam();
+bool BeamLayout::isStartOfCrossBeam(ChordRest *cr) {
+    Beam *b = cr->beam();
     if (b && b->elements().front() == cr) {
         if (b->cross()) {
             return true;
@@ -424,13 +416,12 @@ bool BeamLayout::isStartOfCrossBeam(ChordRest* cr)
 //   restoreBeams
 //---------------------------------------------------------
 
-void BeamLayout::restoreBeams(Measure* m, LayoutContext& ctx)
-{
-    for (Segment* s = m->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
-        for (EngravingItem* e : s->elist()) {
+void BeamLayout::restoreBeams(Measure *m, LayoutContext &ctx) {
+    for (Segment *s = m->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
+        for (EngravingItem *e : s->elist()) {
             if (e && e->isChordRest()) {
-                ChordRest* cr = toChordRest(e);
-                Beam* b = cr->beam();
+                ChordRest *cr = toChordRest(e);
+                Beam *b = cr->beam();
                 if (b && !b->elements().empty() && b->elements().front() == cr) {
                     TLayout::layoutBeam(b, ctx);
                     b->addSkyline(m->system()->staff(b->staffIdx())->skyline());
@@ -440,20 +431,19 @@ void BeamLayout::restoreBeams(Measure* m, LayoutContext& ctx)
     }
 }
 
-bool BeamLayout::measureMayHaveBeamsJoinedIntoNext(const Measure* measure)
-{
-    const MeasureBase* next = measure->next();
+bool BeamLayout::measureMayHaveBeamsJoinedIntoNext(const Measure *measure) {
+    const MeasureBase *next = measure->next();
     if (!(next && next->isMeasure())) {
         return false;
     }
 
-    const Measure* nextMeasure = toMeasure(next);
-    const Segment* firstCrSeg = nextMeasure->findFirstR(SegmentType::ChordRest, Fraction(0, 1));
+    const Measure *nextMeasure = toMeasure(next);
+    const Segment *firstCrSeg = nextMeasure->findFirstR(SegmentType::ChordRest, Fraction(0, 1));
     if (!firstCrSeg) {
         return false;
     }
 
-    for (const EngravingItem* item : firstCrSeg->elist()) {
+    for (const EngravingItem *item : firstCrSeg->elist()) {
         if (!item) {
             continue;
         }
@@ -470,43 +460,42 @@ bool BeamLayout::measureMayHaveBeamsJoinedIntoNext(const Measure* measure)
 //   breakCrossMeasureBeams
 //---------------------------------------------------------
 
-void BeamLayout::breakCrossMeasureBeams(Measure* measure, LayoutContext& ctx)
-{
-    MeasureBase* mbNext = measure->next();
+void BeamLayout::breakCrossMeasureBeams(Measure *measure, LayoutContext &ctx) {
+    MeasureBase *mbNext = measure->next();
     if (!mbNext || !mbNext->isMeasure()) {
         return;
     }
 
-    Measure* next = toMeasure(mbNext);
+    Measure *next = toMeasure(mbNext);
     const size_t ntracks = ctx.dom().ntracks();
-    Segment* fstSeg = next->first(SegmentType::ChordRest);
+    Segment *fstSeg = next->first(SegmentType::ChordRest);
     if (!fstSeg) {
         return;
     }
 
     for (size_t track = 0; track < ntracks; ++track) {
-        const Staff* stf = ctx.dom().staff(track2staff(track));
+        const Staff *stf = ctx.dom().staff(track2staff(track));
 
         // don’t compute beams for invisible staves and tablature without stems
         if (!stf->show() || (stf->isTabStaff(measure->tick()) && stf->staffType(measure->tick())->stemless())) {
             continue;
         }
 
-        EngravingItem* e = fstSeg->element(static_cast<int>(track));
+        EngravingItem *e = fstSeg->element(static_cast<int>(track));
         if (!e || !e->isChordRest()) {
             continue;
         }
 
-        ChordRest* cr = toChordRest(e);
-        Beam* beam = cr->beam();
-        if (!beam || beam->elements().front()->measure() == next) {   // no beam or not cross-measure beam
+        ChordRest *cr = toChordRest(e);
+        Beam *beam = cr->beam();
+        if (!beam || beam->elements().front()->measure() == next) { // no beam or not cross-measure beam
             continue;
         }
 
-        std::vector<ChordRest*> mElements;
-        std::vector<ChordRest*> nextElements;
+        std::vector<ChordRest *> mElements;
+        std::vector<ChordRest *> nextElements;
 
-        for (ChordRest* beamCR : beam->elements()) {
+        for (ChordRest *beamCR : beam->elements()) {
             if (beamCR->tick() < next->tick()) {
                 mElements.push_back(beamCR);
             } else {
@@ -518,7 +507,7 @@ void BeamLayout::breakCrossMeasureBeams(Measure* measure, LayoutContext& ctx)
             mElements[0]->removeDeleteBeam(false);
         }
 
-        Beam* newBeam = nullptr;
+        Beam *newBeam = nullptr;
         if (nextElements.size() > 1) {
             newBeam = Factory::createBeam(ctx.mutDom().score());
             newBeam->setGenerated(true);
@@ -526,7 +515,7 @@ void BeamLayout::breakCrossMeasureBeams(Measure* measure, LayoutContext& ctx)
         }
 
         const bool nextBeamed = bool(newBeam);
-        for (ChordRest* nextCR : nextElements) {
+        for (ChordRest *nextCR : nextElements) {
             nextCR->removeDeleteBeam(nextBeamed);
             if (newBeam) {
                 newBeam->add(nextCR);
@@ -539,10 +528,7 @@ void BeamLayout::breakCrossMeasureBeams(Measure* measure, LayoutContext& ctx)
     }
 }
 
-static bool beamNoContinue(BeamMode mode)
-{
-    return mode == BeamMode::END || mode == BeamMode::NONE || mode == BeamMode::INVALID;
-}
+static bool beamNoContinue(BeamMode mode) { return mode == BeamMode::END || mode == BeamMode::NONE || mode == BeamMode::INVALID; }
 
 #define beamModeMid(a) (a == BeamMode::MID || a == BeamMode::BEGIN16 || a == BeamMode::BEGIN32)
 
@@ -550,18 +536,17 @@ static bool beamNoContinue(BeamMode mode)
 //   beamGraceNotes
 //---------------------------------------------------------
 
-void BeamLayout::beamGraceNotes(LayoutContext& ctx, Chord* mainNote, bool after)
-{
-    ChordRest* a1    = 0;        // start of (potential) beam
-    Beam* beam       = 0;        // current beam
+void BeamLayout::beamGraceNotes(LayoutContext &ctx, Chord *mainNote, bool after) {
+    ChordRest *a1 = 0; // start of (potential) beam
+    Beam *beam = 0;    // current beam
     BeamMode bm = BeamMode::AUTO;
-    std::vector<Chord*> graceNotes = after ? mainNote->graceNotesAfter() : mainNote->graceNotesBefore();
+    std::vector<Chord *> graceNotes = after ? mainNote->graceNotesAfter() : mainNote->graceNotesBefore();
 
     if (beam) {
         beam->setIsGrace(true);
     }
 
-    for (ChordRest* cr : graceNotes) {
+    for (ChordRest *cr : graceNotes) {
         bm = Groups::baseBeamMode(cr);
         if ((cr->durationType().type() <= DurationType::V_QUARTER) || (bm == BeamMode::NONE)) {
             if (beam) {
@@ -619,35 +604,34 @@ void BeamLayout::beamGraceNotes(LayoutContext& ctx, Chord* mainNote, bool after)
     }
 }
 
-void BeamLayout::createBeams(LayoutContext& ctx, Measure* measure)
-{
+void BeamLayout::createBeams(LayoutContext &ctx, Measure *measure) {
     TRACEFUNC;
 
     for (track_idx_t track = 0; track < ctx.dom().ntracks(); ++track) {
-        const Staff* stf = ctx.dom().staff(track2staff(track));
+        const Staff *stf = ctx.dom().staff(track2staff(track));
 
         // don’t compute beams for invisible staves and tablature without stems
         if (!stf->show() || (stf->isTabStaff(measure->tick()) && stf->staffType(measure->tick())->stemless())) {
             continue;
         }
 
-        ChordRest* a1    = nullptr;          // start of (potential) beam
-        bool firstCR     = true;
-        Beam* beam       = nullptr;          // current beam
-        BeamMode bm    = BeamMode::AUTO;
-        ChordRest* prev  = nullptr;
+        ChordRest *a1 = nullptr; // start of (potential) beam
+        bool firstCR = true;
+        Beam *beam = nullptr; // current beam
+        BeamMode bm = BeamMode::AUTO;
+        ChordRest *prev = nullptr;
         std::unordered_map<int, TDuration> beatSubdivision;
 
         // if this measure is simple meter (actually X/4),
         // then perform a prepass to determine the subdivision of each beat
 
         beatSubdivision.clear();
-        TimeSig* ts = stf->timeSig(measure->tick());
+        TimeSig *ts = stf->timeSig(measure->tick());
         const SegmentType st = SegmentType::ChordRest;
         if (ts && ts->denominator() == 4) {
             Fraction stretch = ts->stretch();
-            for (Segment* s = measure->first(st); s; s = s->next(st)) {
-                ChordRest* mcr = toChordRest(s->element(track));
+            for (Segment *s = measure->first(st); s; s = s->next(st)) {
+                ChordRest *mcr = toChordRest(s->element(track));
                 if (mcr == 0) {
                     continue;
                 }
@@ -660,15 +644,15 @@ void BeamLayout::createBeams(LayoutContext& ctx, Measure* measure)
             }
         }
 
-        for (Segment* segment = measure->first(st); segment; segment = segment->next(st)) {
-            ChordRest* cr = segment->cr(track);
+        for (Segment *segment = measure->first(st); segment; segment = segment->next(st)) {
+            ChordRest *cr = segment->cr(track);
             if (!cr) {
                 continue;
             }
 
             if (cr->isChord()) {
-                Chord* chord = toChord(cr);
-                for (Chord* c : chord->graceNotes()) {
+                Chord *chord = toChord(cr);
+                for (Chord *c : chord->graceNotes()) {
                     c->setBeamlet(nullptr); // Will be defined during beam layout
                 }
             }
@@ -679,25 +663,23 @@ void BeamLayout::createBeams(LayoutContext& ctx, Measure* measure)
                 // Handle cross-measure beams
                 BeamMode mode = cr->beamMode();
                 if (mode == BeamMode::MID || mode == BeamMode::END || mode == BeamMode::BEGIN16 || mode == BeamMode::BEGIN32) {
-                    ChordRest* prevCR = ctx.mutDom().findCR(measure->tick() - Fraction::eps(), track);
+                    ChordRest *prevCR = ctx.mutDom().findCR(measure->tick() - Fraction::eps(), track);
                     if (prevCR) {
-                        Beam* prevBeam = prevCR->beam();
-                        const Measure* pm = prevCR->measure();
-                        if (!beamNoContinue(prevCR->beamMode())
-                            && !pm->lineBreak() && !pm->pageBreak() && !pm->sectionBreak()
-                            && ctx.state().prevMeasure()
-                            && !(prevCR->isChord() && prevCR->durationType().type() <= DurationType::V_QUARTER)) {
+                        Beam *prevBeam = prevCR->beam();
+                        const Measure *pm = prevCR->measure();
+                        if (!beamNoContinue(prevCR->beamMode()) && !pm->lineBreak() && !pm->pageBreak() && !pm->sectionBreak() &&
+                            ctx.state().prevMeasure() && !(prevCR->isChord() && prevCR->durationType().type() <= DurationType::V_QUARTER)) {
                             beam = prevBeam;
                             if (prevCR->isChord()) {
-                                if (Hook* hook = toChord(prevCR)->hook()) {
+                                if (Hook *hook = toChord(prevCR)->hook()) {
                                     ctx.mutDom().doUndoRemoveElement(hook);
-                                    prevCR->segment()->staffShape(prevCR->vStaffIdx()).remove_if([hook](const ShapeElement& el) {
+                                    prevCR->segment()->staffShape(prevCR->vStaffIdx()).remove_if([hook](const ShapeElement &el) {
                                         return el.item() == hook;
                                     });
                                 }
                             }
                             //a1 = beam ? beam->elements().front() : prevCR;
-                            a1 = beam ? nullptr : prevCR;               // when beam is found, a1 is no longer required.
+                            a1 = beam ? nullptr : prevCR; // when beam is found, a1 is no longer required.
                         } else if (prevBeam && prevBeam == cr->beam() && prevBeam->elements().front() == prevCR) {
                             // remove the beam from the previous chordrest because we do not currently
                             // support cross-system beams
@@ -716,9 +698,9 @@ void BeamLayout::createBeams(LayoutContext& ctx, Measure* measure)
             // handle grace notes
             // (tied chords?)
             if (cr->isChord()) {
-                Chord* chord = toChord(cr);
-                beamGraceNotes(ctx, chord, false);         // grace before
-                beamGraceNotes(ctx, chord, true);          // grace after
+                Chord *chord = toChord(cr);
+                beamGraceNotes(ctx, chord, false); // grace before
+                beamGraceNotes(ctx, chord, true);  // grace after
             }
 
             bm = Groups::actualBeamMode(cr, prev, &beatSubdivision);
@@ -763,13 +745,8 @@ void BeamLayout::createBeams(LayoutContext& ctx, Measure* measure)
             if (a1 == 0) {
                 a1 = cr;
             } else {
-                if (!beamModeMid(bm)
-                    &&
-                    (bm == BeamMode::BEGIN
-                     || (a1->segment()->segmentType() != cr->segment()->segmentType())
-                     || (a1->endTick() < cr->tick())
-                    )
-                    ) {
+                if (!beamModeMid(bm) && (bm == BeamMode::BEGIN || (a1->segment()->segmentType() != cr->segment()->segmentType()) ||
+                                         (a1->endTick() < cr->tick()))) {
                     a1->removeDeleteBeam(false);
                     a1 = cr;
                 } else {
@@ -789,11 +766,11 @@ void BeamLayout::createBeams(LayoutContext& ctx, Measure* measure)
             layout1(beam, ctx);
         } else if (a1) {
             Fraction nextTick = a1->endTick();
-            Measure* m = (nextTick >= measure->endTick() ? measure->nextMeasure() : measure);
-            ChordRest* nextCR = (m ? m->findChordRest(nextTick, track) : nullptr);
-            Beam* b = a1->beam();
-            if (!(b && !b->elements().empty() && !b->hasAllRests() && b->elements().front() == a1 && nextCR
-                  && beamModeMid(nextCR->beamMode()))) {
+            Measure *m = (nextTick >= measure->endTick() ? measure->nextMeasure() : measure);
+            ChordRest *nextCR = (m ? m->findChordRest(nextTick, track) : nullptr);
+            Beam *b = a1->beam();
+            if (!(b && !b->elements().empty() && !b->hasAllRests() && b->elements().front() == a1 && nextCR &&
+                  beamModeMid(nextCR->beamMode()))) {
                 a1->removeDeleteBeam(false);
             }
         }
@@ -805,10 +782,9 @@ void BeamLayout::createBeams(LayoutContext& ctx, Measure* measure)
  * layout all non-cross-staff beams starting on this segment
  * **********************************************************/
 
-void BeamLayout::layoutNonCrossBeams(ChordRest* cr, LayoutContext& ctx)
-{
+void BeamLayout::layoutNonCrossBeams(ChordRest *cr, LayoutContext &ctx) {
     if (cr->isChord()) {
-        for (Chord* grace : toChord(cr)->graceNotes()) {
+        for (Chord *grace : toChord(cr)->graceNotes()) {
             layoutNonCrossBeams(grace, ctx);
         }
     }
@@ -817,39 +793,37 @@ void BeamLayout::layoutNonCrossBeams(ChordRest* cr, LayoutContext& ctx)
         return;
     }
 
-    Beam* beam = cr->beam();
+    Beam *beam = cr->beam();
 
     TLayout::layoutBeam(beam, ctx);
 
     if (!beam->tremAnchors().empty()) {
         // there are inset tremolos in here
-        for (ChordRest* beamCr : beam->elements()) {
+        for (ChordRest *beamCr : beam->elements()) {
             if (!beamCr->isChord()) {
                 continue;
             }
-            Chord* c = toChord(beamCr);
+            Chord *c = toChord(beamCr);
             if (c->tremoloTwoChord()) {
                 TremoloLayout::layout(c->tremoloTwoChord(), ctx);
             }
         }
     }
 
-    for (ChordRest* beamCR : beam->elements()) {
+    for (ChordRest *beamCR : beam->elements()) {
         if (beamCR->isRest() && beamCR->vStaffIdx() == beam->staffIdx()) {
             verticalAdjustBeamedRests(toRest(beamCR), beam, ctx);
         }
     }
 }
 
-void BeamLayout::verticalAdjustBeamedRests(Rest* rest, Beam* beam, LayoutContext& ctx)
-{
+void BeamLayout::verticalAdjustBeamedRests(Rest *rest, Beam *beam, LayoutContext &ctx) {
     const double spatium = rest->spatium();
     static constexpr Fraction rest32nd(1, 32);
     const bool up = beam->up();
     const BeamMode restBeamMode = rest->beamMode();
-    const bool firstRest = beam->elements().front() == rest
-                           && (restBeamMode == BeamMode::BEGIN || restBeamMode == BeamMode::BEGIN16 || restBeamMode == BeamMode::BEGIN32
-                               || restBeamMode == BeamMode::MID);
+    const bool firstRest = beam->elements().front() == rest && (restBeamMode == BeamMode::BEGIN || restBeamMode == BeamMode::BEGIN16 ||
+                                                                restBeamMode == BeamMode::BEGIN32 || restBeamMode == BeamMode::MID);
 
     double restToBeamPadding;
     if (rest->ticks() <= rest32nd) {
@@ -862,9 +836,8 @@ void BeamLayout::verticalAdjustBeamedRests(Rest* rest, Beam* beam, LayoutContext
     const Shape restShape = rest->shape().translate(rest->pagePos() - rest->offset());
     const double minBeamToRestXDist = up && firstRest ? 0.1 * spatium : 0.0;
 
-    const double restToBeamClearance = up
-                                       ? beamShape.verticalClearance(restShape, minBeamToRestXDist)
-                                       : restShape.verticalClearance(beamShape);
+    const double restToBeamClearance =
+        up ? beamShape.verticalClearance(restShape, minBeamToRestXDist) : restShape.verticalClearance(beamShape);
     const double lineDistance = rest->staff()->lineDistance(rest->tick()) * spatium;
 
     int clearanceInSteps = std::ceil(restToBeamClearance / lineDistance);
@@ -881,15 +854,15 @@ void BeamLayout::verticalAdjustBeamedRests(Rest* rest, Beam* beam, LayoutContext
         lineMoves *= up ? 1 : -1;
         double yMove = lineMoves * lineDistance;
         rest->mutldata()->moveY(yMove);
-        for (Rest* mergedRest : rest->ldata()->mergedRests) {
+        for (Rest *mergedRest : rest->ldata()->mergedRests) {
             mergedRest->mutldata()->moveY(yMove);
         }
 
-        Segment* segment = rest->segment();
+        Segment *segment = rest->segment();
         staff_idx_t staffIdx = rest->vStaffIdx();
-        const Staff* staff = ctx.dom().staff(staffIdx);
-        std::vector<Chord*> chords;
-        std::vector<Rest*> rests;
+        const Staff *staff = ctx.dom().staff(staffIdx);
+        std::vector<Chord *> chords;
+        std::vector<Rest *> rests;
         collectChordsAndRest(segment, staffIdx, chords, rests);
         RestLayout::resolveRestVSChord(rests, chords, staff, segment);
         RestLayout::resolveRestVSRest(rests, staff, segment, ctx, /*considerBeams*/ true);
@@ -900,8 +873,7 @@ void BeamLayout::verticalAdjustBeamedRests(Rest* rest, Beam* beam, LayoutContext
     rest->segment()->createShape(rest->vStaffIdx());
 }
 
-void BeamLayout::checkCrossPosAndStemConsistency(Beam* beam, LayoutContext& ctx)
-{
+void BeamLayout::checkCrossPosAndStemConsistency(Beam *beam, LayoutContext &ctx) {
     if (!beam->cross() || !beam->userModified()) {
         return;
     }
@@ -909,11 +881,11 @@ void BeamLayout::checkCrossPosAndStemConsistency(Beam* beam, LayoutContext& ctx)
     int correctCrossStaffIdx = 0;
     bool inconsistencyFound = false;
 
-    for (ChordRest* cr : beam->elements()) {
+    for (ChordRest *cr : beam->elements()) {
         if (!cr->isChord()) {
             continue;
         }
-        Chord* chord = toChord(cr);
+        Chord *chord = toChord(cr);
         bool currentUp = chord->up();
         bool actualUp = ChordLayout::isChordPosBelowBeam(chord, beam);
         if (actualUp != currentUp) {
@@ -942,8 +914,7 @@ void BeamLayout::checkCrossPosAndStemConsistency(Beam* beam, LayoutContext& ctx)
     }
 }
 
-void BeamLayout::createBeamSegments(Beam* item, const LayoutContext& ctx, const std::vector<ChordRest*>& chordRests)
-{
+void BeamLayout::createBeamSegments(Beam *item, const LayoutContext &ctx, const std::vector<ChordRest *> &chordRests) {
     item->clearBeamSegments();
 
     bool levelHasBeam = false;
@@ -953,16 +924,16 @@ void BeamLayout::createBeamSegments(Beam* item, const LayoutContext& ctx, const 
     bool frenchStyleBeams = ctx.conf().styleB(Sid::frenchStyleBeams);
     do {
         levelHasBeam = false;
-        ChordRest* startCr = nullptr;
-        ChordRest* endCr = nullptr;
+        ChordRest *startCr = nullptr;
+        ChordRest *endCr = nullptr;
         bool breakBeam = false;
         bool previousBreak16 = false;
         bool previousBreak32 = false;
         size_t lastChordIndex = noLastChord;
 
         for (size_t i = 0; i < numCr; i++) {
-            ChordRest* chordRest = chordRests[i];
-            ChordRest* prevChordRest = i < 1 ? nullptr : chordRests[i - 1];
+            ChordRest *chordRest = chordRests[i];
+            ChordRest *prevChordRest = i < 1 ? nullptr : chordRests[i - 1];
 
             if (level < chordRest->beams() && !chordRest->isRest()) {
                 levelHasBeam = true;
@@ -975,16 +946,16 @@ void BeamLayout::createBeamSegments(Beam* item, const LayoutContext& ctx, const 
             breakBeam = isBroken16 || isBroken32;
             bool skipRest = false;
             BeamMode beamMode = chordRest->beamMode();
-            if (chordRest->isRest() && level >= chordRest->beams()
-                && (beamMode == BeamMode::MID || beamMode == BeamMode::BEGIN16 || beamMode == BeamMode::BEGIN32)) {
+            if (chordRest->isRest() && level >= chordRest->beams() &&
+                (beamMode == BeamMode::MID || beamMode == BeamMode::BEGIN16 || beamMode == BeamMode::BEGIN32)) {
                 // if the level is lower than both the previous and next real chords, don't break here
                 size_t nextChordIndex = i + 1;
                 while (nextChordIndex < numCr && chordRests[nextChordIndex]->isRest()) {
                     ++nextChordIndex;
                 }
                 if (lastChordIndex < numCr && nextChordIndex < numCr) {
-                    Chord* lastChord = toChord(chordRests[lastChordIndex]);
-                    Chord* nextChord = toChord(chordRests[nextChordIndex]);
+                    Chord *lastChord = toChord(chordRests[lastChordIndex]);
+                    Chord *nextChord = toChord(chordRests[nextChordIndex]);
                     // we have both chords (not rests) on either side of this rest, so if the level is lower than both we can
                     // just continue the beam through here
                     // this creates situations where we can have the second beam of a pair of 16th notes continuing through
@@ -1009,7 +980,7 @@ void BeamLayout::createBeamSegments(Beam* item, const LayoutContext& ctx, const 
                 if (lastChordIndex < item->elements().size() && (chordRest->isRest() || (endCr && endCr->isRest()))) {
                     // we broke the beam on this chordrest, but the last cr of the beam segment can't end on a rest
                     // so it ends on lastChord
-                    ChordRest* lastCr = toChordRest(item->elements()[lastChordIndex]);
+                    ChordRest *lastCr = toChordRest(item->elements()[lastChordIndex]);
                     if (lastCr && startCr && lastCr->tick() >= startCr->tick()) {
                         endCr = lastCr;
                         beamletIndex = lastChordIndex;
@@ -1018,12 +989,8 @@ void BeamLayout::createBeamSegments(Beam* item, const LayoutContext& ctx, const 
                 }
                 if (startCr && endCr && levelHasBeam) {
                     if (startCr == endCr && startCr->isChord()) {
-                        bool isBeamletBefore = calcIsBeamletBefore(item,
-                                                                   toChord(startCr),
-                                                                   static_cast<int>(beamletIndex),
-                                                                   level,
-                                                                   previousBreak16,
-                                                                   previousBreak32);
+                        bool isBeamletBefore = calcIsBeamletBefore(item, toChord(startCr), static_cast<int>(beamletIndex), level,
+                                                                   previousBreak16, previousBreak32);
                         createBeamletSegment(item, ctx, toChord(startCr), isBeamletBefore, level);
                     } else if (startCr != endCr) {
                         createBeamSegment(item, startCr, endCr, level, frenchStyleBeams);
@@ -1054,8 +1021,7 @@ void BeamLayout::createBeamSegments(Beam* item, const LayoutContext& ctx, const 
     } while (levelHasBeam);
 }
 
-bool BeamLayout::calcIsBeamletBefore(const Beam* item, Chord* chord, int i, int level, bool isAfter16Break, bool isAfter32Break)
-{
+bool BeamLayout::calcIsBeamletBefore(const Beam *item, Chord *chord, int i, int level, bool isAfter16Break, bool isAfter32Break) {
     // if first or last chord in beam group
     if (i == 0) {
         return false;
@@ -1063,7 +1029,7 @@ bool BeamLayout::calcIsBeamletBefore(const Beam* item, Chord* chord, int i, int 
         return true;
     }
     // if first or last chord in tuplet
-    Tuplet* tuplet = chord->tuplet();
+    Tuplet *tuplet = chord->tuplet();
     if (tuplet && chord == tuplet->elements().front()) {
         return false;
     } else if (tuplet && chord == tuplet->elements().back()) {
@@ -1071,9 +1037,9 @@ bool BeamLayout::calcIsBeamletBefore(const Beam* item, Chord* chord, int i, int 
     }
 
     // next note has a beam break
-    ChordRest* nextChordRest = item->elements()[i + 1];
-    ChordRest* currChordRest = item->elements()[i];
-    ChordRest* prevChordRest = item->elements()[i - 1];
+    ChordRest *nextChordRest = item->elements()[i + 1];
+    ChordRest *currChordRest = item->elements()[i];
+    ChordRest *prevChordRest = item->elements()[i - 1];
     if (nextChordRest->isChord()) {
         bool nextBreak16 = false;
         bool nextBreak32 = false;
@@ -1091,7 +1057,7 @@ bool BeamLayout::calcIsBeamletBefore(const Beam* item, Chord* chord, int i, int 
     int nextChordLevel = -1;
     int previousOffset = 1;
     while (i - previousOffset >= 0) {
-        ChordRest* previous = item->elements()[i - previousOffset];
+        ChordRest *previous = item->elements()[i - previousOffset];
         if (previous->isChord()) {
             previousChordLevel = toChord(previous)->beams();
             if (isAfter16Break) {
@@ -1106,7 +1072,7 @@ bool BeamLayout::calcIsBeamletBefore(const Beam* item, Chord* chord, int i, int 
 
     int nextOffset = 1;
     while (i + nextOffset < static_cast<int>(item->elements().size())) {
-        ChordRest* next = item->elements()[i + nextOffset];
+        ChordRest *next = item->elements()[i + nextOffset];
         if (next->isChord()) {
             nextChordLevel = toChord(next)->beams();
             break;
@@ -1132,7 +1098,7 @@ bool BeamLayout::calcIsBeamletBefore(const Beam* item, Chord* chord, int i, int 
     }
 
     static const int BEAM_TUPLET_TOLERANCE = 6;
-    int tickLargeSize  = chord->ticks().ticks() * 2;
+    int tickLargeSize = chord->ticks().ticks() * 2;
     int remainder = tickNext.ticks() % tickLargeSize;
     if (remainder <= BEAM_TUPLET_TOLERANCE || (tickLargeSize - remainder) <= BEAM_TUPLET_TOLERANCE) {
         return true;
@@ -1142,9 +1108,8 @@ bool BeamLayout::calcIsBeamletBefore(const Beam* item, Chord* chord, int i, int 
     return false;
 }
 
-static inline int computeStemLengthAdjustmentSteps(const ChordRest* cr, bool isStartOrEnd, bool isAbove, bool frenchStyleBeams,
-                                                   int level, int beamsAbove, int beamsBelow)
-{
+static inline int computeStemLengthAdjustmentSteps(const ChordRest *cr, bool isStartOrEnd, bool isAbove, bool frenchStyleBeams, int level,
+                                                   int beamsAbove, int beamsBelow) {
     if (isAbove == cr->up()) { // beam segment on opposite side
         if (!frenchStyleBeams || isStartOrEnd) {
             // lengthen
@@ -1160,8 +1125,7 @@ static inline int computeStemLengthAdjustmentSteps(const ChordRest* cr, bool isS
     return 0;
 }
 
-void BeamLayout::createBeamSegment(Beam* item, ChordRest* startCr, ChordRest* endCr, int level, bool frenchStyleBeams)
-{
+void BeamLayout::createBeamSegment(Beam *item, ChordRest *startCr, ChordRest *endCr, int level, bool frenchStyleBeams) {
     const bool isFirstSubgroup = startCr == item->elements().front();
     const bool isLastSubgroup = endCr == item->elements().back();
     const bool firstUp = startCr->up();
@@ -1178,7 +1142,7 @@ void BeamLayout::createBeamSegment(Beam* item, ChordRest* startCr, ChordRest* en
             // up and down stemmed notes in this subgroup
             int upStems, downStems;
             upStems = downStems = 0;
-            for (ChordRest* cr : item->elements()) {
+            for (ChordRest *cr : item->elements()) {
                 if (!cr->isChord() || cr->tick() < startCr->tick()) {
                     continue;
                 }
@@ -1218,7 +1182,7 @@ void BeamLayout::createBeamSegment(Beam* item, ChordRest* startCr, ChordRest* en
 
     // avoid adjusting for beams on opposite side of level 0
     if (level != 0) {
-        for (const BeamSegment* beam : item->beamSegments()) {
+        for (const BeamSegment *beam : item->beamSegments()) {
             if (beam->level == 0 || beam->endTick < startCr->tick() || beam->startTick > endCr->tick()) {
                 continue;
             }
@@ -1245,7 +1209,7 @@ void BeamLayout::createBeamSegment(Beam* item, ChordRest* startCr, ChordRest* en
         }
     }
 
-    BeamSegment* b = new BeamSegment(item);
+    BeamSegment *b = new BeamSegment(item);
     b->above = !overallUp;
     b->level = level;
     b->line = LineF(startX, startY, endX, endY);
@@ -1258,7 +1222,7 @@ void BeamLayout::createBeamSegment(Beam* item, ChordRest* startCr, ChordRest* en
     }
 
     // extend stems properly
-    for (ChordRest* cr : item->elements()) {
+    for (ChordRest *cr : item->elements()) {
         if (!cr->isChord() || cr->tick() < startCr->tick()) {
             continue;
         }
@@ -1266,7 +1230,7 @@ void BeamLayout::createBeamSegment(Beam* item, ChordRest* startCr, ChordRest* en
             break;
         }
 
-        Chord* chord = toChord(cr);
+        Chord *chord = toChord(cr);
         if (!chord->stem()) {
             continue;
         }
@@ -1280,8 +1244,8 @@ void BeamLayout::createBeamSegment(Beam* item, ChordRest* startCr, ChordRest* en
             chord->stem()->mutldata()->beamCorrection = _up * item->beamWidth() / 2;
         } else {
             bool isStartOrEnd = cr == startCr || cr == endCr;
-            int visualStemLengthAdjustmentSteps = computeStemLengthAdjustmentSteps(cr, isStartOrEnd, b->above, frenchStyleBeams,
-                                                                                   level, beamsAbove, beamsBelow);
+            int visualStemLengthAdjustmentSteps =
+                computeStemLengthAdjustmentSteps(cr, isStartOrEnd, b->above, frenchStyleBeams, level, beamsAbove, beamsBelow);
             if (visualStemLengthAdjustmentSteps != 0) {
                 double grow = item->growLeft();
                 if (!muse::RealIsEqual(item->growLeft(), item->growRight())) {
@@ -1294,12 +1258,12 @@ void BeamLayout::createBeamSegment(Beam* item, ChordRest* startCr, ChordRest* en
 
                 if (frenchStyleBeams) {
                     // Even if we visually shorten the stem, we need the 'original' length for collisions.
-                    int bboxStemLengthAdjustmentSteps = computeStemLengthAdjustmentSteps(cr, isStartOrEnd, b->above,
-                                                                                         /*frenchStyleBeams*/ false,
-                                                                                         level, beamsAbove, beamsBelow);
-                    chord->stem()->mutldata()->beamCorrection = _up * item->beamWidth() / 2 + _up * grow
-                                                                * (bboxStemLengthAdjustmentSteps - visualStemLengthAdjustmentSteps)
-                                                                * item->beamDist();
+                    int bboxStemLengthAdjustmentSteps =
+                        computeStemLengthAdjustmentSteps(cr, isStartOrEnd, b->above,
+                                                         /*frenchStyleBeams*/ false, level, beamsAbove, beamsBelow);
+                    chord->stem()->mutldata()->beamCorrection =
+                        _up * item->beamWidth() / 2 +
+                        _up * grow * (bboxStemLengthAdjustmentSteps - visualStemLengthAdjustmentSteps) * item->beamDist();
                 }
                 BeamTremoloLayout::extendStem(item->ldata(), chord, visualStemLengthAdjustment);
             }
@@ -1311,12 +1275,9 @@ void BeamLayout::createBeamSegment(Beam* item, ChordRest* startCr, ChordRest* en
     }
 }
 
-void BeamLayout::createBeamletSegment(Beam* item, const LayoutContext& ctx, ChordRest* cr, bool isBefore, int level)
-{
-    const double startX = BeamTremoloLayout::chordBeamAnchorX(item->ldata(), cr,
-                                                              isBefore
-                                                              ? ChordBeamAnchorType::End
-                                                              : ChordBeamAnchorType::Start);
+void BeamLayout::createBeamletSegment(Beam *item, const LayoutContext &ctx, ChordRest *cr, bool isBefore, int level) {
+    const double startX =
+        BeamTremoloLayout::chordBeamAnchorX(item->ldata(), cr, isBefore ? ChordBeamAnchorType::End : ChordBeamAnchorType::Start);
 
     const double beamletLength = ctx.conf().styleAbsolute(Sid::beamMinLen) * cr->mag();
 
@@ -1329,7 +1290,7 @@ void BeamLayout::createBeamletSegment(Beam* item, const LayoutContext& ctx, Chor
     int extraBeamAdjust = 0;
 
     // avoid adjusting for beams on opposite side of level 0
-    for (const BeamSegment* beam : item->beamSegments()) {
+    for (const BeamSegment *beam : item->beamSegments()) {
         if (beam->level == 0 || beam->line.x2() < startX || beam->line.x1() > endX) {
             continue;
         }
@@ -1357,7 +1318,7 @@ void BeamLayout::createBeamletSegment(Beam* item, const LayoutContext& ctx, Chor
         endY -= verticalOffset * grow2;
     }
 
-    BeamSegment* b = new BeamSegment(item);
+    BeamSegment *b = new BeamSegment(item);
     b->above = !cr->up();
     b->level = level;
     b->line = LineF(startX, startY, endX, endY);
@@ -1371,14 +1332,13 @@ void BeamLayout::createBeamletSegment(Beam* item, const LayoutContext& ctx, Chor
     item->beamSegments().push_back(b);
 }
 
-bool BeamLayout::computeUpForMovedCross(Beam* item)
-{
+bool BeamLayout::computeUpForMovedCross(Beam *item) {
     if (!item->cross()) {
         return false;
     }
     bool isAboveAllChords = true;
     bool isBelowAllChords = true;
-    for (ChordRest* cr : item->elements()) {
+    for (ChordRest *cr : item->elements()) {
         if (cr->isBelowCrossBeam(item)) {
             isBelowAllChords = false;
         } else {
@@ -1399,25 +1359,22 @@ bool BeamLayout::computeUpForMovedCross(Beam* item)
     return false;
 }
 
-PointF BeamLayout::chordBeamAnchor(const Beam* item, const ChordRest* chord, ChordBeamAnchorType anchorType)
-{
+PointF BeamLayout::chordBeamAnchor(const Beam *item, const ChordRest *chord, ChordBeamAnchorType anchorType) {
     return BeamTremoloLayout::chordBeamAnchor(item->ldata(), chord, anchorType);
 }
 
-double BeamLayout::chordBeamAnchorY(const Beam* item, const ChordRest* chord)
-{
+double BeamLayout::chordBeamAnchorY(const Beam *item, const ChordRest *chord) {
     return BeamTremoloLayout::chordBeamAnchorY(item->ldata(), chord);
 }
 
-void BeamLayout::setTremAnchors(Beam* item, const LayoutContext& ctx)
-{
+void BeamLayout::setTremAnchors(Beam *item, const LayoutContext &ctx) {
     item->tremAnchors().clear();
-    for (ChordRest* cr : item->elements()) {
+    for (ChordRest *cr : item->elements()) {
         if (!cr || !cr->isChord()) {
             continue;
         }
-        Chord* c = toChord(cr);
-        TremoloTwoChord* t = c ? c->tremoloTwoChord() : nullptr;
+        Chord *c = toChord(cr);
+        TremoloTwoChord *t = c ? c->tremoloTwoChord() : nullptr;
         if (t && t->chord1() == c && t->chord2()->beam() == item) {
             // there is an inset tremolo here!
             // figure out up / down

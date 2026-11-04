@@ -25,11 +25,9 @@
 
 #include "global/asserts.h"
 
-namespace muse::audio::fx {
-namespace reverb_matrices {
-template<int n>
-inline void Hadamard(const float i[n], float o[n])
-{
+namespace muse::audio::fx { namespace reverb_matrices {
+template <int n>
+inline void Hadamard(const float i[n], float o[n]) {
     UNUSED(i);
     UNUSED(o);
 
@@ -37,18 +35,17 @@ inline void Hadamard(const float i[n], float o[n])
     assert(false);
 }
 
-template<>
-inline void Hadamard<8>(const float i[8], float o[8])
-{
+template <>
+inline void Hadamard<8>(const float i[8], float o[8]) {
     // log2(n)*n adds n muls = 24 adds, 8 muls
 
     const float fact = 1.f / std::sqrt(8.f);
 
-    float a[] = { i[7] + i[0], i[6] + i[1], i[5] + i[3], i[2] + i[4] };
-    float b[] = { i[7] - i[0], i[6] - i[1], i[5] - i[3], i[2] - i[4] };
+    float a[] = {i[7] + i[0], i[6] + i[1], i[5] + i[3], i[2] + i[4]};
+    float b[] = {i[7] - i[0], i[6] - i[1], i[5] - i[3], i[2] - i[4]};
 
-    float c[] = { a[0] + a[1], a[2] + a[3], b[0] + b[1], b[2] + b[3] };
-    float d[] = { a[0] - a[1], a[2] - a[3], b[0] - b[1], b[2] - b[3] };
+    float c[] = {a[0] + a[1], a[2] + a[3], b[0] + b[1], b[2] + b[3]};
+    float d[] = {a[0] - a[1], a[2] - a[3], b[0] - b[1], b[2] - b[3]};
 
     o[0] = fact * (c[0] + c[1]);
     o[1] = fact * (c[2] + c[3]);
@@ -60,9 +57,8 @@ inline void Hadamard<8>(const float i[8], float o[8])
     o[7] = fact * (d[2] - d[3]);
 }
 
-template<>
-inline void Hadamard<12>(const float i[12], float o[12])
-{
+template <>
+inline void Hadamard<12>(const float i[12], float o[12]) {
     // adds 12 + 24 + 24 = 60 adds, 12 muls
 
     // this might seem a bit crazy and it took me 4 attempts to get all signs and numbers right.. I don't have enough
@@ -71,12 +67,12 @@ inline void Hadamard<12>(const float i[12], float o[12])
 
     const float fact = 1.f / std::sqrt(12.f);
 
-    float a[] = { i[7] + i[4], i[10] + i[11], i[2] + i[5], i[0] + i[1], i[8] + i[9], i[6] + i[3] };
-    float b[] = { i[7] - i[4], i[10] - i[11], i[2] - i[5], i[0] - i[1], i[8] - i[9], i[6] - i[3] };
+    float a[] = {i[7] + i[4], i[10] + i[11], i[2] + i[5], i[0] + i[1], i[8] + i[9], i[6] + i[3]};
+    float b[] = {i[7] - i[4], i[10] - i[11], i[2] - i[5], i[0] - i[1], i[8] - i[9], i[6] - i[3]};
 
-    float c[] = { a[0] + a[1], a[0] + b[1], b[0] + a[1], b[0] + b[1], a[0] - a[1], a[0] - b[1], b[0] - a[1], b[0] - b[1] };
-    float d[] = { a[2] + a[3], a[2] + b[3], b[2] + a[3], b[2] + b[3], a[2] - a[3], a[2] - b[3], b[2] - a[3], b[2] - b[3] };
-    float e[] = { a[4] + a[5], a[4] + b[5], b[4] + a[5], b[4] + b[5], a[4] - a[5], a[4] - b[5], b[4] - a[5], b[4] - b[5] };
+    float c[] = {a[0] + a[1], a[0] + b[1], b[0] + a[1], b[0] + b[1], a[0] - a[1], a[0] - b[1], b[0] - a[1], b[0] - b[1]};
+    float d[] = {a[2] + a[3], a[2] + b[3], b[2] + a[3], b[2] + b[3], a[2] - a[3], a[2] - b[3], b[2] - a[3], b[2] - b[3]};
+    float e[] = {a[4] + a[5], a[4] + b[5], b[4] + a[5], b[4] + b[5], a[4] - a[5], a[4] - b[5], b[4] - a[5], b[4] - b[5]};
 
     o[0] = fact * (c[0] + d[0] + e[0]);
     o[1] = fact * (c[3] + d[1] - e[5]);
@@ -92,23 +88,20 @@ inline void Hadamard<12>(const float i[12], float o[12])
     o[11] = fact * (c[5] + d[4] - e[2]);
 }
 
-template<>
-inline void Hadamard<16>(const float i[16], float o[16])
-{
+template <>
+inline void Hadamard<16>(const float i[16], float o[16]) {
     // 16 + 16 + 16 + 16 = 64 adds, 16 muls
 
     const float fact = 1.f / std::sqrt(16.f);
 
-    float a[] = { i[10] + i[4], i[0] + i[5], i[15] + i[11], i[12] + i[7],
-                  i[2] + i[14], i[1] + i[8], i[3] + i[9],   i[13] + i[6] };
-    float b[] = { i[10] - i[4], i[0] - i[5], i[15] - i[11], i[12] - i[7],
-                  i[2] - i[14], i[1] - i[8], i[3] - i[9],   i[13] - i[6] };
+    float a[] = {i[10] + i[4], i[0] + i[5], i[15] + i[11], i[12] + i[7], i[2] + i[14], i[1] + i[8], i[3] + i[9], i[13] + i[6]};
+    float b[] = {i[10] - i[4], i[0] - i[5], i[15] - i[11], i[12] - i[7], i[2] - i[14], i[1] - i[8], i[3] - i[9], i[13] - i[6]};
 
-    float c[] = { a[0] + a[1], a[2] + a[3], a[4] + a[5], a[6] + a[7], b[0] + b[1], b[2] + b[3], b[4] + b[5], b[6] + b[7] };
-    float d[] = { a[0] - a[1], a[2] - a[3], a[4] - a[5], a[6] - a[7], b[0] - b[1], b[2] - b[3], b[4] - b[5], b[6] - b[7] };
+    float c[] = {a[0] + a[1], a[2] + a[3], a[4] + a[5], a[6] + a[7], b[0] + b[1], b[2] + b[3], b[4] + b[5], b[6] + b[7]};
+    float d[] = {a[0] - a[1], a[2] - a[3], a[4] - a[5], a[6] - a[7], b[0] - b[1], b[2] - b[3], b[4] - b[5], b[6] - b[7]};
 
-    float e[] = { c[0] + c[1], c[2] + c[3], d[0] + d[1], d[2] + d[3], c[4] + c[5], c[6] + c[7], d[4] + d[5], d[6] + d[7] };
-    float f[] = { c[0] - c[1], c[2] - c[3], d[0] - d[1], d[2] - d[3], c[4] - c[5], c[6] - c[7], d[4] - d[5], d[6] - d[7] };
+    float e[] = {c[0] + c[1], c[2] + c[3], d[0] + d[1], d[2] + d[3], c[4] + c[5], c[6] + c[7], d[4] + d[5], d[6] + d[7]};
+    float f[] = {c[0] - c[1], c[2] - c[3], d[0] - d[1], d[2] - d[3], c[4] - c[5], c[6] - c[7], d[4] - d[5], d[6] - d[7]};
 
     o[0] = fact * (e[0] + e[1]);
     o[1] = fact * (e[2] + e[3]);
@@ -128,24 +121,22 @@ inline void Hadamard<16>(const float i[16], float o[16])
     o[15] = fact * (f[6] - f[7]);
 }
 
-template<>
-inline void Hadamard<24>(const float i[24], float o[24])
-{
+template <>
+inline void Hadamard<24>(const float i[24], float o[24]) {
     // 24 + 48 + 48 = 120 adds, 24 muls
     const float fact = 1.f / std::sqrt(24.f);
 
-    float a[] = { i[11] + i[12], i[23] + i[14], i[4] + i[2],   i[1] + i[22], i[3] + i[19], i[9] + i[0],
-                  i[17] + i[7],  i[5] + i[10],  i[21] + i[13], i[6] + i[18], i[8] + i[15], i[20] + i[16] };
-    float b[] = { i[11] - i[12], i[23] - i[14], i[4] - i[2],   i[1] - i[22], i[3] - i[19], i[9] - i[0],
-                  i[17] - i[7],  i[5] - i[10],  i[21] - i[13], i[6] - i[18], i[8] - i[15], i[20] - i[16] };
+    float a[] = {i[11] + i[12], i[23] + i[14], i[4] + i[2],   i[1] + i[22], i[3] + i[19], i[9] + i[0],
+                 i[17] + i[7],  i[5] + i[10],  i[21] + i[13], i[6] + i[18], i[8] + i[15], i[20] + i[16]};
+    float b[] = {i[11] - i[12], i[23] - i[14], i[4] - i[2],   i[1] - i[22], i[3] - i[19], i[9] - i[0],
+                 i[17] - i[7],  i[5] - i[10],  i[21] - i[13], i[6] - i[18], i[8] - i[15], i[20] - i[16]};
 
-    float c[] = { a[0] + a[1], a[0] + b[1], b[0] + a[1], b[0] + b[1], a[0] - a[1], a[0] - b[1], b[0] - a[1], b[0] - b[1] };
-    float d[] = { a[2] + a[3], a[2] + b[3], b[2] + a[3], b[2] + b[3], a[2] - a[3], a[2] - b[3], b[2] - a[3], b[2] - b[3] };
-    float e[] = { a[4] + a[5], a[4] + b[5], b[4] + a[5], b[4] + b[5], a[4] - a[5], a[4] - b[5], b[4] - a[5], b[4] - b[5] };
-    float f[] = { a[6] + a[7], a[6] + b[7], b[6] + a[7], b[6] + b[7], a[6] - a[7], a[6] - b[7], b[6] - a[7], b[6] - b[7] };
-    float g[] = { a[8] + a[9], a[8] + b[9], b[8] + a[9], b[8] + b[9], a[8] - a[9], a[8] - b[9], b[8] - a[9], b[8] - b[9] };
-    float h[] = { a[10] + a[11], a[10] + b[11], b[10] + a[11], b[10] + b[11],
-                  a[10] - a[11], a[10] - b[11], b[10] - a[11], b[10] - b[11] };
+    float c[] = {a[0] + a[1], a[0] + b[1], b[0] + a[1], b[0] + b[1], a[0] - a[1], a[0] - b[1], b[0] - a[1], b[0] - b[1]};
+    float d[] = {a[2] + a[3], a[2] + b[3], b[2] + a[3], b[2] + b[3], a[2] - a[3], a[2] - b[3], b[2] - a[3], b[2] - b[3]};
+    float e[] = {a[4] + a[5], a[4] + b[5], b[4] + a[5], b[4] + b[5], a[4] - a[5], a[4] - b[5], b[4] - a[5], b[4] - b[5]};
+    float f[] = {a[6] + a[7], a[6] + b[7], b[6] + a[7], b[6] + b[7], a[6] - a[7], a[6] - b[7], b[6] - a[7], b[6] - b[7]};
+    float g[] = {a[8] + a[9], a[8] + b[9], b[8] + a[9], b[8] + b[9], a[8] - a[9], a[8] - b[9], b[8] - a[9], b[8] - b[9]};
+    float h[] = {a[10] + a[11], a[10] + b[11], b[10] + a[11], b[10] + b[11], a[10] - a[11], a[10] - b[11], b[10] - a[11], b[10] - b[11]};
 
     o[0] = fact * (+c[0] + d[0] + e[0] + f[0] + g[0] + h[0]);
     o[1] = fact * (-c[2] - d[5] + e[7] + f[7] + g[3] + h[0]);
@@ -172,7 +163,6 @@ inline void Hadamard<24>(const float i[24], float o[24])
     o[22] = fact * (-c[0] + d[3] - e[7] - f[7] + g[2] + h[1]);
     o[23] = fact * (-c[0] - d[3] - e[4] - f[4] - g[3] + h[0]);
 }
-} // namespace reverb_matrices
-} // namespace muse::audio::fx
+}} // namespace muse::audio::fx::reverb_matrices
 
 #endif // MUSE_AUDIO_REVERBMATRICES_H

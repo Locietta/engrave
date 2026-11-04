@@ -31,8 +31,7 @@ namespace mu::engraving {
 //    locates the key sig currently in effect at tick
 //---------------------------------------------------------
 
-KeySigEvent KeyList::key(int tick) const
-{
+KeySigEvent KeyList::key(int tick) const {
     KeySigEvent ke;
     ke.setConcertKey(Key::C);
 
@@ -50,8 +49,7 @@ KeySigEvent KeyList::key(int tick) const
 //   setKey
 //---------------------------------------------------------
 
-void KeyList::setKey(int tick, KeySigEvent k)
-{
+void KeyList::setKey(int tick, KeySigEvent k) {
     auto i = find(tick);
     if (i == end()) {
         insert(std::pair<int, KeySigEvent>(tick, k));
@@ -67,8 +65,7 @@ void KeyList::setKey(int tick, KeySigEvent k)
 //    return -1, if no such a key sig
 //---------------------------------------------------------
 
-int KeyList::nextKeyTick(int tick) const
-{
+int KeyList::nextKeyTick(int tick) const {
     if (empty()) {
         return -1;
     }
@@ -82,8 +79,7 @@ int KeyList::nextKeyTick(int tick) const
 //    returns the key before the current key for tick
 //---------------------------------------------------------
 
-KeySigEvent KeyList::prevKey(int tick) const
-{
+KeySigEvent KeyList::prevKey(int tick) const {
     KeySigEvent kc;
     kc.setConcertKey(Key::C);
 
@@ -108,8 +104,7 @@ KeySigEvent KeyList::prevKey(int tick) const
 //    in effect at tick
 //---------------------------------------------------------
 
-int KeyList::currentKeyTick(int tick) const
-{
+int KeyList::currentKeyTick(int tick) const {
     if (empty()) {
         return 0;
     }
@@ -120,4 +115,4 @@ int KeyList::currentKeyTick(int tick) const
     --i;
     return i->first;
 }
-}
+} // namespace mu::engraving

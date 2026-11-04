@@ -37,8 +37,7 @@ using namespace mu::engraving::rendering::score;
 //   layoutArpeggio2
 //    called after layout of page
 
-void ArpeggioLayout::layoutArpeggio2(Arpeggio* item, LayoutContext& ctx)
-{
+void ArpeggioLayout::layoutArpeggio2(Arpeggio *item, LayoutContext &ctx) {
     if (!item) {
         return;
     }
@@ -55,8 +54,7 @@ void ArpeggioLayout::layoutArpeggio2(Arpeggio* item, LayoutContext& ctx)
 // for this area on all arpeggios.
 //
 
-double ArpeggioLayout::insetTop(const Arpeggio* item, const Chord* c)
-{
+double ArpeggioLayout::insetTop(const Arpeggio *item, const Chord *c) {
     double top = c->upNote()->y() - c->upNote()->height() / 2;
 
     // use wiggle width, not height, since it's rotated 90 degrees
@@ -69,8 +67,7 @@ double ArpeggioLayout::insetTop(const Arpeggio* item, const Chord* c)
     return top;
 }
 
-double ArpeggioLayout::insetBottom(const Arpeggio* item, const Chord* c)
-{
+double ArpeggioLayout::insetBottom(const Arpeggio *item, const Chord *c) {
     double bottom = c->downNote()->y() + c->downNote()->height() / 2;
 
     // use wiggle width, not height, since it's rotated 90 degrees
@@ -83,38 +80,32 @@ double ArpeggioLayout::insetBottom(const Arpeggio* item, const Chord* c)
     return bottom;
 }
 
-double ArpeggioLayout::insetWidth(const Arpeggio* item)
-{
+double ArpeggioLayout::insetWidth(const Arpeggio *item) {
     double lineWidth = item->style().styleAbsolute(item->isChordBracket() ? Sid::chordBracketLineWidth : Sid::arpeggioLineWidth);
     switch (item->arpeggioType()) {
-    case ArpeggioType::NORMAL:
-    {
-        return 0.0;
-    }
+        case ArpeggioType::NORMAL: {
+            return 0.0;
+        }
 
-    case ArpeggioType::UP:
-    case ArpeggioType::DOWN:
-    {
-        // use wiggle height, not width, since it's rotated 90 degrees
-        return (item->width() - item->symBbox(SymId::wiggleArpeggiatoUp).height()) / 2;
-    }
+        case ArpeggioType::UP:
+        case ArpeggioType::DOWN: {
+            // use wiggle height, not width, since it's rotated 90 degrees
+            return (item->width() - item->symBbox(SymId::wiggleArpeggiatoUp).height()) / 2;
+        }
 
-    case ArpeggioType::UP_STRAIGHT:
-    case ArpeggioType::DOWN_STRAIGHT:
-    {
-        return (item->width() - lineWidth) / 2;
-    }
+        case ArpeggioType::UP_STRAIGHT:
+        case ArpeggioType::DOWN_STRAIGHT: {
+            return (item->width() - lineWidth) / 2;
+        }
 
-    case ArpeggioType::BRACKET:
-    {
-        return item->width() - lineWidth / 2;
-    }
+        case ArpeggioType::BRACKET: {
+            return item->width() - lineWidth / 2;
+        }
     }
     return 0.0;
 }
 
-void ArpeggioLayout::clearAccidentals(Arpeggio* item, LayoutContext& ctx)
-{
+void ArpeggioLayout::clearAccidentals(Arpeggio *item, LayoutContext &ctx) {
     //   This function finds collisions with accidentals outside of an arpeggio's span
     //   Assumptions are made to deal with cross staff height, as we don't know this yet.
     //   Once a chord is found, its shape is stripped down to only accidentals which collide
@@ -124,13 +115,13 @@ void ArpeggioLayout::clearAccidentals(Arpeggio* item, LayoutContext& ctx)
         return;
     }
 
-    const Segment* seg = item->chord()->segment();
-    const EngravingItem* endEl = seg->element(item->endTrack());
-    const Chord* endChord = endEl && endEl->isChord() ? toChord(endEl) : item->chord();
+    const Segment *seg = item->chord()->segment();
+    const EngravingItem *endEl = seg->element(item->endTrack());
+    const Chord *endChord = endEl && endEl->isChord() ? toChord(endEl) : item->chord();
 
-    const Part* part = item->part();
+    const Part *part = item->part();
     const TrackRange trackRange = part->trackRange();
-    const PaddingTable& paddingTable = item->score()->paddingTables().horizontalPaddingTable();
+    const PaddingTable &paddingTable = item->score()->paddingTables().horizontalPaddingTable();
 
     double arpeggioAccidentalDistance = paddingTable.at(ElementType::ARPEGGIO).at(ElementType::ACCIDENTAL) * item->mag();
     double arpeggioLedgerDistance = paddingTable.at(ElementType::ARPEGGIO).at(ElementType::LEDGER_LINE) * item->mag();
@@ -140,20 +131,20 @@ void ArpeggioLayout::clearAccidentals(Arpeggio* item, LayoutContext& ctx)
     double largestOverlap = 0.0;
 
     for (track_idx_t track = trackRange.startTrack; track < trackRange.endTrack; ++track) {
-        EngravingItem* e = seg->element(track);
+        EngravingItem *e = seg->element(track);
         if (!e || !e->isChord()) {
             continue;
         }
 
-        Chord* chord = toChord(e);
+        Chord *chord = toChord(e);
         // Only check chords the arpeggio doesn't span on staves the arpeggios span
         // We already calculated the gap between chords it does span in ChordLayout::layoutPitched
-        bool aboveStart
-            = std::make_pair(chord->vStaffIdx(), chord->downLine()) < std::make_pair(item->vStaffIdx(), item->chord()->upLine());
+        bool aboveStart =
+            std::make_pair(chord->vStaffIdx(), chord->downLine()) < std::make_pair(item->vStaffIdx(), item->chord()->upLine());
         bool belowEnd = std::make_pair(chord->vStaffIdx(), chord->upLine()) > std::make_pair(endChord->vStaffIdx(), endChord->downLine());
 
-        if ((chord->spanArpeggio() == item && !(aboveStart || belowEnd)) || chord->vStaffIdx() < item->vStaffIdx()
-            || chord->vStaffIdx() > endChord->vStaffIdx()) {
+        if ((chord->spanArpeggio() == item && !(aboveStart || belowEnd)) || chord->vStaffIdx() < item->vStaffIdx() ||
+            chord->vStaffIdx() > endChord->vStaffIdx()) {
             continue;
         }
 
@@ -165,8 +156,8 @@ void ArpeggioLayout::clearAccidentals(Arpeggio* item, LayoutContext& ctx)
         staff_idx_t staffIdx = chord->vStaffIdx();
         if (staffIdx == item->chord()->vStaffIdx() && item->crossStaff()) {
             // Arpeggio doesn't end on this staff, so extend downwards
-            curArpShape.addBBox(RectF(curArpShape.bbox().bottomLeft().x(), curArpShape.bbox().bottomLeft().y(),
-                                      curArpShape.bbox().width(), ARBITRARY_ARPEGGIO_LENGTH));
+            curArpShape.addBBox(RectF(curArpShape.bbox().bottomLeft().x(), curArpShape.bbox().bottomLeft().y(), curArpShape.bbox().width(),
+                                      ARBITRARY_ARPEGGIO_LENGTH));
         } else if (staffIdx == endChord->vStaffIdx() && item->crossStaff()) {
             // Arpeggio doesn't start on this staff so move to last note and extend upwards
             curArpShape.translate(PointF(0.0, endChord->downNote()->pagePos().y() - item->pagePos().y()));
@@ -177,9 +168,8 @@ void ArpeggioLayout::clearAccidentals(Arpeggio* item, LayoutContext& ctx)
         Shape chordShape = chord->shape();
         chordShape.translate(chord->pagePos());
         // Remove any element which isn't an accidental the arpeggio intersects
-        chordShape.remove_if([curArpShape, arpeggioAccidentalDistance, arpeggioLedgerDistance](ShapeElement& shapeElement) {
-            if (!shapeElement.item()
-                || !(shapeElement.item()->isAccidental() || shapeElement.item()->isLedgerLine())) {
+        chordShape.remove_if([curArpShape, arpeggioAccidentalDistance, arpeggioLedgerDistance](ShapeElement &shapeElement) {
+            if (!shapeElement.item() || !(shapeElement.item()->isAccidental() || shapeElement.item()->isLedgerLine())) {
                 return true;
             }
             if (shapeElement.item()->isAccidental()) {
@@ -211,17 +201,16 @@ void ArpeggioLayout::clearAccidentals(Arpeggio* item, LayoutContext& ctx)
     }
 }
 
-double ArpeggioLayout::insetDistance(const Arpeggio* item, const LayoutContext& ctx, double mag_, const Chord* chord)
-{
+double ArpeggioLayout::insetDistance(const Arpeggio *item, const LayoutContext &ctx, double mag_, const Chord *chord) {
     if (!item || !chord) {
         return 0.0;
     }
 
-    std::vector<Accidental*> _accidentals;
+    std::vector<Accidental *> _accidentals;
 
     // generate list of accidentals if none provided
-    for (Note* note : chord->notes()) {
-        Accidental* accidental = note->accidental();
+    for (Note *note : chord->notes()) {
+        Accidental *accidental = note->accidental();
         if (accidental && accidental->visible()) {
             _accidentals.push_back(accidental);
         }
@@ -234,9 +223,8 @@ double ArpeggioLayout::insetDistance(const Arpeggio* item, const LayoutContext& 
     return insetDistance(item, ctx, mag_, chord, _accidentals);
 }
 
-double ArpeggioLayout::insetDistance(const Arpeggio* item, const LayoutContext& ctx, double mag_, const Chord* chord,
-                                     const std::vector<Accidental*>& accidentals)
-{
+double ArpeggioLayout::insetDistance(const Arpeggio *item, const LayoutContext &ctx, double mag_, const Chord *chord,
+                                     const std::vector<Accidental *> &accidentals) {
     if (!item || !chord) {
         return 0.0;
     }
@@ -247,10 +235,10 @@ double ArpeggioLayout::insetDistance(const Arpeggio* item, const LayoutContext& 
 
     // Only be concerned about the top/bottom of an arpeggio line if this is the start/end chord
 
-    const Segment* seg = item->chord()->segment();
-    Chord* endChord = item->chord();
-    const PaddingTable& paddingTable = item->score()->paddingTables().horizontalPaddingTable();
-    if (EngravingItem* e = seg->element(item->endTrack())) {
+    const Segment *seg = item->chord()->segment();
+    Chord *endChord = item->chord();
+    const PaddingTable &paddingTable = item->score()->paddingTables().horizontalPaddingTable();
+    if (EngravingItem *e = seg->element(item->endTrack())) {
         endChord = e->isChord() ? toChord(e) : endChord;
     }
     bool arpStartStave = chord->vStaffIdx() == item->vStaffIdx();
@@ -260,15 +248,11 @@ double ArpeggioLayout::insetDistance(const Arpeggio* item, const LayoutContext& 
     double arpeggioBottom = arpEndStave ? insetBottom(item, endChord) * mag_ : ARBITRARY_ARPEGGIO_LENGTH;
 
     ArpeggioType type = item->arpeggioType();
-    bool hasTopArrow = type == ArpeggioType::UP
-                       || type == ArpeggioType::UP_STRAIGHT
-                       || type == ArpeggioType::BRACKET;
-    bool hasBottomArrow = type == ArpeggioType::DOWN
-                          || type == ArpeggioType::DOWN_STRAIGHT
-                          || type == ArpeggioType::BRACKET;
+    bool hasTopArrow = type == ArpeggioType::UP || type == ArpeggioType::UP_STRAIGHT || type == ArpeggioType::BRACKET;
+    bool hasBottomArrow = type == ArpeggioType::DOWN || type == ArpeggioType::DOWN_STRAIGHT || type == ArpeggioType::BRACKET;
 
-    const Accidental* furthestAccidental = nullptr;
-    for (const Accidental* accidental : accidentals) {
+    const Accidental *furthestAccidental = nullptr;
+    for (const Accidental *accidental : accidentals) {
         if (furthestAccidental) {
             bool currentIsFurtherX = accidental->x() < furthestAccidental->x();
             bool currentIsSameX = accidental->x() == furthestAccidental->x();
@@ -286,12 +270,11 @@ double ArpeggioLayout::insetDistance(const Arpeggio* item, const LayoutContext& 
         }
     }
 
-    IF_ASSERT_FAILED(furthestAccidental) {
-        return 0.0;
-    }
+    IF_ASSERT_FAILED(furthestAccidental) { return 0.0; }
 
-    double maximumInset = (paddingTable.at(ElementType::ARPEGGIO).at(ElementType::ACCIDENTAL)
-                           - ctx.conf().styleAbsolute(Sid::arpeggioAccidentalDistanceMin)) * mag_;
+    double maximumInset = (paddingTable.at(ElementType::ARPEGGIO).at(ElementType::ACCIDENTAL) -
+                           ctx.conf().styleAbsolute(Sid::arpeggioAccidentalDistanceMin)) *
+                          mag_;
 
     RectF bbox = item->symBbox(furthestAccidental->symId());
     double center = furthestAccidental->note()->pos().y() * mag_;
@@ -307,13 +290,12 @@ double ArpeggioLayout::insetDistance(const Arpeggio* item, const LayoutContext& 
     return insetWidth(item);
 }
 
-double ArpeggioLayout::computeHeight(const Arpeggio* item)
-{
-    Chord* chord = item->chord();
+double ArpeggioLayout::computeHeight(const Arpeggio *item) {
+    Chord *chord = item->chord();
     double y = chord->upNote()->pagePos().y() - chord->upNote()->headHeight() * .5;
 
-    Note* downNote = chord->downNote();
-    EngravingItem* e = chord->segment()->element(item->track() + item->span() - 1);
+    Note *downNote = chord->downNote();
+    EngravingItem *e = chord->segment()->element(item->track() + item->span() - 1);
     if (e && e->isChord()) {
         downNote = toChord(e)->downNote();
     }
@@ -321,55 +303,53 @@ double ArpeggioLayout::computeHeight(const Arpeggio* item)
     return h;
 }
 
-double ArpeggioLayout::calcTop(const Arpeggio* item, const LayoutConfiguration& conf)
-{
+double ArpeggioLayout::calcTop(const Arpeggio *item, const LayoutConfiguration &conf) {
     double top = -item->userLen1();
     switch (item->arpeggioType()) {
-    case ArpeggioType::BRACKET: {
-        double lineWidth = conf.styleAbsolute(item->isChordBracket() ? Sid::chordBracketLineWidth : Sid::arpeggioLineWidth);
-        return top - lineWidth / 2.0;
-    }
-    case ArpeggioType::NORMAL:
-    case ArpeggioType::UP:
-    case ArpeggioType::DOWN: {
-        // if the top is in the staff on a space, move it up
-        // if the bottom note is on a line, the distance is 0.25 spaces
-        // if the bottom note is on a space, the distance is 0.5 spaces
-        int topNoteLine = item->chord()->upNote()->line();
-        int lines = item->staff()->lines(item->tick());
-        int bottomLine = (lines - 1) * 2;
-        if (topNoteLine <= 0 || topNoteLine % 2 == 0 || topNoteLine >= bottomLine) {
-            return top;
+        case ArpeggioType::BRACKET: {
+            double lineWidth = conf.styleAbsolute(item->isChordBracket() ? Sid::chordBracketLineWidth : Sid::arpeggioLineWidth);
+            return top - lineWidth / 2.0;
         }
-        int downNoteLine = item->chord()->downNote()->line();
-        if (downNoteLine % 2 == 1 && downNoteLine < bottomLine) {
-            return top - 0.4 * item->spatium();
+        case ArpeggioType::NORMAL:
+        case ArpeggioType::UP:
+        case ArpeggioType::DOWN: {
+            // if the top is in the staff on a space, move it up
+            // if the bottom note is on a line, the distance is 0.25 spaces
+            // if the bottom note is on a space, the distance is 0.5 spaces
+            int topNoteLine = item->chord()->upNote()->line();
+            int lines = item->staff()->lines(item->tick());
+            int bottomLine = (lines - 1) * 2;
+            if (topNoteLine <= 0 || topNoteLine % 2 == 0 || topNoteLine >= bottomLine) {
+                return top;
+            }
+            int downNoteLine = item->chord()->downNote()->line();
+            if (downNoteLine % 2 == 1 && downNoteLine < bottomLine) {
+                return top - 0.4 * item->spatium();
+            }
+            return top - 0.25 * item->spatium();
         }
-        return top - 0.25 * item->spatium();
-    }
-    default: {
-        return top - item->spatium() / 4;
-    }
+        default: {
+            return top - item->spatium() / 4;
+        }
     }
 }
 
-double ArpeggioLayout::calcBottom(const Arpeggio* item, double arpeggioHeight, const LayoutConfiguration& conf)
-{
+double ArpeggioLayout::calcBottom(const Arpeggio *item, double arpeggioHeight, const LayoutConfiguration &conf) {
     double top = -item->userLen1();
     double bottom = arpeggioHeight + item->userLen2();
 
     switch (item->arpeggioType()) {
-    case ArpeggioType::BRACKET: {
-        double lineWidth = conf.styleAbsolute(item->isChordBracket() ? Sid::chordBracketLineWidth : Sid::arpeggioLineWidth);
-        return bottom - top + lineWidth;
-    }
-    case ArpeggioType::NORMAL:
-    case ArpeggioType::UP:
-    case ArpeggioType::DOWN: {
-        return bottom;
-    }
-    default: {
-        return bottom - top + item->spatium() / 2;
-    }
+        case ArpeggioType::BRACKET: {
+            double lineWidth = conf.styleAbsolute(item->isChordBracket() ? Sid::chordBracketLineWidth : Sid::arpeggioLineWidth);
+            return bottom - top + lineWidth;
+        }
+        case ArpeggioType::NORMAL:
+        case ArpeggioType::UP:
+        case ArpeggioType::DOWN: {
+            return bottom;
+        }
+        default: {
+            return bottom - top + item->spatium() / 2;
+        }
     }
 }

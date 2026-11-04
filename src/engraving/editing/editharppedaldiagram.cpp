@@ -36,8 +36,7 @@ using namespace mu::engraving;
 //   ChangeHarpPedalState
 //---------------------------------------------------------
 
-void ChangeHarpPedalState::flip()
-{
+void ChangeHarpPedalState::flip() {
     std::array<PedalPosition, HARP_STRING_NO> f_state = diagram->getPedalState();
     if (f_state == pedalState) {
         return;
@@ -49,15 +48,14 @@ void ChangeHarpPedalState::flip()
     diagram->triggerLayout();
 }
 
-std::vector<EngravingObject*> ChangeHarpPedalState::objectItems() const
-{
-    Part* part = diagram->originPart();
-    std::vector<EngravingObject*> objs{ diagram };
+std::vector<EngravingObject *> ChangeHarpPedalState::objectItems() const {
+    Part *part = diagram->originPart();
+    std::vector<EngravingObject *> objs{diagram};
     if (!part) {
         return objs;
     }
 
-    HarpPedalDiagram* nextDiagram = part->nextHarpDiagram(diagram->tick());
+    HarpPedalDiagram *nextDiagram = part->nextHarpDiagram(diagram->tick());
     if (nextDiagram) {
         objs.push_back(nextDiagram);
     } else {
@@ -70,8 +68,7 @@ std::vector<EngravingObject*> ChangeHarpPedalState::objectItems() const
 //   ChangeSingleHarpPedal
 //---------------------------------------------------------
 
-void ChangeSingleHarpPedal::flip()
-{
+void ChangeSingleHarpPedal::flip() {
     HarpStringType f_type = type;
     PedalPosition f_pos = diagram->getPedalState()[type];
     if (f_pos == pos) {
@@ -85,15 +82,14 @@ void ChangeSingleHarpPedal::flip()
     diagram->triggerLayout();
 }
 
-std::vector<EngravingObject*> ChangeSingleHarpPedal::objectItems() const
-{
-    Part* part = diagram->originPart();
-    std::vector<EngravingObject*> objs{ diagram };
+std::vector<EngravingObject *> ChangeSingleHarpPedal::objectItems() const {
+    Part *part = diagram->originPart();
+    std::vector<EngravingObject *> objs{diagram};
     if (!part) {
         return objs;
     }
 
-    HarpPedalDiagram* nextDiagram = part->nextHarpDiagram(diagram->tick());
+    HarpPedalDiagram *nextDiagram = part->nextHarpDiagram(diagram->tick());
     if (nextDiagram) {
         objs.push_back(nextDiagram);
     } else {

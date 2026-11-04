@@ -27,18 +27,17 @@
 #include "engraving/types/types.h"
 
 namespace mu::engraving {
-class IEngravingConfiguration
-{
+class IEngravingConfiguration {
 public:
     virtual ~IEngravingConfiguration() = default;
 
     virtual muse::io::path_t appDataPath() const = 0;
 
     virtual muse::io::path_t defaultStyleFilePath() const = 0;
-    virtual void setDefaultStyleFilePath(const muse::io::path_t& path) = 0;
+    virtual void setDefaultStyleFilePath(const muse::io::path_t &path) = 0;
 
     virtual muse::io::path_t partStyleFilePath() const = 0;
-    virtual void setPartStyleFilePath(const muse::io::path_t& path) = 0;
+    virtual void setPartStyleFilePath(const muse::io::path_t &path) = 0;
 
     virtual SizeF defaultPageSize() const = 0;
 
@@ -103,26 +102,15 @@ public:
         bool showGapRests = false;
         bool showOriginAndCombinedStaves = false;
 
-        bool anyEnabled() const
-        {
-            return showElementBoundingRects
-                   || colorElementShapes
-                   || showSegmentShapes
-                   || colorSegmentShapes
-                   || showSkylines
-                   || showSystemBoundingRects
-                   || showElementMasks
-                   || showLineAttachPoints
-                   || markEmptyStaffVisibilityOverrides
-                   || markCorruptedMeasures
-                   || showGapRests
-                   || showOriginAndCombinedStaves
-            ;
+        bool anyEnabled() const {
+            return showElementBoundingRects || colorElementShapes || showSegmentShapes || colorSegmentShapes || showSkylines ||
+                   showSystemBoundingRects || showElementMasks || showLineAttachPoints || markEmptyStaffVisibilityOverrides ||
+                   markCorruptedMeasures || showGapRests || showOriginAndCombinedStaves;
         }
     };
 
-    virtual const DebuggingOptions& debuggingOptions() const = 0;
-    virtual void setDebuggingOptions(const DebuggingOptions& options) = 0;
+    virtual const DebuggingOptions &debuggingOptions() const = 0;
+    virtual void setDebuggingOptions(const DebuggingOptions &options) = 0;
 
     virtual bool allowReadingImagesFromOutsideMscz() const = 0;
 
@@ -137,4 +125,4 @@ public:
     virtual void setPreferSameStringForTranspose(bool preferSameString) = 0;
     virtual bool keepDeadNotesUnchangedOnTranspose() const = 0;
 };
-}
+} // namespace mu::engraving

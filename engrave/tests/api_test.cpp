@@ -42,43 +42,38 @@ std::filesystem::path g_resources;
 std::unique_ptr<engrave::Engine> g_engine;
 
 std::vector<std::byte> bytes_of(std::string_view text) {
-    const auto* data = reinterpret_cast<const std::byte*>(text.data());
+    const auto *data = reinterpret_cast<const std::byte *>(text.data());
     return {data, data + text.size()};
 }
 
-std::string text_of(const std::vector<std::byte>& bytes) {
-    return {reinterpret_cast<const char*>(bytes.data()), bytes.size()};
-}
+std::string text_of(const std::vector<std::byte> &bytes) { return {reinterpret_cast<const char *>(bytes.data()), bytes.size()}; }
 
-std::string read_file(const std::filesystem::path& path) {
+std::string read_file(const std::filesystem::path &path) {
     std::ifstream in(path, std::ios::binary);
     return {std::istreambuf_iterator<char>(in), {}};
 }
 
-const std::filesystem::path& gp_data() {
-    static const std::filesystem::path dir =
-        std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "src/importexport/guitarpro/tests/data";
+const std::filesystem::path &gp_data() {
+    static const std::filesystem::path dir = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "src/importexport/guitarpro/tests/data";
     return dir;
 }
 
-std::unique_ptr<engrave::Document> treble_clef(const std::string& title = {}) {
+std::unique_ptr<engrave::Document> treble_clef(const std::string &title = {}) {
     auto document = g_engine->create_document({.template_id = "Treble_Clef", .title = title});
     EXPECT_TRUE(document) << document.error().message;
     return document ? std::move(*document) : nullptr;
 }
 
-std::string exported(engrave::Document& document, Format format) {
+std::string exported(engrave::Document &document, Format format) {
     auto bytes = document.export_score({.format = format});
     EXPECT_TRUE(bytes) << bytes.error().message;
     return bytes ? text_of(*bytes) : std::string{};
 }
 
 TEST(Values, FractionsCompareByValueAndKeepWrittenTerms) {
-    std::vector<F> fractions{{1, 2}, {1, 4}, {-1, 2}, {2, 4},
-                             {max_fraction_term, 1}, {min_fraction_term, 1}, {0, max_fraction_term}};
+    std::vector<F> fractions{{1, 2}, {1, 4}, {-1, 2}, {2, 4}, {max_fraction_term, 1}, {min_fraction_term, 1}, {0, max_fraction_term}};
     std::stable_sort(fractions.begin(), fractions.end());
-    const std::vector<F> expected{{min_fraction_term, 1}, {-1, 2}, {0, 1}, {1, 4},
-                                  {1, 2}, {2, 4}, {max_fraction_term, 1}};
+    const std::vector<F> expected{{min_fraction_term, 1}, {-1, 2}, {0, 1}, {1, 4}, {1, 2}, {2, 4}, {max_fraction_term, 1}};
     EXPECT_EQ(fractions, expected);
     EXPECT_EQ(fractions[4].num, 1);
     EXPECT_EQ(fractions[4].den, 2);
@@ -100,8 +95,8 @@ TEST(Open, RejectsPreMuseScore4) {
         auto result = g_engine->open(xml, {.format = Format::Mscx});
         ASSERT_FALSE(result) << version;
         EXPECT_EQ(result.error().code, ErrorCode::Unsupported);
-        EXPECT_NE(result.error().message.find("written by MuseScore " + version
-                  + "; scores from before MuseScore 4.6 are not supported"), std::string::npos);
+        EXPECT_NE(result.error().message.find("written by MuseScore " + version + "; scores from before MuseScore 4.6 are not supported"),
+                  std::string::npos);
     }
 }
 
@@ -109,8 +104,7 @@ TEST(Capabilities, ListsFormatsAndVersion) {
     const auto capabilities = g_engine->capabilities();
     EXPECT_FALSE(capabilities.engine_version.empty());
     EXPECT_EQ(capabilities.import_formats.size(), 7u);
-    EXPECT_EQ(capabilities.export_formats,
-              (std::vector<Format>{Format::Mscx, Format::Mscz, Format::MusicXml, Format::Mxl, Format::Midi}));
+    EXPECT_EQ(capabilities.export_formats, (std::vector<Format>{Format::Mscx, Format::Mscz, Format::MusicXml, Format::Mxl, Format::Midi}));
 }
 
 TEST(Templates, ListsCategoriesJsonInOrder) {
@@ -120,7 +114,7 @@ TEST(Templates, ListsCategoriesJsonInOrder) {
     EXPECT_EQ(templates.front().title, "Treble Clef");
     EXPECT_EQ(templates.front().category, "General");
     std::set<std::string> ids;
-    for (const auto& info : templates) {
+    for (const auto &info : templates) {
         EXPECT_TRUE(ids.insert(info.id).second) << "duplicate template id " << info.id;
         EXPECT_TRUE(std::filesystem::is_regular_file(info.path)) << info.path;
         EXPECT_FALSE(info.category.empty());
@@ -198,13 +192,12 @@ TEST(Sniff, DetectsEveryImportFormat) {
     EXPECT_EQ(engrave::sniff_format(exported(*document, Format::MusicXml)), Format::MusicXml);
     EXPECT_EQ(engrave::sniff_format(exported(*document, Format::Midi)), Format::Midi);
     EXPECT_EQ(engrave::sniff_format(read_file(g_engine->templates().front().path)), Format::Mscx);
-    for (const char* name : {"bend.gp3", "bend.gp4", "heavy-accent.gp5", "sforzato.gpx", "sforzato.gp", "ptb-baseline.ptb"})
+    for (const char *name : {"bend.gp3", "bend.gp4", "heavy-accent.gp5", "sforzato.gpx", "sforzato.gp", "ptb-baseline.ptb"})
         EXPECT_EQ(engrave::sniff_format(read_file(gp_data() / name)), Format::GuitarPro) << name;
 }
 
 TEST(Sniff, LooksPastByteOrderMarkAndProlog) {
-    EXPECT_EQ(engrave::sniff_format("\xEF\xBB\xBF\n<?xml version=\"1.0\"?>\n<!-- c -->\n<museScore version=\"5.00\"/>"),
-              Format::Mscx);
+    EXPECT_EQ(engrave::sniff_format("\xEF\xBB\xBF\n<?xml version=\"1.0\"?>\n<!-- c -->\n<museScore version=\"5.00\"/>"), Format::Mscx);
     EXPECT_EQ(engrave::sniff_format("<?xml version=\"1.0\"?>\n<!DOCTYPE score-partwise PUBLIC \"-//Recordare//DTD MusicXML 4.0 "
                                     "Partwise//EN\" \"http://www.musicxml.org/dtds/partwise.dtd\">\n<score-timewise/>"),
               Format::MusicXml);
@@ -216,7 +209,10 @@ TEST(Sniff, RejectsUnknownContent) {
     EXPECT_EQ(engrave::sniff_format("<html><body/></html>"), std::nullopt);
     EXPECT_EQ(engrave::sniff_format("<museScore"), std::nullopt) << "malformed XML";
     EXPECT_EQ(engrave::sniff_format(std::string("PK\x03\x04", 4) + "not a zip"), std::nullopt);
-    EXPECT_EQ(engrave::sniff_format("\x10" "FICHIER GUITAR"), Format::GuitarPro) << "the magic alone decides";
+    EXPECT_EQ(engrave::sniff_format("\x10"
+                                    "FICHIER GUITAR"),
+              Format::GuitarPro)
+        << "the magic alone decides";
 }
 
 TEST(Sniff, MapsExtensions) {
@@ -239,7 +235,7 @@ TEST(Open, ReadsEveryImportFormatAtRevisionOne) {
     }
     auto mscx = g_engine->open(g_engine->templates().front().path);
     ASSERT_TRUE(mscx) << mscx.error().message;
-    for (const char* name : {"bend.gp3", "heavy-accent.gp5", "sforzato.gpx", "sforzato.gp", "ptb-baseline.ptb"}) {
+    for (const char *name : {"bend.gp3", "heavy-accent.gp5", "sforzato.gpx", "sforzato.gp", "ptb-baseline.ptb"}) {
         auto document = g_engine->open(gp_data() / name);
         EXPECT_TRUE(document) << name << ": " << document.error().message;
     }
@@ -263,7 +259,7 @@ TEST(Open, FallsBackToTheExtension) {
 }
 
 TEST(Open, ReportsCallerErrors) {
-    const auto expect_error = [](const engrave::Result<std::unique_ptr<engrave::Document>>& result, ErrorCode code) {
+    const auto expect_error = [](const engrave::Result<std::unique_ptr<engrave::Document>> &result, ErrorCode code) {
         ASSERT_FALSE(result);
         EXPECT_EQ(result.error().code, code) << result.error().message;
         EXPECT_FALSE(result.error().message.empty());
@@ -280,12 +276,10 @@ TEST(Open, ReportsCallerErrors) {
     expect_error(g_engine->open(g_resources), ErrorCode::InvalidArgument);
 }
 
-TEST(Contract, SecondEngineAborts) {
-    EXPECT_DEATH((void)engrave::Engine::create({.resources = g_resources}), "one Engine per process");
-}
+TEST(Contract, SecondEngineAborts) { EXPECT_DEATH((void) engrave::Engine::create({.resources = g_resources}), "one Engine per process"); }
 
 TEST(Contract, CallFromAnotherThreadAborts) {
-    EXPECT_DEATH(std::thread([] { (void)g_engine->templates(); }).join(), "thread other than");
+    EXPECT_DEATH(std::thread([] { (void) g_engine->templates(); }).join(), "thread other than");
 }
 
 TEST(Contract, EngineDestroyedBeforeItsDocumentsAborts) {
@@ -299,7 +293,7 @@ TEST(Contract, EngineDestroyedBeforeItsDocumentsAborts) {
 
 } // namespace
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);
     GTEST_FLAG_SET(death_test_style, "threadsafe");
     for (int i = 1; i < argc; ++i) {
@@ -322,24 +316,39 @@ int main(int argc, char** argv) {
     g_engine.reset();
     return result;
 }
+
 TEST(Open, UnicodeFilenameLyricsAndNonBmpRoundTrip) {
     const std::string text = "\xe9\x9f\xb3\xe6\xa5\xbd \xf0\x9d\x84\x9e \xf0\x9f\x98\x80";
     const std::string xml = "<?xml version=\"1.0\" encoding=\"utf-8\"?><score-partwise version=\"4.0\">"
-        "<part-list><score-part id=\"P1\"><part-name>Piano</part-name></score-part></part-list>"
-        "<part id=\"P1\"><measure number=\"1\"><attributes><divisions>1</divisions>"
-        "<time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef>"
-        "</attributes><note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration>"
-        "<type>whole</type><lyric><text>" + text + "</text></lyric></note></measure></part></score-partwise>";
+                            "<part-list><score-part id=\"P1\"><part-name>Piano</part-name></score-part></part-list>"
+                            "<part id=\"P1\"><measure number=\"1\"><attributes><divisions>1</divisions>"
+                            "<time><beats>4</beats><beat-type>4</beat-type></time><clef><sign>G</sign><line>2</line></clef>"
+                            "</attributes><note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration>"
+                            "<type>whole</type><lyric><text>" +
+                            text + "</text></lyric></note></measure></part></score-partwise>";
     const auto path = std::filesystem::current_path() / std::filesystem::u8path(text + ".musicxml");
-    struct Cleanup { std::filesystem::path p; ~Cleanup() { std::error_code ec; std::filesystem::remove(p, ec); } } cleanup{path};
-    { std::ofstream out(path, std::ios::binary); out << xml; ASSERT_TRUE(out.good()); }
+
+    struct Cleanup {
+        std::filesystem::path p;
+
+        ~Cleanup() {
+            std::error_code ec;
+            std::filesystem::remove(p, ec);
+        }
+    } cleanup{path};
+
+    {
+        std::ofstream out(path, std::ios::binary);
+        out << xml;
+        ASSERT_TRUE(out.good());
+    }
     auto document = g_engine->open(path);
     ASSERT_TRUE(document) << document.error().message;
-    const auto saved = (*document)->export_score({.format=Format::Mscz});
+    const auto saved = (*document)->export_score({.format = Format::Mscz});
     ASSERT_TRUE(saved) << saved.error().message;
     auto reopened = g_engine->open(*saved);
     ASSERT_TRUE(reopened) << reopened.error().message;
     EXPECT_NE(exported(**reopened, Format::MusicXml).find(text), std::string::npos);
-    const auto render = (*reopened)->render({.format=engrave::RenderFormat::Svg});
+    const auto render = (*reopened)->render({.format = engrave::RenderFormat::Svg});
     ASSERT_TRUE(render) << render.error().message;
 }

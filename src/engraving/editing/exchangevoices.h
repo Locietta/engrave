@@ -28,11 +28,10 @@ namespace mu::engraving {
 class Score;
 class Measure;
 
-class ExchangeVoices
-{
+class ExchangeVoices {
 public:
-    static void exchangeVoicesInSelection(Score* score, voice_idx_t srcVoice, voice_idx_t dstVoice);
-    static void exchangeVoices(Score* score, Measure* measure, voice_idx_t srcVoice, voice_idx_t dstVoice, staff_idx_t srcStaff,
+    static void exchangeVoicesInSelection(Score *score, voice_idx_t srcVoice, voice_idx_t dstVoice);
+    static void exchangeVoices(Score *score, Measure *measure, voice_idx_t srcVoice, voice_idx_t dstVoice, staff_idx_t srcStaff,
                                staff_idx_t dstStaff);
 };
-}
+} // namespace mu::engraving

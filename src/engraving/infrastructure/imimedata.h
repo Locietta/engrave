@@ -30,19 +30,18 @@
 #include "draw/types/pixmap.h"
 
 namespace mu::engraving {
-class IMimeData
-{
+class IMimeData {
 public:
     virtual ~IMimeData() = default;
 
     virtual std::vector<std::string> formats() const = 0;
 
-    virtual bool hasFormat(const std::string& mimeType) const = 0;
-    virtual muse::ByteArray data(const std::string& mimeType) const = 0;
+    virtual bool hasFormat(const std::string &mimeType) const = 0;
+    virtual muse::ByteArray data(const std::string &mimeType) const = 0;
 
     virtual bool hasImage() const = 0;
     virtual std::shared_ptr<muse::draw::Pixmap> imageData() const = 0;
 };
-}
+} // namespace mu::engraving
 
 #endif // MU_ENGRAVING_IMIMEDATA_H

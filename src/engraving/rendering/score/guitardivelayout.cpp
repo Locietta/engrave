@@ -36,22 +36,21 @@ using namespace mu::engraving;
 using namespace muse::draw;
 using namespace mu::engraving::rendering::score;
 
-void GuitarDiveLayout::updateDiveSequences(const std::vector<GuitarBend*>& bends, const LayoutContext& ctx)
-{
-    std::vector<GuitarBend*> dives;
-    for (GuitarBend* bend : bends) {
+void GuitarDiveLayout::updateDiveSequences(const std::vector<GuitarBend *> &bends, const LayoutContext &ctx) {
+    std::vector<GuitarBend *> dives;
+    for (GuitarBend *bend : bends) {
         if ((bend->bendType() == GuitarBendType::DIVE || bend->bendType() == GuitarBendType::PRE_DIVE) && bend->staffType()->isTabStaff()) {
             dives.push_back(bend);
         }
     }
 
-    for (GuitarBend* dive : dives) {
+    for (GuitarBend *dive : dives) {
         dive->computeBendAmount();
         dive->mutldata()->resetDiveLevels();
     }
 
     for (auto riter = dives.rbegin(); riter != dives.rend(); ++riter) {
-        GuitarBend* dive = *riter;
+        GuitarBend *dive = *riter;
         if (!dive->ldata()->diveLevels().empty()) {
             continue;
         }
@@ -60,7 +59,7 @@ void GuitarDiveLayout::updateDiveSequences(const std::vector<GuitarBend*>& bends
         DirectionV tabPos = dive->diveTabPos();
 
         std::set<int> diveLevels;
-        std::unordered_set<GuitarBend*> diveSequence;
+        std::unordered_set<GuitarBend *> diveSequence;
 
         diveLevels.insert(dive->totBendAmountIncludingPrecedingBends());
         diveSequence.insert(dive);
@@ -68,9 +67,9 @@ void GuitarDiveLayout::updateDiveSequences(const std::vector<GuitarBend*>& bends
         // Consider dives part of the same sequence if they are directly connected
         // or if they are spanned by the same whammy bar line
 
-        if (WhammyBar* whammyBar = dive->findOverlappingWhammyBar(dive->tick(), dive->tick2())) {
+        if (WhammyBar *whammyBar = dive->findOverlappingWhammyBar(dive->tick(), dive->tick2())) {
             for (auto riter2 = riter + 1; riter2 != dives.rend(); ++riter2) {
-                GuitarBend* earlierDive = *riter2;
+                GuitarBend *earlierDive = *riter2;
                 if (earlierDive->tick() >= whammyBar->tick()) {
                     diveLevels.insert(earlierDive->totBendAmountIncludingPrecedingBends());
                     diveSequence.insert(earlierDive);
@@ -81,7 +80,7 @@ void GuitarDiveLayout::updateDiveSequences(const std::vector<GuitarBend*>& bends
             }
         }
 
-        GuitarBend* prevDive = dive->findPrecedingBend();
+        GuitarBend *prevDive = dive->findPrecedingBend();
         while (prevDive) {
             diveLevels.insert(prevDive->totBendAmountIncludingPrecedingBends());
             diveSequence.insert(prevDive);
@@ -93,16 +92,15 @@ void GuitarDiveLayout::updateDiveSequences(const std::vector<GuitarBend*>& bends
 
         bool layoutAboveStaff = tabPos == DirectionV::UP || (tabPos == DirectionV::AUTO && ctx.conf().styleB(Sid::guitarDivesAboveStaff));
 
-        for (GuitarBend* d : diveSequence) {
+        for (GuitarBend *d : diveSequence) {
             d->mutldata()->setDiveLevels(diveLevels);
             d->mutldata()->setAboveStaff(layoutAboveStaff);
         }
     }
 }
 
-void GuitarDiveLayout::layoutDiveTabStaff(GuitarBendSegment* item, LayoutContext& ctx)
-{
-    GuitarBend* bend = item->guitarBend();
+void GuitarDiveLayout::layoutDiveTabStaff(GuitarBendSegment *item, LayoutContext &ctx) {
+    GuitarBend *bend = item->guitarBend();
     if (bend->bendType() == GuitarBendType::DIP) {
         layoutDip(item, ctx);
         return;
@@ -112,34 +110,34 @@ void GuitarDiveLayout::layoutDiveTabStaff(GuitarBendSegment* item, LayoutContext
         return;
     }
 
-    GuitarBendSegment::LayoutData* ldata = item->mutldata();
+    GuitarBendSegment::LayoutData *ldata = item->mutldata();
 
-    Note* startNote = bend->startNote();
-    Note* endNote = bend->endNote();
+    Note *startNote = bend->startNote();
+    Note *endNote = bend->endNote();
     if (!startNote || !endNote) {
         return;
     }
 
-    Chord* startChord = startNote->chord();
-    Chord* endChord = endNote->chord();
+    Chord *startChord = startNote->chord();
+    Chord *endChord = endNote->chord();
     if (startNote->string() != startChord->upString() || endNote->string() != endChord->upString()) {
         return; // On TAB only one dive line can exist and only from the top note
     }
 
     if (bend->bendType() == GuitarBendType::PRE_DIVE) {
         bool alignToGrace = ctx.conf().styleB(Sid::alignPreBendAndPreDiveToGraceNote);
-        for (Note* note : startChord->notes()) {
+        for (Note *note : startChord->notes()) {
             if (!note->overrideBendVisibilityRules()) {
                 note->setVisible(alignToGrace);
             }
         }
-        for (Note* note : endChord->notes()) {
+        for (Note *note : endChord->notes()) {
             if (!note->overrideBendVisibilityRules()) {
                 note->setVisible(!alignToGrace);
             }
         }
     } else if (bend->isFullReleaseDive() || item->isEndType()) {
-        for (Note* note : endChord->notes()) {
+        for (Note *note : endChord->notes()) {
             if (!note->overrideBendVisibilityRules()) {
                 note->setVisible(true);
             }
@@ -148,7 +146,7 @@ void GuitarDiveLayout::layoutDiveTabStaff(GuitarBendSegment* item, LayoutContext
         }
         TLayout::layoutChord(endNote->chord(), ctx);
     } else if (!bend->isFullReleaseDive() || !ctx.conf().styleB(Sid::showFretOnFullBendRelease)) {
-        for (Note* note : endChord->notes()) {
+        for (Note *note : endChord->notes()) {
             if (!note->overrideBendVisibilityRules()) {
                 note->setVisible(false);
             }
@@ -164,7 +162,7 @@ void GuitarDiveLayout::layoutDiveTabStaff(GuitarBendSegment* item, LayoutContext
         item->setPos2(computeEndPosOnStaff(item, ctx) - item->ldata()->pos());
     }
 
-    GuitarBendText* bendText = item->bendText();
+    GuitarBendText *bendText = item->bendText();
     if (item->isSingleEndType()) {
         bendText->setXmlText(bend->ldata()->bendDigit());
         TextLayout::layoutBaseTextBase(bendText, ctx);
@@ -205,12 +203,11 @@ void GuitarDiveLayout::layoutDiveTabStaff(GuitarBendSegment* item, LayoutContext
     item->mutldata()->setBbox(r);
 }
 
-PointF GuitarDiveLayout::computeStartPosOnStaff(GuitarBendSegment* item, LayoutContext& ctx)
-{
-    GuitarBend* bend = item->guitarBend();
+PointF GuitarDiveLayout::computeStartPosOnStaff(GuitarBendSegment *item, LayoutContext &ctx) {
+    GuitarBend *bend = item->guitarBend();
 
     if (bend->bendType() == GuitarBendType::PRE_DIVE) {
-        Note* note = ctx.conf().styleB(Sid::alignPreBendAndPreDiveToGraceNote) ? bend->startNote() : bend->endNote();
+        Note *note = ctx.conf().styleB(Sid::alignPreBendAndPreDiveToGraceNote) ? bend->startNote() : bend->endNote();
         if (bend->bendAmountInQuarterTones() > 0) {
             note = note->chord()->upNote();
         } else {
@@ -219,19 +216,18 @@ PointF GuitarDiveLayout::computeStartPosOnStaff(GuitarBendSegment* item, LayoutC
         PointF notePos = note->systemPos();
         RectF noteBbox = getNoteAndParenthesesShape(note);
         double verticalPadding = 0.25 * item->spatium();
-        notePos += PointF(0.5 * noteBbox.width(), bend->bendAmountInQuarterTones() > 0
-                          ? noteBbox.top() - verticalPadding
-                          : noteBbox.bottom() + verticalPadding);
+        notePos += PointF(0.5 * noteBbox.width(),
+                          bend->bendAmountInQuarterTones() > 0 ? noteBbox.top() - verticalPadding : noteBbox.bottom() + verticalPadding);
         return notePos;
     }
 
-    LineSegment* prevSegment = findPrevHoldOrBendSegment(item, /*excludeFullReleaseDive*/ true);
+    LineSegment *prevSegment = findPrevHoldOrBendSegment(item, /*excludeFullReleaseDive*/ true);
     if (prevSegment) {
         return prevSegment->pos() + prevSegment->pos2();
     }
 
     PointF startPos;
-    Note* startNote = bend->startNote();
+    Note *startNote = bend->startNote();
     RectF startNoteBbox = getNoteAndParenthesesShape(startNote);
     if (item->isSingleBeginType()) {
         startPos = startNote->systemPos();
@@ -245,14 +241,13 @@ PointF GuitarDiveLayout::computeStartPosOnStaff(GuitarBendSegment* item, LayoutC
     return startPos;
 }
 
-PointF GuitarDiveLayout::computeEndPosOnStaff(GuitarBendSegment* item, LayoutContext&)
-{
-    GuitarBend* bend = item->guitarBend();
+PointF GuitarDiveLayout::computeEndPosOnStaff(GuitarBendSegment *item, LayoutContext &) {
+    GuitarBend *bend = item->guitarBend();
     double spatium = item->spatium();
 
     double x = 0.0;
     if (item->isSingleEndType()) {
-        Note* endNote = bend->endNote();
+        Note *endNote = bend->endNote();
         PointF endNotePos = endNote->systemPos();
         RectF endNoteBbox = getNoteAndParenthesesShape(endNote);
 
@@ -269,7 +264,7 @@ PointF GuitarDiveLayout::computeEndPosOnStaff(GuitarBendSegment* item, LayoutCon
         if (bend->isFullReleaseDive()) {
             /* Full release dives end at the same y as they started, so we can use the startNote's position
              * here in the case that the segment is BEGIN type (bc its endNote hasn't been laid out yet) */
-            Note* startNote = bend->startNote();
+            Note *startNote = bend->startNote();
             PointF startNotePos = startNote->systemPos();
             RectF startNoteBbox = getNoteAndParenthesesShape(startNote);
             double y = startNotePos.y() + startNoteBbox.top() + 0.5 * item->lineWidth();
@@ -278,7 +273,7 @@ PointF GuitarDiveLayout::computeEndPosOnStaff(GuitarBendSegment* item, LayoutCon
     }
 
     if (bend->bendType() == GuitarBendType::PRE_DIVE) {
-        LineSegment* prevSegment = findPrevHoldOrBendSegment(item);
+        LineSegment *prevSegment = findPrevHoldOrBendSegment(item);
         if (prevSegment && prevSegment->isGuitarBendHoldSegment()) {
             double y = prevSegment->pos().y() + prevSegment->pos2().y();
             return PointF(x, y);
@@ -288,10 +283,8 @@ PointF GuitarDiveLayout::computeEndPosOnStaff(GuitarBendSegment* item, LayoutCon
     int diveLevel = bend->totBendAmountIncludingPrecedingBends();
     bool aboveStaff = diveLevel > 0;
 
-    const StaffType* staffType = item->staffType();
-    IF_ASSERT_FAILED(staffType) {
-        return PointF(x, 0.0);
-    }
+    const StaffType *staffType = item->staffType();
+    IF_ASSERT_FAILED(staffType) { return PointF(x, 0.0); }
     int staffLines = staffType->lines();
     double lineDist = item->absoluteFromSpatium(staffType->lineDistance());
 
@@ -300,7 +293,7 @@ PointF GuitarDiveLayout::computeEndPosOnStaff(GuitarBendSegment* item, LayoutCon
         return PointF(x, y);
     }
 
-    const std::set<int>& diveLevels = bend->ldata()->diveLevels();
+    const std::set<int> &diveLevels = bend->ldata()->diveLevels();
     std::deque<int> diveLevelsInThisDirection;
     for (int level : diveLevels) {
         if (aboveStaff && level > 0) {
@@ -311,9 +304,7 @@ PointF GuitarDiveLayout::computeEndPosOnStaff(GuitarBendSegment* item, LayoutCon
     }
 
     size_t levelNumber = muse::indexOf(diveLevelsInThisDirection, diveLevel);
-    IF_ASSERT_FAILED(levelNumber != muse::nidx) {
-        return PointF(x, 0.0);
-    }
+    IF_ASSERT_FAILED(levelNumber != muse::nidx) { return PointF(x, 0.0); }
 
     double zeroDiveLevel = aboveStaff ? -1.5 * lineDist : lineDist * (staffLines + 0.5);
     double increment = spatium;
@@ -323,11 +314,10 @@ PointF GuitarDiveLayout::computeEndPosOnStaff(GuitarBendSegment* item, LayoutCon
     return PointF(x, y);
 }
 
-PointF GuitarDiveLayout::computeStartPosAboveStaff(GuitarBendSegment* item, LayoutContext& ctx)
-{
-    GuitarBend* bend = item->guitarBend();
+PointF GuitarDiveLayout::computeStartPosAboveStaff(GuitarBendSegment *item, LayoutContext &ctx) {
+    GuitarBend *bend = item->guitarBend();
 
-    LineSegment* prevSegment = findPrevHoldOrBendSegment(item);
+    LineSegment *prevSegment = findPrevHoldOrBendSegment(item);
     if (prevSegment) {
         return prevSegment->pos() + prevSegment->pos2();
     }
@@ -335,15 +325,15 @@ PointF GuitarDiveLayout::computeStartPosAboveStaff(GuitarBendSegment* item, Layo
     PointF startPos;
 
     if (item->isSingleBeginType()) {
-        Note* note = bend->bendType() == GuitarBendType::PRE_BEND && !ctx.conf().styleB(Sid::alignPreBendAndPreDiveToGraceNote)
-                     ? bend->endNote() : bend->startNote();
+        Note *note = bend->bendType() == GuitarBendType::PRE_BEND && !ctx.conf().styleB(Sid::alignPreBendAndPreDiveToGraceNote) ?
+                         bend->endNote() :
+                         bend->startNote();
         RectF noteBbox = getNoteAndParenthesesShape(note);
         startPos.setX(note->systemPos().x() + 0.5 * noteBbox.width());
 
-        const StaffType* staffType = item->staffType();
-        IF_ASSERT_FAILED(staffType) {
-            startPos.setY(0.0);
-        } else {
+        const StaffType *staffType = item->staffType();
+        IF_ASSERT_FAILED(staffType) { startPos.setY(0.0); }
+        else {
             double spatium = item->spatium();
             double lineDist = item->absoluteFromSpatium(staffType->lineDistance());
             const double baseLine = -1.5 * lineDist;
@@ -362,24 +352,22 @@ PointF GuitarDiveLayout::computeStartPosAboveStaff(GuitarBendSegment* item, Layo
     return startPos;
 }
 
-PointF GuitarDiveLayout::computeEndPosAboveStaff(GuitarBendSegment* item, LayoutContext&)
-{
-    GuitarBend* bend = item->guitarBend();
+PointF GuitarDiveLayout::computeEndPosAboveStaff(GuitarBendSegment *item, LayoutContext &) {
+    GuitarBend *bend = item->guitarBend();
     double spatium = item->spatium();
 
     double x = 0.0;
     if (item->isSingleEndType()) {
-        Note* endNote = bend->endNote();
+        Note *endNote = bend->endNote();
         PointF endNotePos = endNote->systemPos();
         RectF endNoteBbox = getNoteAndParenthesesShape(endNote);
-        x = bend->bendType() == GuitarBendType::PRE_DIVE
-            ? item->pos().x() : endNotePos.x() + 0.5 * endNoteBbox.width();
+        x = bend->bendType() == GuitarBendType::PRE_DIVE ? item->pos().x() : endNotePos.x() + 0.5 * endNoteBbox.width();
     } else {
         x = item->system()->endingXForOpenEndedLines();
     }
 
     if (bend->bendType() == GuitarBendType::PRE_DIVE) {
-        LineSegment* prevSegment = findPrevHoldOrBendSegment(item);
+        LineSegment *prevSegment = findPrevHoldOrBendSegment(item);
         if (prevSegment && prevSegment->isGuitarBendHoldSegment()) {
             double y = prevSegment->pos().y() + prevSegment->pos2().y();
             return PointF(x, y);
@@ -394,9 +382,7 @@ PointF GuitarDiveLayout::computeEndPosAboveStaff(GuitarBendSegment* item, Layout
 
     size_t endingIdx = muse::indexOf(diveLevels, endingLevel);
     size_t startingIdx = muse::indexOf(diveLevels, startingLevel);
-    IF_ASSERT_FAILED(endingIdx != muse::nidx && startingIdx != muse::nidx && endingIdx != startingIdx) {
-        return PointF(x, 0.0);
-    }
+    IF_ASSERT_FAILED(endingIdx != muse::nidx && startingIdx != muse::nidx && endingIdx != startingIdx) { return PointF(x, 0.0); }
 
     int steps = static_cast<int>(endingIdx) - static_cast<int>(startingIdx);
     double increment = spatium;
@@ -406,34 +392,30 @@ PointF GuitarDiveLayout::computeEndPosAboveStaff(GuitarBendSegment* item, Layout
     return PointF(x, y);
 }
 
-LineSegment* GuitarDiveLayout::findPrevHoldOrBendSegment(GuitarBendSegment* item, bool excludeFullReleaseDive)
-{
-    GuitarBend* bend = item->guitarBend();
-    GuitarBend* prevBend = item->guitarBend()->findPrecedingBend();
+LineSegment *GuitarDiveLayout::findPrevHoldOrBendSegment(GuitarBendSegment *item, bool excludeFullReleaseDive) {
+    GuitarBend *bend = item->guitarBend();
+    GuitarBend *prevBend = item->guitarBend()->findPrecedingBend();
     if (!prevBend) {
         return nullptr;
     }
 
-    GuitarBendHold* hold = prevBend->holdLine();
+    GuitarBendHold *hold = prevBend->holdLine();
     if (hold && !hold->segmentsEmpty() && prevBend->endNote() != bend->startNote() && hold->backSegment()->system() == item->system()) {
         return hold->backSegment();
     }
 
-    if (!prevBend->segmentsEmpty() && !(excludeFullReleaseDive && prevBend->isFullReleaseDive())
-        && prevBend->backSegment()->system() == item->system()) {
+    if (!prevBend->segmentsEmpty() && !(excludeFullReleaseDive && prevBend->isFullReleaseDive()) &&
+        prevBend->backSegment()->system() == item->system()) {
         return prevBend->backSegment();
     }
 
     return nullptr;
 }
 
-void GuitarDiveLayout::layoutDip(GuitarBendSegment* item, LayoutContext& ctx)
-{
-    GuitarBend* bend = item->guitarBend();
-    Note* startNote = bend->startNote();
-    IF_ASSERT_FAILED(startNote) {
-        return;
-    }
+void GuitarDiveLayout::layoutDip(GuitarBendSegment *item, LayoutContext &ctx) {
+    GuitarBend *bend = item->guitarBend();
+    Note *startNote = bend->startNote();
+    IF_ASSERT_FAILED(startNote) { return; }
 
     PointF notePos = startNote->systemPos();
     double centerX = notePos.x() + 0.5 * startNote->width();
@@ -459,20 +441,17 @@ void GuitarDiveLayout::layoutDip(GuitarBendSegment* item, LayoutContext& ctx)
     RectF bbox = RectF(PointF(), vertex).normalized().united(RectF(vertex, end).normalized());
     item->mutldata()->setBbox(bbox);
 
-    GuitarBendText* bendText = item->bendText();
+    GuitarBendText *bendText = item->bendText();
     bendText->setXmlText(bend->ldata()->bendDigit());
     TextLayout::layoutBaseTextBase(bendText, ctx);
     double verticalTextPad = 0.35 * item->spatium();
     bendText->setPos(PointF(vertex.x() - 0.5 * bendText->width(), bbox.top() - verticalTextPad - bendText->height()));
 }
 
-void GuitarDiveLayout::layoutScoop(GuitarBendSegment* item)
-{
-    GuitarBend* bend = item->guitarBend();
-    Note* startNote = bend->startNote();
-    IF_ASSERT_FAILED(startNote) {
-        return;
-    }
+void GuitarDiveLayout::layoutScoop(GuitarBendSegment *item) {
+    GuitarBend *bend = item->guitarBend();
+    Note *startNote = bend->startNote();
+    IF_ASSERT_FAILED(startNote) { return; }
 
     const SymId scoopSym = SymId::guitarVibratoBarScoop;
     RectF bbox = item->symBbox(scoopSym);
@@ -491,7 +470,7 @@ void GuitarDiveLayout::layoutScoop(GuitarBendSegment* item)
     }
 
     Shape chordShape = startNote->chord()->shape();
-    chordShape.removeTypes({ ElementType::GUITAR_BEND, ElementType::GUITAR_BEND_SEGMENT, ElementType::BEAM });
+    chordShape.removeTypes({ElementType::GUITAR_BEND, ElementType::GUITAR_BEND_SEGMENT, ElementType::BEAM});
 
     double xMove = -HorizontalSpacing::minHorizontalDistance(Shape(bbox.translated(0.0, startNote->y())), chordShape, spatium) - leftPad;
 
@@ -501,17 +480,16 @@ void GuitarDiveLayout::layoutScoop(GuitarBendSegment* item)
     item->setPos2(PointF());
 }
 
-RectF GuitarDiveLayout::getNoteAndParenthesesShape(const Note* note)
-{
-    const NoteParenthesisInfo* parenInfo = note->parenthesisInfo();
+RectF GuitarDiveLayout::getNoteAndParenthesesShape(const Note *note) {
+    const NoteParenthesisInfo *parenInfo = note->parenthesisInfo();
     RectF noteBbox = note->ldata()->bbox();
 
     if (!parenInfo) {
         return noteBbox;
     }
 
-    const Parenthesis* leftParen = parenInfo->leftParen();
-    const Parenthesis* rightParen = parenInfo->rightParen();
+    const Parenthesis *leftParen = parenInfo->leftParen();
+    const Parenthesis *rightParen = parenInfo->rightParen();
 
     noteBbox.unite(leftParen->ldata()->bbox().translated(leftParen->pos() - note->pos()));
     noteBbox.unite(rightParen->ldata()->bbox().translated(rightParen->pos() - note->pos()));

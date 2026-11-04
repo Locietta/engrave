@@ -28,51 +28,44 @@
 namespace mu::engraving {
 class Factory;
 
-class EditTimeTickAnchors
-{
+class EditTimeTickAnchors {
 public:
-    static void updateAnchors(const EngravingItem* item);
-    static void updateAnchors(Measure* measure, staff_idx_t staffIdx, const std::set<Fraction>& additionalAnchorRelTicks = {});
-    static TimeTickAnchor* createTimeTickAnchor(Measure* measure, Fraction relTick, staff_idx_t staffIdx);
-    static void updateLayout(Measure* measure);
+    static void updateAnchors(const EngravingItem *item);
+    static void updateAnchors(Measure *measure, staff_idx_t staffIdx, const std::set<Fraction> &additionalAnchorRelTicks = {});
+    static TimeTickAnchor *createTimeTickAnchor(Measure *measure, Fraction relTick, staff_idx_t staffIdx);
+    static void updateLayout(Measure *measure);
 };
 
-class MoveElementAnchors
-{
+class MoveElementAnchors {
 public:
-    static void moveSegment(EngravingItem* element, Segment* newSeg, Fraction tickDiff);
-    static void checkMeasureBoundariesAndMoveIfNeed(EngravingItem* element);
+    static void moveSegment(EngravingItem *element, Segment *newSeg, Fraction tickDiff);
+    static void checkMeasureBoundariesAndMoveIfNeed(EngravingItem *element);
 
 private:
-    static bool canAnchorToEndOfPrevious(const EngravingItem* element);
-    static void moveSegment(EngravingItem* element, bool forward);
-    static Segment* getNewSegment(EngravingItem* element, Segment* curSeg, bool forward);
-    static Segment* findNewAnchorableSegment(const Segment* curSeg, bool forward);
-    static Segment* findNewAnchorableSegmentFromDrag(EngravingItem* element, Segment* curSeg);
+    static bool canAnchorToEndOfPrevious(const EngravingItem *element);
+    static void moveSegment(EngravingItem *element, bool forward);
+    static Segment *getNewSegment(EngravingItem *element, Segment *curSeg, bool forward);
+    static Segment *findNewAnchorableSegment(const Segment *curSeg, bool forward);
+    static Segment *findNewAnchorableSegmentFromDrag(EngravingItem *element, Segment *curSeg);
 
-    static void doMoveSegment(EngravingItem* element, Segment* newSeg, Fraction tickDiff);
-    static void doMoveSegment(FiguredBass* element, Segment* newSeg, Fraction tickDiff);
-    static void doMoveHarmonyOrFretDiagramSegment(EngravingItem* element, Segment* newSeg, Fraction tickDiff);
+    static void doMoveSegment(EngravingItem *element, Segment *newSeg, Fraction tickDiff);
+    static void doMoveSegment(FiguredBass *element, Segment *newSeg, Fraction tickDiff);
+    static void doMoveHarmonyOrFretDiagramSegment(EngravingItem *element, Segment *newSeg, Fraction tickDiff);
 
-    static void moveSnappedItems(EngravingItem* element, Segment* newSeg, Fraction tickDiff);
-    static void rebaseOffsetOnMoveSegment(EngravingItem* element, const PointF& curOffset, Segment* newSeg, Segment* oldSeg);
+    static void moveSnappedItems(EngravingItem *element, Segment *newSeg, Fraction tickDiff);
+    static void rebaseOffsetOnMoveSegment(EngravingItem *element, const PointF &curOffset, Segment *newSeg, Segment *oldSeg);
 };
 
-class TimeTickAnchor : public EngravingItem
-{
+class TimeTickAnchor : public EngravingItem {
     TimeTickAnchor(DummyParentOr<Segment> parent);
     friend class Factory;
 
 public:
-    Segment* segment() const { return toSegment(ownershipParentItem()); }
+    Segment *segment() const { return toSegment(ownershipParentItem()); }
 
-    TimeTickAnchor* clone() const override { return new TimeTickAnchor(*this); }
+    TimeTickAnchor *clone() const override { return new TimeTickAnchor(*this); }
 
-    enum class DrawRegion : unsigned char {
-        OUT_OF_RANGE,
-        EXTENDED_REGION,
-        MAIN_REGION
-    };
+    enum class DrawRegion : unsigned char { OUT_OF_RANGE, EXTENDED_REGION, MAIN_REGION };
 
     DrawRegion drawRegion() const;
 
@@ -80,6 +73,7 @@ public:
 
     struct LayoutData : public EngravingItem::LayoutData {
         bool darker() const { return m_darker; }
+
         void setDarker(bool v) { m_darker = v; }
 
     private:
@@ -87,4 +81,4 @@ public:
     };
     DECLARE_LAYOUTDATA_METHODS(TimeTickAnchor)
 };
-}
+} // namespace mu::engraving

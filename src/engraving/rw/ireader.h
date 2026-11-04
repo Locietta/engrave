@@ -46,63 +46,53 @@ class Tuplet;
 class Chord;
 class TremoloSingleChord;
 class TremoloTwoChord;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::compat {
 struct TremoloCompat;
-}
+} // namespace mu::engraving::compat
 
 namespace mu::engraving::rw {
 struct ReadInOutData;
-class IReader
-{
+
+class IReader {
 public:
     virtual ~IReader() = default;
 
-    virtual muse::Ret readScoreFile(Score* score, XmlReader& xml, rw::ReadInOutData* out) = 0;
+    virtual muse::Ret readScoreFile(Score *score, XmlReader &xml, rw::ReadInOutData *out) = 0;
 
-    using Supported = std::variant<std::monostate,
-                                   Accidental*,
-                                   ChordRest*,
-                                   Harmony*,
-                                   Spanner*,
-                                   StaffTypeChange*,
-                                   Symbol*,
-                                   Text*,
-                                   Tuplet*
-                                   >;
+    using Supported =
+        std::variant<std::monostate, Accidental *, ChordRest *, Harmony *, Spanner *, StaffTypeChange *, Symbol *, Text *, Tuplet *>;
 
-    template<typename T>
-    static void check_supported_static(T item)
-    {
-        if constexpr (std::is_same<T, EngravingItem*>::value) {
+    template <typename T>
+    static void check_supported_static(T item) {
+        if constexpr (std::is_same<T, EngravingItem *>::value) {
             // supported
         } else {
             Supported check(item);
-            (void)check;
+            (void) check;
         }
     }
 
-    template<typename T>
-    void readItem(T item, XmlReader& xml)
-    {
+    template <typename T>
+    void readItem(T item, XmlReader &xml) {
 #ifndef NDEBUG
         check_supported_static(item);
 #endif
-        doReadItem(static_cast<EngravingItem*>(item), xml);
+        doReadItem(static_cast<EngravingItem *>(item), xml);
     }
 
     //! NOTE Needs refactoring - reading should be separated from insertion
     //! (we read the elements into some structure, then inserted them)
-    virtual bool pasteStaff(XmlReader& e, Segment* dst, staff_idx_t dstStaff, Fraction scale) = 0;
-    virtual void pasteSymbols(XmlReader& e, ChordRest* dst) = 0;
+    virtual bool pasteStaff(XmlReader &e, Segment *dst, staff_idx_t dstStaff, Fraction scale) = 0;
+    virtual void pasteSymbols(XmlReader &e, ChordRest *dst) = 0;
 
     // compat
-    virtual void readTremoloCompat(engraving::compat::TremoloCompat* item, XmlReader& xml) = 0;
+    virtual void readTremoloCompat(engraving::compat::TremoloCompat *item, XmlReader &xml) = 0;
 
 private:
-    virtual void doReadItem(EngravingItem* item, XmlReader& xml) = 0;
+    virtual void doReadItem(EngravingItem *item, XmlReader &xml) = 0;
 };
 
 using IReaderPtr = std::shared_ptr<IReader>;
-}
+} // namespace mu::engraving::rw

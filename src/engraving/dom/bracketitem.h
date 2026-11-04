@@ -35,36 +35,47 @@ class Factory;
 //   BracketItem
 //---------------------------------------------------------
 
-class BracketItem final : public EngravingItem
-{
+class BracketItem final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, BracketItem)
 
 public:
-    EngravingItem* clone() const override;
+    EngravingItem *clone() const override;
 
     PropertyValue getProperty(Pid) const override;
-    bool setProperty(Pid, const PropertyValue&) override;
+    bool setProperty(Pid, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid id) const override;
 
     size_t bracketSpan() const { return m_bracketSpan; }
+
     BracketType bracketType() const { return m_bracketType; }
+
     void setBracketSpan(size_t v) { m_bracketSpan = v; }
+
     void setBracketType(BracketType v) { m_bracketType = v; }
+
     staff_idx_t startStaffIdx() const { return m_startStaffIdx; }
+
     void setStartStaffIdx(staff_idx_t staffIdx) { m_startStaffIdx = staffIdx; }
-    Staff* startStaff() const;
+
+    Staff *startStaff() const;
+
     size_t column() const { return m_column; }
+
     void setColumn(size_t v) { m_column = v; }
 
-    StaffLabel& label() { return m_name; }
-    const StaffLabel& label() const { return m_name; }
-    const String& longName() const { return m_name.longName(); }
-    const String& shortName() const { return m_name.shortName(); }
+    StaffLabel &label() { return m_name; }
+
+    const StaffLabel &label() const { return m_name; }
+
+    const String &longName() const { return m_name.longName(); }
+
+    const String &shortName() const { return m_name.shortName(); }
 
     bool showText() const { return m_showText; }
+
     bool showBracket() const { return m_showBracket; }
 
-    bool intersects(const BracketItem* other) const;
+    bool intersects(const BracketItem *other) const;
     bool intersects(staff_idx_t first, staff_idx_t last) const;
 
 private:
@@ -83,5 +94,5 @@ private:
     bool m_showText = true;
     bool m_showBracket = true;
 };
-}
+} // namespace mu::engraving
 #endif

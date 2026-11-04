@@ -28,13 +28,12 @@
 namespace mu::engraving {
 class Instrument;
 
-class PlaybackSetupDataResolver
-{
+class PlaybackSetupDataResolver {
 public:
-    void resolveSetupData(const Instrument* instrument, muse::mpe::PlaybackSetupData& result) const;
-    void resolveChordSymbolsSetupData(const Instrument* instrument, muse::mpe::PlaybackSetupData& result) const;
-    void resolveMetronomeSetupData(muse::mpe::PlaybackSetupData& result) const;
+    void resolveSetupData(const Instrument *instrument, muse::mpe::PlaybackSetupData &result) const;
+    void resolveChordSymbolsSetupData(const Instrument *instrument, muse::mpe::PlaybackSetupData &result) const;
+    void resolveMetronomeSetupData(muse::mpe::PlaybackSetupData &result) const;
 };
-}
+} // namespace mu::engraving
 
 #endif // MU_ENGRAVING_PLAYBACKSETUPDATARESOLVER_H

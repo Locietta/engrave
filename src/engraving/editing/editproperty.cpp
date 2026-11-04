@@ -30,7 +30,8 @@
 #include "../dom/textline.h"
 
 #include "log.h"
-#define LOG_UNDO() if (0) LOGD()
+#define LOG_UNDO() \
+    if (0) LOGD()
 
 using namespace mu::engraving;
 
@@ -38,17 +39,16 @@ using namespace mu::engraving;
 //   ChangeProperty::flip
 //---------------------------------------------------------
 
-void ChangeProperty::flip()
-{
+void ChangeProperty::flip() {
     LOG_UNDO() << element->typeName() << int(id) << "(" << propertyName(id) << ")" << element->getProperty(id) << "->" << property;
 
-    PropertyValue v       = element->getProperty(id);
+    PropertyValue v = element->getProperty(id);
     PropertyFlags ps = element->propertyFlags(id);
 
-    if (element->isChordLine() && (std::find(ChordLine::appearanceProperties.begin(), ChordLine::appearanceProperties.end(), id)
-            != ChordLine::appearanceProperties.end()
-        || id == Pid::APPEARANCE_LINKED_TO_MASTER)) {
-        auto* line = toChordLine(element);
+    if (element->isChordLine() && (std::find(ChordLine::appearanceProperties.begin(), ChordLine::appearanceProperties.end(), id) !=
+                                       ChordLine::appearanceProperties.end() ||
+                                   id == Pid::APPEARANCE_LINKED_TO_MASTER)) {
+        auto *line = toChordLine(element);
         auto restore = chordLineAppearance;
         chordLineAppearance = line->appearanceState();
         const auto next = property;
@@ -76,17 +76,13 @@ void ChangeProperty::flip()
     flags = ps;
 }
 
-std::vector<EngravingObject*> ChangeProperty::objectItems() const
-{
-    return compoundObjects(element);
-}
+std::vector<EngravingObject *> ChangeProperty::objectItems() const { return compoundObjects(element); }
 
 //---------------------------------------------------------
 //   ChangeBracketProperty::flip
 //---------------------------------------------------------
 
-void ChangeBracketProperty::flip()
-{
+void ChangeBracketProperty::flip() {
     if (!staff) {
         return;
     }
@@ -100,8 +96,7 @@ void ChangeBracketProperty::flip()
 //   ChangeTextLineProperty::flip
 //---------------------------------------------------------
 
-void ChangeTextLineProperty::flip()
-{
+void ChangeTextLineProperty::flip() {
     ChangeProperty::flip();
     if (element->isTextLine()) {
         toTextLine(element)->initStyle();

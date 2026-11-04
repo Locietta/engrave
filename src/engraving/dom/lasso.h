@@ -24,17 +24,15 @@
 #include "engravingitem.h"
 
 namespace mu::engraving {
-class Lasso : public EngravingItem
-{
+class Lasso : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, Lasso)
     DECLARE_CLASSOF(ElementType::LASSO)
 
 public:
-    Lasso(Score*);
-    virtual Lasso* clone() const override { return new Lasso(*this); }
+    Lasso(Score *);
+
+    virtual Lasso *clone() const override { return new Lasso(*this); }
 
     bool isEmpty() const { return ldata()->bbox().isEmpty(); }
-
-
 };
-}
+} // namespace mu::engraving

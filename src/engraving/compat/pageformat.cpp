@@ -42,9 +42,8 @@ namespace mu::engraving::compat {
 //      </page-layout>
 //---------------------------------------------------------
 
-void PageFormat::read206(XmlReader& e)
-{
-    double _oddRightMargin  = 0.0;
+void PageFormat::read206(XmlReader &e) {
+    double _oddRightMargin = 0.0;
     double _evenRightMargin = 0.0;
     AsciiStringView type;
 
@@ -70,15 +69,15 @@ void PageFormat::read206(XmlReader& e)
             }
             _twosided = type == "odd" || type == "even";
             if (type == "odd" || type == "both") {
-                _oddLeftMargin   = lm;
-                _oddRightMargin  = rm;
-                _oddTopMargin    = tm;
+                _oddLeftMargin = lm;
+                _oddRightMargin = rm;
+                _oddTopMargin = tm;
                 _oddBottomMargin = bm;
             }
             if (type == "even" || type == "both") {
-                _evenLeftMargin   = lm;
-                _evenRightMargin  = rm;
-                _evenTopMargin    = tm;
+                _evenLeftMargin = lm;
+                _evenRightMargin = rm;
+                _evenTopMargin = tm;
                 _evenBottomMargin = bm;
             }
         } else if (tag == "page-height") {
@@ -91,11 +90,10 @@ void PageFormat::read206(XmlReader& e)
     }
     double w1 = _size.width() - _oddLeftMargin - _oddRightMargin;
     double w2 = _size.width() - _evenLeftMargin - _evenRightMargin;
-    _printableWidth = std::min(w1, w2);       // silently adjust right margins
+    _printableWidth = std::min(w1, w2); // silently adjust right margins
 }
 
-void initPageFormat(MStyle* style, PageFormat* pf)
-{
+void initPageFormat(MStyle *style, PageFormat *pf) {
     SizeF sz;
     sz.setWidth(style->value(Sid::pageWidth).toReal());
     sz.setHeight(style->value(Sid::pageHeight).toReal());
@@ -110,25 +108,23 @@ void initPageFormat(MStyle* style, PageFormat* pf)
     pf->setTwosided(style->value(Sid::pageTwosided).toBool());
 }
 
-void setPageFormat(MStyle* style, const PageFormat& pf)
-{
-    style->set(Sid::pageWidth,            pf.size().width());
-    style->set(Sid::pageHeight,           pf.size().height());
-    style->set(Sid::pagePrintableWidth,   pf.printableWidth());
-    style->set(Sid::pageEvenLeftMargin,   pf.evenLeftMargin());
-    style->set(Sid::pageOddLeftMargin,    pf.oddLeftMargin());
-    style->set(Sid::pageEvenTopMargin,    pf.evenTopMargin());
+void setPageFormat(MStyle *style, const PageFormat &pf) {
+    style->set(Sid::pageWidth, pf.size().width());
+    style->set(Sid::pageHeight, pf.size().height());
+    style->set(Sid::pagePrintableWidth, pf.printableWidth());
+    style->set(Sid::pageEvenLeftMargin, pf.evenLeftMargin());
+    style->set(Sid::pageOddLeftMargin, pf.oddLeftMargin());
+    style->set(Sid::pageEvenTopMargin, pf.evenTopMargin());
     style->set(Sid::pageEvenBottomMargin, pf.evenBottomMargin());
-    style->set(Sid::pageOddTopMargin,     pf.oddTopMargin());
-    style->set(Sid::pageOddBottomMargin,  pf.oddBottomMargin());
-    style->set(Sid::pageTwosided,         pf.twosided());
+    style->set(Sid::pageOddTopMargin, pf.oddTopMargin());
+    style->set(Sid::pageOddBottomMargin, pf.oddBottomMargin());
+    style->set(Sid::pageTwosided, pf.twosided());
 }
 
-void readPageFormat206(MStyle* style, XmlReader& e)
-{
+void readPageFormat206(MStyle *style, XmlReader &e) {
     PageFormat pf;
     initPageFormat(style, &pf);
     pf.read206(e);
     setPageFormat(style, pf);
 }
-}
+} // namespace mu::engraving::compat

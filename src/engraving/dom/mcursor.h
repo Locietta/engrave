@@ -26,7 +26,6 @@
 #include "types/string.h"
 #include "../types/types.h"
 
-
 namespace mu::engraving {
 struct EngravingServices;
 class MasterScore;
@@ -39,27 +38,29 @@ enum class Key : signed char;
 //   MCursor
 //---------------------------------------------------------
 
-class MCursor
-{
+class MCursor {
 public:
-    MCursor(MasterScore* s = 0);
-    void createScore(const EngravingServices& services, const String& s);
+    MCursor(MasterScore *s = 0);
+    void createScore(const EngravingServices &services, const String &s);
 
-    void addPart(const String& instrument);
-    Chord* addChord(int pitch, const TDuration& duration);
+    void addPart(const String &instrument);
+    Chord *addChord(int pitch, const TDuration &duration);
     void addKeySig(Key);
-    TimeSig* addTimeSig(const Fraction&);
+    TimeSig *addTimeSig(const Fraction &);
 
-    void move(int track, const Fraction& tick);
-    MasterScore* score() const { return m_score; }
-    void setScore(MasterScore* s) { m_score = s; }
+    void move(int track, const Fraction &tick);
+
+    MasterScore *score() const { return m_score; }
+
+    void setScore(MasterScore *s) { m_score = s; }
+
     void setTimeSig(Fraction f) { m_sig = f; }
 
 private:
 
     void createMeasures();
 
-    MasterScore* m_score = nullptr;
+    MasterScore *m_score = nullptr;
     Fraction m_tick;
     int m_track = 0;
     Fraction m_sig;

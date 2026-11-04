@@ -11,9 +11,7 @@ namespace muse::draw {
 
 // Single-face fonts retain upstream alias behavior. Collections select an exact
 // family/bold/italic key, so registering a later face never renders face zero.
-inline FT_Error newMatchingMemoryFace(FT_Library library, const FT_Byte* bytes,
-                                     FT_Long size, const FontDataKey& key, FT_Face* result)
-{
+inline FT_Error newMatchingMemoryFace(FT_Library library, const FT_Byte *bytes, FT_Long size, const FontDataKey &key, FT_Face *result) {
     if (!result || !bytes || size <= 0) return FT_Err_Invalid_Argument;
     *result = nullptr;
     FT_Face face = nullptr;
@@ -33,10 +31,9 @@ inline FT_Error newMatchingMemoryFace(FT_Library library, const FT_Byte* bytes,
             error = FT_New_Memory_Face(library, bytes, size, index, &face);
             if (error) return error;
         }
-        const bool matches = face->family_name
-            && Font::FontFamily(std::string(face->family_name)) == key.family()
-            && bool(face->style_flags & FT_STYLE_FLAG_BOLD) == key.bold()
-            && bool(face->style_flags & FT_STYLE_FLAG_ITALIC) == key.italic();
+        const bool matches = face->family_name && Font::FontFamily(std::string(face->family_name)) == key.family() &&
+                             bool(face->style_flags & FT_STYLE_FLAG_BOLD) == key.bold() &&
+                             bool(face->style_flags & FT_STYLE_FLAG_ITALIC) == key.italic();
         if (matches) {
             *result = face;
             return 0;

@@ -31,46 +31,34 @@
 #include "string.h"
 
 using namespace muse;
+
 // ==================================
 // Format
 // ==================================
-static Date dateFromTM(const std::tm& tm)
-{
-    return Date(tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
-}
+static Date dateFromTM(const std::tm &tm) { return Date(tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday); }
 
-static void toTM(std::tm& tm, const Date& d)
-{
+static void toTM(std::tm &tm, const Date &d) {
     tm.tm_year = std::max(d.year() - 1900, 0);
     tm.tm_mon = std::max(d.month() - 1, 0);
     tm.tm_mday = std::max(d.day(), 1);
 }
 
-static Time timeFromTM(const std::tm& tm)
-{
-    return Time(tm.tm_hour, tm.tm_min, tm.tm_sec);
-}
+static Time timeFromTM(const std::tm &tm) { return Time(tm.tm_hour, tm.tm_min, tm.tm_sec); }
 
-static void toTM(std::tm& tm, const Time& t)
-{
+static void toTM(std::tm &tm, const Time &t) {
     tm.tm_hour = std::max(t.hour(), 0);
     tm.tm_min = std::max(t.minute(), 0);
     tm.tm_sec = std::max(t.second(), 0);
 }
 
-static DateTime datetimeFromTM(const std::tm& tm)
-{
-    return DateTime(dateFromTM(tm), timeFromTM(tm));
-}
+static DateTime datetimeFromTM(const std::tm &tm) { return DateTime(dateFromTM(tm), timeFromTM(tm)); }
 
-static void toTM(std::tm& tm, const DateTime& dt)
-{
+static void toTM(std::tm &tm, const DateTime &dt) {
     toTM(tm, dt.date());
     toTM(tm, dt.time());
 }
 
-static String formatTime(const Time& t, const char* fmt)
-{
+static String formatTime(const Time &t, const char *fmt) {
     std::tm tm;
     toTM(tm, t);
 
@@ -80,8 +68,7 @@ static String formatTime(const Time& t, const char* fmt)
     return String::fromUtf8(mbstr);
 }
 
-static String formatDate(const Date& d, const char* fmt)
-{
+static String formatDate(const Date &d, const char *fmt) {
     std::tm tm;
     toTM(tm, d);
 
@@ -91,8 +78,7 @@ static String formatDate(const Date& d, const char* fmt)
     return String::fromUtf8(mbstr);
 }
 
-static String formatDateTime(const DateTime& dt, const char* fmt)
-{
+static String formatDateTime(const DateTime &dt, const char *fmt) {
     std::tm tm;
     toTM(tm, dt);
 
@@ -105,33 +91,17 @@ static String formatDateTime(const DateTime& dt, const char* fmt)
 // ==================================
 // Date
 // ==================================
-Date::Date(int y, int m, int d)
-    : m_year(y), m_month(m), m_day(d)
-{
-}
+Date::Date(int y, int m, int d) : m_year(y), m_month(m), m_day(d) {}
 
-bool Date::isNull() const
-{
-    return m_year == 0 && m_month == 0 && m_day == 0;
-}
+bool Date::isNull() const { return m_year == 0 && m_month == 0 && m_day == 0; }
 
-int Date::year() const
-{
-    return m_year;
-}
+int Date::year() const { return m_year; }
 
-int Date::month() const
-{
-    return m_month;
-}
+int Date::month() const { return m_month; }
 
-int Date::day() const
-{
-    return m_day;
-}
+int Date::day() const { return m_day; }
 
-int64_t Date::daysTo(const Date& d) const
-{
+int64_t Date::daysTo(const Date &d) const {
     if (isNull() || d.isNull()) {
         return 0;
     }
@@ -144,17 +114,16 @@ int64_t Date::daysTo(const Date& d) const
 
     std::time_t meTime = std::mktime(&meTM);
     std::time_t otherTime = std::mktime(&otherTM);
-    if (meTime != (std::time_t)(-1) && otherTime != (std::time_t)(-1)) {
+    if (meTime != (std::time_t) (-1) && otherTime != (std::time_t) (-1)) {
         double difference = std::difftime(otherTime, meTime) / (60 * 60 * 24);
         return difference;
     }
     return 0;
 }
 
-Date Date::currentDate()
-{
+Date Date::currentDate() {
     using namespace std::chrono;
-    milliseconds ms_d = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
+    milliseconds ms_d = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 
     std::time_t sec = static_cast<std::time_t>(ms_d.count() / 1000);
     std::tm tm;
@@ -170,17 +139,15 @@ Date Date::currentDate()
     return dateFromTM(tm);
 }
 
-String Date::toString(DateFormat format) const
-{
+String Date::toString(DateFormat format) const {
     switch (format) {
-    case DateFormat::ISODate:           return formatDate(*this, "%Y-%m-%d");
-    case DateFormat::LocaleShortFormat: return formatDate(*this, "%x");
+        case DateFormat::ISODate: return formatDate(*this, "%Y-%m-%d");
+        case DateFormat::LocaleShortFormat: return formatDate(*this, "%x");
     }
     return String();
 }
 
-Date Date::fromStringISOFormat(const String& str)
-{
+Date Date::fromStringISOFormat(const String &str) {
     std::tm tm = {};
     std::stringstream ss(str.toStdString());
     ss >> std::get_time(&tm, "%Y-%m-%d");
@@ -191,30 +158,17 @@ Date Date::fromStringISOFormat(const String& str)
 // Time
 // ==================================
 
-Time::Time(int h, int m, int s)
-    : m_hour(h), m_minute(m), m_second(s)
-{
-}
+Time::Time(int h, int m, int s) : m_hour(h), m_minute(m), m_second(s) {}
 
-int Time::hour() const
-{
-    return m_hour;
-}
+int Time::hour() const { return m_hour; }
 
-int Time::minute() const
-{
-    return m_minute;
-}
+int Time::minute() const { return m_minute; }
 
-int Time::second() const
-{
-    return m_second;
-}
+int Time::second() const { return m_second; }
 
-Time Time::currentTime()
-{
+Time Time::currentTime() {
     using namespace std::chrono;
-    milliseconds ms_d = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
+    milliseconds ms_d = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 
     std::time_t sec = static_cast<std::time_t>(ms_d.count() / 1000);
     std::tm tm;
@@ -230,17 +184,15 @@ Time Time::currentTime()
     return timeFromTM(tm);
 }
 
-String Time::toString(DateFormat format) const
-{
+String Time::toString(DateFormat format) const {
     switch (format) {
-    case DateFormat::ISODate:           return formatTime(*this, "%H:%M:%S");
-    case DateFormat::LocaleShortFormat: return formatTime(*this, "%R");
+        case DateFormat::ISODate: return formatTime(*this, "%H:%M:%S");
+        case DateFormat::LocaleShortFormat: return formatTime(*this, "%R");
     }
     return String();
 }
 
-Time Time::fromStringISOFormat(const String& str)
-{
+Time Time::fromStringISOFormat(const String &str) {
     std::tm tm = {};
     std::stringstream ss(str.toStdString());
     ss >> std::get_time(&tm, "%H:%M:%S");
@@ -250,25 +202,15 @@ Time Time::fromStringISOFormat(const String& str)
 // ==================================
 // DateTime
 // ==================================
-DateTime::DateTime(const Date& d, const Time& t)
-    : m_date(d), m_time(t)
-{
-}
+DateTime::DateTime(const Date &d, const Time &t) : m_date(d), m_time(t) {}
 
-const Date& DateTime::date() const
-{
-    return m_date;
-}
+const Date &DateTime::date() const { return m_date; }
 
-const Time& DateTime::time() const
-{
-    return m_time;
-}
+const Time &DateTime::time() const { return m_time; }
 
-DateTime DateTime::currentDateTime()
-{
+DateTime DateTime::currentDateTime() {
     using namespace std::chrono;
-    milliseconds ms_d = duration_cast< milliseconds >(system_clock::now().time_since_epoch());
+    milliseconds ms_d = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 
     std::time_t sec = static_cast<std::time_t>(ms_d.count() / 1000);
     std::tm tm;
@@ -285,17 +227,15 @@ DateTime DateTime::currentDateTime()
     return datetimeFromTM(tm);
 }
 
-String DateTime::toString(DateFormat format) const
-{
+String DateTime::toString(DateFormat format) const {
     switch (format) {
-    case DateFormat::ISODate:           return formatDateTime(*this, "%Y-%m-%dT%H:%M:%S");
-    case DateFormat::LocaleShortFormat: return formatDateTime(*this, "%x %R");
+        case DateFormat::ISODate: return formatDateTime(*this, "%Y-%m-%dT%H:%M:%S");
+        case DateFormat::LocaleShortFormat: return formatDateTime(*this, "%x %R");
     }
     return String();
 }
 
-DateTime DateTime::fromStringISOFormat(const String& str)
-{
+DateTime DateTime::fromStringISOFormat(const String &str) {
     std::tm tm = {};
     std::stringstream ss(str.toStdString());
     ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");

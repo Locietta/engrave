@@ -45,17 +45,15 @@ namespace mu::engraving {
 //   fermataStyle
 //---------------------------------------------------------
 
-static const ElementStyle fermataStyle {
-    { Sid::fermataMinDistance, Pid::MIN_DISTANCE },
+static const ElementStyle fermataStyle{
+    {Sid::fermataMinDistance, Pid::MIN_DISTANCE},
 };
 
 //---------------------------------------------------------
 //   Fermata
 //---------------------------------------------------------
 
-Fermata::Fermata(EngravingObject* parent)
-    : EngravingItem(ElementType::FERMATA, parent, ElementFlag::MOVABLE | ElementFlag::ON_STAFF)
-{
+Fermata::Fermata(EngravingObject *parent) : EngravingItem(ElementType::FERMATA, parent, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
     setPlacement(PlacementV::ABOVE);
     m_symId = SymId::noSym;
     setPlay(true);
@@ -66,8 +64,7 @@ Fermata::Fermata(EngravingObject* parent)
 //   subtype
 //---------------------------------------------------------
 
-int Fermata::subtype() const
-{
+int Fermata::subtype() const {
     String s = String::fromAscii(SymNames::nameForSymId(m_symId).ascii());
     if (s.endsWith(u"Below")) {
         return int(SymNames::symIdByName(s.left(s.size() - 5) + u"Above"));
@@ -80,18 +77,14 @@ int Fermata::subtype() const
 //   subtypeUserName
 //---------------------------------------------------------
 
-muse::TranslatableString Fermata::subtypeUserName() const
-{
-    return SymNames::userNameForSymId(symId());
-}
+muse::TranslatableString Fermata::subtypeUserName() const { return SymNames::userNameForSymId(symId()); }
 
 //---------------------------------------------------------
 //   measure
 //---------------------------------------------------------
 
-Measure* Fermata::measure() const
-{
-    Segment* s = segment();
+Measure *Fermata::measure() const {
+    Segment *s = segment();
     return toMeasure(s ? s->ownershipParent() : 0);
 }
 
@@ -99,9 +92,8 @@ Measure* Fermata::measure() const
 //   system
 //---------------------------------------------------------
 
-System* Fermata::system() const
-{
-    Measure* m = measure();
+System *Fermata::system() const {
+    Measure *m = measure();
     return m ? m->system() : nullptr;
 }
 
@@ -109,9 +101,8 @@ System* Fermata::system() const
 //   page
 //---------------------------------------------------------
 
-Page* Fermata::page() const
-{
-    System* s = system();
+Page *Fermata::page() const {
+    System *s = system();
     return s ? s->page() : nullptr;
 }
 
@@ -119,17 +110,12 @@ Page* Fermata::page() const
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Fermata::getProperty(Pid propertyId) const
-{
+PropertyValue Fermata::getProperty(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::SYMBOL:
-        return PropertyValue::fromValue(m_symId);
-    case Pid::TIME_STRETCH:
-        return timeStretch();
-    case Pid::PLAY:
-        return play();
-    default:
-        return EngravingItem::getProperty(propertyId);
+        case Pid::SYMBOL: return PropertyValue::fromValue(m_symId);
+        case Pid::TIME_STRETCH: return timeStretch();
+        case Pid::PLAY: return play();
+        default: return EngravingItem::getProperty(propertyId);
     }
 }
 
@@ -137,33 +123,24 @@ PropertyValue Fermata::getProperty(Pid propertyId) const
 //   setProperty
 //---------------------------------------------------------
 
-bool Fermata::setProperty(Pid propertyId, const PropertyValue& v)
-{
+bool Fermata::setProperty(Pid propertyId, const PropertyValue &v) {
     switch (propertyId) {
-    case Pid::SYMBOL:
-        setSymIdAndTimeStretch(v.value<SymId>());
-        break;
-    case Pid::PLACEMENT: {
-        PlacementV p = v.value<PlacementV>();
-        if (p != placement()) {
-            String s = String::fromAscii(SymNames::nameForSymId(m_symId).ascii());
-            bool up = placeAbove();
-            if (s.endsWith(up ? u"Above" : u"Below")) {
-                String s2 = s.left(s.size() - 5) + (up ? u"Below" : u"Above");
-                m_symId = SymNames::symIdByName(s2);
+        case Pid::SYMBOL: setSymIdAndTimeStretch(v.value<SymId>()); break;
+        case Pid::PLACEMENT: {
+            PlacementV p = v.value<PlacementV>();
+            if (p != placement()) {
+                String s = String::fromAscii(SymNames::nameForSymId(m_symId).ascii());
+                bool up = placeAbove();
+                if (s.endsWith(up ? u"Above" : u"Below")) {
+                    String s2 = s.left(s.size() - 5) + (up ? u"Below" : u"Above");
+                    m_symId = SymNames::symIdByName(s2);
+                }
+                setPlacement(p);
             }
-            setPlacement(p);
-        }
-    }
-    break;
-    case Pid::PLAY:
-        setPlay(v.toBool());
-        break;
-    case Pid::TIME_STRETCH:
-        setTimeStretch(v.toDouble());
-        break;
-    default:
-        return EngravingItem::setProperty(propertyId, v);
+        } break;
+        case Pid::PLAY: setPlay(v.toBool()); break;
+        case Pid::TIME_STRETCH: setTimeStretch(v.toDouble()); break;
+        default: return EngravingItem::setProperty(propertyId, v);
     }
     triggerLayout();
     return true;
@@ -173,32 +150,23 @@ bool Fermata::setProperty(Pid propertyId, const PropertyValue& v)
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Fermata::propertyDefault(Pid propertyId) const
-{
+PropertyValue Fermata::propertyDefault(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::PLACEMENT:
-        return track() & 1 ? PlacementV::BELOW : PlacementV::ABOVE;
-    case Pid::TIME_STRETCH:
-        switch (fermataType()) {
-        case FermataType::VeryShort:
-            return 1.25;
-        case FermataType::Short:
-        case FermataType::ShortHenze:
-            return 1.5;
-        case FermataType::Normal:
-        case FermataType::Undefined:
-            return 2.0;
-        case FermataType::Long:
-        case FermataType::LongHenze:
-            return 3.0;
-        case FermataType::VeryLong:
-            return 4.0;
-        }
-        break;
-    case Pid::PLAY:
-        return true;
-    default:
-        break;
+        case Pid::PLACEMENT: return track() & 1 ? PlacementV::BELOW : PlacementV::ABOVE;
+        case Pid::TIME_STRETCH:
+            switch (fermataType()) {
+                case FermataType::VeryShort: return 1.25;
+                case FermataType::Short:
+                case FermataType::ShortHenze: return 1.5;
+                case FermataType::Normal:
+                case FermataType::Undefined: return 2.0;
+                case FermataType::Long:
+                case FermataType::LongHenze: return 3.0;
+                case FermataType::VeryLong: return 4.0;
+            }
+            break;
+        case Pid::PLAY: return true;
+        default: break;
     }
     return EngravingItem::propertyDefault(propertyId);
 }
@@ -207,15 +175,11 @@ PropertyValue Fermata::propertyDefault(Pid propertyId) const
 //   resetProperty
 //---------------------------------------------------------
 
-void Fermata::resetProperty(Pid id)
-{
+void Fermata::resetProperty(Pid id) {
     switch (id) {
-    case Pid::TIME_STRETCH:
-        setProperty(id, propertyDefault(id));
-        return;
+        case Pid::TIME_STRETCH: setProperty(id, propertyDefault(id)); return;
 
-    default:
-        break;
+        default: break;
     }
     EngravingItem::resetProperty(id);
 }
@@ -224,8 +188,7 @@ void Fermata::resetProperty(Pid id)
 //   mag
 //---------------------------------------------------------
 
-double Fermata::mag() const
-{
+double Fermata::mag() const {
     double m = staff() ? staff()->staffMag(tick()) * style().styleD(Sid::articulationMag) : 1.0;
     if (segment() && segment()->isChordRestType() && segment()->element(track())) {
         m *= toChordRest(segment()->element(track()))->intrinsicMag();
@@ -233,29 +196,27 @@ double Fermata::mag() const
     return m;
 }
 
-void Fermata::setSymIdAndTimeStretch(SymId id)
-{
+void Fermata::setSymIdAndTimeStretch(SymId id) {
     m_symId = id;
     m_timeStretch = m_timeStretch == -1 ? propertyDefault(Pid::TIME_STRETCH).value<double>() : -1;
 }
 
-FermataType Fermata::fermataType() const
-{
+FermataType Fermata::fermataType() const {
     static const std::unordered_map<SymId, FermataType> FERMATA_TYPES = {
-        { SymId::fermataAbove, FermataType::Normal },
-        { SymId::fermataBelow, FermataType::Normal },
-        { SymId::fermataLongAbove, FermataType::Long },
-        { SymId::fermataLongBelow, FermataType::Long },
-        { SymId::fermataLongHenzeAbove, FermataType::LongHenze },
-        { SymId::fermataLongHenzeBelow, FermataType::LongHenze },
-        { SymId::fermataVeryLongAbove, FermataType::VeryLong },
-        { SymId::fermataVeryLongBelow, FermataType::VeryLong },
-        { SymId::fermataShortHenzeAbove, FermataType::ShortHenze },
-        { SymId::fermataShortHenzeBelow, FermataType::ShortHenze },
-        { SymId::fermataVeryShortAbove, FermataType::VeryShort },
-        { SymId::fermataVeryShortBelow, FermataType::VeryShort },
-        { SymId::fermataShortAbove, FermataType::Short },
-        { SymId::fermataShortBelow, FermataType::Short },
+        {SymId::fermataAbove, FermataType::Normal},
+        {SymId::fermataBelow, FermataType::Normal},
+        {SymId::fermataLongAbove, FermataType::Long},
+        {SymId::fermataLongBelow, FermataType::Long},
+        {SymId::fermataLongHenzeAbove, FermataType::LongHenze},
+        {SymId::fermataLongHenzeBelow, FermataType::LongHenze},
+        {SymId::fermataVeryLongAbove, FermataType::VeryLong},
+        {SymId::fermataVeryLongBelow, FermataType::VeryLong},
+        {SymId::fermataShortHenzeAbove, FermataType::ShortHenze},
+        {SymId::fermataShortHenzeBelow, FermataType::ShortHenze},
+        {SymId::fermataVeryShortAbove, FermataType::VeryShort},
+        {SymId::fermataVeryShortBelow, FermataType::VeryShort},
+        {SymId::fermataShortAbove, FermataType::Short},
+        {SymId::fermataShortBelow, FermataType::Short},
     };
 
     auto search = FERMATA_TYPES.find(symId());
@@ -271,8 +232,5 @@ FermataType Fermata::fermataType() const
 //   accessibleInfo
 //---------------------------------------------------------
 
-Sid Fermata::defaultPosSid() const
-{
-    return placeAbove() ? Sid::fermataPosAbove : Sid::fermataPosBelow;
-}
-}
+Sid Fermata::defaultPosSid() const { return placeAbove() ? Sid::fermataPosAbove : Sid::fermataPosBelow; }
+} // namespace mu::engraving

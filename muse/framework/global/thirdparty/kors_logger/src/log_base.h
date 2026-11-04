@@ -27,7 +27,7 @@ SOFTWARE.
 
 #include <cassert> // IWYU pragma: export
 
-#include "funcinfo.h" // IWYU pragma: export
+#include "funcinfo.h"    // IWYU pragma: export
 #include "log_forward.h" // IWYU pragma: export
 
 //! Log
@@ -36,7 +36,7 @@ SOFTWARE.
 #define LOG_TAG CLASSFUNC
 #endif
 
-#define IF_LOGLEVEL(level)  if (kors::logger::enabled(level))
+#define IF_LOGLEVEL(level) if (kors::logger::enabled(level))
 
 #define LOG_STREAM(type, tag, color) kors::logger::LogInput(type, tag, color).stream
 
@@ -50,16 +50,17 @@ SOFTWARE.
 #define LOGW LOGW_T(LOG_TAG)
 #define LOGI LOGI_T(LOG_TAG)
 #define LOGD LOGD_T(LOG_TAG)
-#define LOGDA LOGDA_T(LOG_TAG)      // active debug
-#define LOGN if constexpr (0)LOGD_T(LOG_TAG)  // compiling, but no output
+#define LOGDA LOGDA_T(LOG_TAG) // active debug
+#define LOGN \
+    if constexpr (0) LOGD_T(LOG_TAG) // compiling, but no output
 
 #include "global/asserts.h"
 
-#define UNUSED(x) (void)x;
+#define UNUSED(x) (void) x;
 
-#define UNREACHABLE \
+#define UNREACHABLE                                               \
     LOGE() << "\"UNREACHABLE    " << __FILE__ << ":" << __LINE__; \
-    ASSERT_X("UNREACHABLE was reached"); \
+    ASSERT_X("UNREACHABLE was reached");
 
 #define DEPRECATED LOGD() << "This function deprecated!!"
 #define DEPRECATED_USE(use) LOGD() << "This function deprecated!! Use:" << use
@@ -72,7 +73,7 @@ SOFTWARE.
 #undef FALLTHROUGH
 #define FALLTHROUGH [[fallthrough]]
 #else
-#define FALLTHROUGH (void)0
+#define FALLTHROUGH (void) 0
 #endif
 
 #endif // KORS_LOG_BASE_H

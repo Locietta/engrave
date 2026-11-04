@@ -39,99 +39,96 @@
 #define DTL_FUNCTORS_H
 
 namespace dtl {
-    
-    /**
+
+/**
      * printer class template
      */
-    template <typename sesElem, typename stream = ostream >
-    class Printer
-    {
-    public :
-        Printer ()            : out_(cout) {}
-        Printer (stream& out) : out_(out)  {}
-        virtual ~Printer () {}
-        virtual void operator() (const sesElem& se) const = 0;
-    protected :
-        stream& out_;
-    };
-    
-    /**
+template <typename sesElem, typename stream = ostream>
+class Printer {
+public:
+    Printer() : out_(cout) {}
+
+    Printer(stream &out) : out_(out) {}
+
+    virtual ~Printer() {}
+
+    virtual void operator()(const sesElem &se) const = 0;
+protected:
+    stream &out_;
+};
+
+/**
      * common element printer class template
      */
-    template <typename sesElem, typename stream = ostream >
-    class CommonPrinter : public Printer < sesElem, stream >
-    {
-    public :
-        CommonPrinter  ()            : Printer < sesElem, stream > ()    {}
-        CommonPrinter  (stream& out) : Printer < sesElem, stream > (out) {}
-        ~CommonPrinter () {}
-        void operator() (const sesElem& se) const {
-            this->out_ << SES_MARK_COMMON << se.first << endl;    
-        }
-    };
-    
-    /**
+template <typename sesElem, typename stream = ostream>
+class CommonPrinter : public Printer<sesElem, stream> {
+public:
+    CommonPrinter() : Printer<sesElem, stream>() {}
+
+    CommonPrinter(stream &out) : Printer<sesElem, stream>(out) {}
+
+    ~CommonPrinter() {}
+
+    void operator()(const sesElem &se) const { this->out_ << SES_MARK_COMMON << se.first << endl; }
+};
+
+/**
      * ses element printer class template
      */
-    template <typename sesElem, typename stream = ostream >
-    class ChangePrinter : public Printer < sesElem, stream >
-    {
-    public :
-        ChangePrinter  ()            : Printer < sesElem, stream > ()    {}
-        ChangePrinter  (stream& out) : Printer < sesElem, stream > (out) {}
-        ~ChangePrinter () {}
-        void operator() (const sesElem& se) const {
-            switch (se.second.type) {
-            case SES_ADD:
-                this->out_ << SES_MARK_ADD    << se.first << endl;
-                break;
-            case SES_DELETE:
-                this->out_ << SES_MARK_DELETE << se.first << endl;
-                break;
-            case SES_COMMON:
-                this->out_ << SES_MARK_COMMON << se.first << endl;
-                break;
-            }
+template <typename sesElem, typename stream = ostream>
+class ChangePrinter : public Printer<sesElem, stream> {
+public:
+    ChangePrinter() : Printer<sesElem, stream>() {}
+
+    ChangePrinter(stream &out) : Printer<sesElem, stream>(out) {}
+
+    ~ChangePrinter() {}
+
+    void operator()(const sesElem &se) const {
+        switch (se.second.type) {
+            case SES_ADD: this->out_ << SES_MARK_ADD << se.first << endl; break;
+            case SES_DELETE: this->out_ << SES_MARK_DELETE << se.first << endl; break;
+            case SES_COMMON: this->out_ << SES_MARK_COMMON << se.first << endl; break;
         }
-    };
-    
-    /**
+    }
+};
+
+/**
      * unified format element printer class template
      */
-    template <typename sesElem, typename stream = ostream >
-    class UniHunkPrinter
-    {
-    public :
-        UniHunkPrinter  ()            : out_(cout) {}
-        UniHunkPrinter  (stream& out) : out_(out)  {}
-        ~UniHunkPrinter () {}
-        void operator() (const uniHunk< sesElem >& hunk) const {
-            out_ << "@@"
-                 << " -"  << hunk.a << "," << hunk.b
-                 << " +"  << hunk.c << "," << hunk.d
-                 << " @@" << endl;
-            
-            for_each(hunk.common[0].begin(), hunk.common[0].end(), CommonPrinter< sesElem, stream >(out_));
-            for_each(hunk.change.begin(),    hunk.change.end(),    ChangePrinter< sesElem, stream >(out_));
-            for_each(hunk.common[1].begin(), hunk.common[1].end(), CommonPrinter< sesElem, stream >(out_));
-        }
-    private :
-        stream& out_;
-    };
-    
-    /**
+template <typename sesElem, typename stream = ostream>
+class UniHunkPrinter {
+public:
+    UniHunkPrinter() : out_(cout) {}
+
+    UniHunkPrinter(stream &out) : out_(out) {}
+
+    ~UniHunkPrinter() {}
+
+    void operator()(const uniHunk<sesElem> &hunk) const {
+        out_ << "@@"
+             << " -" << hunk.a << "," << hunk.b << " +" << hunk.c << "," << hunk.d << " @@" << endl;
+
+        for_each(hunk.common[0].begin(), hunk.common[0].end(), CommonPrinter<sesElem, stream>(out_));
+        for_each(hunk.change.begin(), hunk.change.end(), ChangePrinter<sesElem, stream>(out_));
+        for_each(hunk.common[1].begin(), hunk.common[1].end(), CommonPrinter<sesElem, stream>(out_));
+    }
+private:
+    stream &out_;
+};
+
+/**
      * compare class template
      */
-    template <typename elem>
-    class Compare
-    {
-    public :
-        Compare () {}
-        virtual ~Compare () {}
-        virtual inline bool impl (const elem& e1, const elem& e2) const {
-            return e1 == e2;
-        }
-    };
-}
+template <typename elem>
+class Compare {
+public:
+    Compare() {}
+
+    virtual ~Compare() {}
+
+    virtual inline bool impl(const elem &e1, const elem &e2) const { return e1 == e2; }
+};
+} // namespace dtl
 
 #endif // DTL_FUNCTORS_H

@@ -41,69 +41,77 @@ class Staff;
 
 // defines the string of an instrument
 struct instrString {
-    instrString(int p = 0, bool o = false, int s = 0)
-        : pitch(p), open(o), startFret(s) {}
+    instrString(int p = 0, bool o = false, int s = 0) : pitch(p), open(o), startFret(s) {}
 
-    int pitch = 0;          // the pitch of the string
-    bool open = false;          // true: string is open | false: string is fretted
-    int startFret = 0;      // banjo 5th string starts on 5th fret
+    int pitch = 0;     // the pitch of the string
+    bool open = false; // true: string is open | false: string is fretted
+    int startFret = 0; // banjo 5th string starts on 5th fret
     bool useFlat = false;
 
-    bool operator==(const instrString& d) const { return d.pitch == pitch && d.open == open; }
+    bool operator==(const instrString &d) const { return d.pitch == pitch && d.open == open; }
 };
 
-class StringData
-{
+class StringData {
 public:
     StringData() {}
+
     StringData(int numFrets, int numStrings, int strings[], bool useFlats = false);
-    StringData(int numFrets, std::vector<instrString>& strings);
+    StringData(int numFrets, std::vector<instrString> &strings);
 
     bool isNull() const;
 
-    void        set(const StringData& src);
-    bool        convertPitch(int pitch, int pitchOffset, int* string, int* fret, const CapoParams& capo = {}) const;
-    bool        convertPitch(int pitch, const Staff* staff, int* string, int* fret) const;
-    bool        convertPitch(int pitch, const Staff* staff, const Fraction& tick, int* string, int* fret) const;
-    int         fret(int pitch, int string, const Staff* staff) const;
-    int         fret(int pitch, int string, const Staff* staff, const Fraction& tick) const;
-    void        fretChords(Chord* chord) const;
-    int         getPitch(int string, int fret, int pitchOffset) const;
-    int         getPitch(int string, int fret, const Staff* staff) const;
-    int         getPitch(int string, int fret, const Staff* staff, const Fraction& tick) const;
-    static int  pitchOffsetAt(const Staff* staff);
-    static int  pitchOffsetAt(const Staff* staff, const Fraction& tick);
-    static int  pitchOffsetAt(const Staff* staff, const Fraction& tick, int string);
-    size_t      strings() const { return m_stringTable.size(); }
-    int         frettedStrings() const;
-    const std::vector<instrString>& stringList() const { return m_stringTable; }
-    std::vector<instrString>& stringList() { return m_stringTable; }
-    int         frets() const { return m_frets; }
-    void        setFrets(int val) { m_frets = val; }
-    bool operator==(const StringData& d) const { return d.m_frets == m_frets && d.m_stringTable == m_stringTable; }
-    void        configBanjo5thString();
-    int         adjustBanjo5thFret(int fret) const;
-    bool        isFiveStringBanjo() const;
-    bool        useFlats() const { return m_useFlats; }
+    void set(const StringData &src);
+    bool convertPitch(int pitch, int pitchOffset, int *string, int *fret, const CapoParams &capo = {}) const;
+    bool convertPitch(int pitch, const Staff *staff, int *string, int *fret) const;
+    bool convertPitch(int pitch, const Staff *staff, const Fraction &tick, int *string, int *fret) const;
+    int fret(int pitch, int string, const Staff *staff) const;
+    int fret(int pitch, int string, const Staff *staff, const Fraction &tick) const;
+    void fretChords(Chord *chord) const;
+    int getPitch(int string, int fret, int pitchOffset) const;
+    int getPitch(int string, int fret, const Staff *staff) const;
+    int getPitch(int string, int fret, const Staff *staff, const Fraction &tick) const;
+    static int pitchOffsetAt(const Staff *staff);
+    static int pitchOffsetAt(const Staff *staff, const Fraction &tick);
+    static int pitchOffsetAt(const Staff *staff, const Fraction &tick, int string);
+
+    size_t strings() const { return m_stringTable.size(); }
+
+    int frettedStrings() const;
+
+    const std::vector<instrString> &stringList() const { return m_stringTable; }
+
+    std::vector<instrString> &stringList() { return m_stringTable; }
+
+    int frets() const { return m_frets; }
+
+    void setFrets(int val) { m_frets = val; }
+
+    bool operator==(const StringData &d) const { return d.m_frets == m_frets && d.m_stringTable == m_stringTable; }
+
+    void configBanjo5thString();
+    int adjustBanjo5thFret(int fret) const;
+    bool isFiveStringBanjo() const;
+
+    bool useFlats() const { return m_useFlats; }
 
 private:
 
-    int         fret(int pitch, int string, int pitchOffset) const;
-    void        sortChordNotes(std::map<int, Note*>& sortedNotes, const Chord* chord, int* count) const;
-    void        sortChordNotesUseSameString(const Chord* chord) const;
-    bool        hasPendingPitchChange(const Chord* chord) const;
-    void        updateFretsOnSameStrings(const Chord* chord) const;
-    void        preferBassStringForNegativeFret(const Chord* chord) const;
-    void        reassignNegativeFretNotes(const Chord* chord) const;
-    bool        tryResolveStringConflictWithOutOfRangeFret(const Note* note, int numStrings, std::vector<int>& bUsed, int& nNewString,
-                                                           int& nNewFret) const;
+    int fret(int pitch, int string, int pitchOffset) const;
+    void sortChordNotes(std::map<int, Note *> &sortedNotes, const Chord *chord, int *count) const;
+    void sortChordNotesUseSameString(const Chord *chord) const;
+    bool hasPendingPitchChange(const Chord *chord) const;
+    void updateFretsOnSameStrings(const Chord *chord) const;
+    void preferBassStringForNegativeFret(const Chord *chord) const;
+    void reassignNegativeFretNotes(const Chord *chord) const;
+    bool tryResolveStringConflictWithOutOfRangeFret(const Note *note, int numStrings, std::vector<int> &bUsed, int &nNewString,
+                                                    int &nNewFret) const;
 
     //      std::vector<int>  stringTable { 40, 45, 50, 55, 59, 64 };   // guitar is default
     //      int         _frets = 19;
-    std::vector<instrString> m_stringTable;                      // no strings by default
+    std::vector<instrString> m_stringTable; // no strings by default
     int m_frets = 0;
 
     static bool bFretting;
     bool m_useFlats = false;
 };
-}
+} // namespace mu::engraving

@@ -32,24 +32,25 @@ class Tuplet;
 //---------------------------------------------------------
 
 struct Tuplet2 {
-    Tuplet* o = nullptr;
-    Tuplet* n = nullptr;
-    Tuplet2(Tuplet* _o, Tuplet* _n)
-        : o(_o), n(_n) {}
+    Tuplet *o = nullptr;
+    Tuplet *n = nullptr;
+
+    Tuplet2(Tuplet *_o, Tuplet *_n) : o(_o), n(_n) {}
 };
 
 //---------------------------------------------------------
 //   TupletMap
 //---------------------------------------------------------
 
-class TupletMap
-{
+class TupletMap {
 public:
     TupletMap() {}
-    Tuplet* findNew(Tuplet* o);
-    void add(Tuplet* _o, Tuplet* _n) { m_map.emplace_back(_o, _n); }
+
+    Tuplet *findNew(Tuplet *o);
+
+    void add(Tuplet *_o, Tuplet *_n) { m_map.emplace_back(_o, _n); }
 
 private:
     std::vector<Tuplet2> m_map;
 };
-}
+} // namespace mu::engraving

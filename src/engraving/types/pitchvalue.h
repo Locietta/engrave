@@ -25,7 +25,6 @@
 
 #include <vector>
 
-
 namespace mu::engraving {
 //---------------------------------------------------------
 //   PitchValue
@@ -43,16 +42,16 @@ struct PitchValue {
     int pitch = 0;
     bool vibrato = false;
     PitchValue() = default;
-    PitchValue(int a, int b, bool c = false)
-        : time(a), pitch(b), vibrato(c) {}
 
-    inline bool operator==(const PitchValue& pv) const { return pv.time == time && pv.pitch == pitch && pv.vibrato == vibrato; }
-    inline bool operator!=(const PitchValue& pv) const { return !operator==(pv); }
+    PitchValue(int a, int b, bool c = false) : time(a), pitch(b), vibrato(c) {}
 
+    inline bool operator==(const PitchValue &pv) const { return pv.time == time && pv.pitch == pitch && pv.vibrato == vibrato; }
+
+    inline bool operator!=(const PitchValue &pv) const { return !operator==(pv); }
 };
 
 using PitchValues = std::vector<PitchValue>;
 
-}
+} // namespace mu::engraving
 
 #endif // MU_ENGRAVING_PITCHVALUE_H

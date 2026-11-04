@@ -49,15 +49,12 @@ namespace mu::engraving {
 //   HChord
 //---------------------------------------------------------
 
-HChord::HChord(const String& str)
-{
-    static const char* const scaleNames[2][12] = {
-        { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" },
-        { "C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B" }
-    };
+HChord::HChord(const String &str) {
+    static const char *const scaleNames[2][12] = {{"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"},
+                                                  {"C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"}};
     m_keys = 0;
     StringList sl = str.split(u' ', muse::SkipEmptyParts);
-    for (const String& s : sl) {
+    for (const String &s : sl) {
         for (int i = 0; i < 12; ++i) {
             if (s == scaleNames[0][i] || s == scaleNames[1][i]) {
                 operator+=(i);
@@ -71,8 +68,7 @@ HChord::HChord(const String& str)
 //   HChord
 //---------------------------------------------------------
 
-HChord::HChord(int a, int b, int c, int d, int e, int f, int g, int h, int i, int k, int l)
-{
+HChord::HChord(int a, int b, int c, int d, int e, int f, int g, int h, int i, int k, int l) {
     m_keys = 0;
     if (a >= 0) {
         operator+=(a);
@@ -114,8 +110,7 @@ HChord::HChord(int a, int b, int c, int d, int e, int f, int g, int h, int i, in
 //    rotate 12 Bits
 //---------------------------------------------------------
 
-void HChord::rotate(int semiTones)
-{
+void HChord::rotate(int semiTones) {
     while (semiTones > 0) {
         if (m_keys & 0x800) {
             m_keys = ((m_keys & ~0x800) << 1) + 1;
@@ -138,8 +133,7 @@ void HChord::rotate(int semiTones)
 //   name
 //---------------------------------------------------------
 
-String HChord::name(int tpc) const
-{
+String HChord::name(int tpc) const {
     static const HChord C0(0, 3, 6, 9);
     static const HChord C1(0, 3);
 
@@ -148,7 +142,7 @@ String HChord::name(int tpc) const
 
     int key = tpc2pitch(tpc);
 
-    c.rotate(-key);          // transpose to C
+    c.rotate(-key); // transpose to C
 
     // special cases
     if (c == C0) {
@@ -160,12 +154,12 @@ String HChord::name(int tpc) const
         return buf;
     }
 
-    bool seven   = false;
-    bool sharp9  = false;
-    bool nat11   = false;
+    bool seven = false;
+    bool sharp9 = false;
+    bool nat11 = false;
     bool sharp11 = false;
-    bool nat13   = false;
-    bool flat13  = false;
+    bool nat13 = false;
+    bool flat13 = false;
 
     // minor?
     if (c.contains(3)) {
@@ -257,10 +251,9 @@ String HChord::name(int tpc) const
 //   voicing
 //---------------------------------------------------------
 
-String HChord::voicing() const
-{
+String HChord::voicing() const {
     String s = u"C";
-    const char* names[] = { "C", " Db", " D", " Eb", " E", " F", " Gb", " G", " Ab", " A", " Bb", " B" };
+    const char *names[] = {"C", " Db", " D", " Eb", " E", " F", " Gb", " G", " Ab", " A", " Bb", " B"};
 
     for (int i = 1; i < 12; i++) {
         if (contains(i)) {
@@ -274,9 +267,8 @@ String HChord::voicing() const
 //   print
 //---------------------------------------------------------
 
-void HChord::print() const
-{
-    const char* names[] = { "C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B" };
+void HChord::print() const {
+    const char *names[] = {"C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"};
 
     for (int i = 0; i < 12; i++) {
         if (contains(i)) {
@@ -289,22 +281,19 @@ void HChord::print() const
 //   add
 //---------------------------------------------------------
 
-void HChord::add(const std::vector<HDegree>& degreeList)
-{
-// LOGD("HChord::add   ");print();
+void HChord::add(const std::vector<HDegree> &degreeList) {
+    // LOGD("HChord::add   ");print();
     // convert degrees to semitones
-    static const int degreeTable[] = {
-        // 1  2  3  4  5  6   7
-        // C  D  E  F  G  A   B
-        0, 2, 4, 5, 7, 9, 11
-    };
+    static const int degreeTable[] = {// 1  2  3  4  5  6   7
+                                      // C  D  E  F  G  A   B
+                                      0, 2, 4, 5, 7, 9, 11};
     // factor in the degrees
-    for (const HDegree& d : degreeList) {
+    for (const HDegree &d : degreeList) {
         int i = (d.value() - 1) % 7;
         if (i < 0) {
             continue; // ?
         }
-        int dv  = degreeTable[i] + d.alter();
+        int dv = degreeTable[i] + d.alter();
         int dv1 = degreeTable[i];
 
         if (d.value() == 7 && d.alter() == 0) {
@@ -318,23 +307,22 @@ void HChord::add(const std::vector<HDegree>& degreeList)
                 *this -= dv1;
                 *this += dv;
             } else {
-//                        LOGD("HDegreeType::ALTER: chord does not contain degree %d(%d):",
-//                           d.value(), d.alter());
-//                        print();
-                *this += dv;              // DEBUG: default to add
+                //                        LOGD("HDegreeType::ALTER: chord does not contain degree %d(%d):",
+                //                           d.value(), d.alter());
+                //                        print();
+                *this += dv; // DEBUG: default to add
             }
         } else if (d.type() == HDegreeType::SUBTRACT) {
             if (contains(dv1)) {
                 *this -= dv1;
             } else {
-                LOGD("SUB: chord does not contain degree %d(%d):",
-                     d.value(), d.alter());
+                LOGD("SUB: chord does not contain degree %d(%d):", d.value(), d.alter());
             }
         } else {
             LOGD("degree type %d not supported", static_cast<int>(d.type()));
         }
 
-// LOGD("  HCHord::added  "); print();
+        // LOGD("  HCHord::added  "); print();
     }
 }
 
@@ -342,11 +330,10 @@ void HChord::add(const std::vector<HDegree>& degreeList)
 //   readRenderList
 //---------------------------------------------------------
 
-static void readRenderList(String val, std::vector<RenderActionPtr>& renderList, int mscVersion)
-{
+static void readRenderList(String val, std::vector<RenderActionPtr> &renderList, int mscVersion) {
     renderList.clear();
     StringList sl = val.split(u' ', muse::SkipEmptyParts);
-    for (const String& s : sl) {
+    for (const String &s : sl) {
         if (s.startsWith(u"m:")) {
             StringList ssl = s.split(u':', muse::SkipEmptyParts);
             if (ssl.size() == 3) {
@@ -406,63 +393,56 @@ static void readRenderList(String val, std::vector<RenderActionPtr>& renderList,
 //   writeRenderList
 //---------------------------------------------------------
 
-static void writeRenderList(XmlWriter& xml, const std::vector<RenderActionPtr>& al, const AsciiStringView& name)
-{
+static void writeRenderList(XmlWriter &xml, const std::vector<RenderActionPtr> &al, const AsciiStringView &name) {
     String s;
 
-    for (const RenderActionPtr& a : al) {
+    for (const RenderActionPtr &a : al) {
         if (!s.isEmpty()) {
             s += u" ";
         }
         switch (a->actionType()) {
-        case RenderAction::RenderActionType::SET: {
-            const RenderActionSetPtr set = std::static_pointer_cast<RenderActionSet>(a);
-            s += set->text();
-            break;
-        }
-        case RenderAction::RenderActionType::MOVE: {
-            const RenderActionMovePtr move = std::static_pointer_cast<RenderActionMove>(a);
-
-            if (!RealIsNull(move->x()) || !RealIsNull(move->y())) {
-                String scaled = move->scaled() ? u"s" : u"";
-                s += String(u"m%1:%2:%3").arg(scaled).arg(move->x()).arg(move->y());
+            case RenderAction::RenderActionType::SET: {
+                const RenderActionSetPtr set = std::static_pointer_cast<RenderActionSet>(a);
+                s += set->text();
+                break;
             }
-            break;
-        }
-        case RenderAction::RenderActionType::MOVEXHEIGHT: {
-            const RenderActionMoveXHeightPtr movex = std::static_pointer_cast<RenderActionMoveXHeight>(a);
-            String scaled = movex->scaled() ? u"s" : u"";
-            s += String(u":mx%1").arg(scaled);
-            break;
-        }
-        case RenderAction::RenderActionType::SCALE: {
-            const RenderActionScalePtr scale = std::static_pointer_cast<RenderActionScale>(a);
-            s+= String(u"sc:%1").arg(scale->scale());
-            break;
-        }
-        case RenderAction::RenderActionType::PUSH:
-            s += u":push";
-            break;
-        case RenderAction::RenderActionType::POP: {
-            const RenderActionPopPtr pop = std::static_pointer_cast<RenderActionPop>(a);
-            String coord = pop->popX() && pop->popY() ? u"" : (pop->popX() ? u"x" : u"y");
-            s += String(u":pop%1").arg(coord);
-            break;
-        }
-        case RenderAction::RenderActionType::NOTE:
-            s += u":n";
-            break;
-        case RenderAction::RenderActionType::ACCIDENTAL:
-            s += u":a";
-            break;
-        case RenderAction::RenderActionType::PAREN: {
-            const RenderActionParenPtr paren = std::static_pointer_cast<RenderActionParen>(a);
-            s += paren->direction() == DirectionH::LEFT ? u":pl" : u":pr";
-            break;
-        }
-        case RenderAction::RenderActionType::STOPHALIGN:
-            // Internal, skip
-            break;
+            case RenderAction::RenderActionType::MOVE: {
+                const RenderActionMovePtr move = std::static_pointer_cast<RenderActionMove>(a);
+
+                if (!RealIsNull(move->x()) || !RealIsNull(move->y())) {
+                    String scaled = move->scaled() ? u"s" : u"";
+                    s += String(u"m%1:%2:%3").arg(scaled).arg(move->x()).arg(move->y());
+                }
+                break;
+            }
+            case RenderAction::RenderActionType::MOVEXHEIGHT: {
+                const RenderActionMoveXHeightPtr movex = std::static_pointer_cast<RenderActionMoveXHeight>(a);
+                String scaled = movex->scaled() ? u"s" : u"";
+                s += String(u":mx%1").arg(scaled);
+                break;
+            }
+            case RenderAction::RenderActionType::SCALE: {
+                const RenderActionScalePtr scale = std::static_pointer_cast<RenderActionScale>(a);
+                s += String(u"sc:%1").arg(scale->scale());
+                break;
+            }
+            case RenderAction::RenderActionType::PUSH: s += u":push"; break;
+            case RenderAction::RenderActionType::POP: {
+                const RenderActionPopPtr pop = std::static_pointer_cast<RenderActionPop>(a);
+                String coord = pop->popX() && pop->popY() ? u"" : (pop->popX() ? u"x" : u"y");
+                s += String(u":pop%1").arg(coord);
+                break;
+            }
+            case RenderAction::RenderActionType::NOTE: s += u":n"; break;
+            case RenderAction::RenderActionType::ACCIDENTAL: s += u":a"; break;
+            case RenderAction::RenderActionType::PAREN: {
+                const RenderActionParenPtr paren = std::static_pointer_cast<RenderActionParen>(a);
+                s += paren->direction() == DirectionH::LEFT ? u":pl" : u":pr";
+                break;
+            }
+            case RenderAction::RenderActionType::STOPHALIGN:
+                // Internal, skip
+                break;
         }
     }
     xml.tag(name, s);
@@ -472,8 +452,7 @@ static void writeRenderList(XmlWriter& xml, const std::vector<RenderActionPtr>& 
 //  read
 //---------------------------------------------------------
 
-void ChordToken::read(XmlReader& e, int mscVersion)
-{
+void ChordToken::read(XmlReader &e, int mscVersion) {
     String c = e.attribute("class");
     if (c == "quality") {
         tokenClass = ChordTokenClass::QUALITY;
@@ -502,30 +481,18 @@ void ChordToken::read(XmlReader& e, int mscVersion)
 //  write
 //---------------------------------------------------------
 
-void ChordToken::write(XmlWriter& xml) const
-{
+void ChordToken::write(XmlWriter &xml) const {
     XmlWriter::Attributes attrs;
     switch (tokenClass) {
-    case ChordTokenClass::QUALITY:
-        attrs.push_back({ "class", "quality" });
-        break;
-    case ChordTokenClass::EXTENSION:
-        attrs.push_back({ "class", "extension" });
-        break;
-    case ChordTokenClass::MODIFIER:
-        attrs.push_back({ "class", "modifier" });
-        break;
-    case ChordTokenClass::TYPE:
-        attrs.push_back({ "class", "type" });
-        break;
-    case ChordTokenClass::ACCIDENTAL:
-        attrs.push_back({ "accidental", "type" });
-        break;
-    default:
-        break;
+        case ChordTokenClass::QUALITY: attrs.push_back({"class", "quality"}); break;
+        case ChordTokenClass::EXTENSION: attrs.push_back({"class", "extension"}); break;
+        case ChordTokenClass::MODIFIER: attrs.push_back({"class", "modifier"}); break;
+        case ChordTokenClass::TYPE: attrs.push_back({"class", "type"}); break;
+        case ChordTokenClass::ACCIDENTAL: attrs.push_back({"accidental", "type"}); break;
+        default: break;
     }
     xml.startElement("token", attrs);
-    for (const String& s : names) {
+    for (const String &s : names) {
         xml.tag("name", s);
     }
     writeRenderList(xml, renderList, "render");
@@ -536,8 +503,7 @@ void ChordToken::write(XmlWriter& xml) const
 //  configure
 //---------------------------------------------------------
 
-void ParsedChord::configure(const ChordList* cl)
-{
+void ParsedChord::configure(const ChordList *cl) {
     if (!cl) {
         return;
     }
@@ -558,8 +524,7 @@ void ParsedChord::configure(const ChordList* cl)
 //    needed for m(Maj9) et al
 //---------------------------------------------------------
 
-void ParsedChord::correctXmlText(const String& s)
-{
+void ParsedChord::correctXmlText(const String &s) {
     String xmlText = m_xmlText;
     xmlText.remove(std::regex("[0-9]"));
     if (!s.empty()) {
@@ -577,8 +542,7 @@ void ParsedChord::correctXmlText(const String& s)
 //    returns true if chord was parseable
 //---------------------------------------------------------
 
-bool ParsedChord::parse(const String& s, const ChordList* cl, bool syntaxOnly, bool preferMinor)
-{
+bool ParsedChord::parse(const String &s, const ChordList *cl, bool syntaxOnly, bool preferMinor) {
     String tok1, tok1L, tok2, tok2L;
     String extensionDigits = u"123456789";
     String special = u"()[],/\\ ";
@@ -592,7 +556,7 @@ bool ParsedChord::parse(const String& s, const ChordList* cl, bool syntaxOnly, b
     int thirdKey = 0, seventhKey = 0;
     bool susChord = false;
     std::vector<HDegree> hdl;
-    int key[] = { 0, 0, 2, 4, 5, 7, 9, 11, 0, 2, 4, 5, 7, 9, 11 };
+    int key[] = {0, 0, 2, 4, 5, 7, 9, 11, 0, 2, 4, 5, 7, 9, 11};
 
     configure(cl);
     m_name = s;
@@ -608,8 +572,8 @@ bool ParsedChord::parse(const String& s, const ChordList* cl, bool syntaxOnly, b
         }
         tok1.append(s.at(i));
         tok1L.append(s.at(i).toLower());
-        if (tok1L == u"m" || m_major.contains(tok1L) || m_minor.contains(tok1L) || m_diminished.contains(tok1L)
-            || m_augmented.contains(tok1L)) {
+        if (tok1L == u"m" || m_major.contains(tok1L) || m_minor.contains(tok1L) || m_diminished.contains(tok1L) ||
+            m_augmented.contains(tok1L)) {
             initial = tok1;
         }
     }
@@ -620,11 +584,7 @@ bool ParsedChord::parse(const String& s, const ChordList* cl, bool syntaxOnly, b
     // quality and first modifier ran together with no separation - eg, mima7, augadd
     // keep quality portion, reset index to read modifier portion later
     // Prevent greedy capture of first character as chord quality in the following cases
-    static const std::array<String, 3> modifiersStartingWithQualityCharacters {
-        u"tristan",
-        u"omit",
-        u"type"
-    };
+    static const std::array<String, 3> modifiersStartingWithQualityCharacters{u"tristan", u"omit", u"type"};
     if (!initial.empty() && initial != tok1 && !muse::contains(modifiersStartingWithQualityCharacters, tok1L)) {
         i -= (tok1.size() - initial.size());
         tok1 = initial;
@@ -880,7 +840,7 @@ bool ParsedChord::parse(const String& s, const ChordList* cl, bool syntaxOnly, b
             m_chord += 9;
             m_chord += 2;
         }
-        for (const String& e : extl) {
+        for (const String &e : extl) {
             String d = u"add" + e;
             m_xmlDegrees << d;
         }
@@ -1288,7 +1248,7 @@ bool ParsedChord::parse(const String& s, const ChordList* cl, bool syntaxOnly, b
         // fix "add" / "alt" conflicts
         // so add9,altb9 -> addb9
         StringList altList = m_xmlDegrees.filter(u"alt");
-        for (const String& d : altList) {
+        for (const String &d : altList) {
             String unalt(d);
             unalt.replace(std::regex("alt[b#]"), u"add");
             if (m_xmlDegrees.removeAll(unalt)) {
@@ -1330,9 +1290,8 @@ bool ParsedChord::parse(const String& s, const ChordList* cl, bool syntaxOnly, b
 //   fromXml
 //---------------------------------------------------------
 
-String ParsedChord::fromXml(const String& rawKind, const String& rawKindText, const String& useSymbols, const String& useParens,
-                            const std::vector<HDegree>& dl, const ChordList* cl)
-{
+String ParsedChord::fromXml(const String &rawKind, const String &rawKindText, const String &useSymbols, const String &useParens,
+                            const std::vector<HDegree> &dl, const ChordList *cl) {
     String kind = rawKind;
     String kindText = rawKindText;
     bool syms = (useSymbols == "yes");
@@ -1410,27 +1369,21 @@ String ParsedChord::fromXml(const String& rawKind, const String& rawKindText, co
     }
 
     // get modifier info from degree list
-    for (const HDegree& d : dl) {
+    for (const HDegree &d : dl) {
         String mod;
         int v = d.value();
         switch (d.type()) {
-        case HDegreeType::ADD:
-        case HDegreeType::ALTER:
-            switch (d.alter()) {
-            case -1:    mod = u"b";
+            case HDegreeType::ADD:
+            case HDegreeType::ALTER:
+                switch (d.alter()) {
+                    case -1: mod = u"b"; break;
+                    case 1: mod = u"#"; break;
+                    case 0: mod = u"add"; break;
+                }
                 break;
-            case 1:     mod = u"#";
-                break;
-            case 0:     mod = u"add";
-                break;
-            }
-            break;
-        case HDegreeType::SUBTRACT:
-            mod = u"no";
-            break;
-        case HDegreeType::UNDEF:
-        default:
-            break;
+            case HDegreeType::SUBTRACT: mod = u"no"; break;
+            case HDegreeType::UNDEF:
+            default: break;
         }
         mod += String::number(v);
         if (mod == "add7" && kind.contains(u"suspended")) {
@@ -1474,7 +1427,7 @@ String ParsedChord::fromXml(const String& rawKind, const String& rawKindText, co
             addn = m_modifierList.indexOf(u"add2");
         }
         if (addn != muse::nidx) {
-            String& s = m_modifierList[addn];
+            String &s = m_modifierList[addn];
             s.replace(u"add", u"sus");
             m_modifierList.removeAt(no3);
         }
@@ -1558,7 +1511,7 @@ String ParsedChord::fromXml(const String& rawKind, const String& rawKindText, co
     m_xmlText = kindText;
     m_xmlSymbols = useSymbols;
     m_xmlParens = useParens;
-    for (const HDegree& d : dl) {
+    for (const HDegree &d : dl) {
         if (kind == "half-diminished" && d.type() == HDegreeType::ALTER && d.alter() == -1 && d.value() == 5) {
             continue;
         }
@@ -1572,33 +1525,32 @@ String ParsedChord::fromXml(const String& rawKind, const String& rawKindText, co
 //   position
 //---------------------------------------------------------
 
-double ChordList::position(const StringList& names, bool stackModifiers, bool superScript, ChordTokenClass ctc, size_t modifierIdx,
-                           size_t nmodifiers) const
-{
+double ChordList::position(const StringList &names, bool stackModifiers, bool superScript, ChordTokenClass ctc, size_t modifierIdx,
+                           size_t nmodifiers) const {
     String name = names.empty() ? u"" : names.front();
     switch (ctc) {
-    case ChordTokenClass::EXTENSION:
-        return m_eadjust;
-    case ChordTokenClass::MODIFIER: {
-        double yAdj = 0.0;
-        if (superScript) {
-            // Fake superscript by aligning with capheight
-            yAdj += 0.15;
-        } else if (stackModifiers && nmodifiers > 1) {
-            static constexpr double LINE_SPACING = 0.4;             // Space between modifiers in units of modiferHeight
-            const double modifierHeight = m_mmag * m_stackedmmag;   // Modifier height in units of root capheight
-            const double stackHeight = (nmodifiers * modifierHeight) + ((nmodifiers - 1) * modifierHeight * LINE_SPACING); // Height of total modifier stack (bottom baseline to top capheight)
-            const double base = stackHeight / 2;                            // Baseline of bottom modifier in the stack
-            yAdj += base - modifierIdx * modifierHeight * (1 + LINE_SPACING);
-        }
+        case ChordTokenClass::EXTENSION: return m_eadjust;
+        case ChordTokenClass::MODIFIER: {
+            double yAdj = 0.0;
+            if (superScript) {
+                // Fake superscript by aligning with capheight
+                yAdj += 0.15;
+            } else if (stackModifiers && nmodifiers > 1) {
+                static constexpr double LINE_SPACING = 0.4;           // Space between modifiers in units of modiferHeight
+                const double modifierHeight = m_mmag * m_stackedmmag; // Modifier height in units of root capheight
+                const double stackHeight =
+                    (nmodifiers * modifierHeight) +
+                    ((nmodifiers - 1) * modifierHeight * LINE_SPACING); // Height of total modifier stack (bottom baseline to top capheight)
+                const double base = stackHeight / 2;                    // Baseline of bottom modifier in the stack
+                yAdj += base - modifierIdx * modifierHeight * (1 + LINE_SPACING);
+            }
 
-        if (!name.isEmpty()) {
-            yAdj += m_madjust;
+            if (!name.isEmpty()) {
+                yAdj += m_madjust;
+            }
+            return yAdj;
         }
-        return yAdj;
-    }
-    default:
-        return 0.0;
+        default: return 0.0;
     }
 }
 
@@ -1606,8 +1558,7 @@ double ChordList::position(const StringList& names, bool stackModifiers, bool su
 //   renderList
 //---------------------------------------------------------
 
-const std::vector<RenderActionPtr >& ParsedChord::renderList(const ChordList* cl, bool stacked)
-{
+const std::vector<RenderActionPtr> &ParsedChord::renderList(const ChordList *cl, bool stacked) {
     // generate anew on each call,
     // in case chord list has changed since last time
     if (!m_renderList.empty()) {
@@ -1628,7 +1579,7 @@ const std::vector<RenderActionPtr >& ParsedChord::renderList(const ChordList* cl
     // Standard stack layout if there is only one
     static const std::wregex SUS_ADD_REGEX = std::wregex(L"sus|add");
     bool stackSusOrAdd = false;
-    for (const String& mod : m_modifierList) {
+    for (const String &mod : m_modifierList) {
         if (!(stackModifiersEnabled || superScriptEnabled) || !mod.contains(SUS_ADD_REGEX)) {
             continue;
         }
@@ -1644,10 +1595,10 @@ const std::vector<RenderActionPtr >& ParsedChord::renderList(const ChordList* cl
     bool firstModifierToken = true;
     bool closingParenPending = false;
     for (auto tokIt = m_tokenList.begin(); tokIt != m_tokenList.end(); tokIt++) {
-        const ChordToken& tok = *tokIt;
+        const ChordToken &tok = *tokIt;
         const String n = tok.names.front();
-        if ((n == u"/" || n == u"," || n == u"\\" || n == u" ")
-            && (stackSusOrAdd || (stackModifiersEnabled && tok.tokenClass == ChordTokenClass::MODIFIER))) {
+        if ((n == u"/" || n == u"," || n == u"\\" || n == u" ") &&
+            (stackSusOrAdd || (stackModifiersEnabled && tok.tokenClass == ChordTokenClass::MODIFIER))) {
             continue;
         }
 
@@ -1660,13 +1611,13 @@ const std::vector<RenderActionPtr >& ParsedChord::renderList(const ChordList* cl
         }
         const bool modifierEnd = curMod.endsWith(n) && modIdx != finalModIdx;
 
-        std::vector<RenderActionPtr > rl;
+        std::vector<RenderActionPtr> rl;
         std::vector<ChordToken> definedTokens;
         bool found = false;
         // potential definitions for token
         if (cl) {
-            for (const ChordToken& ct : cl->chordTokenList) {
-                for (const String& ctn : ct.names) {
+            for (const ChordToken &ct : cl->chordTokenList) {
+                for (const String &ctn : ct.names) {
                     if (ctn == n) {
                         definedTokens.push_back(ct);
                     }
@@ -1675,7 +1626,7 @@ const std::vector<RenderActionPtr >& ParsedChord::renderList(const ChordList* cl
         }
         // find matching class, fallback on ChordTokenClass::ALL
         ChordTokenClass ctc = ChordTokenClass::ALL;
-        for (const ChordToken& matchingTok : definedTokens) {
+        for (const ChordToken &matchingTok : definedTokens) {
             if (tok.tokenClass == matchingTok.tokenClass) {
                 rl = matchingTok.renderList;
                 ctc = tok.tokenClass;
@@ -1723,29 +1674,22 @@ const std::vector<RenderActionPtr >& ParsedChord::renderList(const ChordList* cl
                 // Check if the next token is a closing paren
                 // Delay starting a new line until after the paren
                 // (parens are excluded from the modifier string)
-                const auto& nextTokIt = std::next(tokIt);
+                const auto &nextTokIt = std::next(tokIt);
                 if (nextTokIt != m_tokenList.end() && modifierEnd) {
-                    const ChordToken& nextTok = *nextTokIt;
+                    const ChordToken &nextTok = *nextTokIt;
                     if (nextTok.names.front() == ")") {
                         closingParenPending = true;
                     }
                 }
 
-                auto startsWithAcc = [](const String& s) -> bool {
-                    return s.startsWith(u"b") || s.startsWith(u"#");
-                };
-                auto startsWithSusOrAdd = [](const String& s) -> bool {
-                    return s.startsWith(u"sus") || s.startsWith(u"add");
-                };
+                auto startsWithAcc = [](const String &s) -> bool { return s.startsWith(u"b") || s.startsWith(u"#"); };
+                auto startsWithSusOrAdd = [](const String &s) -> bool { return s.startsWith(u"sus") || s.startsWith(u"add"); };
                 // Align vertically stacked modifier's x position by pushing it at the start of every modifier and popping at the end
                 // Make sure degrees are aligned when there are accidentals
                 // -- nextMod now searches to the end of modifierList to support stacks of 3+ modifiers
-                auto it = std::find_if(
-                    m_modifierList.begin() + (modIdx + 1),
-                    m_modifierList.end(),
-                    [&startsWithAcc](const String& s) { return startsWithAcc(s); }
-                    );
-                const String& nextMod = (it != m_modifierList.end()) ? *it : u"";
+                auto it = std::find_if(m_modifierList.begin() + (modIdx + 1), m_modifierList.end(),
+                                       [&startsWithAcc](const String &s) { return startsWithAcc(s); });
+                const String &nextMod = (it != m_modifierList.end()) ? *it : u"";
                 bool nextModStartsWithAcc = (it != m_modifierList.end());
                 bool curModStartsWithAcc = startsWithAcc(curMod);
                 bool nIsAcc = startsWithAcc(n);
@@ -1753,18 +1697,22 @@ const std::vector<RenderActionPtr >& ParsedChord::renderList(const ChordList* cl
                 bool nIsSusOrAdd = startsWithSusOrAdd(n);
                 bool nIsParen = (n == u"(") || (n == u")");
 
-                if (curModStartsWithSusOrAdd) {                                         // Align sus or add left
+                if (curModStartsWithSusOrAdd) { // Align sus or add left
                     if (nIsSusOrAdd) {
                         m_renderList.emplace_back(new RenderActionPush());
                     }
-                } else if (nIsAcc && nextModStartsWithAcc) {                            // current line has accidental, next line has accidental -> push before accidental
+                } else if (nIsAcc &&
+                           nextModStartsWithAcc) { // current line has accidental, next line has accidental -> push before accidental
                     m_renderList.emplace_back(new RenderActionPush());
-                } else if (!curModStartsWithAcc && !nextModStartsWithAcc) {             // current line has no accidental, next line has no accidental -> push before degree
+                } else if (!curModStartsWithAcc &&
+                           !nextModStartsWithAcc) { // current line has no accidental, next line has no accidental -> push before degree
                     m_renderList.emplace_back(new RenderActionPush());
-                } else if (curModStartsWithAcc && !nextModStartsWithAcc && !nIsAcc) {   // current line has accidental, next line has no accidental ->  push before degree
+                } else if (curModStartsWithAcc && !nextModStartsWithAcc &&
+                           !nIsAcc) { // current line has accidental, next line has no accidental ->  push before degree
                     m_renderList.emplace_back(new RenderActionPush());
-                } else if (!curModStartsWithAcc && nextModStartsWithAcc && !nIsParen) { // current line has no accidental, next line has accidental -> push before degree
-                    m_renderList.emplace_back(new RenderActionPush());                  // and move by next line's accidental's width to align
+                } else if (!curModStartsWithAcc && nextModStartsWithAcc &&
+                           !nIsParen) { // current line has no accidental, next line has accidental -> push before degree
+                    m_renderList.emplace_back(new RenderActionPush()); // and move by next line's accidental's width to align
                     String nextAcc = nextMod;
                     static const std::wregex DEGREE_REGEX = std::wregex(L"[0-9]+");
                     nextAcc.replace(DEGREE_REGEX, u"");
@@ -1772,7 +1720,7 @@ const std::vector<RenderActionPtr >& ParsedChord::renderList(const ChordList* cl
                     m_renderList.emplace_back(new RenderActionScale(cl->stackedModifierMag()));
                     const ChordToken accTok = cl->token(nextAcc, ChordTokenClass::MODIFIER);
                     if (accTok.isValid()) {
-                        for (const RenderActionPtr& a : accTok.renderList) {
+                        for (const RenderActionPtr &a : accTok.renderList) {
                             if (a->actionType() == RenderAction::RenderActionType::SET) {
                                 m_renderList.emplace_back(new RenderActionMoveTextWidth(u"s" + nextAcc));
                             } else {
@@ -1833,8 +1781,7 @@ const std::vector<RenderActionPtr >& ParsedChord::renderList(const ChordList* cl
 //   addToken
 //---------------------------------------------------------
 
-void ParsedChord::addToken(String s, ChordTokenClass tc)
-{
+void ParsedChord::addToken(String s, ChordTokenClass tc) {
     if (s.empty()) {
         return;
     }
@@ -1850,10 +1797,9 @@ void ParsedChord::addToken(String s, ChordTokenClass tc)
 //    a private id is assigned for id = 0
 //---------------------------------------------------------
 
-ChordDescription::ChordDescription(int i)
-{
+ChordDescription::ChordDescription(int i) {
     if (!i) {
-//            i = --(cl->privateID);
+        //            i = --(cl->privateID);
         i = --ChordList::privateID;
     }
     id = i;
@@ -1868,8 +1814,7 @@ ChordDescription::ChordDescription(int i)
 //    a private id is always assigned
 //---------------------------------------------------------
 
-ChordDescription::ChordDescription(const String& name)
-{
+ChordDescription::ChordDescription(const String &name) {
     id = --ChordList::privateID;
     generated = true;
     names.push_back(name);
@@ -1882,8 +1827,7 @@ ChordDescription::ChordDescription(const String& name)
 //    generate missing renderList and semantic (Xml) info
 //---------------------------------------------------------
 
-void ChordDescription::complete(ParsedChord* pc, const ChordList* cl)
-{
+void ChordDescription::complete(ParsedChord *pc, const ChordList *cl) {
     ParsedChord tempPc;
     if (!pc) {
         // generate parsed chord for its rendering & semantic (xml) info
@@ -1919,8 +1863,7 @@ void ChordDescription::complete(ParsedChord* pc, const ChordList* cl)
 //   read
 //---------------------------------------------------------
 
-void ChordDescription::read(XmlReader& e, int mscVersion)
-{
+void ChordDescription::read(XmlReader &e, int mscVersion) {
     int ni = 0;
     id = e.attribute("id").toInt();
     while (e.readNextStartElement()) {
@@ -1948,22 +1891,21 @@ void ChordDescription::read(XmlReader& e, int mscVersion)
 //   write
 //---------------------------------------------------------
 
-void ChordDescription::write(XmlWriter& xml) const
-{
+void ChordDescription::write(XmlWriter &xml) const {
     if (generated && !exportOk) {
         return;
     }
     if (id > 0) {
-        xml.startElement("chord", { { "id", id } });
+        xml.startElement("chord", {{"id", id}});
     } else {
         xml.startElement("chord");
     }
-    for (const String& s : names) {
+    for (const String &s : names) {
         xml.tag("name", s);
     }
     xml.tag("xml", xmlKind);
     xml.tag("voicing", chord.voicing());
-    for (const String& s : xmlDegrees) {
+    for (const String &s : xmlDegrees) {
         xml.tag("degree", s);
     }
     writeRenderList(xml, renderList, "render");
@@ -1981,8 +1923,7 @@ int ChordList::privateID = -1000;
 //---------------------------------------------------------
 
 void ChordList::configureAutoAdjust(double emag, double eadjust, double mmag, double madjust, double stackedmmag, bool stackModifiers,
-                                    bool excludeModsHAlign, String symbolFont, const ChordStylePreset& preset)
-{
+                                    bool excludeModsHAlign, String symbolFont, const ChordStylePreset &preset) {
     m_stackModifiers = stackModifiers;
     m_excludeModsHAlign = excludeModsHAlign;
     m_emag = emag;
@@ -1998,8 +1939,7 @@ void ChordList::configureAutoAdjust(double emag, double eadjust, double mmag, do
 //   read
 //---------------------------------------------------------
 
-void ChordList::read(XmlReader& e, int mscVersion)
-{
+void ChordList::read(XmlReader &e, int mscVersion) {
     int fontIdx = static_cast<int>(fonts.size());
     m_autoAdjust = false;
     while (e.readNextStartElement()) {
@@ -2019,8 +1959,8 @@ void ChordList::read(XmlReader& e, int mscVersion)
                 if (e.name() == "sym") {
                     ChordSymbol cs;
                     cs.fontIdx = fontIdx;
-                    cs.name    = e.attribute("name");
-                    cs.value   = e.attribute("value");
+                    cs.name = e.attribute("name");
+                    cs.value = e.attribute("value");
                     String code = e.attribute("code");
                     String symClass = e.attribute("class");
                     if (!code.empty()) {
@@ -2046,7 +1986,7 @@ void ChordList::read(XmlReader& e, int mscVersion)
                         cs.value = cs.name;
                     }
                     cs.name = symClass + cs.name;
-                    m_symbols.insert({ cs.name, cs });
+                    m_symbols.insert({cs.name, cs});
                     e.readNext();
                 } else if (e.name() == "mag") {
                     f.mag = e.readDouble();
@@ -2082,9 +2022,7 @@ void ChordList::read(XmlReader& e, int mscVersion)
             // if no id attribute (id == 0), then assign it a private id
             // user chords that match these ChordDescriptions will be treated as normal recognized chords
             // except that the id will not be written to the score file
-            ChordDescription cd = (id && muse::contains(*this, id))
-                                  ? muse::take(*this, id)
-                                  : ChordDescription(id);
+            ChordDescription cd = (id && muse::contains(*this, id)) ? muse::take(*this, id) : ChordDescription(id);
 
             // record updated id
             id = cd.id;
@@ -2097,7 +2035,7 @@ void ChordList::read(XmlReader& e, int mscVersion)
             // generate any missing info (including new parsed chords)
             cd.complete(0, this);
             // add to list
-            insert({ id, cd });
+            insert({id, cd});
         } else if (tag == "renderRoot") {
             readRenderList(e.readText(), renderListRoot, mscVersion);
         } else if (tag == "renderFunction") {
@@ -2116,20 +2054,19 @@ void ChordList::read(XmlReader& e, int mscVersion)
 //   write
 //---------------------------------------------------------
 
-void ChordList::write(XmlWriter& xml) const
-{
+void ChordList::write(XmlWriter &xml) const {
     int fontIdx = 0;
-    for (const ChordFont& f : fonts) {
-        xml.startElement("font", { { "id", fontIdx }, { "family", f.family } });
+    for (const ChordFont &f : fonts) {
+        xml.startElement("font", {{"id", fontIdx}, {"family", f.family}});
         xml.tag("mag", f.mag);
-        for (const auto& p : m_symbols) {
-            const ChordSymbol& s = p.second;
+        for (const auto &p : m_symbols) {
+            const ChordSymbol &s = p.second;
             if (s.fontIdx == fontIdx) {
                 if (s.code.isNull()) {
-                    xml.tag("sym", { { "name", s.name }, { "value", s.value } });
+                    xml.tag("sym", {{"name", s.name}, {"value", s.value}});
                 } else {
                     // write hex numbers with a "0x" prefix, so they can convert back properly on read
-                    xml.tag("sym", { { "name", s.name }, { "code", u"0x" + String::number(s.code.unicode(), 16) } });
+                    xml.tag("sym", {{"name", s.name}, {"code", u"0x" + String::number(s.code.unicode(), 16)}});
                 }
             }
         }
@@ -2137,9 +2074,9 @@ void ChordList::write(XmlWriter& xml) const
         ++fontIdx;
     }
     if (m_autoAdjust) {
-        xml.tag("autoAdjust", { { "mag", m_nmag }, { "adjust", m_nadjust } });
+        xml.tag("autoAdjust", {{"mag", m_nmag}, {"adjust", m_nadjust}});
     }
-    for (const ChordToken& t : chordTokenList) {
+    for (const ChordToken &t : chordTokenList) {
         t.write(xml);
     }
     if (!renderListRoot.empty()) {
@@ -2154,8 +2091,8 @@ void ChordList::write(XmlWriter& xml) const
     if (!renderListBassOffset.empty()) {
         writeRenderList(xml, renderListBassOffset, "renderBassOffset");
     }
-    for (const auto& p : *this) {
-        const ChordDescription& cd = p.second;
+    for (const auto &p : *this) {
+        const ChordDescription &cd = p.second;
         cd.write(xml);
     }
 }
@@ -2165,9 +2102,8 @@ void ChordList::write(XmlWriter& xml) const
 //    read Chord List, return false on error
 //---------------------------------------------------------
 
-bool ChordList::read(const String& name)
-{
-//      LOGD("ChordList::read <%s>", muPrintable(name));
+bool ChordList::read(const String &name) {
+    //      LOGD("ChordList::read <%s>", muPrintable(name));
     muse::io::path_t path;
     FileInfo ftest(name);
     if (ftest.isAbsolute()) {
@@ -2193,8 +2129,7 @@ bool ChordList::read(const String& name)
     return read(&f);
 }
 
-bool ChordList::read(IODevice* device)
-{
+bool ChordList::read(IODevice *device) {
     XmlReader e(device);
 
     while (e.readNextStartElement()) {
@@ -2213,8 +2148,7 @@ bool ChordList::read(IODevice* device)
 //   writeChordList
 //---------------------------------------------------------
 
-bool ChordList::write(const String& name) const
-{
+bool ChordList::write(const String &name) const {
     FileInfo info(name);
 
     if (info.suffix().isEmpty()) {
@@ -2236,11 +2170,10 @@ bool ChordList::write(const String& name) const
     return true;
 }
 
-bool ChordList::write(IODevice* device) const
-{
+bool ChordList::write(IODevice *device) const {
     XmlWriter xml(device);
     xml.startDocument();
-    xml.startElement("museScore", { { "version", Constants::MSC_VERSION_STR } });
+    xml.startElement("museScore", {{"version", Constants::MSC_VERSION_STR}});
 
     write(xml);
 
@@ -2253,8 +2186,7 @@ bool ChordList::write(IODevice* device) const
 //   loaded
 //---------------------------------------------------------
 
-bool ChordList::loaded() const
-{
+bool ChordList::loaded() const {
     // track whether a description file has been loaded
     // since chords.xml really doesn't load enough to stand alone,
     // we need a way to track when a "real" chord list has been loaded
@@ -2266,8 +2198,7 @@ bool ChordList::loaded() const
 //   unload
 //---------------------------------------------------------
 
-void ChordList::unload()
-{
+void ChordList::unload() {
     clear();
     m_symbols.clear();
     fonts.clear();
@@ -2277,8 +2208,7 @@ void ChordList::unload()
     m_autoAdjust = false;
 }
 
-const ChordDescription* ChordList::description(int id) const
-{
+const ChordDescription *ChordList::description(int id) const {
     auto it = this->find(id);
     if (it == this->end()) {
         return nullptr;
@@ -2286,14 +2216,10 @@ const ChordDescription* ChordList::description(int id) const
     return &it->second;
 }
 
-ChordSymbol ChordList::symbol(const String& s) const
-{
-    return muse::value(m_symbols, s);
-}
+ChordSymbol ChordList::symbol(const String &s) const { return muse::value(m_symbols, s); }
 
-ChordToken ChordList::token(const String& s, ChordTokenClass type) const
-{
-    for (const ChordToken& tok : chordTokenList) {
+ChordToken ChordList::token(const String &s, ChordTokenClass type) const {
+    for (const ChordToken &tok : chordTokenList) {
         if (tok.tokenClass != type || !tok.names.contains(s)) {
             continue;
         }
@@ -2304,8 +2230,7 @@ ChordToken ChordList::token(const String& s, ChordTokenClass type) const
     return ChordToken();
 }
 
-void ChordList::checkChordList(const MStyle& style)
-{
+void ChordList::checkChordList(const MStyle &style) {
     // make sure we have a chordlist
     if (!loaded()) {
         double emag = style.styleD(Sid::chordExtensionMag);
@@ -2332,54 +2257,43 @@ void ChordList::checkChordList(const MStyle& style)
 //    only for debugging
 //---------------------------------------------------------
 
-void RenderAction::print(RenderActionType type, const String& info) const
-{
-    static const char* names[] = {
-        "SET", "MOVE", "MOVEXHEIGHT", "PUSH", "POP",
-        "NOTE", "ACCIDENTAL", "STOPHALIGN", "SCALE", "PAREN"
-    };
+void RenderAction::print(RenderActionType type, const String &info) const {
+    static const char *names[] = {"SET", "MOVE", "MOVEXHEIGHT", "PUSH", "POP", "NOTE", "ACCIDENTAL", "STOPHALIGN", "SCALE", "PAREN"};
     LOGD("%10s %s", names[int(type)], muPrintable(info));
 }
 
-void RenderActionMove::print() const
-{
+void RenderActionMove::print() const {
     String info = String(u"%1 %2").arg(m_vec.x(), m_vec.y());
     RenderAction::print(actionType(), info);
 }
 
-void RenderActionSet::print() const
-{
+void RenderActionSet::print() const {
     String info = String(u"<%1>").arg(m_text);
     RenderAction::print(actionType(), info);
 }
 
-void RenderActionPop::print() const
-{
+void RenderActionPop::print() const {
     String info = String(u"pop x: %1 pop y: %2").arg(m_popx, m_popy);
     RenderAction::print(actionType(), info);
 }
 
-void RenderActionScale::print() const
-{
+void RenderActionScale::print() const {
     String info = String(u"%1").arg(m_scale);
     RenderAction::print(actionType(), info);
 }
 
-void RenderActionMoveScaled::print() const
-{
+void RenderActionMoveScaled::print() const {
     String info = String(u"SCALED %1 %2").arg(x(), y());
     RenderAction::print(actionType(), info);
 }
 
-void RenderActionMoveXHeight::print() const
-{
+void RenderActionMoveXHeight::print() const {
     String info = String(u"up: %1").arg(m_up);
     RenderAction::print(actionType(), info);
 }
 
-void RenderActionParen::print() const
-{
+void RenderActionParen::print() const {
     String info = String(u"direction: %1").arg(direction() == DirectionH::LEFT ? u"left" : u"right");
     RenderAction::print(actionType(), info);
 }
-}
+} // namespace mu::engraving

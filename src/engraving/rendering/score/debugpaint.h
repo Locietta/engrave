@@ -26,14 +26,14 @@
 namespace mu::engraving {
 class EngravingItem;
 class Page;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
 class PaintDebugger;
-class DebugPaint
-{
+
+class DebugPaint {
 public:
-    static void paintElementDebug(muse::draw::Painter& painter, const EngravingItem* item);
-    static void paintPageDebug(muse::draw::Painter& painter, const Page* page, const std::vector<EngravingItem*>& items);
+    static void paintElementDebug(muse::draw::Painter &painter, const EngravingItem *item);
+    static void paintPageDebug(muse::draw::Painter &painter, const Page *page, const std::vector<EngravingItem *> &items);
 };
-}
+} // namespace mu::engraving::rendering::score

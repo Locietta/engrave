@@ -23,8 +23,9 @@
 #define MUSE_LOGSTREAM_H
 
 #include "thirdparty/kors_logger/src/logstream.h"
+
 namespace muse::logger {
 using Stream = kors::logger::Stream;
-}
+} // namespace muse::logger
 
 #endif // MU_LOGSTREAM_H

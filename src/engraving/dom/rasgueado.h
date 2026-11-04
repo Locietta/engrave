@@ -32,17 +32,16 @@ class Rasgueado;
 //   @@ RasgueadoSegment
 //---------------------------------------------------------
 
-class RasgueadoSegment final : public TextLineBaseSegment
-{
+class RasgueadoSegment final : public TextLineBaseSegment {
     OBJECT_ALLOCATOR(engraving, RasgueadoSegment)
     DECLARE_CLASSOF(ElementType::RASGUEADO_SEGMENT)
 
 public:
-    RasgueadoSegment(Rasgueado* sp);
+    RasgueadoSegment(Rasgueado *sp);
 
-    RasgueadoSegment* clone() const override { return new RasgueadoSegment(*this); }
+    RasgueadoSegment *clone() const override { return new RasgueadoSegment(*this); }
 
-    Rasgueado* rasgueado() const { return (Rasgueado*)spanner(); }
+    Rasgueado *rasgueado() const { return (Rasgueado *) spanner(); }
 
     friend class Rasgueado;
 };
@@ -51,19 +50,18 @@ public:
 //   @@ Rasgueado
 //---------------------------------------------------------
 
-class Rasgueado final : public ChordTextLineBase
-{
+class Rasgueado final : public ChordTextLineBase {
     OBJECT_ALLOCATOR(engraving, Rasgueado)
     DECLARE_CLASSOF(ElementType::RASGUEADO)
 
 public:
     Rasgueado(DummyParentOr<EngravingItem> parent);
 
-    Rasgueado* clone() const override { return new Rasgueado(*this); }
+    Rasgueado *clone() const override { return new Rasgueado(*this); }
 
     Anchor anchor() const override { return Anchor::SEGMENT; }
 
-    LineSegment* createLineSegment() override;
+    LineSegment *createLineSegment() override;
 
     PropertyValue propertyDefault(Pid propertyId) const override;
     Sid getPropertyStyle(Pid) const override;

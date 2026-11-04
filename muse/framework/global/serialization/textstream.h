@@ -25,41 +25,39 @@
 #include <string_view>
 #include <vector>
 
-
 namespace muse {
 class ByteArray;
 class String;
 
 namespace io {
 class IODevice;
-}
+} // namespace io
 
-class TextStream
-{
+class TextStream {
 public:
     TextStream() = default;
-    explicit TextStream(io::IODevice* device);
+    explicit TextStream(io::IODevice *device);
     virtual ~TextStream();
 
-    void setDevice(io::IODevice* device);
+    void setDevice(io::IODevice *device);
 
     void flush();
 
-    TextStream& operator<<(char ch);
-    TextStream& operator<<(int32_t);
-    TextStream& operator<<(uint32_t);
-    TextStream& operator<<(double);
-    TextStream& operator<<(int64_t);
-    TextStream& operator<<(uint64_t);
-    TextStream& operator<<(const char* s);
-    TextStream& operator<<(std::string_view);
-    TextStream& operator<<(const ByteArray& b);
-    TextStream& operator<<(const String& s);
+    TextStream &operator<<(char ch);
+    TextStream &operator<<(int32_t);
+    TextStream &operator<<(uint32_t);
+    TextStream &operator<<(double);
+    TextStream &operator<<(int64_t);
+    TextStream &operator<<(uint64_t);
+    TextStream &operator<<(const char *s);
+    TextStream &operator<<(std::string_view);
+    TextStream &operator<<(const ByteArray &b);
+    TextStream &operator<<(const String &s);
 
 
 private:
-    void write(const char* ch, size_t len);
-    io::IODevice* m_device = nullptr;
+    void write(const char *ch, size_t len);
+    io::IODevice *m_device = nullptr;
     std::vector<uint8_t> m_buf;
 };
-}
+} // namespace muse

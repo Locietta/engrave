@@ -29,27 +29,19 @@
 #include "circularsamplebuffer.h"
 
 namespace muse::audio::fx {
-class SparseFirFilter
-{
+class SparseFirFilter {
 public:
-    SparseFirFilter()
-    {
-    }
+    SparseFirFilter() {}
 
-    void reset()
-    {
-        m_buffer.reset();
-    }
+    void reset() { m_buffer.reset(); }
 
-    void setFormat(int maxBlockSize, int maxImpulseOffset)
-    {
+    void setFormat(int maxBlockSize, int maxImpulseOffset) {
         m_buffer.setSize(maxBlockSize + maxImpulseOffset + 1);
         m_blockSize = maxBlockSize;
         m_maxAllowedOffset = maxImpulseOffset;
     }
 
-    void processBlock(const float* signal_in, float* signal_out, int n)
-    {
+    void processBlock(const float *signal_in, float *signal_out, int n) {
         assert(n <= m_blockSize);
         assert(m_impulses.size() > 0);
 
@@ -63,12 +55,11 @@ public:
         m_buffer.advance(n);
     }
 
-    float processSample(float smp)
-    {
+    float processSample(float smp) {
         m_buffer.writeOffset0(smp);
 
         smp = 0.f;
-        for (const auto& i : m_impulses) {
+        for (const auto &i : m_impulses) {
             smp += m_buffer.read(-i.offset) * i.gainFact;
         }
 
@@ -76,22 +67,17 @@ public:
         return smp;
     }
 
-    void clearImpulses()
-    {
-        m_impulses.clear();
-    }
+    void clearImpulses() { m_impulses.clear(); }
 
-    void appendImpulse(int offset, float value)
-    {
+    void appendImpulse(int offset, float value) {
         assert(offset >= 0 && offset <= m_maxAllowedOffset);
 
-        m_impulses.push_back({ offset, value });
+        m_impulses.push_back({offset, value});
         m_buffer.setSize(offset + 1);
     }
 
 private:
-    struct Impulse
-    {
+    struct Impulse {
         int offset;
         float gainFact;
     };

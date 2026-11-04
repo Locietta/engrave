@@ -24,51 +24,52 @@ SOFTWARE.
 #pragma once
 #include "log_forward.h"
 #include <vector>
+
 namespace kors::logger {
 using Type = std::string_view;
+
 struct LogMsg {
     Type type;
     std::string_view tag;
     std::string message;
 };
+
 class LogLayout {
 public:
-    explicit LogLayout(const std::string& format)
-        : m_format(format)
-    {
-    }
-    std::string output(const LogMsg&) const;
+    explicit LogLayout(const std::string &format) : m_format(format) {}
+
+    std::string output(const LogMsg &) const;
 
 private:
     std::string m_format;
 };
+
 class LogDest {
 public:
-    explicit LogDest(const LogLayout& layout)
-        : m_layout(layout)
-    {
-    }
+    explicit LogDest(const LogLayout &layout) : m_layout(layout) {}
+
     virtual ~LogDest() = default;
     virtual std::string name() const = 0;
-    virtual void write(const LogMsg&) = 0;
+    virtual void write(const LogMsg &) = 0;
 
 protected:
     LogLayout m_layout;
 };
+
 class Logger {
 public:
     static constexpr Type ERRR = "ERROR", WARN = "WARN", INFO = "INFO", DEBG = "DEBUG";
-    static Logger* instance();
+    static Logger *instance();
     void setLevel(Level);
     Level level() const;
     bool isLevel(Level value) const;
-    void write(const LogMsg&);
-    void addDest(LogDest*);
-    void removeDest(LogDest*);
+    void write(const LogMsg &);
+    void addDest(LogDest *);
+    void removeDest(LogDest *);
     void clearDests();
 
 private:
     ~Logger();
-    std::vector<LogDest*> m_dests;
+    std::vector<LogDest *> m_dests;
 };
-}
+} // namespace kors::logger

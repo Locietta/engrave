@@ -72,8 +72,7 @@ namespace mu::engraving {
 //   pasteStaff
 //    return false if paste fails
 //---------------------------------------------------------
-bool Paste::pasteStaff(Transaction&, Score*, XmlReader& e, Segment* dst, staff_idx_t dstStaff, Fraction scale)
-{
+bool Paste::pasteStaff(Transaction &, Score *, XmlReader &e, Segment *dst, staff_idx_t dstStaff, Fraction scale) {
     //! NOTE Needs refactoring - reading should be separated from insertion
     //! (we read the elements into some structure, then inserted them)
     return rw::RWRegister::reader()->pasteStaff(e, dst, dstStaff, scale);
@@ -83,19 +82,18 @@ bool Paste::pasteStaff(Transaction&, Score*, XmlReader& e, Segment* dst, staff_i
 //   pasteChordRest
 //---------------------------------------------------------
 
-void Paste::pasteChordRest(Transaction& tx, Score* score, ChordRest* cr, const Fraction& t)
-{
+void Paste::pasteChordRest(Transaction &tx, Score *score, ChordRest *cr, const Fraction &t) {
     Fraction tick(t);
-// LOGD("pasteChordRest %s at %d, len %d/%d", cr->typeName(), tick, cr->ticks().numerator(), cr->ticks().denominator() );
+    // LOGD("pasteChordRest %s at %d, len %d/%d", cr->typeName(), tick, cr->ticks().numerator(), cr->ticks().denominator() );
 
-    Measure* measure = score->tick2measure(tick);
+    Measure *measure = score->tick2measure(tick);
     if (!measure) {
         return;
     }
 
     int twoNoteTremoloFactor = 1;
     if (cr->isChord()) {
-        Chord* chord = toChord(cr);
+        Chord *chord = toChord(cr);
         if (chord->vStaffIdx() >= chord->score()->nstaves()) {
             // check if staffMove moves a note to a
             // nonexistent staff
@@ -107,11 +105,11 @@ void Paste::pasteChordRest(Transaction& tx, Score* score, ChordRest* cr, const F
         } else if (cr->durationTypeTicks() == (cr->ticks() * 2)) {
             // this could be the 2nd note of a two-note tremolo
             // check previous CR on same track, if it has a two-note tremolo, then set twoNoteTremoloFactor to 2
-            Segment* seg = measure->undoGetSegment(SegmentType::ChordRest, tick);
-            ChordRest* crt = seg->nextChordRest(cr->track(), true);
+            Segment *seg = measure->undoGetSegment(SegmentType::ChordRest, tick);
+            ChordRest *crt = seg->nextChordRest(cr->track(), true);
             if (crt && crt->isChord()) {
-                Chord* chrt = toChord(crt);
-                TremoloTwoChord* tr = chrt->tremoloTwoChord();
+                Chord *chrt = toChord(crt);
+                TremoloTwoChord *tr = chrt->tremoloTwoChord();
                 if (tr) {
                     twoNoteTremoloFactor = 2;
                 }
@@ -123,16 +121,16 @@ void Paste::pasteChordRest(Transaction& tx, Score* score, ChordRest* cr, const F
     // and only if the lengths of the rest and measure match
     // otherwise, we need to convert to duration rest(s)
     // and potentially split the rest up (eg, 5/4 => whole + quarter)
-    bool convertMeasureRest = cr->isRest() && cr->durationType().type() == DurationType::V_MEASURE
-                              && (tick != measure->tick() || cr->actualTicksAt(tick) != measure->ticks());
+    bool convertMeasureRest = cr->isRest() && cr->durationType().type() == DurationType::V_MEASURE &&
+                              (tick != measure->tick() || cr->actualTicksAt(tick) != measure->ticks());
 
     Fraction measureEnd = measure->endTick();
     bool isGrace = cr->isChord() && toChord(cr)->noteType() != NoteType::NORMAL;
 
     // adjust measures for measure repeat
     if (cr->isMeasureRepeat()) {
-        MeasureRepeat* mr = toMeasureRepeat(cr);
-        Measure* m = (mr->numMeasures() == 4 ? measure->prevMeasure() : measure);
+        MeasureRepeat *mr = toMeasureRepeat(cr);
+        Measure *m = (mr->numMeasures() == 4 ? measure->prevMeasure() : measure);
         for (int i = 1; i <= mr->numMeasures(); ++i) {
             tx.push(new ChangeMeasureRepeatCount(m, i, mr->staffIdx()));
             if (i < mr->numMeasures()) {
@@ -155,7 +153,7 @@ void Paste::pasteChordRest(Transaction& tx, Score* score, ChordRest* cr, const F
     // we have already disallowed a tuplet from crossing the barline, so there is no problem here
     // but due to rounding, it might appear from actualTicks() that the last note is too long by a couple of ticks
 
-    Staff* stf = cr->staff();
+    Staff *stf = cr->staff();
     const bool shouldSplit = tick + cr->actualTicksAt(tick) > measureEnd || partialCopy || convertMeasureRest;
     if (isGrace || cr->tuplet() || !shouldSplit) {
         score->undoAddCR(cr, measure, tick);
@@ -163,12 +161,12 @@ void Paste::pasteChordRest(Transaction& tx, Score* score, ChordRest* cr, const F
     }
     if (cr->isChord()) {
         // split Chord
-        Chord* c = toChord(cr);
+        Chord *c = toChord(cr);
         Fraction rest = c->ticks();
         bool firstpart = true;
         while (rest.isNotZero()) {
             measure = score->tick2measure(tick);
-            Chord* c2 = firstpart ? c : toChord(c->clone());
+            Chord *c2 = firstpart ? c : toChord(c->clone());
             if (!firstpart) {
                 c2->removeMarkings(true);
             }
@@ -186,18 +184,18 @@ void Paste::pasteChordRest(Transaction& tx, Score* score, ChordRest* cr, const F
             c2->setTicks(d.fraction());
             score->undoAddCR(c2, measure, tick);
 
-            std::vector<Note*> nl1 = c->notes();
-            std::vector<Note*> nl2 = c2->notes();
+            std::vector<Note *> nl1 = c->notes();
+            std::vector<Note *> nl2 = c2->notes();
 
             if (!firstpart) {
                 for (unsigned i = 0; i < nl1.size(); ++i) {
-                    Tie* tie = Factory::createTie(nl1[i]);
+                    Tie *tie = Factory::createTie(nl1[i]);
                     tie->setStartNote(nl1[i]);
                     tie->setEndNote(nl2[i]);
                     tie->setTick(tie->startNote()->tick());
                     tie->setTick2(tie->endNote()->tick());
                     tie->setTrack(c->track());
-                    Tie* tie2 = nl1[i]->tieFor();
+                    Tie *tie2 = nl1[i]->tieFor();
                     if (tie2) {
                         nl2[i]->setTieFor(nl1[i]->tieFor());
                         tie2->setStartNote(nl2[i]);
@@ -213,16 +211,16 @@ void Paste::pasteChordRest(Transaction& tx, Score* score, ChordRest* cr, const F
         }
     } else if (cr->isRest()) {
         // split Rest
-        Rest* r       = toRest(cr);
+        Rest *r = toRest(cr);
         Fraction rest = r->ticks();
 
         bool firstpart = true;
         while (!rest.isZero()) {
-            Rest* r2      = firstpart ? r : toRest(r->clone());
-            measure       = score->tick2measure(tick);
+            Rest *r2 = firstpart ? r : toRest(r->clone());
+            measure = score->tick2measure(tick);
             Fraction timeStretch = stf->timeStretch(tick);
             Fraction mlen = (measure->endTick() - tick) * timeStretch;
-            Fraction len  = rest > mlen ? mlen : rest;
+            Fraction len = rest > mlen ? mlen : rest;
             std::vector<TDuration> dl = toRhythmicDurationList(len, true, (tick - measure->tick()) * timeStretch,
                                                                score->sigmap()->timesig(tick).nominal(), measure, MAX_DOTS, timeStretch);
             if (dl.empty()) {
@@ -238,18 +236,18 @@ void Paste::pasteChordRest(Transaction& tx, Score* score, ChordRest* cr, const F
             firstpart = false;
         }
     } else if (cr->isMeasureRepeat()) {
-        MeasureRepeat* mr = toMeasureRepeat(cr);
+        MeasureRepeat *mr = toMeasureRepeat(cr);
         std::vector<TDuration> list = toDurationList(mr->ticks(), true);
         for (auto dur : list) {
-            Rest* r = Factory::createRest(score->dummy(), dur);
+            Rest *r = Factory::createRest(score->dummy(), dur);
             r->setTrack(cr->track());
             Fraction rest = r->ticks();
             while (!rest.isZero()) {
-                Rest* r2      = toRest(r->clone());
-                measure       = score->tick2measure(tick);
+                Rest *r2 = toRest(r->clone());
+                measure = score->tick2measure(tick);
                 Fraction timeStretch = stf->timeStretch(tick);
                 Fraction mlen = (measure->endTick() - tick) * timeStretch;
-                Fraction len  = rest > mlen ? mlen : rest;
+                Fraction len = rest > mlen ? mlen : rest;
                 std::vector<TDuration> dl = toDurationList(len, false);
                 if (dl.empty()) {
                     LOGD("Could not make durations for: %d/%d", len.numerator(), len.denominator());
@@ -275,32 +273,30 @@ void Paste::pasteChordRest(Transaction& tx, Score* score, ChordRest* cr, const F
 //
 //    (Note: info about delta ticks is currently ignored)
 //---------------------------------------------------------
-void Paste::pasteSymbols(Transaction&, XmlReader& e, ChordRest* dst)
-{
+void Paste::pasteSymbols(Transaction &, XmlReader &e, ChordRest *dst) {
     //! NOTE Needs refactoring - reading should be separated from insertion
     //! (we read the elements into some structure, then inserted them)
     rw::RWRegister::reader()->pasteSymbols(e, dst);
 }
 
-bool Paste::repeatListSelection(Transaction& tx, Score* score)
-{
+bool Paste::repeatListSelection(Transaction &tx, Score *score) {
     TRACEFUNC;
 
-    InputState& is = score->inputState();
+    InputState &is = score->inputState();
 
-    std::vector<Note*> notes = score->selection().noteList();
-    std::sort(notes.begin(), notes.end(), [](const Note* a, const Note* b) {
-        return std::make_tuple(a->track(), a->tick(), a->pitch())
-               < std::make_tuple(b->track(), b->tick(), b->pitch());
+    std::vector<Note *> notes = score->selection().noteList();
+    std::sort(notes.begin(), notes.end(), [](const Note *a, const Note *b) {
+        return std::make_tuple(a->track(), a->tick(), a->pitch()) < std::make_tuple(b->track(), b->tick(), b->pitch());
     });
 
-    std::vector<EngravingItem*> toSelect;
-    std::unordered_set<const Chord*> foundChords;
+    std::vector<EngravingItem *> toSelect;
+    std::unordered_set<const Chord *> foundChords;
 
     // Parenthesis logic: group new notes by the left parenthesis (if any) of their old equivalent. Once all
     // new notes have been created we can call cmdAddParentheses on each group then set their offset & visibility
     // Use a vector of pairs to preserve insertion order
-    using NoteList = std::vector<Note*>;
+    using NoteList = std::vector<Note *>;
+
     struct ParenGroup {
         NoteList notes;
         bool leftVisible = true;
@@ -308,14 +304,15 @@ bool Paste::repeatListSelection(Transaction& tx, Score* score)
         PointF leftOffset;
         PointF rightOffset;
     };
-    std::vector<std::pair<const Parenthesis*, ParenGroup> > parenEntries;
 
-    for (Note* n : notes) {
+    std::vector<std::pair<const Parenthesis *, ParenGroup>> parenEntries;
+
+    for (Note *n : notes) {
         if (n->isGrace() || n->incomingPartialTie() || n->outgoingPartialTie()) {
             continue;
         }
 
-        const Chord* sourceChord = n->chord();
+        const Chord *sourceChord = n->chord();
         is.setTrack(sourceChord->track());
 
         const bool addFlag = muse::contains(foundChords, sourceChord);
@@ -338,20 +335,18 @@ bool Paste::repeatListSelection(Transaction& tx, Score* score)
         }
 
         NoteVal nval = n->noteVal();
-        Note* newNote = NoteInput::addPitch(tx, score, nval, addFlag);
-        IF_ASSERT_FAILED(newNote) {
-            continue;
-        }
+        Note *newNote = NoteInput::addPitch(tx, score, nval, addFlag);
+        IF_ASSERT_FAILED(newNote) { continue; }
 
         newNote->undoChangeProperty(Pid::VISIBLE, n->visible());
 
-        Chord* newChord = newNote->chord();
+        Chord *newChord = newNote->chord();
 
         newChord->updateArticulations(sourceChord->articulationSymbolIds());
 
-        const TremoloSingleChord* oldTsc = sourceChord->tremoloSingleChord();
+        const TremoloSingleChord *oldTsc = sourceChord->tremoloSingleChord();
         if (!newChord->tremoloSingleChord() && oldTsc) {
-            TremoloSingleChord* newTsc = oldTsc->clone();
+            TremoloSingleChord *newTsc = oldTsc->clone();
             newTsc->setOwnershipParent(newChord);
             newTsc->setTrack(newChord->track());
             score->doUndoAddElement(newTsc);
@@ -359,23 +354,21 @@ bool Paste::repeatListSelection(Transaction& tx, Score* score)
 
         toSelect.push_back(newNote);
 
-        const NoteParenthesisInfo* parenInfo = n->parenthesisInfo();
-        const Parenthesis* leftParen = parenInfo ? parenInfo->leftParen() : nullptr;
+        const NoteParenthesisInfo *parenInfo = n->parenthesisInfo();
+        const Parenthesis *leftParen = parenInfo ? parenInfo->leftParen() : nullptr;
         if (!leftParen) {
             continue;
         }
-        const Parenthesis* rightParen = parenInfo->rightParen();
-        IF_ASSERT_FAILED(rightParen) {
-            continue;
-        }
+        const Parenthesis *rightParen = parenInfo->rightParen();
+        IF_ASSERT_FAILED(rightParen) { continue; }
 
         NoteList notesForParen;
         notesForParen.emplace_back(newNote);
 
         // All tied notes should be parenthesized...
-        Tie* tie = newNote->tieBack();
+        Tie *tie = newNote->tieBack();
         while (tie) {
-            Note* tiedNote = tie->startNote();
+            Note *tiedNote = tie->startNote();
             if (!tiedNote) {
                 break;
             }
@@ -384,11 +377,9 @@ bool Paste::repeatListSelection(Transaction& tx, Score* score)
         }
 
         auto search = std::find_if(parenEntries.begin(), parenEntries.end(),
-                                   [leftParen](const std::pair<const Parenthesis*, ParenGroup>& p) {
-            return p.first == leftParen;
-        });
+                                   [leftParen](const std::pair<const Parenthesis *, ParenGroup> &p) { return p.first == leftParen; });
         if (search != parenEntries.end()) {
-            NoteList& nl = search->second.notes;
+            NoteList &nl = search->second.notes;
             nl.insert(nl.end(), notesForParen.begin(), notesForParen.end());
             continue;
         }
@@ -402,15 +393,15 @@ bool Paste::repeatListSelection(Transaction& tx, Score* score)
         parenEntries.emplace_back(leftParen, std::move(group));
     }
 
-    for (auto& [paren, group] : parenEntries) {
+    for (auto &[paren, group] : parenEntries) {
         EditParentheses::addParenthesesToNotes(tx, group.notes);
 
         // Restore the original parentheses' visibility and offset on each newly-created pair...
-        std::unordered_set<const Parenthesis*> processedParens;
-        for (Note* note : group.notes) {
-            const NoteParenthesisInfo* newParenInfo = note->parenthesisInfo();
-            Parenthesis* newLeftParen = newParenInfo ? newParenInfo->leftParen() : nullptr;
-            if (!newLeftParen || muse::contains(processedParens, static_cast<const Parenthesis*>(newLeftParen))) {
+        std::unordered_set<const Parenthesis *> processedParens;
+        for (Note *note : group.notes) {
+            const NoteParenthesisInfo *newParenInfo = note->parenthesisInfo();
+            Parenthesis *newLeftParen = newParenInfo ? newParenInfo->leftParen() : nullptr;
+            if (!newLeftParen || muse::contains(processedParens, static_cast<const Parenthesis *>(newLeftParen))) {
                 continue;
             }
             processedParens.insert(newLeftParen);
@@ -418,10 +409,8 @@ bool Paste::repeatListSelection(Transaction& tx, Score* score)
             newLeftParen->undoSetVisible(group.leftVisible);
             newLeftParen->undoChangeProperty(Pid::OFFSET, group.leftOffset);
 
-            Parenthesis* newRightParen = newParenInfo->rightParen();
-            IF_ASSERT_FAILED(newRightParen) {
-                continue;
-            }
+            Parenthesis *newRightParen = newParenInfo->rightParen();
+            IF_ASSERT_FAILED(newRightParen) { continue; }
 
             newRightParen->undoSetVisible(group.rightVisible);
             newRightParen->undoChangeProperty(Pid::OFFSET, group.rightOffset);
@@ -432,31 +421,29 @@ bool Paste::repeatListSelection(Transaction& tx, Score* score)
     return !toSelect.empty();
 }
 
-static ChordRest* replaceWithRest(ChordRest* target)
-{
+static ChordRest *replaceWithRest(ChordRest *target) {
     target->score()->undoRemoveElement(target);
     return target->score()->addRest(target->segment(), target->track(), target->ticks(), target->tuplet());
 }
 
-static Note* prepareTarget(ChordRest* target, Note* with, const Fraction& duration)
-{
+static Note *prepareTarget(ChordRest *target, Note *with, const Fraction &duration) {
     if (!target->segment()->element(target->track())) {
         return nullptr; // target was removed by previous operation, ignore this
     }
     if (target->isChord() && target->ticks() > duration) {
         target = replaceWithRest(target); // prevent unexpected note splitting
     }
-    Segment* segment = target->segment();
+    Segment *segment = target->segment();
     if (segment->measure()->isMMRest()) {
-        Measure* m = segment->measure()->mmRestFirst();
+        Measure *m = segment->measure()->mmRestFirst();
         segment = m->findSegment(SegmentType::ChordRest, m->tick());
     }
 
-    const Staff* staff = target->staff();
+    const Staff *staff = target->staff();
     const StaffGroup staffGroup = staff->staffType(segment->tick())->group();
     DirectionV stemDirection = DirectionV::AUTO;
     if (staffGroup == StaffGroup::PERCUSSION) {
-        const Drumset* ds = staff->part()->instrument(segment->tick())->drumset();
+        const Drumset *ds = staff->part()->instrument(segment->tick())->drumset();
         DO_ASSERT(ds);
 
         if (ds) {
@@ -464,25 +451,23 @@ static Note* prepareTarget(ChordRest* target, Note* with, const Fraction& durati
         }
     }
 
-    segment = target->score()->setNoteRest(segment, target->track(),
-                                           with->noteVal(), duration, stemDirection, false, {}, false, &target->score()->inputState());
+    segment = target->score()->setNoteRest(segment, target->track(), with->noteVal(), duration, stemDirection, false, {}, false,
+                                           &target->score()->inputState());
     return toChord(segment->nextChordRest(target->track()))->upNote();
 }
 
-static EngravingItem* prepareTarget(EngravingItem* target, Note* with, const Fraction& duration)
-{
+static EngravingItem *prepareTarget(EngravingItem *target, Note *with, const Fraction &duration) {
     if (target->isNote() && toNote(target)->chord()->ticks() != duration) {
         return prepareTarget(toNote(target)->chord(), with, duration);
     }
-    if (target->isChordRest()
-        && (toChordRest(target)->ticks() != duration || toChordRest(target)->durationType().type() == DurationType::V_MEASURE)) {
+    if (target->isChordRest() &&
+        (toChordRest(target)->ticks() != duration || toChordRest(target)->durationType().type() == DurationType::V_MEASURE)) {
         return prepareTarget(toChordRest(target), with, duration);
     }
     return target;
 }
 
-static EngravingItem* pasteSystemObject(Transaction& tx, EditData& srcData, EngravingItem* target)
-{
+static EngravingItem *pasteSystemObject(Transaction &tx, EditData &srcData, EngravingItem *target) {
     if (!target) {
         return nullptr;
     }
@@ -492,14 +477,14 @@ static EngravingItem* pasteSystemObject(Transaction& tx, EditData& srcData, Engr
         return nullptr;
     }
 
-    Score* targetScore = target->score();
-    Staff* targetStaff = target->staff();
+    Score *targetScore = target->score();
+    Staff *targetStaff = target->staff();
     if (!targetScore || !targetStaff) {
         return nullptr;
     }
 
     // System objects can only be pasted on the *top* staff of an instrument
-    Part* targetPart = targetStaff->part();
+    Part *targetPart = targetStaff->part();
     targetStaff = targetPart ? targetPart->staves().front() : nullptr;
     if (!targetStaff) {
         return nullptr;
@@ -511,16 +496,16 @@ static EngravingItem* pasteSystemObject(Transaction& tx, EditData& srcData, Engr
 
     tx.push(new AddSystemObjectStaff(targetStaff));
 
-    const std::vector<EngravingItem*> topSystemObjects = collectSystemObjects(targetScore);
+    const std::vector<EngravingItem *> topSystemObjects = collectSystemObjects(targetScore);
     const staff_idx_t staffIdx = targetStaff->idx();
     const Fraction targetTick = target->tick();
 
-    EngravingItem* pastedItem = nullptr;
+    EngravingItem *pastedItem = nullptr;
 
-    for (EngravingItem* obj : topSystemObjects) {
+    for (EngravingItem *obj : topSystemObjects) {
         const bool visible = obj->type() == srcData.dropElement->type() && obj->tick() == targetTick;
 
-        EngravingItem* copy = obj->linkedClone();
+        EngravingItem *copy = obj->linkedClone();
         copy->setVisible(visible);
         copy->setStaffIdx(staffIdx);
         targetScore->undoAddElement(copy, false /*addToLinkedStaves*/);
@@ -541,20 +526,19 @@ static EngravingItem* pasteSystemObject(Transaction& tx, EditData& srcData, Engr
 //   cmdPaste
 //---------------------------------------------------------
 
-}
+} // namespace mu::engraving
 
-bool Paste::pasteStaffList(Transaction& tx, Score* score, muse::ByteArray& data, Fraction scale)
-{
+bool Paste::pasteStaffList(Transaction &tx, Score *score, muse::ByteArray &data, Fraction scale) {
     if (MScore::debugMode) {
         LOGD() << "Pasting staff list: " << data.data();
     }
 
-    ChordRest* cr = nullptr;
+    ChordRest *cr = nullptr;
     if (score->selection().isRange()) {
         cr = score->selection().firstChordRest();
     } else if (score->selection().isSingle()) {
-        EngravingItem* e = score->selection().element();
-        Measure* measure = e->findMeasure();
+        EngravingItem *e = score->selection().element();
+        Measure *measure = e->findMeasure();
         cr = measure ? measure->findChordRest(e->tick(), e->track()) : nullptr;
         if (!cr) {
             LOGE() << "Cannot paste staff list onto " << e->typeName();
@@ -577,18 +561,17 @@ bool Paste::pasteStaffList(Transaction& tx, Score* score, muse::ByteArray& data,
     return pasteStaff(tx, score, xmlReader, cr->segment(), cr->staffIdx(), scale);
 }
 
-bool Paste::pasteSymbolList(Transaction& tx, Score* score, muse::ByteArray& data)
-{
+bool Paste::pasteSymbolList(Transaction &tx, Score *score, muse::ByteArray &data) {
     if (MScore::debugMode) {
         LOGD() << "Pasting element list: " << data.data();
     }
 
-    ChordRest* cr = nullptr;
+    ChordRest *cr = nullptr;
     if (score->selection().isRange()) {
         cr = score->selection().firstChordRest();
     } else if (score->selection().isSingle()) {
-        EngravingItem* e = score->selection().element();
-        Measure* measure = e->findMeasure();
+        EngravingItem *e = score->selection().element();
+        Measure *measure = e->findMeasure();
         cr = measure ? measure->findChordRest(e->tick(), e->track()) : nullptr;
         if (!cr) {
             LOGE() << "Cannot paste element list onto " << e->typeName();

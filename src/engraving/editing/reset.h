@@ -28,15 +28,14 @@ namespace mu::engraving {
 class Score;
 class Transaction;
 
-class Reset
-{
+class Reset {
 public:
-    static void resetAllPositions(Transaction& tx, Score* score);
-    static void resetToDefaultLayout(Transaction& tx, Score* score);
-    static void resetTextStyleOverrides(Score* score); //! Not undoable
-    static void resetAllStyles(Transaction& tx, Score* score, const StyleIdSet& exceptTheseOnes = {});
+    static void resetAllPositions(Transaction &tx, Score *score);
+    static void resetToDefaultLayout(Transaction &tx, Score *score);
+    static void resetTextStyleOverrides(Score *score); //! Not undoable
+    static void resetAllStyles(Transaction &tx, Score *score, const StyleIdSet &exceptTheseOnes = {});
 
     // Removes system/page breaks and spacers
-    static void resetMeasuresLayout(Transaction& tx, Score* score);
+    static void resetMeasuresLayout(Transaction &tx, Score *score);
 };
-}
+} // namespace mu::engraving

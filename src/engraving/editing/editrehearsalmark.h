@@ -29,14 +29,13 @@ class RehearsalMark;
 class Score;
 class Transaction;
 
-class EditRehearsalMark
-{
+class EditRehearsalMark {
 public:
-    static void resequenceRehearsalMarks(Transaction& tx, Score* score);
+    static void resequenceRehearsalMarks(Transaction &tx, Score *score);
 
-    static muse::String createRehearsalMarkText(const Score* score, RehearsalMark* current);
+    static muse::String createRehearsalMarkText(const Score *score, RehearsalMark *current);
 
     // Finds next rehearsal mark in the sequence established by previous.
-    static muse::String nextRehearsalMarkText(const RehearsalMark* previous, const RehearsalMark* current);
+    static muse::String nextRehearsalMarkText(const RehearsalMark *previous, const RehearsalMark *current);
 };
-}
+} // namespace mu::engraving

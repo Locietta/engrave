@@ -26,7 +26,7 @@
 #include <cstdlib> // IWYU pragma: export
 #include <cassert> // IWYU pragma: export
 
-#include "profiler.h" // IWYU pragma: export
+#include "profiler.h"                            // IWYU pragma: export
 #include "thirdparty/kors_logger/src/log_base.h" // IWYU pragma: export
 
 #undef FALLTHROUGH
@@ -34,7 +34,7 @@
 #if __has_cpp_attribute(fallthrough)
 #define MU_FALLTHROUGH() [[fallthrough]]
 #else
-#define MU_FALLTHROUGH() (void)0
+#define MU_FALLTHROUGH() (void) 0
 #endif
 
 #endif // MUSE_GLOBAL_LOG_H

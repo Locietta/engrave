@@ -24,8 +24,7 @@
 #include "engravingitem.h"
 
 namespace mu::engraving {
-class Parenthesis : public EngravingItem
-{
+class Parenthesis : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, Parenthesis)
     M_PROPERTY2(DirectionH, direction, setDirection, DirectionH::LEFT)
 
@@ -33,37 +32,36 @@ public:
     static constexpr double PARENTHESIS_END_WIDTH = 0.1;
 
     Parenthesis(DummyParentOr<EngravingItem> parent);
-    Parenthesis(const Parenthesis& p);
+    Parenthesis(const Parenthesis &p);
 
-    Parenthesis* clone() const override { return new Parenthesis(*this); }
-    Segment* segment() const { return ownershipParent() && ownershipParent()->isSegment() ? toSegment(ownershipParent()) : nullptr; }
+    Parenthesis *clone() const override { return new Parenthesis(*this); }
+
+    Segment *segment() const { return ownershipParent() && ownershipParent()->isSegment() ? toSegment(ownershipParent()) : nullptr; }
 
     PropertyValue getProperty(Pid) const override;
-    bool setProperty(Pid, const PropertyValue&) override;
+    bool setProperty(Pid, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid) const override;
-
-
 
     bool followParentCurColor() const;
     void setFollowParentColor(bool val);
 
-    Color curColor(const rendering::PaintOptions& opt) const override;
+    Color curColor(const rendering::PaintOptions &opt) const override;
 
-    struct LayoutData : public EngravingItem::LayoutData
-    {
+    struct LayoutData : public EngravingItem::LayoutData {
         ld_field<muse::draw::PainterPath> path = "[Parenthesis] path";
-        ld_field<double> startY = { "[Parenthesis] startY", 0.0 };
-        ld_field<double> height = { "[Parenthesis] height", 0.0 };
-        ld_field<double> midPointThickness = { "[Parenthesis] midPointThickness", 0.0 };
-        ld_field<double> endPointThickness = { "[Parenthesis] endPointThickness", PARENTHESIS_END_WIDTH };
-        ld_field<double> shoulderWidth = { "[Parenthesis] endPointThickness", 0.0 };
-        ld_field<double> intrinsicMag = { "[Parenthesis] intrinsicMag", 1.0 };      // Mag separate from staff scale
-        ld_field<SymId> symId = { "[Parenthesis] symId", SymId::noSym };
-        ld_field<double> symScale = { "[Parenthesis] symScale", 1.0 };
+        ld_field<double> startY = {"[Parenthesis] startY", 0.0};
+        ld_field<double> height = {"[Parenthesis] height", 0.0};
+        ld_field<double> midPointThickness = {"[Parenthesis] midPointThickness", 0.0};
+        ld_field<double> endPointThickness = {"[Parenthesis] endPointThickness", PARENTHESIS_END_WIDTH};
+        ld_field<double> shoulderWidth = {"[Parenthesis] endPointThickness", 0.0};
+        ld_field<double> intrinsicMag = {"[Parenthesis] intrinsicMag", 1.0}; // Mag separate from staff scale
+        ld_field<SymId> symId = {"[Parenthesis] symId", SymId::noSym};
+        ld_field<double> symScale = {"[Parenthesis] symScale", 1.0};
     };
+
     DECLARE_LAYOUTDATA_METHODS(Parenthesis);
 
 private:
     bool m_followParentColor = false;
 };
-} // namespace engraving
+} // namespace mu::engraving

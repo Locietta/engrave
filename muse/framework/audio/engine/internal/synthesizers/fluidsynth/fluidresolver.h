@@ -33,27 +33,26 @@
 #include "fluidsynth.h"
 
 namespace muse::audio::synth {
-class FluidResolver : public ISynthResolver::IResolver
-{
+class FluidResolver : public ISynthResolver::IResolver {
 public:
     // The repository, configuration and MIDI port (optional: it receives the
     // events every synthesizer handles) must outlive the resolver.
-    FluidResolver(const ISoundFontRepository& soundFontRepository, const engine::IAudioEngineConfiguration& config,
-                  midi::IMidiOutPort* midiOutPort);
+    FluidResolver(const ISoundFontRepository &soundFontRepository, const engine::IAudioEngineConfiguration &config,
+                  midi::IMidiOutPort *midiOutPort);
     ~FluidResolver() override;
 
-    ISynthesizerPtr resolveSynth(const audio::TrackId trackId, const audio::AudioInputParams& params,
-                                 const OutputSpec& spec) const override;
-    bool hasCompatibleResources(const audio::PlaybackSetupData& setup) const override;
+    ISynthesizerPtr resolveSynth(const audio::TrackId trackId, const audio::AudioInputParams &params,
+                                 const OutputSpec &spec) const override;
+    bool hasCompatibleResources(const audio::PlaybackSetupData &setup) const override;
 
     audio::AudioResourceMetaList resolveResources() const override;
-    audio::SoundPresetList resolveSoundPresets(const AudioResourceMeta& resourceMeta) const override;
+    audio::SoundPresetList resolveSoundPresets(const AudioResourceMeta &resourceMeta) const override;
 
     void refresh() override;
     void clearSources() override;
 
 private:
-    FluidSynthPtr createSynth(const audio::AudioResourceId& resourceId) const;
+    FluidSynthPtr createSynth(const audio::AudioResourceId &resourceId) const;
 
     struct SoundFontResource {
         io::path_t path;
@@ -61,9 +60,9 @@ private:
         AudioResourceMeta meta;
     };
 
-    const ISoundFontRepository& m_soundFontRepository;
-    const engine::IAudioEngineConfiguration& m_config;
-    midi::IMidiOutPort* m_midiOutPort = nullptr;
+    const ISoundFontRepository &m_soundFontRepository;
+    const engine::IAudioEngineConfiguration &m_config;
+    midi::IMidiOutPort *m_midiOutPort = nullptr;
     std::unordered_map<AudioResourceId, SoundFontResource> m_resourcesCache;
 };
-}
+} // namespace muse::audio::synth

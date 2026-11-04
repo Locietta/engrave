@@ -7,15 +7,21 @@
 using namespace muse;
 
 namespace mu::iex::guitarpro {
-std::pair<int, std::unique_ptr<GPTrack> > GP7DomBuilder::createGPTrack(XmlDomNode* trackNode, XmlDomNode* versionNode)
-{
-    static const std::set<String> sUnused = {
-        u"Color", u"SystemsDefautLayout", u"SystemsLayout", u"AutoBrush",
-        u"PalmMute", u"AutoAccentuation", u"PlayingStyle",
-        u"UseOneChannelPerString", u"IconId", u"InstrumentSet",
-        u"ForcedSound", u"PlaybackState", u"AudioEngineState",
-        u"Automations"
-    };
+std::pair<int, std::unique_ptr<GPTrack>> GP7DomBuilder::createGPTrack(XmlDomNode *trackNode, XmlDomNode *versionNode) {
+    static const std::set<String> sUnused = {u"Color",
+                                             u"SystemsDefautLayout",
+                                             u"SystemsLayout",
+                                             u"AutoBrush",
+                                             u"PalmMute",
+                                             u"AutoAccentuation",
+                                             u"PlayingStyle",
+                                             u"UseOneChannelPerString",
+                                             u"IconId",
+                                             u"InstrumentSet",
+                                             u"ForcedSound",
+                                             u"PlaybackState",
+                                             u"AudioEngineState",
+                                             u"Automations"};
 
     int trackIdx = trackNode->toElement().attribute("id").value().toInt();
     auto track = std::make_unique<GPTrack>(trackIdx);
@@ -75,7 +81,7 @@ std::pair<int, std::unique_ptr<GPTrack> > GP7DomBuilder::createGPTrack(XmlDomNod
         } else if (nodeName == u"Automations") {
             auto automationNode = trackChildNode.firstChild();
             while (!automationNode.isNull()) {
-                GPTrack::SoundAutomation automation =  readTrackAutomation(&automationNode);
+                GPTrack::SoundAutomation automation = readTrackAutomation(&automationNode);
                 if (!automation.type.isEmpty()) {
                     track->addSoundAutomation(automation);
                 }
@@ -91,32 +97,22 @@ std::pair<int, std::unique_ptr<GPTrack> > GP7DomBuilder::createGPTrack(XmlDomNod
     return std::make_pair(trackIdx, std::move(track));
 }
 
-int GP7DomBuilder::readMidiChannel(XmlDomNode* trackChildNode) const
-{
-    int channel
-        =trackChildNode->firstChildElement("PrimaryChannel")
-          .text().toInt();
+int GP7DomBuilder::readMidiChannel(XmlDomNode *trackChildNode) const {
+    int channel = trackChildNode->firstChildElement("PrimaryChannel").text().toInt();
 
     return channel;
 }
 
-int GP7DomBuilder::readMidiProgramm(XmlDomNode* trackChildNode) const
-{
-    int programm = trackChildNode->firstChild()
-                   .firstChildElement("MIDI")
-                   .firstChildElement("Program")
-                   .text().toInt();
+int GP7DomBuilder::readMidiProgramm(XmlDomNode *trackChildNode) const {
+    int programm = trackChildNode->firstChild().firstChildElement("MIDI").firstChildElement("Program").text().toInt();
 
     return programm;
 }
 
-GPTrack::Sound GP7DomBuilder::readSounds(XmlDomNode* soundNode) const
-{
+GPTrack::Sound GP7DomBuilder::readSounds(XmlDomNode *soundNode) const {
     GPTrack::Sound result;
 
-    result.programm = soundNode->firstChildElement("MIDI")
-                      .firstChildElement("Program")
-                      .text().toInt();
+    result.programm = soundNode->firstChildElement("MIDI").firstChildElement("Program").text().toInt();
     result.name = soundNode->firstChildElement("Name").text();
     result.label = soundNode->firstChildElement("Label").text();
     result.path = soundNode->firstChildElement("Path").text();
@@ -125,8 +121,7 @@ GPTrack::Sound GP7DomBuilder::readSounds(XmlDomNode* soundNode) const
     return result;
 }
 
-GPTrack::SoundAutomation GP7DomBuilder::readTrackAutomation(XmlDomNode* automationNode) const
-{
+GPTrack::SoundAutomation GP7DomBuilder::readTrackAutomation(XmlDomNode *automationNode) const {
     GPTrack::SoundAutomation result;
 
     String type = automationNode->firstChildElement("Type").text();

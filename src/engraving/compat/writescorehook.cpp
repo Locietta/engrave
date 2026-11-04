@@ -32,8 +32,7 @@ using namespace mu::engraving;
 using namespace mu::engraving::compat;
 using namespace mu::engraving::write;
 
-void WriteScoreHook::onWriteStyle302(Score* score, XmlWriter& xml, bool inlineStyle)
-{
+void WriteScoreHook::onWriteStyle302(Score *score, XmlWriter &xml, bool inlineStyle) {
     bool isWriteStyle = inlineStyle;
 
     //! NOTE If not the master score, because the Excerpts (parts) have not yet been write to separate files
@@ -47,12 +46,11 @@ void WriteScoreHook::onWriteStyle302(Score* score, XmlWriter& xml, bool inlineSt
     }
 
     if (isWriteStyle) {
-        score->style().save(xml, true);     // save only differences to builtin style (logic from 3.)
+        score->style().save(xml, true); // save only differences to builtin style (logic from 3.)
     }
 }
 
-void WriteScoreHook::onWriteExcerpts302(Score* score, XmlWriter& xml, WriteContext& ctx)
-{
+void WriteScoreHook::onWriteExcerpts302(Score *score, XmlWriter &xml, WriteContext &ctx) {
     bool isWriteExcerpts = ctx.inlineExcerpts();
 
     //! NOTE If the test mode, because the tests have not yet been adapted to the new format
@@ -61,8 +59,8 @@ void WriteScoreHook::onWriteExcerpts302(Score* score, XmlWriter& xml, WriteConte
     }
 
     if (isWriteExcerpts && score->isMaster() && !ctx.shouldWriteRange()) {
-        MasterScore* mScore = static_cast<MasterScore*>(score);
-        for (const Excerpt* excerpt : mScore->excerpts()) {
+        MasterScore *mScore = static_cast<MasterScore *>(score);
+        for (const Excerpt *excerpt : mScore->excerpts()) {
             if (excerpt->excerptScore() != score) {
                 write::Writer::write(excerpt->excerptScore(), xml, ctx, *this); // recursion write
             }

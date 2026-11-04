@@ -7,10 +7,9 @@ using namespace muse;
 using namespace muse::audio;
 using namespace muse::audio::engine;
 
-OfflineRenderSession::OfflineRenderSession(IAudioFactory& factory, const OutputSpec& spec)
+OfflineRenderSession::OfflineRenderSession(IAudioFactory &factory, const OutputSpec &spec)
     : m_factory(factory), m_spec(spec), m_mixer(std::make_shared<Mixer>()),
-      m_master(std::make_shared<TrackChain>(MASTER_TRACK_ID, "Master"))
-{
+      m_master(std::make_shared<TrackChain>(MASTER_TRACK_ID, "Master")) {
     m_mixer->init();
     auto control = std::make_shared<AutomationControlNode>();
     control->setPlayheadPosition(nullptr);
@@ -23,14 +22,13 @@ OfflineRenderSession::OfflineRenderSession(IAudioFactory& factory, const OutputS
     m_master->setMode(ProcessMode::Idle);
 }
 
-OfflineRenderSession::~OfflineRenderSession()
-{
+OfflineRenderSession::~OfflineRenderSession() {
     OfflineTimer timer(OfflineTiming::current().teardown);
     m_master->setMode(ProcessMode::Idle);
     m_master->clear();
     m_master->disconnectAll();
     m_master.reset();
-    for (const auto& track : m_tracks) {
+    for (const auto &track : m_tracks) {
         if (auto fx = track->fxChain()) fx->clear();
         track->clear();
         track->disconnectAll();
@@ -41,18 +39,16 @@ OfflineRenderSession::~OfflineRenderSession()
     m_factory.clearAllFx();
 }
 
-RetVal2<TrackId, TrackParams> OfflineRenderSession::addTrack(const std::string& name,
-    const mpe::PlaybackData& data, const TrackParams& params)
-{
+RetVal2<TrackId, TrackParams> OfflineRenderSession::addTrack(const std::string &name, const mpe::PlaybackData &data,
+                                                             const TrackParams &params) {
     return add(name, &data, params);
 }
-RetVal2<TrackId, TrackParams> OfflineRenderSession::addAuxTrack(const std::string& name, const TrackParams& params)
-{
+
+RetVal2<TrackId, TrackParams> OfflineRenderSession::addAuxTrack(const std::string &name, const TrackParams &params) {
     return add(name, nullptr, params);
 }
-RetVal2<TrackId, TrackParams> OfflineRenderSession::add(const std::string& name,
-    const mpe::PlaybackData* data, const TrackParams& params)
-{
+
+RetVal2<TrackId, TrackParams> OfflineRenderSession::add(const std::string &name, const mpe::PlaybackData *data, const TrackParams &params) {
     using Result = RetVal2<TrackId, TrackParams>;
     const TrackId id = ++m_lastId;
     AudioSourceNodePtr source;
@@ -83,14 +79,14 @@ RetVal2<TrackId, TrackParams> OfflineRenderSession::add(const std::string& name,
     if (source) source->seek(TimePosition::zero(m_spec.sampleRate));
     m_tracks.push_back(chain);
     size_t audible = 0;
-    for (const auto& track : m_tracks) if (!track->control()->muted()) ++audible;
+    for (const auto &track : m_tracks)
+        if (!track->control()->muted()) ++audible;
     m_mixer->setNonMutedTrackCount(audible);
     return Result::make_ok(id, params);
 }
-void OfflineRenderSession::resetSources()
-{
-    for (const auto& track : m_tracks) {
-        if (auto source = std::dynamic_pointer_cast<AudioSourceNode>(track->source()))
-            source->seek(TimePosition::zero(m_spec.sampleRate));
+
+void OfflineRenderSession::resetSources() {
+    for (const auto &track : m_tracks) {
+        if (auto source = std::dynamic_pointer_cast<AudioSourceNode>(track->source())) source->seek(TimePosition::zero(m_spec.sampleRate));
     }
 }

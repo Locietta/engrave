@@ -34,27 +34,26 @@
 namespace mu::engraving {
 class ScoreAutomationController;
 
-class EditAutomationPoints : public UndoableCommand
-{
+class EditAutomationPoints : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, EditAutomationPoints)
 
 public:
-    EditAutomationPoints(Score* score, ScoreAutomationController* controller, const AutomationCurveKey& key,
-                         const AutomationPointEdits& edits);
+    EditAutomationPoints(Score *score, ScoreAutomationController *controller, const AutomationCurveKey &key,
+                         const AutomationPointEdits &edits);
 
     UNDO_TYPE(CommandType::EditAutomationPoints)
     UNDO_NAME("EditAutomationPoints")
-    UNDO_CHANGED_OBJECTS({ m_score })
+    UNDO_CHANGED_OBJECTS({m_score})
 
     std::optional<ChangedRange> changedRange() const override;
 
 private:
     void flip() override;
 
-    Score* m_score = nullptr;
-    ScoreAutomationController* m_controller = nullptr;
+    Score *m_score = nullptr;
+    ScoreAutomationController *m_controller = nullptr;
     AutomationCurveKey m_key;
-    std::map<utick_t, std::optional<AutomationPoint> > m_pointStates; // tick -> point to write next, or nullopt to erase
+    std::map<utick_t, std::optional<AutomationPoint>> m_pointStates; // tick -> point to write next, or nullopt to erase
     std::optional<ChangedRange> m_changedRange;
 };
-}
+} // namespace mu::engraving

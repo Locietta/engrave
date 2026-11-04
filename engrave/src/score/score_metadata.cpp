@@ -68,39 +68,34 @@ namespace {
 using Json = nlohmann::json;
 using namespace mu::engraving;
 
-std::string boolToString(bool b)
-{
-    return b ? "true" : "false";
-}
+std::string boolToString(bool b) { return b ? "true" : "false"; }
 
-bool shouldTryRecognizeText(const Text* text)
-{
+bool shouldTryRecognizeText(const Text *text) {
     const TextStyleType type = text->textStyleType();
     if (type == TextStyleType::DEFAULT || type == TextStyleType::FRAME) {
         return true;
     }
 
-    return static_cast<int>(type) >= static_cast<int>(TextStyleType::USER1)
-           && static_cast<int>(type) <= static_cast<int>(TextStyleType::USER12);
+    return static_cast<int>(type) >= static_cast<int>(TextStyleType::USER1) &&
+           static_cast<int>(type) <= static_cast<int>(TextStyleType::USER12);
 }
 
-muse::String recognizeTitle(const Score* score)
-{
-    const MeasureBase* mb = score->first();
+muse::String recognizeTitle(const Score *score) {
+    const MeasureBase *mb = score->first();
     if (!mb || !mb->isVBox()) {
         return muse::String();
     }
 
-    const Text* titleText = nullptr;
+    const Text *titleText = nullptr;
     double maxFontSize = DBL_MIN;
     double minY = DBL_MAX;
 
-    for (const EngravingItem* item : mb->el()) {
+    for (const EngravingItem *item : mb->el()) {
         if (!item || !item->isText()) {
             continue;
         }
 
-        const Text* text = toText(item);
+        const Text *text = toText(item);
         if (!shouldTryRecognizeText(text)) {
             continue;
         }
@@ -121,22 +116,21 @@ muse::String recognizeTitle(const Score* score)
     return titleText ? titleText->plainText() : muse::String();
 }
 
-muse::String recognizeComposer(const Score* score)
-{
-    const MeasureBase* mb = score->first();
+muse::String recognizeComposer(const Score *score) {
+    const MeasureBase *mb = score->first();
     if (!mb || !mb->isVBox()) {
         return muse::String();
     }
 
-    const Text* rightmostText = nullptr;
+    const Text *rightmostText = nullptr;
     double rightmostTextX = mb->ldata()->bbox().center().x();
 
-    for (const EngravingItem* item : mb->el()) {
+    for (const EngravingItem *item : mb->el()) {
         if (!item || !item->isText()) {
             continue;
         }
 
-        const Text* text = toText(item);
+        const Text *text = toText(item);
         if (!shouldTryRecognizeText(text)) {
             continue;
         }
@@ -150,10 +144,9 @@ muse::String recognizeComposer(const Score* score)
     return rightmostText ? rightmostText->plainText() : muse::String();
 }
 
-muse::String titleString(const Score* score)
-{
+muse::String titleString(const Score *score) {
     muse::String title;
-    const Text* text = score->getText(TextStyleType::TITLE);
+    const Text *text = score->getText(TextStyleType::TITLE);
     if (text) {
         title = text->plainText();
     }
@@ -173,50 +166,47 @@ muse::String titleString(const Score* score)
     return title;
 }
 
-std::string title(const Score* score)
-{
-    return titleString(score).toStdString();
-}
+std::string title(const Score *score) { return titleString(score).toStdString(); }
 
 // Exactly the character set of the JS regex
 // /[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g. The JS class includes NUL, the control range
 // U+0001..U+001A (which also covers TAB/LF/VT/FF/CR), ASCII space, and the
 // Unicode WhiteSpace/LineTerminator additions below. U+0085 and U+180E are not
 // JS whitespace and are deliberately not matched.
-bool isFilenameUnsafe(char32_t c)
-{
+bool isFilenameUnsafe(char32_t c) {
     if (c <= 0x1A) {
         return true; // U+0000, U+0001..U+001A
     }
 
     switch (c) {
-    case U' ': case U'<': case U'>': case U':': case U'{': case U'}':
-    case U'"': case U'/': case U'\\': case U'|': case U'?': case U'*':
-    case U'~': case U'.':
-        return true;
-    default:
-        break;
+        case U' ':
+        case U'<':
+        case U'>':
+        case U':':
+        case U'{':
+        case U'}':
+        case U'"':
+        case U'/':
+        case U'\\':
+        case U'|':
+        case U'?':
+        case U'*':
+        case U'~':
+        case U'.': return true;
+        default: break;
     }
 
     if (c < 0x7F) {
         return false;
     }
 
-    return c == 0x00A0
-           || c == 0x1680
-           || (c >= 0x2000 && c <= 0x200A)
-           || c == 0x2028
-           || c == 0x2029
-           || c == 0x202F
-           || c == 0x205F
-           || c == 0x3000
-           || c == 0xFEFF;
+    return c == 0x00A0 || c == 0x1680 || (c >= 0x2000 && c <= 0x200A) || c == 0x2028 || c == 0x2029 || c == 0x202F || c == 0x205F ||
+           c == 0x3000 || c == 0xFEFF;
 }
 
-std::string subtitle(const Score* score)
-{
+std::string subtitle(const Score *score) {
     muse::String subtitle;
-    const Text* text = score->getText(TextStyleType::SUBTITLE);
+    const Text *text = score->getText(TextStyleType::SUBTITLE);
     if (text) {
         subtitle = text->plainText();
     }
@@ -224,10 +214,9 @@ std::string subtitle(const Score* score)
     return subtitle.toStdString();
 }
 
-std::string composer(const Score* score)
-{
+std::string composer(const Score *score) {
     muse::String composer;
-    const Text* text = score->getText(TextStyleType::COMPOSER);
+    const Text *text = score->getText(TextStyleType::COMPOSER);
     if (text) {
         composer = text->plainText();
     }
@@ -243,10 +232,9 @@ std::string composer(const Score* score)
     return composer.toStdString();
 }
 
-std::string poet(const Score* score)
-{
+std::string poet(const Score *score) {
     muse::String poet;
-    const Text* text = score->getText(TextStyleType::LYRICIST);
+    const Text *text = score->getText(TextStyleType::LYRICIST);
     if (text) {
         poet = text->plainText();
     }
@@ -258,17 +246,16 @@ std::string poet(const Score* score)
     return poet.toStdString();
 }
 
-std::string timesig(const Score* score)
-{
+std::string timesig(const Score *score) {
     size_t staves = score->nstaves();
     size_t tracks = staves * VOICES;
-    const Segment* timeSigSegment = score->firstSegmentMM(SegmentType::TimeSig);
+    const Segment *timeSigSegment = score->firstSegmentMM(SegmentType::TimeSig);
     if (!timeSigSegment) {
         return std::string();
     }
 
     std::string timeSig;
-    const EngravingItem* element = nullptr;
+    const EngravingItem *element = nullptr;
     for (size_t track = 0; track < tracks; ++track) {
         element = timeSigSegment->element(track);
         if (element) {
@@ -277,34 +264,31 @@ std::string timesig(const Score* score)
     }
 
     if (element && element->isTimeSig()) {
-        const TimeSig* ts = toTimeSig(element);
+        const TimeSig *ts = toTimeSig(element);
         timeSig = std::to_string(ts->numerator()) + "/" + std::to_string(ts->denominator());
     }
 
     return timeSig;
 }
 
-std::pair<int, std::string> tempo(const Score* score)
-{
+std::pair<int, std::string> tempo(const Score *score) {
     int tempo = 0;
     muse::String tempoText;
-    for (const Segment* segment = score->firstSegmentMM(SegmentType::All); segment;
-         segment = segment->next1MM()) {
+    for (const Segment *segment = score->firstSegmentMM(SegmentType::All); segment; segment = segment->next1MM()) {
         auto annotations = segment->annotations();
-        for (const EngravingItem* annotation : annotations) {
+        for (const EngravingItem *annotation : annotations) {
             if (annotation && annotation->isTempoText()) {
-                const TempoText* tt = toTempoText(annotation);
+                const TempoText *tt = toTempoText(annotation);
                 tempo = static_cast<int>(std::round(tt->tempo().toBPM().val));
                 tempoText = tt->xmlText();
             }
         }
     }
 
-    return { tempo, tempoText.toStdString() };
+    return {tempo, tempoText.toStdString()};
 }
 
-bool parsePartId(const std::string& text, std::uint64_t& value)
-{
+bool parsePartId(const std::string &text, std::uint64_t &value) {
     if (text.empty()) {
         return false;
     }
@@ -326,8 +310,7 @@ bool parsePartId(const std::string& text, std::uint64_t& value)
     return true;
 }
 
-Json trackJson(const InstrumentTrackId& id, const MetadataTrack& track)
-{
+Json trackJson(const InstrumentTrackId &id, const MetadataTrack &track) {
     Json jsonTrack = Json::object();
     jsonTrack["instrumentId"] = id.instrumentId.toStdString();
     jsonTrack["partId"] = id.partId.toStdString();
@@ -353,19 +336,18 @@ Json trackJson(const InstrumentTrackId& id, const MetadataTrack& track)
     return jsonTrack;
 }
 
-Json tracksJsonArray(const Score* score, const std::vector<MetadataTrack>& tracks)
-{
+Json tracksJsonArray(const Score *score, const std::vector<MetadataTrack> &tracks) {
     Json jsonTracksArray = Json::array();
     std::map<InstrumentTrackId, Json> sortedJsonTracks;
 
-    for (const MetadataTrack& track : tracks) {
+    for (const MetadataTrack &track : tracks) {
         std::uint64_t partIdValue = 0;
         if (!parsePartId(track.part_id, partIdValue) || partIdValue == 0) {
             throw std::invalid_argument("score_metadata: invalid part id '" + track.part_id + "'");
         }
 
-        const Part* part = nullptr;
-        for (const Part* candidate : score->parts()) {
+        const Part *part = nullptr;
+        for (const Part *candidate : score->parts()) {
             if (candidate && candidate->id().toUint64() == partIdValue) {
                 part = candidate;
                 break;
@@ -380,33 +362,31 @@ Json tracksJsonArray(const Score* score, const std::vector<MetadataTrack>& track
         }
 
         const InstrumentTrackIdSet ids = part->instrumentTrackIdSet();
-        const auto match = std::find_if(ids.begin(), ids.end(), [&track](const InstrumentTrackId& id) {
-            return id.instrumentId.toStdString() == track.instrument_id;
-        });
+        const auto match = std::find_if(
+            ids.begin(), ids.end(), [&track](const InstrumentTrackId &id) { return id.instrumentId.toStdString() == track.instrument_id; });
         if (match == ids.end()) {
-            throw std::invalid_argument("score_metadata: unknown instrument id '" + track.instrument_id
-                                        + "' for part '" + track.part_id + "'");
+            throw std::invalid_argument("score_metadata: unknown instrument id '" + track.instrument_id + "' for part '" + track.part_id +
+                                        "'");
         }
 
         const auto inserted = sortedJsonTracks.emplace(*match, Json::object());
         if (!inserted.second) {
-            throw std::invalid_argument("score_metadata: duplicate track for part '" + track.part_id
-                                        + "' and instrument '" + track.instrument_id + "'");
+            throw std::invalid_argument("score_metadata: duplicate track for part '" + track.part_id + "' and instrument '" +
+                                        track.instrument_id + "'");
         }
         inserted.first->second = trackJson(*match, track);
     }
 
-    for (const auto& entry : sortedJsonTracks) {
+    for (const auto &entry : sortedJsonTracks) {
         jsonTracksArray.push_back(entry.second);
     }
 
     return jsonTracksArray;
 }
 
-Json partsJsonArray(const Score* score)
-{
+Json partsJsonArray(const Score *score) {
     Json jsonPartsArray = Json::array();
-    for (const Part* part : score->parts()) {
+    for (const Part *part : score->parts()) {
         Json jsonPart = Json::object();
         jsonPart["id"] = part->id().toStdString();
         muse::String name = part->longName();
@@ -427,8 +407,7 @@ Json partsJsonArray(const Score* score)
     return jsonPartsArray;
 }
 
-Json pageFormatJson(const MStyle& style)
-{
+Json pageFormatJson(const MStyle &style) {
     Json format = Json::object();
     // Upstream stores round(...) as a QJson double; QJsonDocument serializes a
     // whole value without a fractional part, so int keeps the existing output.
@@ -439,34 +418,29 @@ Json pageFormatJson(const MStyle& style)
     return format;
 }
 
-void findTextByType(TextStyleType textStyleType, std::vector<muse::String>& strings,
-                    EngravingItem* element)
-{
+void findTextByType(TextStyleType textStyleType, std::vector<muse::String> &strings, EngravingItem *element) {
     if (!element || !element->isTextBase()) {
         return;
     }
 
-    const TextBase* text = toTextBase(element);
+    const TextBase *text = toTextBase(element);
     if (text->textStyleType() == textStyleType) {
         strings.push_back(text->plainText());
     }
 }
 
-Json typeDataJson(Score* score)
-{
+Json typeDataJson(Score *score) {
     Json typesData = Json::object();
-    static const std::vector<std::pair<std::string, TextStyleType> > namesTypesList {
-        { "titles", TextStyleType::TITLE },
-        { "subtitles", TextStyleType::SUBTITLE },
-        { "composers", TextStyleType::COMPOSER },
-        { "poets", TextStyleType::LYRICIST }
-    };
+    static const std::vector<std::pair<std::string, TextStyleType>> namesTypesList{{"titles", TextStyleType::TITLE},
+                                                                                   {"subtitles", TextStyleType::SUBTITLE},
+                                                                                   {"composers", TextStyleType::COMPOSER},
+                                                                                   {"poets", TextStyleType::LYRICIST}};
 
-    for (const auto& nameType : namesTypesList) {
+    for (const auto &nameType : namesTypesList) {
         Json typeData = Json::array();
         std::vector<muse::String> typeTextStrings;
-        score->scanElements([&](EngravingItem* item) { findTextByType(nameType.second, typeTextStrings, item); });
-        for (const auto& typeStr : typeTextStrings) {
+        score->scanElements([&](EngravingItem *item) { findTextByType(nameType.second, typeTextStrings, item); });
+        for (const auto &typeStr : typeTextStrings) {
             typeData.push_back(typeStr.toStdString());
         }
         typesData[nameType.first] = typeData;
@@ -475,18 +449,17 @@ Json typeDataJson(Score* score)
     return typesData;
 }
 
-Json excerptsJsonArray(const Score* score)
-{
+Json excerptsJsonArray(const Score *score) {
     Json jsonExcerptsArray = Json::array();
 
-    const MasterScore* master = score->masterScore();
+    const MasterScore *master = score->masterScore();
     if (!master) {
         return jsonExcerptsArray;
     }
 
-    const std::vector<Excerpt*>& excerpts = master->excerpts();
+    const std::vector<Excerpt *> &excerpts = master->excerpts();
     for (size_t i = 0; i < excerpts.size(); ++i) {
-        const Excerpt* e = excerpts[i];
+        const Excerpt *e = excerpts[i];
         if (!e) {
             continue;
         }
@@ -494,7 +467,7 @@ Json excerptsJsonArray(const Score* score)
         // Loaders can leave an excerpt entry without an excerpt score. Skip it
         // instead of dereferencing null; the remaining entries keep their
         // original master-list index as "id".
-        Score* part = e->excerptScore();
+        Score *part = e->excerptScore();
         if (!part) {
             continue;
         }
@@ -509,10 +482,10 @@ Json excerptsJsonArray(const Score* score)
 
     return jsonExcerptsArray;
 }
-Json metadataTracksJsonArray(const std::vector<ScoreMetadataTrack>& tracks)
-{
+
+Json metadataTracksJsonArray(const std::vector<ScoreMetadataTrack> &tracks) {
     Json jsonTracksArray = Json::array();
-    for (const ScoreMetadataTrack& track : tracks) {
+    for (const ScoreMetadataTrack &track : tracks) {
         Json jsonTrack = Json::object();
         jsonTrack["trackId"] = track.track_id;
         jsonTrack["partId"] = track.part_id;
@@ -531,8 +504,7 @@ Json metadataTracksJsonArray(const std::vector<ScoreMetadataTrack>& tracks)
     return jsonTracksArray;
 }
 
-Json make_score_metadata_json(Score* score, Json jsonTracks)
-{
+Json make_score_metadata_json(Score *score, Json jsonTracks) {
     Json json = Json::object();
 
     json["title"] = title(score);
@@ -565,16 +537,14 @@ Json make_score_metadata_json(Score* score, Json jsonTracks)
 }
 } // namespace
 
-nlohmann::json score_metadata(mu::engraving::Score* score, const std::vector<ScoreMetadataTrack>& tracks)
-{
+nlohmann::json score_metadata(mu::engraving::Score *score, const std::vector<ScoreMetadataTrack> &tracks) {
     if (!score) {
         return nlohmann::json::object();
     }
     return make_score_metadata_json(score, metadataTracksJsonArray(tracks));
 }
 
-nlohmann::json score_metadata(mu::engraving::Score* score, const std::vector<MetadataTrack>& tracks)
-{
+nlohmann::json score_metadata(mu::engraving::Score *score, const std::vector<MetadataTrack> &tracks) {
     if (!score) {
         if (!tracks.empty()) {
             throw std::invalid_argument("score_metadata: cannot validate tracks without a score");
@@ -588,8 +558,7 @@ nlohmann::json score_metadata(mu::engraving::Score* score, const std::vector<Met
     return make_score_metadata_json(score, std::move(jsonTracks));
 }
 
-nlohmann::json score_metadata(mu::engraving::Score* score)
-{
+nlohmann::json score_metadata(mu::engraving::Score *score) {
     if (!score) {
         return nlohmann::json::object();
     }
@@ -597,7 +566,7 @@ nlohmann::json score_metadata(mu::engraving::Score* score)
     const auto infos = score_audio_track_info(score);
     tracks.reserve(infos.size());
     for (std::size_t index = 0; index < infos.size(); ++index) {
-        const auto& info = infos[index];
+        const auto &info = infos[index];
         ScoreMetadataTrack t;
         t.track_id = static_cast<std::int64_t>(index);
         t.part_id = info.part_id;
@@ -613,8 +582,7 @@ nlohmann::json score_metadata(mu::engraving::Score* score)
     return score_metadata(score, tracks);
 }
 
-std::string score_title_filename_safe(const mu::engraving::Score* score)
-{
+std::string score_title_filename_safe(const mu::engraving::Score *score) {
     if (!score) {
         return std::string();
     }
@@ -646,8 +614,7 @@ std::string score_title_filename_safe(const mu::engraving::Score* score)
     return muse::String::fromUcs4(output.data(), output.size()).toStdString();
 }
 
-std::string score_title(const mu::engraving::Score* score)
-{
+std::string score_title(const mu::engraving::Score *score) {
     if (!score) {
         return std::string();
     }

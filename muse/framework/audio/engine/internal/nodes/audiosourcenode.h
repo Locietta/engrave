@@ -28,23 +28,21 @@
 #include "audio/common/timeposition.h"
 
 namespace muse::audio {
-struct SourceTag
-{
-    static constexpr const char* name = "Source";
+struct SourceTag {
+    static constexpr const char *name = "Source";
 };
-}
+} // namespace muse::audio
 
 namespace muse::audio::engine {
 //! NOTE Abstract Base Audio Source Node
-class AudioSourceNode : public AudioNode<SourceTag>
-{
+class AudioSourceNode : public AudioNode<SourceTag> {
 public:
 
-    virtual void seek(const TimePosition& position, const bool flushSound = true) = 0;
+    virtual void seek(const TimePosition &position, const bool flushSound = true) = 0;
     virtual void flush() = 0;
 
-    virtual const AudioInputParams& inputParams() const = 0;
-    virtual void applyInputParams(const AudioInputParams& requiredParams) = 0;
+    virtual const AudioInputParams &inputParams() const = 0;
+    virtual void applyInputParams(const AudioInputParams &requiredParams) = 0;
 
     virtual void prepareToPlay() = 0;
     virtual bool readyToPlay() const = 0;
@@ -57,4 +55,4 @@ public:
 };
 
 using AudioSourceNodePtr = std::shared_ptr<AudioSourceNode>;
-}
+} // namespace muse::audio::engine

@@ -10,7 +10,7 @@
 
 namespace mu::engraving {
 class MasterScore;
-}
+} // namespace mu::engraving
 
 namespace music {
 
@@ -21,8 +21,7 @@ namespace music {
 // Durations are integer engraving ticks: MusicXML divisions are normalised by
 // the engine to Constants::DIVISION == 480 ticks per quarter note. All staves
 // of the selected part are included; voice, when present, is 0..3.
-struct ScoreRegion
-{
+struct ScoreRegion {
     size_t part_index = 0;
     size_t first_measure = 0;
     size_t measure_count = 0;
@@ -32,8 +31,7 @@ struct ScoreRegion
 // id is a stable EID assigned once on the owner thread. tied reports a tie
 // anchor on either side. spanned reports a non-tie spanner anchored to the
 // note or its chord. Grace notes are deliberately excluded from query results.
-struct NoteView
-{
+struct NoteView {
     std::string id;
     std::string measure_id;
     size_t part_index = 0;
@@ -47,16 +45,14 @@ struct NoteView
     bool spanned = false;
 };
 
-struct MeasureView
-{
+struct MeasureView {
     std::string id;
     size_t index = 0;
     int tick = 0;
     int duration_ticks = 0;
 };
 
-struct ScoreRegionView
-{
+struct ScoreRegionView {
     std::vector<NoteView> notes;
     std::vector<MeasureView> measures;
     // True when a tie or spanner crosses the requested part/measure window.
@@ -73,6 +69,7 @@ struct ScoreSpanEndpoint {
     std::optional<size_t> measure_index;
     std::optional<unsigned> voice;
 };
+
 struct ScoreSpanView {
     std::optional<size_t> part_index;
     ScoreSpanEndpoint start, end;
@@ -80,6 +77,7 @@ struct ScoreSpanView {
     int last_tick = 0;
     bool tie = false;
 };
+
 struct ScoreReadProjection {
     bool complete = false;
     std::string unavailable_reason;
@@ -94,14 +92,14 @@ struct ScoreReadProjection {
 // the 4096-note per-region query cap does not apply to this capture. An
 // over-limit score returns complete=false, an explicit reason and no partial
 // musical data. Once captured, querying this value never accesses the engine.
-ScoreReadProjection snapshot_score_projection(mu::engraving::MasterScore*);
-ScoreRegionView query_score_projection(const ScoreReadProjection&, const ScoreRegion&);
+ScoreReadProjection snapshot_score_projection(mu::engraving::MasterScore *);
+ScoreRegionView query_score_projection(const ScoreReadProjection &, const ScoreRegion &);
 
 // Requires a valid MasterScore and execution on its owner thread. The query
 // assigns EIDs to returned notes and measures when they do not have one yet,
 // so it mutates the master score's EID registry even though musical content is
 // left untouched. Bounded to 128 measures and 4096 notes; a larger request or
 // result throws. Bad regions throw std::invalid_argument.
-ScoreRegionView query_score_region(mu::engraving::MasterScore* score, const ScoreRegion& region);
+ScoreRegionView query_score_region(mu::engraving::MasterScore *score, const ScoreRegion &region);
 
 } // namespace music

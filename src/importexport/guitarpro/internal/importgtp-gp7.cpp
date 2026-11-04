@@ -45,14 +45,13 @@ namespace {
 constexpr uint64_t GP7_MAX_ENTRY_BYTES = 64ull * 1024 * 1024;
 constexpr uint64_t GP7_MAX_TOTAL_BYTES = 128ull * 1024 * 1024;
 constexpr size_t GP7_MAX_ENTRIES = 4096;
-}
+} // namespace
 
 //---------------------------------------------------------
 //   read
 //---------------------------------------------------------
 
-bool GuitarPro7::read(IODevice* io)
-{
+bool GuitarPro7::read(IODevice *io) {
     f = io;
     previousTempo = -1;
     m_gpifRead = false;
@@ -65,7 +64,7 @@ bool GuitarPro7::read(IODevice* io)
     }
 
     uint64_t total = 0;
-    for (const auto& entry : entries) {
+    for (const auto &entry : entries) {
         if (entry.size > GP7_MAX_ENTRY_BYTES || total > GP7_MAX_TOTAL_BYTES - entry.size) {
             LOGE() << "Guitar Pro 7 archive declares an unsafe uncompressed size";
             return false;
@@ -104,8 +103,7 @@ bool GuitarPro7::read(IODevice* io)
 //   readProperties
 //---------------------------------------------------------
 
-GuitarPro::GPProperties GuitarPro7::readProperties(ByteArray* data)
-{
+GuitarPro::GPProperties GuitarPro7::readProperties(ByteArray *data) {
     GPProperties properties;
     size_t partsInfoSize = data->size();
     const size_t numInstrOffset = 8;
@@ -129,8 +127,5 @@ GuitarPro::GPProperties GuitarPro7::readProperties(ByteArray* data)
     return properties;
 }
 
-std::unique_ptr<IGPDomBuilder> GuitarPro7::createGPDomBuilder() const
-{
-    return std::make_unique<GP7DomBuilder>();
-}
+std::unique_ptr<IGPDomBuilder> GuitarPro7::createGPDomBuilder() const { return std::make_unique<GP7DomBuilder>(); }
 } // namespace mu::iex::guitarpro

@@ -32,23 +32,22 @@ struct LameHandler;
 
 namespace muse::io {
 class IODevice;
-}
+} // namespace muse::io
 
 namespace muse::audio::encode {
-class Mp3Encoder : public AbstractAudioEncoder
-{
+class Mp3Encoder : public AbstractAudioEncoder {
 public:
-    Mp3Encoder(const SoundTrackFormat&, io::IODevice&);
+    Mp3Encoder(const SoundTrackFormat &, io::IODevice &);
 
     ~Mp3Encoder() noexcept override;
 
     bool begin(samples_t totalSamplesNumber) override;
-    size_t encode(samples_t samplesPerChannel, const float* input) override;
+    size_t encode(samples_t samplesPerChannel, const float *input) override;
     Ret end() override;
 
 private:
     std::vector<std::uint8_t> m_outputBuffer;
     std::unique_ptr<LameHandler> m_handler;
-    io::IODevice* m_dstDevice = nullptr;
+    io::IODevice *m_dstDevice = nullptr;
 };
-}
+} // namespace muse::audio::encode

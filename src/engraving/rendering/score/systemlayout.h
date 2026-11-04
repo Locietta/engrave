@@ -59,128 +59,124 @@ class System;
 class SystemText;
 class TempoText;
 class TimeSig;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class SystemLayout
-{
+class SystemLayout {
 public:
-    static System* collectSystem(LayoutContext& ctx);
-    static void layoutSystemElements(System* system, LayoutContext& ctx);
+    static System *collectSystem(LayoutContext &ctx);
+    static void layoutSystemElements(System *system, LayoutContext &ctx);
 
-    static void layoutSystem(System* system, LayoutContext& ctx, double xo1);
+    static void layoutSystem(System *system, LayoutContext &ctx, double xo1);
 
-    static void hideEmptyStaves(System* system, LayoutContext& ctx, bool isFirstSystem);
-    static bool canChangeSysStaffVisibility(const System* system, const staff_idx_t staffIdx);
+    static void hideEmptyStaves(System *system, LayoutContext &ctx, bool isFirstSystem);
+    static bool canChangeSysStaffVisibility(const System *system, const staff_idx_t staffIdx);
 
-    static void layout2(System* system, LayoutContext& ctx);
-    static void restoreLayout2(System* system, LayoutContext& ctx);
-    static void setMeasureHeight(System* system, double height, const LayoutContext& ctx);
+    static void layout2(System *system, LayoutContext &ctx);
+    static void restoreLayout2(System *system, LayoutContext &ctx);
+    static void setMeasureHeight(System *system, double height, const LayoutContext &ctx);
 
-    static double minDistance(const System* top, const System* bottom, const LayoutContext& ctx);
+    static double minDistance(const System *top, const System *bottom, const LayoutContext &ctx);
 
-    static void centerElementsBetweenStaves(const System* system);
+    static void centerElementsBetweenStaves(const System *system);
     /* Centers the systems which were laid out during this layout but whose page was not
      * collected (e.g. the first system of the next page, re-laid out by a partial layout),
      * so centerElementsBetweenStaves has not been called for them yet. Call it after the
      * system/page collection loop, before any leftover systems are deleted. */
-    static void centerPendingSystems(LayoutContext& ctx);
-    static void centerBigTimeSigsAcrossStaves(const System* system);
+    static void centerPendingSystems(LayoutContext &ctx);
+    static void centerBigTimeSigsAcrossStaves(const System *system);
 
-    static void updateSkylineForElement(EngravingItem* element, const System* system, double yMove);
-    static void removeElementFromSkyline(EngravingItem* element, const System* system);
+    static void updateSkylineForElement(EngravingItem *element, const System *system, double yMove);
+    static void removeElementFromSkyline(EngravingItem *element, const System *system);
 
-    static void layoutSystemLockIndicators(System* system, LayoutContext& ctx);
-    static void layoutPageLockIndicators(System* system);
+    static void layoutSystemLockIndicators(System *system, LayoutContext &ctx);
+    static void layoutPageLockIndicators(System *system);
 
 private:
-    struct MeasureState
-    {
-        Measure* measure = nullptr;
+    struct MeasureState {
+        Measure *measure = nullptr;
         double measureWidth = 0.0;
         double measurePos = 0.0;
-        std::map<EngravingItem*, PointF> elementPositions;
-        std::map<EngravingItem*, double> elementWidths;
-        std::map<SharedPart*, SharedTrackMap> sharedTrackMaps;
+        std::map<EngravingItem *, PointF> elementPositions;
+        std::map<EngravingItem *, double> elementWidths;
+        std::map<SharedPart *, SharedTrackMap> sharedTrackMaps;
         bool curHeader = false;
         bool curTrailer = false;
 
         void clear();
 
-        void restoreMeasure(LayoutContext& ctx);
+        void restoreMeasure(LayoutContext &ctx);
     };
 
-    struct ElementsToLayout
-    {
-        System* system;
-        std::vector<Measure*> measures;
-        std::vector<Segment*> segments;
+    struct ElementsToLayout {
+        System *system;
+        std::vector<Measure *> measures;
+        std::vector<Segment *> segments;
 
-        std::vector<ChordRest*> chordRests;
-        std::vector<Chord*> chords;
-        std::vector<BarLine*> barlines;
-        std::vector<TimeSig*> timeSigAboveStaves;
+        std::vector<ChordRest *> chordRests;
+        std::vector<Chord *> chords;
+        std::vector<BarLine *> barlines;
+        std::vector<TimeSig *> timeSigAboveStaves;
 
-        std::vector<MeasureNumber*> measureNumbers;
-        std::vector<MMRestRange*> mmrRanges;
-        std::vector<EngravingItem*> markersAndJumps;
+        std::vector<MeasureNumber *> measureNumbers;
+        std::vector<MMRestRange *> mmrRanges;
+        std::vector<EngravingItem *> markersAndJumps;
 
-        std::vector<Sticking*> stickings;
-        std::vector<EngravingItem*> fermatasAndTremoloBars;
-        std::vector<FiguredBass*> figuredBass;
-        std::vector<Dynamic*> dynamics;
-        std::vector<Expression*> expressions;
-        std::vector<HarpPedalDiagram*> harpDiagrams;
-        std::vector<FretDiagram*> fretDiagrams;
-        std::vector<StaffTextBase*> staffText;
-        std::vector<InstrumentChange*> instrChanges;
-        std::vector<SystemText*> systemText;
-        std::vector<EngravingItem*> playTechCapoStringTunTripletFeel;
-        std::vector<RehearsalMark*> rehMarks;
-        std::vector<TempoText*> tempoText;
-        std::vector<Image*> images;
-        std::vector<Parenthesis*> parenthesis;
-        std::vector<Harmony*> harmonies;
-        std::vector<PlayCountText*> playCountText;
+        std::vector<Sticking *> stickings;
+        std::vector<EngravingItem *> fermatasAndTremoloBars;
+        std::vector<FiguredBass *> figuredBass;
+        std::vector<Dynamic *> dynamics;
+        std::vector<Expression *> expressions;
+        std::vector<HarpPedalDiagram *> harpDiagrams;
+        std::vector<FretDiagram *> fretDiagrams;
+        std::vector<StaffTextBase *> staffText;
+        std::vector<InstrumentChange *> instrChanges;
+        std::vector<SystemText *> systemText;
+        std::vector<EngravingItem *> playTechCapoStringTunTripletFeel;
+        std::vector<RehearsalMark *> rehMarks;
+        std::vector<TempoText *> tempoText;
+        std::vector<Image *> images;
+        std::vector<Parenthesis *> parenthesis;
+        std::vector<Harmony *> harmonies;
+        std::vector<PlayCountText *> playCountText;
 
-        std::vector<Spanner*> slurs;
-        std::vector<Spanner*> trills;
-        std::vector<Spanner*> hairpins;
-        std::vector<Spanner*> ottavas;
-        std::vector<Spanner*> pedal;
-        std::vector<Spanner*> voltas;
-        std::vector<Spanner*> tempoChangeLines;
-        std::vector<Spanner*> partialLyricsLines;
-        std::vector<Spanner*> allOtherSpanners;
+        std::vector<Spanner *> slurs;
+        std::vector<Spanner *> trills;
+        std::vector<Spanner *> hairpins;
+        std::vector<Spanner *> ottavas;
+        std::vector<Spanner *> pedal;
+        std::vector<Spanner *> voltas;
+        std::vector<Spanner *> tempoChangeLines;
+        std::vector<Spanner *> partialLyricsLines;
+        std::vector<Spanner *> allOtherSpanners;
 
-        std::vector<GuitarBend*> guitarBends;
+        std::vector<GuitarBend *> guitarBends;
 
-        ElementsToLayout(System* s)
-            : system(s) {}
+        ElementsToLayout(System *s) : system(s) {}
     };
 
-    static void collectElementsToLayout(Measure* measure, ElementsToLayout& elements, const LayoutContext& ctx);
-    static void collectSpannersToLayout(ElementsToLayout& elements, const LayoutContext& ctx);
+    static void collectElementsToLayout(Measure *measure, ElementsToLayout &elements, const LayoutContext &ctx);
+    static void collectSpannersToLayout(ElementsToLayout &elements, const LayoutContext &ctx);
 
-    static System* getNextSystem(LayoutContext& lc);
-    static void createSkylines(const ElementsToLayout& elementsToLayout, LayoutContext& ctx);
-    static void processLines(System* system, LayoutContext& ctx, const std::vector<Spanner*>& lines, bool align = false);
-    static void layoutTies(Chord* ch, System* system, const Fraction& stick, LayoutContext& ctx);
-    static void doLayoutTies(System* system, const std::vector<Segment*>& sl, const Fraction& stick, const Fraction& etick,
-                             LayoutContext& ctx);
-    static void doLayoutNoteSpannersLinear(System* system, LayoutContext& ctx);
-    static void layoutNoteAnchoredSpanners(System* system, Chord* chord);
-    static void updateCrossBeams(System* system, LayoutContext& ctx);
-    static bool measureHasCrossStuffOrModifiedBeams(const Measure* measure);
-    static void restoreOldSystemLayout(System* system, LayoutContext& ctx);
-    static void layoutTuplets(const std::vector<ChordRest*>& chordRests, LayoutContext& ctx);
+    static System *getNextSystem(LayoutContext &lc);
+    static void createSkylines(const ElementsToLayout &elementsToLayout, LayoutContext &ctx);
+    static void processLines(System *system, LayoutContext &ctx, const std::vector<Spanner *> &lines, bool align = false);
+    static void layoutTies(Chord *ch, System *system, const Fraction &stick, LayoutContext &ctx);
+    static void doLayoutTies(System *system, const std::vector<Segment *> &sl, const Fraction &stick, const Fraction &etick,
+                             LayoutContext &ctx);
+    static void doLayoutNoteSpannersLinear(System *system, LayoutContext &ctx);
+    static void layoutNoteAnchoredSpanners(System *system, Chord *chord);
+    static void updateCrossBeams(System *system, LayoutContext &ctx);
+    static bool measureHasCrossStuffOrModifiedBeams(const Measure *measure);
+    static void restoreOldSystemLayout(System *system, LayoutContext &ctx);
+    static void layoutTuplets(const std::vector<ChordRest *> &chordRests, LayoutContext &ctx);
 
-    static void layoutTiesAndBends(const ElementsToLayout& elementsToLayout, LayoutContext& ctx);
+    static void layoutTiesAndBends(const ElementsToLayout &elementsToLayout, LayoutContext &ctx);
 
-    static double minVertSpaceForCrossStaffBeams(System* system, staff_idx_t staffIdx1, staff_idx_t staffIdx2, LayoutContext& ctx);
+    static double minVertSpaceForCrossStaffBeams(System *system, staff_idx_t staffIdx1, staff_idx_t staffIdx2, LayoutContext &ctx);
 
     struct CenterableItem {
-        EngravingItem* item = nullptr;
+        EngravingItem *item = nullptr;
         Shape shape; // x relative to the system, y relative to the upper staff of the item's gap
         bool isLyrics = false;
         bool onUpperGapStaff = false; // whether the item hangs below the upper staff of its gap or sits above the lower one
@@ -194,41 +190,41 @@ private:
         std::vector<CenterableItem> items;
     };
 
-    static bool snapChainShouldBeCenteredBetweenStaves(EngravingItem* item, const System* system);
-    static bool elementShouldBeCenteredBetweenStaves(const EngravingItem* item, const System* system, bool placeAbove);
-    static bool mmRestShouldBeCenteredBetweenStaves(const MMRest* mmRest, const System* system);
-    static bool whammyBarShouldBeCenteredBetweenStaves(const WhammyBarSegment* wbar, const System* system);
-    static bool elementHasAnotherStackedOutside(const EngravingItem* element, const Shape& elementShape, const SkylineLine& skylineLine);
-    static bool shapesStackVertically(const Shape& shape1, const Shape& shape2, double minHorizontalClearance);
-    static void collectCenterableItems(const System* system, std::vector<Gap>& gaps, std::vector<MMRest*>& mmRestsToCenter);
-    static std::vector<std::vector<const CenterableItem*> > groupItemsToCenterTogether(const std::vector<const CenterableItem*>& items,
+    static bool snapChainShouldBeCenteredBetweenStaves(EngravingItem *item, const System *system);
+    static bool elementShouldBeCenteredBetweenStaves(const EngravingItem *item, const System *system, bool placeAbove);
+    static bool mmRestShouldBeCenteredBetweenStaves(const MMRest *mmRest, const System *system);
+    static bool whammyBarShouldBeCenteredBetweenStaves(const WhammyBarSegment *wbar, const System *system);
+    static bool elementHasAnotherStackedOutside(const EngravingItem *element, const Shape &elementShape, const SkylineLine &skylineLine);
+    static bool shapesStackVertically(const Shape &shape1, const Shape &shape2, double minHorizontalClearance);
+    static void collectCenterableItems(const System *system, std::vector<Gap> &gaps, std::vector<MMRest *> &mmRestsToCenter);
+    static std::vector<std::vector<const CenterableItem *>> groupItemsToCenterTogether(const std::vector<const CenterableItem *> &items,
                                                                                        double minHorizontalClearance);
-    static void centerItemsInGap(const Gap& gap, const System* system, double minHorizontalClearance);
-    static double gapConvergeDistance(const std::vector<const CenterableItem*>& group, double yStaffDiff, double minHorizontalClearance);
-    static double convergenceMoveFor(const CenterableItem* centerableItem, double convergeDistance);
-    static void centerItemGroup(const std::vector<const CenterableItem*>& group, const System* system, const SkylineLine& upperSkyline,
-                                const SkylineLine& lowerSkyline, double yStaffDiff, double minHorizontalClearance);
-    static void centerMMRestBetweenStaves(MMRest* mmRest, const System* system);
+    static void centerItemsInGap(const Gap &gap, const System *system, double minHorizontalClearance);
+    static double gapConvergeDistance(const std::vector<const CenterableItem *> &group, double yStaffDiff, double minHorizontalClearance);
+    static double convergenceMoveFor(const CenterableItem *centerableItem, double convergeDistance);
+    static void centerItemGroup(const std::vector<const CenterableItem *> &group, const System *system, const SkylineLine &upperSkyline,
+                                const SkylineLine &lowerSkyline, double yStaffDiff, double minHorizontalClearance);
+    static void centerMMRestBetweenStaves(MMRest *mmRest, const System *system);
 
-    static bool shouldBeJustified(System* system, double curSysWidth, double targetSystemWidth, LayoutContext& ctx);
+    static bool shouldBeJustified(System *system, double curSysWidth, double targetSystemWidth, LayoutContext &ctx);
 
-    static void updateTimeSigAboveStavesXPos(System* system, LayoutContext& ctx);
-    static void clearBigTimeSigNotShown(System* system, LayoutContext& ctx);
+    static void updateTimeSigAboveStavesXPos(System *system, LayoutContext &ctx);
+    static void clearBigTimeSigNotShown(System *system, LayoutContext &ctx);
 
-    static void layoutSticking(const std::vector<Sticking*> stickings, System* system, LayoutContext& ctx);
+    static void layoutSticking(const std::vector<Sticking *> stickings, System *system, LayoutContext &ctx);
 
-    static void layoutLyrics(const ElementsToLayout& elements, LayoutContext& ctx);
+    static void layoutLyrics(const ElementsToLayout &elements, LayoutContext &ctx);
 
-    static void layoutVoltas(const ElementsToLayout& elementsToLayout, LayoutContext& ctx);
+    static void layoutVoltas(const ElementsToLayout &elementsToLayout, LayoutContext &ctx);
 
-    static void layoutDynamicExpressionAndHairpins(const ElementsToLayout& elementsToLayout, LayoutContext& ctx);
+    static void layoutDynamicExpressionAndHairpins(const ElementsToLayout &elementsToLayout, LayoutContext &ctx);
 
-    static void layoutParenthesisAndBigTimeSigs(const ElementsToLayout& elementsToLayout);
+    static void layoutParenthesisAndBigTimeSigs(const ElementsToLayout &elementsToLayout);
 
-    static void layoutHarmonies(const std::vector<Harmony*> harmonies, System* system, LayoutContext& ctx);
-    static void layoutFretDiagrams(const ElementsToLayout& elements, System* system, LayoutContext& ctx);
+    static void layoutHarmonies(const std::vector<Harmony *> harmonies, System *system, LayoutContext &ctx);
+    static void layoutFretDiagrams(const ElementsToLayout &elements, System *system, LayoutContext &ctx);
 
-    static void alignRests(const ElementsToLayout& elementsToLayout, LayoutContext& ctx);
-    static void checkFullMeasureRestCollisions(const ElementsToLayout& elementsToLayout, LayoutContext& ctx);
+    static void alignRests(const ElementsToLayout &elementsToLayout, LayoutContext &ctx);
+    static void checkFullMeasureRestCollisions(const ElementsToLayout &elementsToLayout, LayoutContext &ctx);
 };
-}
+} // namespace mu::engraving::rendering::score

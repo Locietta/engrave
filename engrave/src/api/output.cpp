@@ -22,52 +22,50 @@
 namespace engrave {
 namespace {
 
-std::unexpected<Error> fail(ErrorCode code, std::string message) {
-    return std::unexpected(Error{code, std::move(message)});
-}
+std::unexpected<Error> fail(ErrorCode code, std::string message) { return std::unexpected(Error{code, std::move(message)}); }
 
 std::vector<std::byte> bytes_of(std::string data) {
-    const auto* first = reinterpret_cast<const std::byte*>(data.data());
+    const auto *first = reinterpret_cast<const std::byte *>(data.data());
     return std::vector<std::byte>(first, first + data.size());
 }
 
 // An excerpt the file carried is laid out by the loader, and an edit lays out the
 // part it touched; a score that never reached the layout has no page to draw yet.
-void prepare_layout(mu::engraving::Score& score) {
+void prepare_layout(mu::engraving::Score &score) {
     if (score.npages() == 0 && score.nmeasures() > 0) {
         score.doLayout();
         score.update();
     }
 }
 
-const char* backend_name(RenderFormat format) {
+const char *backend_name(RenderFormat format) {
     switch (format) {
-    case RenderFormat::Pdf: return "pdf";
-    case RenderFormat::Png: return "png";
-    case RenderFormat::Svg: return "svg";
+        case RenderFormat::Pdf: return "pdf";
+        case RenderFormat::Png: return "png";
+        case RenderFormat::Svg: return "svg";
     }
     return "";
 }
 
 } // namespace
 
-Result<std::int32_t> Document::page_count(const ScoreSel& selection) {
+Result<std::int32_t> Document::page_count(const ScoreSel &selection) {
     impl_->engine->check_thread();
     if (impl_->poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
     impl_->refresh_fonts();
-    const Result<mu::engraving::Score*> selected = select_score(*impl_->project->masterScore(), selection);
+    const Result<mu::engraving::Score *> selected = select_score(*impl_->project->masterScore(), selection);
     if (!selected) return std::unexpected(selected.error());
     prepare_layout(**selected);
     return static_cast<std::int32_t>((*selected)->npages());
 }
 
-Result<RenderOutput> Document::render(const RenderOptions& options) {
+Result<RenderOutput> Document::render(const RenderOptions &options) {
     impl_->engine->check_thread();
     if (impl_->poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
     impl_->refresh_fonts();
-    const Result<mu::engraving::Score*> selected = select_score(*impl_->project->masterScore(), options.score);
+    const Result<mu::engraving::Score *> selected = select_score(*impl_->project->masterScore(), options.score);
     if (!selected) return std::unexpected(selected.error());
-    mu::engraving::Score& score = **selected;
+    mu::engraving::Score &score = **selected;
     prepare_layout(score);
 
     if (options.dpi < min_render_dpi || options.dpi > max_render_dpi) {
@@ -83,8 +81,7 @@ Result<RenderOutput> Document::render(const RenderOptions& options) {
     const std::int32_t first = options.first_page;
     const std::int32_t last = options.last_page < 0 ? npages - 1 : options.last_page;
     if (first < 0 || last < first || last >= npages) {
-        return fail(ErrorCode::InvalidArgument,
-                    std::format("the page range {}..{} is outside the score's 0..{}", first, last, npages - 1));
+        return fail(ErrorCode::InvalidArgument, std::format("the page range {}..{} is outside the score's 0..{}", first, last, npages - 1));
     }
 
     music::ExportOptions backend;
@@ -107,31 +104,32 @@ Result<RenderOutput> Document::render(const RenderOptions& options) {
             output.pages.push_back(bytes_of(music::render_score(*impl_->engine->context, &score, format, backend)));
         }
         return output;
-    } catch (const music::RenderCancelled&) {
+    } catch (const music::RenderCancelled &) {
         return fail(ErrorCode::Cancelled, "render cancelled");
-    } catch (const music::RenderLimitExceeded& error) {
+    } catch (const music::RenderLimitExceeded &error) {
         return fail(ErrorCode::ResourceLimit, error.what());
-    } catch (const std::invalid_argument& error) {
+    } catch (const std::invalid_argument &error) {
         return fail(ErrorCode::InvalidArgument, error.what());
     }
 }
 
-Result<Positions> Document::positions(PositionKind kind, const ScoreSel& selection) {
-    return positions(kind, selection, {});
-}
+Result<Positions> Document::positions(PositionKind kind, const ScoreSel &selection) { return positions(kind, selection, {}); }
 
-Result<Positions> Document::positions(PositionKind kind, const ScoreSel& selection, const CaptureOptions& capture) {
+Result<Positions> Document::positions(PositionKind kind, const ScoreSel &selection, const CaptureOptions &capture) {
     impl_->engine->check_thread();
     if (impl_->poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
-    if (kind != PositionKind::Measure && kind != PositionKind::Segment)
-        return fail(ErrorCode::InvalidArgument, "unknown position kind");
+    if (kind != PositionKind::Measure && kind != PositionKind::Segment) return fail(ErrorCode::InvalidArgument, "unknown position kind");
     if (capture.cancelled && capture.cancelled()) return fail(ErrorCode::Cancelled, "position capture cancelled");
     const auto selected = select_score(*impl_->project->masterScore(), selection);
     if (!selected) return std::unexpected(selected.error());
     impl_->refresh_fonts();
     prepare_layout(**selected);
     if ((*selected)->npages() == 0) return fail(ErrorCode::InvalidArgument, "the score has no pages");
-    struct Stop { ErrorCode code; };
+
+    struct Stop {
+        ErrorCode code;
+    };
+
     const auto poll = [&] {
         if (capture.cancelled && capture.cancelled()) throw Stop{ErrorCode::Cancelled};
     };
@@ -141,15 +139,19 @@ Result<Positions> Document::positions(PositionKind kind, const ScoreSel& selecti
         std::uint64_t bytes = 0;
         const auto count = [&](std::size_t amount) {
             poll();
-            if (amount > std::numeric_limits<std::uint64_t>::max() - bytes
-                || (capture.max_bytes && (bytes > *capture.max_bytes || amount > *capture.max_bytes - bytes)))
+            if (amount > std::numeric_limits<std::uint64_t>::max() - bytes ||
+                (capture.max_bytes && (bytes > *capture.max_bytes || amount > *capture.max_bytes - bytes)))
                 throw Stop{ErrorCode::ResourceLimit};
             bytes += amount;
         };
-        const music::PositionVisitor estimate{
-            [&](int, double, double, double, double, int) { count(sizeof(PositionElement)); ++element_count; },
-            [&](int, int) { count(sizeof(PositionEvent)); ++event_count; }
-        };
+        const music::PositionVisitor estimate{[&](int, double, double, double, double, int) {
+                                                  count(sizeof(PositionElement));
+                                                  ++element_count;
+                                              },
+                                              [&](int, int) {
+                                                  count(sizeof(PositionEvent));
+                                                  ++event_count;
+                                              }};
         const bool segments = kind == PositionKind::Segment;
         const auto [width, height] = music::visit_score_positions(*selected, segments, estimate, false);
         Positions result;
@@ -157,19 +159,19 @@ Result<Positions> Document::positions(PositionKind kind, const ScoreSel& selecti
         result.page_height = height;
         result.elements.reserve(element_count);
         result.events.reserve(event_count);
-        const music::PositionVisitor emit{
-            [&](int id, double x, double y, double sx, double sy, int page) {
-                poll();
-                result.elements.push_back({id, x, y, sx, sy, page});
-            },
-            [&](int id, int time) { poll(); result.events.push_back({id, time}); }
-        };
+        const music::PositionVisitor emit{[&](int id, double x, double y, double sx, double sy, int page) {
+                                              poll();
+                                              result.elements.push_back({id, x, y, sx, sy, page});
+                                          },
+                                          [&](int id, int time) {
+                                              poll();
+                                              result.events.push_back({id, time});
+                                          }};
         music::visit_score_positions(*selected, segments, emit, true, element_count);
         poll();
         return result;
-    } catch (const Stop& stop) {
-        return fail(stop.code, stop.code == ErrorCode::Cancelled ? "position capture cancelled"
-                                                               : "position capture byte limit exceeded");
+    } catch (const Stop &stop) {
+        return fail(stop.code, stop.code == ErrorCode::Cancelled ? "position capture cancelled" : "position capture byte limit exceeded");
     }
 }
 

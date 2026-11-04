@@ -28,13 +28,12 @@
 namespace mu::engraving::rendering::score {
 class LayoutConfiguration;
 
-class MarkerLayout
-{
+class MarkerLayout {
 public:
-    static void layoutMarker(Marker* item, Marker::LayoutData* ldata, LayoutContext& ctx);
+    static void layoutMarker(Marker *item, Marker::LayoutData *ldata, LayoutContext &ctx);
 
 private:
-    static void doLayoutMarker(Marker* item, Marker::LayoutData* ldata, LayoutContext& ctx);
-    static double computeCustomTextOffset(const Marker* item, Marker::LayoutData* ldata, LayoutContext& ctx);
+    static void doLayoutMarker(Marker *item, Marker::LayoutData *ldata, LayoutContext &ctx);
+    static double computeCustomTextOffset(const Marker *item, Marker::LayoutData *ldata, LayoutContext &ctx);
 };
 } // namespace mu::engraving::rendering::score

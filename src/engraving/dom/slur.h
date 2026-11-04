@@ -32,8 +32,7 @@ namespace mu::engraving {
 ///    a single segment of slur; also used for Tie
 //---------------------------------------------------------
 
-class SlurSegment : public SlurTieSegment
-{
+class SlurSegment : public SlurTieSegment {
     OBJECT_ALLOCATOR(engraving, SlurSegment)
     DECLARE_CLASSOF(ElementType::SLUR_SEGMENT)
 
@@ -42,21 +41,21 @@ class SlurSegment : public SlurTieSegment
     M_PROPERTY2(PointF, endPointOff2, setEndPointOff2, PointF(0.0, 0.0))
 
 public:
-    SlurSegment(Slur* sp, ElementType type = ElementType::SLUR_SEGMENT);
-    SlurSegment(const SlurSegment& ss);
+    SlurSegment(Slur *sp, ElementType type = ElementType::SLUR_SEGMENT);
+    SlurSegment(const SlurSegment &ss);
 
-    SlurSegment* clone() const override { return new SlurSegment(*this); }
+    SlurSegment *clone() const override { return new SlurSegment(*this); }
 
     bool isEdited() const;
     bool isEndPointsEdited() const;
 
-    Slur* slur() const { return toSlur(spanner()); }
+    Slur *slur() const { return toSlur(spanner()); }
 
     double endWidth() const override;
     double midWidth() const override;
     double dottedWidth() const override;
 
-    Color curColor(const rendering::PaintOptions& opt) const override;
+    Color curColor(const rendering::PaintOptions &opt) const override;
 
 protected:
 };
@@ -65,57 +64,59 @@ protected:
 //   @@ Slur
 //---------------------------------------------------------
 
-class Slur : public SlurTie
-{
+class Slur : public SlurTie {
     OBJECT_ALLOCATOR(engraving, Slur)
     DECLARE_CLASSOF(ElementType::SLUR)
 
 public:
     Slur(DummyParentOr<EngravingItem> parent, ElementType type = ElementType::SLUR);
-    Slur(const Slur&);
+    Slur(const Slur &);
 
     Anchor anchor() const override { return Anchor::CHORDREST; }
 
-    struct StemFloated
-    {
+    struct StemFloated {
         bool left = false;
         bool right = false;
-        void reset()
-        {
+
+        void reset() {
             left = false;
             right = false;
         }
     };
 
     /// temporary HACK for correct guitar pro import
-    enum ConnectedElement : unsigned char {
-        NONE,
-        GLISSANDO
-    };
+    enum ConnectedElement : unsigned char { NONE, GLISSANDO };
 
     ~Slur() {}
 
-    Slur* clone() const override { return new Slur(*this); }
+    Slur *clone() const override { return new Slur(*this); }
 
     void setTrack(track_idx_t val) override;
 
     PropertyValue getProperty(Pid propertyId) const override;
     PropertyValue propertyDefault(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue& v) override;
+    bool setProperty(Pid propertyId, const PropertyValue &v) override;
 
-    SlurSegment* frontSegment() { return toSlurSegment(Spanner::frontSegment()); }
-    const SlurSegment* frontSegment() const { return toSlurSegment(Spanner::frontSegment()); }
-    SlurSegment* backSegment() { return toSlurSegment(Spanner::backSegment()); }
-    const SlurSegment* backSegment() const { return toSlurSegment(Spanner::backSegment()); }
-    SlurSegment* segmentAt(int n) { return toSlurSegment(Spanner::segmentAt(n)); }
-    const SlurSegment* segmentAt(int n) const { return toSlurSegment(Spanner::segmentAt(n)); }
+    SlurSegment *frontSegment() { return toSlurSegment(Spanner::frontSegment()); }
+
+    const SlurSegment *frontSegment() const { return toSlurSegment(Spanner::frontSegment()); }
+
+    SlurSegment *backSegment() { return toSlurSegment(Spanner::backSegment()); }
+
+    const SlurSegment *backSegment() const { return toSlurSegment(Spanner::backSegment()); }
+
+    SlurSegment *segmentAt(int n) { return toSlurSegment(Spanner::segmentAt(n)); }
+
+    const SlurSegment *segmentAt(int n) const { return toSlurSegment(Spanner::segmentAt(n)); }
 
     bool isCrossStaff();
     bool hasCrossBeams();
-    const StemFloated& stemFloated() const { return m_stemFloated; }
-    StemFloated& stemFloated() { return m_stemFloated; }
 
-    SlurTieSegment* newSlurTieSegment() override { return new SlurSegment(this); }
+    const StemFloated &stemFloated() const { return m_stemFloated; }
+
+    StemFloated &stemFloated() { return m_stemFloated; }
+
+    SlurTieSegment *newSlurTieSegment() override { return new SlurSegment(this); }
 
     double scalingFactor() const override;
 
@@ -126,7 +127,7 @@ public:
     bool isIncoming() const;
     bool isOutgoing() const;
 
-    void undoChangeStartEndElements(ChordRest* scr, ChordRest* ecr);
+    void undoChangeStartEndElements(ChordRest *scr, ChordRest *ecr);
 
 private:
     M_PROPERTY2(ConnectedElement, connectedElement, setConnectedElement, ConnectedElement::NONE)

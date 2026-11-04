@@ -41,56 +41,53 @@ class EngravingItem;
 //    binary space partitioning
 //---------------------------------------------------------
 
-class BspTree
-{
+class BspTree {
 public:
     struct Node {
-        enum class Type : char {
-            HORIZONTAL, VERTICAL, LEAF
-        };
+        enum class Type : char { HORIZONTAL, VERTICAL, LEAF };
+
         union {
             double offset;
             int leafIndex;
         };
+
         Type type;
     };
 private:
 
-    void initialize(const RectF& rect, int depth, int index);
-    void climbTree(BspTreeVisitor* visitor, const PointF& pos, int index = 0);
-    void climbTree(BspTreeVisitor* visitor, const RectF& rect, int index = 0);
+    void initialize(const RectF &rect, int depth, int index);
+    void climbTree(BspTreeVisitor *visitor, const PointF &pos, int index = 0);
+    void climbTree(BspTreeVisitor *visitor, const RectF &rect, int index = 0);
 
-    void nearestNeighbor(const PointF& pos, EngravingItem** bestItem, double& bestDistance, int nodeIndex = 0);
+    void nearestNeighbor(const PointF &pos, EngravingItem **bestItem, double &bestDistance, int nodeIndex = 0);
 
     RectF rectForIndex(int index) const;
 
     unsigned int m_depth = 0;
     std::vector<Node> m_nodes;
-    std::vector<std::vector<EngravingItem*> > m_leaves;
+    std::vector<std::vector<EngravingItem *>> m_leaves;
     int m_leafCnt = 0;
     RectF m_rect;
 
 public:
     BspTree();
 
-    void initialize(const RectF& rect, int depth);
+    void initialize(const RectF &rect, int depth);
     void clear();
 
-    void insert(EngravingItem* item);
-    void remove(EngravingItem* item);
+    void insert(EngravingItem *item);
+    void remove(EngravingItem *item);
 
-    std::vector<EngravingItem*> items(const RectF& rect);
-    std::vector<EngravingItem*> items(const PointF& pos);
+    std::vector<EngravingItem *> items(const RectF &rect);
+    std::vector<EngravingItem *> items(const PointF &pos);
 
-    EngravingItem* nearestNeighbor(const PointF& pos);
+    EngravingItem *nearestNeighbor(const PointF &pos);
 
     int leafCount() const { return m_leafCnt; }
+
     inline int firstChildIndex(int index) const { return index * 2 + 1; }
 
-    inline int parentIndex(int index) const
-    {
-        return index > 0 ? ((index & 1) ? ((index - 1) / 2) : ((index - 2) / 2)) : -1;
-    }
+    inline int parentIndex(int index) const { return index > 0 ? ((index & 1) ? ((index - 1) / 2) : ((index - 2) / 2)) : -1; }
 
 #ifndef NDEBUG
     String debug(int index) const;
@@ -101,11 +98,11 @@ public:
 //   BspTreeVisitor
 //---------------------------------------------------------
 
-class BspTreeVisitor
-{
+class BspTreeVisitor {
     OBJECT_ALLOCATOR(engraving, BspTreeVisitor)
 public:
     virtual ~BspTreeVisitor() {}
-    virtual void visit(std::vector<EngravingItem*>& items) = 0;
+
+    virtual void visit(std::vector<EngravingItem *> &items) = 0;
 };
-}
+} // namespace mu::engraving

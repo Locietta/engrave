@@ -49,9 +49,8 @@ struct Edit {
     size_t idx2 = 0;
 };
 
-static std::vector<std::string_view> splitLines(const ByteArray& data)
-{
-    const char* buf = data.constChar();
+static std::vector<std::string_view> splitLines(const ByteArray &data) {
+    const char *buf = data.constChar();
     const size_t size = data.size();
 
     std::vector<std::string_view> lines;
@@ -75,12 +74,11 @@ static std::vector<std::string_view> splitLines(const ByteArray& data)
     return lines;
 }
 
-static std::vector<Edit> computeDiff(const std::vector<std::string_view>& lines1, const std::vector<std::string_view>& lines2)
-{
+static std::vector<Edit> computeDiff(const std::vector<std::string_view> &lines1, const std::vector<std::string_view> &lines2) {
     const size_t m = lines1.size();
     const size_t n = lines2.size();
 
-    std::vector<std::vector<size_t> > dp(m + 1, std::vector<size_t>(n + 1, 0));
+    std::vector<std::vector<size_t>> dp(m + 1, std::vector<size_t>(n + 1, 0));
     for (size_t i = 1; i <= m; ++i) {
         for (size_t j = 1; j <= n; ++j) {
             if (lines1[i - 1] == lines2[j - 1]) {
@@ -97,14 +95,14 @@ static std::vector<Edit> computeDiff(const std::vector<std::string_view>& lines1
 
     while (i > 0 || j > 0) {
         if (i > 0 && j > 0 && lines1[i - 1] == lines2[j - 1]) {
-            edits.push_back({ Edit::Type::Equal, i - 1, j - 1 });
+            edits.push_back({Edit::Type::Equal, i - 1, j - 1});
             --i;
             --j;
         } else if (j > 0 && (i == 0 || dp[i][j - 1] >= dp[i - 1][j])) {
-            edits.push_back({ Edit::Type::Insert, 0, j - 1 });
+            edits.push_back({Edit::Type::Insert, 0, j - 1});
             --j;
         } else {
-            edits.push_back({ Edit::Type::Delete, i - 1, 0 });
+            edits.push_back({Edit::Type::Delete, i - 1, 0});
             --i;
         }
     }
@@ -113,24 +111,21 @@ static std::vector<Edit> computeDiff(const std::vector<std::string_view>& lines1
     return edits;
 }
 
-bool ScoreComp::saveCompareScore(Score* score, const String& saveName, const String& compareWithLocalPath)
-{
+bool ScoreComp::saveCompareScore(Score *score, const String &saveName, const String &compareWithLocalPath) {
     if (!ScoreRW::saveScore(score, saveName)) {
         return false;
     }
     return ScoreComp::compareFiles(ScoreRW::rootPath() + u"/" + compareWithLocalPath, saveName);
 }
 
-bool ScoreComp::saveCompareMimeData(muse::ByteArray mimeData, const muse::String& saveName, const muse::String& compareWithLocalPath)
-{
+bool ScoreComp::saveCompareMimeData(muse::ByteArray mimeData, const muse::String &saveName, const muse::String &compareWithLocalPath) {
     if (!ScoreRW::saveMimeData(mimeData, saveName)) {
         return false;
     }
     return ScoreComp::compareFiles(ScoreRW::rootPath() + u"/" + compareWithLocalPath, saveName);
 }
 
-bool ScoreComp::compareFiles(const String& fullPath1, const String& fullPath2)
-{
+bool ScoreComp::compareFiles(const String &fullPath1, const String &fullPath2) {
     TRACEFUNC;
 
     RetVal<ByteArray> rv1 = muse::io::fileSystem()->readFile(fullPath1);
@@ -197,7 +192,7 @@ bool ScoreComp::compareFiles(const String& fullPath1, const String& fullPath2)
         bool start1Set = false;
         bool start2Set = false;
         for (size_t k = hunkStart; k < hunkEnd; ++k) {
-            const Edit& e = edits[k];
+            const Edit &e = edits[k];
             if (e.type != Edit::Type::Insert) {
                 if (!start1Set) {
                     start1 = e.idx1;
@@ -228,7 +223,7 @@ bool ScoreComp::compareFiles(const String& fullPath1, const String& fullPath2)
         ts << " @@\n";
 
         for (size_t k = hunkStart; k < hunkEnd; ++k) {
-            const Edit& e = edits[k];
+            const Edit &e = edits[k];
             if (e.type == Edit::Type::Equal) {
                 ts << " " << lines1[e.idx1] << "\n";
             } else if (e.type == Edit::Type::Delete) {

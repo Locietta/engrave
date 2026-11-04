@@ -24,7 +24,6 @@
 #include <memory>
 #include <cassert>
 
-
 #include "global/types/string.h"
 #include "global/logstream.h"
 
@@ -46,7 +45,7 @@ enum class P_TYPE : unsigned char {
     STRING,
 
     // Geometry
-    POINT,              // point units, value saved as absolute or spatium depending on EngravingItem->sizeIsSpatiumDependent()
+    POINT, // point units, value saved as absolute or spatium depending on EngravingItem->sizeIsSpatiumDependent()
     SIZE,
     DRAW_PATH,
     SCALE,
@@ -137,241 +136,177 @@ enum class P_TYPE : unsigned char {
     GROUPS,
 };
 
-class PropertyValue
-{
+class PropertyValue {
 public:
     PropertyValue() = default;
 
     // Base
-    PropertyValue(bool v)
-        : m_type(P_TYPE::BOOL), m_data(make_data<bool>(v)) {}
+    PropertyValue(bool v) : m_type(P_TYPE::BOOL), m_data(make_data<bool>(v)) {}
 
-    PropertyValue(int v)
-        : m_type(P_TYPE::INT), m_data(make_data<int>(v)) {}
+    PropertyValue(int v) : m_type(P_TYPE::INT), m_data(make_data<int>(v)) {}
 
-    PropertyValue(const std::vector<int>& v)
-        : m_type(P_TYPE::INT_VEC), m_data(make_data<std::vector<int> >(v)) {}
+    PropertyValue(const std::vector<int> &v) : m_type(P_TYPE::INT_VEC), m_data(make_data<std::vector<int>>(v)) {}
 
-    PropertyValue(size_t v)
-        : m_type(P_TYPE::SIZE_T), m_data(make_data<size_t>(v)) {}
+    PropertyValue(size_t v) : m_type(P_TYPE::SIZE_T), m_data(make_data<size_t>(v)) {}
 
-    PropertyValue(double v)
-        : m_type(P_TYPE::REAL), m_data(make_data<double>(v)) {}
+    PropertyValue(double v) : m_type(P_TYPE::REAL), m_data(make_data<double>(v)) {}
 
-    PropertyValue(const char* v)
-        : m_type(P_TYPE::STRING), m_data(make_data<String>(String::fromUtf8(v))) {}
+    PropertyValue(const char *v) : m_type(P_TYPE::STRING), m_data(make_data<String>(String::fromUtf8(v))) {}
 
-    PropertyValue(const String& v)
-        : m_type(P_TYPE::STRING), m_data(make_data<String>(v)) {}
-
+    PropertyValue(const String &v) : m_type(P_TYPE::STRING), m_data(make_data<String>(v)) {}
 
     // Geometry
-    PropertyValue(const PointF& v)
-        : m_type(P_TYPE::POINT), m_data(make_data<PointF>(v)) {}
+    PropertyValue(const PointF &v) : m_type(P_TYPE::POINT), m_data(make_data<PointF>(v)) {}
 
-    PropertyValue(const PairF& v)
-        : m_type(P_TYPE::PAIR_REAL), m_data(make_data<PairF>(v)) {}
+    PropertyValue(const PairF &v) : m_type(P_TYPE::PAIR_REAL), m_data(make_data<PairF>(v)) {}
 
-    PropertyValue(const SizeF& v)
-        : m_type(P_TYPE::SIZE), m_data(make_data<SizeF>(v)) {}
+    PropertyValue(const SizeF &v) : m_type(P_TYPE::SIZE), m_data(make_data<SizeF>(v)) {}
 
-    PropertyValue(const PainterPath& v)
-        : m_type(P_TYPE::DRAW_PATH), m_data(make_data<PainterPath>(v)) {}
+    PropertyValue(const PainterPath &v) : m_type(P_TYPE::DRAW_PATH), m_data(make_data<PainterPath>(v)) {}
 
-    PropertyValue(const ScaleF& v)
-        : m_type(P_TYPE::SCALE), m_data(make_data<ScaleF>(v)) {}
+    PropertyValue(const ScaleF &v) : m_type(P_TYPE::SCALE), m_data(make_data<ScaleF>(v)) {}
 
-    PropertyValue(const Spatium& v)
-        : m_type(P_TYPE::SPATIUM), m_data(make_data<Spatium>(v)) {}
+    PropertyValue(const Spatium &v) : m_type(P_TYPE::SPATIUM), m_data(make_data<Spatium>(v)) {}
 
     // Draw
-    PropertyValue(SymId v)
-        : m_type(P_TYPE::SYMID), m_data(make_data<SymId>(v)) {}
+    PropertyValue(SymId v) : m_type(P_TYPE::SYMID), m_data(make_data<SymId>(v)) {}
 
-    PropertyValue(const Color& v)
-        : m_type(P_TYPE::COLOR), m_data(make_data<Color>(v)) {}
+    PropertyValue(const Color &v) : m_type(P_TYPE::COLOR), m_data(make_data<Color>(v)) {}
 
-    PropertyValue(OrnamentStyle v)
-        : m_type(P_TYPE::ORNAMENT_STYLE), m_data(make_data<OrnamentStyle>(v)) {}
+    PropertyValue(OrnamentStyle v) : m_type(P_TYPE::ORNAMENT_STYLE), m_data(make_data<OrnamentStyle>(v)) {}
 
-    PropertyValue(GlissandoStyle v)
-        : m_type(P_TYPE::GLISS_STYLE), m_data(make_data<GlissandoStyle>(v)) {}
+    PropertyValue(GlissandoStyle v) : m_type(P_TYPE::GLISS_STYLE), m_data(make_data<GlissandoStyle>(v)) {}
 
-    PropertyValue(GlissandoType v)
-        : m_type(P_TYPE::GLISS_TYPE), m_data(make_data<GlissandoType>(v)) {}
+    PropertyValue(GlissandoType v) : m_type(P_TYPE::GLISS_TYPE), m_data(make_data<GlissandoType>(v)) {}
 
     // Layout
-    PropertyValue(Align v)
-        : m_type(P_TYPE::ALIGN), m_data(make_data<Align>(v)) {}
-    PropertyValue(AlignH v)
-        : m_type(P_TYPE::ALIGN_H), m_data(make_data<AlignH>(v)) {}
+    PropertyValue(Align v) : m_type(P_TYPE::ALIGN), m_data(make_data<Align>(v)) {}
 
-    PropertyValue(PlacementV v)
-        : m_type(P_TYPE::PLACEMENT_V), m_data(make_data<PlacementV>(v)) {}
-    PropertyValue(PlacementH v)
-        : m_type(P_TYPE::PLACEMENT_H), m_data(make_data<PlacementH>(v)) {}
+    PropertyValue(AlignH v) : m_type(P_TYPE::ALIGN_H), m_data(make_data<AlignH>(v)) {}
 
-    PropertyValue(TextPlace v)
-        : m_type(P_TYPE::TEXT_PLACE), m_data(make_data<TextPlace>(v)) {}
+    PropertyValue(PlacementV v) : m_type(P_TYPE::PLACEMENT_V), m_data(make_data<PlacementV>(v)) {}
 
-    PropertyValue(DirectionV v)
-        : m_type(P_TYPE::DIRECTION_V), m_data(make_data<DirectionV>(v)) {}
-    PropertyValue(DirectionH v)
-        : m_type(P_TYPE::DIRECTION_H), m_data(make_data<DirectionH>(v)) {}
+    PropertyValue(PlacementH v) : m_type(P_TYPE::PLACEMENT_H), m_data(make_data<PlacementH>(v)) {}
 
-    PropertyValue(Orientation v)
-        : m_type(P_TYPE::ORIENTATION), m_data(make_data<Orientation>(v)) {}
+    PropertyValue(TextPlace v) : m_type(P_TYPE::TEXT_PLACE), m_data(make_data<TextPlace>(v)) {}
 
-    PropertyValue(SharedLabelOrientation v)
-        : m_type(P_TYPE::SHARED_LABEL_ORIENTATION), m_data(make_data<SharedLabelOrientation>(v)) {}
+    PropertyValue(DirectionV v) : m_type(P_TYPE::DIRECTION_V), m_data(make_data<DirectionV>(v)) {}
 
-    PropertyValue(BeamMode v)
-        : m_type(P_TYPE::BEAM_MODE), m_data(make_data<BeamMode>(v)) {}
+    PropertyValue(DirectionH v) : m_type(P_TYPE::DIRECTION_H), m_data(make_data<DirectionH>(v)) {}
 
-    PropertyValue(const AccidentalRole& v)
-        : m_type(P_TYPE::ACCIDENTAL_ROLE), m_data(make_data<AccidentalRole>(v)) {}
+    PropertyValue(Orientation v) : m_type(P_TYPE::ORIENTATION), m_data(make_data<Orientation>(v)) {}
 
-    PropertyValue(TiePlacement v)
-        : m_type(P_TYPE::TIE_PLACEMENT), m_data(make_data<TiePlacement>(v)) {}
+    PropertyValue(SharedLabelOrientation v) : m_type(P_TYPE::SHARED_LABEL_ORIENTATION), m_data(make_data<SharedLabelOrientation>(v)) {}
 
-    PropertyValue(TieDotsPlacement v)
-        : m_type(P_TYPE::TIE_DOTS_PLACEMENT), m_data(make_data<TieDotsPlacement>(v)) {}
+    PropertyValue(BeamMode v) : m_type(P_TYPE::BEAM_MODE), m_data(make_data<BeamMode>(v)) {}
 
-    PropertyValue(TimeSigPlacement v)
-        : m_type(P_TYPE::TIMESIG_PLACEMENT), m_data(make_data<TimeSigPlacement>(v)) {}
+    PropertyValue(const AccidentalRole &v) : m_type(P_TYPE::ACCIDENTAL_ROLE), m_data(make_data<AccidentalRole>(v)) {}
 
-    PropertyValue(TimeSigStyle v)
-        : m_type(P_TYPE::TIMESIG_STYLE), m_data(make_data<TimeSigStyle>(v)) {}
+    PropertyValue(TiePlacement v) : m_type(P_TYPE::TIE_PLACEMENT), m_data(make_data<TiePlacement>(v)) {}
 
-    PropertyValue(TimeSigVSMargin v)
-        : m_type(P_TYPE::TIMESIG_MARGIN), m_data(make_data<TimeSigVSMargin>(v)) {}
+    PropertyValue(TieDotsPlacement v) : m_type(P_TYPE::TIE_DOTS_PLACEMENT), m_data(make_data<TieDotsPlacement>(v)) {}
 
-    PropertyValue(NoteSpellingType v)
-        : m_type(P_TYPE::NOTE_SPELLING_TYPE), m_data(make_data<NoteSpellingType>(v)) {}
+    PropertyValue(TimeSigPlacement v) : m_type(P_TYPE::TIMESIG_PLACEMENT), m_data(make_data<TimeSigPlacement>(v)) {}
 
-    PropertyValue(const ChordStylePreset& v)
-        : m_type(P_TYPE::CHORD_PRESET_TYPE), m_data(make_data<ChordStylePreset>(v)) {}
+    PropertyValue(TimeSigStyle v) : m_type(P_TYPE::TIMESIG_STYLE), m_data(make_data<TimeSigStyle>(v)) {}
 
-    PropertyValue(const ParenthesesMode& v)
-        : m_type(P_TYPE::PARENTHESES_MODE), m_data(make_data<ParenthesesMode>(v)) {}
+    PropertyValue(TimeSigVSMargin v) : m_type(P_TYPE::TIMESIG_MARGIN), m_data(make_data<TimeSigVSMargin>(v)) {}
 
-    PropertyValue(const RepeatPlayCountPreset& v)
-        : m_type(P_TYPE::PLAY_COUNT_PRESET), m_data(make_data<RepeatPlayCountPreset>(v)) {}
+    PropertyValue(NoteSpellingType v) : m_type(P_TYPE::NOTE_SPELLING_TYPE), m_data(make_data<NoteSpellingType>(v)) {}
+
+    PropertyValue(const ChordStylePreset &v) : m_type(P_TYPE::CHORD_PRESET_TYPE), m_data(make_data<ChordStylePreset>(v)) {}
+
+    PropertyValue(const ParenthesesMode &v) : m_type(P_TYPE::PARENTHESES_MODE), m_data(make_data<ParenthesesMode>(v)) {}
+
+    PropertyValue(const RepeatPlayCountPreset &v) : m_type(P_TYPE::PLAY_COUNT_PRESET), m_data(make_data<RepeatPlayCountPreset>(v)) {}
 
     // Sound
-    PropertyValue(const Fraction& v)
-        : m_type(P_TYPE::FRACTION), m_data(make_data<Fraction>(v)) {}
-    PropertyValue(const DurationTypeWithDots& v)
-        : m_type(P_TYPE::DURATION_TYPE_WITH_DOTS), m_data(make_data<DurationTypeWithDots>(v)) {}
-    PropertyValue(ChangeMethod v)
-        : m_type(P_TYPE::CHANGE_METHOD), m_data(make_data<ChangeMethod>(v)) {}
-    PropertyValue(const PitchValues& v)
-        : m_type(P_TYPE::PITCH_VALUES), m_data(make_data<PitchValues>(v)) {}
-    PropertyValue(const BeatsPerSecond& v)
-        : m_type(P_TYPE::TEMPO), m_data(make_data<BeatsPerSecond>(v)) {}
+    PropertyValue(const Fraction &v) : m_type(P_TYPE::FRACTION), m_data(make_data<Fraction>(v)) {}
+
+    PropertyValue(const DurationTypeWithDots &v) : m_type(P_TYPE::DURATION_TYPE_WITH_DOTS), m_data(make_data<DurationTypeWithDots>(v)) {}
+
+    PropertyValue(ChangeMethod v) : m_type(P_TYPE::CHANGE_METHOD), m_data(make_data<ChangeMethod>(v)) {}
+
+    PropertyValue(const PitchValues &v) : m_type(P_TYPE::PITCH_VALUES), m_data(make_data<PitchValues>(v)) {}
+
+    PropertyValue(const BeatsPerSecond &v) : m_type(P_TYPE::TEMPO), m_data(make_data<BeatsPerSecond>(v)) {}
 
     // Types
-    PropertyValue(LayoutBreakType v)
-        : m_type(P_TYPE::LAYOUTBREAK_TYPE), m_data(make_data<LayoutBreakType>(v)) {}
+    PropertyValue(LayoutBreakType v) : m_type(P_TYPE::LAYOUTBREAK_TYPE), m_data(make_data<LayoutBreakType>(v)) {}
 
-    PropertyValue(VeloType v)
-        : m_type(P_TYPE::VELO_TYPE), m_data(make_data<VeloType>(v)) {}
+    PropertyValue(VeloType v) : m_type(P_TYPE::VELO_TYPE), m_data(make_data<VeloType>(v)) {}
 
-    PropertyValue(BarLineType v)
-        : m_type(P_TYPE::BARLINE_TYPE), m_data(make_data<BarLineType>(v)) {}
+    PropertyValue(BarLineType v) : m_type(P_TYPE::BARLINE_TYPE), m_data(make_data<BarLineType>(v)) {}
 
-    PropertyValue(NoteHeadType v)
-        : m_type(P_TYPE::NOTEHEAD_TYPE), m_data(make_data<NoteHeadType>(v)) {}
-    PropertyValue(NoteHeadScheme v)
-        : m_type(P_TYPE::NOTEHEAD_SCHEME), m_data(make_data<NoteHeadScheme>(v)) {}
-    PropertyValue(NoteHeadGroup v)
-        : m_type(P_TYPE::NOTEHEAD_GROUP), m_data(make_data<NoteHeadGroup>(v)) {}
+    PropertyValue(NoteHeadType v) : m_type(P_TYPE::NOTEHEAD_TYPE), m_data(make_data<NoteHeadType>(v)) {}
 
-    PropertyValue(ClefType v)
-        : m_type(P_TYPE::CLEF_TYPE), m_data(make_data<ClefType>(v)) {}
+    PropertyValue(NoteHeadScheme v) : m_type(P_TYPE::NOTEHEAD_SCHEME), m_data(make_data<NoteHeadScheme>(v)) {}
 
-    PropertyValue(ClefToBarlinePosition v)
-        : m_type(P_TYPE::CLEF_TO_BARLINE_POS), m_data(make_data<ClefToBarlinePosition>(v)) {}
+    PropertyValue(NoteHeadGroup v) : m_type(P_TYPE::NOTEHEAD_GROUP), m_data(make_data<NoteHeadGroup>(v)) {}
 
-    PropertyValue(DynamicType v)
-        : m_type(P_TYPE::DYNAMIC_TYPE), m_data(make_data<DynamicType>(v)) {}
-    PropertyValue(DynamicSpeed v)
-        : m_type(P_TYPE::DYNAMIC_SPEED), m_data(make_data<DynamicSpeed>(v)) {}
+    PropertyValue(ClefType v) : m_type(P_TYPE::CLEF_TYPE), m_data(make_data<ClefType>(v)) {}
 
-    PropertyValue(LineType v)
-        : m_type(P_TYPE::LINE_TYPE), m_data(make_data<LineType>(v)) {}
-    PropertyValue(HookType v)
-        : m_type(P_TYPE::HOOK_TYPE), m_data(make_data<HookType>(v)) {}
+    PropertyValue(ClefToBarlinePosition v) : m_type(P_TYPE::CLEF_TO_BARLINE_POS), m_data(make_data<ClefToBarlinePosition>(v)) {}
 
-    PropertyValue(KeyMode v)
-        : m_type(P_TYPE::KEY_MODE), m_data(make_data<KeyMode>(v)) {}
+    PropertyValue(DynamicType v) : m_type(P_TYPE::DYNAMIC_TYPE), m_data(make_data<DynamicType>(v)) {}
 
-    PropertyValue(TextStyleType v)
-        : m_type(P_TYPE::TEXT_STYLE), m_data(make_data<TextStyleType>(v)) {}
+    PropertyValue(DynamicSpeed v) : m_type(P_TYPE::DYNAMIC_SPEED), m_data(make_data<DynamicSpeed>(v)) {}
 
-    PropertyValue(PlayingTechniqueType v)
-        : m_type(P_TYPE::PLAYTECH_TYPE), m_data(make_data<PlayingTechniqueType>(v)) {}
+    PropertyValue(LineType v) : m_type(P_TYPE::LINE_TYPE), m_data(make_data<LineType>(v)) {}
 
-    PropertyValue(GradualTempoChangeType v)
-        : m_type(P_TYPE::TEMPOCHANGE_TYPE), m_data(make_data<GradualTempoChangeType>(v)) {}
+    PropertyValue(HookType v) : m_type(P_TYPE::HOOK_TYPE), m_data(make_data<HookType>(v)) {}
 
-    PropertyValue(SlurStyleType v)
-        : m_type(P_TYPE::SLUR_STYLE_TYPE), m_data(make_data<SlurStyleType>(v)) {}
+    PropertyValue(KeyMode v) : m_type(P_TYPE::KEY_MODE), m_data(make_data<KeyMode>(v)) {}
 
-    PropertyValue(const NoteLineEndPlacement& v)
-        : m_type(P_TYPE::NOTELINE_PLACEMENT_TYPE), m_data(make_data<NoteLineEndPlacement>(v)) {}
+    PropertyValue(TextStyleType v) : m_type(P_TYPE::TEXT_STYLE), m_data(make_data<TextStyleType>(v)) {}
 
-    PropertyValue(ActionIconType v)
-        : m_type(P_TYPE::ACTION_TYPE), m_data(make_data<ActionIconType>(v)) {}
+    PropertyValue(PlayingTechniqueType v) : m_type(P_TYPE::PLAYTECH_TYPE), m_data(make_data<PlayingTechniqueType>(v)) {}
+
+    PropertyValue(GradualTempoChangeType v) : m_type(P_TYPE::TEMPOCHANGE_TYPE), m_data(make_data<GradualTempoChangeType>(v)) {}
+
+    PropertyValue(SlurStyleType v) : m_type(P_TYPE::SLUR_STYLE_TYPE), m_data(make_data<SlurStyleType>(v)) {}
+
+    PropertyValue(const NoteLineEndPlacement &v) : m_type(P_TYPE::NOTELINE_PLACEMENT_TYPE), m_data(make_data<NoteLineEndPlacement>(v)) {}
+
+    PropertyValue(ActionIconType v) : m_type(P_TYPE::ACTION_TYPE), m_data(make_data<ActionIconType>(v)) {}
 
     // Other
-    PropertyValue(const GroupNodes& v)
-        : m_type(P_TYPE::GROUPS), m_data(make_data<GroupNodes>(v)) {}
+    PropertyValue(const GroupNodes &v) : m_type(P_TYPE::GROUPS), m_data(make_data<GroupNodes>(v)) {}
 
-    PropertyValue(const OrnamentInterval& v)
-        : m_type(P_TYPE::ORNAMENT_INTERVAL), m_data(make_data<OrnamentInterval>(v)) {}
+    PropertyValue(const OrnamentInterval &v) : m_type(P_TYPE::ORNAMENT_INTERVAL), m_data(make_data<OrnamentInterval>(v)) {}
 
-    PropertyValue(const OrnamentShowAccidental& v)
+    PropertyValue(const OrnamentShowAccidental &v)
         : m_type(P_TYPE::ORNAMENT_SHOW_ACCIDENTAL), m_data(make_data<OrnamentShowAccidental>(v)) {}
 
-    PropertyValue(const LyricsDashSystemStart& v)
+    PropertyValue(const LyricsDashSystemStart &v)
         : m_type(P_TYPE::LYRICS_DASH_SYSTEM_START_TYPE), m_data(make_data<LyricsDashSystemStart>(v)) {}
 
-    PropertyValue(const PartialSpannerDirection& v)
+    PropertyValue(const PartialSpannerDirection &v)
         : m_type(P_TYPE::PARTIAL_SPANNER_DIRECTION), m_data(make_data<PartialSpannerDirection>(v)) {}
 
-    PropertyValue(const LHTappingSymbol& v)
-        : m_type(P_TYPE::LH_TAPPING_SYMBOL), m_data(make_data<LHTappingSymbol>(v)) {}
+    PropertyValue(const LHTappingSymbol &v) : m_type(P_TYPE::LH_TAPPING_SYMBOL), m_data(make_data<LHTappingSymbol>(v)) {}
 
-    PropertyValue(const RHTappingSymbol& v)
-        : m_type(P_TYPE::RH_TAPPING_SYMBOL), m_data(make_data<RHTappingSymbol>(v)) {}
+    PropertyValue(const RHTappingSymbol &v) : m_type(P_TYPE::RH_TAPPING_SYMBOL), m_data(make_data<RHTappingSymbol>(v)) {}
 
-    PropertyValue(const VibratoType& v)
-        : m_type(P_TYPE::VIBRATO_LINE_TYPE), m_data(make_data<VibratoType>(v)) {}
+    PropertyValue(const VibratoType &v) : m_type(P_TYPE::VIBRATO_LINE_TYPE), m_data(make_data<VibratoType>(v)) {}
 
-    PropertyValue(const VoiceAssignment& v)
-        : m_type(P_TYPE::VOICE_ASSIGNMENT), m_data(make_data<VoiceAssignment>(v)) {}
+    PropertyValue(const VoiceAssignment &v) : m_type(P_TYPE::VOICE_ASSIGNMENT), m_data(make_data<VoiceAssignment>(v)) {}
 
-    PropertyValue(const AutoOnOff& v)
-        : m_type(P_TYPE::AUTO_ON_OFF), m_data(make_data<AutoOnOff>(v)) {}
+    PropertyValue(const AutoOnOff &v) : m_type(P_TYPE::AUTO_ON_OFF), m_data(make_data<AutoOnOff>(v)) {}
 
-    PropertyValue(const AutoCustomHide& v)
-        : m_type(P_TYPE::AUTO_CUSTOM_HIDE), m_data(make_data<AutoCustomHide>(v)) {}
+    PropertyValue(const AutoCustomHide &v) : m_type(P_TYPE::AUTO_CUSTOM_HIDE), m_data(make_data<AutoCustomHide>(v)) {}
 
-    PropertyValue(const MarkerType& v)
-        : m_type(P_TYPE::MARKER_TYPE), m_data(make_data<MarkerType>(v)) {}
+    PropertyValue(const MarkerType &v) : m_type(P_TYPE::MARKER_TYPE), m_data(make_data<MarkerType>(v)) {}
 
-    PropertyValue(const MeasureNumberPlacement& v)
+    PropertyValue(const MeasureNumberPlacement &v)
         : m_type(P_TYPE::MEASURE_NUMBER_PLACEMENT), m_data(make_data<MeasureNumberPlacement>(v)) {}
 
-    PropertyValue(const CapoParams::TransposeMode& v)
+    PropertyValue(const CapoParams::TransposeMode &v)
         : m_type(P_TYPE::CAPO_TRANSPOSE_MODE), m_data(make_data<CapoParams::TransposeMode>(v)) {}
 
-    PropertyValue(const InstrumentNamesAlign& v)
-        : m_type(P_TYPE::INSTRUMENT_NAMES_ALIGN), m_data(make_data<InstrumentNamesAlign>(v)) {}
+    PropertyValue(const InstrumentNamesAlign &v) : m_type(P_TYPE::INSTRUMENT_NAMES_ALIGN), m_data(make_data<InstrumentNamesAlign>(v)) {}
 
-    PropertyValue(const InstrumentNamesFormat& v)
-        : m_type(P_TYPE::INSTRUMENT_NAMES_FORMAT), m_data(make_data<InstrumentNamesFormat>(v)) {}
+    PropertyValue(const InstrumentNamesFormat &v) : m_type(P_TYPE::INSTRUMENT_NAMES_FORMAT), m_data(make_data<InstrumentNamesFormat>(v)) {}
 
     PropertyValue(InstrumentLabelVisibility v)
         : m_type(P_TYPE::INSTRUMENT_LABEL_VISIBILITY), m_data(make_data<InstrumentLabelVisibility>(v)) {}
@@ -379,11 +314,11 @@ public:
     bool isValid() const;
 
     P_TYPE type() const;
+
     bool isEnum() const { return m_data ? m_data->isEnum() : false; }
 
-    template<typename T>
-    T value() const
-    {
+    template <typename T>
+    T value() const {
         if (m_type == P_TYPE::UNDEFINED) {
             return T();
         }
@@ -393,7 +328,7 @@ public:
             return T();
         }
 
-        Arg<T>* at = get<T>();
+        Arg<T> *at = get<T>();
         if (!at) {
             //! HACK Temporary hack for int to enum
             if constexpr (std::is_enum<T>::value) {
@@ -431,7 +366,7 @@ public:
             //! HACK Temporary hack for real to Spatium
             if constexpr (std::is_same<T, Spatium>::value) {
                 if (P_TYPE::REAL == m_type) {
-                    Arg<double>* srv = get<double>();
+                    Arg<double> *srv = get<double>();
                     assert(srv);
                     return srv ? Spatium(srv->v) : Spatium();
                 }
@@ -457,7 +392,6 @@ public:
                     return value<Fraction>().toString();
                 }
             }
-
         }
 
         assert(at);
@@ -468,49 +402,50 @@ public:
     }
 
     bool toBool() const { return value<bool>(); }
+
     int toInt() const { return value<int>(); }
+
     double toReal() const { return value<double>(); }
+
     double toDouble() const { return value<double>(); }
 
-    bool operator ==(const PropertyValue& v) const;
-    inline bool operator !=(const PropertyValue& v) const { return !this->operator ==(v); }
+    bool operator==(const PropertyValue &v) const;
 
-    template<typename T>
-    static PropertyValue fromValue(const T& v) { return PropertyValue(v); }
+    inline bool operator!=(const PropertyValue &v) const { return !this->operator==(v); }
+
+    template <typename T>
+    static PropertyValue fromValue(const T &v) {
+        return PropertyValue(v);
+    }
 
 
 private:
     struct IArg {
         virtual ~IArg() = default;
 
-        virtual bool equal(const IArg* a) const = 0;
+        virtual bool equal(const IArg *a) const = 0;
 
         virtual bool isEnum() const = 0;
         virtual int enumToInt() const = 0;
     };
 
-    template<typename T>
+    template <typename T>
     struct Arg : public IArg {
         T v;
-        Arg(const T& v)
-            : IArg(), v(v) {}
 
-        bool equal(const IArg* a) const override
-        {
+        Arg(const T &v) : IArg(), v(v) {}
+
+        bool equal(const IArg *a) const override {
             assert(a);
-            const Arg<T>* at = dynamic_cast<const Arg<T>*>(a);
+            const Arg<T> *at = dynamic_cast<const Arg<T> *>(a);
             assert(at);
             return at ? at->v == v : false;
         }
 
         //! HACK Temporary hack for enum to int
-        bool isEnum() const override
-        {
-            return std::is_enum<T>::value;
-        }
+        bool isEnum() const override { return std::is_enum<T>::value; }
 
-        int enumToInt() const override
-        {
+        int enumToInt() const override {
             if constexpr (std::is_enum<T>::value) {
                 return static_cast<int>(v);
             } else {
@@ -519,25 +454,22 @@ private:
         }
     };
 
-    template<typename T>
-    inline std::shared_ptr<IArg> make_data(const T& v) const
-    {
+    template <typename T>
+    inline std::shared_ptr<IArg> make_data(const T &v) const {
         return std::shared_ptr<IArg>(new Arg<T>(v));
     }
 
-    template<typename T>
-    inline Arg<T>* get() const
-    {
-        return dynamic_cast<Arg<T>*>(m_data.get());
+    template <typename T>
+    inline Arg<T> *get() const {
+        return dynamic_cast<Arg<T> *>(m_data.get());
     }
 
     P_TYPE m_type = P_TYPE::UNDEFINED;
     std::shared_ptr<IArg> m_data = nullptr;
 };
-}
+} // namespace mu::engraving
 
-inline muse::logger::Stream& operator<<(muse::logger::Stream& s, const mu::engraving::PropertyValue&)
-{
+inline muse::logger::Stream &operator<<(muse::logger::Stream &s, const mu::engraving::PropertyValue &) {
     s << "property(not implemented log output)";
     return s;
 }

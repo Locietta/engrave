@@ -53,50 +53,42 @@ using namespace mu;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-static const ElementStyle glissandoElementStyle {
-    { Sid::glissandoFontFace,    Pid::FONT_FACE },
-    { Sid::glissandoFontSize,    Pid::FONT_SIZE },
-    { Sid::glissandoFontStyle,   Pid::FONT_STYLE },
-    { Sid::glissandoLineWidth,   Pid::LINE_WIDTH },
-    { Sid::glissandoShowText,    Pid::GLISS_SHOW_TEXT },
-    { Sid::glissandoText,        Pid::GLISS_TEXT },
-    { Sid::glissandoStyle,       Pid::GLISS_STYLE },
-    { Sid::glissandoLineStyle,   Pid::LINE_STYLE },
-    { Sid::glissandoDashLineLen, Pid::DASH_LINE_LEN },
-    { Sid::glissandoDashGapLen,  Pid::DASH_GAP_LEN },
-    { Sid::glissandoType,        Pid::GLISS_TYPE }
-};
+static const ElementStyle glissandoElementStyle{{Sid::glissandoFontFace, Pid::FONT_FACE},
+                                                {Sid::glissandoFontSize, Pid::FONT_SIZE},
+                                                {Sid::glissandoFontStyle, Pid::FONT_STYLE},
+                                                {Sid::glissandoLineWidth, Pid::LINE_WIDTH},
+                                                {Sid::glissandoShowText, Pid::GLISS_SHOW_TEXT},
+                                                {Sid::glissandoText, Pid::GLISS_TEXT},
+                                                {Sid::glissandoStyle, Pid::GLISS_STYLE},
+                                                {Sid::glissandoLineStyle, Pid::LINE_STYLE},
+                                                {Sid::glissandoDashLineLen, Pid::DASH_LINE_LEN},
+                                                {Sid::glissandoDashGapLen, Pid::DASH_GAP_LEN},
+                                                {Sid::glissandoType, Pid::GLISS_TYPE}};
 
 //=========================================================
 //   GlissandoSegment
 //=========================================================
 
-GlissandoSegment::GlissandoSegment(Glissando* sp)
-    : LineSegment(ElementType::GLISSANDO_SEGMENT, sp, ElementFlag::MOVABLE)
-{
-}
+GlissandoSegment::GlissandoSegment(Glissando *sp) : LineSegment(ElementType::GLISSANDO_SEGMENT, sp, ElementFlag::MOVABLE) {}
 
 //---------------------------------------------------------
 //   propertyDelegate
 //---------------------------------------------------------
 
-EngravingObject* GlissandoSegment::propertyDelegate(Pid pid) const
-{
+EngravingObject *GlissandoSegment::propertyDelegate(Pid pid) const {
     switch (pid) {
-    case Pid::GLISS_TYPE:
-    case Pid::GLISS_TEXT:
-    case Pid::GLISS_SHOW_TEXT:
-    case Pid::GLISS_STYLE:
-    case Pid::GLISS_SHIFT:
-    case Pid::GLISS_EASEIN:
-    case Pid::GLISS_EASEOUT:
-    case Pid::FONT_FACE:
-    case Pid::FONT_SIZE:
-    case Pid::FONT_STYLE:
-    case Pid::LINE_WIDTH:
-        return glissando();
-    default:
-        return LineSegment::propertyDelegate(pid);
+        case Pid::GLISS_TYPE:
+        case Pid::GLISS_TEXT:
+        case Pid::GLISS_SHOW_TEXT:
+        case Pid::GLISS_STYLE:
+        case Pid::GLISS_SHIFT:
+        case Pid::GLISS_EASEIN:
+        case Pid::GLISS_EASEOUT:
+        case Pid::FONT_FACE:
+        case Pid::FONT_SIZE:
+        case Pid::FONT_STYLE:
+        case Pid::LINE_WIDTH: return glissando();
+        default: return LineSegment::propertyDelegate(pid);
     }
 }
 
@@ -104,53 +96,42 @@ EngravingObject* GlissandoSegment::propertyDelegate(Pid pid) const
 //   Glissando
 //=========================================================
 
-Glissando::Glissando(DummyParentOr<EngravingItem> parent)
-    : SLine(ElementType::GLISSANDO, parent, ElementFlag::MOVABLE)
-{
+Glissando::Glissando(DummyParentOr<EngravingItem> parent) : SLine(ElementType::GLISSANDO, parent, ElementFlag::MOVABLE) {
     initElementStyle(&glissandoElementStyle);
 
-    static const std::array<Pid, 4> propertiesToInitialise {
-        Pid::GLISS_SHIFT,
-        Pid::GLISS_EASEIN,
-        Pid::GLISS_EASEOUT,
-        Pid::DIAGONAL
-    };
+    static const std::array<Pid, 4> propertiesToInitialise{Pid::GLISS_SHIFT, Pid::GLISS_EASEIN, Pid::GLISS_EASEOUT, Pid::DIAGONAL};
 
-    for (const Pid& pid : propertiesToInitialise) {
+    for (const Pid &pid : propertiesToInitialise) {
         resetProperty(pid);
     }
 }
 
-Glissando::Glissando(const Glissando& g)
-    : SLine(g)
-{
-    _text           = g._text;
-    _fontFace       = g._fontFace;
-    _fontSize       = g._fontSize;
-    _glissandoType  = g._glissandoType;
+Glissando::Glissando(const Glissando &g) : SLine(g) {
+    _text = g._text;
+    _fontFace = g._fontFace;
+    _fontSize = g._fontSize;
+    _glissandoType = g._glissandoType;
     _glissandoStyle = g._glissandoStyle;
     _glissandoShift = g._glissandoShift;
-    _easeIn         = g._easeIn;
-    _easeOut        = g._easeOut;
-    _showText       = g._showText;
-    _fontStyle      = g._fontStyle;
-    m_isHarpGliss   = g.m_isHarpGliss;
+    _easeIn = g._easeIn;
+    _easeOut = g._easeOut;
+    _showText = g._showText;
+    _fontStyle = g._fontStyle;
+    m_isHarpGliss = g.m_isHarpGliss;
 }
 
 //---------------------------------------------------------
 //   createLineSegment
 //---------------------------------------------------------
 
-LineSegment* Glissando::createLineSegment()
-{
-    GlissandoSegment* seg = new GlissandoSegment(this);
+LineSegment *Glissando::createLineSegment() {
+    GlissandoSegment *seg = new GlissandoSegment(this);
     seg->setTrack(track());
     seg->setColor(color());
     return seg;
 }
 
-Sid Glissando::getPropertyStyle(Pid id) const
-{
+Sid Glissando::getPropertyStyle(Pid id) const {
     if (id == Pid::GLISS_STYLE) {
         return isHarpGliss().value_or(false) ? Sid::glissandoStyleHarp : Sid::glissandoStyle;
     }
@@ -158,12 +139,11 @@ Sid Glissando::getPropertyStyle(Pid id) const
     return SLine::getPropertyStyle(id);
 }
 
-bool Glissando::pitchSteps(const Spanner* spanner, std::vector<int>& pitchOffsets)
-{
+bool Glissando::pitchSteps(const Spanner *spanner, std::vector<int> &pitchOffsets) {
     if (!spanner->endElement()->isNote()) {
         return false;
     }
-    const Glissando* glissando = toGlissando(spanner);
+    const Glissando *glissando = toGlissando(spanner);
     if (!glissando->playSpanner()) {
         return false;
     }
@@ -172,8 +152,8 @@ bool Glissando::pitchSteps(const Spanner* spanner, std::vector<int>& pitchOffset
         return false;
     }
     // only consider glissando connected to NOTE.
-    const Note* noteStart = toNote(spanner->startElement());
-    const Note* noteEnd = toNote(spanner->endElement());
+    const Note *noteStart = toNote(spanner->startElement());
+    const Note *noteEnd = toNote(spanner->endElement());
     int pitchStart = noteStart->ppitch();
     int pitchEnd = noteEnd->ppitch();
     if (pitchEnd == pitchStart) {
@@ -184,8 +164,8 @@ bool Glissando::pitchSteps(const Spanner* spanner, std::vector<int>& pitchOffset
     if (glissandoStyle == GlissandoStyle::DIATONIC) {
         // Obey harp pedal diagrams if on a harp staff
         if (glissando->isHarpGliss().value_or(false)) {
-            HarpPedalDiagram* hd = spanner->originPart()->currentHarpDiagram(spanner->tick());
-            std::set<int> playableTpcs = hd ? hd->playableTpcs() : std::set<int>({ 14, 16, 18, 13, 15, 17, 19 });
+            HarpPedalDiagram *hd = spanner->originPart()->currentHarpDiagram(spanner->tick());
+            std::set<int> playableTpcs = hd ? hd->playableTpcs() : std::set<int>({14, 16, 18, 13, 15, 17, 19});
             std::vector<int> playablePitches;
             playablePitches.reserve(playableTpcs.size());
             for (int t : playableTpcs) {
@@ -235,8 +215,8 @@ bool Glissando::pitchSteps(const Spanner* spanner, std::vector<int>& pitchOffset
         }
         return true;
     }
-    static const std::vector<bool> whiteNotes = { true, false, true, false, true, true, false, true, false, true, false, true };
-    int Cnote = 60;   // pitch of middle C
+    static const std::vector<bool> whiteNotes = {true, false, true, false, true, true, false, true, false, true, false, true};
+    int Cnote = 60; // pitch of middle C
     bool notePick = glissandoStyle == GlissandoStyle::WHITE_KEYS;
     for (int pitch = pitchStart; pitch != pitchEnd; pitch += direction) {
         int idx = ((pitch - Cnote) + 1200) % 12;
@@ -260,44 +240,40 @@ bool Glissando::pitchSteps(const Spanner* spanner, std::vector<int>& pitchOffset
 //    Returns:    the top note in a suitable previous chord or nullptr if none found.
 //---------------------------------------------------------
 
-Note* Glissando::guessInitialNote(Chord* chord)
-{
+Note *Glissando::guessInitialNote(Chord *chord) {
     switch (chord->noteType()) {
-//            case NoteType::INVALID:
-//                  return 0;
-    // for grace notes before, previous chord is previous chord of parent chord
-    case NoteType::ACCIACCATURA:
-    case NoteType::APPOGGIATURA:
-    case NoteType::GRACE4:
-    case NoteType::GRACE16:
-    case NoteType::GRACE32:
-        // move unto parent chord and proceed to standard case
-        if (chord->ownershipParent() && chord->ownershipParent()->isChord()) {
-            chord = toChord(chord->ownershipParent());
-        } else {
-            return 0;
-        }
-        break;
-    // for grace notes after, return top note of parent chord
-    case NoteType::GRACE8_AFTER:
-    case NoteType::GRACE16_AFTER:
-    case NoteType::GRACE32_AFTER:
-        if (chord->ownershipParent() && chord->ownershipParent()->isChord()) {
-            return toChord(chord->ownershipParent())->upNote();
-        } else {                                // no parent or parent is not a chord?
-            return nullptr;
-        }
-    case NoteType::NORMAL:
-    {
-        // if chord has grace notes before, the last one is the previous note
-        std::vector<Chord*> graces = chord->graceNotesBefore();
-        if (graces.size() > 0) {
-            return graces.back()->upNote();
-        }
-    }
-    break;                                      // else process to standard case
-    default:
-        break;
+            //            case NoteType::INVALID:
+            //                  return 0;
+        // for grace notes before, previous chord is previous chord of parent chord
+        case NoteType::ACCIACCATURA:
+        case NoteType::APPOGGIATURA:
+        case NoteType::GRACE4:
+        case NoteType::GRACE16:
+        case NoteType::GRACE32:
+            // move unto parent chord and proceed to standard case
+            if (chord->ownershipParent() && chord->ownershipParent()->isChord()) {
+                chord = toChord(chord->ownershipParent());
+            } else {
+                return 0;
+            }
+            break;
+        // for grace notes after, return top note of parent chord
+        case NoteType::GRACE8_AFTER:
+        case NoteType::GRACE16_AFTER:
+        case NoteType::GRACE32_AFTER:
+            if (chord->ownershipParent() && chord->ownershipParent()->isChord()) {
+                return toChord(chord->ownershipParent())->upNote();
+            } else { // no parent or parent is not a chord?
+                return nullptr;
+            }
+        case NoteType::NORMAL: {
+            // if chord has grace notes before, the last one is the previous note
+            std::vector<Chord *> graces = chord->graceNotesBefore();
+            if (graces.size() > 0) {
+                return graces.back()->upNote();
+            }
+        } break; // else process to standard case
+        default: break;
     }
 
     // standard case (NORMAL or grace before chord)
@@ -308,20 +284,20 @@ Note* Glissando::guessInitialNote(Chord* chord)
     }
 
     track_idx_t chordTrack = chord->track();
-    Segment* segm = chord->segment();
-    Part* part = chord->part();
+    Segment *segm = chord->segment();
+    Part *part = chord->part();
     if (segm != nullptr) {
         segm = segm->prev1();
     }
     while (segm) {
         // if previous segment is a ChordRest segment
         if (segm->segmentType() == SegmentType::ChordRest) {
-            Chord* target = nullptr;
+            Chord *target = nullptr;
             // look for a Chord in the same track
             if (segm->element(chordTrack) && segm->element(chordTrack)->isChord()) {
                 target = toChord(segm->element(chordTrack));
-            } else {                 // if no same track, look for other chords in the same instrument
-                for (EngravingItem* currChord : segm->elist()) {
+            } else { // if no same track, look for other chords in the same instrument
+                for (EngravingItem *currChord : segm->elist()) {
                     if (currChord && currChord->isChord() && toChord(currChord)->part() == part) {
                         target = toChord(currChord);
                         break;
@@ -331,11 +307,11 @@ Note* Glissando::guessInitialNote(Chord* chord)
             // if we found a target previous chord
             if (target) {
                 // if chord has grace notes after, the last one is the previous note
-                std::vector<Chord*> graces = target->graceNotesAfter();
+                std::vector<Chord *> graces = target->graceNotesAfter();
                 if (graces.size() > 0) {
                     return graces.back()->upNote();
                 }
-                return target->upNote();              // if no grace after, return top note
+                return target->upNote(); // if no grace after, return top note
             }
         }
         segm = segm->prev1();
@@ -348,31 +324,19 @@ Note* Glissando::guessInitialNote(Chord* chord)
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Glissando::getProperty(Pid propertyId) const
-{
+PropertyValue Glissando::getProperty(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::GLISS_TYPE:
-        return glissandoType();
-    case Pid::GLISS_TEXT:
-        return text();
-    case Pid::GLISS_SHOW_TEXT:
-        return showText();
-    case Pid::GLISS_STYLE:
-        return glissandoStyle();
-    case Pid::GLISS_SHIFT:
-        return glissandoShift();
-    case Pid::GLISS_EASEIN:
-        return easeIn();
-    case Pid::GLISS_EASEOUT:
-        return easeOut();
-    case Pid::FONT_FACE:
-        return _fontFace;
-    case Pid::FONT_SIZE:
-        return _fontSize;
-    case Pid::FONT_STYLE:
-        return int(_fontStyle);
-    default:
-        break;
+        case Pid::GLISS_TYPE: return glissandoType();
+        case Pid::GLISS_TEXT: return text();
+        case Pid::GLISS_SHOW_TEXT: return showText();
+        case Pid::GLISS_STYLE: return glissandoStyle();
+        case Pid::GLISS_SHIFT: return glissandoShift();
+        case Pid::GLISS_EASEIN: return easeIn();
+        case Pid::GLISS_EASEOUT: return easeOut();
+        case Pid::FONT_FACE: return _fontFace;
+        case Pid::FONT_SIZE: return _fontSize;
+        case Pid::FONT_STYLE: return int(_fontStyle);
+        default: break;
     }
     return SLine::getProperty(propertyId);
 }
@@ -381,51 +345,31 @@ PropertyValue Glissando::getProperty(Pid propertyId) const
 //   setProperty
 //---------------------------------------------------------
 
-bool Glissando::setProperty(Pid propertyId, const PropertyValue& v)
-{
+bool Glissando::setProperty(Pid propertyId, const PropertyValue &v) {
     switch (propertyId) {
-    case Pid::GLISS_TYPE:
-        setGlissandoType(v.value<GlissandoType>());
-        break;
-    case Pid::GLISS_TEXT:
-        setText(v.value<String>());
-        break;
-    case Pid::GLISS_SHOW_TEXT:
-        setShowText(v.toBool());
-        break;
-    case Pid::GLISS_STYLE:
-    {
-        // Make sure harp glisses can only be diatonic and chromatic
-        GlissandoStyle glissStyle = v.value<GlissandoStyle>();
-        if (isHarpGliss().value_or(false) && (glissStyle != GlissandoStyle::DIATONIC && glissStyle != GlissandoStyle::CHROMATIC)) {
-            glissStyle = GlissandoStyle::DIATONIC;
+        case Pid::GLISS_TYPE: setGlissandoType(v.value<GlissandoType>()); break;
+        case Pid::GLISS_TEXT: setText(v.value<String>()); break;
+        case Pid::GLISS_SHOW_TEXT: setShowText(v.toBool()); break;
+        case Pid::GLISS_STYLE: {
+            // Make sure harp glisses can only be diatonic and chromatic
+            GlissandoStyle glissStyle = v.value<GlissandoStyle>();
+            if (isHarpGliss().value_or(false) && (glissStyle != GlissandoStyle::DIATONIC && glissStyle != GlissandoStyle::CHROMATIC)) {
+                glissStyle = GlissandoStyle::DIATONIC;
+            }
+            setGlissandoStyle(glissStyle);
+            break;
         }
-        setGlissandoStyle(glissStyle);
-        break;
-    }
-    case Pid::GLISS_SHIFT:
-        setGlissandoShift(v.toBool());
-        break;
-    case Pid::GLISS_EASEIN:
-        setEaseIn(v.toInt());
-        break;
-    case Pid::GLISS_EASEOUT:
-        setEaseOut(v.toInt());
-        break;
-    case Pid::FONT_FACE:
-        setFontFace(v.value<String>());
-        break;
-    case Pid::FONT_SIZE:
-        setFontSize(v.toReal());
-        break;
-    case Pid::FONT_STYLE:
-        setFontStyle(FontStyle(v.toInt()));
-        break;
-    default:
-        if (!SLine::setProperty(propertyId, v)) {
-            return false;
-        }
-        break;
+        case Pid::GLISS_SHIFT: setGlissandoShift(v.toBool()); break;
+        case Pid::GLISS_EASEIN: setEaseIn(v.toInt()); break;
+        case Pid::GLISS_EASEOUT: setEaseOut(v.toInt()); break;
+        case Pid::FONT_FACE: setFontFace(v.value<String>()); break;
+        case Pid::FONT_SIZE: setFontSize(v.toReal()); break;
+        case Pid::FONT_STYLE: setFontStyle(FontStyle(v.toInt())); break;
+        default:
+            if (!SLine::setProperty(propertyId, v)) {
+                return false;
+            }
+            break;
     }
     triggerLayout();
     return true;
@@ -435,32 +379,20 @@ bool Glissando::setProperty(Pid propertyId, const PropertyValue& v)
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Glissando::propertyDefault(Pid propertyId) const
-{
+PropertyValue Glissando::propertyDefault(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::GLISS_TYPE:
-        return style().styleV(Sid::glissandoType);
-    case Pid::GLISS_SHOW_TEXT:
-        return true;
-    case Pid::GLISS_STYLE:
-        return style().styleV(getPropertyStyle(propertyId));
-    case Pid::GLISS_SHIFT:
-        return false;
-    case Pid::GLISS_EASEIN:
-    case Pid::GLISS_EASEOUT:
-        return 0;
-    case Pid::GLISS_TEXT:
-        return style().styleV(Sid::glissandoText);
-    case Pid::DIAGONAL:
-        return true;
-    default:
-        break;
+        case Pid::GLISS_TYPE: return style().styleV(Sid::glissandoType);
+        case Pid::GLISS_SHOW_TEXT: return true;
+        case Pid::GLISS_STYLE: return style().styleV(getPropertyStyle(propertyId));
+        case Pid::GLISS_SHIFT: return false;
+        case Pid::GLISS_EASEIN:
+        case Pid::GLISS_EASEOUT: return 0;
+        case Pid::GLISS_TEXT: return style().styleV(Sid::glissandoText);
+        case Pid::DIAGONAL: return true;
+        default: break;
     }
     return SLine::propertyDefault(propertyId);
 }
 
-TranslatableString Glissando::subtypeUserName() const
-{
-    return TConv::userName(glissandoType());
-}
-}
+TranslatableString Glissando::subtypeUserName() const { return TConv::userName(glissandoType()); }
+} // namespace mu::engraving

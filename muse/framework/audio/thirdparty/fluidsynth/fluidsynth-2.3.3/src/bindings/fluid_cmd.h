@@ -23,9 +23,7 @@
 
 #include "fluid_sys.h"
 
-
 void fluid_shell_settings(fluid_settings_t *settings);
-
 
 /** some help functions */
 int fluid_is_number(char *a);
@@ -123,7 +121,6 @@ int fluid_handle_ladspa_stop(void *data, int ac, char **av, fluid_ostream_t out)
 int fluid_handle_ladspa_reset(void *data, int ac, char **av, fluid_ostream_t out);
 #endif
 
-
 /**
  * Command handler function prototype.
  * @param data User defined data
@@ -137,35 +134,27 @@ typedef int (*fluid_cmd_func_t)(void *data, int ac, char **av, fluid_ostream_t o
 /**
  * Shell command information structure.
  */
-typedef struct
-{
-    char *name;                           /**< The name of the command, as typed in the shell */
-    char *topic;                          /**< The help topic group of this command */
-    fluid_cmd_func_t handler;             /**< Pointer to the handler for this command */
-    char *help;                           /**< A help string */
+typedef struct {
+    char *name;               /**< The name of the command, as typed in the shell */
+    char *topic;              /**< The help topic group of this command */
+    fluid_cmd_func_t handler; /**< Pointer to the handler for this command */
+    char *help;               /**< A help string */
 } fluid_cmd_t;
 
 fluid_cmd_t *fluid_cmd_copy(const fluid_cmd_t *cmd);
 void delete_fluid_cmd(fluid_cmd_t *cmd);
 
-int fluid_cmd_handler_handle(void *data,
-                             int ac, char **av,
-                             fluid_ostream_t out);
+int fluid_cmd_handler_handle(void *data, int ac, char **av, fluid_ostream_t out);
 
 int fluid_cmd_handler_register(fluid_cmd_handler_t *handler, const fluid_cmd_t *cmd);
 int fluid_cmd_handler_unregister(fluid_cmd_handler_t *handler, const char *cmd);
 
-
 void fluid_server_remove_client(fluid_server_t *server, fluid_client_t *client);
 void fluid_server_add_client(fluid_server_t *server, fluid_client_t *client);
 
-
-fluid_client_t *new_fluid_client(fluid_server_t *server,
-                                 fluid_settings_t *settings,
-                                 fluid_socket_t sock);
+fluid_client_t *new_fluid_client(fluid_server_t *server, fluid_settings_t *settings, fluid_socket_t sock);
 
 void delete_fluid_client(fluid_client_t *client);
 void fluid_client_quit(fluid_client_t *client);
-
 
 #endif /* _FLUID_CMD_H */

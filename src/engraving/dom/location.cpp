@@ -42,8 +42,7 @@ static constexpr Location absDefaults = Location::absolute();
 //   Location::track
 //---------------------------------------------------------
 
-int Location::track() const
-{
+int Location::track() const {
     if ((m_staff == absDefaults.m_staff) || (m_voice == absDefaults.m_voice)) {
         return INT_MIN;
     }
@@ -54,8 +53,7 @@ int Location::track() const
 //   Location::setTrack
 //---------------------------------------------------------
 
-void Location::setTrack(int track)
-{
+void Location::setTrack(int track) {
     m_staff = track / VOICES;
     m_voice = track % VOICES;
 }
@@ -64,8 +62,7 @@ void Location::setTrack(int track)
 //   Location::toAbsolute
 //---------------------------------------------------------
 
-void Location::toAbsolute(const Location& ref)
-{
+void Location::toAbsolute(const Location &ref) {
     if (isAbsolute()) {
         return;
     }
@@ -81,8 +78,7 @@ void Location::toAbsolute(const Location& ref)
 //   Location::toRelative
 //---------------------------------------------------------
 
-void Location::toRelative(const Location& ref)
-{
+void Location::toRelative(const Location &ref) {
     if (isRelative()) {
         return;
     }
@@ -102,8 +98,7 @@ void Location::toRelative(const Location& ref)
 //    for Chords and Notes, like grace index.
 //---------------------------------------------------------
 
-void Location::fillPositionForElement(const EngravingItem* e, bool absfrac)
-{
+void Location::fillPositionForElement(const EngravingItem *e, bool absfrac) {
     assert(isAbsolute());
     if (!e) {
         LOGW("Location::fillPositionForElement: element is nullptr");
@@ -127,8 +122,7 @@ void Location::fillPositionForElement(const EngravingItem* e, bool absfrac)
 //    for Chords and Notes.
 //---------------------------------------------------------
 
-void Location::fillForElement(const EngravingItem* e, bool absfrac)
-{
+void Location::fillForElement(const EngravingItem *e, bool absfrac) {
     assert(isAbsolute());
     if (!e) {
         LOGW("Location::fillForElement: element is nullptr");
@@ -144,8 +138,7 @@ void Location::fillForElement(const EngravingItem* e, bool absfrac)
 //   Location::forElement
 //---------------------------------------------------------
 
-Location Location::forElement(const EngravingItem* e, bool absfrac)
-{
+Location Location::forElement(const EngravingItem *e, bool absfrac) {
     Location i = Location::absolute();
     i.fillForElement(e, absfrac);
     return i;
@@ -155,8 +148,7 @@ Location Location::forElement(const EngravingItem* e, bool absfrac)
 //   Location::positionForElement
 //---------------------------------------------------------
 
-Location Location::positionForElement(const EngravingItem* e, bool absfrac)
-{
+Location Location::positionForElement(const EngravingItem *e, bool absfrac) {
     Location i = Location::absolute();
     i.fillPositionForElement(e, absfrac);
     return i;
@@ -166,11 +158,10 @@ Location Location::positionForElement(const EngravingItem* e, bool absfrac)
 //   Location::track
 //---------------------------------------------------------
 
-int Location::track(const EngravingItem* e)
-{
+int Location::track(const EngravingItem *e) {
     int track = static_cast<int>(e->track());
     if (track < 0) {
-        const MeasureBase* mb = e->findMeasureBase();
+        const MeasureBase *mb = e->findMeasureBase();
         if (mb && !mb->isMeasure()) {
             // Such elements are written in the first staff,
             // see writeMeasure() in rw/write/measurewrite.cpp
@@ -184,9 +175,8 @@ int Location::track(const EngravingItem* e)
 //   Location::measure
 //---------------------------------------------------------
 
-int Location::measure(const EngravingItem* e)
-{
-    const Measure* m = toMeasure(e->findMeasure());
+int Location::measure(const EngravingItem *e) {
+    const Measure *m = toMeasure(e->findMeasure());
     if (m) {
         return m->measureIndex();
     }
@@ -198,10 +188,9 @@ int Location::measure(const EngravingItem* e)
 //   Location::graceIndex
 //---------------------------------------------------------
 
-int Location::graceIndex(const EngravingItem* e)
-{
+int Location::graceIndex(const EngravingItem *e) {
     if (e->isChord() || (e->ownershipParent() && e->ownershipParent()->isChord())) {
-        const Chord* ch = e->isChord() ? toChord(e) : toChord(e->ownershipParent());
+        const Chord *ch = e->isChord() ? toChord(e) : toChord(e->ownershipParent());
         if (ch->isGrace()) {
             return static_cast<int>(ch->graceIndex());
         }
@@ -213,11 +202,10 @@ int Location::graceIndex(const EngravingItem* e)
 //   Location::note
 //---------------------------------------------------------
 
-int Location::note(const EngravingItem* e)
-{
+int Location::note(const EngravingItem *e) {
     if (e->isNote()) {
-        const Note* n = toNote(e);
-        const std::vector<Note*>& notes = n->chord()->notes();
+        const Note *n = toNote(e);
+        const std::vector<Note *> &notes = n->chord()->notes();
         if (notes.size() == 1) {
             return 0;
         }
@@ -236,26 +224,18 @@ int Location::note(const EngravingItem* e)
 //   Location::getLocationProperty
 //---------------------------------------------------------
 
-PropertyValue Location::getLocationProperty(Pid pid, const EngravingItem* start, const EngravingItem* end)
-{
+PropertyValue Location::getLocationProperty(Pid pid, const EngravingItem *start, const EngravingItem *end) {
     if (!start || !end) {
         return 0;
     }
     switch (pid) {
-    case Pid::LOCATION_STAVES:
-        return (track(start) / VOICES) - (track(end) / VOICES);
-    case Pid::LOCATION_VOICES:
-        return (track(start) % VOICES) - (track(end) / VOICES);
-    case Pid::LOCATION_MEASURES:
-        return measure(end) - measure(start);
-    case Pid::LOCATION_FRACTIONS:
-        return end->rtick() - start->rtick();
-    case Pid::LOCATION_GRACE:
-        return graceIndex(start) - graceIndex(end);
-    case Pid::LOCATION_NOTE:
-        return note(start) - note(end);
-    default:
-        return PropertyValue();
+        case Pid::LOCATION_STAVES: return (track(start) / VOICES) - (track(end) / VOICES);
+        case Pid::LOCATION_VOICES: return (track(start) % VOICES) - (track(end) / VOICES);
+        case Pid::LOCATION_MEASURES: return measure(end) - measure(start);
+        case Pid::LOCATION_FRACTIONS: return end->rtick() - start->rtick();
+        case Pid::LOCATION_GRACE: return graceIndex(start) - graceIndex(end);
+        case Pid::LOCATION_NOTE: return note(start) - note(end);
+        default: return PropertyValue();
     }
 }
 
@@ -263,15 +243,9 @@ PropertyValue Location::getLocationProperty(Pid pid, const EngravingItem* start,
 //   Location::operator==
 //---------------------------------------------------------
 
-bool Location::operator==(const Location& pi2) const
-{
-    const Location& pi1 = *this;
-    return (pi1.m_frac == pi2.m_frac)
-           && (pi1.m_measure == pi2.m_measure)
-           && (pi1.m_voice == pi2.m_voice)
-           && (pi1.m_staff == pi2.m_staff)
-           && (pi1.m_graceIndex == pi2.m_graceIndex)
-           && (pi1.m_note == pi2.m_note)
-    ;
+bool Location::operator==(const Location &pi2) const {
+    const Location &pi1 = *this;
+    return (pi1.m_frac == pi2.m_frac) && (pi1.m_measure == pi2.m_measure) && (pi1.m_voice == pi2.m_voice) && (pi1.m_staff == pi2.m_staff) &&
+           (pi1.m_graceIndex == pi2.m_graceIndex) && (pi1.m_note == pi2.m_note);
 }
-}
+} // namespace mu::engraving

@@ -26,8 +26,7 @@
 #include "io/path.h"
 
 namespace mu::iex::musicxml {
-class IMusicXmlConfiguration
-{
+class IMusicXmlConfiguration {
 public:
     virtual ~IMusicXmlConfiguration() = default;
 
@@ -43,9 +42,7 @@ public:
     virtual bool exportMu3Compat() const = 0;
     virtual void setExportMu3Compat(bool value) = 0;
 
-    enum class MusicXmlExportBreaksType {
-        All, Manual, No
-    };
+    enum class MusicXmlExportBreaksType { All, Manual, No };
 
     virtual MusicXmlExportBreaksType exportBreaksType() const = 0;
     virtual void setExportBreaksType(MusicXmlExportBreaksType breaksType) = 0;
@@ -64,4 +61,4 @@ public:
     virtual void setInferTextType(bool value) = 0;
     virtual void setInferTextTypeOverride(std::optional<bool> value) = 0;
 };
-}
+} // namespace mu::iex::musicxml

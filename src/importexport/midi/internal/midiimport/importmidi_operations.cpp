@@ -30,8 +30,7 @@ namespace mu::iex::midi {
 MidiOperations::Data midiImportOperations;
 
 namespace MidiOperations {
-static int readBoolFromXml(muse::XmlStreamReader& xml)
-{
+static int readBoolFromXml(muse::XmlStreamReader &xml) {
     int value = -1;
     const muse::AsciiStringView name = xml.name();
     xml.readNext();
@@ -50,8 +49,7 @@ static int readBoolFromXml(muse::XmlStreamReader& xml)
 
 // Terms: <name attribute="value">text</name>
 
-static void setOperationsFromFile(const std::string& fileName, Opers& opers)
-{
+static void setOperationsFromFile(const std::string &fileName, Opers &opers) {
     if (fileName.empty()) {
         return;
     }
@@ -70,7 +68,7 @@ static void setOperationsFromFile(const std::string& fileName, Opers& opers)
         if (token == muse::XmlStreamReader::StartDocument) {
             continue;
         }
-        if (token != muse::XmlStreamReader::StartElement) {          // like <elem>
+        if (token != muse::XmlStreamReader::StartElement) { // like <elem>
             continue;
         }
         if (xml.name() == "MidiOptions") {
@@ -84,37 +82,19 @@ static void setOperationsFromFile(const std::string& fileName, Opers& opers)
                 const int index = xml.text().trimmed().toInt(&ok);
                 if (ok) {
                     switch (index) {
-                    case 0:
-                        opers.quantValue.setDefaultValue(QuantValue::Q_4, false);
-                        break;
-                    case 1:
-                        opers.quantValue.setDefaultValue(QuantValue::Q_8, false);
-                        break;
-                    case 2:
-                        opers.quantValue.setDefaultValue(QuantValue::Q_16, false);
-                        break;
-                    case 3:
-                        opers.quantValue.setDefaultValue(QuantValue::Q_32, false);
-                        break;
-                    case 4:
-                        opers.quantValue.setDefaultValue(QuantValue::Q_64, false);
-                        break;
-                    case 5:
-                        opers.quantValue.setDefaultValue(QuantValue::Q_128, false);
-                        break;
-                    case 6:
-                        opers.quantValue.setDefaultValue(QuantValue::Q_256, false);
-                        break;
-                    case 7:
-                        opers.quantValue.setDefaultValue(QuantValue::Q_512, false);
-                        break;
-                    case 8:
-                        opers.quantValue.setDefaultValue(QuantValue::Q_1024, false);
-                        break;
-                    default:
-                        LOGD("Load MIDI import operations from file: "
-                             "unknown max quantization value");
-                        break;
+                        case 0: opers.quantValue.setDefaultValue(QuantValue::Q_4, false); break;
+                        case 1: opers.quantValue.setDefaultValue(QuantValue::Q_8, false); break;
+                        case 2: opers.quantValue.setDefaultValue(QuantValue::Q_16, false); break;
+                        case 3: opers.quantValue.setDefaultValue(QuantValue::Q_32, false); break;
+                        case 4: opers.quantValue.setDefaultValue(QuantValue::Q_64, false); break;
+                        case 5: opers.quantValue.setDefaultValue(QuantValue::Q_128, false); break;
+                        case 6: opers.quantValue.setDefaultValue(QuantValue::Q_256, false); break;
+                        case 7: opers.quantValue.setDefaultValue(QuantValue::Q_512, false); break;
+                        case 8: opers.quantValue.setDefaultValue(QuantValue::Q_1024, false); break;
+                        default:
+                            LOGD("Load MIDI import operations from file: "
+                                 "unknown max quantization value");
+                            break;
                     }
                 }
             }
@@ -125,22 +105,14 @@ static void setOperationsFromFile(const std::string& fileName, Opers& opers)
                 const int index = xml.text().trimmed().toInt(&ok);
                 if (ok) {
                     switch (index) {
-                    case 0:
-                        opers.maxVoiceCount.setDefaultValue(VoiceCount::V_1, false);
-                        break;
-                    case 1:
-                        opers.maxVoiceCount.setDefaultValue(VoiceCount::V_2, false);
-                        break;
-                    case 2:
-                        opers.maxVoiceCount.setDefaultValue(VoiceCount::V_3, false);
-                        break;
-                    case 3:
-                        opers.maxVoiceCount.setDefaultValue(VoiceCount::V_4, false);
-                        break;
-                    default:
-                        LOGD("Load MIDI import operations from file: "
-                             "unknown max voice count");
-                        break;
+                        case 0: opers.maxVoiceCount.setDefaultValue(VoiceCount::V_1, false); break;
+                        case 1: opers.maxVoiceCount.setDefaultValue(VoiceCount::V_2, false); break;
+                        case 2: opers.maxVoiceCount.setDefaultValue(VoiceCount::V_3, false); break;
+                        case 3: opers.maxVoiceCount.setDefaultValue(VoiceCount::V_4, false); break;
+                        default:
+                            LOGD("Load MIDI import operations from file: "
+                                 "unknown max voice count");
+                            break;
                     }
                 }
             }
@@ -221,19 +193,13 @@ static void setOperationsFromFile(const std::string& fileName, Opers& opers)
                 const int index = xml.text().trimmed().toInt(&ok);
                 if (ok) {
                     switch (index) {
-                    case 0:
-                        opers.swing.setDefaultValue(Swing::NONE, false);
-                        break;
-                    case 1:
-                        opers.swing.setDefaultValue(Swing::SHUFFLE, false);
-                        break;
-                    case 2:
-                        opers.swing.setDefaultValue(Swing::SWING, false);
-                        break;
-                    default:
-                        LOGD("Load MIDI import operations from file: "
-                             "unknown swing");
-                        break;
+                        case 0: opers.swing.setDefaultValue(Swing::NONE, false); break;
+                        case 1: opers.swing.setDefaultValue(Swing::SHUFFLE, false); break;
+                        case 2: opers.swing.setDefaultValue(Swing::SWING, false); break;
+                        default:
+                            LOGD("Load MIDI import operations from file: "
+                                 "unknown swing");
+                            break;
                     }
                 }
             }
@@ -246,8 +212,7 @@ static void setOperationsFromFile(const std::string& fileName, Opers& opers)
 
 //-------------------------------------------------------------------------------------------
 
-FileData* Data::data()
-{
+FileData *Data::data() {
     const auto it = _data.find(_currentMidiFile);
     if (it != _data.end()) {
         return &it->second;
@@ -255,8 +220,7 @@ FileData* Data::data()
     return nullptr;
 }
 
-const FileData* Data::data() const
-{
+const FileData *Data::data() const {
     const auto it = _data.find(_currentMidiFile);
     if (it != _data.end()) {
         return &it->second;
@@ -264,18 +228,16 @@ const FileData* Data::data() const
     return nullptr;
 }
 
-void Data::addNewMidiFile(const std::string& fileName)
-{
+void Data::addNewMidiFile(const std::string &fileName) {
     if (_data.find(fileName) != _data.end()) {
         return;
     }
     FileData fileData;
     setOperationsFromFile(_midiOperationsFile, fileData.trackOpers);
-    _data.insert({ fileName, fileData });
+    _data.insert({fileName, fileData});
 }
 
-const MidiFile* Data::midiFile(const std::string& fileName)
-{
+const MidiFile *Data::midiFile(const std::string &fileName) {
     const auto it = _data.find(fileName);
     if (it != _data.end()) {
         return &it->second.midiFile;
@@ -283,40 +245,27 @@ const MidiFile* Data::midiFile(const std::string& fileName)
     return nullptr;
 }
 
-std::vector<std::string> Data::allMidiFiles() const
-{
+std::vector<std::string> Data::allMidiFiles() const {
     std::vector<std::string> list;
-    for (const auto& d: _data) {
+    for (const auto &d : _data) {
         list.push_back(d.first);
     }
     return list;
 }
 
-void Data::setMidiFileData(const std::string& fileName, const MidiFile& midiFile)
-{
-    _data[fileName].midiFile = midiFile;
-}
+void Data::setMidiFileData(const std::string &fileName, const MidiFile &midiFile) { _data[fileName].midiFile = midiFile; }
 
-void Data::excludeMidiFile(const std::string& fileName)
-{
-    _data.erase(fileName);
-}
+void Data::excludeMidiFile(const std::string &fileName) { _data.erase(fileName); }
 
-bool Data::hasMidiFile(const std::string& fileName)
-{
-    return _data.find(fileName) != _data.end();
-}
+bool Data::hasMidiFile(const std::string &fileName) { return _data.find(fileName) != _data.end(); }
 
-int Data::currentTrack() const
-{
-    Q_ASSERT_X(_currentTrack >= 0,
-               "Data::currentTrack", "Invalid current track index");
+int Data::currentTrack() const {
+    Q_ASSERT_X(_currentTrack >= 0, "Data::currentTrack", "Invalid current track index");
 
     return _currentTrack;
 }
 
-void Data::setOperationsFile(const std::string& fileName)
-{
+void Data::setOperationsFile(const std::string &fileName) {
     if (muse::io::File::exists(muse::io::path_t(fileName))) {
         _midiOperationsFile = fileName;
     }

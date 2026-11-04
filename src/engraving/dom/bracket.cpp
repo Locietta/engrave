@@ -42,28 +42,24 @@ using namespace muse::draw;
 //   Bracket
 //---------------------------------------------------------
 
-Bracket::Bracket(DummyParentOr<EngravingItem> parent)
-    : EngravingItem(ElementType::BRACKET, parent)
-{
-    m_ay1          = 0;
-    m_firstStaff  = 0;
-    m_lastStaff   = 0;
-    m_labelType   = InstrumentNameType::LONG;
-    m_bi          = 0;
+Bracket::Bracket(DummyParentOr<EngravingItem> parent) : EngravingItem(ElementType::BRACKET, parent) {
+    m_ay1 = 0;
+    m_firstStaff = 0;
+    m_lastStaff = 0;
+    m_labelType = InstrumentNameType::LONG;
+    m_bi = 0;
     m_braceSymbol = SymId::noSym;
-    m_magx        = 1.;
-    setGenerated(true);       // brackets are not saved
+    m_magx = 1.;
+    setGenerated(true); // brackets are not saved
 }
 
-Bracket::~Bracket()
-{
+Bracket::~Bracket() {
     if (m_text) {
         delete m_text;
     }
 }
 
-void Bracket::scanElements(std::function<void(EngravingItem*)> func)
-{
+void Bracket::scanElements(std::function<void(EngravingItem *)> func) {
     if (m_text) {
         m_text->scanElements(func);
     }
@@ -75,13 +71,12 @@ void Bracket::scanElements(std::function<void(EngravingItem*)> func)
 //   setStaffSpan
 //---------------------------------------------------------
 
-void Bracket::setStaffSpan(size_t a, size_t b)
-{
+void Bracket::setStaffSpan(size_t a, size_t b) {
     m_firstStaff = a;
     m_lastStaff = b;
 
-    if (bracketType() == BracketType::BRACE
-        && style().styleSt(Sid::musicalSymbolFont) != "Emmentaler" && style().styleSt(Sid::musicalSymbolFont) != "Gonville") {
+    if (bracketType() == BracketType::BRACE && style().styleSt(Sid::musicalSymbolFont) != "Emmentaler" &&
+        style().styleSt(Sid::musicalSymbolFont) != "Gonville") {
         int v = static_cast<int>(m_lastStaff - m_firstStaff + 1);
 
         // if staves inner staves are hidden, decrease span
@@ -110,25 +105,19 @@ void Bracket::setStaffSpan(size_t a, size_t b)
     }
 }
 
-
-
 //---------------------------------------------------------
 //   acceptDrop
 //---------------------------------------------------------
 
-bool Bracket::acceptDrop(EditData& data) const
-{
-    return data.dropElement->type() == ElementType::BRACKET;
-}
+bool Bracket::acceptDrop(EditData &data) const { return data.dropElement->type() == ElementType::BRACKET; }
 
 //---------------------------------------------------------
 //   drop
 //---------------------------------------------------------
 
-EngravingItem* Bracket::drop(Transaction&, EditData& data)
-{
-    EngravingItem* e = data.dropElement;
-    Bracket* b = 0;
+EngravingItem *Bracket::drop(Transaction &, EditData &data) {
+    EngravingItem *e = data.dropElement;
+    Bracket *b = 0;
     if (e->isBracket()) {
         b = toBracket(e);
         undoChangeProperty(Pid::SYSTEM_BRACKET, int(b->bracketType()));
@@ -141,8 +130,7 @@ EngravingItem* Bracket::drop(Transaction&, EditData& data)
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Bracket::getProperty(Pid id) const
-{
+PropertyValue Bracket::getProperty(Pid id) const {
     PropertyValue v = EngravingItem::getProperty(id);
     if (!v.isValid()) {
         v = m_bi->getProperty(id);
@@ -154,17 +142,13 @@ PropertyValue Bracket::getProperty(Pid id) const
 //   setProperty
 //---------------------------------------------------------
 
-bool Bracket::setProperty(Pid id, const PropertyValue& v)
-{
-    return m_bi->setProperty(id, v);
-}
+bool Bracket::setProperty(Pid id, const PropertyValue &v) { return m_bi->setProperty(id, v); }
 
 //---------------------------------------------------------
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Bracket::propertyDefault(Pid id) const
-{
+PropertyValue Bracket::propertyDefault(Pid id) const {
     if (id == Pid::BRACKET_COLUMN) {
         return size_t(0);
     }
@@ -179,29 +163,24 @@ PropertyValue Bracket::propertyDefault(Pid id) const
 //   subtypeUserName
 //---------------------------------------------------------
 
-muse::TranslatableString Bracket::subtypeUserName() const
-{
-    return TConv::userName(bracketType());
-}
+muse::TranslatableString Bracket::subtypeUserName() const { return TConv::userName(bracketType()); }
 
 //---------------------------------------------------------
 //   undoChangeProperty
 //---------------------------------------------------------
 
-void Bracket::undoChangeProperty(Pid id, const PropertyValue& v, PropertyFlags ps)
-{
+void Bracket::undoChangeProperty(Pid id, const PropertyValue &v, PropertyFlags ps) {
     if (id == Pid::COLOR) {
         setColor(v.value<Color>());
     }
 
     // brackets do not survive layout() and therefore cannot be on
     // the undo stack; delegate to BracketItem:
-    BracketItem* bi = bracketItem();
+    BracketItem *bi = bracketItem();
     bi->undoChangeProperty(id, v, ps);
 }
 
-Fraction Bracket::tick() const
-{
+Fraction Bracket::tick() const {
     if (measure()) {
         return measure()->tick();
     }
@@ -212,8 +191,7 @@ Fraction Bracket::tick() const
 //   setSelected
 //---------------------------------------------------------
 
-void Bracket::setSelected(bool f)
-{
+void Bracket::setSelected(bool f) {
     m_bi->setSelected(f);
     if (m_text) {
         m_text->setSelected(f);
@@ -222,12 +200,6 @@ void Bracket::setSelected(bool f)
     EngravingItem::setSelected(f);
 }
 
-bool Bracket::intersects(const Bracket* other) const
-{
-    return m_firstStaff <= other->m_lastStaff && m_lastStaff >= other->m_firstStaff;
-}
+bool Bracket::intersects(const Bracket *other) const { return m_firstStaff <= other->m_lastStaff && m_lastStaff >= other->m_firstStaff; }
 
-bool Bracket::contains(staff_idx_t staffIdx) const
-{
-    return staffIdx >= m_firstStaff && staffIdx <= m_lastStaff;
-}
+bool Bracket::contains(staff_idx_t staffIdx) const { return staffIdx >= m_firstStaff && staffIdx <= m_lastStaff; }

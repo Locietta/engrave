@@ -53,49 +53,41 @@
 using namespace mu::engraving;
 
 namespace mu::iex::guitarpro {
-bool PowerTab::readBoolean()
-{
-    return readUInt8() != 0;
-}
+bool PowerTab::readBoolean() { return readUInt8() != 0; }
 
-uint8_t PowerTab::readUInt8()
-{
+uint8_t PowerTab::readUInt8() {
     uint8_t byte;
-    if (_file->read((uint8_t*)&byte, 1) != 1) {
+    if (_file->read((uint8_t *) &byte, 1) != 1) {
         throw std::runtime_error("Unexpected end of PowerTab file");
     }
     return byte;
 }
 
-unsigned short PowerTab::readShort()
-{
+unsigned short PowerTab::readShort() {
     uint16_t val;
-    if (_file->read((uint8_t*)&val, 2) != 2) {
+    if (_file->read((uint8_t *) &val, 2) != 2) {
         throw std::runtime_error("Unexpected end of PowerTab file");
     }
     return val;
 }
 
-char PowerTab::readChar()
-{
+char PowerTab::readChar() {
     char byte;
-    if (_file->read((uint8_t*)&byte, 1) != 1) {
+    if (_file->read((uint8_t *) &byte, 1) != 1) {
         throw std::runtime_error("Unexpected end of PowerTab file");
     }
     return byte;
 }
 
-int PowerTab::readInt()
-{
+int PowerTab::readInt() {
     int32_t val;
-    if (_file->read((uint8_t*)&val, 4) != 4) {
+    if (_file->read((uint8_t *) &val, 4) != 4) {
         throw std::runtime_error("Unexpected end of PowerTab file");
     }
     return val;
 }
 
-std::string PowerTab::readString(int length)
-{
+std::string PowerTab::readString(int length) {
     if (length == 0) {
         LOGE() << "reading string of length zero";
         return std::string();
@@ -112,28 +104,25 @@ std::string PowerTab::readString(int length)
     }
 
     std::string s(static_cast<size_t>(length), '\0');
-    if (length > 0 && _file->read((uint8_t*)s.data(), static_cast<size_t>(length)) != static_cast<size_t>(length)) {
+    if (length > 0 && _file->read((uint8_t *) s.data(), static_cast<size_t>(length)) != static_cast<size_t>(length)) {
         throw std::runtime_error("Unexpected end of PowerTab file");
     }
     return s;
 }
 
-bool PowerTab::readVersion()
-{
+bool PowerTab::readVersion() {
     std::string version = readString(4);
     version += std::string("-") + std::to_string(readShort());
     return version == "ptab-4";
 }
 
-void PowerTab::skip(int len /* = 1 */)
-{
+void PowerTab::skip(int len /* = 1 */) {
     for (int i = 0; i < len; ++i) {
         readChar();
     }
 }
 
-void PowerTab::readSongInfo(ptSongInfo& info)
-{
+void PowerTab::readSongInfo(ptSongInfo &info) {
     auto classification = readChar();
     info.classification = classification;
     if (classification == 0) {
@@ -144,31 +133,30 @@ void PowerTab::readSongInfo(ptSongInfo& info)
         auto releaseType = readChar();
 
         switch (releaseType) {
-        case 0: {
-            /*auto albumType =*/
-            readChar();
-            info.album = readString();
-            info.year = readShort();
-            info.liverecording = readChar() != 0;
-            break;
-        }
-        case 1: {
-            info.album = readString();
-            info.liverecording = readChar() != 0;
-            break;
-        }
-        case 2: {
-            info.album  = readString();
-            info.day    = readShort();
-            info.month  = readShort();
-            info.year   = readShort();
-            break;
-        }
-        case 3: {
-            break;
-        }
-        default:
-            throw std::runtime_error("Invalid PowerTab release type");
+            case 0: {
+                /*auto albumType =*/
+                readChar();
+                info.album = readString();
+                info.year = readShort();
+                info.liverecording = readChar() != 0;
+                break;
+            }
+            case 1: {
+                info.album = readString();
+                info.liverecording = readChar() != 0;
+                break;
+            }
+            case 2: {
+                info.album = readString();
+                info.day = readShort();
+                info.month = readShort();
+                info.year = readShort();
+                break;
+            }
+            case 3: {
+                break;
+            }
+            default: throw std::runtime_error("Invalid PowerTab release type");
         }
 
         if (readChar() == 0) {
@@ -176,28 +164,27 @@ void PowerTab::readSongInfo(ptSongInfo& info)
             info.lyricist = readString();
         }
 
-        info.arranger           = readString();
-        info.guitarTranscriber  = readString();
-        info.bassTranscriber    = readString();
-        info.copyright          = readString();
+        info.arranger = readString();
+        info.guitarTranscriber = readString();
+        info.bassTranscriber = readString();
+        info.copyright = readString();
 
-        info.lyrics             = readString();
+        info.lyrics = readString();
 
         info.guitarInstructions = readString();
-        info.bassInstructions   = readString();
+        info.bassInstructions = readString();
     } else if (classification == 1) {
-        info.name         = readString();
-        info.album        = readString();
-        info.style        = readShort();
-        info.level        = readUInt8();
-        info.author       = readString();
+        info.name = readString();
+        info.album = readString();
+        info.style = readShort();
+        info.level = readUInt8();
+        info.author = readString();
         info.instructions = readString();
-        info.copyright    = readString();
+        info.copyright = readString();
     }
 }
 
-int PowerTab::readHeaderItems()
-{
+int PowerTab::readHeaderItems() {
     int itemCount = readShort();
     if (itemCount != 0) {
         int header = readShort();
@@ -205,14 +192,13 @@ int PowerTab::readHeaderItems()
             if (readShort() != 1) {
                 return -1;
             }
-            auto str = readString(readShort());       //section title
+            auto str = readString(readShort()); //section title
         }
     }
     return itemCount;
 }
 
-void PowerTab::readTrackInfo(ptTrack& info)
-{
+void PowerTab::readTrackInfo(ptTrack &info) {
     TrackInfo tr;
 
     tr.number = readUInt8();
@@ -235,67 +221,59 @@ void PowerTab::readTrackInfo(ptTrack& info)
     info.infos.push_back(tr);
 }
 
-void PowerTab::readChord(ptTrack& info)
-{
+void PowerTab::readChord(ptTrack &info) {
     ptChord ch;
-    ch.key = readShort();   //chord key
+    ch.key = readShort(); //chord key
     ch.formula = readUInt8();
-    ch.modification = readShort();   //Chord Modification
+    ch.modification = readShort(); //Chord Modification
     ch.extra = readUInt8();
     ch.top_fret = readUInt8();
     auto stringCount = readUInt8();
     for (int i = 0; i < stringCount; ++i) {
-        ch.frets.push_back(readUInt8());     // fret
+        ch.frets.push_back(readUInt8()); // fret
     }
-    if (info.diagramMap.find({ { ch.key, ch.formula, ch.modification } }) == info.diagramMap.end()) {
-        info.diagramMap[ { { ch.key, ch.formula, ch.modification } }] = ch;
+    if (info.diagramMap.find({{ch.key, ch.formula, ch.modification}}) == info.diagramMap.end()) {
+        info.diagramMap[{{ch.key, ch.formula, ch.modification}}] = ch;
     } else {
-        auto a1 = info.diagramMap[ { { ch.key, ch.formula, ch.modification } }];
+        auto a1 = info.diagramMap[{{ch.key, ch.formula, ch.modification}}];
         auto a2 = ch;
 
-//??            int k = 1;
+        //??            int k = 1;
     }
 }
 
-void PowerTab::readFontSettings()
-{
-    readString();   //font name
-    readInt();   // point size
-    readInt();   // weight
-    readBoolean();   //italic
-    readBoolean();   //underline
-    readBoolean();   //strikeout
-    readInt();   //color
+void PowerTab::readFontSettings() {
+    readString();  //font name
+    readInt();     // point size
+    readInt();     // weight
+    readBoolean(); //italic
+    readBoolean(); //underline
+    readBoolean(); //strikeout
+    readInt();     //color
 }
 
-void PowerTab::readFloatingText()
-{
-    readString();   //text
+void PowerTab::readFloatingText() {
+    readString(); //text
     //rect :
-    readInt();   // left
-    readInt();   // top
-    readInt();   // right
-    readInt();   // bottom
+    readInt(); // left
+    readInt(); // top
+    readInt(); // right
+    readInt(); // bottom
 
     readUInt8();
     readFontSettings();
 }
 
-void PowerTab::readDynamic()
-{
+void PowerTab::readDynamic() {
     readShort();
     readUInt8();
     readUInt8();
     readShort();
 }
 
-void PowerTab::readKeySignature()
-{
-    readUInt8();
-}
+void PowerTab::readKeySignature() { readUInt8(); }
 
-void PowerTab::readRehearsalSign(ptSection& sec)
-{
+void PowerTab::readRehearsalSign(ptSection &sec) {
     auto c = readChar();
     auto str = readString();
     if (str.size()) {
@@ -304,8 +282,7 @@ void PowerTab::readRehearsalSign(ptSection& sec)
     }
 }
 
-void PowerTab::readChordText(ptSection& sec)
-{
+void PowerTab::readChordText(ptSection &sec) {
     ptChordText cht;
     cht.position = readUInt8();
     cht.key = readShort();
@@ -313,31 +290,21 @@ void PowerTab::readChordText(ptSection& sec)
     cht.formula_mod = readShort();
     cht.extra = readUInt8();
     //sec.chordTextMap.push_back(cht);
-    sec.chordTextMap.insert({ cht.position, cht });
+    sec.chordTextMap.insert({cht.position, cht});
 }
 
-void PowerTab::readRhytmSlash(ptSection& sec)
-{
+void PowerTab::readRhytmSlash(ptSection &sec) {
     stRhytmSlash rs;
     rs.position = readUInt8();
     auto beaming = readUInt8();
     auto data = readInt();
     auto duration = (data & 0xE00000) >> 21;
     switch (duration) {
-    case 0:
-        rs.duration = 1;
-        break;
-    case 1:
-        rs.duration = 2;
-        break;
-    case 2:
-        rs.duration = 4;
-        break;
-    case 3:
-        rs.duration = 8;
-        break;
-    case 4:
-        rs.duration = 16;
+        case 0: rs.duration = 1; break;
+        case 1: rs.duration = 2; break;
+        case 2: rs.duration = 4; break;
+        case 3: rs.duration = 8; break;
+        case 4: rs.duration = 16;
     }
 
     rs.triplet = beaming & (0x20 | 0x40);
@@ -351,8 +318,7 @@ void PowerTab::readRhytmSlash(ptSection& sec)
     sec.rhythm.emplace_back(rs);
 }
 
-void PowerTab::readGuitarIn(ptTrack& info)
-{
+void PowerTab::readGuitarIn(ptTrack &info) {
     ptGuitarIn gin;
     gin.section = readShort();
     gin.staff = readUInt8() + staffInc;
@@ -362,21 +328,19 @@ void PowerTab::readGuitarIn(ptTrack& info)
     info.guitar_ins.push_back(gin);
 }
 
-void PowerTab::readTempoMarker(ptTrack& info)
-{
+void PowerTab::readTempoMarker(ptTrack &info) {
     auto section = readShort();
-    /*auto position =*/ readUInt8();
+    /*auto position =*/readUInt8();
     auto tempo = readShort();
-    /*auto data =*/ readShort();
-    readString();   //description
+    /*auto data =*/readShort();
+    readString(); //description
 
     if (tempo > 0) {
         info.getSection(section).tempo = tempo;
     }
 }
 
-void PowerTab::readSectionSymbol(ptTrack& info)
-{
+void PowerTab::readSectionSymbol(ptTrack &info) {
     int section = readShort();
     int position = readUInt8();
     int data = readInt();
@@ -385,20 +349,18 @@ void PowerTab::readSectionSymbol(ptTrack& info)
     info.getSection(section).getPosition(position).addComponent(new ptSymbol(endNumber));
 }
 
-void PowerTab::readTimeSignature(ptBar* bar)
-{
+void PowerTab::readTimeSignature(ptBar *bar) {
     skip(3);
     int data = readUInt8();
-    readUInt8();   // measure pulses
+    readUInt8(); // measure pulses
 
     bar->numerator = ((data - (data % 8)) / 8) + 1;
     bar->denominator = pow(2, data % 8);
 }
 
-void PowerTab::readBarLine(ptSection& sec)
-{
+void PowerTab::readBarLine(ptSection &sec) {
     auto bar = new ptBar();
-    /*int position =*/ readUInt8();
+    /*int position =*/readUInt8();
     auto b_type = readUInt8();
 
     bar->repeatStart = (b_type >> 5) == 3;
@@ -415,8 +377,7 @@ void PowerTab::readBarLine(ptSection& sec)
           bars.push_back(bar);*/
 }
 
-void PowerTab::readStaff(int staff, ptSection& sec)
-{
+void PowerTab::readStaff(int staff, ptSection &sec) {
     skip(5);
     for (int voice = 0; voice < 2; ++voice) {
         int itemCount = readHeaderItems();
@@ -429,8 +390,7 @@ void PowerTab::readStaff(int staff, ptSection& sec)
     }
 }
 
-void PowerTab::readNote(ptBeat* beat)
-{
+void PowerTab::readNote(ptBeat *beat) {
     ptNote note;
     auto position = readUInt8();
     auto simpleData = readShort();
@@ -450,8 +410,7 @@ void PowerTab::readNote(ptBeat* beat)
     beat->notes.emplace_back(note);
 }
 
-void PowerTab::readPosition(int staff, int voice, ptSection& sec)
-{
+void PowerTab::readPosition(int staff, int voice, ptSection &sec) {
     auto position = readUInt8();
 
     ptBeat beat = ptBeat();
@@ -464,12 +423,12 @@ void PowerTab::readPosition(int staff, int voice, ptSection& sec)
         add = true;
     }
     auto beaming = readUInt8();
-    beaming = (((int)beaming - 128 < 0) ? beaming : beaming - 128);
+    beaming = (((int) beaming - 128 < 0) ? beaming : beaming - 128);
 
     readUInt8();
 
     auto data1 = readUInt8();
-    auto data2 = readUInt8();   //32 - palm mute, 4 - accent, 2 - staccato
+    auto data2 = readUInt8(); //32 - palm mute, 4 - accent, 2 - staccato
     auto data3 = readUInt8();
     auto durationValue = readUInt8();
 
@@ -504,7 +463,7 @@ void PowerTab::readPosition(int staff, int voice, ptSection& sec)
     beat.tuplet = (data3 & 0x20) != 0;
 
     if (beat.duration != 0) {
-        durationValue = std::max((int)durationValue, beat.duration);
+        durationValue = std::max((int) durationValue, beat.duration);
     }
 
     beat.duration = durationValue;
@@ -528,8 +487,7 @@ void PowerTab::readPosition(int staff, int voice, ptSection& sec)
     //sec.getPosition(position).addComponent(beat);
 }
 
-std::vector<int> PowerTab::getStaffMap(ptSection& sec)
-{
+std::vector<int> PowerTab::getStaffMap(ptSection &sec) {
     std::vector<int> result;
     std::vector<int> slash;
     if (!staffInc && curTrack->guitar_ins.size()) {
@@ -571,9 +529,9 @@ std::vector<int> PowerTab::getStaffMap(ptSection& sec)
     }
 
     // negative numbers
-//    for (auto i : slash) {
-//        result.push_back(i);
-//    }
+    //    for (auto i : slash) {
+    //        result.push_back(i);
+    //    }
 
     lastStaffMap = result;
     return result;
@@ -583,16 +541,15 @@ std::vector<int> PowerTab::getStaffMap(ptSection& sec)
 //   addPalmMate
 //---------------------------------------------------------
 
-void PowerTab::addPalmMute(Chord* chord)
-{
+void PowerTab::addPalmMute(Chord *chord) {
     track_idx_t track = chord->track();
     while (_palmMutes.size() < track + 1) {
         _palmMutes.push_back(0);
     }
 
     if (_palmMutes[track]) {
-        PalmMute* pm = _palmMutes[track];
-        Chord* lastChord = toChord(pm->endCR());
+        PalmMute *pm = _palmMutes[track];
+        Chord *lastChord = toChord(pm->endCR());
         if (lastChord == chord) {
             return;
         }
@@ -608,9 +565,9 @@ void PowerTab::addPalmMute(Chord* chord)
         }
     }
     if (!_palmMutes[track]) {
-        PalmMute* pm = new PalmMute(score->dummy());
+        PalmMute *pm = new PalmMute(score->dummy());
         _palmMutes[track] = pm;
-        Segment* segment = chord->segment();
+        Segment *segment = chord->segment();
         Fraction tick = segment->tick();
 
         pm->setTick(tick);
@@ -623,26 +580,21 @@ void PowerTab::addPalmMute(Chord* chord)
     }
 }
 
-void PowerTab::fillMeasure(tBeatList& elist, Measure* measure, int staff, std::vector<Note*>& tiedNotes)
-{
-    Tuplet* tuple = nullptr;
-    int tupleBeatCounter{ 0 };
+void PowerTab::fillMeasure(tBeatList &elist, Measure *measure, int staff, std::vector<Note *> &tiedNotes) {
+    Tuplet *tuple = nullptr;
+    int tupleBeatCounter{0};
     Fraction tick = measure->tick();
     Fraction endtick = measure->endTick();
-    Chord* hammer{ nullptr };
+    Chord *hammer{nullptr};
 
     while (elist.size() && tick < endtick) {
-        auto& beat = elist.front();
+        auto &beat = elist.front();
         auto segment = measure->getSegment(SegmentType::ChordRest, tick);
         Fraction l(1, beat.duration);
         int dots = beat.dotted ? (beat.doubleDotted ? 2 : 1) : (beat.doubleDotted ? 2 : 0);
         switch (dots) {
-        case 1:
-            l = l + (l * Fraction(1, 2));
-            break;
-        case 2:
-            l = l + (l * Fraction(3, 4));
-            break;
+            case 1: l = l + (l * Fraction(1, 2)); break;
+            case 2: l = l + (l * Fraction(3, 4)); break;
         }
 
         TDuration d(l);
@@ -654,7 +606,7 @@ void PowerTab::fillMeasure(tBeatList& elist, Measure* measure, int staff, std::v
         } else {
             tick += l;
         }
-        ChordRest* cr;
+        ChordRest *cr;
         if (beat.notes.empty()) {
             auto rest = Factory::createRest(segment);
             cr = rest;
@@ -663,7 +615,7 @@ void PowerTab::fillMeasure(tBeatList& elist, Measure* measure, int staff, std::v
             rest->setDurationType(d);
             segment->add(rest);
         } else {
-            Chord* chord = Factory::createChord(segment);
+            Chord *chord = Factory::createChord(segment);
             cr = chord;
             chord->setTrack(staff * VOICES);
             chord->setTicks(l);
@@ -684,19 +636,19 @@ void PowerTab::fillMeasure(tBeatList& elist, Measure* measure, int staff, std::v
                 chord->add(st);
             }
             bool has_hammer = false;
-            for (const auto& n : beat.notes) {
+            for (const auto &n : beat.notes) {
                 if (n.str < 0 || static_cast<size_t>(n.str) >= tiedNotes.size()) {
                     LOGE() << "string index out of range, skipping note";
                     continue;
                 }
 
-                const std::vector<int>& trackStrings = curTrack->infos[staff].strings;
+                const std::vector<int> &trackStrings = curTrack->infos[staff].strings;
                 if (trackStrings.empty()) {
                     LOGE() << "track has no strings, skipping note";
                     continue;
                 }
 
-                const StringData* sd = score->staff(staff)->part()->instrument()->stringData();
+                const StringData *sd = score->staff(staff)->part()->instrument()->stringData();
                 const int k = std::max(int(trackStrings.size()) - n.str - 1, 0);
                 if (!sd || static_cast<size_t>(k) >= sd->stringList().size()) {
                     LOGE() << "string data missing for note pitch";
@@ -715,21 +667,21 @@ void PowerTab::fillMeasure(tBeatList& elist, Measure* measure, int staff, std::v
                 }
 
                 if (n.tied && tiedNotes[n.str]) {
-                    Tie* tie = Factory::createTie(tiedNotes[n.str]);
+                    Tie *tie = Factory::createTie(tiedNotes[n.str]);
                     tie->setEndNote(note);
                     tiedNotes[n.str]->add(tie);
                 }
 
                 if (n.bend) {
-                    Bend* bend = Factory::createBend(note);
-//TODO-ws                              bend->setNote(note);
+                    Bend *bend = Factory::createBend(note);
+                    //TODO-ws                              bend->setNote(note);
                     bend->points().push_back(PitchValue(0, n.bend * 25 - 12));
                     bend->points().push_back(PitchValue(50, 0));
                     note->add(bend);
                 }
 
                 if (false && n.slide) {
-                    Text* st = Factory::createText(chord->notes().front(), TextStyleType::HARMONY_A);
+                    Text *st = Factory::createText(chord->notes().front(), TextStyleType::HARMONY_A);
                     st->setXmlText(String(u"SLIDE %1").arg(n.slide));
                     st->setTrack(staff * VOICES);
                     chord->notes().front()->add(st);
@@ -738,7 +690,7 @@ void PowerTab::fillMeasure(tBeatList& elist, Measure* measure, int staff, std::v
                 tiedNotes[n.str] = note;
                 note->setFret(n.value);
                 note->setString(n.str);
-                int pitch = sd->stringList().at(k).pitch + n.value;         //getPitch(n.str, n.value, 0);
+                int pitch = sd->stringList().at(k).pitch + n.value; //getPitch(n.str, n.value, 0);
                 note->setPitch(pitch);
                 note->setTpcFromPitch();
             }
@@ -763,7 +715,7 @@ void PowerTab::fillMeasure(tBeatList& elist, Measure* measure, int staff, std::v
                     auto cr2 = chord;
                     hammer = nullptr;
 
-                    Slur* slur = Factory::createSlur(score->dummy());
+                    Slur *slur = Factory::createSlur(score->dummy());
                     slur->setStartElement(cr1);
                     slur->setEndElement(cr2);
                     slur->setTick(cr1->tick());
@@ -772,7 +724,7 @@ void PowerTab::fillMeasure(tBeatList& elist, Measure* measure, int staff, std::v
                     slur->setTrack2(staff * VOICES);
                     score->addElement(slur);
 
-                    Text* st = Factory::createText(chord->notes().front(), TextStyleType::HARMONY_A);
+                    Text *st = Factory::createText(chord->notes().front(), TextStyleType::HARMONY_A);
                     st->setXmlText(u"H");
                     st->setTrack(staff * VOICES);
                     cr1->notes().front()->add(st);
@@ -804,7 +756,7 @@ void PowerTab::fillMeasure(tBeatList& elist, Measure* measure, int staff, std::v
     }
 
     if (tick == measure->tick()) {
-        Segment* seg = measure->getSegment(SegmentType::ChordRest, tick);
+        Segment *seg = measure->getSegment(SegmentType::ChordRest, tick);
         auto rest = Factory::createRest(seg);
         rest->setTrack(staff * VOICES);
         auto ts = measure->timesig();
@@ -814,8 +766,7 @@ void PowerTab::fillMeasure(tBeatList& elist, Measure* measure, int staff, std::v
     }
 }
 
-void PowerTab::addToScore(ptSection& sec)
-{
+void PowerTab::addToScore(ptSection &sec) {
     cur_section = &sec;
     Fraction tick = score->lastMeasure() ? score->lastMeasure()->endTick() : Fraction(0, 1);
 
@@ -828,8 +779,8 @@ void PowerTab::addToScore(ptSection& sec)
     if (firstMeasure) {
         //int lastStaff = sec.staffMap.back() + 1;
         for (int i = 0; i < staves; ++i) {
-            Part* part = new Part(score);
-            Staff* s = Factory::createStaff(part);
+            Part *part = new Part(score);
+            Staff *s = Factory::createStaff(part);
             auto info = &curTrack->infos[i];
             std::string ss = info->name;
             String staffName;
@@ -881,8 +832,8 @@ void PowerTab::addToScore(ptSection& sec)
         sec.bars.pop_front();
     }
     if (sec.tempo) {
-        Segment* segment = measure->getSegment(SegmentType::ChordRest, measure->tick());
-        TempoText* tt = new TempoText(segment);
+        Segment *segment = measure->getSegment(SegmentType::ChordRest, measure->tick());
+        TempoText *tt = new TempoText(segment);
         tt->setTempo(double(sec.tempo) / 60.0f);
         tt->setXmlText(String(u"<sym>metNoteQuarterUp</sym> = %1").arg(sec.tempo));
         tt->setTrack(0);
@@ -891,7 +842,7 @@ void PowerTab::addToScore(ptSection& sec)
     if (!sec.partName.empty() && lastPart != sec.partMarker) {
         lastPart = sec.partMarker;
         auto seg = measure->getSegment(SegmentType::ChordRest, measure->tick());
-        RehearsalMark* t = new RehearsalMark(seg);
+        RehearsalMark *t = new RehearsalMark(seg);
         t->setFrameType(FrameType::RECTANGLE);
         t->setPlainText(String(Char::fromAscii(sec.partMarker)));
         t->setTrack(0);
@@ -908,9 +859,9 @@ void PowerTab::addToScore(ptSection& sec)
     }
     if (firstMeasure) {
         for (int staffIdx = 0; staffIdx < staves; ++staffIdx) {
-            int keysig = staffIdx >= staffInc ? 0 : 1;       // Can be parsed int beat section
-            Segment* s = measure->getSegment(SegmentType::KeySig, tick);
-            KeySig* t = Factory::createKeySig(s);
+            int keysig = staffIdx >= staffInc ? 0 : 1; // Can be parsed int beat section
+            Segment *s = measure->getSegment(SegmentType::KeySig, tick);
+            KeySig *t = Factory::createKeySig(s);
             t->setKey(Key(keysig));
             t->setTrack(staffIdx * VOICES);
             s->add(t);
@@ -924,10 +875,10 @@ void PowerTab::addToScore(ptSection& sec)
         }
     }
 
-    std::vector<std::vector<Note*> > tiedNotes(staves);
-    for (auto& nvec : tiedNotes) {
+    std::vector<std::vector<Note *>> tiedNotes(staves);
+    for (auto &nvec : tiedNotes) {
         nvec.resize(10);
-        memset(nvec.data(), 0, sizeof(Note*) * 10);
+        memset(nvec.data(), 0, sizeof(Note *) * 10);
     }
 
     if (sec.beats.size() > static_cast<size_t>(staves)) {
@@ -949,10 +900,10 @@ void PowerTab::addToScore(ptSection& sec)
         if (lastTS != measure->timesig()) {
             lastTS = measure->timesig();
             for (int staffIdx = 0; staffIdx < staves; ++staffIdx) {
-                Staff* staff = score->staff(staffIdx);
+                Staff *staff = score->staff(staffIdx);
                 auto staffType = staff->staffType(Fraction(0, 1));
                 if (staffType->genTimesig()) {
-                    Segment* s = measure->getSegment(SegmentType::TimeSig, measure->tick());
+                    Segment *s = measure->getSegment(SegmentType::TimeSig, measure->tick());
                     auto t = Factory::createTimeSig(s);
                     t->setTrack(staffIdx * VOICES);
                     t->setSig(lastTS);
@@ -1001,8 +952,7 @@ void PowerTab::addToScore(ptSection& sec)
     }
 }
 
-void PowerTab::ptSection::copyTracks(ptTrack* track)
-{
+void PowerTab::ptSection::copyTracks(ptTrack *track) {
     //if not found GuitarIn in section or all tracks are read -> return
     if (staves == int(staffMap.size())) {
         return;
@@ -1015,7 +965,7 @@ void PowerTab::ptSection::copyTracks(ptTrack* track)
             continue;
         }
 
-        for (const auto& rt : rhythm) {
+        for (const auto &rt : rhythm) {
             auto newSig = chordTextMap.find(rt.position);
             if (newSig != chordTextMap.end()) {
                 signature = newSig;
@@ -1029,8 +979,7 @@ void PowerTab::ptSection::copyTracks(ptTrack* track)
             beat.isRest = rt.is_rest;
             beat.tuplet = rt.triplet;
             if (!rt.is_rest) {
-                auto diagram = track->diagramMap.find({ { signature->second.key, signature->second.formula,
-                                                          signature->second.formula_mod } });
+                auto diagram = track->diagramMap.find({{signature->second.key, signature->second.formula, signature->second.formula_mod}});
 
                 if (diagram != track->diagramMap.end()) {
                     for (unsigned int string = 0; string < diagram->second.frets.size(); ++string) {
@@ -1059,17 +1008,16 @@ void PowerTab::ptSection::copyTracks(ptTrack* track)
     }
 }
 
-void PowerTab::readSection(ptSection& sec)
-{
+void PowerTab::readSection(ptSection &sec) {
     //rect:
-    readInt();   // left
-    readInt();   // top
-    readInt();   // right
-    readInt();   // bottom
+    readInt(); // left
+    readInt(); // top
+    readInt(); // right
+    readInt(); // bottom
 
     auto lastBarData = readUInt8();
 
-    skip(4);   //spacing from staff
+    skip(4); //spacing from staff
 
     readBarLine(sec);
 
@@ -1122,8 +1070,7 @@ void PowerTab::readSection(ptSection& sec)
     //sec.getPosition(sec.getNextPositionNumber()).addComponent(bar);
 }
 
-void PowerTab::readDirection(ptSection& sec)
-{
+void PowerTab::readDirection(ptSection &sec) {
     int position = readUInt8();
     int symbolCount = readUInt8();
     for (int i = 0; i < symbolCount; ++i) {
@@ -1132,8 +1079,7 @@ void PowerTab::readDirection(ptSection& sec)
     }
 }
 
-void PowerTab::readDataInstruments(ptTrack& info)
-{
+void PowerTab::readDataInstruments(ptTrack &info) {
     curTrack = &info;
     //Guitar section
     auto itemCount = readHeaderItems();
@@ -1201,9 +1147,8 @@ void PowerTab::readDataInstruments(ptTrack& info)
     }
 }
 
-std::string crTS(int strings, int tuning[])
-{
-    const static char* tune[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+std::string crTS(int strings, int tuning[]) {
+    const static char *tune[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
     std::vector<int> pitch;
     for (int i = 0; i < strings; ++i) {
         pitch.push_back(tuning[i]);
@@ -1216,8 +1161,7 @@ std::string crTS(int strings, int tuning[])
     return t;
 }
 
-Measure* PowerTab::createMeasure(ptBar* bar, const Fraction& tick)
-{
+Measure *PowerTab::createMeasure(ptBar *bar, const Fraction &tick) {
     auto measure = Factory::createMeasure(score);
     Fraction nts(bar->numerator, bar->denominator);
 
@@ -1230,24 +1174,19 @@ Measure* PowerTab::createMeasure(ptBar* bar, const Fraction& tick)
     return measure;
 }
 
-PowerTab::ptSection& PowerTab::ptTrack::getSection(int ind)
-{
-    for (int i = (int)sections.size(); i < ind + 1; ++i) {
+PowerTab::ptSection &PowerTab::ptTrack::getSection(int ind) {
+    for (int i = (int) sections.size(); i < ind + 1; ++i) {
         sections.push_back(ptSection(i));
     }
     return sections[ind];
 }
 
-PowerTab::ptSection::ptSection(int num)
-{
-    number = num;
-}
+PowerTab::ptSection::ptSection(int num) { number = num; }
 
-PowerTab::ptPosition& PowerTab::ptSection::getPosition(int pos)
-{
+PowerTab::ptPosition &PowerTab::ptSection::getPosition(int pos) {
     unsigned int i = 0;
     while (i < positions.size()) {
-        auto& p = positions[i];
+        auto &p = positions[i];
         if (p.position == pos) {
             return p;
         }
@@ -1259,8 +1198,7 @@ PowerTab::ptPosition& PowerTab::ptSection::getPosition(int pos)
     return positions.back();
 }
 
-int PowerTab::ptSection::getNextPositionNumber()
-{
+int PowerTab::ptSection::getNextPositionNumber() {
     int next = 0;
     unsigned int k = 0;
     while (k < positions.size()) {
@@ -1271,78 +1209,74 @@ int PowerTab::ptSection::getNextPositionNumber()
     return next;
 }
 
-void PowerTab::ptPosition::addComponent(ptComponent* c)
-{
-    components.push_back(std::shared_ptr<ptComponent>(c));
-}
+void PowerTab::ptPosition::addComponent(ptComponent *c) { components.push_back(std::shared_ptr<ptComponent>(c)); }
 
 //---------------------------------------------------------
 //   read
 //---------------------------------------------------------
 
-Err PowerTab::read()
-{
+Err PowerTab::read() {
     try {
-    if (!readVersion()) {
-        return Err::FileBadFormat;
-    }
-    ptSong song;
-
-    readSongInfo(song.info);
-    readDataInstruments(song.track1);
-    staffInc = int(song.track1.infos.size());
-    lastStaffMap.clear();
-    readDataInstruments(song.track1);
-
-    staves = int(song.track1.infos.size());
-
-    std::vector<tBeatList> parts(staves);
-    for (int i = staffInc; i < staves; ++i) {
-        for (auto& sec : song.track1.sections) {
-            while (int(sec.beats.size()) < staves) {
-                sec.beats.push_back({});
-            }
-            parts[i].insert(parts[i].end(), sec.beats[i].begin(), sec.beats[i].end());
-            sec.beats[i].clear();
+        if (!readVersion()) {
+            return Err::FileBadFormat;
         }
-    }
+        ptSong song;
 
-    for (auto& sec : song.track1.sections) {
-        for (int i = 0; i < staves; ++i) {
-            if (parts[i].size()) {
-                sec.beats[i].insert(sec.beats[i].begin(), parts[i].begin(), parts[i].end());
-                parts[i].clear();
+        readSongInfo(song.info);
+        readDataInstruments(song.track1);
+        staffInc = int(song.track1.infos.size());
+        lastStaffMap.clear();
+        readDataInstruments(song.track1);
+
+        staves = int(song.track1.infos.size());
+
+        std::vector<tBeatList> parts(staves);
+        for (int i = staffInc; i < staves; ++i) {
+            for (auto &sec : song.track1.sections) {
+                while (int(sec.beats.size()) < staves) {
+                    sec.beats.push_back({});
+                }
+                parts[i].insert(parts[i].end(), sec.beats[i].begin(), sec.beats[i].end());
+                sec.beats[i].clear();
             }
         }
-        addToScore(sec);
-        for (int i = 0; i < staves; ++i) {
-            parts[i] = sec.beats[i];
-        }
-    }
 
-    MeasureBase* m;
-    if (!score->measures()->first()) {
-        m = Factory::createTitleVBox(score);
-        score->measures()->append(m);
-    } else {
-        m = score->measures()->first();
-        if (!m->isVBox()) {
-            MeasureBase* mb = Factory::createTitleVBox(score);
-            score->addMeasure(mb, m);
-            m = mb;
+        for (auto &sec : song.track1.sections) {
+            for (int i = 0; i < staves; ++i) {
+                if (parts[i].size()) {
+                    sec.beats[i].insert(sec.beats[i].begin(), parts[i].begin(), parts[i].end());
+                    parts[i].clear();
+                }
+            }
+            addToScore(sec);
+            for (int i = 0; i < staves; ++i) {
+                parts[i] = sec.beats[i];
+            }
         }
-    }
-    // create title
-    std::string name = song.info.name;
-    if (!name.empty()) {
-        Text* s = Factory::createText(m, TextStyleType::TITLE);
-        std::string valid;
-        muse::UtfCodec::replaceInvalid(name, valid);
-        s->setPlainText(String::fromStdString(valid));
-        m->add(s);
-    }
-    return Err::NoError;
-    } catch (const std::exception& e) {
+
+        MeasureBase *m;
+        if (!score->measures()->first()) {
+            m = Factory::createTitleVBox(score);
+            score->measures()->append(m);
+        } else {
+            m = score->measures()->first();
+            if (!m->isVBox()) {
+                MeasureBase *mb = Factory::createTitleVBox(score);
+                score->addMeasure(mb, m);
+                m = mb;
+            }
+        }
+        // create title
+        std::string name = song.info.name;
+        if (!name.empty()) {
+            Text *s = Factory::createText(m, TextStyleType::TITLE);
+            std::string valid;
+            muse::UtfCodec::replaceInvalid(name, valid);
+            s->setPlainText(String::fromStdString(valid));
+            m->add(s);
+        }
+        return Err::NoError;
+    } catch (const std::exception &e) {
         LOGE() << "PowerTab import failed: " << e.what();
         return Err::FileBadFormat;
     }

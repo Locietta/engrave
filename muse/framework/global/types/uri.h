@@ -30,30 +30,30 @@
 #include "val.h"
 
 namespace muse {
-class Uri
-{
+class Uri {
 public:
     Uri() = default;
-    explicit Uri(const std::string& str);
-    explicit Uri(const muse::String& str);
-    explicit Uri(const std::string& scheme, const std::string& path);
+    explicit Uri(const std::string &str);
+    explicit Uri(const muse::String &str);
+    explicit Uri(const std::string &scheme, const std::string &path);
 
     using Scheme = std::string;
 
     bool isValid() const;
 
-    const Scheme& scheme() const;
-    void setScheme(const Scheme& scheme);
+    const Scheme &scheme() const;
+    void setScheme(const Scheme &scheme);
 
-    const std::string& path() const;
-    void setPath(const std::string& path);
-    void addPath(const std::string& path);
+    const std::string &path() const;
+    void setPath(const std::string &path);
+    void addPath(const std::string &path);
     std::vector<std::string> pathSegments() const;
 
-    inline bool operator==(const Uri& uri) const { return m_path == uri.m_path && m_scheme == uri.m_scheme; }
-    inline bool operator!=(const Uri& uri) const { return !(*this == uri); }
-    inline bool operator <(const Uri& uri) const
-    {
+    inline bool operator==(const Uri &uri) const { return m_path == uri.m_path && m_scheme == uri.m_scheme; }
+
+    inline bool operator!=(const Uri &uri) const { return !(*this == uri); }
+
+    inline bool operator<(const Uri &uri) const {
         if (m_scheme != uri.m_scheme) {
             return m_scheme < uri.m_scheme;
         }
@@ -63,7 +63,7 @@ public:
     std::string toString() const;
 
     io::path_t toLocalFile() const;
-    static Uri fromLocalFile(const io::path_t& path);
+    static Uri fromLocalFile(const io::path_t &path);
 
 private:
 
@@ -71,78 +71,81 @@ private:
     std::string m_path;
 };
 
-class UriQuery
-{
+class UriQuery {
 public:
 
     using Params = std::map<std::string /*key*/, Val>;
 
     UriQuery() = default;
-    explicit UriQuery(const std::string& str);
-    explicit UriQuery(const String& str);
-    explicit UriQuery(const Uri& uri);
+    explicit UriQuery(const std::string &str);
+    explicit UriQuery(const String &str);
+    explicit UriQuery(const Uri &uri);
 
     bool isValid() const;
-    const Uri& uri() const;
-    void setScheme(const Uri::Scheme& scheme);
+    const Uri &uri() const;
+    void setScheme(const Uri::Scheme &scheme);
 
-    const Params& params() const;
-    Val param(const std::string& key, const Val& def = Val()) const;
+    const Params &params() const;
+    Val param(const std::string &key, const Val &def = Val()) const;
 
-    void setParams(const Params& params);
+    void setParams(const Params &params);
 
-    UriQuery& set(const ValMap& vals);
-    UriQuery& set(const std::string& key, const Val& val);
-    UriQuery& set(const std::string& key, const ValList& vals) { return set(key, Val(vals)); }
-    UriQuery& set(const std::string& key, const std::string& val) { return set(key, Val(val)); }
-    UriQuery& set(const std::string& key, const char* val) { return set(key, Val(val)); }
-    UriQuery& set(const std::string& key, int val) { return set(key, Val(val)); }
-    UriQuery& set(const std::string& key, bool val) { return set(key, Val(val)); }
+    UriQuery &set(const ValMap &vals);
+    UriQuery &set(const std::string &key, const Val &val);
 
-    UriQuery set(const ValMap& vals) const;
-    UriQuery set(const std::string& key, const Val& val) const;
-    UriQuery set(const std::string& key, const ValList& vals) const { return set(key, Val(vals)); }
-    UriQuery set(const std::string& key, const std::string& val) const { return set(key, Val(val)); }
-    UriQuery set(const std::string& key, const char* val) const { return set(key, Val(val)); }
-    UriQuery set(const std::string& key, int val) const { return set(key, Val(val)); }
-    UriQuery set(const std::string& key, bool val) const { return set(key, Val(val)); }
+    UriQuery &set(const std::string &key, const ValList &vals) { return set(key, Val(vals)); }
 
-    void addParam(const std::string& key, const Val& val);
-    UriQuery addingParam(const std::string& key, const Val& val) const;
-    bool contains(const std::string& key) const;
+    UriQuery &set(const std::string &key, const std::string &val) { return set(key, Val(val)); }
+
+    UriQuery &set(const std::string &key, const char *val) { return set(key, Val(val)); }
+
+    UriQuery &set(const std::string &key, int val) { return set(key, Val(val)); }
+
+    UriQuery &set(const std::string &key, bool val) { return set(key, Val(val)); }
+
+    UriQuery set(const ValMap &vals) const;
+    UriQuery set(const std::string &key, const Val &val) const;
+
+    UriQuery set(const std::string &key, const ValList &vals) const { return set(key, Val(vals)); }
+
+    UriQuery set(const std::string &key, const std::string &val) const { return set(key, Val(val)); }
+
+    UriQuery set(const std::string &key, const char *val) const { return set(key, Val(val)); }
+
+    UriQuery set(const std::string &key, int val) const { return set(key, Val(val)); }
+
+    UriQuery set(const std::string &key, bool val) const { return set(key, Val(val)); }
+
+    void addParam(const std::string &key, const Val &val);
+    UriQuery addingParam(const std::string &key, const Val &val) const;
+    bool contains(const std::string &key) const;
 
     std::string toString() const;
 
-    bool operator==(const UriQuery& query) const;
-    bool operator!=(const UriQuery& query) const;
+    bool operator==(const UriQuery &query) const;
+    bool operator!=(const UriQuery &query) const;
 
 private:
 
-    void parseParams(const std::string& str, Params& out) const;
-    void extractQuotedStrings(const std::string& str, std::vector<std::string>& out) const;
+    void parseParams(const std::string &str, Params &out) const;
+    void extractQuotedStrings(const std::string &str, std::vector<std::string> &out) const;
 
     Uri m_uri;
     Params m_params;
 };
-}
+} // namespace muse
 
-inline muse::logger::Stream& operator<<(muse::logger::Stream& s, const muse::Uri& uri)
-{
+inline muse::logger::Stream &operator<<(muse::logger::Stream &s, const muse::Uri &uri) {
     s << uri.toString();
     return s;
 }
 
-inline muse::logger::Stream& operator<<(muse::logger::Stream& s, const muse::UriQuery& q)
-{
+inline muse::logger::Stream &operator<<(muse::logger::Stream &s, const muse::UriQuery &q) {
     s << q.toString();
     return s;
 }
 
-template<>
-struct std::hash<muse::Uri>
-{
-    std::size_t operator()(const muse::Uri& uri) const noexcept
-    {
-        return std::hash<std::string> {}(uri.toString());
-    }
+template <>
+struct std::hash<muse::Uri> {
+    std::size_t operator()(const muse::Uri &uri) const noexcept { return std::hash<std::string>{}(uri.toString()); }
 };

@@ -29,99 +29,92 @@
 #include "../dom/part.h"
 
 namespace mu::engraving {
-class AddExcerpt : public UndoableCommand
-{
+class AddExcerpt : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, AddExcerpt)
 
-    Excerpt* excerpt = nullptr;
+    Excerpt *excerpt = nullptr;
     bool deleteExcerpt = false;
 
 public:
-    AddExcerpt(Excerpt* ex);
+    AddExcerpt(Excerpt *ex);
     ~AddExcerpt() override;
 
     void undo() override;
     void redo() override;
 
-    std::vector<EngravingObject*> objectItems() const override;
+    std::vector<EngravingObject *> objectItems() const override;
 
     UNDO_TYPE(CommandType::AddExcerpt)
     UNDO_NAME("AddExcerpt")
 };
 
-class RemoveExcerpt : public UndoableCommand
-{
+class RemoveExcerpt : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, RemoveExcerpt)
 
-    Excerpt* excerpt = nullptr;
+    Excerpt *excerpt = nullptr;
     size_t index = muse::nidx;
     bool deleteExcerpt = false;
 
 public:
-    RemoveExcerpt(Excerpt* ex);
+    RemoveExcerpt(Excerpt *ex);
     ~RemoveExcerpt() override;
 
     void undo() override;
     void redo() override;
 
-    std::vector<EngravingObject*> objectItems() const override;
+    std::vector<EngravingObject *> objectItems() const override;
 
     UNDO_TYPE(CommandType::RemoveExcerpt)
     UNDO_NAME("RemoveExcerpt")
 };
 
-class SwapExcerpt : public UndoableCommand
-{
+class SwapExcerpt : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, SwapExcerpt)
 
-    MasterScore* score = nullptr;
+    MasterScore *score = nullptr;
     int pos1 = 0;
     int pos2 = 0;
 
     void flip() override;
 
 public:
-    SwapExcerpt(MasterScore* s, int p1, int p2)
-        : score(s), pos1(p1), pos2(p2) {}
+    SwapExcerpt(MasterScore *s, int p1, int p2) : score(s), pos1(p1), pos2(p2) {}
 
     UNDO_TYPE(CommandType::SwapExcerpt)
     UNDO_NAME("SwapExcerpt")
-    UNDO_CHANGED_OBJECTS({ score })
+    UNDO_CHANGED_OBJECTS({score})
 };
 
-class ChangeExcerptTitle : public UndoableCommand
-{
+class ChangeExcerptTitle : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeExcerptTitle)
 
-    Excerpt* excerpt = nullptr;
+    Excerpt *excerpt = nullptr;
     String title;
 
     void flip() override;
 
 public:
-    ChangeExcerptTitle(Excerpt* x, const String& t)
-        : excerpt(x), title(t) {}
+    ChangeExcerptTitle(Excerpt *x, const String &t) : excerpt(x), title(t) {}
 
     UNDO_TYPE(CommandType::ChangeExcerptTitle)
     UNDO_NAME("ChangeExcerptTitle")
 };
 
-class AddPartToExcerpt : public UndoableCommand
-{
+class AddPartToExcerpt : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, AddPartToExcerpt)
 
-    Excerpt* m_excerpt = nullptr;
-    Part* m_part = nullptr;
+    Excerpt *m_excerpt = nullptr;
+    Part *m_part = nullptr;
     size_t m_targetPartIdx = 0;
 
 public:
-    AddPartToExcerpt(Excerpt* e, Part* p, size_t targetPartIdx);
+    AddPartToExcerpt(Excerpt *e, Part *p, size_t targetPartIdx);
     void undo() override;
     void redo() override;
     void cleanup(bool wasDone) override;
 
     UNDO_TYPE(CommandType::AddPartToExcerpt)
     UNDO_NAME("AddPartToExcerpt")
-    UNDO_CHANGED_OBJECTS({ m_part })
+    UNDO_CHANGED_OBJECTS({m_part})
 };
-}
+} // namespace mu::engraving

@@ -27,9 +27,9 @@
 
 namespace muse::io {
 enum class Err {
-    Undefined       = int(Ret::Code::Undefined),
-    NoError         = int(Ret::Code::Ok),
-    UnknownError    = int(Ret::Code::SystemFirst),
+    Undefined = int(Ret::Code::Undefined),
+    NoError = int(Ret::Code::Ok),
+    UnknownError = int(Ret::Code::SystemFirst),
 
     FSNotExist,
     FSAlreadyExists,
@@ -43,28 +43,27 @@ enum class Err {
     FSMoveErrors
 };
 
-inline Ret make_ret(Err e)
-{
+inline Ret make_ret(Err e) {
     int retCode = static_cast<int>(e);
 
     switch (e) {
-    case Err::Undefined: return Ret(retCode);
-    case Err::NoError: return Ret(retCode);
-    case Err::UnknownError: return Ret(retCode);
-    case Err::FSNotExist: return Ret(retCode, muse::trc("system", "The file does not exist"));
-    case Err::FSAlreadyExists: return Ret(retCode, muse::trc("system", "The file already exists"));
-    case Err::FSRemoveError: return Ret(retCode, muse::trc("system", "The file could not be removed"));
-    case Err::FSDirNotEmptyError: return Ret(retCode, muse::trc("system", "The directory is not empty"));
-    case Err::FSClearError: return Ret(retCode, muse::trc("system", "The directory could not be cleared"));
-    case Err::FSReadError: return Ret(retCode, muse::trc("system", "An error occurred when reading from the file"));
-    case Err::FSWriteError: return Ret(retCode, muse::trc("system", "An error occurred when writing to the file"));
-    case Err::FSMakingError: return Ret(retCode, muse::trc("system", "An error occurred when making a path"));
-    case Err::FSCopyError: return Ret(retCode, muse::trc("system", "An error occurred when copying the file"));
-    case Err::FSMoveErrors: return Ret(retCode, muse::trc("system", "An error occurred when moving the file"));
+        case Err::Undefined: return Ret(retCode);
+        case Err::NoError: return Ret(retCode);
+        case Err::UnknownError: return Ret(retCode);
+        case Err::FSNotExist: return Ret(retCode, muse::trc("system", "The file does not exist"));
+        case Err::FSAlreadyExists: return Ret(retCode, muse::trc("system", "The file already exists"));
+        case Err::FSRemoveError: return Ret(retCode, muse::trc("system", "The file could not be removed"));
+        case Err::FSDirNotEmptyError: return Ret(retCode, muse::trc("system", "The directory is not empty"));
+        case Err::FSClearError: return Ret(retCode, muse::trc("system", "The directory could not be cleared"));
+        case Err::FSReadError: return Ret(retCode, muse::trc("system", "An error occurred when reading from the file"));
+        case Err::FSWriteError: return Ret(retCode, muse::trc("system", "An error occurred when writing to the file"));
+        case Err::FSMakingError: return Ret(retCode, muse::trc("system", "An error occurred when making a path"));
+        case Err::FSCopyError: return Ret(retCode, muse::trc("system", "An error occurred when copying the file"));
+        case Err::FSMoveErrors: return Ret(retCode, muse::trc("system", "An error occurred when moving the file"));
     }
 
     return Ret(static_cast<int>(e));
 }
-}
+} // namespace muse::io
 
 #endif // MUSE_IO_IORETCODES_H

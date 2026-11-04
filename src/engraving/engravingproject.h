@@ -43,24 +43,23 @@
 
 namespace mu::engraving::rw {
 struct ReadInOutData;
-}
+} // namespace mu::engraving::rw
 
 namespace mu::engraving::write {
 class WriteContext;
-}
+} // namespace mu::engraving::write
 
 namespace mu::engraving {
 class MasterScore;
 class MStyle;
 
-class EngravingProject : public std::enable_shared_from_this<EngravingProject>
-{
+class EngravingProject : public std::enable_shared_from_this<EngravingProject> {
 public:
     ~EngravingProject();
 
     // services must outlive the project.
-    static std::shared_ptr<EngravingProject> create(const EngravingServices& services);
-    static std::shared_ptr<EngravingProject> create(const MStyle& style, const EngravingServices& services);
+    static std::shared_ptr<EngravingProject> create(const EngravingServices &services);
+    static std::shared_ptr<EngravingProject> create(const MStyle &style, const EngravingServices &services);
 
     IFileInfoProviderPtr fileInfoProvider() const;
     void setFileInfoProvider(IFileInfoProviderPtr fileInfoProvider);
@@ -70,12 +69,12 @@ public:
 
     bool readOnly() const;
 
-    MasterScore* masterScore() const;
-    void setMasterScore(MasterScore* score);
+    MasterScore *masterScore() const;
+    void setMasterScore(MasterScore *score);
     muse::Ret setupMasterScore(bool forceMode);
 
-    muse::Ret loadMscz(const MscReader& msc, rw::ReadInOutData* data, bool ignoreVersionError);
-    bool writeMscz(MscWriter& writer, const write::WriteContext* ctx = nullptr);
+    muse::Ret loadMscz(const MscReader &msc, rw::ReadInOutData *data, bool ignoreVersionError);
+    bool writeMscz(MscWriter &writer, const write::WriteContext *ctx = nullptr);
 
     bool isCorruptedUponLoading() const;
     muse::Ret checkCorrupted() const;
@@ -83,15 +82,15 @@ public:
 private:
     friend class MasterScore;
 
-    explicit EngravingProject(const EngravingServices& services);
+    explicit EngravingProject(const EngravingServices &services);
 
-    void init(const MStyle& style);
+    void init(const MStyle &style);
 
-    const EngravingServices& m_services;
-    MasterScore* m_masterScore = nullptr;
+    const EngravingServices &m_services;
+    MasterScore *m_masterScore = nullptr;
 
     bool m_isCorruptedUponLoading = false;
 };
 
 using EngravingProjectPtr = std::shared_ptr<EngravingProject>;
-}
+} // namespace mu::engraving

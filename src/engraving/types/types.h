@@ -93,10 +93,10 @@ enum class ElementType : unsigned char {
     CHORD_BRACKET,
     ACCIDENTAL,
     LEDGER_LINE,
-    STEM,   // list STEM before NOTE: notes in TAB might 'break' stems
-    HOOK,   // and this requires stems to be drawn before notes
-    NOTE,   // elements from CLEF to TIMESIG need to be in the order
-    CLEF,   // in which they appear in a measure
+    STEM, // list STEM before NOTE: notes in TAB might 'break' stems
+    HOOK, // and this requires stems to be drawn before notes
+    NOTE, // elements from CLEF to TIMESIG need to be in the order
+    CLEF, // in which they appear in a measure
     KEYSIG,
     AMBITUS,
     TIMESIG,
@@ -229,105 +229,102 @@ constexpr size_t TOT_ELEMENT_TYPES = static_cast<size_t>(ElementType::MAXTYPE);
 
 // Items must be added here to enable autoplace
 // Add new types to the appropriate group below as needed
-constexpr bool autoplaceAppliesToType(ElementType type)
-{
+constexpr bool autoplaceAppliesToType(ElementType type) {
     switch (type) {
-    // Ties, slurs and lines with their segments
-    case ElementType::SLUR:
-    case ElementType::SLUR_SEGMENT:
-    case ElementType::TIE:
-    case ElementType::TIE_SEGMENT:
-    case ElementType::LAISSEZ_VIB:
-    case ElementType::LAISSEZ_VIB_SEGMENT:
-    case ElementType::PARTIAL_TIE:
-    case ElementType::PARTIAL_TIE_SEGMENT:
-    case ElementType::VOLTA:
-    case ElementType::VOLTA_SEGMENT:
-    case ElementType::HAIRPIN:
-    case ElementType::HAIRPIN_SEGMENT:
-    case ElementType::OTTAVA:
-    case ElementType::OTTAVA_SEGMENT:
-    case ElementType::TRILL:
-    case ElementType::TRILL_SEGMENT:
-    case ElementType::LET_RING:
-    case ElementType::LET_RING_SEGMENT:
-    case ElementType::GRADUAL_TEMPO_CHANGE:
-    case ElementType::GRADUAL_TEMPO_CHANGE_SEGMENT:
-    case ElementType::VIBRATO:
-    case ElementType::VIBRATO_SEGMENT:
-    case ElementType::PALM_MUTE:
-    case ElementType::PALM_MUTE_SEGMENT:
-    case ElementType::WHAMMY_BAR:
-    case ElementType::WHAMMY_BAR_SEGMENT:
-    case ElementType::RASGUEADO:
-    case ElementType::RASGUEADO_SEGMENT:
-    case ElementType::HARMONIC_MARK:
-    case ElementType::HARMONIC_MARK_SEGMENT:
-    case ElementType::PICK_SCRAPE:
-    case ElementType::PICK_SCRAPE_SEGMENT:
-    case ElementType::TEXTLINE:
-    case ElementType::TEXTLINE_SEGMENT:
-    case ElementType::PEDAL:
-    case ElementType::PEDAL_SEGMENT:
-    case ElementType::LYRICSLINE:
-    case ElementType::LYRICSLINE_SEGMENT:
-    case ElementType::PARTIAL_LYRICSLINE:
-    case ElementType::PARTIAL_LYRICSLINE_SEGMENT:
-    case ElementType::GLISSANDO:
-    case ElementType::GLISSANDO_SEGMENT:
-    case ElementType::NOTELINE:
-    case ElementType::NOTELINE_SEGMENT:
-    case ElementType::GUITAR_BEND:
-    case ElementType::GUITAR_BEND_SEGMENT:
-    case ElementType::GUITAR_BEND_HOLD:
-    case ElementType::GUITAR_BEND_HOLD_SEGMENT:
-    case ElementType::HAMMER_ON_PULL_OFF:
-    case ElementType::HAMMER_ON_PULL_OFF_SEGMENT:
-    case ElementType::TAPPING:
-    case ElementType::TAPPING_HALF_SLUR:
-    case ElementType::TAPPING_HALF_SLUR_SEGMENT:
+        // Ties, slurs and lines with their segments
+        case ElementType::SLUR:
+        case ElementType::SLUR_SEGMENT:
+        case ElementType::TIE:
+        case ElementType::TIE_SEGMENT:
+        case ElementType::LAISSEZ_VIB:
+        case ElementType::LAISSEZ_VIB_SEGMENT:
+        case ElementType::PARTIAL_TIE:
+        case ElementType::PARTIAL_TIE_SEGMENT:
+        case ElementType::VOLTA:
+        case ElementType::VOLTA_SEGMENT:
+        case ElementType::HAIRPIN:
+        case ElementType::HAIRPIN_SEGMENT:
+        case ElementType::OTTAVA:
+        case ElementType::OTTAVA_SEGMENT:
+        case ElementType::TRILL:
+        case ElementType::TRILL_SEGMENT:
+        case ElementType::LET_RING:
+        case ElementType::LET_RING_SEGMENT:
+        case ElementType::GRADUAL_TEMPO_CHANGE:
+        case ElementType::GRADUAL_TEMPO_CHANGE_SEGMENT:
+        case ElementType::VIBRATO:
+        case ElementType::VIBRATO_SEGMENT:
+        case ElementType::PALM_MUTE:
+        case ElementType::PALM_MUTE_SEGMENT:
+        case ElementType::WHAMMY_BAR:
+        case ElementType::WHAMMY_BAR_SEGMENT:
+        case ElementType::RASGUEADO:
+        case ElementType::RASGUEADO_SEGMENT:
+        case ElementType::HARMONIC_MARK:
+        case ElementType::HARMONIC_MARK_SEGMENT:
+        case ElementType::PICK_SCRAPE:
+        case ElementType::PICK_SCRAPE_SEGMENT:
+        case ElementType::TEXTLINE:
+        case ElementType::TEXTLINE_SEGMENT:
+        case ElementType::PEDAL:
+        case ElementType::PEDAL_SEGMENT:
+        case ElementType::LYRICSLINE:
+        case ElementType::LYRICSLINE_SEGMENT:
+        case ElementType::PARTIAL_LYRICSLINE:
+        case ElementType::PARTIAL_LYRICSLINE_SEGMENT:
+        case ElementType::GLISSANDO:
+        case ElementType::GLISSANDO_SEGMENT:
+        case ElementType::NOTELINE:
+        case ElementType::NOTELINE_SEGMENT:
+        case ElementType::GUITAR_BEND:
+        case ElementType::GUITAR_BEND_SEGMENT:
+        case ElementType::GUITAR_BEND_HOLD:
+        case ElementType::GUITAR_BEND_HOLD_SEGMENT:
+        case ElementType::HAMMER_ON_PULL_OFF:
+        case ElementType::HAMMER_ON_PULL_OFF_SEGMENT:
+        case ElementType::TAPPING:
+        case ElementType::TAPPING_HALF_SLUR:
+        case ElementType::TAPPING_HALF_SLUR_SEGMENT:
 
-    // Measure/system attachments
-    case ElementType::MEASURE_NUMBER:
-    case ElementType::MMREST_RANGE:
+        // Measure/system attachments
+        case ElementType::MEASURE_NUMBER:
+        case ElementType::MMREST_RANGE:
 
-    // Note/measure-attached texts and symbols
-    case ElementType::TIMESIG:
-    case ElementType::REST:
-    case ElementType::MMREST:
-    case ElementType::ARTICULATION:
-    case ElementType::ORNAMENT:
-    case ElementType::FERMATA:
-    case ElementType::DYNAMIC:
-    case ElementType::EXPRESSION:
-    case ElementType::LYRICS:
-    case ElementType::FIGURED_BASS:
-    case ElementType::MARKER:
-    case ElementType::JUMP:
-    case ElementType::FINGERING:
-    case ElementType::TUPLET:
-    case ElementType::TEMPO_TEXT:
-    case ElementType::STAFF_TEXT:
-    case ElementType::SYSTEM_TEXT:
-    case ElementType::STAVE_SHARING_LABEL:
-    case ElementType::PLAY_COUNT_TEXT:
-    case ElementType::PLAYTECH_ANNOTATION:
-    case ElementType::CAPO:
-    case ElementType::STRING_TUNINGS:
-    case ElementType::TRIPLET_FEEL:
-    case ElementType::REHEARSAL_MARK:
-    case ElementType::INSTRUMENT_CHANGE:
-    case ElementType::FRET_DIAGRAM:
-    case ElementType::HARMONY:
-    case ElementType::HARP_DIAGRAM:
-    case ElementType::STICKING:
-        return true;
-    default:
-        return false;
+        // Note/measure-attached texts and symbols
+        case ElementType::TIMESIG:
+        case ElementType::REST:
+        case ElementType::MMREST:
+        case ElementType::ARTICULATION:
+        case ElementType::ORNAMENT:
+        case ElementType::FERMATA:
+        case ElementType::DYNAMIC:
+        case ElementType::EXPRESSION:
+        case ElementType::LYRICS:
+        case ElementType::FIGURED_BASS:
+        case ElementType::MARKER:
+        case ElementType::JUMP:
+        case ElementType::FINGERING:
+        case ElementType::TUPLET:
+        case ElementType::TEMPO_TEXT:
+        case ElementType::STAFF_TEXT:
+        case ElementType::SYSTEM_TEXT:
+        case ElementType::STAVE_SHARING_LABEL:
+        case ElementType::PLAY_COUNT_TEXT:
+        case ElementType::PLAYTECH_ANNOTATION:
+        case ElementType::CAPO:
+        case ElementType::STRING_TUNINGS:
+        case ElementType::TRIPLET_FEEL:
+        case ElementType::REHEARSAL_MARK:
+        case ElementType::INSTRUMENT_CHANGE:
+        case ElementType::FRET_DIAGRAM:
+        case ElementType::HARMONY:
+        case ElementType::HARP_DIAGRAM:
+        case ElementType::STICKING: return true;
+        default: return false;
     }
 }
 
-const static std::unordered_set<ElementType> TEXTBASE_TYPES {
+const static std::unordered_set<ElementType> TEXTBASE_TYPES{
     ElementType::TEXT,
     ElementType::LYRICS,
     ElementType::DYNAMIC,
@@ -373,43 +370,29 @@ using ID = muse::ID;
 
 // --- Geometry ---
 using Point = muse::Point;
-using PointF = muse::PointF;              // P_TYPE::POINT
+using PointF = muse::PointF; // P_TYPE::POINT
 using RectF = muse::RectF;
 using LineF = muse::LineF;
-using SizeF = muse::SizeF;                // P_TYPE::SIZE
+using SizeF = muse::SizeF;                   // P_TYPE::SIZE
 using PainterPath = muse::draw::PainterPath; // P_TYPE::PATH
-using ScaleF = muse::ScaleF;              // P_TYPE::SCALE
-using PairF = muse::PairF;                // P_TYPE::PAIR_REAL
+using ScaleF = muse::ScaleF;                 // P_TYPE::SCALE
+using PairF = muse::PairF;                   // P_TYPE::PAIR_REAL
 using PolygonF = muse::PolygonF;
 
 // --- Draw ---
-using Color = muse::draw::Color;        // P_TYPE::COLOR
+using Color = muse::draw::Color; // P_TYPE::COLOR
 
-enum class OrnamentStyle : unsigned char {
-    DEFAULT, BAROQUE
-};
+enum class OrnamentStyle : unsigned char { DEFAULT, BAROQUE };
 
 // P_TYPE::GLISS_STYLE
-enum class GlissandoStyle : unsigned char {
-    CHROMATIC, WHITE_KEYS, BLACK_KEYS, DIATONIC, PORTAMENTO
-};
+enum class GlissandoStyle : unsigned char { CHROMATIC, WHITE_KEYS, BLACK_KEYS, DIATONIC, PORTAMENTO };
 
 // --- Layout ---
 
 // P_TYPE::ALIGN
-enum class AlignV : unsigned char {
-    TOP,
-    VCENTER,
-    BOTTOM,
-    BASELINE
-};
+enum class AlignV : unsigned char { TOP, VCENTER, BOTTOM, BASELINE };
 
-enum class AlignH : unsigned char {
-    LEFT,
-    RIGHT,
-    HCENTER,
-    JUSTIFY
-};
+enum class AlignH : unsigned char { LEFT, RIGHT, HCENTER, JUSTIFY };
 
 enum class InstrumentNamesAlign : unsigned char {
     // Represents possible INSTRUMENT_STAFF alignment combinations
@@ -431,57 +414,53 @@ struct Align {
     AlignV vertical = AlignV::TOP;
 
     Align() = default;
-    Align(AlignH ah, AlignV av)
-        : horizontal(ah), vertical(av) {}
 
-    Align(AlignH a)
-        : horizontal(a) {}
-    Align(AlignV a)
-        : vertical(a) {}
+    Align(AlignH ah, AlignV av) : horizontal(ah), vertical(av) {}
 
-    inline Align& operator =(AlignH a) { horizontal = a; return *this; }
-    inline Align& operator =(AlignV a) { vertical = a; return *this; }
+    Align(AlignH a) : horizontal(a) {}
 
-    inline bool operator ==(const Align& a) const { return a.vertical == vertical && a.horizontal == horizontal; }
-    inline bool operator !=(const Align& a) const { return !operator ==(a); }
+    Align(AlignV a) : vertical(a) {}
 
-    inline bool operator ==(const AlignV& a) const { return a == vertical; }
-    inline bool operator !=(const AlignV& a) const { return !operator ==(a); }
+    inline Align &operator=(AlignH a) {
+        horizontal = a;
+        return *this;
+    }
 
-    inline bool operator ==(const AlignH& a) const { return a == horizontal; }
-    inline bool operator !=(const AlignH& a) const { return !operator ==(a); }
+    inline Align &operator=(AlignV a) {
+        vertical = a;
+        return *this;
+    }
+
+    inline bool operator==(const Align &a) const { return a.vertical == vertical && a.horizontal == horizontal; }
+
+    inline bool operator!=(const Align &a) const { return !operator==(a); }
+
+    inline bool operator==(const AlignV &a) const { return a == vertical; }
+
+    inline bool operator!=(const AlignV &a) const { return !operator==(a); }
+
+    inline bool operator==(const AlignH &a) const { return a == horizontal; }
+
+    inline bool operator!=(const AlignH &a) const { return !operator==(a); }
 };
 
 // P_TYPE::PLACEMENT_V
-enum class PlacementV : unsigned char {
-    ABOVE, BELOW
-};
+enum class PlacementV : unsigned char { ABOVE, BELOW };
 
 // P_TYPE::PLACEMENT_H
-enum class PlacementH : unsigned char {
-    LEFT, CENTER, RIGHT
-};
+enum class PlacementH : unsigned char { LEFT, CENTER, RIGHT };
 
 // P_TYPE::TEXT_PLACE
-enum class TextPlace : unsigned char {
-    AUTO, ABOVE, BELOW, LEFT
-};
+enum class TextPlace : unsigned char { AUTO, ABOVE, BELOW, LEFT };
 
 // P_TYPE::DIRECTION
-enum class DirectionV : unsigned char {
-    AUTO, UP, DOWN
-};
+enum class DirectionV : unsigned char { AUTO, UP, DOWN };
 
 // P_TYPE::DIRECTION_H
-enum class DirectionH : unsigned char {
-    AUTO, LEFT, RIGHT
-};
+enum class DirectionH : unsigned char { AUTO, LEFT, RIGHT };
 
 // P_TYPE::ORIENTATION
-enum class Orientation : signed char {
-    VERTICAL,
-    HORIZONTAL
-};
+enum class Orientation : signed char { VERTICAL, HORIZONTAL };
 
 enum class SharedLabelOrientation : signed char {
     HORIZONTAL,
@@ -489,24 +468,12 @@ enum class SharedLabelOrientation : signed char {
     VOICE,
 };
 
-enum class AutoOnOff : unsigned char {
-    AUTO,
-    ON,
-    OFF
-};
+enum class AutoOnOff : unsigned char { AUTO, ON, OFF };
 
-enum class AutoCustomHide : unsigned char {
-    AUTO,
-    CUSTOM,
-    HIDE
-};
+enum class AutoCustomHide : unsigned char { AUTO, CUSTOM, HIDE };
 
 //! Note: from lowest to highest priority
-enum class VoiceAssignment : unsigned char {
-    ALL_VOICE_IN_INSTRUMENT,
-    ALL_VOICE_IN_STAFF,
-    CURRENT_VOICE_ONLY
-};
+enum class VoiceAssignment : unsigned char { ALL_VOICE_IN_INSTRUMENT, ALL_VOICE_IN_STAFF, CURRENT_VOICE_ONLY };
 
 // P_TYPE::BEAM_MODE
 //! Note: for historical reasons, these have strange names
@@ -527,83 +494,75 @@ enum class BeamMode : signed char {
 };
 
 enum class DurationType : signed char {
-    V_LONG, V_BREVE, V_WHOLE, V_HALF, V_QUARTER, V_EIGHTH, V_16TH,
-    V_32ND, V_64TH, V_128TH, V_256TH, V_512TH, V_1024TH,
-    V_ZERO, V_MEASURE,  V_INVALID
+    V_LONG,
+    V_BREVE,
+    V_WHOLE,
+    V_HALF,
+    V_QUARTER,
+    V_EIGHTH,
+    V_16TH,
+    V_32ND,
+    V_64TH,
+    V_128TH,
+    V_256TH,
+    V_512TH,
+    V_1024TH,
+    V_ZERO,
+    V_MEASURE,
+    V_INVALID
 };
 
 // P_TYPE::DURATION_TYPE_WITH_DOTS
-struct DurationTypeWithDots
-{
+struct DurationTypeWithDots {
     DurationType type = DurationType::V_INVALID;
     int dots = 0;
     DurationTypeWithDots() = default;
-    DurationTypeWithDots(DurationType t, int d = 0)
-        : type(t), dots(d) {}
 
-    inline bool operator ==(const DurationTypeWithDots& other) const { return other.type == type && other.dots == dots; }
+    DurationTypeWithDots(DurationType t, int d = 0) : type(t), dots(d) {}
+
+    inline bool operator==(const DurationTypeWithDots &other) const { return other.type == type && other.dots == dots; }
 };
 
 // --- Types ---
 
 // P_TYPE::LAYOUTBREAK_TYPE
-enum class LayoutBreakType : unsigned char {
-    PAGE, LINE, SECTION, NOBREAK
-};
+enum class LayoutBreakType : unsigned char { PAGE, LINE, SECTION, NOBREAK };
 
 // P_TYPE::VELO_TYPE
-enum class VeloType : unsigned char {
-    OFFSET_VAL, USER_VAL
-};
+enum class VeloType : unsigned char { OFFSET_VAL, USER_VAL };
 
 // P_TYPE::BARLINE_TYPE
 enum class BarLineType {
-    NORMAL           = 1,
-    SINGLE           = BarLineType::NORMAL,
-    DOUBLE           = 2,
-    START_REPEAT     = 4,
-    LEFT_REPEAT      = BarLineType::START_REPEAT,
-    END_REPEAT       = 8,
-    RIGHT_REPEAT     = BarLineType::END_REPEAT,
-    BROKEN           = 0x10,
-    DASHED           = BarLineType::BROKEN,
-    END              = 0x20,
-    FINAL            = BarLineType::END,
+    NORMAL = 1,
+    SINGLE = BarLineType::NORMAL,
+    DOUBLE = 2,
+    START_REPEAT = 4,
+    LEFT_REPEAT = BarLineType::START_REPEAT,
+    END_REPEAT = 8,
+    RIGHT_REPEAT = BarLineType::END_REPEAT,
+    BROKEN = 0x10,
+    DASHED = BarLineType::BROKEN,
+    END = 0x20,
+    FINAL = BarLineType::END,
     END_START_REPEAT = 0x40,
-    LEFT_RIGHT_REPEAT= BarLineType::END_START_REPEAT,
-    DOTTED           = 0x80,
-    REVERSE_END      = 0x100,
-    REVERSE_FINALE   = BarLineType::REVERSE_END,
-    HEAVY            = 0x200,
-    DOUBLE_HEAVY     = 0x400,
+    LEFT_RIGHT_REPEAT = BarLineType::END_START_REPEAT,
+    DOTTED = 0x80,
+    REVERSE_END = 0x100,
+    REVERSE_FINALE = BarLineType::REVERSE_END,
+    HEAVY = 0x200,
+    DOUBLE_HEAVY = 0x400,
 };
 
-constexpr BarLineType operator|(BarLineType t1, BarLineType t2)
-{
+constexpr BarLineType operator|(BarLineType t1, BarLineType t2) {
     return static_cast<BarLineType>(static_cast<int>(t1) | static_cast<int>(t2));
 }
 
-constexpr bool operator&(BarLineType t1, BarLineType t2)
-{
-    return static_cast<int>(t1) & static_cast<int>(t2);
-}
+constexpr bool operator&(BarLineType t1, BarLineType t2) { return static_cast<int>(t1) & static_cast<int>(t2); }
 
-enum class MeasureNumberPlacement {
-    ABOVE_SYSTEM,
-    BELOW_SYSTEM,
-    ON_SYSTEM_OBJECT_STAVES,
-    ON_ALL_STAVES
-};
+enum class MeasureNumberPlacement { ABOVE_SYSTEM, BELOW_SYSTEM, ON_SYSTEM_OBJECT_STAVES, ON_ALL_STAVES };
 
 // P_TYPE::NOTEHEAD_TYPE
-enum class NoteHeadType : signed char {
-    HEAD_AUTO    = -1,
-    HEAD_WHOLE   = 0,
-    HEAD_HALF    = 1,
-    HEAD_QUARTER = 2,
-    HEAD_BREVIS  = 3,
-    HEAD_TYPES
-};
+enum class NoteHeadType : signed char { HEAD_AUTO = -1, HEAD_WHOLE = 0, HEAD_HALF = 1, HEAD_QUARTER = 2, HEAD_BREVIS = 3, HEAD_TYPES };
 
 // P_TYPE::NOTEHEAD_SCHEME
 enum class NoteHeadScheme : signed char {
@@ -758,11 +717,7 @@ enum class ClefType : signed char {
     MAX
 };
 
-enum class ClefToBarlinePosition : unsigned char {
-    AUTO,
-    BEFORE,
-    AFTER
-};
+enum class ClefToBarlinePosition : unsigned char { AUTO, BEFORE, AFTER };
 
 // P_TYPE::DYNAMIC_TYPE
 enum class DynamicType : unsigned char {
@@ -803,94 +758,45 @@ enum class DynamicType : unsigned char {
 };
 
 // P_TYPE::DYNAMIC_SPEED
-enum class DynamicSpeed : unsigned char {
-    SLOW, NORMAL, FAST
-};
+enum class DynamicSpeed : unsigned char { SLOW, NORMAL, FAST };
 
 // P_TYPE::LINE_TYPE
-enum class LineType : unsigned char {
-    SOLID, DASHED, DOTTED
-};
+enum class LineType : unsigned char { SOLID, DASHED, DOTTED };
 
 // P_TYPE::HOOK_TYPE
-enum class HookType : unsigned char {
-    NONE, HOOK_90, HOOK_45, HOOK_90T, ARROW, ARROW_FILLED, ROSETTE
-};
+enum class HookType : unsigned char { NONE, HOOK_90, HOOK_45, HOOK_90T, ARROW, ARROW_FILLED, ROSETTE };
 
 // P_TYPE::KEY_MODE
-enum class KeyMode : signed char {
-    UNKNOWN = -1,
-    NONE,
-    MAJOR,
-    MINOR,
-    DORIAN,
-    PHRYGIAN,
-    LYDIAN,
-    MIXOLYDIAN,
-    AEOLIAN,
-    IONIAN,
-    LOCRIAN
-};
+enum class KeyMode : signed char { UNKNOWN = -1, NONE, MAJOR, MINOR, DORIAN, PHRYGIAN, LYDIAN, MIXOLYDIAN, AEOLIAN, IONIAN, LOCRIAN };
 
 // P_TYPE::INT
-enum class ArpeggioType : unsigned char {
-    NORMAL, UP, DOWN, BRACKET, UP_STRAIGHT, DOWN_STRAIGHT
-};
+enum class ArpeggioType : unsigned char { NORMAL, UP, DOWN, BRACKET, UP_STRAIGHT, DOWN_STRAIGHT };
 
-enum class IntervalStep : unsigned char {
-    UNISON,
-    SECOND,
-    THIRD,
-    FOURTH,
-    FIFTH,
-    SIXTH,
-    SEVENTH,
-    OCTAVE
-};
+enum class IntervalStep : unsigned char { UNISON, SECOND, THIRD, FOURTH, FIFTH, SIXTH, SEVENTH, OCTAVE };
 
-enum class IntervalType : unsigned char {
-    AUTO,
-    AUGMENTED,
-    MAJOR,
-    PERFECT,
-    MINOR,
-    DIMINISHED
-};
+enum class IntervalType : unsigned char { AUTO, AUGMENTED, MAJOR, PERFECT, MINOR, DIMINISHED };
 
-enum class InstrumentLabelVisibility : unsigned char {
-    LONG,
-    SHORT,
-    HIDE,
-    AUTO
-};
+enum class InstrumentLabelVisibility : unsigned char { LONG, SHORT, HIDE, AUTO };
 
-struct OrnamentInterval
-{
+struct OrnamentInterval {
     IntervalStep step = IntervalStep::SECOND;
     IntervalType type = IntervalType::AUTO;
 
     OrnamentInterval() = default;
-    OrnamentInterval(IntervalStep s, IntervalType t)
-        : step(s), type(t) {}
 
-    inline bool operator ==(const OrnamentInterval& interval) const { return step == interval.step && type == interval.type; }
-    inline bool operator !=(const OrnamentInterval& interval) const { return !operator ==(interval); }
+    OrnamentInterval(IntervalStep s, IntervalType t) : step(s), type(t) {}
 
-    static bool isPerfectStep(IntervalStep step)
-    {
-        static const std::unordered_set<IntervalStep> perfectSteps {
-            IntervalStep::UNISON,
-            IntervalStep::FOURTH,
-            IntervalStep::FIFTH,
-            IntervalStep::OCTAVE
-        };
+    inline bool operator==(const OrnamentInterval &interval) const { return step == interval.step && type == interval.type; }
+
+    inline bool operator!=(const OrnamentInterval &interval) const { return !operator==(interval); }
+
+    static bool isPerfectStep(IntervalStep step) {
+        static const std::unordered_set<IntervalStep> perfectSteps{IntervalStep::UNISON, IntervalStep::FOURTH, IntervalStep::FIFTH,
+                                                                   IntervalStep::OCTAVE};
         return muse::contains(perfectSteps, step);
     }
 
-    bool isPerfect() const
-    {
-        return isPerfectStep(step);
-    }
+    bool isPerfect() const { return isPerfectStep(step); }
 };
 
 static const OrnamentInterval DEFAULT_ORNAMENT_INTERVAL = OrnamentInterval(IntervalStep::SECOND, IntervalType::AUTO);
@@ -901,25 +807,11 @@ enum class OrnamentShowAccidental : unsigned char {
     ALWAYS,
 };
 
-enum class PartialSpannerDirection : signed char {
-    NONE = -1,
-    INCOMING,
-    OUTGOING,
-    BOTH
-};
+enum class PartialSpannerDirection : signed char { NONE = -1, INCOMING, OUTGOING, BOTH };
 
-enum ChordStylePreset : unsigned char {
-    STANDARD,
-    JAZZ,
-    LEGACY,
-    CUSTOM
-};
+enum ChordStylePreset : unsigned char { STANDARD, JAZZ, LEGACY, CUSTOM };
 
-enum class DisplayCapoChordType : unsigned char {
-    CONCERT,
-    BOTH,
-    TRANSPOSED
-};
+enum class DisplayCapoChordType : unsigned char { CONCERT, BOTH, TRANSPOSED };
 
 // P_TYPE::PARENTHESES_MODE
 enum class ParenthesesMode : unsigned char {
@@ -928,36 +820,24 @@ enum class ParenthesesMode : unsigned char {
     RIGHT = 0x2,
     BOTH = 0x3,
 };
-constexpr bool operator&(const ParenthesesMode& t1, const ParenthesesMode& t2)
-{
-    return static_cast<int>(t1) & static_cast<int>(t2);
-}
 
-constexpr bool operator|(const ParenthesesMode& t1, const ParenthesesMode& t2)
-{
-    return static_cast<int>(t1) | static_cast<int>(t2);
-}
+constexpr bool operator&(const ParenthesesMode &t1, const ParenthesesMode &t2) { return static_cast<int>(t1) & static_cast<int>(t2); }
 
-constexpr void operator|=(ParenthesesMode& t1, const ParenthesesMode& t2)
-{
+constexpr bool operator|(const ParenthesesMode &t1, const ParenthesesMode &t2) { return static_cast<int>(t1) | static_cast<int>(t2); }
+
+constexpr void operator|=(ParenthesesMode &t1, const ParenthesesMode &t2) {
     int t1i = static_cast<int>(t1);
     t1i |= static_cast<int>(t2);
     t1 = ParenthesesMode(t1i);
 }
 
-constexpr void operator&=(ParenthesesMode& t1, const ParenthesesMode& t2)
-{
+constexpr void operator&=(ParenthesesMode &t1, const ParenthesesMode &t2) {
     int t1i = static_cast<int>(t1);
     t1i &= static_cast<int>(t2);
     t1 = ParenthesesMode(t1i);
 }
 
-enum RepeatPlayCountPreset : unsigned char {
-    X_N,
-    N_X,
-    PLAY_N_TIMES,
-    N_REPEATS
-};
+enum RepeatPlayCountPreset : unsigned char { X_N, N_X, PLAY_N_TIMES, N_REPEATS };
 
 //-------------------------------------------------------------------
 // TextStyleType
@@ -994,8 +874,8 @@ enum class TextStyleType : unsigned char {
     TEMPO_CHANGE,
     METRONOME,
     REPEAT_PLAY_COUNT,
-    REPEAT_LEFT,       // align to start of measure
-    REPEAT_RIGHT,      // align to end of measure
+    REPEAT_LEFT,  // align to start of measure
+    REPEAT_RIGHT, // align to end of measure
     REHEARSAL_MARK,
     SYSTEM,
 
@@ -1055,42 +935,23 @@ enum class TextStyleType : unsigned char {
     USER11,
     USER12,
     // special, no-contents, styles used while importing older scores
-    TEXT_TYPES,           // used for user-defined types
-    IGNORED_TYPES         // used for types no longer relevant (mainly Figured bass text type)
+    TEXT_TYPES,   // used for user-defined types
+    IGNORED_TYPES // used for types no longer relevant (mainly Figured bass text type)
 };
 
 //---------------------------------------------------------
 //   FontStyle
 //---------------------------------------------------------
 
-enum class FontStyle : signed char {
-    Undefined = -1,
-    Normal = 0,
-    Bold = 1 << 0,
-    Italic = 1 << 1,
-    Underline = 1 << 2,
-    Strike = 1 << 3
-};
+enum class FontStyle : signed char { Undefined = -1, Normal = 0, Bold = 1 << 0, Italic = 1 << 1, Underline = 1 << 2, Strike = 1 << 3 };
 
-constexpr FontStyle operator+(FontStyle a1, FontStyle a2)
-{
-    return static_cast<FontStyle>(static_cast<char>(a1) | static_cast<char>(a2));
-}
+constexpr FontStyle operator+(FontStyle a1, FontStyle a2) { return static_cast<FontStyle>(static_cast<char>(a1) | static_cast<char>(a2)); }
 
-constexpr FontStyle operator|(FontStyle a1, FontStyle a2)
-{
-    return static_cast<FontStyle>(static_cast<char>(a1) | static_cast<char>(a2));
-}
+constexpr FontStyle operator|(FontStyle a1, FontStyle a2) { return static_cast<FontStyle>(static_cast<char>(a1) | static_cast<char>(a2)); }
 
-constexpr FontStyle operator-(FontStyle a1, FontStyle a2)
-{
-    return static_cast<FontStyle>(static_cast<char>(a1) & ~static_cast<char>(a2));
-}
+constexpr FontStyle operator-(FontStyle a1, FontStyle a2) { return static_cast<FontStyle>(static_cast<char>(a1) & ~static_cast<char>(a2)); }
 
-constexpr bool operator&(FontStyle a1, FontStyle a2)
-{
-    return static_cast<bool>(static_cast<char>(a1) & static_cast<char>(a2));
-}
+constexpr bool operator&(FontStyle a1, FontStyle a2) { return static_cast<bool>(static_cast<char>(a1) & static_cast<char>(a2)); }
 
 enum class PlayingTechniqueType : signed char {
     Undefined = -1,
@@ -1142,37 +1003,34 @@ enum class ChangeMethod : signed char {
     EXPONENTIAL,
     EASE_IN,
     EASE_OUT,
-    EASE_IN_OUT        // and shake it all about
+    EASE_IN_OUT // and shake it all about
 };
 
-enum class ChangeDirection : signed char {
-    INCREASING,
-    DECREASING
-};
+enum class ChangeDirection : signed char { INCREASING, DECREASING };
 
 // P_TYPE::ACCIDENTAL_ROLE
 enum class AccidentalRole : unsigned char {
-    AUTO,                 // layout created accidental
-    USER                  // user created accidental
+    AUTO, // layout created accidental
+    USER  // user created accidental
 };
 
 enum class AccidentalVal : signed char {
-    SHARP3  = 3,
-    SHARP2  = 2,
-    SHARP   = 1,
+    SHARP3 = 3,
+    SHARP2 = 2,
+    SHARP = 1,
     NATURAL = 0,
-    FLAT    = -1,
-    FLAT2   = -2,
-    FLAT3   = -3,
-    MIN     = FLAT3,
-    MAX     = SHARP3
+    FLAT = -1,
+    FLAT2 = -2,
+    FLAT3 = -3,
+    MIN = FLAT3,
+    MAX = SHARP3
 };
 
 // Positions of naturals in key sig. changes
 enum class KeySigNatural : char {
-    NONE   = 0,      // no naturals, except for change to CMaj/Amin
-    BEFORE = 1,      // naturals before accidentals
-    AFTER  = 2       // naturals after accidentals (but always before if going sharps <=> flats)
+    NONE = 0,   // no naturals, except for change to CMaj/Amin
+    BEFORE = 1, // naturals before accidentals
+    AFTER = 2   // naturals after accidentals (but always before if going sharps <=> flats)
 };
 
 // For barlines before key sig. and time sig. changes
@@ -1182,29 +1040,11 @@ enum class CourtesyBarlineMode : char {
     DOUBLE_BEFORE_COURTESY = 2,
 };
 
-enum class FermataType : signed char {
-    Undefined = -1,
-    VeryShort,
-    Short,
-    ShortHenze,
-    Normal,
-    Long,
-    LongHenze,
-    VeryLong
-};
+enum class FermataType : signed char { Undefined = -1, VeryShort, Short, ShortHenze, Normal, Long, LongHenze, VeryLong };
 
-enum class ChordLineType : unsigned char {
-    NOTYPE, FALL, DOIT,
-    PLOP, SCOOP
-};
+enum class ChordLineType : unsigned char { NOTYPE, FALL, DOIT, PLOP, SCOOP };
 
-enum class SlurStyleType : signed char {
-    Undefined = -1,
-    Solid,
-    Dotted,
-    Dashed,
-    WideDashed
-};
+enum class SlurStyleType : signed char { Undefined = -1, Solid, Dotted, Dashed, WideDashed };
 
 enum class TappingHand {
     INVALID = -1,
@@ -1232,51 +1072,43 @@ struct InstrumentTrackId {
     muse::ID partId = 0;
     String instrumentId;
 
-    bool operator ==(const InstrumentTrackId& other) const
-    {
-        return partId == other.partId && instrumentId == other.instrumentId;
-    }
+    bool operator==(const InstrumentTrackId &other) const { return partId == other.partId && instrumentId == other.instrumentId; }
 
-    bool operator !=(const InstrumentTrackId& other) const
-    {
-        return !operator ==(other);
-    }
+    bool operator!=(const InstrumentTrackId &other) const { return !operator==(other); }
 
-    bool operator <(const InstrumentTrackId& other) const noexcept
-    {
+    bool operator<(const InstrumentTrackId &other) const noexcept {
         return std::tie(partId, instrumentId) < std::tie(other.partId, other.instrumentId);
     }
 
-    bool isValid() const
-    {
-        return partId.isValid() && !instrumentId.empty();
-    }
+    bool isValid() const { return partId.isValid() && !instrumentId.empty(); }
 };
 
 // Tremolo subtypes:
 enum class TremoloType : signed char {
     INVALID_TREMOLO = -1,
-    R8 = 0, R16, R32, R64, R128, R256, BUZZ_ROLL,     // one note tremolo (repeat)
-    C8, C16, C32, C64, C128, C256                     // two note tremolo (change)
+    R8 = 0,
+    R16,
+    R32,
+    R64,
+    R128,
+    R256,
+    BUZZ_ROLL, // one note tremolo (repeat)
+    C8,
+    C16,
+    C32,
+    C64,
+    C128,
+    C256 // two note tremolo (change)
 };
 
-inline bool isTremoloTwoChord(TremoloType type)
-{
-    return type >= TremoloType::C8;
-}
+inline bool isTremoloTwoChord(TremoloType type) { return type >= TremoloType::C8; }
 
 // only applicable to minim two-note tremolo in non-TAB staves
-enum class TremoloStyle : signed char {
-    DEFAULT = 0, TRADITIONAL, TRADITIONAL_ALTERNATE
-};
+enum class TremoloStyle : signed char { DEFAULT = 0, TRADITIONAL, TRADITIONAL_ALTERNATE };
 
-enum class TremoloChordType : unsigned char {
-    TremoloNone, TremoloSingle, TremoloFirstChord, TremoloSecondChord
-};
+enum class TremoloChordType : unsigned char { TremoloNone, TremoloSingle, TremoloFirstChord, TremoloSecondChord };
 
-enum class BracketType : signed char {
-    NORMAL, BRACE, SQUARE, LINE, GROUP, NO_BRACKET = -1
-};
+enum class BracketType : signed char { NORMAL, BRACE, SQUARE, LINE, GROUP, NO_BRACKET = -1 };
 
 using InstrumentTrackIdList = std::vector<InstrumentTrackId>;
 using InstrumentTrackIdSet = std::unordered_set<InstrumentTrackId>;
@@ -1285,9 +1117,7 @@ enum EmbellishmentType : unsigned char {};
 
 enum DrumNum : unsigned char {};
 
-enum class GlissandoType : unsigned char {
-    STRAIGHT, WAVY
-};
+enum class GlissandoType : unsigned char { STRAIGHT, WAVY };
 
 enum class JumpType : unsigned char {
     DC,
@@ -1319,38 +1149,51 @@ enum class MarkerType : unsigned char {
     USER
 };
 
-enum class StaffGroup : unsigned char {
-    STANDARD, PERCUSSION, TAB
-};
+enum class StaffGroup : unsigned char { STANDARD, PERCUSSION, TAB };
 constexpr int STAFF_GROUP_MAX = int(StaffGroup::TAB) + 1; // out of enum to avoid compiler complains about not handled switch cases
 
 // keep in sync with the _presets initialization in StaffType::initStaffTypes() and _defaultPreset for legacy scores
 enum class StaffTypes : signed char {
     STANDARD,
-    PERC_1LINE, PERC_2LINE, PERC_3LINE, PERC_5LINE,
-    TAB_6SIMPLE, TAB_6COMMON, TAB_6FULL,
-    TAB_4SIMPLE, TAB_4COMMON, TAB_4FULL,
-    TAB_5SIMPLE, TAB_5COMMON, TAB_5FULL,
-    TAB_UKULELE, TAB_BALALAJKA, TAB_DULCIMER,
-    TAB_ITALIAN, TAB_FRENCH,
-    TAB_7COMMON, TAB_8COMMON, TAB_9COMMON, TAB_10COMMON,
-    TAB_7SIMPLE, TAB_8SIMPLE, TAB_9SIMPLE, TAB_10SIMPLE,
+    PERC_1LINE,
+    PERC_2LINE,
+    PERC_3LINE,
+    PERC_5LINE,
+    TAB_6SIMPLE,
+    TAB_6COMMON,
+    TAB_6FULL,
+    TAB_4SIMPLE,
+    TAB_4COMMON,
+    TAB_4FULL,
+    TAB_5SIMPLE,
+    TAB_5COMMON,
+    TAB_5FULL,
+    TAB_UKULELE,
+    TAB_BALALAJKA,
+    TAB_DULCIMER,
+    TAB_ITALIAN,
+    TAB_FRENCH,
+    TAB_7COMMON,
+    TAB_8COMMON,
+    TAB_9COMMON,
+    TAB_10COMMON,
+    TAB_7SIMPLE,
+    TAB_8SIMPLE,
+    TAB_9SIMPLE,
+    TAB_10SIMPLE,
     STAFF_TYPES,
     PERC_DEFAULT = StaffTypes::PERC_5LINE,
     TAB_DEFAULT = StaffTypes::TAB_6COMMON,
 };
 
 enum class TrillType : unsigned char {
-    TRILL_LINE, UPPRALL_LINE, DOWNPRALL_LINE, PRALLPRALL_LINE,
+    TRILL_LINE,
+    UPPRALL_LINE,
+    DOWNPRALL_LINE,
+    PRALLPRALL_LINE,
 };
 
-enum class VibratoType : signed char {
-    NONE = -1,
-    GUITAR_VIBRATO,
-    GUITAR_VIBRATO_WIDE,
-    VIBRATO_SAWTOOTH,
-    VIBRATO_SAWTOOTH_WIDE
-};
+enum class VibratoType : signed char { NONE = -1, GUITAR_VIBRATO, GUITAR_VIBRATO_WIDE, VIBRATO_SAWTOOTH, VIBRATO_SAWTOOTH_WIDE };
 
 enum class ArticulationTextType : unsigned char {
     NO_TEXT,
@@ -1366,19 +1209,13 @@ enum class ArticulationTextType : unsigned char {
     VIB,
 };
 
-enum class LyricsSyllabic : unsigned char {
-    SINGLE, BEGIN, END, MIDDLE
-};
+enum class LyricsSyllabic : unsigned char { SINGLE, BEGIN, END, MIDDLE };
 
-enum class LyricsDashSystemStart : unsigned char {
-    STANDARD,
-    UNDER_HEADER,
-    UNDER_FIRST_NOTE
-};
+enum class LyricsDashSystemStart : unsigned char { STANDARD, UNDER_HEADER, UNDER_FIRST_NOTE };
 
 enum class LyricsStackingOrder : unsigned char {
-    LYRICS_AFTER_PEDALS,    // < v5.0
-    LYRICS_BEFORE_DYNAMICS  // >= v5.0
+    LYRICS_AFTER_PEDALS,   // < v5.0
+    LYRICS_BEFORE_DYNAMICS // >= v5.0
 };
 
 enum class NoteLineEndPlacement : unsigned char {
@@ -1386,9 +1223,7 @@ enum class NoteLineEndPlacement : unsigned char {
     OFFSET_ENDS,
 };
 
-enum class SpannerSegmentType : unsigned char {
-    SINGLE, BEGIN, MIDDLE, END
-};
+enum class SpannerSegmentType : unsigned char { SINGLE, BEGIN, MIDDLE, END };
 
 enum class TiePlacement : unsigned char {
     AUTO,
@@ -1396,23 +1231,11 @@ enum class TiePlacement : unsigned char {
     OUTSIDE,
 };
 
-enum class TieDotsPlacement : unsigned char {
-    AUTO,
-    BEFORE_DOTS,
-    AFTER_DOTS
-};
+enum class TieDotsPlacement : unsigned char { AUTO, BEFORE_DOTS, AFTER_DOTS };
 
-enum class TimeSigPlacement : unsigned char {
-    NORMAL,
-    ABOVE_STAVES,
-    ACROSS_STAVES
-};
+enum class TimeSigPlacement : unsigned char { NORMAL, ABOVE_STAVES, ACROSS_STAVES };
 
-enum class TimeSigStyle : unsigned char {
-    NORMAL,
-    NARROW,
-    LARGE
-};
+enum class TimeSigStyle : unsigned char { NORMAL, NARROW, LARGE };
 
 enum class TimeSigVSMargin : unsigned char {
     HANG_INTO_MARGIN,
@@ -1420,9 +1243,7 @@ enum class TimeSigVSMargin : unsigned char {
     CREATE_SPACE,
 };
 
-enum class NoteSpellingType : unsigned char {
-    STANDARD = 0, GERMAN, GERMAN_PURE, SOLFEGGIO, FRENCH
-};
+enum class NoteSpellingType : unsigned char { STANDARD = 0, GERMAN, GERMAN_PURE, SOLFEGGIO, FRENCH };
 
 //---------------------------------------------------------
 //   Key
@@ -1436,7 +1257,7 @@ enum class Key : signed char {
     E_B,
     B_B,
     F,
-    C,      // == 0
+    C, // == 0
     G,
     D,
     A,
@@ -1444,25 +1265,30 @@ enum class Key : signed char {
     B,
     F_S,
     C_S,
-    MIN     = Key::C_B,
-    MAX     = Key::C_S,
+    MIN = Key::C_B,
+    MAX = Key::C_S,
     INVALID = Key::MIN - 1,
-    NUM_OF  = Key::MAX - Key::MIN + 1,
+    NUM_OF = Key::MAX - Key::MIN + 1,
     DELTA_ENHARMONIC = 12
 };
 
 static inline bool operator<(Key a, Key b) { return static_cast<int>(a) < static_cast<int>(b); }
-static inline bool operator>(Key a, Key b) { return static_cast<int>(a) > static_cast<int>(b); }
-static inline bool operator>(Key a, int b) { return static_cast<int>(a) > b; }
-static inline bool operator<(Key a, int b) { return static_cast<int>(a) < b; }
-static inline bool operator==(const Key a, const Key b) { return int(a) == int(b); }
-static inline bool operator!=(const Key a, const Key b) { return static_cast<int>(a) != static_cast<int>(b); }
-static inline Key operator+=(Key& a, const Key& b) { return a = Key(static_cast<int>(a) + static_cast<int>(b)); }
-static inline Key operator-=(Key& a, const Key& b) { return a = Key(static_cast<int>(a) - static_cast<int>(b)); }
 
-enum class PreferSharpFlat : char {
-    NONE, SHARPS, FLATS, AUTO
-};
+static inline bool operator>(Key a, Key b) { return static_cast<int>(a) > static_cast<int>(b); }
+
+static inline bool operator>(Key a, int b) { return static_cast<int>(a) > b; }
+
+static inline bool operator<(Key a, int b) { return static_cast<int>(a) < b; }
+
+static inline bool operator==(const Key a, const Key b) { return int(a) == int(b); }
+
+static inline bool operator!=(const Key a, const Key b) { return static_cast<int>(a) != static_cast<int>(b); }
+
+static inline Key operator+=(Key &a, const Key &b) { return a = Key(static_cast<int>(a) + static_cast<int>(b)); }
+
+static inline Key operator-=(Key &a, const Key &b) { return a = Key(static_cast<int>(a) - static_cast<int>(b)); }
+
+enum class PreferSharpFlat : char { NONE, SHARPS, FLATS, AUTO };
 
 struct SwingParameters {
     int swingUnit = 0;
@@ -1475,7 +1301,7 @@ struct CapoParams {
     enum class TransposeMode {
         PLAYBACK_ONLY = 0,
         STANDARD_ONLY = 1,
-        TAB_ONLY      = 2,
+        TAB_ONLY = 2,
     };
     std::unordered_set<string_idx_t> ignoredStrings;
     int fretPosition = 0;
@@ -1510,9 +1336,9 @@ struct MeasureBeat {
 
 enum class UpdateMode : unsigned char {
     DoNothing,
-    Update,             // do screen refresh of RectF "refresh"
-    UpdateAll,          // do complete screen refresh
-    Layout,             // do partial layout for tick range
+    Update,    // do screen refresh of RectF "refresh"
+    UpdateAll, // do complete screen refresh
+    Layout,    // do partial layout for tick range
 };
 
 //---------------------------------------------------------
@@ -1520,18 +1346,14 @@ enum class UpdateMode : unsigned char {
 //---------------------------------------------------------
 
 enum class LayoutFlag : unsigned char {
-    NO_FLAGS       = 0,
-    PLAY_EVENTS    = 2,
+    NO_FLAGS = 0,
+    PLAY_EVENTS = 2,
     REBUILD_MIDI_MAPPING = 4,
 };
 
 typedef muse::Flags<LayoutFlag> LayoutFlags;
 
-enum class LoopBoundaryType : signed char {
-    Unknown = -1,
-    LoopIn = 0,
-    LoopOut = 1
-};
+enum class LoopBoundaryType : signed char { Unknown = -1, LoopIn = 0, LoopOut = 1 };
 
 enum class ActionIconType : signed char {
     UNDEFINED = -1,
@@ -1581,22 +1403,16 @@ enum class ActionIconType : signed char {
     PAGE_LOCK
 };
 
-enum class TupletNumberType : unsigned char {
-    SHOW_NUMBER, SHOW_RELATION, NO_TEXT
-};
+enum class TupletNumberType : unsigned char { SHOW_NUMBER, SHOW_RELATION, NO_TEXT };
 
-enum class TupletBracketType : unsigned char {
-    AUTO_BRACKET, SHOW_BRACKET, SHOW_NO_BRACKET
-};
-} // mu::engraving
+enum class TupletBracketType : unsigned char { AUTO_BRACKET, SHOW_BRACKET, SHOW_NO_BRACKET };
+} // namespace mu::engraving
 
-template<>
-struct std::hash<mu::engraving::InstrumentTrackId>
-{
-    std::size_t operator()(const mu::engraving::InstrumentTrackId& s) const noexcept
-    {
-        std::size_t h1 = std::hash<int> {}(static_cast<int>(s.partId.toUint64()));
-        std::size_t h2 = std::hash<muse::String> {}(s.instrumentId);
+template <>
+struct std::hash<mu::engraving::InstrumentTrackId> {
+    std::size_t operator()(const mu::engraving::InstrumentTrackId &s) const noexcept {
+        std::size_t h1 = std::hash<int>{}(static_cast<int>(s.partId.toUint64()));
+        std::size_t h2 = std::hash<muse::String>{}(s.instrumentId);
         return h1 ^ (h2 << 1);
     }
 };

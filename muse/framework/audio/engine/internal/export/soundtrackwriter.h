@@ -28,8 +28,6 @@
 #include <vector>
 #include <functional>
 
-
-
 #include "audio/common/audiotypes.h"
 #include "../nodes/audionode.h"
 
@@ -37,16 +35,15 @@
 
 namespace muse::io {
 class IODevice;
-}
+} // namespace muse::io
 
 namespace muse::audio::soundtrack {
-class SoundTrackWriter
-{
+class SoundTrackWriter {
 
 public:
-    SoundTrackWriter(io::IODevice& dstDevice, const SoundTrackFormat& format, const secs_t totalDuration, IAudioNodePtr source,
+    SoundTrackWriter(io::IODevice &dstDevice, const SoundTrackFormat &format, const secs_t totalDuration, IAudioNodePtr source,
                      std::function<void(uint64_t)> blockCompleted = {},
-                     std::function<encode::AbstractAudioEncoderPtr(const SoundTrackFormat&, io::IODevice&)> encoderFactory = {},
+                     std::function<encode::AbstractAudioEncoderPtr(const SoundTrackFormat &, io::IODevice &)> encoderFactory = {},
                      std::function<bool()> cancelled = {});
 
     Ret write();
@@ -57,7 +54,6 @@ private:
     Ret writeStreaming();
     bool pollCancellation();
     std::function<bool()> m_cancelled;
-
 
     IAudioNodePtr m_source;
     std::function<void(uint64_t)> m_blockCompleted;
@@ -72,4 +68,4 @@ private:
 
     std::atomic<bool> m_isAborted = false;
 };
-}
+} // namespace muse::audio::soundtrack

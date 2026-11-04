@@ -38,43 +38,47 @@ class Tuplet;
 //   @P globalDuration Fraction  played duration
 //---------------------------------------------------------
 
-class DurationElement : public EngravingItem
-{
+class DurationElement : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, DurationElement)
 public:
     ~DurationElement();
 
-    virtual Measure* measure() const { return (Measure*)(ownershipParent()); }
+    virtual Measure *measure() const { return (Measure *) (ownershipParent()); }
 
-    void readAddTuplet(Tuplet* t);
+    void readAddTuplet(Tuplet *t);
 
-    void setTuplet(Tuplet* t);
-    Tuplet* tuplet() const { return m_tuplet; }
-    Tuplet* topTuplet() const;
-    virtual Beam* beam() const { return nullptr; }
+    void setTuplet(Tuplet *t);
 
-    Fraction actualTicksAt(const Fraction& tick) const;
+    Tuplet *tuplet() const { return m_tuplet; }
+
+    Tuplet *topTuplet() const;
+
+    virtual Beam *beam() const { return nullptr; }
+
+    Fraction actualTicksAt(const Fraction &tick) const;
     Fraction actualTicks() const;
 
     Fraction endTick() const { return tick() + actualTicks(); }
 
     // Length expressed as a fraction of a whole note
     virtual Fraction ticks() const { return m_duration; }
+
     Fraction globalTicks() const;
     float timeStretchFactor() const;
-    void setTicks(const Fraction& f) { m_duration = f; }
+
+    void setTicks(const Fraction &f) { m_duration = f; }
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
 
 protected:
-    DurationElement(const ElementType& type, EngravingObject* parent = nullptr,
+    DurationElement(const ElementType &type, EngravingObject *parent = nullptr,
                     ElementFlags = ElementFlag::MOVABLE | ElementFlag::ON_STAFF);
-    DurationElement(const DurationElement& e, bool link = false);
+    DurationElement(const DurationElement &e, bool link = false);
 
 private:
     Fraction m_duration;
-    Tuplet* m_tuplet = nullptr;
+    Tuplet *m_tuplet = nullptr;
 };
 } // namespace mu::engraving
 

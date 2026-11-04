@@ -33,12 +33,10 @@ namespace mu::iex::musicxml {
 //   xmlLocation
 //---------------------------------------------------------
 
-static String xmlLocation(const muse::XmlStreamReader* xmlreader)
-{
+static String xmlLocation(const muse::XmlStreamReader *xmlreader) {
     String loc;
     if (xmlreader) {
-        loc = String(u" at byte offset %1")
-              .arg(size_t(xmlreader->byteOffset()));
+        loc = String(u" at byte offset %1").arg(size_t(xmlreader->byteOffset()));
     }
     return loc;
 }
@@ -46,18 +44,13 @@ static String xmlLocation(const muse::XmlStreamReader* xmlreader)
 //---------------------------------------------------------
 //   logDebugTrace
 //---------------------------------------------------------
-static void to_xml_log(MusicXmlLogger::Level level, const String& text, const XmlStreamReader* xmlreader)
-{
+static void to_xml_log(MusicXmlLogger::Level level, const String &text, const XmlStreamReader *xmlreader) {
     String str;
     switch (level) {
-    case MusicXmlLogger::Level::MXML_TRACE: str = u"Trace";
-        break;
-    case MusicXmlLogger::Level::MXML_INFO: str = u"Info";
-        break;
-    case MusicXmlLogger::Level::MXML_ERROR: str = u"Error";
-        break;
-    default: str = u"Unknown";
-        break;
+        case MusicXmlLogger::Level::MXML_TRACE: str = u"Trace"; break;
+        case MusicXmlLogger::Level::MXML_INFO: str = u"Info"; break;
+        case MusicXmlLogger::Level::MXML_ERROR: str = u"Error"; break;
+        default: str = u"Unknown"; break;
     }
 
     str += xmlLocation(xmlreader);
@@ -75,8 +68,7 @@ static void to_xml_log(MusicXmlLogger::Level level, const String& text, const Xm
  Log debug (function) trace.
  */
 
-void MusicXmlLogger::logDebugTrace(const String& trace, const muse::XmlStreamReader* xmlreader)
-{
+void MusicXmlLogger::logDebugTrace(const String &trace, const muse::XmlStreamReader *xmlreader) {
     if (m_level <= Level::MXML_TRACE) {
         to_xml_log(Level::MXML_TRACE, trace, xmlreader);
     }
@@ -90,8 +82,7 @@ void MusicXmlLogger::logDebugTrace(const String& trace, const muse::XmlStreamRea
  Log debug \a info (non-fatal events relevant for debugging).
  */
 
-void MusicXmlLogger::logDebugInfo(const String& info, const XmlStreamReader* xmlreader)
-{
+void MusicXmlLogger::logDebugInfo(const String &info, const XmlStreamReader *xmlreader) {
     if (m_level <= Level::MXML_INFO) {
         to_xml_log(Level::MXML_INFO, info, xmlreader);
     }
@@ -105,10 +96,9 @@ void MusicXmlLogger::logDebugInfo(const String& info, const XmlStreamReader* xml
  Log \a error (possibly non-fatal but to be reported to the user anyway).
  */
 
-void MusicXmlLogger::logError(const String& error, const XmlStreamReader* xmlreader)
-{
+void MusicXmlLogger::logError(const String &error, const XmlStreamReader *xmlreader) {
     if (m_level <= Level::MXML_ERROR) {
         to_xml_log(Level::MXML_ERROR, error, xmlreader);
     }
 }
-}
+} // namespace mu::iex::musicxml

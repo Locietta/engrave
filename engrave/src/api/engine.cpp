@@ -26,46 +26,46 @@ namespace engrave {
 namespace {
 std::atomic<bool> s_engine_created = false;
 
-std::unexpected<Error> fail(ErrorCode code, std::string message) {
-    return std::unexpected(Error{code, std::move(message)});
-}
+std::unexpected<Error> fail(ErrorCode code, std::string message) { return std::unexpected(Error{code, std::move(message)}); }
 
 std::filesystem::path path_from_utf8(std::string_view text) {
-    return std::u8string(reinterpret_cast<const char8_t*>(text.data()), text.size());
+    return std::u8string(reinterpret_cast<const char8_t *>(text.data()), text.size());
 }
 
-const char* backend_name(Format format) {
+const char *backend_name(Format format) {
     switch (format) {
-    case Format::Mscz: return "mscz";
-    case Format::Mscx: return "mscx";
-    case Format::MusicXml: return "musicxml";
-    case Format::Mxl: return "mxl";
-    case Format::Midi: return "midi";
-    case Format::GuitarPro: return "gp";
-    case Format::Mnx: return "mnx";
+        case Format::Mscz: return "mscz";
+        case Format::Mscx: return "mscx";
+        case Format::MusicXml: return "musicxml";
+        case Format::Mxl: return "mxl";
+        case Format::Midi: return "midi";
+        case Format::GuitarPro: return "gp";
+        case Format::Mnx: return "mnx";
     }
     return "";
 }
 
 // The upstream template names carry an ordering prefix: "01-Treble_Clef".
-std::string template_id(const std::filesystem::path& mscx) {
+std::string template_id(const std::filesystem::path &mscx) {
     std::string stem = utf8(mscx.stem());
     const auto dash = stem.find('-');
-    if (dash != std::string::npos && dash > 0
-        && std::all_of(stem.begin(), stem.begin() + dash, [](unsigned char c) { return c >= '0' && c <= '9'; }))
+    if (dash != std::string::npos && dash > 0 &&
+        std::all_of(stem.begin(), stem.begin() + dash, [](unsigned char c) { return c >= '0' && c <= '9'; }))
         stem.erase(0, dash + 1);
     return stem;
 }
 
 // The metadata half of upstream's MasterNotation::applyOptions for a score
 // created from a template: the meta tags and the title frame's texts.
-void apply_metadata(mu::engraving::MasterScore* score, const CreateOptions& options) {
+void apply_metadata(mu::engraving::MasterScore *score, const CreateOptions &options) {
     using mu::engraving::TextStyleType;
+
     struct Field {
-        const char16_t* tag;
+        const char16_t *tag;
         TextStyleType style;
-        const std::string& value;
+        const std::string &value;
     };
+
     const Field fields[] = {
         {u"workTitle", TextStyleType::TITLE, options.title},
         {u"subtitle", TextStyleType::SUBTITLE, options.subtitle},
@@ -73,11 +73,11 @@ void apply_metadata(mu::engraving::MasterScore* score, const CreateOptions& opti
         {u"lyricist", TextStyleType::LYRICIST, options.lyricist},
     };
     mu::engraving::ScoreLoad load;
-    for (const Field& field : fields) {
+    for (const Field &field : fields) {
         if (field.value.empty()) continue;
         const muse::String text = muse::String::fromStdString(field.value);
         score->setMetaTag(field.tag, text);
-        mu::engraving::TextBase* item = score->getText(field.style);
+        mu::engraving::TextBase *item = score->getText(field.style);
         if (!item) item = score->addText(field.style);
         if (item) item->setPlainText(text);
     }
@@ -88,19 +88,19 @@ void apply_metadata(mu::engraving::MasterScore* score, const CreateOptions& opti
 
 Engine::Engine(std::unique_ptr<Impl> impl) : impl_(std::move(impl)) {}
 
-Result<std::unique_ptr<Engine>> Engine::create(const EngineOptions& options) {
+Result<std::unique_ptr<Engine>> Engine::create(const EngineOptions &options) {
     check(!s_engine_created, "engrave supports one Engine per process");
     std::error_code ec;
     const auto resources = std::filesystem::absolute(options.resources, ec);
     if (options.resources.empty() || !std::filesystem::is_regular_file(resources / "engraving/instruments/instruments.xml", ec))
         return fail(ErrorCode::NotFound, "no engrave resources in '" + utf8(options.resources) + "'");
-    for (const auto& font : options.fonts) {
+    for (const auto &font : options.fonts) {
         if (!std::filesystem::is_regular_file(font, ec)) return fail(ErrorCode::NotFound, "no font file '" + utf8(font) + "'");
     }
     if (options.audio_sample_rate < 8000 || options.audio_sample_rate > 192000)
         return fail(ErrorCode::InvalidArgument,
                     std::format("the audio sample rate must be between 8000 and 192000 Hz, not {}", options.audio_sample_rate));
-    for (const auto& soundfont : options.soundfonts) {
+    for (const auto &soundfont : options.soundfonts) {
         if (!std::filesystem::is_regular_file(soundfont, ec))
             return fail(ErrorCode::NotFound, "no SoundFont file '" + utf8(soundfont) + "'");
         const auto extension = soundfont.extension().u8string();
@@ -111,26 +111,25 @@ Result<std::unique_ptr<Engine>> Engine::create(const EngineOptions& options) {
 
     auto impl = std::make_unique<Impl>();
     impl->state.resources = resources;
-    impl->state.cache_dir = options.cache_dir.empty() ? std::filesystem::temp_directory_path(ec)
-                                                      : std::filesystem::absolute(options.cache_dir);
-    for (const auto& soundfont : options.soundfonts)
-        impl->state.soundfonts.push_back(std::filesystem::absolute(soundfont));
+    impl->state.cache_dir =
+        options.cache_dir.empty() ? std::filesystem::temp_directory_path(ec) : std::filesystem::absolute(options.cache_dir);
+    for (const auto &soundfont : options.soundfonts) impl->state.soundfonts.push_back(std::filesystem::absolute(soundfont));
     impl->state.audio_sample_rate = options.audio_sample_rate;
     mu::engraving::MScore::testMode = options.deterministic_ids;
     impl->state.context = std::make_unique<music::EngineContext>(
         utf8(resources), options.cache_dir.empty() ? std::string() : utf8(std::filesystem::absolute(options.cache_dir)));
     std::unique_ptr<Engine> engine(new Engine(std::move(impl)));
-    for (const auto& font : options.fonts) {
+    for (const auto &font : options.fonts) {
         try {
             engine->impl_->state.context->assets().addFont(utf8(std::filesystem::absolute(font)));
-        } catch (const std::runtime_error& error) {
+        } catch (const std::runtime_error &error) {
             return fail(ErrorCode::InvalidInput, error.what());
         }
     }
     return engine;
 }
 
-Result<void> Engine::add_font(const std::filesystem::path& file) {
+Result<void> Engine::add_font(const std::filesystem::path &file) {
     impl_->state.check_thread();
     std::error_code ec;
     if (!std::filesystem::is_regular_file(file, ec)) return fail(ErrorCode::NotFound, "no font file '" + utf8(file) + "'");
@@ -138,7 +137,7 @@ Result<void> Engine::add_font(const std::filesystem::path& file) {
         // addFont publishes a new registry and replaces the font engine, discarding
         // its cached FreeType faces and glyph metrics before documents relayout.
         impl_->state.context->assets().addFont(utf8(std::filesystem::absolute(file)));
-    } catch (const std::runtime_error& error) {
+    } catch (const std::runtime_error &error) {
         return fail(ErrorCode::InvalidInput, error.what());
     }
     ++impl_->state.font_generation;
@@ -150,31 +149,29 @@ std::vector<RuntimeFontInfo> Engine::runtime_fonts() const {
     const auto active = impl_->state.context->assets().fonts();
     std::vector<RuntimeFontInfo> result;
     result.reserve(active.size());
-    for (const auto& font : active) {
-        result.push_back({font.id, font.family, font.bold, font.italic,
-                          path_from_utf8(font.path), font.content_hash});
+    for (const auto &font : active) {
+        result.push_back({font.id, font.family, font.bold, font.italic, path_from_utf8(font.path), font.content_hash});
     }
     return result;
 }
 
-Result<void> Engine::set_soundfonts(const std::vector<std::filesystem::path>& files) {
+Result<void> Engine::set_soundfonts(const std::vector<std::filesystem::path> &files) {
     impl_->state.check_thread();
     std::vector<std::filesystem::path> retained;
-    for (const auto& file : files) {
+    for (const auto &file : files) {
         std::error_code ec;
         if (!std::filesystem::is_regular_file(file, ec)) return fail(ErrorCode::NotFound, "no SoundFont file '" + utf8(file) + "'");
         try {
             retained.push_back(path_from_utf8(impl_->state.context->assets().freezeSoundFont(utf8(std::filesystem::absolute(file))).path));
-        } catch (const std::runtime_error& error) {
+        } catch (const std::runtime_error &error) {
             return fail(ErrorCode::InvalidInput, error.what());
         }
     }
     if (!retained.empty()) {
         std::vector<std::string> paths;
-        for (const auto& file : retained) paths.push_back(utf8(file));
+        for (const auto &file : retained) paths.push_back(utf8(file));
         std::string error;
-        if (!music::validate_engine_soundfonts(paths, &error))
-            return fail(ErrorCode::InvalidInput, error);
+        if (!music::validate_engine_soundfonts(paths, &error)) return fail(ErrorCode::InvalidInput, error);
     }
     impl_->state.soundfonts.swap(retained);
     return {};
@@ -205,8 +202,8 @@ std::vector<TemplateInfo> Engine::templates() const {
     std::ifstream file(root / "categories.json", std::ios::binary);
     if (!file) return {};
     std::vector<TemplateInfo> result;
-    for (const auto& category : nlohmann::json::parse(file)) {
-        for (const auto& entry : category.at("files")) {
+    for (const auto &category : nlohmann::json::parse(file)) {
+        for (const auto &entry : category.at("files")) {
             const auto mscx = root / path_from_utf8(entry.get<std::string>());
             std::string id = template_id(mscx);
             std::string title = id;
@@ -217,30 +214,29 @@ std::vector<TemplateInfo> Engine::templates() const {
     return result;
 }
 
-Result<std::unique_ptr<Document>> Engine::open(std::span<const std::byte> data, const OpenOptions& options) {
+Result<std::unique_ptr<Document>> Engine::open(std::span<const std::byte> data, const OpenOptions &options) {
     impl_->state.check_thread();
     if (data.empty()) return fail(ErrorCode::InvalidInput, "the input is empty");
-    if (data.size() > max_input_bytes)
-        return fail(ErrorCode::ResourceLimit, std::format("the input exceeds {} bytes", max_input_bytes));
-    const std::string bytes(reinterpret_cast<const char*>(data.data()), data.size());
+    if (data.size() > max_input_bytes) return fail(ErrorCode::ResourceLimit, std::format("the input exceeds {} bytes", max_input_bytes));
+    const std::string bytes(reinterpret_cast<const char *>(data.data()), data.size());
 
     std::vector<Diagnostic> diagnostics;
     std::optional<Format> format = options.format ? options.format : sniff_format(bytes);
     if (!format) {
         format = format_from_extension(options.filename_hint);
         if (!format) return fail(ErrorCode::UnsupportedFormat, "the data matches no score format the engine reads");
-        diagnostics.push_back({Severity::Info, std::format("the content was not recognised; reading it as {} because of its file name",
-                                                           to_string(*format))});
+        diagnostics.push_back(
+            {Severity::Info, std::format("the content was not recognised; reading it as {} because of its file name", to_string(*format))});
     }
     music::ScoreProject project;
     try {
-        project = *format == Format::Mnx ? open_mnx(*impl_->state.context, bytes)
-            : music::load_native_score(*impl_->state.context, bytes, backend_name(*format));
-    } catch (const music::UnsupportedScoreVersion& error) {
+        project = *format == Format::Mnx ? open_mnx(*impl_->state.context, bytes) :
+                                           music::load_native_score(*impl_->state.context, bytes, backend_name(*format));
+    } catch (const music::UnsupportedScoreVersion &error) {
         return fail(ErrorCode::Unsupported, error.what());
-    } catch (const std::bad_alloc&) {
+    } catch (const std::bad_alloc &) {
         throw;
-    } catch (const std::exception& error) {
+    } catch (const std::exception &error) {
         return fail(ErrorCode::InvalidInput, std::format("cannot read the data as {}: {}", to_string(*format), error.what()));
     }
     // An MSCZ can carry the project's default mixer settings. Read them from the
@@ -257,7 +253,7 @@ Result<std::unique_ptr<Document>> Engine::open(std::span<const std::byte> data, 
     return Document::Impl::make(impl_->state, std::move(project), std::move(audio_defaults), std::move(diagnostics));
 }
 
-Result<std::unique_ptr<Document>> Engine::open(const std::filesystem::path& file, const OpenOptions& options) {
+Result<std::unique_ptr<Document>> Engine::open(const std::filesystem::path &file, const OpenOptions &options) {
     impl_->state.check_thread();
     std::error_code ec;
     const auto status = std::filesystem::status(file, ec);
@@ -265,19 +261,18 @@ Result<std::unique_ptr<Document>> Engine::open(const std::filesystem::path& file
     if (!std::filesystem::is_regular_file(status)) return fail(ErrorCode::InvalidArgument, "'" + utf8(file) + "' is not a file");
     const auto size = std::filesystem::file_size(file, ec);
     if (ec) return fail(ErrorCode::Io, "cannot read '" + utf8(file) + "': " + ec.message());
-    if (size > max_input_bytes)
-        return fail(ErrorCode::ResourceLimit, std::format("'{}' exceeds {} bytes", utf8(file), max_input_bytes));
+    if (size > max_input_bytes) return fail(ErrorCode::ResourceLimit, std::format("'{}' exceeds {} bytes", utf8(file), max_input_bytes));
 
     std::vector<std::byte> data(size);
     std::ifstream in(file, std::ios::binary);
-    if (!in.read(reinterpret_cast<char*>(data.data()), static_cast<std::streamsize>(size)))
+    if (!in.read(reinterpret_cast<char *>(data.data()), static_cast<std::streamsize>(size)))
         return fail(ErrorCode::Io, "cannot read '" + utf8(file) + "'");
     OpenOptions effective = options;
     if (effective.filename_hint.empty()) effective.filename_hint = file;
     return open(data, effective);
 }
 
-Result<std::unique_ptr<Document>> Engine::create_document(const CreateOptions& options) {
+Result<std::unique_ptr<Document>> Engine::create_document(const CreateOptions &options) {
     impl_->state.check_thread();
     if (options.template_id.empty() == options.template_path.empty())
         return fail(ErrorCode::InvalidArgument, "set exactly one of template_id and template_path");
@@ -290,17 +285,16 @@ Result<std::unique_ptr<Document>> Engine::create_document(const CreateOptions& o
     }
     std::error_code ec;
     if (!std::filesystem::is_regular_file(mscx, ec)) return fail(ErrorCode::NotFound, "no template file '" + utf8(mscx) + "'");
-    if (mscx.extension() != ".mscx")
-        return fail(ErrorCode::InvalidArgument, "a template is an .mscx file, not '" + utf8(mscx) + "'");
+    if (mscx.extension() != ".mscx") return fail(ErrorCode::InvalidArgument, "a template is an .mscx file, not '" + utf8(mscx) + "'");
 
     music::ScoreProject project;
     try {
         project = music::load_native_score_dir(*impl_->state.context, utf8(std::filesystem::absolute(mscx)));
-    } catch (const music::UnsupportedScoreVersion& error) {
+    } catch (const music::UnsupportedScoreVersion &error) {
         return fail(ErrorCode::Unsupported, error.what());
-    } catch (const std::bad_alloc&) {
+    } catch (const std::bad_alloc &) {
         throw;
-    } catch (const std::exception& error) {
+    } catch (const std::exception &error) {
         return fail(ErrorCode::InvalidInput, std::format("cannot read the template '{}': {}", utf8(mscx), error.what()));
     }
     apply_metadata(project->masterScore(), options);

@@ -28,16 +28,15 @@
 #include "mpetypes.h"
 
 namespace muse::mpe {
-class IArticulationProfilesRepository
-{
+class IArticulationProfilesRepository {
 public:
     virtual ~IArticulationProfilesRepository() = default;
 
     virtual ArticulationsProfilePtr createNew() const = 0;
     virtual ArticulationsProfilePtr defaultProfile(const ArticulationFamily family) const = 0;
-    virtual ArticulationsProfilePtr loadProfile(const io::path_t& path) const = 0;
-    virtual void saveProfile(const io::path_t& path, const ArticulationsProfilePtr profilePtr) = 0;
+    virtual ArticulationsProfilePtr loadProfile(const io::path_t &path) const = 0;
+    virtual void saveProfile(const io::path_t &path, const ArticulationsProfilePtr profilePtr) = 0;
 };
-}
+} // namespace muse::mpe
 
 #endif // MUSE_MPE_IARTICULATIONPROFILESREPOSITORY_H

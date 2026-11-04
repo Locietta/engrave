@@ -40,21 +40,20 @@ namespace mu::engraving {
 ///   item in VelocityMap
 //---------------------------------------------------------
 
-enum class VelocityEventType : char {
-    DYNAMIC, HAIRPIN, INVALID
-};
+enum class VelocityEventType : char { DYNAMIC, HAIRPIN, INVALID };
 
-class VelocityEvent
-{
+class VelocityEvent {
 public:
     VelocityEvent() {}
-    VelocityEvent(int val)
-        : m_value(val), m_type(VelocityEventType::DYNAMIC) {}
+
+    VelocityEvent(int val) : m_value(val), m_type(VelocityEventType::DYNAMIC) {}
+
     VelocityEvent(Fraction s, Fraction e, int diff, ChangeMethod m, ChangeDirection d)
         : m_value(diff), m_type(VelocityEventType::HAIRPIN), m_length(e - s), m_method(m), m_direction(d) {}
 
-    bool operator==(const VelocityEvent& event) const;
-    bool operator!=(const VelocityEvent& event) const { return !(operator==(event)); }
+    bool operator==(const VelocityEvent &event) const;
+
+    bool operator!=(const VelocityEvent &event) const { return !(operator==(event)); }
 
 private:
     friend class VelocityMap;
@@ -73,35 +72,35 @@ private:
 ///  List of changes in a value.
 //---------------------------------------------------------
 
-typedef std::vector<std::pair<Fraction, Fraction> > EndPointsVector;
+typedef std::vector<std::pair<Fraction, Fraction>> EndPointsVector;
 
-class VelocityMap : public std::multimap<Fraction, VelocityEvent>
-{
+class VelocityMap : public std::multimap<Fraction, VelocityEvent> {
     OBJECT_ALLOCATOR(engraving, VelocityMap)
 public:
     VelocityMap() {}
+
     int val(Fraction tick) const;
-    std::vector<std::pair<Fraction, Fraction> > changesInRange(Fraction stick, Fraction etick) const;
+    std::vector<std::pair<Fraction, Fraction>> changesInRange(Fraction stick, Fraction etick) const;
 
     void addDynamic(Fraction tick, int value);
     void addHairpin(Fraction stick, Fraction etick, int change, ChangeMethod method, ChangeDirection direction);
     void setup();
 
-    static int interpolate(Fraction& eventTick, VelocityEvent& event, Fraction& tick);
+    static int interpolate(Fraction &eventTick, VelocityEvent &event, Fraction &tick);
 
 private:
 
     struct ChangeMethodItem {
         ChangeMethod method;
-        const char* name;
+        const char *name;
     };
 
-    static bool compareHairpinEvents(VelocityEvent& a, VelocityEvent& b) { return a.m_length > b.m_length; }
+    static bool compareHairpinEvents(VelocityEvent &a, VelocityEvent &b) { return a.m_length > b.m_length; }
 
     void sortHairpins();
     void resolveHairpinCollisions();
     void resolveDynamicInsideHairpinCollisions();
-    void adjustCollidingHairpinsLength(std::vector<bool>& startsInHairpin, EndPointsVector& endPoints);
+    void adjustCollidingHairpinsLength(std::vector<bool> &startsInHairpin, EndPointsVector &endPoints);
     bool dynamicExistsOnTick(Fraction tick) const;
     VelocityEvent dynamicEventForTick(Fraction tick) const;
     void addMissingDynamicsAfterHairpins();

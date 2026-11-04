@@ -27,46 +27,36 @@
 using namespace mu::engraving;
 using namespace muse;
 
-void GraceNotesMetaParser::doParse(const EngravingItem* item, const RenderingContext& ctx, mpe::ArticulationMap& result)
-{
-    IF_ASSERT_FAILED(item->isChord()) {
-        return;
-    }
+void GraceNotesMetaParser::doParse(const EngravingItem *item, const RenderingContext &ctx, mpe::ArticulationMap &result) {
+    IF_ASSERT_FAILED(item->isChord()) { return; }
 
     mpe::ArticulationType type = mpe::ArticulationType::Undefined;
 
-    const Chord* graceChord = toChord(item);
+    const Chord *graceChord = toChord(item);
 
     if (!graceChord->isChordPlayable()) {
         return;
     }
 
     switch (graceChord->noteType()) {
-    case NoteType::ACCIACCATURA:
-        type = mpe::ArticulationType::Acciaccatura;
-        break;
+        case NoteType::ACCIACCATURA: type = mpe::ArticulationType::Acciaccatura; break;
 
-    case NoteType::APPOGGIATURA:
-    case NoteType::GRACE4:
-    case NoteType::GRACE16:
-    case NoteType::GRACE32:
-        type = mpe::ArticulationType::PreAppoggiatura;
-        break;
+        case NoteType::APPOGGIATURA:
+        case NoteType::GRACE4:
+        case NoteType::GRACE16:
+        case NoteType::GRACE32: type = mpe::ArticulationType::PreAppoggiatura; break;
 
-    case NoteType::GRACE8_AFTER:
-    case NoteType::GRACE16_AFTER:
-    case NoteType::GRACE32_AFTER:
-        type = mpe::ArticulationType::PostAppoggiatura;
-        break;
-    default:
-        break;
+        case NoteType::GRACE8_AFTER:
+        case NoteType::GRACE16_AFTER:
+        case NoteType::GRACE32_AFTER: type = mpe::ArticulationType::PostAppoggiatura; break;
+        default: break;
     }
 
     if (type == mpe::ArticulationType::Undefined) {
         return;
     }
 
-    const mpe::ArticulationPattern& pattern = ctx.profile->pattern(type);
+    const mpe::ArticulationPattern &pattern = ctx.profile->pattern(type);
     if (pattern.empty()) {
         return;
     }

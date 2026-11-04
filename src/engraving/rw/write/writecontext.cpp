@@ -27,13 +27,9 @@
 using namespace mu::engraving;
 using namespace mu::engraving::write;
 
-std::shared_ptr<IEngravingConfiguration> WriteContext::configuration() const
-{
-    return m_score->configuration();
-}
+std::shared_ptr<IEngravingConfiguration> WriteContext::configuration() const { return m_score->configuration(); }
 
-bool WriteContext::canWrite(const EngravingItem* e) const
-{
+bool WriteContext::canWrite(const EngravingItem *e) const {
     if (!_filter.has_value()) {
         return true;
     }
@@ -41,18 +37,16 @@ bool WriteContext::canWrite(const EngravingItem* e) const
     return _filter.value().canSelect(e);
 }
 
-bool WriteContext::canWriteNoteIdx(size_t noteIdx, size_t totalNotesInChord) const
-{
+bool WriteContext::canWriteNoteIdx(size_t noteIdx, size_t totalNotesInChord) const {
     if (!_filter.has_value()) {
         return true;
     }
 
-    const Selection& sel = m_score->selection();
+    const Selection &sel = m_score->selection();
     return _filter.value().canSelectNoteIdx(noteIdx, totalNotesInChord, sel.rangeContainsMultiNoteChords());
 }
 
-bool WriteContext::canWriteVoice(track_idx_t track) const
-{
+bool WriteContext::canWriteVoice(track_idx_t track) const {
     if (!_filter.has_value()) {
         return true;
     }

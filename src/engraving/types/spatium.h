@@ -31,89 +31,80 @@ namespace mu::engraving {
 //    - the distance between two note lines
 //    - used for many layout items
 //---------------------------------------------------------
-class Spatium
-{
+class Spatium {
 public:
     constexpr Spatium() = default;
-    explicit constexpr Spatium(double v)
-        : m_val(v) {}
+
+    explicit constexpr Spatium(double v) : m_val(v) {}
 
     constexpr double val() const { return m_val; }
 
     constexpr double toAbsolute(double spval) const { return m_val * spval; }
+
     static constexpr Spatium fromAbsolute(double absolute, double spval) { return Spatium(absolute / spval); }
 
-    constexpr bool operator>(const Spatium& a) const { return m_val > a.m_val; }
-    constexpr bool operator<(const Spatium& a) const { return m_val < a.m_val; }
-    bool operator==(const Spatium& a) const { return muse::RealIsEqual(m_val, a.m_val); }
-    bool operator!=(const Spatium& a) const { return m_val != a.m_val; }
+    constexpr bool operator>(const Spatium &a) const { return m_val > a.m_val; }
+
+    constexpr bool operator<(const Spatium &a) const { return m_val < a.m_val; }
+
+    bool operator==(const Spatium &a) const { return muse::RealIsEqual(m_val, a.m_val); }
+
+    bool operator!=(const Spatium &a) const { return m_val != a.m_val; }
+
     bool isZero() const { return muse::RealIsNull(m_val); }
 
-    constexpr Spatium& operator+=(const Spatium& a)
-    {
+    constexpr Spatium &operator+=(const Spatium &a) {
         m_val += a.m_val;
         return *this;
     }
 
-    constexpr Spatium operator+(const Spatium& a) const
-    {
+    constexpr Spatium operator+(const Spatium &a) const {
         Spatium r(*this);
         r += a;
         return r;
     }
 
-    constexpr Spatium& operator-=(const Spatium& a)
-    {
+    constexpr Spatium &operator-=(const Spatium &a) {
         m_val -= a.m_val;
         return *this;
     }
 
-    constexpr Spatium operator-(const Spatium& a) const
-    {
+    constexpr Spatium operator-(const Spatium &a) const {
         Spatium r(*this);
         r -= a;
         return r;
     }
 
-    constexpr Spatium& operator/=(double d)
-    {
+    constexpr Spatium &operator/=(double d) {
         m_val /= d;
         return *this;
     }
 
-    constexpr double operator/(const Spatium& b) const
-    {
-        return m_val / b.m_val;
-    }
+    constexpr double operator/(const Spatium &b) const { return m_val / b.m_val; }
 
-    constexpr Spatium operator/(double b) const
-    {
+    constexpr Spatium operator/(double b) const {
         Spatium r(*this);
         r /= b;
         return r;
     }
 
-    constexpr Spatium& operator*=(int d)
-    {
+    constexpr Spatium &operator*=(int d) {
         m_val *= d;
         return *this;
     }
 
-    constexpr Spatium& operator*=(double d)
-    {
+    constexpr Spatium &operator*=(double d) {
         m_val *= d;
         return *this;
     }
 
-    constexpr Spatium operator*(int b) const
-    {
+    constexpr Spatium operator*(int b) const {
         Spatium r(*this);
         r *= b;
         return r;
     }
 
-    constexpr Spatium operator*(double b) const
-    {
+    constexpr Spatium operator*(double b) const {
         Spatium r(*this);
         r *= b;
         return r;
@@ -126,19 +117,18 @@ private:
 };
 
 constexpr Spatium operator""_sp(long double v) { return Spatium(static_cast<double>(v)); }
+
 constexpr Spatium operator""_sp(unsigned long long v) { return Spatium(static_cast<double>(v)); }
 
-constexpr Spatium operator*(int a, const Spatium& b)
-{
+constexpr Spatium operator*(int a, const Spatium &b) {
     Spatium r(b);
     r *= a;
     return r;
 }
 
-constexpr Spatium operator*(double a, const Spatium& b)
-{
+constexpr Spatium operator*(double a, const Spatium &b) {
     Spatium r(b);
     r *= a;
     return r;
 }
-}
+} // namespace mu::engraving

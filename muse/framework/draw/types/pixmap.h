@@ -26,37 +26,38 @@
 
 #include "geometry.h"
 
-
 namespace muse::draw {
-class Pixmap
-{
+class Pixmap {
 public:
 
     Pixmap() = default;
-    Pixmap(Size size)
-        : m_size(size) {}
-    Pixmap(const ByteArray& data, Size size)
-        : m_size(size) { setData(data); }
-    Pixmap(int w, int h)
-        : m_size(Size(w, h)) {}
+
+    Pixmap(Size size) : m_size(size) {}
+
+    Pixmap(const ByteArray &data, Size size) : m_size(size) { setData(data); }
+
+    Pixmap(int w, int h) : m_size(Size(w, h)) {}
 
     int width() const { return m_size.width(); }
+
     int height() const { return m_size.height(); }
+
     Size size() const { return m_size; }
+
     ByteArray data() const { return m_data; }
 
     bool isNull() const { return m_data.empty(); }
 
     unsigned int key() const { return m_key; }
 
-    bool operator==(const Pixmap& o) const { return m_size == o.m_size && m_key == o.m_key && m_data == o.m_data; }
-    bool operator!=(const Pixmap& o) const { return !this->operator==(o); }
+    bool operator==(const Pixmap &o) const { return m_size == o.m_size && m_key == o.m_key && m_data == o.m_data; }
+
+    bool operator!=(const Pixmap &o) const { return !this->operator==(o); }
 
 
 private:
 
-    inline unsigned int doKey(const uint8_t* p, size_t len) const
-    {
+    inline unsigned int doKey(const uint8_t *p, size_t len) const {
         unsigned int h = 0;
         for (size_t i = 0; i < len; ++i) {
             h = 31 * h + p[i];
@@ -64,8 +65,7 @@ private:
         return h;
     }
 
-    void setData(const ByteArray& data)
-    {
+    void setData(const ByteArray &data) {
         m_data = data;
         m_key = doKey(data.constData(), data.size());
     }
@@ -74,7 +74,6 @@ private:
     ByteArray m_data; //! usually png
     unsigned int m_key = 0;
 };
-}
-
+} // namespace muse::draw
 
 #endif // MUSE_DRAW_PIXMAP_H

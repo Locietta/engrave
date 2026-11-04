@@ -29,11 +29,10 @@
 #include "../../ifxresolver.h"
 
 namespace muse::audio::fx {
-class FxResolver : public IFxResolver
-{
+class FxResolver : public IFxResolver {
 public:
-    std::vector<IFxProcessorPtr> resolveMasterFxList(const AudioFxChain& fxChain, const OutputSpec& outputSpec) override;
-    std::vector<IFxProcessorPtr> resolveFxList(const TrackId trackId, const AudioFxChain& fxChain, const OutputSpec& outputSpec) override;
+    std::vector<IFxProcessorPtr> resolveMasterFxList(const AudioFxChain &fxChain, const OutputSpec &outputSpec) override;
+    std::vector<IFxProcessorPtr> resolveFxList(const TrackId trackId, const AudioFxChain &fxChain, const OutputSpec &outputSpec) override;
     AudioResourceMetaList resolveAvailableResources() const override;
     void registerResolver(const AudioFxType type, IResolverPtr resolver) override;
     void clearAllFx() override;
@@ -42,6 +41,6 @@ private:
     std::map<AudioFxType, IResolverPtr> m_resolvers;
     mutable std::mutex m_mutex;
 };
-}
+} // namespace muse::audio::fx
 
 #endif // MUSE_AUDIO_FXRESOLVER_H

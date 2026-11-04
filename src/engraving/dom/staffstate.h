@@ -30,19 +30,13 @@
 namespace mu::engraving {
 class Transaction;
 
-enum class StaffStateType : char {
-    INSTRUMENT,
-    TYPE,
-    VISIBLE,
-    INVISIBLE
-};
+enum class StaffStateType : char { INSTRUMENT, TYPE, VISIBLE, INVISIBLE };
 
 //---------------------------------------------------------
 //   @@ StaffState
 //---------------------------------------------------------
 
-class StaffState final : public EngravingItem
-{
+class StaffState final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, StaffState)
     DECLARE_CLASSOF(ElementType::STAFF_STATE)
 
@@ -50,20 +44,26 @@ public:
 
     ~StaffState();
 
-    StaffState* clone() const override { return new StaffState(*this); }
+    StaffState *clone() const override { return new StaffState(*this); }
 
-    void setStaffStateType(const String&);
+    void setStaffStateType(const String &);
+
     void setStaffStateType(StaffStateType st) { m_staffStateType = st; }
+
     StaffStateType staffStateType() const { return m_staffStateType; }
+
     String staffStateTypeName() const;
 
-    bool acceptDrop(EditData&) const override;
-    EngravingItem* drop(Transaction& tx, EditData&) override;
+    bool acceptDrop(EditData &) const override;
+    EngravingItem *drop(Transaction &tx, EditData &) override;
 
-    Instrument* instrument() const { return m_instrument; }
-    void setInstrument(const Instrument* i) { *m_instrument = *i; }
-    void setInstrument(const Instrument&& i) { *m_instrument = i; }
-    Segment* segment() { return (Segment*)ownershipParent(); }
+    Instrument *instrument() const { return m_instrument; }
+
+    void setInstrument(const Instrument *i) { *m_instrument = *i; }
+
+    void setInstrument(const Instrument &&i) { *m_instrument = i; }
+
+    Segment *segment() { return (Segment *) ownershipParent(); }
 
     struct LayoutData : public EngravingItem::LayoutData {
         double lw = 0.0;
@@ -75,11 +75,11 @@ private:
 
     friend class Factory;
     StaffState(DummyParentOr<EngravingItem> parent);
-    StaffState(const StaffState&);
+    StaffState(const StaffState &);
 
     StaffStateType m_staffStateType = StaffStateType::INVISIBLE;
 
-    Instrument* m_instrument = nullptr;
+    Instrument *m_instrument = nullptr;
 };
 } // namespace mu::engraving
 #endif

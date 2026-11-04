@@ -27,17 +27,13 @@
 #include "audiomathutils.h"
 
 namespace muse::audio::dsp {
-struct EnvelopeFilterConfig
-{
-    explicit EnvelopeFilterConfig(const unsigned int sampleRate,
-                                  const float ratio = DEFAULT_RATIO,
+struct EnvelopeFilterConfig {
+    explicit EnvelopeFilterConfig(const unsigned int sampleRate, const float ratio = DEFAULT_RATIO,
                                   const volume_db_t logarithmicThreshold = DEFAULT_THRESHOLD_DB,
-                                  const volume_db_t kneeWidth = DEFAULT_KNEE_WIDTH,
-                                  const float attackTime = DEFAULT_ATTACK_TIME,
+                                  const volume_db_t kneeWidth = DEFAULT_KNEE_WIDTH, const float attackTime = DEFAULT_ATTACK_TIME,
                                   const float releaseTime = DEFAULT_RELEASE_TIME,
                                   const volume_db_t minimumOperableLevel = DEFAULT_MINIMUM_OPERABLE_LEVEL,
-                                  const volume_db_t makeUpGain = DEFAULT_MAKE_UP_GAIN)
-    {
+                                  const volume_db_t makeUpGain = DEFAULT_MAKE_UP_GAIN) {
         m_sampleRate = sampleRate;
         m_ratio = ratio;
         m_kneeWidth = kneeWidth;
@@ -57,65 +53,35 @@ struct EnvelopeFilterConfig
     }
 
     static constexpr float DEFAULT_KNEE_WIDTH = 6.f; // [0, 20.f]
-    static constexpr float DEFAULT_RATIO = 4.f; // [1, 50.f]
+    static constexpr float DEFAULT_RATIO = 4.f;      // [1, 50.f]
     static constexpr volume_db_t DEFAULT_THRESHOLD_DB = volume_dbfs_t::make(-10.f);
     static constexpr float DEFAULT_ATTACK_TIME = 0.005f; // [0, 4.f]
     static constexpr float DEFAULT_RELEASE_TIME = 0.02f; // [0, 4.f]
     static constexpr volume_db_t DEFAULT_MINIMUM_OPERABLE_LEVEL = volume_dbfs_t::make(-60.f);
     static constexpr volume_db_t DEFAULT_MAKE_UP_GAIN = volume_dbfs_t::make(-10.f); // [-10.f, 12.f]
 
-    unsigned int sampleRate() const
-    {
-        return m_sampleRate;
-    }
+    unsigned int sampleRate() const { return m_sampleRate; }
 
     /// Compression ratio is the input/output ratio for signals that overshoot the operation threshold.
-    float ratio() const
-    {
-        return m_ratio;
-    }
+    float ratio() const { return m_ratio; }
 
-    volume_db_t kneeWidth() const
-    {
-        return m_kneeWidth;
-    }
+    volume_db_t kneeWidth() const { return m_kneeWidth; }
 
     /// Operation threshold is the level above which gain is applied to the input signal.
-    volume_db_t logarithmicThreshold() const
-    {
-        return m_logarithmicThreshold;
-    }
+    volume_db_t logarithmicThreshold() const { return m_logarithmicThreshold; }
 
-    float attackTimeCoefficient() const
-    {
-        return m_attackTimeCoefficient;
-    }
+    float attackTimeCoefficient() const { return m_attackTimeCoefficient; }
 
-    float releaseTimeCoefficient() const
-    {
-        return m_releaseTimeCoefficient;
-    }
+    float releaseTimeCoefficient() const { return m_releaseTimeCoefficient; }
 
-    volume_db_t minimumOperableLevel() const
-    {
-        return m_minimumOperableLevel;
-    }
+    volume_db_t minimumOperableLevel() const { return m_minimumOperableLevel; }
 
-    volume_db_t softThresholdUpper() const
-    {
-        return m_softThresholdUpper;
-    }
+    volume_db_t softThresholdUpper() const { return m_softThresholdUpper; }
 
-    volume_db_t softThresholdLower() const
-    {
-        return m_softThresholdLower;
-    }
+    volume_db_t softThresholdLower() const { return m_softThresholdLower; }
 
     /// Make-up gain compensates for gain lost during limiting. It is applied at the output of the dynamic range limiter.
-    volume_db_t makeUpGain() const
-    {
-        return m_makeUpGain;
-    }
+    volume_db_t makeUpGain() const { return m_makeUpGain; }
 
 private:
     unsigned int m_sampleRate = 0;
@@ -132,6 +98,6 @@ private:
     volume_db_t m_softThresholdLower = 0.f;
     volume_db_t m_makeUpGain = 0.f;
 };
-}
+} // namespace muse::audio::dsp
 
 #endif // MUSE_AUDIO_DSP_ABSTRACTENVELOPEFILTER_H

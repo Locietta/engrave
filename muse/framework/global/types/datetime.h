@@ -22,17 +22,15 @@
 #ifndef MUSE_GLOBAL_DATETIME_H
 #define MUSE_GLOBAL_DATETIME_H
 
-
 #include "string.h"
 
 namespace muse {
 enum class DateFormat {
-    ISODate,                // ISO 8601
+    ISODate, // ISO 8601
     LocaleShortFormat
 };
 
-class Date
-{
+class Date {
 public:
     Date() = default;
     Date(int y, int m, int d);
@@ -43,15 +41,16 @@ public:
     int month() const;
     int day() const;
 
-    inline bool operator ==(const Date& d) const { return m_year == d.m_year && m_month == d.m_month && m_day == d.m_day; }
-    inline bool operator !=(const Date& d) const { return !this->operator ==(d); }
+    inline bool operator==(const Date &d) const { return m_year == d.m_year && m_month == d.m_month && m_day == d.m_day; }
 
-    int64_t daysTo(const Date& d) const;
+    inline bool operator!=(const Date &d) const { return !this->operator==(d); }
+
+    int64_t daysTo(const Date &d) const;
 
     static Date currentDate();
 
     String toString(DateFormat format = DateFormat::ISODate) const;
-    static Date fromStringISOFormat(const String& str);
+    static Date fromStringISOFormat(const String &str);
 
 
 private:
@@ -60,8 +59,7 @@ private:
     int m_day = 0;
 };
 
-class Time
-{
+class Time {
 public:
 
     Time() = default;
@@ -71,13 +69,14 @@ public:
     int minute() const;
     int second() const;
 
-    inline bool operator ==(const Time& t) const { return m_hour == t.m_hour && m_minute == t.m_minute && m_second == t.m_second; }
-    inline bool operator !=(const Time& t) const { return !this->operator ==(t); }
+    inline bool operator==(const Time &t) const { return m_hour == t.m_hour && m_minute == t.m_minute && m_second == t.m_second; }
+
+    inline bool operator!=(const Time &t) const { return !this->operator==(t); }
 
     static Time currentTime();
 
     String toString(DateFormat format = DateFormat::ISODate) const;
-    static Time fromStringISOFormat(const String& str);
+    static Time fromStringISOFormat(const String &str);
 
 
 private:
@@ -86,22 +85,22 @@ private:
     int m_second = 0;
 };
 
-class DateTime
-{
+class DateTime {
 public:
     DateTime() = default;
-    DateTime(const Date& d, const Time& t);
+    DateTime(const Date &d, const Time &t);
 
-    const Date& date() const;
-    const Time& time() const;
+    const Date &date() const;
+    const Time &time() const;
 
-    inline bool operator ==(const DateTime& dt) const { return dt.date() == date() && dt.time() == time(); }
-    inline bool operator !=(const DateTime& dt) const { return !this->operator ==(dt); }
+    inline bool operator==(const DateTime &dt) const { return dt.date() == date() && dt.time() == time(); }
+
+    inline bool operator!=(const DateTime &dt) const { return !this->operator==(dt); }
 
     static DateTime currentDateTime();
 
     String toString(DateFormat format = DateFormat::ISODate) const;
-    static DateTime fromStringISOFormat(const String& str);
+    static DateTime fromStringISOFormat(const String &str);
 
 
 private:
@@ -109,6 +108,6 @@ private:
     Date m_date;
     Time m_time;
 };
-}
+} // namespace muse
 
 #endif // MUSE_GLOBAL_DATETIME_H

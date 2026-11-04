@@ -25,20 +25,19 @@
 namespace mu::engraving {
 class Score;
 class XmlWriter;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::write {
 class WriteContext;
-}
+} // namespace mu::engraving::write
 
 namespace mu::engraving::compat {
-class WriteScoreHook
-{
+class WriteScoreHook {
 public:
     WriteScoreHook() = default;
 
-    void onWriteStyle302(Score* score, XmlWriter& xml, bool inlineStyle = false);
-    void onWriteExcerpts302(Score* score, XmlWriter& xml, write::WriteContext& ctx);
+    void onWriteStyle302(Score *score, XmlWriter &xml, bool inlineStyle = false);
+    void onWriteExcerpts302(Score *score, XmlWriter &xml, write::WriteContext &ctx);
 };
-}
+} // namespace mu::engraving::compat
 #endif // MU_ENGRAVING_WRITESCOREHOOK_H

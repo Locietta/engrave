@@ -25,42 +25,33 @@
 #include <cstddef>
 #include <memory>
 
-
-
 #include "audio/common/audiotypes.h"
 #include "global/types/ret.h"
 
 namespace muse::audio::encode {
-class AbstractAudioEncoder
-{
+class AbstractAudioEncoder {
 public:
-    AbstractAudioEncoder(const AbstractAudioEncoder&) = delete;
-    AbstractAudioEncoder(AbstractAudioEncoder&&) = delete;
+    AbstractAudioEncoder(const AbstractAudioEncoder &) = delete;
+    AbstractAudioEncoder(AbstractAudioEncoder &&) = delete;
 
     virtual ~AbstractAudioEncoder() noexcept = default;
 
-    AbstractAudioEncoder& operator=(const AbstractAudioEncoder&) = delete;
-    AbstractAudioEncoder& operator=(AbstractAudioEncoder&&) = delete;
+    AbstractAudioEncoder &operator=(const AbstractAudioEncoder &) = delete;
+    AbstractAudioEncoder &operator=(AbstractAudioEncoder &&) = delete;
 
     virtual bool begin(samples_t totalSamplesNumber) = 0;
-    virtual size_t encode(samples_t samplesPerChannel, const float* input) = 0;
+    virtual size_t encode(samples_t samplesPerChannel, const float *input) = 0;
     // Finalization may successfully produce zero bytes; report status instead.
     virtual Ret end() = 0;
 
-    const SoundTrackFormat& format() const
-    {
-        return m_format;
-    }
+    const SoundTrackFormat &format() const { return m_format; }
 
 
 protected:
-    explicit AbstractAudioEncoder(const SoundTrackFormat& format)
-        : m_format(format)
-    {
-    }
+    explicit AbstractAudioEncoder(const SoundTrackFormat &format) : m_format(format) {}
 
     SoundTrackFormat m_format;
 };
 
 using AbstractAudioEncoderPtr = std::unique_ptr<AbstractAudioEncoder>;
-}
+} // namespace muse::audio::encode

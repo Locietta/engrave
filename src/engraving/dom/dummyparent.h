@@ -32,21 +32,21 @@ class Score;
 //! The parent an object has while it is not attached to anything. It is not part of
 //! the score and nothing is laid out in it - it is not even an item; it only keeps
 //! unattached objects reachable, and heads the accessibility tree they form.
-class DummyParent : public EngravingObject
-{
+class DummyParent : public EngravingObject {
     OBJECT_ALLOCATOR(engraving, DummyParent)
 public:
-    DummyParent(Score* score);
+    DummyParent(Score *score);
     ~DummyParent();
 
     void init();
 
-    RootItem* rootItem() const { return m_root; }
+    RootItem *rootItem() const { return m_root; }
 
     PropertyValue getProperty(Pid) const override { return PropertyValue(); }
-    bool setProperty(Pid, const PropertyValue&) override { return false; }
+
+    bool setProperty(Pid, const PropertyValue &) override { return false; }
 
 private:
-    RootItem* m_root = nullptr;
+    RootItem *m_root = nullptr;
 };
-}
+} // namespace mu::engraving

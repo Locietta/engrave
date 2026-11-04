@@ -37,27 +37,25 @@ using namespace mu;
 using namespace muse::draw;
 
 namespace mu::engraving {
-void Skyline::add(const ShapeElement& r)
-{
+void Skyline::add(const ShapeElement &r) {
     if (r.ignoreForLayout()) {
         return;
     }
-    const EngravingItem* item = r.item();
+    const EngravingItem *item = r.item();
     bool crossSouth = false;
     bool crossNorth = false;
     if (item && item->isStem()) {
-        Chord* chord = toStem(item)->chord();
+        Chord *chord = toStem(item)->chord();
         if (chord) {
-            Beam* beam = chord->beam();
-            TremoloTwoChord* tremolo = chord->tremoloTwoChord();
-            bool isCross = (beam && beam->cross())
-                           || (tremolo && tremolo->chord1()->staffMove() != tremolo->chord2()->staffMove());
+            Beam *beam = chord->beam();
+            TremoloTwoChord *tremolo = chord->tremoloTwoChord();
+            bool isCross = (beam && beam->cross()) || (tremolo && tremolo->chord1()->staffMove() != tremolo->chord2()->staffMove());
             if (isCross) {
-                std::vector<ChordRest*> elements;
+                std::vector<ChordRest *> elements;
                 if (beam) {
                     elements = beam->elements();
                 } else if (tremolo) {
-                    elements = { tremolo->chord1(), tremolo->chord2() };
+                    elements = {tremolo->chord1(), tremolo->chord2()};
                 }
                 int thisStaffMove = chord->staffMove();
                 if (thisStaffMove < 0) {
@@ -65,7 +63,7 @@ void Skyline::add(const ShapeElement& r)
                 } else if (thisStaffMove > 0) {
                     crossSouth = true;
                 }
-                for (ChordRest* element : elements) {
+                for (ChordRest *element : elements) {
                     int staffMove = element->staffMove();
                     if (staffMove < thisStaffMove) {
                         crossNorth = true;
@@ -78,7 +76,7 @@ void Skyline::add(const ShapeElement& r)
         }
     }
     if (item && (item->isArpeggio() || item->isChordBracket())) {
-        const Arpeggio* arpeggio = toArpeggio(item);
+        const Arpeggio *arpeggio = toArpeggio(item);
         if (arpeggio->crossStaff()) {
             crossSouth = true;
         }
@@ -91,20 +89,18 @@ void Skyline::add(const ShapeElement& r)
     }
 }
 
-void SkylineLine::add(const Shape& s)
-{
-    for (const ShapeElement& se : s.elements()) {
+void SkylineLine::add(const Shape &s) {
+    for (const ShapeElement &se : s.elements()) {
         add(se);
     }
 }
 
-SkylineLine SkylineLine::getFilteredCopy(std::function<bool(const ShapeElement&)> filterOut) const
-{
+SkylineLine SkylineLine::getFilteredCopy(std::function<bool(const ShapeElement &)> filterOut) const {
     SkylineLine newSkylineLine(*this);
 
     newSkylineLine.m_shape.clear();
 
-    for (const ShapeElement& shapeEl : m_shape.elements()) {
+    for (const ShapeElement &shapeEl : m_shape.elements()) {
         if (filterOut(shapeEl)) {
             continue;
         }
@@ -114,8 +110,7 @@ SkylineLine SkylineLine::getFilteredCopy(std::function<bool(const ShapeElement&)
     return newSkylineLine;
 }
 
-void SkylineLine::add(const ShapeElement& r)
-{
+void SkylineLine::add(const ShapeElement &r) {
     if (r.ignoreForLayout()) {
         return;
     }
@@ -142,8 +137,7 @@ void SkylineLine::add(const ShapeElement& r)
     m_shape.add(r);
 }
 
-double SkylineLine::staffLinesTopAtX(double x) const
-{
+double SkylineLine::staffLinesTopAtX(double x) const {
     if (m_staffLineEdges.empty()) {
         return 0.0;
     }
@@ -156,8 +150,7 @@ double SkylineLine::staffLinesTopAtX(double x) const
     return (*upperBound).second.top;
 }
 
-double SkylineLine::staffLinesBottomAtX(double x) const
-{
+double SkylineLine::staffLinesBottomAtX(double x) const {
     if (m_staffLineEdges.empty()) {
         return 0.0;
     }
@@ -170,21 +163,18 @@ double SkylineLine::staffLinesBottomAtX(double x) const
     return (*upperBound).second.bottom;
 }
 
-void Skyline::add(const Shape& s)
-{
-    for (const auto& r : s.elements()) {
+void Skyline::add(const Shape &s) {
+    for (const auto &r : s.elements()) {
         add(r);
     }
 }
 
-void Skyline::clear()
-{
+void Skyline::clear() {
     _north.clear();
     _south.clear();
 }
 
-void SkylineLine::clear()
-{
+void SkylineLine::clear() {
     m_staffLineEdges.clear();
     m_shape.clear();
 }
@@ -195,45 +185,35 @@ void SkylineLine::clear()
 //    Calculates the minimum distance between two skylines
 //-------------------------------------------------------------------
 
-double Skyline::minDistance(const Skyline& s, double minHorizontalClearance) const
-{
+double Skyline::minDistance(const Skyline &s, double minHorizontalClearance) const {
     return south().minDistance(s.north(), minHorizontalClearance);
 }
 
-double SkylineLine::minDistance(const SkylineLine& sl, double minHorizontalClearance) const
-{
+double SkylineLine::minDistance(const SkylineLine &sl, double minHorizontalClearance) const {
     return m_shape.minVerticalDistance(sl.m_shape, minHorizontalClearance);
 }
 
-double SkylineLine::minDistanceToShapeAbove(const Shape& shapeAbove, double minHorizontalClearance) const
-{
+double SkylineLine::minDistanceToShapeAbove(const Shape &shapeAbove, double minHorizontalClearance) const {
     return shapeAbove.minVerticalDistance(m_shape, minHorizontalClearance);
 }
 
-double SkylineLine::minDistanceToShapeBelow(const Shape& shapeBelow, double minHorizontalClearance) const
-{
+double SkylineLine::minDistanceToShapeBelow(const Shape &shapeBelow, double minHorizontalClearance) const {
     return m_shape.minVerticalDistance(shapeBelow, minHorizontalClearance);
 }
 
-double SkylineLine::verticalClearanceAbove(const Shape& shapeAbove) const
-{
-    return shapeAbove.verticalClearance(m_shape);
-}
+double SkylineLine::verticalClearanceAbove(const Shape &shapeAbove) const { return shapeAbove.verticalClearance(m_shape); }
 
-double SkylineLine::verticalClearanceBelow(const Shape& shapeBelow) const
-{
-    return m_shape.verticalClearance(shapeBelow);
-}
+double SkylineLine::verticalClearanceBelow(const Shape &shapeBelow) const { return m_shape.verticalClearance(shapeBelow); }
 
-void Skyline::paint(Painter& painter, double lineWidth) const // DEBUG only
+void Skyline::paint(Painter &painter, double lineWidth) const // DEBUG only
 {
     painter.save();
 
     painter.setBrush(BrushStyle::NoBrush);
 
-    for (const ShapeElement& northShapeEl : _north.elements()) {
+    for (const ShapeElement &northShapeEl : _north.elements()) {
         painter.setPen(Pen(Color(144, 238, 144), lineWidth));
-        for (const ShapeElement& southShapeEl : _south.elements()) {
+        for (const ShapeElement &southShapeEl : _south.elements()) {
             if (northShapeEl.item() == southShapeEl.item()) {
                 // Paint in different color items that belong to both north and south skyline
                 painter.setPen(Pen(Color(144, 191, 191), lineWidth));
@@ -244,9 +224,9 @@ void Skyline::paint(Painter& painter, double lineWidth) const // DEBUG only
     }
 
     painter.setPen(Pen(Color(144, 144, 238), lineWidth));
-    for (const ShapeElement& southShapeEl : _south.elements()) {
+    for (const ShapeElement &southShapeEl : _south.elements()) {
         bool alreadyPainted = false;
-        for (const ShapeElement& northShapeEl : _north.elements()) {
+        for (const ShapeElement &northShapeEl : _north.elements()) {
             if (northShapeEl.item() == southShapeEl.item()) {
                 alreadyPainted = true;
                 break;
@@ -260,21 +240,16 @@ void Skyline::paint(Painter& painter, double lineWidth) const // DEBUG only
     painter.restore();
 }
 
-bool SkylineLine::valid() const
-{
-    return !m_shape.empty();
-}
+bool SkylineLine::valid() const { return !m_shape.empty(); }
 
-SkylineLine& SkylineLine::translateY(double y)
-{
+SkylineLine &SkylineLine::translateY(double y) {
     m_shape.translateY(y);
     return *this;
 }
 
-double SkylineLine::top(double startX, double endX)
-{
+double SkylineLine::top(double startX, double endX) {
     double top = DBL_MAX;
-    for (const ShapeElement& element : m_shape.elements()) {
+    for (const ShapeElement &element : m_shape.elements()) {
         if (element.right() > startX && element.left() < endX) {
             top = std::min(top, element.top());
         }
@@ -287,10 +262,9 @@ double SkylineLine::top(double startX, double endX)
     return top;
 }
 
-double SkylineLine::bottom(double startX, double endX)
-{
+double SkylineLine::bottom(double startX, double endX) {
     double bottom = -DBL_MAX;
-    for (const ShapeElement& element : m_shape.elements()) {
+    for (const ShapeElement &element : m_shape.elements()) {
         if (element.right() > startX && element.left() < endX) {
             bottom = std::max(bottom, element.bottom());
         }
@@ -303,14 +277,10 @@ double SkylineLine::bottom(double startX, double endX)
     return bottom;
 }
 
-double SkylineLine::max() const
-{
-    return m_isNorth ? m_shape.top() : m_shape.bottom();
-}
+double SkylineLine::max() const { return m_isNorth ? m_shape.top() : m_shape.bottom(); }
 } // namespace mu::engraving
 
-std::string mu::engraving::dump(const Skyline& skyline)
-{
+std::string mu::engraving::dump(const Skyline &skyline) {
     std::stringstream ss;
     ss << "Skyline dump.\n";
     dump(skyline.north(), ss);
@@ -318,10 +288,9 @@ std::string mu::engraving::dump(const Skyline& skyline)
     return ss.str();
 }
 
-void mu::engraving::dump(const SkylineLine& skylineLine, std::stringstream& ss)
-{
+void mu::engraving::dump(const SkylineLine &skylineLine, std::stringstream &ss) {
     ss << "North: " << skylineLine.isNorth();
-    for (const ShapeElement& se : skylineLine.elements()) {
+    for (const ShapeElement &se : skylineLine.elements()) {
         dump(se, ss);
     }
 }

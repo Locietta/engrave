@@ -46,8 +46,7 @@ namespace mu::engraving {
  * EditTimeTickAnchors
  * ************************************/
 
-void EditTimeTickAnchors::updateAnchors(const EngravingItem* item)
-{
+void EditTimeTickAnchors::updateAnchors(const EngravingItem *item) {
     if (!item->allowTimeAnchor()) {
         item->score()->hideAnchors();
         return;
@@ -56,16 +55,16 @@ void EditTimeTickAnchors::updateAnchors(const EngravingItem* item)
     Fraction startTickMainRegion = item->isSpannerSegment() ? toSpannerSegment(item)->spanner()->tick() : item->tick();
     Fraction endTickMainRegion = item->isSpannerSegment() ? toSpannerSegment(item)->spanner()->tick2() : item->tick();
 
-    Score* score = item->score();
-    Measure* startMeasure = score->tick2measure(startTickMainRegion);
-    Measure* endMeasure = score->tick2measure(endTickMainRegion);
+    Score *score = item->score();
+    Measure *startMeasure = score->tick2measure(startTickMainRegion);
+    Measure *endMeasure = score->tick2measure(endTickMainRegion);
     if (!startMeasure || !endMeasure) {
         return;
     }
 
     staff_idx_t staff = item->staffIdx();
-    Measure* startOneBefore = startMeasure->prevMeasure();
-    for (MeasureBase* mb = startOneBefore ? startOneBefore : startMeasure; mb && mb->tick() <= endMeasure->tick(); mb = mb->next()) {
+    Measure *startOneBefore = startMeasure->prevMeasure();
+    for (MeasureBase *mb = startOneBefore ? startOneBefore : startMeasure; mb && mb->tick() <= endMeasure->tick(); mb = mb->next()) {
         if (!mb->isMeasure()) {
             continue;
         }
@@ -74,67 +73,62 @@ void EditTimeTickAnchors::updateAnchors(const EngravingItem* item)
 
     Fraction startTickExtendedRegion = startMeasure->tick();
     Fraction endTickExtendedRegion = endMeasure->endTick();
-    voice_idx_t voiceIdx =  item->hasVoiceAssignmentProperties() && item->getProperty(Pid::VOICE_ASSIGNMENT).value<VoiceAssignment>()
-                           != VoiceAssignment::CURRENT_VOICE_ONLY ? VOICES : item->voice();
+    voice_idx_t voiceIdx = item->hasVoiceAssignmentProperties() && item->getProperty(Pid::VOICE_ASSIGNMENT).value<VoiceAssignment>() !=
+                                                                       VoiceAssignment::CURRENT_VOICE_ONLY ?
+                               VOICES :
+                               item->voice();
 
-    score->setShowAnchors(ShowAnchors(voiceIdx, staff, startTickMainRegion, endTickMainRegion, startTickExtendedRegion,
-                                      endTickExtendedRegion));
+    score->setShowAnchors(
+        ShowAnchors(voiceIdx, staff, startTickMainRegion, endTickMainRegion, startTickExtendedRegion, endTickExtendedRegion));
 
     item->triggerLayout();
 }
 
-void EditTimeTickAnchors::updateAnchors(Measure* measure, staff_idx_t staffIdx, const std::set<Fraction>& additionalAnchorRelTicks)
-{
+void EditTimeTickAnchors::updateAnchors(Measure *measure, staff_idx_t staffIdx, const std::set<Fraction> &additionalAnchorRelTicks) {
     Fraction startTick = Fraction(0, 1);
     Fraction endTick = measure->ticks();
 
-    TimeSig* timeSig = measure->score()->staff(staffIdx)->timeSig(measure->tick());
+    TimeSig *timeSig = measure->score()->staff(staffIdx)->timeSig(measure->tick());
     Fraction timeSigFrac = timeSig ? timeSig->sig() : measure->timesig();
     Fraction halfDivision = Fraction(1, 2 * timeSigFrac.denominator());
     if (timeSig) {
         halfDivision /= timeSig->stretch();
     }
 
-    std::set<Fraction> anchorTicks { additionalAnchorRelTicks };
+    std::set<Fraction> anchorTicks{additionalAnchorRelTicks};
     for (Fraction tick = startTick; tick <= endTick; tick += halfDivision) {
         anchorTicks.insert(tick);
     }
-    for (Segment* seg = measure->first(SegmentType::Duration); seg;
-         seg = seg->next(SegmentType::Duration)) {
+    for (Segment *seg = measure->first(SegmentType::Duration); seg; seg = seg->next(SegmentType::Duration)) {
         anchorTicks.insert(seg->rtick());
     }
 
-    for (const Fraction& anchorTick : anchorTicks) {
+    for (const Fraction &anchorTick : anchorTicks) {
         createTimeTickAnchor(measure, anchorTick, staffIdx);
     }
 
     updateLayout(measure);
 }
 
-TimeTickAnchor* EditTimeTickAnchors::createTimeTickAnchor(Measure* measure, Fraction relTick, staff_idx_t staffIdx)
-{
-    TimeTickAnchor* returnAnchor = nullptr;
+TimeTickAnchor *EditTimeTickAnchors::createTimeTickAnchor(Measure *measure, Fraction relTick, staff_idx_t staffIdx) {
+    TimeTickAnchor *returnAnchor = nullptr;
 
-    Staff* staff = measure->score()->staff(staffIdx);
-    IF_ASSERT_FAILED(staff) {
-        return nullptr;
-    }
+    Staff *staff = measure->score()->staff(staffIdx);
+    IF_ASSERT_FAILED(staff) { return nullptr; }
 
-    for (EngravingObject* linkedObj : staff->linkList()) {
-        IF_ASSERT_FAILED(linkedObj) {
-            continue;
-        }
+    for (EngravingObject *linkedObj : staff->linkList()) {
+        IF_ASSERT_FAILED(linkedObj) { continue; }
 
-        Staff* linkedStaff = toStaff(linkedObj);
-        Measure* linkedMeasure = linkedObj == staff ? measure : linkedStaff->score()->tick2measureMM(measure->tick());
+        Staff *linkedStaff = toStaff(linkedObj);
+        Measure *linkedMeasure = linkedObj == staff ? measure : linkedStaff->score()->tick2measureMM(measure->tick());
         if (!linkedMeasure) {
             continue;
         }
 
-        Segment* segment = linkedMeasure->getSegmentR(SegmentType::TimeTick, relTick);
+        Segment *segment = linkedMeasure->getSegmentR(SegmentType::TimeTick, relTick);
         track_idx_t track = staff2track(linkedStaff->idx());
-        EngravingItem* element = segment->element(track);
-        TimeTickAnchor* anchor = element ? toTimeTickAnchor(element) : nullptr;
+        EngravingItem *element = segment->element(track);
+        TimeTickAnchor *anchor = element ? toTimeTickAnchor(element) : nullptr;
         if (!anchor) {
             anchor = Factory::createTimeTickAnchor(segment);
             anchor->setTrack(track);
@@ -148,33 +142,28 @@ TimeTickAnchor* EditTimeTickAnchors::createTimeTickAnchor(Measure* measure, Frac
     return returnAnchor;
 }
 
-void EditTimeTickAnchors::updateLayout(Measure* measure)
-{
+void EditTimeTickAnchors::updateLayout(Measure *measure) {
     measure->computeTicks();
 
-    Score* score = measure->score();
+    Score *score = measure->score();
     LayoutContext ctx(score);
     MeasureLayout::layoutTimeTickAnchors(measure, ctx);
 }
 
-bool MoveElementAnchors::canAnchorToEndOfPrevious(const EngravingItem* element)
-{
+bool MoveElementAnchors::canAnchorToEndOfPrevious(const EngravingItem *element) {
     switch (element->type()) {
-    case ElementType::HARMONY:
-    case ElementType::FRET_DIAGRAM:
-    case ElementType::REHEARSAL_MARK:
-        return false;
-    default:
-        return true;
+        case ElementType::HARMONY:
+        case ElementType::FRET_DIAGRAM:
+        case ElementType::REHEARSAL_MARK: return false;
+        default: return true;
     }
 }
 
-void MoveElementAnchors::checkMeasureBoundariesAndMoveIfNeed(EngravingItem* element)
-{
-    Segment* curSeg = toSegment(element->parent());
+void MoveElementAnchors::checkMeasureBoundariesAndMoveIfNeed(EngravingItem *element) {
+    Segment *curSeg = toSegment(element->parent());
     Fraction curTick = curSeg->tick();
-    Measure* curMeasure = curSeg->measure();
-    Measure* prevMeasure = curMeasure->prevMeasure();
+    Measure *curMeasure = curSeg->measure();
+    Measure *prevMeasure = curMeasure->prevMeasure();
     bool anchorToEndOfPrevious = element->getProperty(Pid::ANCHOR_TO_END_OF_PREVIOUS).toBool();
     bool needMoveToNext = curTick == curMeasure->endTick() && !anchorToEndOfPrevious;
     bool needMoveToPrevious = curSeg->rtick().isZero() && anchorToEndOfPrevious && prevMeasure;
@@ -183,12 +172,12 @@ void MoveElementAnchors::checkMeasureBoundariesAndMoveIfNeed(EngravingItem* elem
         return;
     }
 
-    Segment* newSeg = nullptr;
+    Segment *newSeg = nullptr;
     if (needMoveToPrevious) {
         newSeg = prevMeasure->findSegment(SegmentType::TimeTick, curSeg->tick());
         if (!newSeg) {
-            TimeTickAnchor* anchor = EditTimeTickAnchors::createTimeTickAnchor(prevMeasure, curTick - prevMeasure->tick(),
-                                                                               element->staffIdx());
+            TimeTickAnchor *anchor =
+                EditTimeTickAnchors::createTimeTickAnchor(prevMeasure, curTick - prevMeasure->tick(), element->staffIdx());
             EditTimeTickAnchors::updateLayout(prevMeasure);
             newSeg = anchor->segment();
         }
@@ -201,16 +190,15 @@ void MoveElementAnchors::checkMeasureBoundariesAndMoveIfNeed(EngravingItem* elem
     }
 }
 
-Segment* MoveElementAnchors::findNewAnchorableSegmentFromDrag(EngravingItem* element, Segment* curSeg)
-{
-    const System* system = curSeg->system();
+Segment *MoveElementAnchors::findNewAnchorableSegmentFromDrag(EngravingItem *element, Segment *curSeg) {
+    const System *system = curSeg->system();
     if (!system) {
         return nullptr;
     }
 
-    const Measure* newMeasure = nullptr;
+    const Measure *newMeasure = nullptr;
     double xRef = element->canvasX() - system->canvasX();
-    for (MeasureBase* mb : system->measures()) {
+    for (MeasureBase *mb : system->measures()) {
         if (!mb->isMeasure()) {
             continue;
         }
@@ -223,39 +211,34 @@ Segment* MoveElementAnchors::findNewAnchorableSegmentFromDrag(EngravingItem* ele
         return nullptr;
     }
 
-    Segment* newSeg = nullptr;
+    Segment *newSeg = nullptr;
     dragPositionToSegment(element->canvasPos(), newMeasure, element->staffIdx(), &newSeg, 0.5, true);
 
     return newSeg;
 }
 
-void MoveElementAnchors::moveSegment(EngravingItem* element, bool forward)
-{
-    Segment* curSeg = toSegment(element->ownershipParent());
-    Segment* newSeg = getNewSegment(element, curSeg, forward);
+void MoveElementAnchors::moveSegment(EngravingItem *element, bool forward) {
+    Segment *curSeg = toSegment(element->ownershipParent());
+    Segment *newSeg = getNewSegment(element, curSeg, forward);
 
     if (newSeg) {
         moveSegment(element, newSeg, newSeg->tick() - curSeg->tick());
     }
 }
 
-Segment* MoveElementAnchors::getNewSegment(EngravingItem* element, Segment* curSeg, bool forward)
-{
+Segment *MoveElementAnchors::getNewSegment(EngravingItem *element, Segment *curSeg, bool forward) {
     switch (element->type()) {
-    case ElementType::REHEARSAL_MARK:
-    {
-        Measure* measure = curSeg->measure();
-        Measure* newMeasure = forward ? measure->nextMeasureMM() : measure->prevMeasureMM();
-        return newMeasure ? newMeasure->first(SegmentType::ChordRest) : nullptr;
-    }
-    default:
-        return findNewAnchorableSegment(curSeg, forward);
+        case ElementType::REHEARSAL_MARK: {
+            Measure *measure = curSeg->measure();
+            Measure *newMeasure = forward ? measure->nextMeasureMM() : measure->prevMeasureMM();
+            return newMeasure ? newMeasure->first(SegmentType::ChordRest) : nullptr;
+        }
+        default: return findNewAnchorableSegment(curSeg, forward);
     }
 }
 
-Segment* MoveElementAnchors::findNewAnchorableSegment(const Segment* curSeg, bool forward)
-{
-    Segment* newSeg = forward ? curSeg->next1(SegmentType::Duration) : curSeg->prev1(SegmentType::Duration);
+Segment *MoveElementAnchors::findNewAnchorableSegment(const Segment *curSeg, bool forward) {
+    Segment *newSeg = forward ? curSeg->next1(SegmentType::Duration) : curSeg->prev1(SegmentType::Duration);
 
     // Continue until we get to a different tick than where we are
     while (newSeg && newSeg->tick() == curSeg->tick()) {
@@ -267,7 +250,7 @@ Segment* MoveElementAnchors::findNewAnchorableSegment(const Segment* curSeg, boo
 
     // Always prefer ChordRest segment if one exists at the same tick
     if (newSeg->segmentType() != SegmentType::ChordRest) {
-        Segment* newChordRestSeg = forward ? newSeg->next1(SegmentType::ChordRest) : newSeg->prev1(SegmentType::ChordRest);
+        Segment *newChordRestSeg = forward ? newSeg->next1(SegmentType::ChordRest) : newSeg->prev1(SegmentType::ChordRest);
         if (newChordRestSeg && newChordRestSeg->tick() == newSeg->tick()) {
             newSeg = newChordRestSeg;
         }
@@ -276,27 +259,17 @@ Segment* MoveElementAnchors::findNewAnchorableSegment(const Segment* curSeg, boo
     return newSeg;
 }
 
-void MoveElementAnchors::moveSegment(EngravingItem* element, Segment* newSeg, Fraction tickDiff)
-{
+void MoveElementAnchors::moveSegment(EngravingItem *element, Segment *newSeg, Fraction tickDiff) {
     switch (element->type()) {
-    case ElementType::FIGURED_BASS:
-        doMoveSegment(toFiguredBass(element), newSeg, tickDiff);
-        break;
-    case ElementType::HARMONY:
-    case ElementType::FRET_DIAGRAM:
-        doMoveHarmonyOrFretDiagramSegment(element, newSeg, tickDiff);
-        break;
-    default:
-        doMoveSegment(toEngravingItem(element), newSeg, tickDiff);
-        break;
+        case ElementType::FIGURED_BASS: doMoveSegment(toFiguredBass(element), newSeg, tickDiff); break;
+        case ElementType::HARMONY:
+        case ElementType::FRET_DIAGRAM: doMoveHarmonyOrFretDiagramSegment(element, newSeg, tickDiff); break;
+        default: doMoveSegment(toEngravingItem(element), newSeg, tickDiff); break;
     }
 }
 
-void MoveElementAnchors::doMoveSegment(EngravingItem* element, Segment* newSeg, Fraction tickDiff)
-{
-    IF_ASSERT_FAILED(element->parent() && element->parent()->isSegment()) {
-        return;
-    }
+void MoveElementAnchors::doMoveSegment(EngravingItem *element, Segment *newSeg, Fraction tickDiff) {
+    IF_ASSERT_FAILED(element->parent() && element->parent()->isSegment()) { return; }
 
     // NOTE: when creating mmRests, we clone text elements from the underlying measure onto the
     // mmRest measure. This creates lots of additional linked copies which are hard to manage
@@ -304,25 +277,25 @@ void MoveElementAnchors::doMoveSegment(EngravingItem* element, Segment* newSeg, 
     // when moving segments (and if needed will be recreated at the next layout). In future we need to
     // change approach and *move* elements onto the mmRests, not clone them. [M.S.]
 
-    Score* score = element->score();
-    Measure* parentMeasure = toMeasure(element->findAncestor(ElementType::MEASURE));
+    Score *score = element->score();
+    Measure *parentMeasure = toMeasure(element->findAncestor(ElementType::MEASURE));
     bool parentMeasureIsMMRest = parentMeasure && parentMeasure->isMMRest();
 
-    std::list<EngravingObject*> linkedElements = element->linkList();
-    for (EngravingObject* linkedElement : linkedElements) {
+    std::list<EngravingObject *> linkedElements = element->linkList();
+    for (EngravingObject *linkedElement : linkedElements) {
         if (linkedElement == element) {
             continue;
         }
-        Measure* linkedParentMeasure = toMeasure(toEngravingItem(linkedElement)->findAncestor(ElementType::MEASURE));
+        Measure *linkedParentMeasure = toMeasure(toEngravingItem(linkedElement)->findAncestor(ElementType::MEASURE));
         bool linkedParentMeasureIsMMrest = linkedParentMeasure && linkedParentMeasure->isMMRest();
         if (linkedParentMeasureIsMMrest != parentMeasureIsMMRest) {
-            for (EngravingObject* child : linkedElement->children()) {
+            for (EngravingObject *child : linkedElement->children()) {
                 // e.g. fret diagram should also remove the harmony
                 child->undoUnlink();
                 score->undoRemoveElement(toEngravingItem(child));
             }
             linkedElement->undoUnlink();
-            score->undoRemoveElement(static_cast<EngravingItem*>(linkedElement));
+            score->undoRemoveElement(static_cast<EngravingItem *>(linkedElement));
         }
     }
 
@@ -330,13 +303,10 @@ void MoveElementAnchors::doMoveSegment(EngravingItem* element, Segment* newSeg, 
     moveSnappedItems(element, newSeg, tickDiff);
 }
 
-void MoveElementAnchors::doMoveSegment(FiguredBass* element, Segment* newSeg, Fraction tickDiff)
-{
-    IF_ASSERT_FAILED(element->parent() && element->parent()->isSegment()) {
-        return;
-    }
+void MoveElementAnchors::doMoveSegment(FiguredBass *element, Segment *newSeg, Fraction tickDiff) {
+    IF_ASSERT_FAILED(element->parent() && element->parent()->isSegment()) { return; }
 
-    Segment* oldSeg = element->segment();
+    Segment *oldSeg = element->segment();
 
     doMoveSegment(toEngravingItem(element), newSeg, tickDiff);
 
@@ -345,10 +315,9 @@ void MoveElementAnchors::doMoveSegment(FiguredBass* element, Segment* newSeg, Fr
 
     // Shorten this if needed
     if (newSeg->tick() > oldSeg->tick()) {
-        FiguredBass* nextFB = nullptr;
+        FiguredBass *nextFB = nullptr;
         Fraction endTick = newSeg->tick() + element->ticks();
-        for (Segment* seg = newSeg->next1(SegmentType::Duration); seg && seg->tick() <= endTick;
-             seg = seg->next1(SegmentType::Duration)) {
+        for (Segment *seg = newSeg->next1(SegmentType::Duration); seg && seg->tick() <= endTick; seg = seg->next1(SegmentType::Duration)) {
             nextFB = toFiguredBass(seg->findAnnotation(ElementType::FIGURED_BASS, startTrack, endTrack));
             if (nextFB) {
                 break;
@@ -361,10 +330,10 @@ void MoveElementAnchors::doMoveSegment(FiguredBass* element, Segment* newSeg, Fr
 
     // Shorten previous if needed
     if (newSeg->tick() < oldSeg->tick()) {
-        FiguredBass* prevFB = nullptr;
-        for (Segment* seg = newSeg->prev1(SegmentType::Duration); seg && seg->measure()->isAfterOrEqual(newSeg->measure());
+        FiguredBass *prevFB = nullptr;
+        for (Segment *seg = newSeg->prev1(SegmentType::Duration); seg && seg->measure()->isAfterOrEqual(newSeg->measure());
              seg = seg->prev1(SegmentType::Duration)) {
-            prevFB = (FiguredBass*)(seg->findAnnotation(ElementType::FIGURED_BASS, startTrack, endTrack));
+            prevFB = (FiguredBass *) (seg->findAnnotation(ElementType::FIGURED_BASS, startTrack, endTrack));
             if (prevFB) {
                 break;
             }
@@ -375,12 +344,11 @@ void MoveElementAnchors::doMoveSegment(FiguredBass* element, Segment* newSeg, Fr
     }
 }
 
-void MoveElementAnchors::doMoveHarmonyOrFretDiagramSegment(EngravingItem* element, Segment* newSeg, Fraction tickDiff)
-{
-    for (EngravingObject* item : element->linkList()) {
-        Score* score = item->score();
-        Measure* measure = score->tick2measure(newSeg->tick());
-        Segment* chordRestSeg = measure->undoGetSegment(SegmentType::ChordRest, newSeg->tick());
+void MoveElementAnchors::doMoveHarmonyOrFretDiagramSegment(EngravingItem *element, Segment *newSeg, Fraction tickDiff) {
+    for (EngravingObject *item : element->linkList()) {
+        Score *score = item->score();
+        Measure *measure = score->tick2measure(newSeg->tick());
+        Segment *chordRestSeg = measure->undoGetSegment(SegmentType::ChordRest, newSeg->tick());
         if (item == element) {
             newSeg = chordRestSeg;
         }
@@ -390,9 +358,9 @@ void MoveElementAnchors::doMoveHarmonyOrFretDiagramSegment(EngravingItem* elemen
 
     doMoveSegment(toEngravingItem(element), newSeg, tickDiff);
 
-    for (EngravingObject* item : element->linkList()) {
-        Score* score = item->score();
-        Segment* oldSegment = score->tick2segment(oldTick, true, SegmentType::ChordRest, false);
+    for (EngravingObject *item : element->linkList()) {
+        Score *score = item->score();
+        Segment *oldSegment = score->tick2segment(oldTick, true, SegmentType::ChordRest, false);
         if (oldSegment) {
             oldSegment->checkEmpty();
             if (oldSegment->empty()) {
@@ -402,26 +370,25 @@ void MoveElementAnchors::doMoveHarmonyOrFretDiagramSegment(EngravingItem* elemen
     }
 }
 
-void MoveElementAnchors::moveSnappedItems(EngravingItem* element, Segment* newSeg, Fraction tickDiff)
-{
-    if (EngravingItem* itemAfter = element->mutldata()->itemSnappedAfter()) {
+void MoveElementAnchors::moveSnappedItems(EngravingItem *element, Segment *newSeg, Fraction tickDiff) {
+    if (EngravingItem *itemAfter = element->mutldata()->itemSnappedAfter()) {
         if (itemAfter->isTextBase() && itemAfter->parent() != newSeg) {
             element->score()->undoChangeParent(itemAfter, newSeg, itemAfter->staffIdx());
             moveSnappedItems(itemAfter, newSeg, tickDiff);
         } else if (itemAfter->isTextLineBaseSegment()) {
-            TextLineBase* textLine = ((TextLineBaseSegment*)itemAfter)->textLineBase();
+            TextLineBase *textLine = ((TextLineBaseSegment *) itemAfter)->textLineBase();
             if (textLine->tick() != newSeg->tick()) {
                 textLine->undoMoveStart(tickDiff);
             }
         }
     }
 
-    if (EngravingItem* itemBefore = element->mutldata()->itemSnappedBefore()) {
+    if (EngravingItem *itemBefore = element->mutldata()->itemSnappedBefore()) {
         if (itemBefore->isTextBase() && itemBefore->parent() != newSeg) {
             element->score()->undoChangeParent(itemBefore, newSeg, itemBefore->staffIdx());
             moveSnappedItems(itemBefore, newSeg, tickDiff);
         } else if (itemBefore->isTextLineBaseSegment()) {
-            TextLineBase* textLine = ((TextLineBaseSegment*)itemBefore)->textLineBase();
+            TextLineBase *textLine = ((TextLineBaseSegment *) itemBefore)->textLineBase();
             if (textLine->tick2() != newSeg->tick()) {
                 textLine->undoMoveEnd(tickDiff);
             }
@@ -429,18 +396,17 @@ void MoveElementAnchors::moveSnappedItems(EngravingItem* element, Segment* newSe
     }
 }
 
-void MoveElementAnchors::rebaseOffsetOnMoveSegment(EngravingItem* element, const PointF& curOffset, Segment* newSeg, Segment* oldSeg)
-{
+void MoveElementAnchors::rebaseOffsetOnMoveSegment(EngravingItem *element, const PointF &curOffset, Segment *newSeg, Segment *oldSeg) {
     PointF offsetShift = newSeg->pagePos() - oldSeg->pagePos();
     element->setOffset(curOffset - offsetShift);
 
-    if (EngravingItem* itemBefore = element->mutldata()->itemSnappedBefore()) {
+    if (EngravingItem *itemBefore = element->mutldata()->itemSnappedBefore()) {
         if (itemBefore->isTextBase()) {
             itemBefore->setOffset(itemBefore->offset() - offsetShift);
         }
     }
 
-    if (EngravingItem* itemAfter = element->mutldata()->itemSnappedAfter()) {
+    if (EngravingItem *itemAfter = element->mutldata()->itemSnappedAfter()) {
         if (itemAfter->isTextBase()) {
             itemAfter->setOffset(itemAfter->offset() - offsetShift);
         }
@@ -452,17 +418,12 @@ void MoveElementAnchors::rebaseOffsetOnMoveSegment(EngravingItem* element, const
  * *****************************************/
 
 TimeTickAnchor::TimeTickAnchor(DummyParentOr<Segment> parent)
-    : EngravingItem(ElementType::TIME_TICK_ANCHOR, parent,
-                    ElementFlag::ON_STAFF
-                    | ElementFlag::NOT_SELECTABLE
-                    | ElementFlag::GENERATED)
-{
+    : EngravingItem(ElementType::TIME_TICK_ANCHOR, parent, ElementFlag::ON_STAFF | ElementFlag::NOT_SELECTABLE | ElementFlag::GENERATED) {
     setZ(-INT_MAX); // Make sure it is behind everything
 }
 
-TimeTickAnchor::DrawRegion TimeTickAnchor::drawRegion() const
-{
-    const ShowAnchors& showAnchors = score()->showAnchors();
+TimeTickAnchor::DrawRegion TimeTickAnchor::drawRegion() const {
+    const ShowAnchors &showAnchors = score()->showAnchors();
     const staff_idx_t thisStaffIdx = staffIdx();
     const Fraction thisTick = segment()->tick();
 
@@ -479,8 +440,5 @@ TimeTickAnchor::DrawRegion TimeTickAnchor::drawRegion() const
     return DrawRegion::MAIN_REGION;
 }
 
-voice_idx_t TimeTickAnchor::voiceIdx() const
-{
-    return score()->showAnchors().voiceIdx;
-}
+voice_idx_t TimeTickAnchor::voiceIdx() const { return score()->showAnchors().voiceIdx; }
 } // namespace mu::engraving

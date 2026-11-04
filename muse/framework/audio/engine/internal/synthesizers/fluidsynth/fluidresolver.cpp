@@ -22,7 +22,6 @@
 
 #include "fluidresolver.h"
 
-
 #include "audio/engine/internal/codecs/vorbisdecoder.h"
 
 #include "log.h"
@@ -32,24 +31,21 @@ using namespace muse::audio::synth;
 
 static const AudioResourceVendor FLUID_VENDOR_NAME = "Fluid";
 
-FluidResolver::FluidResolver(const ISoundFontRepository& soundFontRepository,
-                             const engine::IAudioEngineConfiguration& config, midi::IMidiOutPort* midiOutPort)
-    : m_soundFontRepository(soundFontRepository), m_config(config), m_midiOutPort(midiOutPort)
-{
+FluidResolver::FluidResolver(const ISoundFontRepository &soundFontRepository, const engine::IAudioEngineConfiguration &config,
+                             midi::IMidiOutPort *midiOutPort)
+    : m_soundFontRepository(soundFontRepository), m_config(config), m_midiOutPort(midiOutPort) {
 
     fluid::FluidVorbisDecoder::decoder = new codec::VorbisDecoder();
 
     refresh();
 }
 
-FluidResolver::~FluidResolver()
-{
+FluidResolver::~FluidResolver() {
     delete fluid::FluidVorbisDecoder::decoder;
     fluid::FluidVorbisDecoder::decoder = nullptr;
 }
 
-ISynthesizerPtr FluidResolver::resolveSynth(const TrackId /*trackId*/, const AudioInputParams& params, const OutputSpec& spec) const
-{
+ISynthesizerPtr FluidResolver::resolveSynth(const TrackId /*trackId*/, const AudioInputParams &params, const OutputSpec &spec) const {
 
     auto search = m_resourcesCache.find(params.resourceMeta.id);
     if (search == m_resourcesCache.end()) {
@@ -59,47 +55,38 @@ ISynthesizerPtr FluidResolver::resolveSynth(const TrackId /*trackId*/, const Aud
 
     FluidSynthPtr synth = std::make_shared<FluidSynth>(params, m_config, m_midiOutPort);
     synth->init(spec);
-    synth->addSoundFonts({ search->second.path });
+    synth->addSoundFonts({search->second.path});
     synth->setPreset(search->second.preset);
 
     return synth;
 }
 
-bool FluidResolver::hasCompatibleResources(const PlaybackSetupData& /*setup*/) const
-{
-    return true;
-}
+bool FluidResolver::hasCompatibleResources(const PlaybackSetupData & /*setup*/) const { return true; }
 
-AudioResourceMetaList FluidResolver::resolveResources() const
-{
+AudioResourceMetaList FluidResolver::resolveResources() const {
 
     AudioResourceMetaList result;
     result.reserve(m_resourcesCache.size());
 
-    for (const auto& pair : m_resourcesCache) {
+    for (const auto &pair : m_resourcesCache) {
         result.push_back(pair.second.meta);
     }
 
     return result;
 }
 
-SoundPresetList FluidResolver::resolveSoundPresets(const audio::AudioResourceMeta&) const
-{
-    return SoundPresetList();
-}
+SoundPresetList FluidResolver::resolveSoundPresets(const audio::AudioResourceMeta &) const { return SoundPresetList(); }
 
-static std::string makeId(const std::string& name, int bank, int program)
-{
+static std::string makeId(const std::string &name, int bank, int program) {
     return name + "\\" + std::to_string(bank) + "\\" + std::to_string(program);
 }
 
-void FluidResolver::refresh()
-{
+void FluidResolver::refresh() {
 
     m_resourcesCache.clear();
 
-    for (const auto& pair : m_soundFontRepository.soundFonts()) {
-        const SoundFontMeta& soundFont = pair.second;
+    for (const auto &pair : m_soundFontRepository.soundFonts()) {
+        const SoundFontMeta &soundFont = pair.second;
 
         {
             AudioResourceId id = soundFont.name;
@@ -108,15 +95,13 @@ void FluidResolver::refresh()
             chooseAutomaticMeta.id = id;
             chooseAutomaticMeta.type = FLUID_SOUNDFONT_TYPE_NAME;
             chooseAutomaticMeta.vendor = FLUID_VENDOR_NAME;
-            chooseAutomaticMeta.attributes = {
-                { PLAYBACK_SETUP_DATA_ATTRIBUTE, muse::mpe::GENERIC_SETUP_DATA_STRING },
-                { SOUNDFONT_NAME_ATTRIBUTE, String::fromStdString(soundFont.name) }
-            };
+            chooseAutomaticMeta.attributes = {{PLAYBACK_SETUP_DATA_ATTRIBUTE, muse::mpe::GENERIC_SETUP_DATA_STRING},
+                                              {SOUNDFONT_NAME_ATTRIBUTE, String::fromStdString(soundFont.name)}};
 
-            m_resourcesCache.emplace(id, SoundFontResource { soundFont.path, std::nullopt, std::move(chooseAutomaticMeta) });
+            m_resourcesCache.emplace(id, SoundFontResource{soundFont.path, std::nullopt, std::move(chooseAutomaticMeta)});
         }
 
-        for (const SoundFontPreset& preset : soundFont.presets) {
+        for (const SoundFontPreset &preset : soundFont.presets) {
             AudioResourceId id = makeId(soundFont.name, preset.program.bank, preset.program.program);
 
             AudioResourceMeta meta;
@@ -124,18 +109,16 @@ void FluidResolver::refresh()
             meta.type = FLUID_SOUNDFONT_TYPE_NAME;
             meta.vendor = FLUID_VENDOR_NAME;
             meta.attributes = {
-                { PLAYBACK_SETUP_DATA_ATTRIBUTE, muse::mpe::GENERIC_SETUP_DATA_STRING },
-                { SOUNDFONT_NAME_ATTRIBUTE, String::fromStdString(soundFont.name) },
-                { PRESET_NAME_ATTRIBUTE, String::fromStdString(preset.name) },
-                { PRESET_BANK_ATTRIBUTE, String::number(preset.program.bank) },
-                { PRESET_PROGRAM_ATTRIBUTE, String::number(preset.program.program) },
+                {PLAYBACK_SETUP_DATA_ATTRIBUTE, muse::mpe::GENERIC_SETUP_DATA_STRING},
+                {SOUNDFONT_NAME_ATTRIBUTE, String::fromStdString(soundFont.name)},
+                {PRESET_NAME_ATTRIBUTE, String::fromStdString(preset.name)},
+                {PRESET_BANK_ATTRIBUTE, String::number(preset.program.bank)},
+                {PRESET_PROGRAM_ATTRIBUTE, String::number(preset.program.program)},
             };
 
-            m_resourcesCache.emplace(id, SoundFontResource { soundFont.path, preset.program, std::move(meta) });
+            m_resourcesCache.emplace(id, SoundFontResource{soundFont.path, preset.program, std::move(meta)});
         }
     }
 }
 
-void FluidResolver::clearSources()
-{
-}
+void FluidResolver::clearSources() {}

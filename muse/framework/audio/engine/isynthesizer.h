@@ -24,13 +24,11 @@
 
 #include <string>
 
-
 #include "audio/common/audiotypes.h"
 #include "audio/common/timeposition.h"
 
 namespace muse::audio::synth {
-class ISynthesizer
-{
+class ISynthesizer {
 public:
     virtual ~ISynthesizer() = default;
 
@@ -41,15 +39,15 @@ public:
     virtual void setMode(const ProcessMode mode) = 0;
     virtual ProcessMode mode() const = 0;
 
-    virtual void setOutputSpec(const OutputSpec& spec) = 0;
+    virtual void setOutputSpec(const OutputSpec &spec) = 0;
 
-    virtual void setup(const mpe::PlaybackData& playbackData) = 0;
-    virtual const mpe::PlaybackData& playbackData() const = 0;
+    virtual void setup(const mpe::PlaybackData &playbackData) = 0;
+    virtual const mpe::PlaybackData &playbackData() const = 0;
 
-    virtual const audio::AudioInputParams& params() const = 0;
+    virtual const audio::AudioInputParams &params() const = 0;
 
     virtual TimePosition playbackPosition() const = 0;
-    virtual void setPlaybackPosition(const TimePosition& position) = 0;
+    virtual void setPlaybackPosition(const TimePosition &position) = 0;
 
     virtual void prepareToPlay() = 0;
     virtual bool readyToPlay() const = 0;
@@ -62,8 +60,8 @@ public:
 
     virtual void clearCache() = 0;
 
-    virtual samples_t process(float* buffer, samples_t samplesPerChannel) = 0;
+    virtual samples_t process(float *buffer, samples_t samplesPerChannel) = 0;
 };
 
 using ISynthesizerPtr = std::shared_ptr<ISynthesizer>;
-}
+} // namespace muse::audio::synth

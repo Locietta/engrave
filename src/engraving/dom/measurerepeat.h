@@ -30,47 +30,49 @@
 namespace mu::engraving {
 class Segment;
 
-class MeasureRepeat final : public Rest
-{
+class MeasureRepeat final : public Rest {
     OBJECT_ALLOCATOR(engraving, MeasureRepeat)
     DECLARE_CLASSOF(ElementType::MEASURE_REPEAT)
 
 public:
     MeasureRepeat(DummyParentOr<Segment> parent);
-    MeasureRepeat(const MeasureRepeat&) = default;
-    MeasureRepeat& operator=(const MeasureRepeat&) = delete;
+    MeasureRepeat(const MeasureRepeat &) = default;
+    MeasureRepeat &operator=(const MeasureRepeat &) = delete;
 
-    MeasureRepeat* clone() const override { return new MeasureRepeat(*this); }
-    EngravingItem* linkedClone() override { return EngravingItem::linkedClone(); }
+    MeasureRepeat *clone() const override { return new MeasureRepeat(*this); }
+
+    EngravingItem *linkedClone() override { return EngravingItem::linkedClone(); }
 
     static constexpr int MAX_NUM_MEASURES = 4;
 
     void setNumMeasures(int n);
+
     int numMeasures() const { return m_numMeasures; }
 
     void setNumberOffset(const Spatium y) { m_numberOffset = y; }
+
     Spatium numberOffset() const { return m_numberOffset; }
 
-    Measure* firstMeasureOfGroup() const;
-    const Measure* referringMeasure(const Measure* measure) const;
+    Measure *firstMeasureOfGroup() const;
+    const Measure *referringMeasure(const Measure *measure) const;
 
     Fraction ticks() const override;
+
     Fraction actualTicks() const { return Rest::ticks(); }
 
     PropertyValue propertyDefault(Pid) const override;
-    bool setProperty(Pid, const PropertyValue&) override;
+    bool setProperty(Pid, const PropertyValue &) override;
     PropertyValue getProperty(Pid) const override;
 
-
-
     int subtype() const override { return m_numMeasures; }
+
     muse::TranslatableString subtypeUserName() const override;
 
-    bool placeMultiple() const override { return numMeasures() == 1; }     // prevent overlapping additions with range selection
+    bool placeMultiple() const override { return numMeasures() == 1; } // prevent overlapping additions with range selection
 
     RectF numberRect() const override;
 
-    PointF numberPosition(const RectF& numberBbox) const;
+    PointF numberPosition(const RectF &numberBbox) const;
 
     struct LayoutData : public Rest::LayoutData {
         SymId symId = SymId::noSym;
@@ -79,7 +81,9 @@ public:
         void setSymId(SymId id) { symId = id; }
 
         void setNumberSym(int n) { numberSym = timeSigSymIdsFromString(String::number(n)); }
-        void setNumberSym(const String& s) { numberSym = timeSigSymIdsFromString(s); }
+
+        void setNumberSym(const String &s) { numberSym = timeSigSymIdsFromString(s); }
+
         void clearNumberSym() { numberSym.clear(); }
 
         LineF extenderLineLeft = LineF();

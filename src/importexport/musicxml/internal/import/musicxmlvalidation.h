@@ -26,10 +26,9 @@
 #include "engraving/engravingerrors.h"
 
 namespace mu::iex::musicxml {
-class MusicXmlValidation
-{
+class MusicXmlValidation {
 public:
 
-    static engraving::Err validate(const muse::String& name, const muse::ByteArray& data);
+    static engraving::Err validate(const muse::String &name, const muse::ByteArray &data);
 };
-}
+} // namespace mu::iex::musicxml

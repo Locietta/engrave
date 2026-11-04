@@ -25,12 +25,11 @@
 #include "renderbase.h"
 
 namespace mu::engraving {
-class ArpeggioRenderer : public RenderBase<ArpeggioRenderer>
-{
+class ArpeggioRenderer : public RenderBase<ArpeggioRenderer> {
 public:
-    static const muse::mpe::ArticulationTypeSet& supportedTypes();
+    static const muse::mpe::ArticulationTypeSet &supportedTypes();
 
-    static void doRender(const EngravingItem* item, const muse::mpe::ArticulationType preferredType, const RenderingContext& ctx,
-                         muse::mpe::PlaybackEventList& result);
+    static void doRender(const EngravingItem *item, const muse::mpe::ArticulationType preferredType, const RenderingContext &ctx,
+                         muse::mpe::PlaybackEventList &result);
 };
-}
+} // namespace mu::engraving

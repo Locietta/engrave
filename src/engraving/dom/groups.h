@@ -37,21 +37,22 @@ class ChordRest;
 ///    GroupNodes must be sorted by tick
 //---------------------------------------------------------
 
-class Groups
-{
+class Groups {
 public:
     Groups() {}
-    Groups(const GroupNodes& nodes)
-        : m_nodes(nodes) {}
 
-    const GroupNodes& nodes() const { return m_nodes; }
+    Groups(const GroupNodes &nodes) : m_nodes(nodes) {}
+
+    const GroupNodes &nodes() const { return m_nodes; }
+
     bool empty() const { return m_nodes.empty(); }
-    void addNode(const GroupNode& n) { m_nodes.push_back(n); }
+
+    void addNode(const GroupNode &n) { m_nodes.push_back(n); }
 
     BeamMode beamMode(int tick, DurationType d) const;
     void addStop(int pos, DurationType d, BeamMode bm);
-    bool operator==(const Groups& g) const
-    {
+
+    bool operator==(const Groups &g) const {
         if (g.m_nodes.size() != m_nodes.size()) {
             return false;
         }
@@ -63,12 +64,12 @@ public:
         return true;
     }
 
-    void dump(const char*) const;
+    void dump(const char *) const;
 
-    static const Groups& endings(const Fraction& f);
-    static BeamMode baseBeamMode(const ChordRest* cr, const ChordRest* prev = 0);
-    static BeamMode actualBeamMode(const ChordRest* cr, const ChordRest* prev);
-    static BeamMode actualBeamMode(const ChordRest* cr, const ChordRest* prev, const std::unordered_map<int, TDuration>* beatSubdivision);
+    static const Groups &endings(const Fraction &f);
+    static BeamMode baseBeamMode(const ChordRest *cr, const ChordRest *prev = 0);
+    static BeamMode actualBeamMode(const ChordRest *cr, const ChordRest *prev);
+    static BeamMode actualBeamMode(const ChordRest *cr, const ChordRest *prev, const std::unordered_map<int, TDuration> *beatSubdivision);
 
 private:
     GroupNodes m_nodes;

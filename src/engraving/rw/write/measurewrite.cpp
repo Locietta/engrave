@@ -33,18 +33,15 @@
 using namespace mu::engraving;
 using namespace mu::engraving::write;
 
-void MeasureWrite::writeMeasure(const Measure* measure, XmlWriter& xml, WriteContext& ctx,
-                                staff_idx_t staff,
-                                bool writeSystemElements,
-                                bool forceTimeSig)
-{
+void MeasureWrite::writeMeasure(const Measure *measure, XmlWriter &xml, WriteContext &ctx, staff_idx_t staff, bool writeSystemElements,
+                                bool forceTimeSig) {
     if (MScore::debugMode) {
         const int mno = measure->measureNumber() + 1;
         xml.comment(String(u"Measure %1").arg(mno));
     }
     if (measure->ticks() != measure->timesig()) {
         // this is an irregular measure
-        xml.startElement(measure, { { "len", measure->ticks().toString() } });
+        xml.startElement(measure, {{"len", measure->ticks().toString()}});
     } else {
         xml.startElement(measure);
     }
@@ -59,7 +56,7 @@ void MeasureWrite::writeMeasure(const Measure* measure, XmlWriter& xml, WriteCon
         TWrite::writeItemEid(measure, xml);
 
         if (measure->isMMRest()) {
-            Measure* lastMeasure = measure->mmRestLast();
+            Measure *lastMeasure = measure->mmRestLast();
             EID eidOfLastMeasure = lastMeasure->eid();
             if (!eidOfLastMeasure.isValid()) {
                 eidOfLastMeasure = lastMeasure->assignNewEID();
@@ -79,7 +76,7 @@ void MeasureWrite::writeMeasure(const Measure* measure, XmlWriter& xml, WriteCon
         TWrite::writeProperty(measure, xml, Pid::MEASURE_NUMBER_OFFSET);
         TWrite::writeProperty(measure, xml, Pid::MEASURE_NUMBER_MODE);
     }
-    MStaff* mstaff = measure->mstaves()[staff];
+    MStaff *mstaff = measure->mstaves()[staff];
     if (mstaff->measureNumber() && !mstaff->measureNumber()->generated()) {
         TWrite::write(mstaff->measureNumber(), xml, ctx);
     }
@@ -113,7 +110,7 @@ void MeasureWrite::writeMeasure(const Measure* measure, XmlWriter& xml, WriteCon
 
     track_idx_t strack = staff * VOICES;
     track_idx_t etrack = strack + VOICES;
-    for (const EngravingItem* e : measure->el()) {
+    for (const EngravingItem *e : measure->el()) {
         if (e->generated()) {
             continue;
         }
@@ -121,14 +118,9 @@ void MeasureWrite::writeMeasure(const Measure* measure, XmlWriter& xml, WriteCon
         bool writeSystem = writeSystemElements;
         if (e->systemFlag()) {
             ElementType et = e->type();
-            if ((et == ElementType::REHEARSAL_MARK)
-                || (et == ElementType::SYSTEM_TEXT)
-                || (et == ElementType::TRIPLET_FEEL)
-                || (et == ElementType::PLAYTECH_ANNOTATION)
-                || (et == ElementType::JUMP)
-                || (et == ElementType::MARKER)
-                || (et == ElementType::TEMPO_TEXT)
-                || isSystemTextLine(e)) {
+            if ((et == ElementType::REHEARSAL_MARK) || (et == ElementType::SYSTEM_TEXT) || (et == ElementType::TRIPLET_FEEL) ||
+                (et == ElementType::PLAYTECH_ANNOTATION) || (et == ElementType::JUMP) || (et == ElementType::MARKER) ||
+                (et == ElementType::TEMPO_TEXT) || isSystemTextLine(e)) {
                 writeSystem = (e->staffIdx() == staff); // always show these on appropriate staves
             }
         }
@@ -150,26 +142,23 @@ void MeasureWrite::writeMeasure(const Measure* measure, XmlWriter& xml, WriteCon
     xml.endElement();
 }
 
-std::vector<Segment*> MeasureWrite::segmentsToWrite(const Measure* measure)
-{
+std::vector<Segment *> MeasureWrite::segmentsToWrite(const Measure *measure) {
     /* Layout moves the time signature at the start of an MM rest from its first underlying measure onto the MM rest.
      * During writing, the MM rest is written after that measure, and the reader needs the time signature before the measure's
      * contents to get its length right, so we write the signature in the underlying measure instead of the MM. */
 
-    auto startTimeSigSegment = [](const Measure* mmRest) {
-        return mmRest->findSegmentR(SegmentType::TimeSig, Fraction(0, 1));
-    };
+    auto startTimeSigSegment = [](const Measure *mmRest) { return mmRest->findSegmentR(SegmentType::TimeSig, Fraction(0, 1)); };
 
-    const Segment* segToSkip = nullptr;
-    Segment* segToInsert = nullptr;
+    const Segment *segToSkip = nullptr;
+    Segment *segToInsert = nullptr;
     if (measure->isMMRest()) {
         segToSkip = startTimeSigSegment(measure);
     } else if (measure->mmRest()) {
         segToInsert = startTimeSigSegment(measure->mmRest());
     }
 
-    std::vector<Segment*> segments;
-    for (Segment* s = measure->first(); s; s = s->next()) {
+    std::vector<Segment *> segments;
+    for (Segment *s = measure->first(); s; s = s->next()) {
         // insert it where the measure would place it if it had this segment itself
         if (segToInsert && (s->rtick().isNotZero() || segToInsert->goesBefore(s))) {
             segments.push_back(segToInsert);

@@ -32,9 +32,8 @@
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-VerticalGapData::VerticalGapData(const MStyle* style, bool first, System* sys, const Staff* st, SysStaff* sst, Spacer* nextSpacer, double y)
-    : style(style), system(sys), sysStaff(sst), staff(st), m_fixedHeight(first)
-{
+VerticalGapData::VerticalGapData(const MStyle *style, bool first, System *sys, const Staff *st, SysStaff *sst, Spacer *nextSpacer, double y)
+    : style(style), system(sys), sysStaff(sst), staff(st), m_fixedHeight(first) {
     if (m_fixedHeight) {
         m_normalisedSpacing = style->styleAbsolute(Sid::staffUpperBorder);
         m_maxActualSpacing = m_normalisedSpacing;
@@ -42,7 +41,7 @@ VerticalGapData::VerticalGapData(const MStyle* style, bool first, System* sys, c
         m_normalisedSpacing = system->y() + (sysStaff ? sysStaff->bbox().y() : 0.0) - y;
         m_maxActualSpacing = style->styleAbsolute(Sid::maxStaffSpread);
 
-        Spacer* spacer { staff ? system->upSpacer(staff->idx(), nextSpacer) : nullptr };
+        Spacer *spacer{staff ? system->upSpacer(staff->idx(), nextSpacer) : nullptr};
 
         if (spacer) {
             m_fixedSpacer = spacer->spacerType() == SpacerType::FIXED;
@@ -58,8 +57,7 @@ VerticalGapData::VerticalGapData(const MStyle* style, bool first, System* sys, c
 //   updateFactor
 //---------------------------------------------------------
 
-void VerticalGapData::updateFactor(double factor)
-{
+void VerticalGapData::updateFactor(double factor) {
     if (m_fixedHeight) {
         return;
     }
@@ -72,8 +70,7 @@ void VerticalGapData::updateFactor(double factor)
 //   addSpaceBetweenSections
 //---------------------------------------------------------
 
-void VerticalGapData::addSpaceBetweenSections()
-{
+void VerticalGapData::addSpaceBetweenSections() {
     updateFactor(style->styleD(Sid::spreadSystem));
     if (!(m_fixedHeight | m_fixedSpacer)) {
         m_maxActualSpacing = style->styleAbsolute(Sid::maxSystemSpread) / m_factor;
@@ -84,8 +81,7 @@ void VerticalGapData::addSpaceBetweenSections()
 //   addSpaceAroundVBox
 //---------------------------------------------------------
 
-void VerticalGapData::addSpaceAroundVBox(bool above)
-{
+void VerticalGapData::addSpaceAroundVBox(bool above) {
     m_fixedHeight = true;
     m_factor = 1.0;
     m_normalisedSpacing = above ? style->styleAbsolute(Sid::frameSystemDistance) : style->styleAbsolute(Sid::systemFrameDistance);
@@ -96,63 +92,44 @@ void VerticalGapData::addSpaceAroundVBox(bool above)
 //   addSpaceAroundNormalBracket
 //---------------------------------------------------------
 
-void VerticalGapData::addSpaceAroundNormalBracket()
-{
-    updateFactor(style->styleD(Sid::spreadSquareBracket));
-}
+void VerticalGapData::addSpaceAroundNormalBracket() { updateFactor(style->styleD(Sid::spreadSquareBracket)); }
 
 //---------------------------------------------------------
 //   addSpaceAroundCurlyBracket
 //---------------------------------------------------------
 
-void VerticalGapData::addSpaceAroundCurlyBracket()
-{
-    updateFactor(style->styleD(Sid::spreadCurlyBracket));
-}
+void VerticalGapData::addSpaceAroundCurlyBracket() { updateFactor(style->styleD(Sid::spreadCurlyBracket)); }
 
 //---------------------------------------------------------
 //   insideCurlyBracket
 //---------------------------------------------------------
 
-void VerticalGapData::insideCurlyBracket()
-{
-    m_maxActualSpacing = style->styleAbsolute(Sid::maxAkkoladeDistance) / m_factor;
-}
+void VerticalGapData::insideCurlyBracket() { m_maxActualSpacing = style->styleAbsolute(Sid::maxAkkoladeDistance) / m_factor; }
 
 //---------------------------------------------------------
 //   factor
 //---------------------------------------------------------
 
-double VerticalGapData::factor() const
-{
-    return m_factor;
-}
+double VerticalGapData::factor() const { return m_factor; }
 
 //---------------------------------------------------------
 //   spacing
 //    return normalised spacing
 //---------------------------------------------------------
 
-double VerticalGapData::spacing() const
-{
-    return m_normalisedSpacing + m_addedNormalisedSpace;
-}
+double VerticalGapData::spacing() const { return m_normalisedSpacing + m_addedNormalisedSpace; }
 
 //---------------------------------------------------------
 //   addedSpace
 //---------------------------------------------------------
 
-double VerticalGapData::actualAddedSpace() const
-{
-    return m_addedNormalisedSpace * factor();
-}
+double VerticalGapData::actualAddedSpace() const { return m_addedNormalisedSpace * factor(); }
 
 //---------------------------------------------------------
 //   addSpacing
 //---------------------------------------------------------
 
-double VerticalGapData::addSpacing(double step)
-{
+double VerticalGapData::addSpacing(double step) {
     if (m_fixedHeight | m_fixedSpacer) {
         return 0.0;
     }
@@ -160,7 +137,7 @@ double VerticalGapData::addSpacing(double step)
         m_normalisedSpacing = m_maxActualSpacing;
         step = 0.0;
     } else {
-        double newSpacing { m_normalisedSpacing + m_addedNormalisedSpace + step };
+        double newSpacing{m_normalisedSpacing + m_addedNormalisedSpace + step};
         if ((newSpacing >= m_maxActualSpacing)) {
             step = m_maxActualSpacing - m_normalisedSpacing - m_addedNormalisedSpace;
         }
@@ -174,17 +151,13 @@ double VerticalGapData::addSpacing(double step)
 //   isFixedHeight
 //---------------------------------------------------------
 
-bool VerticalGapData::isFixedHeight() const
-{
-    return m_fixedHeight || muse::RealIsNull(m_normalisedSpacing - m_maxActualSpacing);
-}
+bool VerticalGapData::isFixedHeight() const { return m_fixedHeight || muse::RealIsNull(m_normalisedSpacing - m_maxActualSpacing); }
 
 //---------------------------------------------------------
 //   undoLastAddSpacing
 //---------------------------------------------------------
 
-void VerticalGapData::undoLastAddSpacing()
-{
+void VerticalGapData::undoLastAddSpacing() {
     m_addedNormalisedSpace -= m_lastStep;
     m_lastStep = 0.0;
 }
@@ -193,28 +166,23 @@ void VerticalGapData::undoLastAddSpacing()
 //   addFillSpacing
 //---------------------------------------------------------
 
-double VerticalGapData::addFillSpacing(double step, double maxFill)
-{
+double VerticalGapData::addFillSpacing(double step, double maxFill) {
     if (m_fixedSpacer) {
         return 0.0;
     }
-    double actStep { ((step + m_fillSpacing / m_factor) > maxFill) ? (maxFill - m_fillSpacing / m_factor) : step };
+    double actStep{((step + m_fillSpacing / m_factor) > maxFill) ? (maxFill - m_fillSpacing / m_factor) : step};
     double res = addSpacing(actStep);
     m_fillSpacing += res * m_factor;
     return res;
 }
 
-void VerticalGapData::setNormalisedSpacing(double newNormalisedSpacing)
-{
-    m_normalisedSpacing = newNormalisedSpacing;
-}
+void VerticalGapData::setNormalisedSpacing(double newNormalisedSpacing) { m_normalisedSpacing = newNormalisedSpacing; }
 
 //---------------------------------------------------------
 //   deleteAll
 //---------------------------------------------------------
 
-void VerticalGapDataList::deleteAll()
-{
+void VerticalGapDataList::deleteAll() {
     for (auto vsd : *this) {
         delete vsd;
     }
@@ -224,10 +192,9 @@ void VerticalGapDataList::deleteAll()
 //   sumStretchFactor
 //---------------------------------------------------------
 
-double VerticalGapDataList::sumStretchFactor() const
-{
-    double sum { 0.0 };
-    for (VerticalGapData* vsd : *this) {
+double VerticalGapDataList::sumStretchFactor() const {
+    double sum{0.0};
+    for (VerticalGapData *vsd : *this) {
         if (!vsd->isFixedHeight()) {
             sum += vsd->factor();
         }
@@ -239,10 +206,9 @@ double VerticalGapDataList::sumStretchFactor() const
 //   smallest
 //---------------------------------------------------------
 
-double VerticalGapDataList::smallest(double limit) const
-{
-    VerticalGapData* vdp { nullptr };
-    for (VerticalGapData* vgd : *this) {
+double VerticalGapDataList::smallest(double limit) const {
+    VerticalGapData *vdp{nullptr};
+    for (VerticalGapData *vgd : *this) {
         if (vgd->isFixedHeight()) {
             continue;
         }

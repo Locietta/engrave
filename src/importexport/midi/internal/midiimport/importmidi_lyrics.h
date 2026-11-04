@@ -30,8 +30,8 @@ class MidiFile;
 class MTrack;
 
 namespace MidiLyrics {
-void extractLyricsToMidiData(const MidiFile* mf);
-void setLyricsToScore(std::vector<MTrack>& tracks);
+void extractLyricsToMidiData(const MidiFile *mf);
+void setLyricsToScore(std::vector<MTrack> &tracks);
 std::vector<std::string> makeLyricsListForUI();
 } // namespace MidiLyrics
 } // namespace mu::iex::midi

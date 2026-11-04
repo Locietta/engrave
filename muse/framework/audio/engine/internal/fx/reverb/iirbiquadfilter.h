@@ -32,19 +32,17 @@
  * and not containing any allocation/deallocation
  */
 
-namespace muse::audio::fx {
-namespace IirBiquadFilter {
+namespace muse::audio::fx { namespace IirBiquadFilter {
 namespace { // private methods
-template<typename T>
-T inline sq(T x)
-{
+
+template <typename T>
+T inline sq(T x) {
     return x * x;
 }
 
 /// all 2p filter types have similar poles. Calculate a1 and a2 from the analog poles using matched-Z transform
-template<typename coeffT>
-inline void _matchedZpoleCoeffs(coeffT normf, coeffT Q, coeffT& a1, coeffT& a2)
-{
+template <typename coeffT>
+inline void _matchedZpoleCoeffs(coeffT normf, coeffT Q, coeffT &a1, coeffT &a2) {
     auto q = 1 / (2 * Q);
     auto w0 = normf * 6.28318530717958647692;
 
@@ -59,8 +57,7 @@ inline void _matchedZpoleCoeffs(coeffT normf, coeffT Q, coeffT& a1, coeffT& a2)
 }
 
 /// calculate the phi angles for vicanek's matching form
-inline std::array<double, 3> _phiFactorsForFreq(double normf)
-{
+inline std::array<double, 3> _phiFactorsForFreq(double normf) {
     auto cw = 0.5 * cos(normf * 6.28318530717958647692);
     std::array<double, 3> phi;
     phi[0] = 0.5 + cw;
@@ -70,14 +67,12 @@ inline std::array<double, 3> _phiFactorsForFreq(double normf)
 }
 
 /// convert biquad coefficients to phi matching form coefficients
-inline std::array<double, 3> _phiCoeffsForBiquadCoeffs(double c0, double c1, double c2)
-{
-    return { sq(c0 + c1 + c2), sq(c0 - c1 + c2), -4 * c0 * c2 };
+inline std::array<double, 3> _phiCoeffsForBiquadCoeffs(double c0, double c1, double c2) {
+    return {sq(c0 + c1 + c2), sq(c0 - c1 + c2), -4 * c0 * c2};
 }
 
 /// convert phi matching form coeffs to biquad coeffs
-inline void _biquadCoeffsForPhiCoeffs(const std::array<double, 3>& C, double& c0, double& c1, double& c2)
-{
+inline void _biquadCoeffsForPhiCoeffs(const std::array<double, 3> &C, double &c0, double &c1, double &c2) {
     auto W = 0.5 * (std::sqrt(C[0]) + std::sqrt(C[1]));
     c0 = 0.5 * (W + std::sqrt(sq(W) + C[2]));
     c1 = 0.5 * (std::sqrt(C[0]) - std::sqrt(C[1]));
@@ -85,20 +80,15 @@ inline void _biquadCoeffsForPhiCoeffs(const std::array<double, 3>& C, double& c0
 }
 } // namespace
 
-template<typename T>
-struct Coeffs
-{
-    T a1 = T(0), a2 = T(0);          // poles
+template <typename T>
+struct Coeffs {
+    T a1 = T(0), a2 = T(0);            // poles
     T b0 = T(1), b1 = T(0), b2 = T(0); // zeros
 
     // operator support for step-wise smoothing
-    bool operator!=(const Coeffs& rhs) const
-    {
-        return a1 != rhs.a1 || a2 != rhs.a2 || b0 != rhs.b0 || b1 != rhs.b1 || b2 != rhs.b2;
-    }
+    bool operator!=(const Coeffs &rhs) const { return a1 != rhs.a1 || a2 != rhs.a2 || b0 != rhs.b0 || b1 != rhs.b1 || b2 != rhs.b2; }
 
-    Coeffs& operator+=(const Coeffs& rhs)
-    {
+    Coeffs &operator+=(const Coeffs &rhs) {
         a1 += rhs.a1;
         a2 += rhs.a2;
         b0 += rhs.b0;
@@ -108,46 +98,40 @@ struct Coeffs
     }
 };
 
-template<typename T>
-inline Coeffs<T> operator-(const Coeffs<T>& a, const Coeffs<T>& b)
-{
-    return { a.a1 - b.a1, a.a2 - b.a2, a.b0 - b.b0, a.b1 - b.b1, a.b2 - b.b2 };
+template <typename T>
+inline Coeffs<T> operator-(const Coeffs<T> &a, const Coeffs<T> &b) {
+    return {a.a1 - b.a1, a.a2 - b.a2, a.b0 - b.b0, a.b1 - b.b1, a.b2 - b.b2};
 }
 
-template<typename T>
-inline Coeffs<T> operator*(T f, const Coeffs<T>& a)
-{
-    return { f* a.a1, f* a.a2, f* a.b0, f* a.b1, f* a.b2 };
+template <typename T>
+inline Coeffs<T> operator*(T f, const Coeffs<T> &a) {
+    return {f * a.a1, f * a.a2, f * a.b0, f * a.b1, f * a.b2};
 }
 
-template<typename T>
-struct DF1State
-{
-    T x1 = { 0 }, y1 = { 0 };
-    T x2 = { 0 }, y2 = { 0 };
+template <typename T>
+struct DF1State {
+    T x1 = {0}, y1 = {0};
+    T x2 = {0}, y2 = {0};
 };
 
-template<typename T>
-inline void resetState(DF1State<T>& state)
-{
-    state = { 0 };
+template <typename T>
+inline void resetState(DF1State<T> &state) {
+    state = {0};
 }
 
 /// Calculate one sample of direct-form-I filtered audio
-template<typename SampleT, typename CoeffT, typename StateT>
-inline SampleT processSampleDF1(SampleT x0, const Coeffs<CoeffT>& cf, DF1State<StateT>& st)
-{
+template <typename SampleT, typename CoeffT, typename StateT>
+inline SampleT processSampleDF1(SampleT x0, const Coeffs<CoeffT> &cf, DF1State<StateT> &st) {
     auto y0 = cf.b0 * x0 + cf.b1 * st.x1 + cf.b2 * st.x2 - cf.a1 * st.y1 - cf.a2 * st.y2;
     st.x2 = st.x1;
     st.y2 = st.y1;
     st.x1 = x0;
     st.y1 = y0;
-    return (SampleT)y0;
+    return (SampleT) y0;
 }
 
-template<typename SampleT, typename CoeffT, typename StateT>
-inline void processBlockDF1(SampleT* smp, int numSamples, const Coeffs<CoeffT>& coeffs, DF1State<StateT>& state)
-{
+template <typename SampleT, typename CoeffT, typename StateT>
+inline void processBlockDF1(SampleT *smp, int numSamples, const Coeffs<CoeffT> &coeffs, DF1State<StateT> &state) {
     const auto cf = coeffs;
     auto st = state;
     for (int i = 0; i < numSamples; ++i) {
@@ -157,10 +141,9 @@ inline void processBlockDF1(SampleT* smp, int numSamples, const Coeffs<CoeffT>& 
     state = st;
 }
 
-template<typename SampleT, typename CoeffT, typename StateT>
-inline void processBlockDeltaDF1(SampleT* smp, int numSamples, const Coeffs<CoeffT>& coeffs,
-                                 const Coeffs<CoeffT>& coeffs_dt, DF1State<StateT>& state)
-{
+template <typename SampleT, typename CoeffT, typename StateT>
+inline void processBlockDeltaDF1(SampleT *smp, int numSamples, const Coeffs<CoeffT> &coeffs, const Coeffs<CoeffT> &coeffs_dt,
+                                 DF1State<StateT> &state) {
     auto cf = coeffs;
     const auto cf_dt = coeffs_dt;
     auto st = state;
@@ -171,40 +154,34 @@ inline void processBlockDeltaDF1(SampleT* smp, int numSamples, const Coeffs<Coef
     state = st;
 }
 
-template<typename T>
-struct DF2State
-{
-    T w1 = { 0 }, w2 = { 0 };
+template <typename T>
+struct DF2State {
+    T w1 = {0}, w2 = {0};
 };
 
-template<typename T>
-inline void resetState(DF2State<T>& state)
-{
-    state = { 0 };
+template <typename T>
+inline void resetState(DF2State<T> &state) {
+    state = {0};
 }
 
-template<typename SampleT, typename CoeffT, typename StateT>
-inline SampleT processSampleDF2(SampleT x0, const Coeffs<CoeffT>& cf, DF2State<StateT>& st)
-{
+template <typename SampleT, typename CoeffT, typename StateT>
+inline SampleT processSampleDF2(SampleT x0, const Coeffs<CoeffT> &cf, DF2State<StateT> &st) {
     auto y0 = x0 * cf.b0 + st.w1;
     st.w1 = x0 * cf.b1 - y0 * cf.a1 + st.w2;
     st.w2 = x0 * cf.b2 - y0 * cf.a2;
-    return (SampleT)y0;
+    return (SampleT) y0;
 }
 
 //! Utility class to process a DF1 biquad with coefficient smoothing.
-template<typename coeffT>
-class DF1Processor
-{
+template <typename coeffT>
+class DF1Processor {
 public:
-    DF1Processor()
-    {
+    DF1Processor() {
         setSmoothingSteps(32);
         reset();
     }
 
-    void process(float** signal, int numChannels, int n)
-    {
+    void process(float **signal, int numChannels, int n) {
         assert(numChannels <= 2);
         int smoothSamples = std::min(_smooth_n, n);
         if (smoothSamples > 0) {
@@ -226,8 +203,7 @@ public:
         }
     }
 
-    void processMonoSample(float& s)
-    {
+    void processMonoSample(float &s) {
         if (_smooth_n <= 0) {
             s = processSampleDF1(s, _coeffs_target, _state[0]);
         } else {
@@ -237,8 +213,7 @@ public:
         }
     }
 
-    void processStereoSample(float& l, float& r)
-    {
+    void processStereoSample(float &l, float &r) {
         if (_smooth_n <= 0) {
             l = processSampleDF1(l, _coeffs_target, _state[0]);
             r = processSampleDF1(r, _coeffs_target, _state[1]);
@@ -250,8 +225,7 @@ public:
         }
     }
 
-    void reset()
-    {
+    void reset() {
         _coeffs = _coeffs_target;
         _smooth_n = 0;
         for (int ch = 0; ch < 2; ++ch) {
@@ -259,13 +233,9 @@ public:
         }
     }
 
-    void setSmoothingSteps(int n)
-    {
-        _smoothingSteps = n;
-    }
+    void setSmoothingSteps(int n) { _smoothingSteps = n; }
 
-    void setTargetCoefficients(const Coeffs<coeffT>& cf)
-    {
+    void setTargetCoefficients(const Coeffs<coeffT> &cf) {
         if (cf != _coeffs_target) {
             _coeffs_target = cf;
             _coeffs_delta = (coeffT(1) / coeffT(_smoothingSteps)) * (_coeffs_target - _coeffs);
@@ -288,10 +258,9 @@ private:
 /**
   Calculate biquad coeffs that just apply a gain factor
  */
-template<typename coeffT>
-inline Coeffs<coeffT> createGainFilter(coeffT gainFact)
-{
-    return { 0.0, 0.0, gainFact, 0.0, 0.0 };
+template <typename coeffT>
+inline Coeffs<coeffT> createGainFilter(coeffT gainFact) {
+    return {0.0, 0.0, gainFact, 0.0, 0.0};
 }
 
 /**
@@ -304,8 +273,7 @@ inline Coeffs<coeffT> createGainFilter(coeffT gainFact)
  *
  * @return The coefficients of the biquad filter
  */
-inline Coeffs<double> createBandShelfMatched(double cutOffFrequency, double Q, double gainFact, double sampleRate)
-{
+inline Coeffs<double> createBandShelfMatched(double cutOffFrequency, double Q, double gainFact, double sampleRate) {
     // From Vicanek: Matched Second Order Digital Filters.
     auto normf = cutOffFrequency / sampleRate;
     // this method cannot handle freqs above nyquist, matched-z poles would alias
@@ -336,9 +304,8 @@ inline Coeffs<double> createBandShelfMatched(double cutOffFrequency, double Q, d
  *
  * @return The coefficients of the biquad filter
  */
-template<typename coeffT>
-inline Coeffs<coeffT> createLowPass1PMatched(coeffT cutOffFrequency, coeffT sampleRate)
-{
+template <typename coeffT>
+inline Coeffs<coeffT> createLowPass1PMatched(coeffT cutOffFrequency, coeffT sampleRate) {
     // adrian's method similar to simple Vicanek, but for 1 pole.
     auto normf = cutOffFrequency / sampleRate;
 
@@ -365,9 +332,8 @@ inline Coeffs<coeffT> createLowPass1PMatched(coeffT cutOffFrequency, coeffT samp
  *
  * @return The coefficients of the biquad filter
  */
-template<typename coeffT>
-inline Coeffs<coeffT> createHighPass1PMatched(coeffT cutOffFrequency, coeffT sampleRate)
-{
+template <typename coeffT>
+inline Coeffs<coeffT> createHighPass1PMatched(coeffT cutOffFrequency, coeffT sampleRate) {
     // adrian's method similar to simple Vicanek, but for 1 pole.
     auto normf = cutOffFrequency / sampleRate;
 
@@ -394,9 +360,8 @@ inline Coeffs<coeffT> createHighPass1PMatched(coeffT cutOffFrequency, coeffT sam
  *
  * @return The coefficients of the biquad filter
  */
-template<typename T>
-inline Coeffs<T> createAllpass2P(T cutoffFrequency, T Q, T sampleRate)
-{
+template <typename T>
+inline Coeffs<T> createAllpass2P(T cutoffFrequency, T Q, T sampleRate) {
     T w0 = 6.28318530717958647692 * cutoffFrequency / sampleRate;
     auto alpha = 0.5 * std::sin(w0) / Q;
 
@@ -417,9 +382,8 @@ inline Coeffs<T> createAllpass2P(T cutoffFrequency, T Q, T sampleRate)
     return cf;
 }
 
-template<typename T>
-inline Coeffs<T> createHighShelf2P(T freq, T gainFact, T sampleRate)
-{
+template <typename T>
+inline Coeffs<T> createHighShelf2P(T freq, T gainFact, T sampleRate) {
     auto w = (6.28318530717958647692 * freq) / sampleRate;
     auto alpha = std::sin(w) / sqrt(2.0);
     auto cosw = std::cos(w);
@@ -454,10 +418,9 @@ inline Coeffs<T> createHighShelf2P(T freq, T gainFact, T sampleRate)
  * @param gainFactM gain factor for middle band
  * @param gainFactH gain factor for high band
  */
-template<typename T>
-inline void create3BandToneControl4P(T xoverFreqLM, T xoverFreqMH, T gainFactL, T gainFactM, T gainFactH, T sampleRate,
-                                     Coeffs<T>& cf1, Coeffs<T>& cf2)
-{
+template <typename T>
+inline void create3BandToneControl4P(T xoverFreqLM, T xoverFreqMH, T gainFactL, T gainFactM, T gainFactH, T sampleRate, Coeffs<T> &cf1,
+                                     Coeffs<T> &cf2) {
     cf1 = createHighShelf2P(xoverFreqLM, gainFactM / gainFactL, sampleRate);
     cf2 = createHighShelf2P(xoverFreqMH, gainFactH / gainFactM, sampleRate);
 
@@ -470,7 +433,6 @@ inline void create3BandToneControl4P(T xoverFreqLM, T xoverFreqMH, T gainFactL, 
     cf2.b1 *= gain_l;
     cf2.b2 *= gain_l;
 }
-} // namespace iirbiquadfilter
-} // namespace muse::audio::fx
+}} // namespace muse::audio::fx::IirBiquadFilter
 
 #endif // MUSE_AUDIO_IIRBIQUADFILTER_H

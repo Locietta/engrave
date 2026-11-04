@@ -34,13 +34,11 @@
 #include "engraving/dom/score.h"
 #include "engraving/editing/editstaffbrackets.h"
 
-namespace mu::iex::midi {
-namespace MidiDrum {
+namespace mu::iex::midi { namespace MidiDrum {
 #ifndef NDEBUG
 
-bool haveNonZeroVoices(const std::multimap<ReducedFraction, MidiChord>& chords)
-{
-    for (const auto& chordEvent: chords) {
+bool haveNonZeroVoices(const std::multimap<ReducedFraction, MidiChord> &chords) {
+    for (const auto &chordEvent : chords) {
         if (chordEvent.second.voice != 0) {
             return false;
         }
@@ -50,17 +48,14 @@ bool haveNonZeroVoices(const std::multimap<ReducedFraction, MidiChord>& chords)
 
 #endif
 
-void splitChord(
-    std::multimap<ReducedFraction, MidiChord>::iterator& chordIt,
-    const std::set<int>& notesToMove,
-    std::multimap<ReducedFraction, MidiChord>& chords)
-{
-    MidiChord& chord = chordIt->second;
-    auto& notes = chord.notes;
+void splitChord(std::multimap<ReducedFraction, MidiChord>::iterator &chordIt, const std::set<int> &notesToMove,
+                std::multimap<ReducedFraction, MidiChord> &chords) {
+    MidiChord &chord = chordIt->second;
+    auto &notes = chord.notes;
 
-    if (notesToMove.size() == notes.size()) {    // just move chord to another voice
+    if (notesToMove.size() == notes.size()) { // just move chord to another voice
         chord.voice = 1;
-    } else {            // split chord
+    } else { // split chord
         MidiChord newChord(chord);
         newChord.notes.clear();
         newChord.voice = 1;
@@ -75,24 +70,21 @@ void splitChord(
         }
         notes = updatedOldNotes;
 
-        Q_ASSERT_X(!notes.empty(),
-                   "MidiDrum::splitChord", "Old chord notes are empty");
-        Q_ASSERT_X(!newChord.notes.empty(),
-                   "MidiDrum::splitChord", "New chord notes are empty");
+        Q_ASSERT_X(!notes.empty(), "MidiDrum::splitChord", "Old chord notes are empty");
+        Q_ASSERT_X(!newChord.notes.empty(), "MidiDrum::splitChord", "New chord notes are empty");
 
-        chordIt = chords.insert({ chordIt->first, newChord });
+        chordIt = chords.insert({chordIt->first, newChord});
     }
 }
 
-void splitDrumVoices(std::multimap<int, MTrack>& tracks)
-{
-    for (auto& track: tracks) {
-        MTrack& mtrack = track.second;
-        auto& chords = mtrack.chords;
+void splitDrumVoices(std::multimap<int, MTrack> &tracks) {
+    for (auto &track : tracks) {
+        MTrack &mtrack = track.second;
+        auto &chords = mtrack.chords;
         if (chords.empty()) {
             continue;
         }
-        const engraving::Drumset* const drumset = mtrack.mtrack->drumTrack() ? engraving::smDrumset : 0;
+        const engraving::Drumset *const drumset = mtrack.mtrack->drumTrack() ? engraving::smDrumset : 0;
         if (!drumset) {
             continue;
         }
@@ -100,15 +92,12 @@ void splitDrumVoices(std::multimap<int, MTrack>& tracks)
         // because allowedVoices == V_1 (see MidiImportOperations)
         // also, all chords should have different onTime values
 #ifndef NDEBUG
-        Q_ASSERT_X(MChord::areOnTimeValuesDifferent(chords),
-                   "MidiDrum::splitDrumVoices",
+        Q_ASSERT_X(MChord::areOnTimeValuesDifferent(chords), "MidiDrum::splitDrumVoices",
                    "onTime values of chords are equal but should be different");
-        Q_ASSERT_X(haveNonZeroVoices(chords),
-                   "MidiDrum::splitDrumVoices",
-                   "All voices of drum track should be zero here");
+        Q_ASSERT_X(haveNonZeroVoices(chords), "MidiDrum::splitDrumVoices", "All voices of drum track should be zero here");
 #endif
         for (auto chordIt = chords.begin(); chordIt != chords.end(); ++chordIt) {
-            auto& notes = chordIt->second.notes;
+            auto &notes = chordIt->second.notes;
             // search for the drumset pitches with voice = 1
             std::set<int> notesToMove;
             for (int i = 0; i != static_cast<int>(notes.size()); ++i) {
@@ -126,14 +115,11 @@ void splitDrumVoices(std::multimap<int, MTrack>& tracks)
     }
 }
 
-MTrack& getNewTrack(std::map<int, MTrack>& newTracks,
-                    const MTrack& drumTrack,
-                    int pitch)
-{
+MTrack &getNewTrack(std::map<int, MTrack> &newTracks, const MTrack &drumTrack, int pitch) {
     auto newTrackIt = newTracks.find(pitch);
     if (newTrackIt == newTracks.end()) {
-        newTrackIt = newTracks.insert({ pitch, drumTrack }).first;
-        MTrack& newTrack = newTrackIt->second;
+        newTrackIt = newTracks.insert({pitch, drumTrack}).first;
+        MTrack &newTrack = newTrackIt->second;
         // chords are copied and then cleared -
         // not very efficient way but it's more safe for possible
         // future additions of new fields in MTrack
@@ -145,36 +131,34 @@ MTrack& getNewTrack(std::map<int, MTrack>& newTracks,
     return newTrackIt->second;
 }
 
-std::map<int, MTrack> splitDrumTrack(const MTrack& drumTrack)
-{
-    std::map<int, MTrack> newTracks;           // <percussion note pitch, track>
+std::map<int, MTrack> splitDrumTrack(const MTrack &drumTrack) {
+    std::map<int, MTrack> newTracks; // <percussion note pitch, track>
     if (drumTrack.chords.empty()) {
         return newTracks;
     }
 
-    for (const auto& chordEvent: drumTrack.chords) {
-        const auto& onTime = chordEvent.first;
-        const MidiChord& chord = chordEvent.second;
+    for (const auto &chordEvent : drumTrack.chords) {
+        const auto &onTime = chordEvent.first;
+        const MidiChord &chord = chordEvent.second;
 
-        for (const auto& note: chord.notes) {
+        for (const auto &note : chord.notes) {
             MidiChord newChord(chord);
             newChord.notes.clear();
             newChord.notes.push_back(note);
-            MTrack& newTrack = getNewTrack(newTracks, drumTrack, note.pitch);
-            newTrack.chords.insert({ onTime, newChord });
+            MTrack &newTrack = getNewTrack(newTracks, drumTrack, note.pitch);
+            newTrack.chords.insert({onTime, newChord});
         }
     }
 
     return newTracks;
 }
 
-void splitDrumTracks(std::multimap<int, MTrack>& tracks)
-{
+void splitDrumTracks(std::multimap<int, MTrack> &tracks) {
     for (auto it = tracks.begin(); it != tracks.end(); ++it) {
         if (!it->second.mtrack->drumTrack() || it->second.chords.empty()) {
             continue;
         }
-        const auto& opers = midiImportOperations.data()->trackOpers;
+        const auto &opers = midiImportOperations.data()->trackOpers;
         if (!opers.doStaffSplit.value(it->second.indexOfOperation)) {
             continue;
         }
@@ -182,15 +166,14 @@ void splitDrumTracks(std::multimap<int, MTrack>& tracks)
         const int trackIndex = it->first;
         it = tracks.erase(it);
         for (auto i = newTracks.rbegin(); i != newTracks.rend(); ++i) {
-            it = tracks.insert({ trackIndex, i->second });
+            it = tracks.insert({trackIndex, i->second});
         }
     }
 }
 
-void setBracket(engraving::Staff*& staff, int& counter)
-{
+void setBracket(engraving::Staff *&staff, int &counter) {
     if (staff && counter > 1) {
-        engraving::Score* score = staff->score();
+        engraving::Score *score = staff->score();
         engraving::EditStaffBrackets::setBracketType(score, staff->idx(), 0, engraving::BracketType::NORMAL);
         engraving::EditStaffBrackets::setBracketSpan(score, staff->idx(), 0, counter);
     }
@@ -202,13 +185,12 @@ void setBracket(engraving::Staff*& staff, int& counter)
     }
 }
 
-void setStaffBracketForDrums(std::vector<MTrack>& tracks)
-{
+void setStaffBracketForDrums(std::vector<MTrack> &tracks) {
     int counter = 0;
-    engraving::Staff* firstDrumStaff = nullptr;
+    engraving::Staff *firstDrumStaff = nullptr;
     int opIndex = -1;
 
-    for (const MTrack& track: tracks) {
+    for (const MTrack &track : tracks) {
         if (track.mtrack->drumTrack()) {
             if (opIndex != track.indexOfOperation) {
                 opIndex = track.indexOfOperation;
@@ -222,5 +204,4 @@ void setStaffBracketForDrums(std::vector<MTrack>& tracks)
     }
     setBracket(firstDrumStaff, counter);
 }
-} // namespace MidiDrum
-} // namespace mu::iex::midi
+}} // namespace mu::iex::midi::MidiDrum

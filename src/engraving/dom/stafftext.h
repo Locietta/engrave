@@ -26,33 +26,33 @@
 #include "stafftextbase.h"
 
 namespace mu::engraving {
-class StaffText final : public StaffTextBase
-{
+class StaffText final : public StaffTextBase {
     OBJECT_ALLOCATOR(engraving, StaffText)
     DECLARE_CLASSOF(ElementType::STAFF_TEXT)
 
 public:
     StaffText(DummyParentOr<Segment> parent, TextStyleType = TextStyleType::STAFF);
-    StaffText(const StaffText&);
+    StaffText(const StaffText &);
 
-    StaffText* clone() const override { return new StaffText(*this); }
-    EngravingItem* linkedClone() override;
+    StaffText *clone() const override { return new StaffText(*this); }
 
-    void scanElements(std::function<void(EngravingItem*)> func) override;
+    EngravingItem *linkedClone() override;
 
-    void add(EngravingItem*) override;
-    void remove(EngravingItem*) override;
+    void scanElements(std::function<void(EngravingItem *)> func) override;
+
+    void add(EngravingItem *) override;
+    void remove(EngravingItem *) override;
 
     void setTrack(track_idx_t idx) override;
 
     bool hasSoundFlag() const;
-    SoundFlag* soundFlag() const;
-    void setSoundFlag(SoundFlag* flag);
+    SoundFlag *soundFlag() const;
+    void setSoundFlag(SoundFlag *flag);
 
 private:
     PropertyValue propertyDefault(Pid id) const override;
 
-    SoundFlag* m_soundFlag = nullptr;
+    SoundFlag *m_soundFlag = nullptr;
 };
 } // namespace mu::engraving
 #endif // MU_ENGRAVING_STAFFTEXT_H

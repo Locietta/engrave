@@ -25,18 +25,9 @@
 #include "global/types/flags.h"
 
 namespace muse::draw {
-enum class CompositionMode {
-    SourceOver,
-    HardLight,
-    SourceIn
-};
+enum class CompositionMode { SourceOver, HardLight, SourceIn };
 
-enum class PolygonMode {
-    OddEven,
-    Winding,
-    Convex,
-    Polyline
-};
+enum class PolygonMode { OddEven, Winding, Convex, Polyline };
 
 enum class PenStyle { // pen style
     NoPen,
@@ -82,10 +73,7 @@ enum class BrushStyle { // brush style
     TexturePattern = 24
 };
 
-enum class FillRule {
-    OddEvenFill,
-    WindingFill
-};
+enum class FillRule { OddEvenFill, WindingFill };
 
 // Keep in sync with Qt::AlignmentFlag (https://doc.qt.io/qt-6/qt.html#AlignmentFlag-enum)
 enum AlignmentFlag {
@@ -135,4 +123,4 @@ enum TextFlag {
 
 DECLARE_FLAGS(TextFlags, TextFlag)
 DECLARE_OPERATORS_FOR_FLAGS(TextFlags)
-}
+} // namespace muse::draw

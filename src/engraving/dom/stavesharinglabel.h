@@ -24,14 +24,13 @@
 #include "stafftextbase.h"
 
 namespace mu::engraving {
-class StaveSharingLabel final : public StaffTextBase
-{
+class StaveSharingLabel final : public StaffTextBase {
     OBJECT_ALLOCATOR(engraving, StaveSharingLabel)
     DECLARE_CLASSOF(ElementType::STAVE_SHARING_LABEL)
 
 public:
     StaveSharingLabel(DummyParentOr<Segment> parent, TextStyleType tid = TextStyleType::STAVE_SHARING);
 
-    StaveSharingLabel* clone() const override { return new StaveSharingLabel(*this); }
+    StaveSharingLabel *clone() const override { return new StaveSharingLabel(*this); }
 };
 } // namespace mu::engraving

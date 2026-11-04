@@ -35,17 +35,18 @@
 
 namespace mu::engraving {
 class InstrumentTemplate;
-}
+} // namespace mu::engraving
 
 namespace mu::iex::midi {
 class ReducedFraction;
 
 namespace MidiCharset {
 std::string defaultCharset();
-}
+} // namespace MidiCharset
+
 namespace Quantize {
 MidiOperations::QuantValue defaultQuantValueFromPreferences();
-}
+} // namespace Quantize
 
 namespace MidiOperations {
 // operation types are in importmidi_operation.h
@@ -56,16 +57,12 @@ namespace MidiOperations {
 //   - importmidi_trmodel.cpp (2 places),
 // and - other importmidi files where algorithm requires it
 
-template<typename T>
-class TrackOp
-{
+template <typename T>
+class TrackOp {
 public:
-    explicit TrackOp(T defaultValue)
-        : _operation{{ -1, defaultValue }}, _canRedefineDefaultLater(true)
-    {}
+    explicit TrackOp(T defaultValue) : _operation{{-1, defaultValue}}, _canRedefineDefaultLater(true) {}
 
-    const T& value(int trackIndex) const
-    {
+    const T &value(int trackIndex) const {
         const auto it = _operation.find(trackIndex);
         if (it == _operation.end()) {
             return _operation.find(-1)->second;
@@ -73,8 +70,7 @@ public:
         return it->second;
     }
 
-    void setValue(int trackIndex, T value)
-    {
+    void setValue(int trackIndex, T value) {
         Q_ASSERT_X(trackIndex >= 0, "TrackOperation", "Invalid track index");
 
         if (value != this->value(trackIndex)) {
@@ -82,17 +78,12 @@ public:
         }
     }
 
-    const T& defaultValue() const
-    {
-        return _operation.find(-1)->second;
-    }
+    const T &defaultValue() const { return _operation.find(-1)->second; }
 
     bool canRedefineDefaultLater() const { return _canRedefineDefaultLater; }
 
-    void setDefaultValue(T value, bool canRedefineDefaultLater = true)
-    {
-        Q_ASSERT_X(_canRedefineDefaultLater, "TrackOp::setDefaultValue",
-                   "Cannot set default value");
+    void setDefaultValue(T value, bool canRedefineDefaultLater = true) {
+        Q_ASSERT_X(_canRedefineDefaultLater, "TrackOp::setDefaultValue", "Cannot set default value");
 
         if (!_canRedefineDefaultLater) {
             return;
@@ -101,8 +92,7 @@ public:
         _canRedefineDefaultLater = canRedefineDefaultLater;
     }
 
-    void clear()
-    {
+    void clear() {
         T defaultVal = defaultValue();
         _operation.clear();
         _operation[-1] = defaultVal;
@@ -115,43 +105,32 @@ private:
     bool _canRedefineDefaultLater;
 };
 
-template<typename T>
-class Op
-{
+template <typename T>
+class Op {
 public:
 
-    explicit Op(T defaultValue)
-        : _value(defaultValue), _valueWasSet(false),
-        _defaultValue{defaultValue}, _canRedefineDefaultLater(true)
-    {}
+    explicit Op(T defaultValue) : _value(defaultValue), _valueWasSet(false), _defaultValue{defaultValue}, _canRedefineDefaultLater(true) {}
 
-    T value() const
-    {
+    T value() const {
         if (!_valueWasSet) {
             return _defaultValue;
         }
         return _value;
     }
 
-    void setValue(T value)
-    {
+    void setValue(T value) {
         if (value != this->value()) {
             _value = value;
             _valueWasSet = true;
         }
     }
 
-    T defaultValue() const
-    {
-        return _defaultValue;
-    }
+    T defaultValue() const { return _defaultValue; }
 
     bool canRedefineDefaultLater() const { return _canRedefineDefaultLater; }
 
-    void setDefaultValue(T value, bool canRedefineDefaultLater = true)
-    {
-        Q_ASSERT_X(_canRedefineDefaultLater, "Op::setDefaultValue",
-                   "Cannot set default value");
+    void setDefaultValue(T value, bool canRedefineDefaultLater = true) {
+        Q_ASSERT_X(_canRedefineDefaultLater, "Op::setDefaultValue", "Cannot set default value");
 
         if (!_canRedefineDefaultLater) {
             return;
@@ -169,15 +148,13 @@ private:
 
 // values that can be changed
 
-struct Opers
-{
+struct Opers {
     // data that cannot be changed by the user
     TrackOp<int> channel = TrackOp<int>(int());
-    TrackOp<std::string> staffName = TrackOp<std::string>(std::string());         // will be converted to unicode later
+    TrackOp<std::string> staffName = TrackOp<std::string>(std::string()); // will be converted to unicode later
     TrackOp<muse::String> midiInstrName = TrackOp<muse::String>(muse::String());
-    TrackOp<std::vector<const engraving::InstrumentTemplate*> > msInstrList
-        = TrackOp<std::vector<const engraving::InstrumentTemplate*> >(
-              std::vector<const engraving::InstrumentTemplate*>());
+    TrackOp<std::vector<const engraving::InstrumentTemplate *>> msInstrList =
+        TrackOp<std::vector<const engraving::InstrumentTemplate *>>(std::vector<const engraving::InstrumentTemplate *>());
     TrackOp<bool> isDrumTrack = TrackOp<bool>(false);
 
     // operations for all tracks
@@ -201,19 +178,18 @@ struct Opers
     TrackOp<bool> search7plets = TrackOp<bool>(true);
     TrackOp<bool> search9plets = TrackOp<bool>(true);
     TrackOp<bool> useDots = TrackOp<bool>(true);
-    TrackOp<bool> simplifyDurations = TrackOp<bool>(true);     // for drum tracks - remove rests and ties
+    TrackOp<bool> simplifyDurations = TrackOp<bool>(true); // for drum tracks - remove rests and ties
     TrackOp<bool> showStaccato = TrackOp<bool>(true);
-    TrackOp<bool> doStaffSplit = TrackOp<bool>(false);         // for drum tracks - split by voices
+    TrackOp<bool> doStaffSplit = TrackOp<bool>(false); // for drum tracks - split by voices
     TrackOp<VoiceCount> maxVoiceCount = TrackOp<VoiceCount>(VoiceCount::V_4);
     TrackOp<bool> changeClef = TrackOp<bool>(true);
     TrackOp<Swing> swing = TrackOp<Swing>(Swing::NONE);
     TrackOp<bool> removeDrumRests = TrackOp<bool>(true);
-    TrackOp<int> lyricTrackIndex = TrackOp<int>(-1);           // empty lyric
-    TrackOp<int> msInstrIndex = TrackOp<int>(-1);              // for empty instrument list
+    TrackOp<int> lyricTrackIndex = TrackOp<int>(-1); // empty lyric
+    TrackOp<int> msInstrIndex = TrackOp<int>(-1);    // for empty instrument list
 };
 
-struct HumanBeatData
-{
+struct HumanBeatData {
     std::set<ReducedFraction> beatSet;
     // to adapt human beats to a different time sig, if necessary
     int addedFirstBeats = 0;
@@ -224,8 +200,7 @@ struct HumanBeatData
     bool measureCount2xLess = false;
 };
 
-struct FileData
-{
+struct FileData {
     MidiFile midiFile;
     std::vector<MTrack> tracks;
     int processingsOfOpenedFile = 0;
@@ -241,25 +216,24 @@ struct FileData
     // tracks of <tick, lyric fragment> from karaoke files: there can be
     // multiple lyric tracks, and lyric track count != MIDI track count in
     // general.
-    std::vector<std::multimap<ReducedFraction, std::string> > lyricTracks;
+    std::vector<std::multimap<ReducedFraction, std::string>> lyricTracks;
     std::multimap<ReducedFraction, muse::String> chordNames;
     HumanBeatData humanBeatData;
 };
 
-class Data
-{
+class Data {
 public:
-    FileData* data();
-    const FileData* data() const;
+    FileData *data();
+    const FileData *data() const;
 
-    void addNewMidiFile(const std::string& fileName);
+    void addNewMidiFile(const std::string &fileName);
     int currentTrack() const;
-    void setMidiFileData(const std::string& fileName, const MidiFile& midiFile);
-    void excludeMidiFile(const std::string& fileName);
-    bool hasMidiFile(const std::string& fileName);
-    const MidiFile* midiFile(const std::string& fileName);
+    void setMidiFileData(const std::string &fileName, const MidiFile &midiFile);
+    void excludeMidiFile(const std::string &fileName);
+    bool hasMidiFile(const std::string &fileName);
+    const MidiFile *midiFile(const std::string &fileName);
     std::vector<std::string> allMidiFiles() const;
-    void setOperationsFile(const std::string& fileName);
+    void setOperationsFile(const std::string &fileName);
 
 
 private:
@@ -270,59 +244,47 @@ private:
     std::string _midiOperationsFile;
     int _currentTrack = -1;
 
-    std::map<std::string, FileData> _data;      // <file name, tracks data>
+    std::map<std::string, FileData> _data; // <file name, tracks data>
 };
 
 // scoped setter of current track
-class CurrentTrackSetter
-{
+class CurrentTrackSetter {
 public:
-    CurrentTrackSetter(Data& opers, int track)
-        : _opers(opers)
-    {
+    CurrentTrackSetter(Data &opers, int track) : _opers(opers) {
         _oldValue = _opers._currentTrack;
         _opers._currentTrack = track;
     }
 
-    ~CurrentTrackSetter()
-    {
-        _opers._currentTrack = _oldValue;
-    }
+    ~CurrentTrackSetter() { _opers._currentTrack = _oldValue; }
 
 private:
-    Data& _opers;
+    Data &_opers;
     int _oldValue;
     // disallow heap allocation - for stack-only usage
-    void* operator new(size_t);                 // standard new
-    void* operator new(size_t, void*);          // placement new
-    void* operator new[](size_t);               // array new
-    void* operator new[](size_t, void*);        // placement array new
+    void *operator new(size_t);           // standard new
+    void *operator new(size_t, void *);   // placement new
+    void *operator new[](size_t);         // array new
+    void *operator new[](size_t, void *); // placement array new
 };
 
 // scoped setter of current MIDI file
-class CurrentMidiFileSetter
-{
+class CurrentMidiFileSetter {
 public:
-    CurrentMidiFileSetter(Data& opers, const std::string& fileName)
-        : _opers(opers)
-    {
+    CurrentMidiFileSetter(Data &opers, const std::string &fileName) : _opers(opers) {
         _oldValue = _opers._currentMidiFile;
         _opers._currentMidiFile = fileName;
     }
 
-    ~CurrentMidiFileSetter()
-    {
-        _opers._currentMidiFile = _oldValue;
-    }
+    ~CurrentMidiFileSetter() { _opers._currentMidiFile = _oldValue; }
 
 private:
-    Data& _opers;
+    Data &_opers;
     std::string _oldValue;
     // disallow heap allocation - for stack-only usage
-    void* operator new(size_t);                 // standard new
-    void* operator new(size_t, void*);          // placement new
-    void* operator new[](size_t);               // array new
-    void* operator new[](size_t, void*);        // placement array new
+    void *operator new(size_t);           // standard new
+    void *operator new(size_t, void *);   // placement new
+    void *operator new[](size_t);         // array new
+    void *operator new[](size_t, void *); // placement array new
 };
 } // namespace MidiOperations
 

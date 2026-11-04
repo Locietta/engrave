@@ -26,14 +26,13 @@
 #include "iwriter.h"
 
 namespace mu::engraving::rw {
-class RWRegister
-{
+class RWRegister {
 public:
 
     static IReaderPtr reader(int version = -1);
 
     static IWriterPtr writer();
 };
-}
+} // namespace mu::engraving::rw
 
 #endif // MU_ENGRAVING_RWREGISTER_H

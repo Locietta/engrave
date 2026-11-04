@@ -31,11 +31,10 @@
 namespace mu::engraving {
 class Transaction;
 
-class ChangeStyle : public UndoableCommand
-{
+class ChangeStyle : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeStyle)
 
-    Score* score = nullptr;
+    Score *score = nullptr;
     MStyle style;
     bool overlap = false;
 
@@ -43,39 +42,36 @@ class ChangeStyle : public UndoableCommand
     void undo() override;
 
 public:
-    ChangeStyle(Score*, const MStyle&, const bool overlapOnly = false);
+    ChangeStyle(Score *, const MStyle &, const bool overlapOnly = false);
 
     StyleIdSet changedIds() const;
 
     UNDO_TYPE(CommandType::ChangeStyle)
     UNDO_NAME("ChangeStyle")
-    UNDO_CHANGED_OBJECTS({ score })
+    UNDO_CHANGED_OBJECTS({score})
 };
 
-class ChangeStyleValues : public UndoableCommand
-{
+class ChangeStyleValues : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeStyleValues)
 
 public:
-    ChangeStyleValues(Score* s, std::unordered_map<Sid, PropertyValue> values)
-        : m_score(s), m_values(std::move(values)) {}
+    ChangeStyleValues(Score *s, std::unordered_map<Sid, PropertyValue> values) : m_score(s), m_values(std::move(values)) {}
 
-    const std::unordered_map<Sid, PropertyValue>& values() const { return m_values; }
+    const std::unordered_map<Sid, PropertyValue> &values() const { return m_values; }
 
     UNDO_TYPE(CommandType::ChangeStyleValues)
     UNDO_NAME("ChangeStyleValues")
-    UNDO_CHANGED_OBJECTS({ m_score })
+    UNDO_CHANGED_OBJECTS({m_score})
 
 private:
     void flip() override;
 
-    Score* m_score = nullptr;
+    Score *m_score = nullptr;
     std::unordered_map<Sid, PropertyValue> m_values;
 };
 
-class EditStyle
-{
+class EditStyle {
 public:
-    static bool loadStyle(Transaction& tx, Score* score, muse::io::IODevice& dev, bool ign = false, bool overlap = false);
+    static bool loadStyle(Transaction &tx, Score *score, muse::io::IODevice &dev, bool ign = false, bool overlap = false);
 };
-}
+} // namespace mu::engraving

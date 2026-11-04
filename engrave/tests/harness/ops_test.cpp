@@ -54,7 +54,7 @@ bool g_update_evidence = false;
 std::unique_ptr<engrave::Engine> g_engine;
 
 std::filesystem::path fixture(std::string_view name) {
-    for (const auto& path : g_corpus) {
+    for (const auto &path : g_corpus) {
         if (path.filename() == name) return path;
     }
     return {};
@@ -115,14 +115,16 @@ TEST(Edit, AFailingOperationRollsTheBatchBack) {
     const ElementId note = find_id(*document, "Note");
     const engrave::Value color = property(*document, note, "color");
     const SetProperty red{note, "color", Color{255, 0, 0}};
+
     struct Bad {
         engrave::Op op;
         ErrorCode code;
     };
+
     const Bad bad[] = {
         {SetProperty{note, "noSuchProperty", 1.0}, ErrorCode::InvalidArgument},
         {SetProperty{note, "color", std::int64_t{3}}, ErrorCode::InvalidArgument},
-        {SetProperty{note, "pitch", std::int64_t{60}}, ErrorCode::InvalidArgument},    // structural only
+        {SetProperty{note, "pitch", std::int64_t{60}}, ErrorCode::InvalidArgument},         // structural only
         {SetProperty{note, "beamMode", engrave::Enum{"auto"}}, ErrorCode::InvalidArgument}, // not a Note property
         // An integer that does not fit the engine's int is not narrowed silently.
         {SetProperty{note, "fret", std::int64_t{4294967297LL}}, ErrorCode::InvalidArgument},
@@ -134,7 +136,7 @@ TEST(Edit, AFailingOperationRollsTheBatchBack) {
         {SetStyle{{}, "staffDistance", true}, ErrorCode::InvalidArgument},
         {SetStyle{{ElementId{1, 2}}, "staffDistance", 9.0}, ErrorCode::NotFound},
     };
-    for (const Bad& entry : bad) {
+    for (const Bad &entry : bad) {
         const auto result = document->edit({{red, entry.op}});
         ASSERT_FALSE(result);
         EXPECT_EQ(result.error().code, entry.code) << result.error().message;
@@ -147,14 +149,14 @@ TEST(Edit, AFailingOperationRollsTheBatchBack) {
 TEST(Edit, APoisonedDocumentRefusesWork) {
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
-    auto& hooks = engrave::DocumentAccess::edit_hooks(*document);
+    auto &hooks = engrave::DocumentAccess::edit_hooks(*document);
     hooks.policy = engrave::api::Policy::Snapshot;
     hooks.fail_restore = true;
     hooks.before_step = [](std::size_t) { throw std::runtime_error("injected"); };
     const Batch batch{{SetStyle{{}, "staffDistance", 9.0}}};
-    EXPECT_ANY_THROW((void)document->edit(batch));
+    EXPECT_ANY_THROW((void) document->edit(batch));
     hooks = {};
-    const auto expect_poisoned = [](const auto& result) {
+    const auto expect_poisoned = [](const auto &result) {
         ASSERT_FALSE(result);
         EXPECT_EQ(result.error().code, ErrorCode::Poisoned);
         EXPECT_EQ(result.error().message, "an earlier edit left the document unusable");
@@ -189,9 +191,9 @@ const std::map<std::string, std::string> s1_asymmetries = {
     {"linked_parts.mscx", "files"},
 };
 
-std::string changed_fields(const engrave::harness::Fingerprint& before, const engrave::harness::Fingerprint& after) {
+std::string changed_fields(const engrave::harness::Fingerprint &before, const engrave::harness::Fingerprint &after) {
     std::string fields;
-    for (const auto& field : engrave::harness::differences(before, after, {"layout", "externals", "objects", "registered"}))
+    for (const auto &field : engrave::harness::differences(before, after, {"layout", "externals", "objects", "registered"}))
         fields += (fields.empty() ? "" : " ") + field;
     return fields;
 }
@@ -205,10 +207,8 @@ TEST(Snapshot, S1RestoreIsIdempotent) {
     // A throw, not a returned error: the guard unwinds a clean failure and only
     // restores the snapshot when the engine threw (see BatchGuard::roll_back), and
     // this test is about the restore.
-    const engrave::api::Step fail = [](engrave::api::EditContext&) -> engrave::Result<void> {
-        throw std::runtime_error("restore");
-    };
-    for (const auto& path : g_corpus) {
+    const engrave::api::Step fail = [](engrave::api::EditContext &) -> engrave::Result<void> { throw std::runtime_error("restore"); };
+    for (const auto &path : g_corpus) {
         auto document = g_engine->open(path);
         if (!document) continue;
         const std::string name = path.filename().string();
@@ -237,12 +237,12 @@ TEST(Edit, AFailedMixedBatchKeepsTheLayout) {
     engrave::Query query;
     query.types = {"Note"};
     query.layout_boxes = true;
-    const auto boxes = [&query](engrave::Document& doc) {
+    const auto boxes = [&query](engrave::Document &doc) {
         std::map<engrave::ElementId, engrave::LayoutBox> found;
         const auto result = doc.query(query);
         EXPECT_TRUE(result) << result.error().message;
         if (!result) return found;
-        for (const auto& item : result->elements) {
+        for (const auto &item : result->elements) {
             if (item.box) found.emplace(item.id, *item.box);
         }
         return found;
@@ -257,8 +257,7 @@ TEST(Edit, AFailedMixedBatchKeepsTheLayout) {
     const auto outline = document->outline();
     ASSERT_TRUE(outline);
     const engrave::ElementId measure = outline->measures.front().id;
-    const engrave::Batch batch{{engrave::Remove{note}, engrave::Remove{note},
-                                engrave::SetLayoutBreak{measure, "line", false}}};
+    const engrave::Batch batch{{engrave::Remove{note}, engrave::Remove{note}, engrave::SetLayoutBreak{measure, "line", false}}};
     const auto result = document->edit(batch);
     ASSERT_FALSE(result);
     EXPECT_EQ(result.error().code, ErrorCode::StaleHandle);
@@ -267,7 +266,7 @@ TEST(Edit, AFailedMixedBatchKeepsTheLayout) {
 
     const auto after = boxes(*document);
     ASSERT_EQ(after.size(), before.size());
-    for (const auto& [id, box] : before) {
+    for (const auto &[id, box] : before) {
         const auto found = after.find(id);
         ASSERT_NE(found, after.end()) << engrave::to_string(id) << " is gone after the rollback";
         EXPECT_EQ(found->second.page, box.page) << engrave::to_string(id);
@@ -289,14 +288,12 @@ using mu::engraving::Pid;
 using mu::engraving::PropertyValue;
 using muse::draw::PainterPath;
 
-ChordLine& chord_line(engrave::Document& document) {
-    return *mu::engraving::toChordLine(&engrave::harness::element(
-        document, find_id(document, "ChordLine")));
+ChordLine &chord_line(engrave::Document &document) {
+    return *mu::engraving::toChordLine(&engrave::harness::element(document, find_id(document, "ChordLine")));
 }
 
-void seed_controls(ChordLine& line) {
-    line.readSourceOffsets({muse::PointF(0.25, -0.5), muse::PointF(0.5, 0.25),
-                            muse::PointF(-0.75, 0.5), muse::PointF(1.0, -0.25)}, 1.0);
+void seed_controls(ChordLine &line) {
+    line.readSourceOffsets({muse::PointF(0.25, -0.5), muse::PointF(0.5, 0.25), muse::PointF(-0.75, 0.5), muse::PointF(1.0, -0.25)}, 1.0);
     line.setModified(true);
 }
 
@@ -308,7 +305,7 @@ PainterPath edited_path() {
     return path;
 }
 
-void expect_chord_line(const ChordLine& line, const ChordLine::AppearanceState& expected) {
+void expect_chord_line(const ChordLine &line, const ChordLine::AppearanceState &expected) {
     const auto actual = line.appearanceState();
     EXPECT_EQ(actual.linked, expected.linked);
     EXPECT_EQ(actual.offsets, expected.offsets);
@@ -324,14 +321,13 @@ void expect_chord_line(const ChordLine& line, const ChordLine::AppearanceState& 
     }
 }
 
-engrave::Result<engrave::EditResult> chord_line_batch(engrave::Document& document,
-                                                    std::vector<engrave::api::Step> steps) {
+engrave::Result<engrave::EditResult> chord_line_batch(engrave::Document &document, std::vector<engrave::api::Step> steps) {
     engrave::DocumentAccess::edit_hooks(document).keep_history = true;
     return engrave::api::BatchGuard(document).run(std::move(steps), engrave::api::Policy::Transaction, std::nullopt);
 }
 
-engrave::api::Step set_line(ChordLine& line, Pid pid, PropertyValue value) {
-    return [&line, pid, value](engrave::api::EditContext&) -> engrave::Result<void> {
+engrave::api::Step set_line(ChordLine &line, Pid pid, PropertyValue value) {
+    return [&line, pid, value](engrave::api::EditContext &) -> engrave::Result<void> {
         line.undoChangeProperty(pid, value);
         return {};
     };
@@ -340,10 +336,10 @@ engrave::api::Step set_line(ChordLine& line, Pid pid, PropertyValue value) {
 TEST(ChordLineEdit, PathAssignmentResetUndoRedoAndMode) {
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
-    auto& line = chord_line(*document);
+    auto &line = chord_line(*document);
     seed_controls(line);
     const auto source = line.appearanceState();
-    auto* stack = engrave::harness::master_of(*document).undoStack();
+    auto *stack = engrave::harness::master_of(*document).undoStack();
     ASSERT_TRUE(chord_line_batch(*document, {set_line(line, Pid::PATH, PropertyValue::fromValue(edited_path()))}));
     EXPECT_FALSE(line.hasSourceOffsets());
     EXPECT_TRUE(line.modified());
@@ -353,11 +349,10 @@ TEST(ChordLineEdit, PathAssignmentResetUndoRedoAndMode) {
     stack->redo();
     expect_chord_line(line, legacy);
 
-    ASSERT_TRUE(chord_line_batch(*document, {
-        [&line](engrave::api::EditContext&) -> engrave::Result<void> {
-            line.undoResetProperty(Pid::PATH);
-            return {};
-        }}));
+    ASSERT_TRUE(chord_line_batch(*document, {[&line](engrave::api::EditContext &) -> engrave::Result<void> {
+        line.undoResetProperty(Pid::PATH);
+        return {};
+    }}));
     EXPECT_FALSE(line.modified());
     EXPECT_FALSE(line.hasSourceOffsets());
     stack->undo(nullptr);
@@ -365,14 +360,13 @@ TEST(ChordLineEdit, PathAssignmentResetUndoRedoAndMode) {
     stack->undo(nullptr);
     expect_chord_line(line, source);
 
-    ASSERT_TRUE(chord_line_batch(*document, {
-        [&line](engrave::api::EditContext&) -> engrave::Result<void> {
-            line.undoResetProperty(Pid::PATH);
-            return {};
-        }}));
+    ASSERT_TRUE(chord_line_batch(*document, {[&line](engrave::api::EditContext &) -> engrave::Result<void> {
+        line.undoResetProperty(Pid::PATH);
+        return {};
+    }}));
     EXPECT_TRUE(line.hasSourceOffsets());
     EXPECT_FALSE(line.modified());
-    const std::array<muse::PointF, 4> zero {};
+    const std::array<muse::PointF, 4> zero{};
     EXPECT_EQ(line.sourceOffsets(), zero);
     const auto reset = line.appearanceState();
     stack->undo(nullptr);
@@ -381,8 +375,8 @@ TEST(ChordLineEdit, PathAssignmentResetUndoRedoAndMode) {
     expect_chord_line(line, reset);
     stack->undo(nullptr);
 
-    ASSERT_TRUE(chord_line_batch(*document, {set_line(line, Pid::SIZE_SPATIUM_DEPENDENT,
-        !line.getProperty(Pid::SIZE_SPATIUM_DEPENDENT).toBool())}));
+    ASSERT_TRUE(chord_line_batch(*document,
+                                 {set_line(line, Pid::SIZE_SPATIUM_DEPENDENT, !line.getProperty(Pid::SIZE_SPATIUM_DEPENDENT).toBool())}));
     EXPECT_EQ(line.sourceOffsets(), source.controls);
     const auto mode = line.appearanceState();
     stack->undo(nullptr);
@@ -394,7 +388,7 @@ TEST(ChordLineEdit, PathAssignmentResetUndoRedoAndMode) {
 TEST(ChordLineEdit, OrdinaryScaleCallbacksAndInverseKeepSources) {
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
-    auto& line = chord_line(*document);
+    auto &line = chord_line(*document);
     seed_controls(line);
     const auto before = line.appearanceState();
     line.spatiumChanged(2.0, 3.0);
@@ -410,7 +404,7 @@ TEST(ChordLineEdit, OrdinaryScaleCallbacksAndInverseKeepSources) {
 TEST(ChordLineEdit, PathEditAndOffsetResetSurviveNativeReopen) {
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
-    auto& line = chord_line(*document);
+    auto &line = chord_line(*document);
     seed_controls(line);
     ASSERT_TRUE(chord_line_batch(*document, {set_line(line, Pid::PATH, PropertyValue::fromValue(edited_path()))}));
     const auto expected = edited_path();
@@ -420,7 +414,7 @@ TEST(ChordLineEdit, PathEditAndOffsetResetSurviveNativeReopen) {
         ASSERT_TRUE(saved) << saved.error().message;
         auto reopened = g_engine->open(*saved, {.format = format});
         ASSERT_TRUE(reopened) << reopened.error().message;
-        const auto& restored = chord_line(**reopened);
+        const auto &restored = chord_line(**reopened);
         EXPECT_FALSE(restored.hasSourceOffsets());
         EXPECT_TRUE(restored.modified());
         const auto actual = restored.getProperty(Pid::PATH).value<PainterPath>();
@@ -433,37 +427,34 @@ TEST(ChordLineEdit, PathEditAndOffsetResetSurviveNativeReopen) {
         }
     }
     engrave::harness::master_of(*document).undoStack()->undo(nullptr);
-    ASSERT_TRUE(chord_line_batch(*document, {
-        [&line](engrave::api::EditContext&) -> engrave::Result<void> {
-            line.undoResetProperty(Pid::PATH);
-            return {};
-        }}));
+    ASSERT_TRUE(chord_line_batch(*document, {[&line](engrave::api::EditContext &) -> engrave::Result<void> {
+        line.undoResetProperty(Pid::PATH);
+        return {};
+    }}));
     for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
         SCOPED_TRACE(format == engrave::Format::Mscx ? "MSCX" : "MSCZ");
         const auto saved = document->export_score({.format = format, .native_version = "5.00"});
         ASSERT_TRUE(saved) << saved.error().message;
         auto reopened = g_engine->open(*saved, {.format = format});
         ASSERT_TRUE(reopened) << reopened.error().message;
-        const auto& restored = chord_line(**reopened);
+        const auto &restored = chord_line(**reopened);
         EXPECT_TRUE(restored.hasSourceOffsets());
-        EXPECT_EQ(restored.sourceOffsets(), (std::array<muse::PointF, 4> {}));
+        EXPECT_EQ(restored.sourceOffsets(), (std::array<muse::PointF, 4>{}));
     }
 }
 
 TEST(ChordLineEdit, StyleScaleUndoRedoUsesExistingCommand) {
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
-    auto& line = chord_line(*document);
+    auto &line = chord_line(*document);
     seed_controls(line);
-    auto& score = engrave::harness::master_of(*document);
+    auto &score = engrave::harness::master_of(*document);
     const auto before = line.appearanceState();
     const double oldSpatium = score.style().spatium();
-    ASSERT_TRUE(chord_line_batch(*document, {
-        [&score, oldSpatium](engrave::api::EditContext&) -> engrave::Result<void> {
-            score.undo(new mu::engraving::ChangeStyleValues(&score,
-                {{mu::engraving::Sid::spatium, oldSpatium * 2.0}}));
-            return {};
-        }}));
+    ASSERT_TRUE(chord_line_batch(*document, {[&score, oldSpatium](engrave::api::EditContext &) -> engrave::Result<void> {
+        score.undo(new mu::engraving::ChangeStyleValues(&score, {{mu::engraving::Sid::spatium, oldSpatium * 2.0}}));
+        return {};
+    }}));
     for (size_t i = 0; i < 4; ++i) EXPECT_EQ(line.sourceOffsets()[i], before.controls[i] * 2.0);
     const auto scaled = line.appearanceState();
     score.undoStack()->undo(nullptr);
@@ -475,7 +466,7 @@ TEST(ChordLineEdit, StyleScaleUndoRedoUsesExistingCommand) {
 TEST(ChordLineEdit, EmptyAssignmentIsNotReset) {
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
-    auto& line = chord_line(*document);
+    auto &line = chord_line(*document);
     seed_controls(line);
     const auto before = line.appearanceState();
     ASSERT_TRUE(chord_line_batch(*document, {set_line(line, Pid::PATH, PropertyValue::fromValue(PainterPath()))}));
@@ -487,12 +478,11 @@ TEST(ChordLineEdit, EmptyAssignmentIsNotReset) {
 }
 
 TEST(ChordLineEdit, EmptyCachedPathAssignmentSwitchesRepresentation) {
-    const auto source = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT)
-        / "engrave/tests/data/chordline-offsets/offsets-500.mscx";
+    const auto source = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests/data/chordline-offsets/offsets-500.mscx";
     auto opened = g_engine->open(source);
     ASSERT_TRUE(opened) << opened.error().message;
     auto document = std::move(*opened);
-    auto& line = chord_line(*document);
+    auto &line = chord_line(*document);
     ASSERT_TRUE(line.hasSourceOffsets());
     line.setProperty(Pid::CHORD_LINE_WAVY, true);
     engrave::harness::master_of(*document).doLayout();
@@ -506,20 +496,19 @@ TEST(ChordLineEdit, EmptyCachedPathAssignmentSwitchesRepresentation) {
 }
 
 TEST(ChordLineEdit, DefaultPathResetKeepsPartLinked) {
-    const auto source = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT)
-        / "engrave/tests/data/chordline-offsets/offsets-500.mscx";
+    const auto source = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests/data/chordline-offsets/offsets-500.mscx";
     auto opened = g_engine->open(source);
     ASSERT_TRUE(opened) << opened.error().message;
     auto document = std::move(*opened);
-    auto& masterLine = chord_line(*document);
+    auto &masterLine = chord_line(*document);
     ASSERT_FALSE(masterLine.hasDefaultPath());
     const auto initialRevision = document->revision();
     ASSERT_TRUE(document->edit({{ResetProperty{find_id(*document, "ChordLine"), "path"}}}));
     EXPECT_EQ(document->revision(), initialRevision + 1);
     ASSERT_TRUE(masterLine.hasDefaultPath());
     ASSERT_TRUE(document->edit({{engrave::GenerateExcerpts{{find_id(*document, "Part")}}}}));
-    ChordLine* partLine = nullptr;
-    for (auto* linked : masterLine.linkListForPropertyPropagation()) {
+    ChordLine *partLine = nullptr;
+    for (auto *linked : masterLine.linkListForPropertyPropagation()) {
         if (linked->isChordLine() && !linked->score()->isMaster()) {
             partLine = mu::engraving::toChordLine(linked);
             break;
@@ -541,9 +530,9 @@ TEST(ChordLineEdit, LinkedAppearanceEditRelinkAndUndo) {
     ASSERT_TRUE(document);
     seed_controls(chord_line(*document));
     ASSERT_TRUE(document->edit({{engrave::GenerateExcerpts{{find_id(*document, "Part")}}}}));
-    auto& masterLine = chord_line(*document);
-    ChordLine* partLine = nullptr;
-    for (auto* linked : masterLine.linkListForPropertyPropagation()) {
+    auto &masterLine = chord_line(*document);
+    ChordLine *partLine = nullptr;
+    for (auto *linked : masterLine.linkListForPropertyPropagation()) {
         if (linked->isChordLine() && !linked->score()->isMaster()) {
             partLine = mu::engraving::toChordLine(linked);
             break;
@@ -552,7 +541,7 @@ TEST(ChordLineEdit, LinkedAppearanceEditRelinkAndUndo) {
     ASSERT_NE(partLine, nullptr);
     const auto masterBefore = masterLine.appearanceState();
     const auto partBefore = partLine->appearanceState();
-    auto* stack = engrave::harness::master_of(*document).undoStack();
+    auto *stack = engrave::harness::master_of(*document).undoStack();
     ASSERT_TRUE(chord_line_batch(*document, {set_line(*partLine, Pid::PATH, PropertyValue::fromValue(edited_path()))}));
     EXPECT_FALSE(partLine->isAppearanceLinkedToMaster());
     EXPECT_FALSE(partLine->hasSourceOffsets());
@@ -574,11 +563,9 @@ TEST(ChordLineEdit, LinkedAppearanceEditRelinkAndUndo) {
     stack->redo();
     expect_chord_line(*partLine, independent);
     const auto revision = document->revision();
-    EXPECT_FALSE(chord_line_batch(*document, {
-        set_line(*partLine, Pid::APPEARANCE_LINKED_TO_MASTER, true),
-        [](engrave::api::EditContext&) -> engrave::Result<void> {
-            throw std::runtime_error("injected after relink");
-        }}));
+    EXPECT_FALSE(chord_line_batch(
+        *document, {set_line(*partLine, Pid::APPEARANCE_LINKED_TO_MASTER, true),
+                    [](engrave::api::EditContext &) -> engrave::Result<void> { throw std::runtime_error("injected after relink"); }}));
     expect_chord_line(*partLine, independent);
     expect_chord_line(masterLine, masterBefore);
     EXPECT_EQ(document->revision(), revision);
@@ -588,23 +575,24 @@ TEST(ChordLineEdit, LinkedAppearanceEditRelinkAndUndo) {
 TEST(ChordLineEdit, FailedBatchRestoresSourceAndLegacyRepresentations) {
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
-    auto& line = chord_line(*document);
-    auto* stack = engrave::harness::master_of(*document).undoStack();
+    auto &line = chord_line(*document);
+    auto *stack = engrave::harness::master_of(*document).undoStack();
     for (bool offsets : {true, false}) {
-        if (offsets) seed_controls(line);
-        else line.setProperty(Pid::PATH, PropertyValue::fromValue(edited_path()));
+        if (offsets)
+            seed_controls(line);
+        else
+            line.setProperty(Pid::PATH, PropertyValue::fromValue(edited_path()));
         const auto before = line.appearanceState();
         const auto revision = document->revision();
-        const auto fail = [](engrave::api::EditContext&) -> engrave::Result<void> {
+        const auto fail = [](engrave::api::EditContext &) -> engrave::Result<void> {
             throw std::runtime_error("injected after ChordLine edits");
         };
-        auto result = chord_line_batch(*document, {
-            set_line(line, Pid::SIZE_SPATIUM_DEPENDENT, !line.sizeIsSpatiumDependent()),
-            [&line](engrave::api::EditContext&) -> engrave::Result<void> {
-                line.undoResetProperty(Pid::PATH);
-                return {};
-            },
-            set_line(line, Pid::PATH, PropertyValue::fromValue(PainterPath())), fail});
+        auto result = chord_line_batch(*document, {set_line(line, Pid::SIZE_SPATIUM_DEPENDENT, !line.sizeIsSpatiumDependent()),
+                                                   [&line](engrave::api::EditContext &) -> engrave::Result<void> {
+                                                       line.undoResetProperty(Pid::PATH);
+                                                       return {};
+                                                   },
+                                                   set_line(line, Pid::PATH, PropertyValue::fromValue(PainterPath())), fail});
         EXPECT_FALSE(result);
         expect_chord_line(line, before);
         EXPECT_EQ(document->revision(), revision);
@@ -613,17 +601,16 @@ TEST(ChordLineEdit, FailedBatchRestoresSourceAndLegacyRepresentations) {
     }
 }
 
-
 // --- the evidence ---------------------------------------------------------------
 
-std::string read_text(const std::filesystem::path& path) {
+std::string read_text(const std::filesystem::path &path) {
     std::ifstream in(path, std::ios::binary);
     return {std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
 }
 
 TEST(Evidence, EveryCaseMatchesTheCheckedInRow) {
     std::vector<engrave::harness::EvidenceRow> rows;
-    for (const auto& op_case : engrave::harness::registered_cases()) {
+    for (const auto &op_case : engrave::harness::registered_cases()) {
         const std::filesystem::path path = fixture(op_case.fixture);
         ASSERT_FALSE(path.empty()) << op_case.name << ": " << op_case.fixture << " is not in the corpus";
 
@@ -638,24 +625,26 @@ TEST(Evidence, EveryCaseMatchesTheCheckedInRow) {
     ASSERT_FALSE(checked_in.is_discarded()) << g_evidence.string() << " is not JSON";
     const auto now = nlohmann::ordered_json::parse(current);
     EXPECT_EQ(now["verdicts"], checked_in["verdicts"]);
-    for (const auto& row : now["cases"]) {
-        const auto found = std::ranges::find_if(checked_in["cases"], [&row](const auto& old) { return old["case"] == row["case"]; });
-        if (found == checked_in["cases"].end()) ADD_FAILURE() << row["case"] << " has no checked-in row";
-        else EXPECT_EQ(row, *found) << "rerun with --update-evidence once the change is understood";
+    for (const auto &row : now["cases"]) {
+        const auto found = std::ranges::find_if(checked_in["cases"], [&row](const auto &old) { return old["case"] == row["case"]; });
+        if (found == checked_in["cases"].end())
+            ADD_FAILURE() << row["case"] << " has no checked-in row";
+        else
+            EXPECT_EQ(row, *found) << "rerun with --update-evidence once the change is understood";
     }
 }
 
 // --- corpus -----------------------------------------------------------------------
 
-void collect(const std::filesystem::path& path) {
+void collect(const std::filesystem::path &path) {
     static const std::set<std::string> extensions = {".mscx", ".mscz", ".musicxml", ".mxl", ".mid", ".midi",
                                                      ".gp",   ".gp3",  ".gp4",      ".gp5", ".gpx", ".ptb"};
     std::error_code ec;
     if (std::filesystem::is_directory(path, ec)) {
         std::vector<std::filesystem::path> entries;
-        for (const auto& entry : std::filesystem::directory_iterator(path, ec)) entries.push_back(entry.path());
+        for (const auto &entry : std::filesystem::directory_iterator(path, ec)) entries.push_back(entry.path());
         std::ranges::sort(entries);
-        for (const auto& entry : entries) collect(entry);
+        for (const auto &entry : entries) collect(entry);
     } else if (std::filesystem::is_regular_file(path, ec) && extensions.contains(path.extension().string())) {
         g_corpus.push_back(path);
     }
@@ -663,14 +652,17 @@ void collect(const std::filesystem::path& path) {
 
 } // namespace
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);
     std::filesystem::path assets;
     for (int i = 1; i < argc; ++i) {
         const std::string_view argument = argv[i];
-        if (argument.starts_with("--assets=")) assets = std::filesystem::path(argument.substr(9));
-        else if (argument.starts_with("--corpus=")) collect(std::filesystem::path(argument.substr(9)));
-        else if (argument == "--update-evidence") g_update_evidence = true;
+        if (argument.starts_with("--assets="))
+            assets = std::filesystem::path(argument.substr(9));
+        else if (argument.starts_with("--corpus="))
+            collect(std::filesystem::path(argument.substr(9)));
+        else if (argument == "--update-evidence")
+            g_update_evidence = true;
     }
     if (g_corpus.empty()) {
         std::fprintf(stderr, "no corpus: pass --corpus=<file or directory>\n");

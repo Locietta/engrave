@@ -29,11 +29,10 @@
 #include "ifilesystem.h"
 
 namespace muse::io {
-class Dir
-{
+class Dir {
 public:
     Dir() = default;
-    Dir(const path_t& path);
+    Dir(const path_t &path);
 
     path_t path() const;
     path_t absolutePath() const;
@@ -42,18 +41,18 @@ public:
     Ret removeRecursively();
 
     Ret mkpath();
-    static Ret mkpath(const path_t& path);
+    static Ret mkpath(const path_t &path);
 
-    static RetVal<io::paths_t> scanFiles(const io::path_t& rootDir, const std::vector<std::string>& filters,
+    static RetVal<io::paths_t> scanFiles(const io::path_t &rootDir, const std::vector<std::string> &filters,
                                          ScanMode mode = ScanMode::FilesInCurrentDirAndSubdirs);
 
-    static path_t fromNativeSeparators(const path_t& pathName);
-    static path_t cleanPath(const path_t& path);
+    static path_t fromNativeSeparators(const path_t &pathName);
+    static path_t cleanPath(const path_t &path);
     static path_t tempPath();
 
 private:
     path_t m_path;
 };
-}
+} // namespace muse::io
 
 #endif // MUSE_IO_DIR_H

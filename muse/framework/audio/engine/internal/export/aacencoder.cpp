@@ -40,8 +40,7 @@ using namespace muse::audio;
 using namespace muse::audio::encode;
 
 namespace muse::audio::encode {
-struct AacEncoderHandler
-{
+struct AacEncoderHandler {
     HANDLE_AACENCODER handle = nullptr;
     AACENC_InfoStruct info = {};
     std::vector<INT_PCM> inputBuffer;
@@ -49,15 +48,13 @@ struct AacEncoderHandler
     size_t frameLength = 0;
     int channels = 0;
 
-    ~AacEncoderHandler()
-    {
+    ~AacEncoderHandler() {
         if (handle) {
             aacEncClose(&handle);
         }
     }
 
-    bool init(const SoundTrackFormat& format)
-    {
+    bool init(const SoundTrackFormat &format) {
         channels = format.outputSpec.audioChannelCount;
         if (aacEncOpen(&handle, 0, channels) != AACENC_OK) {
             LOGE() << "Failed to open AAC encoder";
@@ -76,21 +73,13 @@ struct AacEncoderHandler
 
         CHANNEL_MODE mode = MODE_1;
         switch (channels) {
-        case 1: mode = MODE_1;
-            break;
-        case 2: mode = MODE_2;
-            break;
-        case 3: mode = MODE_1_2;
-            break;
-        case 4: mode = MODE_1_2_1;
-            break;
-        case 5: mode = MODE_1_2_2;
-            break;
-        case 6: mode = MODE_1_2_2_1;
-            break;
-        default:
-            LOGE() << "Unsupported channel count:" << channels;
-            return false;
+            case 1: mode = MODE_1; break;
+            case 2: mode = MODE_2; break;
+            case 3: mode = MODE_1_2; break;
+            case 4: mode = MODE_1_2_1; break;
+            case 5: mode = MODE_1_2_2; break;
+            case 6: mode = MODE_1_2_2_1; break;
+            default: LOGE() << "Unsupported channel count:" << channels; return false;
         }
 
         if (aacEncoder_SetParam(handle, AACENC_CHANNELMODE, mode) != AACENC_OK) {
@@ -135,18 +124,16 @@ struct AacEncoderHandler
         return true;
     }
 };
-}
+} // namespace muse::audio::encode
 
-AacEncoder::AacEncoder(const SoundTrackFormat& format, io::IODevice& dstDevice)
-    : AbstractAudioEncoder(format), m_handler{std::make_unique<AacEncoderHandler>()}, m_dstDevice{&dstDevice}
-{
+AacEncoder::AacEncoder(const SoundTrackFormat &format, io::IODevice &dstDevice)
+    : AbstractAudioEncoder(format), m_handler{std::make_unique<AacEncoderHandler>()}, m_dstDevice{&dstDevice} {
     DO_ASSERT(m_dstDevice);
 }
 
 AacEncoder::~AacEncoder() noexcept = default;
 
-bool AacEncoder::begin(const samples_t /*totalSamplesNumber*/)
-{
+bool AacEncoder::begin(const samples_t /*totalSamplesNumber*/) {
     if (!m_format.isValid()) {
         return false;
     }
@@ -154,11 +141,8 @@ bool AacEncoder::begin(const samples_t /*totalSamplesNumber*/)
     return m_handler->init(m_format);
 }
 
-size_t AacEncoder::encode(samples_t samplesPerChannel, const float* input)
-{
-    IF_ASSERT_FAILED(m_handler && m_dstDevice) {
-        return 0;
-    }
+size_t AacEncoder::encode(samples_t samplesPerChannel, const float *input) {
+    IF_ASSERT_FAILED(m_handler && m_dstDevice) { return 0; }
 
     const int channels = m_handler->channels;
     const size_t frameLength = m_handler->frameLength;
@@ -183,12 +167,12 @@ size_t AacEncoder::encode(samples_t samplesPerChannel, const float* input)
         int inIdentifier = IN_AUDIO_DATA;
         int inSize = static_cast<int>(samplesToProcess * sizeof(INT_PCM));
         int inElemSize = sizeof(INT_PCM);
-        void* inPtr = m_handler->inputBuffer.data();
+        void *inPtr = m_handler->inputBuffer.data();
 
         int outIdentifier = OUT_BITSTREAM_DATA;
         int outSize = static_cast<int>(m_handler->outputBuffer.size());
         int outElemSize = 1;
-        void* outPtr = m_handler->outputBuffer.data();
+        void *outPtr = m_handler->outputBuffer.data();
 
         inBufDesc.numBufs = 1;
         inBufDesc.bufs = &inPtr;
@@ -236,11 +220,8 @@ size_t AacEncoder::encode(samples_t samplesPerChannel, const float* input)
     return static_cast<size_t>(samplesPerChannel) * static_cast<size_t>(channels);
 }
 
-muse::Ret AacEncoder::end()
-{
-    IF_ASSERT_FAILED(m_handler && m_dstDevice) {
-        return make_ret(Err::ErrorEncode, "AAC encoder is not initialized");
-    }
+muse::Ret AacEncoder::end() {
+    IF_ASSERT_FAILED(m_handler && m_dstDevice) { return make_ret(Err::ErrorEncode, "AAC encoder is not initialized"); }
 
     AACENC_BufDesc inBufDesc = {};
     AACENC_BufDesc outBufDesc = {};
@@ -250,12 +231,12 @@ muse::Ret AacEncoder::end()
     int inIdentifier = IN_AUDIO_DATA;
     int inSize = 0;
     int inElemSize = sizeof(INT_PCM);
-    void* inPtr = nullptr;
+    void *inPtr = nullptr;
 
     int outIdentifier = OUT_BITSTREAM_DATA;
     int outSize = static_cast<int>(m_handler->outputBuffer.size());
     int outElemSize = 1;
-    void* outPtr = m_handler->outputBuffer.data();
+    void *outPtr = m_handler->outputBuffer.data();
 
     inBufDesc.numBufs = 1;
     inBufDesc.bufs = &inPtr;
@@ -284,8 +265,7 @@ muse::Ret AacEncoder::end()
 
         if (outArgs.numOutBytes > 0) {
             const size_t written = m_dstDevice->write(m_handler->outputBuffer.data(), static_cast<size_t>(outArgs.numOutBytes));
-            if (written != static_cast<size_t>(outArgs.numOutBytes))
-                return make_ret(Err::ErrorEncode, "AAC finalization write failed");
+            if (written != static_cast<size_t>(outArgs.numOutBytes)) return make_ret(Err::ErrorEncode, "AAC finalization write failed");
         }
     }
 

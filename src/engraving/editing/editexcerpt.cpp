@@ -28,35 +28,29 @@ using namespace mu::engraving;
 //   AddExcerpt
 //---------------------------------------------------------
 
-AddExcerpt::AddExcerpt(Excerpt* ex)
-    : excerpt(ex)
-{}
+AddExcerpt::AddExcerpt(Excerpt *ex) : excerpt(ex) {}
 
-AddExcerpt::~AddExcerpt()
-{
+AddExcerpt::~AddExcerpt() {
     if (deleteExcerpt) {
         delete excerpt;
         excerpt = nullptr;
     }
 }
 
-void AddExcerpt::undo()
-{
+void AddExcerpt::undo() {
     deleteExcerpt = true;
     excerpt->masterScore()->removeExcerpt(excerpt);
 }
 
-void AddExcerpt::redo()
-{
+void AddExcerpt::redo() {
     deleteExcerpt = false;
     excerpt->masterScore()->addExcerpt(excerpt);
 }
 
-std::vector<EngravingObject*> AddExcerpt::objectItems() const
-{
+std::vector<EngravingObject *> AddExcerpt::objectItems() const {
     if (excerpt) {
-        if (MasterScore* score = excerpt->masterScore()) {
-            return { score };
+        if (MasterScore *score = excerpt->masterScore()) {
+            return {score};
         }
     }
 
@@ -67,37 +61,29 @@ std::vector<EngravingObject*> AddExcerpt::objectItems() const
 //   RemoveExcerpt
 //---------------------------------------------------------
 
-RemoveExcerpt::RemoveExcerpt(Excerpt* ex)
-    : excerpt(ex)
-{
-    index = muse::indexOf(excerpt->masterScore()->excerpts(), excerpt);
-}
+RemoveExcerpt::RemoveExcerpt(Excerpt *ex) : excerpt(ex) { index = muse::indexOf(excerpt->masterScore()->excerpts(), excerpt); }
 
-RemoveExcerpt::~RemoveExcerpt()
-{
+RemoveExcerpt::~RemoveExcerpt() {
     if (deleteExcerpt) {
         delete excerpt;
         excerpt = nullptr;
     }
 }
 
-void RemoveExcerpt::undo()
-{
+void RemoveExcerpt::undo() {
     deleteExcerpt = false;
     excerpt->masterScore()->addExcerpt(excerpt, index);
 }
 
-void RemoveExcerpt::redo()
-{
+void RemoveExcerpt::redo() {
     deleteExcerpt = true;
     excerpt->masterScore()->removeExcerpt(excerpt);
 }
 
-std::vector<EngravingObject*> RemoveExcerpt::objectItems() const
-{
+std::vector<EngravingObject *> RemoveExcerpt::objectItems() const {
     if (excerpt) {
-        if (MasterScore* score = excerpt->masterScore()) {
-            return { score };
+        if (MasterScore *score = excerpt->masterScore()) {
+            return {score};
         }
     }
 
@@ -108,9 +94,8 @@ std::vector<EngravingObject*> RemoveExcerpt::objectItems() const
 //   SwapExcerpt
 //---------------------------------------------------------
 
-void SwapExcerpt::flip()
-{
-    Excerpt* tmp = score->excerpts().at(pos1);
+void SwapExcerpt::flip() {
+    Excerpt *tmp = score->excerpts().at(pos1);
     score->excerpts()[pos1] = score->excerpts().at(pos2);
     score->excerpts()[pos2] = tmp;
     score->setExcerptsChanged(true);
@@ -120,8 +105,7 @@ void SwapExcerpt::flip()
 //   ChangeExcerptTitle
 //---------------------------------------------------------
 
-void ChangeExcerptTitle::flip()
-{
+void ChangeExcerptTitle::flip() {
     String s = title;
     title = excerpt->name();
     excerpt->setName(s);
@@ -132,38 +116,33 @@ void ChangeExcerptTitle::flip()
 //   AddPartToExcerpt
 //---------------------------------------------------------
 
-AddPartToExcerpt::AddPartToExcerpt(Excerpt* e, Part* p, size_t targetPartIdx)
-    : m_excerpt(e), m_part(p), m_targetPartIdx(targetPartIdx)
-{
+AddPartToExcerpt::AddPartToExcerpt(Excerpt *e, Part *p, size_t targetPartIdx) : m_excerpt(e), m_part(p), m_targetPartIdx(targetPartIdx) {
     assert(m_excerpt);
     assert(m_part);
 }
 
-void AddPartToExcerpt::undo()
-{
+void AddPartToExcerpt::undo() {
     muse::remove(m_excerpt->parts(), m_part);
 
-    if (Score* score = m_excerpt->excerptScore()) {
+    if (Score *score = m_excerpt->excerptScore()) {
         score->removePart(m_part);
     }
 }
 
-void AddPartToExcerpt::redo()
-{
-    std::vector<Part*>& excerptParts = m_excerpt->parts();
+void AddPartToExcerpt::redo() {
+    std::vector<Part *> &excerptParts = m_excerpt->parts();
     if (m_targetPartIdx < excerptParts.size()) {
         excerptParts.insert(excerptParts.begin() + m_targetPartIdx, m_part);
     } else {
         excerptParts.push_back(m_part);
     }
 
-    if (Score* score = m_excerpt->excerptScore()) {
+    if (Score *score = m_excerpt->excerptScore()) {
         score->insertPart(m_part, m_targetPartIdx);
     }
 }
 
-void AddPartToExcerpt::cleanup(bool wasDone)
-{
+void AddPartToExcerpt::cleanup(bool wasDone) {
     if (!wasDone) {
         delete m_part;
         m_part = nullptr;

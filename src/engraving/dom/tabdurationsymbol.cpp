@@ -28,29 +28,24 @@
 using namespace mu::engraving;
 
 TabDurationSymbol::TabDurationSymbol(DummyParentOr<ChordRest> parent)
-    : EngravingItem(ElementType::TAB_DURATION_SYMBOL, parent, ElementFlag::NOT_SELECTABLE)
-{
+    : EngravingItem(ElementType::TAB_DURATION_SYMBOL, parent, ElementFlag::NOT_SELECTABLE) {
     setGenerated(true);
-    m_tab        = 0;
-    m_text       = String();
+    m_tab = 0;
+    m_text = String();
 }
 
-TabDurationSymbol::TabDurationSymbol(DummyParentOr<ChordRest> parent, const StaffType* tab, DurationType type, int dots)
-    : EngravingItem(ElementType::TAB_DURATION_SYMBOL, parent, ElementFlag::NOT_SELECTABLE)
-{
+TabDurationSymbol::TabDurationSymbol(DummyParentOr<ChordRest> parent, const StaffType *tab, DurationType type, int dots)
+    : EngravingItem(ElementType::TAB_DURATION_SYMBOL, parent, ElementFlag::NOT_SELECTABLE) {
     setGenerated(true);
     setDuration(type, dots, tab);
 }
 
-TabDurationSymbol::TabDurationSymbol(const TabDurationSymbol& e)
-    : EngravingItem(e)
-{
+TabDurationSymbol::TabDurationSymbol(const TabDurationSymbol &e) : EngravingItem(e) {
     m_tab = e.m_tab;
     m_text = e.m_text;
 }
 
-void TabDurationSymbol::setDuration(DurationType type, int dots, const StaffType* tab)
-{
+void TabDurationSymbol::setDuration(DurationType type, int dots, const StaffType *tab) {
     m_tab = tab;
     m_text = tab->durationString(type, dots);
 }

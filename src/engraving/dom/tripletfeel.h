@@ -25,22 +25,13 @@
 #include "systemtext.h"
 
 namespace mu::engraving {
-enum class TripletFeelType : unsigned char {
-    NONE,
-    TRIPLET_8TH,
-    TRIPLET_16TH,
-    DOTTED_8TH,
-    DOTTED_16TH,
-    SCOTTISH_8TH,
-    SCOTTISH_16TH
-};
+enum class TripletFeelType : unsigned char { NONE, TRIPLET_8TH, TRIPLET_16TH, DOTTED_8TH, DOTTED_16TH, SCOTTISH_8TH, SCOTTISH_16TH };
 
 //---------------------------------------------------------
 //   TripletFeel
 //---------------------------------------------------------
 
-class TripletFeel final : public SystemText
-{
+class TripletFeel final : public SystemText {
     OBJECT_ALLOCATOR(engraving, TripletFeel)
     DECLARE_CLASSOF(ElementType::TRIPLET_FEEL)
 
@@ -48,8 +39,10 @@ public:
     TripletFeel(DummyParentOr<Segment> parent, TripletFeelType tripletFillType = TripletFeelType::NONE);
     void setTripletProperty();
 
-    TripletFeel* clone() const override { return new TripletFeel(*this); }
+    TripletFeel *clone() const override { return new TripletFeel(*this); }
+
     TripletFeelType getTripletFeelType() const { return m_tripletFeelType; }
+
     PropertyValue propertyDefault(Pid propertyId) const override;
     Sid getPropertyStyle(Pid id) const override;
     TranslatableString subtypeUserName() const override;
@@ -66,4 +59,4 @@ private:
 
     TripletFeelType m_tripletFeelType = TripletFeelType::NONE;
 };
-}
+} // namespace mu::engraving

@@ -44,20 +44,19 @@ using namespace mu::engraving::rendering::score;
 //   chordBracketsInSegment
 //---------------------------------------------------------
 
-std::vector<ChordBracket*> ChordBracketLayout::chordBracketsInSegment(const Segment* segment)
-{
-    std::vector<ChordBracket*> result;
+std::vector<ChordBracket *> ChordBracketLayout::chordBracketsInSegment(const Segment *segment) {
+    std::vector<ChordBracket *> result;
 
     if (!segment) {
         return result;
     }
 
-    for (EngravingItem* item : segment->elist()) {
+    for (EngravingItem *item : segment->elist()) {
         if (!item || !item->isChord()) {
             continue;
         }
 
-        for (EngravingItem* child : toChord(item)->el()) {
+        for (EngravingItem *child : toChord(item)->el()) {
             if (child && child->isChordBracket()) {
                 result.push_back(toChordBracket(child));
             }
@@ -71,19 +70,18 @@ std::vector<ChordBracket*> ChordBracketLayout::chordBracketsInSegment(const Segm
 //   bracketVisualSpan
 //---------------------------------------------------------
 
-ChordBracketLayout::BracketVisualSpan ChordBracketLayout::bracketVisualSpan(const ChordBracket* bracket)
-{
-    const Chord* startChord = bracket->chord();
-    EngravingItem* endItem = startChord->segment()->element(bracket->endTrack());
-    const Chord* endChord = endItem && endItem->isChord() ? toChord(endItem) : startChord;
+ChordBracketLayout::BracketVisualSpan ChordBracketLayout::bracketVisualSpan(const ChordBracket *bracket) {
+    const Chord *startChord = bracket->chord();
+    EngravingItem *endItem = startChord->segment()->element(bracket->endTrack());
+    const Chord *endChord = endItem && endItem->isChord() ? toChord(endItem) : startChord;
 
-    const auto topY = [](const Chord* chord) {
-        const Note* note = chord->upNote();
+    const auto topY = [](const Chord *chord) {
+        const Note *note = chord->upNote();
         return chord->pos().y() + note->pos().y() + note->ldata()->bbox().top();
     };
 
-    const auto bottomY = [](const Chord* chord) {
-        const Note* note = chord->downNote();
+    const auto bottomY = [](const Chord *chord) {
+        const Note *note = chord->downNote();
         return chord->pos().y() + note->pos().y() + note->ldata()->bbox().bottom();
     };
 
@@ -120,8 +118,8 @@ ChordBracketLayout::BracketVisualSpan ChordBracketLayout::bracketVisualSpan(cons
             }
         }
     } else {
-        const Chord* upperAnchor = startStaff < endStaff ? startChord : endChord;
-        const Chord* lowerAnchor = startStaff < endStaff ? endChord : startChord;
+        const Chord *upperAnchor = startStaff < endStaff ? startChord : endChord;
+        const Chord *lowerAnchor = startStaff < endStaff ? endChord : startChord;
 
         result.topY = topY(upperAnchor) - topPadding;
         result.bottomY = bottomY(lowerAnchor) + bottomPadding;
@@ -137,9 +135,8 @@ ChordBracketLayout::BracketVisualSpan ChordBracketLayout::bracketVisualSpan(cons
 //   bracketCollisionShape
 //---------------------------------------------------------
 
-Shape ChordBracketLayout::bracketCollisionShape(const ChordBracket* bracket, const BracketVisualSpan& span, staff_idx_t staffIdx,
-                                                double x)
-{
+Shape ChordBracketLayout::bracketCollisionShape(const ChordBracket *bracket, const BracketVisualSpan &span, staff_idx_t staffIdx,
+                                                double x) {
     if (staffIdx < span.topStaff || staffIdx > span.bottomStaff) {
         return Shape();
     }
@@ -167,10 +164,9 @@ Shape ChordBracketLayout::bracketCollisionShape(const ChordBracket* bracket, con
 //---------------------------------------------------------
 //   layoutHorizontal
 //---------------------------------------------------------
-void ChordBracketLayout::layoutHorizontal(ChordBracket* bracket)
-{
-    Chord* owner = bracket->chord();
-    Segment* segment = owner->segment();
+void ChordBracketLayout::layoutHorizontal(ChordBracket *bracket) {
+    Chord *owner = bracket->chord();
+    Segment *segment = owner->segment();
     const TrackRange range = bracket->part()->trackRange();
     const BracketVisualSpan span = bracketVisualSpan(bracket);
 
@@ -178,14 +174,14 @@ void ChordBracketLayout::layoutHorizontal(ChordBracket* bracket)
     const double baseX = owner->pos().x() + bracket->offset().x();
 
     for (track_idx_t track = range.startTrack; track < range.endTrack; ++track) {
-        EngravingItem* item = segment->element(track);
+        EngravingItem *item = segment->element(track);
         if (!item || !item->isChord()) {
             continue;
         }
 
-        Chord* chord = toChord(item);
+        Chord *chord = toChord(item);
         Shape chordShape = chord->shape();
-        chordShape.removeTypes({ ElementType::CHORD_BRACKET });
+        chordShape.removeTypes({ElementType::CHORD_BRACKET});
         chordShape.translate(chord->pos());
         if (chordShape.empty()) {
             continue;
@@ -196,9 +192,9 @@ void ChordBracketLayout::layoutHorizontal(ChordBracket* bracket)
             continue;
         }
 
-        const double distance = bracket->rightSide()
-                                ? HorizontalSpacing::minHorizontalDistance(chordShape, bracketShape, bracket->spatium())
-                                : HorizontalSpacing::minHorizontalDistance(bracketShape, chordShape, bracket->spatium());
+        const double distance = bracket->rightSide() ?
+                                    HorizontalSpacing::minHorizontalDistance(chordShape, bracketShape, bracket->spatium()) :
+                                    HorizontalSpacing::minHorizontalDistance(bracketShape, chordShape, bracket->spatium());
         requiredDistance = std::max(requiredDistance, distance);
     }
 
@@ -209,14 +205,13 @@ void ChordBracketLayout::layoutHorizontal(ChordBracket* bracket)
 //   layoutSegment
 //---------------------------------------------------------
 
-void ChordBracketLayout::layoutSegment(Segment* segment, LayoutContext& ctx)
-{
+void ChordBracketLayout::layoutSegment(Segment *segment, LayoutContext &ctx) {
     if (!segment) {
         return;
     }
 
-    for (ChordBracket* bracket : chordBracketsInSegment(segment)) {
-        Chord* owner = bracket->chord();
+    for (ChordBracket *bracket : chordBracketsInSegment(segment)) {
+        Chord *owner = bracket->chord();
         if (!owner || owner->segment() != segment || !bracket->part() || owner->onTabStaff()) {
             continue;
         }
@@ -235,16 +230,15 @@ void ChordBracketLayout::layoutSegment(Segment* segment, LayoutContext& ctx)
 //   updateHorizontalSpacing
 //---------------------------------------------------------
 
-void ChordBracketLayout::updateHorizontalSpacing(const Segment* firstSegment, const Segment* secondSegment,
-                                                 staff_idx_t staffIdx, double squeezeFactor, double& minDistance)
-{
+void ChordBracketLayout::updateHorizontalSpacing(const Segment *firstSegment, const Segment *secondSegment, staff_idx_t staffIdx,
+                                                 double squeezeFactor, double &minDistance) {
     if (!firstSegment || !secondSegment) {
         return;
     }
 
-    auto updateForBrackets = [&](const Segment* segment, const Shape& otherShape, bool rightSide) {
-        for (ChordBracket* bracket : chordBracketsInSegment(segment)) {
-            const Chord* owner = bracket->chord();
+    auto updateForBrackets = [&](const Segment *segment, const Shape &otherShape, bool rightSide) {
+        for (ChordBracket *bracket : chordBracketsInSegment(segment)) {
+            const Chord *owner = bracket->chord();
             if (!owner || owner->onTabStaff() || !bracket->visible() || !bracket->addToSkyline() || bracket->rightSide() != rightSide) {
                 continue;
             }
@@ -262,9 +256,9 @@ void ChordBracketLayout::updateHorizontalSpacing(const Segment* firstSegment, co
                 continue;
             }
 
-            const double distance = rightSide
-                                    ? HorizontalSpacing::minHorizontalDistance(bracketShape, otherShape, bracket->spatium(), squeezeFactor)
-                                    : HorizontalSpacing::minHorizontalDistance(otherShape, bracketShape, bracket->spatium(), squeezeFactor);
+            const double distance =
+                rightSide ? HorizontalSpacing::minHorizontalDistance(bracketShape, otherShape, bracket->spatium(), squeezeFactor) :
+                            HorizontalSpacing::minHorizontalDistance(otherShape, bracketShape, bracket->spatium(), squeezeFactor);
 
             minDistance = std::max(minDistance, distance);
         }
@@ -272,16 +266,15 @@ void ChordBracketLayout::updateHorizontalSpacing(const Segment* firstSegment, co
 
     // Check the brackets facing the gap between the two Segments:
     // left-side brackets on the second Segment and right-side brackets on the first.
-    updateForBrackets(secondSegment, firstSegment->staffShape(staffIdx), /*rightSide=*/ false);
-    updateForBrackets(firstSegment, secondSegment->staffShape(staffIdx), /*rightSide=*/ true);
+    updateForBrackets(secondSegment, firstSegment->staffShape(staffIdx), /*rightSide=*/false);
+    updateForBrackets(firstSegment, secondSegment->staffShape(staffIdx), /*rightSide=*/true);
 }
 
 //---------------------------------------------------------
 //   updateVerticalGeometry
 //---------------------------------------------------------
 
-void ChordBracketLayout::updateVerticalGeometry(ChordBracket* bracket, LayoutContext& ctx)
-{
+void ChordBracketLayout::updateVerticalGeometry(ChordBracket *bracket, LayoutContext &ctx) {
     if (!bracket || !bracket->chord() || !bracket->chord()->segment()) {
         return;
     }
@@ -292,8 +285,8 @@ void ChordBracketLayout::updateVerticalGeometry(ChordBracket* bracket, LayoutCon
     bracket->mutldata()->setPosX(x);
 
     // Refresh cached shapes after restoring the segment-level position.
-    Chord* chord = bracket->chord();
-    Segment* segment = chord->segment();
+    Chord *chord = bracket->chord();
+    Segment *segment = chord->segment();
     ChordLayout::fillShape(chord, chord->mutldata());
 
     const BracketVisualSpan span = bracketVisualSpan(bracket);

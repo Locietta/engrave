@@ -4,14 +4,15 @@
 namespace muse::profiler {
 class Scope {
 public:
-    explicit Scope(const char*);
+    explicit Scope(const char *);
     ~Scope();
 
 private:
-    const char* m_name;
+    const char *m_name;
     long long m_start;
 };
-}
+} // namespace muse::profiler
+
 #define TRACEFUNC muse::profiler::Scope __engrave_scope(__func__);
 #define TRACEFUNC_C(info) muse::profiler::Scope __engrave_scope(info);
 #else

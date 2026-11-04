@@ -26,15 +26,14 @@
 
 namespace mu::engraving {
 class Score;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class ScoreLayout
-{
+class ScoreLayout {
 public:
 
-    static void layoutRange(Score* score, const Fraction& st, const Fraction& et);
+    static void layoutRange(Score *score, const Fraction &st, const Fraction &et);
 };
-}
+} // namespace mu::engraving::rendering::score
 
 #endif // MU_ENGRAVING_SCORELAYOUT_DEV_H

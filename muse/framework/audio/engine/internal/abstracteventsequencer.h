@@ -32,9 +32,8 @@
 #include "audio/common/audiotypes.h"
 
 namespace muse::audio::engine {
-template<class ... Types>
-class AbstractEventSequencer
-{
+template <class... Types>
+class AbstractEventSequencer {
 public:
     using EventType = std::variant<Types...>;
     using EventSequence = std::vector<EventType>;
@@ -43,41 +42,29 @@ public:
     typedef typename EventSequenceMap::const_iterator SequenceIterator;
     typedef typename EventSequence::const_iterator EventIterator;
 
-    AbstractEventSequencer()
-    {
-        resetAllIterators();
-    }
+    AbstractEventSequencer() { resetAllIterators(); }
 
     virtual ~AbstractEventSequencer() = default;
 
-    void load(const mpe::PlaybackData& data)
-    {
+    void load(const mpe::PlaybackData &data) {
 
         m_playbackData = data;
 
         updateMainStreamEvents(data.originEvents, data.dynamics);
     }
 
-    const mpe::PlaybackData& playbackData() const
-    {
-        return m_playbackData;
-    }
+    const mpe::PlaybackData &playbackData() const { return m_playbackData; }
 
-    void updateMainStream()
-    {
+    void updateMainStream() {
         if (m_shouldUpdateMainStreamEvents) {
             updateMainStreamEvents(m_playbackData.originEvents, m_playbackData.dynamics);
             m_shouldUpdateMainStreamEvents = false;
         }
     }
 
-    void setUpdateMainStreamWhenInactive(bool update)
-    {
-        m_updateMainStreamWhenInactive = update;
-    }
+    void setUpdateMainStreamWhenInactive(bool update) { m_updateMainStreamWhenInactive = update; }
 
-    void flushOffstream()
-    {
+    void flushOffstream() {
         if (m_offStreamEvents.empty()) {
             return;
         }
@@ -90,8 +77,7 @@ public:
         }
     }
 
-    void setActive(const bool active)
-    {
+    void setActive(const bool active) {
         if (m_isActive == active) {
             return;
         }
@@ -103,40 +89,23 @@ public:
         }
     }
 
-    bool isActive() const
-    {
-        return m_isActive;
-    }
+    bool isActive() const { return m_isActive; }
 
-    void setPlaybackPosition(const msecs_t newPlaybackPosition)
-    {
+    void setPlaybackPosition(const msecs_t newPlaybackPosition) {
 
         m_playbackPosition = newPlaybackPosition;
         resetAllIterators();
     }
 
-    msecs_t playbackPosition() const
-    {
+    msecs_t playbackPosition() const { return m_playbackPosition; }
 
-        return m_playbackPosition;
-    }
+    using OnFlushedCallback = std::function<void()>;
 
-    using OnFlushedCallback = std::function<void ()>;
+    void setOnOffStreamFlushed(OnFlushedCallback flushed) { m_onOffStreamFlushed = flushed; }
 
-    void setOnOffStreamFlushed(OnFlushedCallback flushed)
-    {
+    void setOnMainStreamFlushed(OnFlushedCallback flushed) { m_onMainStreamFlushed = flushed; }
 
-        m_onOffStreamFlushed = flushed;
-    }
-
-    void setOnMainStreamFlushed(OnFlushedCallback flushed)
-    {
-
-        m_onMainStreamFlushed = flushed;
-    }
-
-    EventSequenceMap movePlaybackForward(const msecs_t nextMsecs)
-    {
+    EventSequenceMap movePlaybackForward(const msecs_t nextMsecs) {
 
         EventSequenceMap result;
 
@@ -167,33 +136,26 @@ public:
     }
 
 protected:
-    virtual void updateMainStreamEvents(const mpe::PlaybackEventsMap& events, const mpe::DynamicAutomationLayers& dynamics) = 0;
-    virtual void updateOffStreamEvents(const mpe::PlaybackEventsMap& events) = 0;
+    virtual void updateMainStreamEvents(const mpe::PlaybackEventsMap &events, const mpe::DynamicAutomationLayers &dynamics) = 0;
+    virtual void updateOffStreamEvents(const mpe::PlaybackEventsMap &events) = 0;
 
-    void resetAllIterators()
-    {
+    void resetAllIterators() {
         updateMainSequenceIterator();
         updateOffSequenceIterator();
     }
 
-    void updateMainSequenceIterator()
-    {
-        m_currentMainSequenceIt = m_mainStreamEvents.lower_bound(m_playbackPosition);
-    }
+    void updateMainSequenceIterator() { m_currentMainSequenceIt = m_mainStreamEvents.lower_bound(m_playbackPosition); }
 
-    void updateOffSequenceIterator()
-    {
+    void updateOffSequenceIterator() {
         m_currentOffSequenceIt = m_offStreamEvents.cbegin();
         m_offstreamPosition = 0;
     }
 
-    void handleMainStream(EventSequenceMap& result)
-    {
-        while (m_currentMainSequenceIt != m_mainStreamEvents.end()
-               && m_currentMainSequenceIt->first <= m_playbackPosition) {
+    void handleMainStream(EventSequenceMap &result) {
+        while (m_currentMainSequenceIt != m_mainStreamEvents.end() && m_currentMainSequenceIt->first <= m_playbackPosition) {
             if (OfflineCancellation::requested()) return;
-            EventSequence& sequence = result[m_currentMainSequenceIt->first];
-            for (const auto& event : m_currentMainSequenceIt->second) {
+            EventSequence &sequence = result[m_currentMainSequenceIt->first];
+            for (const auto &event : m_currentMainSequenceIt->second) {
                 if (OfflineCancellation::requested()) return;
                 sequence.push_back(event);
             }
@@ -201,17 +163,15 @@ protected:
         }
     }
 
-    void handleOffStream(EventSequenceMap& result)
-    {
+    void handleOffStream(EventSequenceMap &result) {
         if (m_offStreamEvents.empty()) {
             return;
         }
 
-        while (m_currentOffSequenceIt != m_offStreamEvents.end()
-               && m_currentOffSequenceIt->first <= m_offstreamPosition) {
+        while (m_currentOffSequenceIt != m_offStreamEvents.end() && m_currentOffSequenceIt->first <= m_offstreamPosition) {
             if (OfflineCancellation::requested()) return;
-            EventSequence& sequence = result[m_currentOffSequenceIt->first];
-            for (auto& event : m_currentOffSequenceIt->second) {
+            EventSequence &sequence = result[m_currentOffSequenceIt->first];
+            for (auto &event : m_currentOffSequenceIt->second) {
                 if (OfflineCancellation::requested()) return;
                 sequence.push_back(std::move(event));
             }
@@ -242,4 +202,4 @@ private:
     bool m_shouldUpdateMainStreamEvents = false;
     bool m_updateMainStreamWhenInactive = false;
 };
-}
+} // namespace muse::audio::engine

@@ -33,7 +33,4 @@ using namespace mu::engraving;
 //    DeadSlapped
 //--------------------------------------------------------
 
-DeadSlapped::DeadSlapped(Rest* rest)
-    : EngravingItem(ElementType::DEAD_SLAPPED, rest)
-{
-}
+DeadSlapped::DeadSlapped(Rest *rest) : EngravingItem(ElementType::DEAD_SLAPPED, rest) {}

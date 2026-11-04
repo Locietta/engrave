@@ -35,81 +35,58 @@ using namespace muse;
 
 static constexpr int TEXTSTREAM_BUFFERSIZE = 16384;
 
-TextStream::TextStream(io::IODevice* device)
-    : m_device(device)
-{
-    m_buf.reserve(TEXTSTREAM_BUFFERSIZE);
-}
+TextStream::TextStream(io::IODevice *device) : m_device(device) { m_buf.reserve(TEXTSTREAM_BUFFERSIZE); }
 
-TextStream::~TextStream()
-{
-    flush();
-}
+TextStream::~TextStream() { flush(); }
 
-void TextStream::setDevice(io::IODevice* device)
-{
-    m_device = device;
-}
+void TextStream::setDevice(io::IODevice *device) { m_device = device; }
 
-void TextStream::flush()
-{
+void TextStream::flush() {
     if (m_device && m_device->isOpen()) {
         m_device->write(m_buf.data(), m_buf.size());
         m_buf.clear();
     }
 }
 
-TextStream& TextStream::operator<<(char ch)
-{
+TextStream &TextStream::operator<<(char ch) {
     write(&ch, 1);
     return *this;
 }
 
-TextStream& TextStream::operator<<(const int32_t val)
-{
+TextStream &TextStream::operator<<(const int32_t val) {
     // ceil(log_10(2^31)) = 10 (+ sign)
     std::array<char, 11> buf{};
     const auto [last, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), val);
-    IF_ASSERT_FAILED(ec == std::errc {}) {
-        return *this;
-    }
+    IF_ASSERT_FAILED(ec == std::errc{}) { return *this; }
 
     write(buf.data(), static_cast<size_t>(last - buf.data()));
 
     return *this;
 }
 
-TextStream& TextStream::operator<<(const uint32_t val)
-{
+TextStream &TextStream::operator<<(const uint32_t val) {
     // ceil(log_10(2^32)) = 10
     std::array<char, 10> buf{};
     const auto [last, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), val);
-    IF_ASSERT_FAILED(ec == std::errc {}) {
-        return *this;
-    }
+    IF_ASSERT_FAILED(ec == std::errc{}) { return *this; }
 
     write(buf.data(), static_cast<size_t>(last - buf.data()));
     return *this;
 }
 
-TextStream& TextStream::operator<<(double val)
-{
+TextStream &TextStream::operator<<(double val) {
     // macOS: requires macOS 13.3 at runtime
     // linux: requires at least libstdc++ 11 (we compile with libstdc++ 10) or libc++ 14
-#if (defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 130300) \
-    || (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && __IPHONE_OS_VERSION_MIN_REQUIRED >= 160300) \
-    || defined(_MSC_VER) \
-    || (!defined(__APPLE__) && defined(_LIBCPP_VERSION) && _LIBCPP_VERSION >= 14000) \
-    || (defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE >= 11)
+#if (defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && __MAC_OS_X_VERSION_MIN_REQUIRED >= 130300) ||                        \
+    (defined(__IPHONE_OS_VERSION_MIN_REQUIRED) && __IPHONE_OS_VERSION_MIN_REQUIRED >= 160300) || defined(_MSC_VER) || \
+    (!defined(__APPLE__) && defined(_LIBCPP_VERSION) && _LIBCPP_VERSION >= 14000) || (defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE >= 11)
     std::array<char, 24> buf{};
 
     // emulate std::stringstream default behavior
     constexpr auto format = std::chars_format::general;
     constexpr int precision = 6;
     const auto [last, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), val, format, precision);
-    IF_ASSERT_FAILED(ec == std::errc {}) {
-        return *this;
-    }
+    IF_ASSERT_FAILED(ec == std::errc{}) { return *this; }
     write(buf.data(), static_cast<size_t>(last - buf.data()));
 #else
     std::stringstream ss;
@@ -121,63 +98,49 @@ TextStream& TextStream::operator<<(double val)
     return *this;
 }
 
-TextStream& TextStream::operator<<(const int64_t val)
-{
+TextStream &TextStream::operator<<(const int64_t val) {
     // ceil(log_10(2^63)) = 20 (+ sign)
     std::array<char, 21> buf{};
     const auto [last, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), val);
-    IF_ASSERT_FAILED(ec == std::errc {}) {
-        return *this;
-    }
+    IF_ASSERT_FAILED(ec == std::errc{}) { return *this; }
 
     write(buf.data(), static_cast<size_t>(last - buf.data()));
 
     return *this;
 }
 
-TextStream& TextStream::operator<<(const uint64_t val)
-{
+TextStream &TextStream::operator<<(const uint64_t val) {
     // ceil(log_10(2^64)) = 20
     std::array<char, 20> buf{};
     const auto [last, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), val);
-    IF_ASSERT_FAILED(ec == std::errc {}) {
-        return *this;
-    }
+    IF_ASSERT_FAILED(ec == std::errc{}) { return *this; }
 
     write(buf.data(), static_cast<size_t>(last - buf.data()));
 
     return *this;
 }
 
-TextStream& TextStream::operator<<(const char* s)
-{
-    return operator<<(std::string_view { s });
-}
+TextStream &TextStream::operator<<(const char *s) { return operator<<(std::string_view{s}); }
 
-TextStream& TextStream::operator<<(const std::string_view str)
-{
+TextStream &TextStream::operator<<(const std::string_view str) {
     write(str.data(), str.size());
     return *this;
 }
 
-
-TextStream& TextStream::operator<<(const ByteArray& b)
-{
-    write(reinterpret_cast<const char*>(b.constData()), b.size());
+TextStream &TextStream::operator<<(const ByteArray &b) {
+    write(reinterpret_cast<const char *>(b.constData()), b.size());
     return *this;
 }
 
-TextStream& TextStream::operator<<(const String& s)
-{
+TextStream &TextStream::operator<<(const String &s) {
     ByteArray b = s.toUtf8();
-    write(reinterpret_cast<const char*>(b.constData()), b.size());
+    write(reinterpret_cast<const char *>(b.constData()), b.size());
     return *this;
 }
 
-void TextStream::write(const char* ch, size_t len)
-{
+void TextStream::write(const char *ch, size_t len) {
     if (io::activeWriteBudget && !io::activeWriteBudget->charge(len)) throw io::WriteBudgetStop{};
-    m_buf.insert(m_buf.end(), reinterpret_cast<const uint8_t*>(ch), reinterpret_cast<const uint8_t*>(ch + len));
+    m_buf.insert(m_buf.end(), reinterpret_cast<const uint8_t *>(ch), reinterpret_cast<const uint8_t *>(ch + len));
     if (m_device && m_buf.size() > TEXTSTREAM_BUFFERSIZE) {
         flush();
         if (io::activeWriteBudget && !io::activeWriteBudget->poll()) throw io::WriteBudgetStop{};

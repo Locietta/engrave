@@ -28,26 +28,24 @@
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-static void resetLayoutData(EngravingObject* obj)
-{
+static void resetLayoutData(EngravingObject *obj) {
     if (obj->isEngravingItem()) {
-        EngravingItem* item = toEngravingItem(obj);
+        EngravingItem *item = toEngravingItem(obj);
         if (item->ldata()) {
             item->mutldata()->reset();
         }
     }
 
-    for (EngravingObject* ch : obj->children()) {
+    for (EngravingObject *ch : obj->children()) {
         resetLayoutData(ch);
     }
 }
 
-void PassResetLayoutData::doRun(Score* score, LayoutContext& ctx)
-{
+void PassResetLayoutData::doRun(Score *score, LayoutContext &ctx) {
     if (ctx.state().isLayoutAll()) {
         resetLayoutData(score);
     } else {
-        MeasureBase* m = ctx.mutState().nextMeasure();
+        MeasureBase *m = ctx.mutState().nextMeasure();
         while (m && m->tick() <= ctx.state().endTick()) {
             resetLayoutData(m);
             m = m->next();

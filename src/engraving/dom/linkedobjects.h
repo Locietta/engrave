@@ -27,15 +27,14 @@
 #include "engravingobject.h"
 
 namespace mu::engraving {
-class LinkedObjects : public std::list<EngravingObject*>
-{
+class LinkedObjects : public std::list<EngravingObject *> {
     OBJECT_ALLOCATOR(engraving, LinkedObjects)
 
 public:
-    bool contains(const EngravingObject* o) const;
+    bool contains(const EngravingObject *o) const;
 
-    EngravingObject* mainElement();
+    EngravingObject *mainElement();
 };
-}
+} // namespace mu::engraving
 
 #endif // MU_ENGRAVING_LINKEDOBJECTS_H

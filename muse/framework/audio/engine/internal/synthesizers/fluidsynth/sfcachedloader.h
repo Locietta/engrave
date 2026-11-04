@@ -29,27 +29,24 @@
 #include <sfloader/fluid_defsfont.h>
 
 namespace muse::audio::synth {
-struct SoundFontData
-{
-    fluid_sfont_t* soundFontPtr = nullptr;
-    std::FILE* fileStream = nullptr;
+struct SoundFontData {
+    fluid_sfont_t *soundFontPtr = nullptr;
+    std::FILE *fileStream = nullptr;
 };
 
 struct SoundFontCache : public std::map<std::string, SoundFontData> {
-    static SoundFontCache* instance()
-    {
+    static SoundFontCache *instance() {
         static SoundFontCache s;
         return &s;
     }
 
     // Called only after all synthesizers owned by the engine have gone away.
     // A font still in use stays cached and can be released on a later attempt.
-    void clearUnused()
-    {
+    void clearUnused() {
         for (auto it = begin(); it != end();) {
-            SoundFontData& data = it->second;
+            SoundFontData &data = it->second;
             if (data.soundFontPtr) {
-                auto* defsFont = static_cast<fluid_defsfont_t*>(fluid_sfont_get_data(data.soundFontPtr));
+                auto *defsFont = static_cast<fluid_defsfont_t *>(fluid_sfont_get_data(data.soundFontPtr));
                 if (delete_fluid_defsfont(defsFont) != FLUID_OK) {
                     ++it;
                     continue;
@@ -63,22 +60,18 @@ struct SoundFontCache : public std::map<std::string, SoundFontData> {
 
 private:
     SoundFontCache() = default;
-    ~SoundFontCache()
-    {
-        clearUnused();
-    }
+
+    ~SoundFontCache() { clearUnused(); }
 };
 
-void* openSoundFont(const char* filename)
-{
+void *openSoundFont(const char *filename) {
     auto search = SoundFontCache::instance()->find(filename);
 
-    if (search != SoundFontCache::instance()->cend()
-        && search->second.fileStream) {
+    if (search != SoundFontCache::instance()->cend() && search->second.fileStream) {
         return search->second.fileStream;
     }
 
-    std::FILE* stream = std::fopen(filename, "rb");
+    std::FILE *stream = std::fopen(filename, "rb");
 
     SoundFontData sfData;
     sfData.fileStream = stream;
@@ -88,18 +81,15 @@ void* openSoundFont(const char* filename)
     return stream;
 }
 
-int readSoundFont(void* buf, fluid_long_long_t count, void* handle)
-{
-    return static_cast<int>(std::fread(buf, count, 1, static_cast<std::FILE*>(handle)));
+int readSoundFont(void *buf, fluid_long_long_t count, void *handle) {
+    return static_cast<int>(std::fread(buf, count, 1, static_cast<std::FILE *>(handle)));
 }
 
-int seekSoundFont(void* handle, fluid_long_long_t offset, int origin)
-{
-    return std::fseek(static_cast<std::FILE*>(handle), offset, origin);
+int seekSoundFont(void *handle, fluid_long_long_t offset, int origin) {
+    return std::fseek(static_cast<std::FILE *>(handle), offset, origin);
 }
 
-int closeSoundFont(void* /*handle*/)
-{
+int closeSoundFont(void * /*handle*/) {
     //!Note Prevent closing of sound-font files by Fluid instances,
     //!     instead the actual closing of cached sound-font files will happen in SoundFontCache.
     //!     However, we still need to provide "some" callback for Fluid's API
@@ -107,13 +97,9 @@ int closeSoundFont(void* /*handle*/)
     return FLUID_OK;
 }
 
-fluid_long_long_t tellSoundFont(void* handle)
-{
-    return std::ftell(static_cast<std::FILE*>(handle));
-}
+fluid_long_long_t tellSoundFont(void *handle) { return std::ftell(static_cast<std::FILE *>(handle)); }
 
-int deleteSoundFont(fluid_sfont_t* /*sfont*/)
-{
+int deleteSoundFont(fluid_sfont_t * /*sfont*/) {
     //!Note Prevent removal of sound-fonts by Fluid instances,
     //!     instead the actual removal of cached sound-fonts will happen in SoundFontCache.
     //!     However, we still need to provide "some" callback for Fluid's API
@@ -121,35 +107,25 @@ int deleteSoundFont(fluid_sfont_t* /*sfont*/)
     return FLUID_OK;
 }
 
-static fluid_file_callbacks_t FILE_CALLBACKS {
-    openSoundFont,
-    readSoundFont,
-    seekSoundFont,
-    closeSoundFont,
-    tellSoundFont
-};
+static fluid_file_callbacks_t FILE_CALLBACKS{openSoundFont, readSoundFont, seekSoundFont, closeSoundFont, tellSoundFont};
 
-fluid_sfont_t* loadSoundFont(fluid_sfloader_t* loader, const char* filename)
-{
+fluid_sfont_t *loadSoundFont(fluid_sfloader_t *loader, const char *filename) {
     auto search = SoundFontCache::instance()->find(filename);
     if (search != SoundFontCache::instance()->cend()) {
         return search->second.soundFontPtr;
     }
 
-    fluid_defsfont_t* defsfont = nullptr;
-    fluid_sfont_t* result = nullptr;
+    fluid_defsfont_t *defsfont = nullptr;
+    fluid_sfont_t *result = nullptr;
 
-    defsfont = new_fluid_defsfont(static_cast<fluid_settings_t*>(fluid_sfloader_get_data(loader)));
+    defsfont = new_fluid_defsfont(static_cast<fluid_settings_t *>(fluid_sfloader_get_data(loader)));
 
     if (!defsfont) {
         return nullptr;
     }
 
-    result = new_fluid_sfont(fluid_defsfont_sfont_get_name,
-                             fluid_defsfont_sfont_get_preset,
-                             fluid_defsfont_sfont_iteration_start,
-                             fluid_defsfont_sfont_iteration_next,
-                             deleteSoundFont);
+    result = new_fluid_sfont(fluid_defsfont_sfont_get_name, fluid_defsfont_sfont_get_preset, fluid_defsfont_sfont_iteration_start,
+                             fluid_defsfont_sfont_iteration_next, deleteSoundFont);
 
     if (!result) {
         return result;
@@ -164,11 +140,11 @@ fluid_sfont_t* loadSoundFont(fluid_sfloader_t* loader, const char* filename)
         return nullptr;
     }
 
-    SoundFontData& sfData = SoundFontCache::instance()->operator[](filename);
+    SoundFontData &sfData = SoundFontCache::instance()->operator[](filename);
     sfData.soundFontPtr = result;
 
     return result;
 }
-}
+} // namespace muse::audio::synth
 
 #endif // MUSE_AUDIO_SFCACHEDLOADER_H

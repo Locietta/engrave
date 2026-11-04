@@ -39,17 +39,17 @@
 #define DTL_LCS_H
 
 namespace dtl {
-    
-    /**
+
+/**
      * Longest Common Subsequence template class
      */
-    template <typename elem>
-    class Lcs : public Sequence< elem >
-    {
-    public :
-        Lcs ()  {}
-        ~Lcs () {}
-    };
-}
+template <typename elem>
+class Lcs : public Sequence<elem> {
+public:
+    Lcs() {}
+
+    ~Lcs() {}
+};
+} // namespace dtl
 
 #endif // DTL_LCS_H

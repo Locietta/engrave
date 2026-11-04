@@ -26,47 +26,20 @@ using namespace muse;
 using namespace mu;
 using namespace mu::engraving;
 
-LocalFileInfoProvider::LocalFileInfoProvider(const muse::io::path_t& path)
-    : m_path(path)
-{
-}
+LocalFileInfoProvider::LocalFileInfoProvider(const muse::io::path_t &path) : m_path(path) {}
 
-bool LocalFileInfoProvider::saved() const
-{
-    return false;
-}
+bool LocalFileInfoProvider::saved() const { return false; }
 
-muse::io::path_t LocalFileInfoProvider::path() const
-{
-    return io::absolutePath(m_path);
-}
+muse::io::path_t LocalFileInfoProvider::path() const { return io::absolutePath(m_path); }
 
-muse::io::path_t LocalFileInfoProvider::fileName(bool includingExtension) const
-{
-    return io::filename(m_path, includingExtension);
-}
+muse::io::path_t LocalFileInfoProvider::fileName(bool includingExtension) const { return io::filename(m_path, includingExtension); }
 
-muse::io::path_t LocalFileInfoProvider::absoluteDirPath() const
-{
-    return io::absoluteDirpath(m_path);
-}
+muse::io::path_t LocalFileInfoProvider::absoluteDirPath() const { return io::absoluteDirpath(m_path); }
 
-String LocalFileInfoProvider::displayName() const
-{
-    return String::fromUtf8(fileName(/*includingExtension*/ false).c_str());
-}
+String LocalFileInfoProvider::displayName() const { return String::fromUtf8(fileName(/*includingExtension*/ false).c_str()); }
 
-DateTime LocalFileInfoProvider::birthTime() const
-{
-    return muse::io::fileSystem()->birthTime(m_path);
-}
+DateTime LocalFileInfoProvider::birthTime() const { return muse::io::fileSystem()->birthTime(m_path); }
 
-DateTime LocalFileInfoProvider::lastModified() const
-{
-    return muse::io::fileSystem()->lastModified(m_path);
-}
+DateTime LocalFileInfoProvider::lastModified() const { return muse::io::fileSystem()->lastModified(m_path); }
 
-bool LocalFileInfoProvider::isNewlyCreated() const
-{
-    return true;
-}
+bool LocalFileInfoProvider::isNewlyCreated() const { return true; }

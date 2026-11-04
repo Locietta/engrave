@@ -40,8 +40,7 @@ namespace mu::iex::musicxml {
  Convert MusicXML note type to fraction.
  */
 
-static Fraction noteTypeToFraction(const String& type)
-{
+static Fraction noteTypeToFraction(const String &type) {
     if (type == u"1024th") {
         return Fraction(1, 1024);
     } else if (type == u"512th") {
@@ -83,8 +82,7 @@ static Fraction noteTypeToFraction(const String& type)
  Convert note type, number of dots and actual and normal notes into a duration
  */
 
-static Fraction calculateFraction(const String& type, const int dots, const Fraction timeMod)
-{
+static Fraction calculateFraction(const String &type, const int dots, const Fraction timeMod) {
     // type
     Fraction f = noteTypeToFraction(type);
     if (f.isValid()) {
@@ -113,8 +111,7 @@ static Fraction calculateFraction(const String& type, const int dots, const Frac
  Return empty string if OK, message in case of error.
  */
 
-String MusicXmlNoteDuration::checkTiming(const String& type, const bool rest, const bool grace)
-{
+String MusicXmlNoteDuration::checkTiming(const String &type, const bool rest, const bool grace) {
     //LOGD("type %s rest %d grace %d", muPrintable(type), rest, grace);
     String errorStr;
 
@@ -131,8 +128,8 @@ String MusicXmlNoteDuration::checkTiming(const String& type, const bool rest, co
 
     if (m_specDura.isValid() && m_calcDura.isValid()) {
         if (m_specDura != m_calcDura) {
-            errorStr = String(u"calculated duration (%1) not equal to specified duration (%2)")
-                       .arg(m_calcDura.toString(), m_specDura.toString());
+            errorStr =
+                String(u"calculated duration (%1) not equal to specified duration (%2)").arg(m_calcDura.toString(), m_specDura.toString());
             //LOGD("rest %d type '%s' timemod %s", rest, muPrintable(type), muPrintable(_timeMod.print()));
 
             if (rest && type == "whole" && m_specDura.isValid()) {
@@ -195,11 +192,10 @@ String MusicXmlNoteDuration::checkTiming(const String& type, const bool rest, co
  Parse the /score-partwise/part/measure/note/duration node.
  */
 
-void MusicXmlNoteDuration::duration(muse::XmlStreamReader& e)
-{
+void MusicXmlNoteDuration::duration(muse::XmlStreamReader &e) {
     m_logger->logDebugTrace(u"MusicXmlParserPass1::duration", &e);
 
-    m_specDura.set(0, 0);          // invalid unless set correctly
+    m_specDura.set(0, 0); // invalid unless set correctly
     int intDura = e.readAsciiText().toInt();
     m_specDura = m_pass1->calcTicks(intDura, m_divs, &e); // Duration reading (and rounding) code consolidated to pass1
 }
@@ -213,13 +209,12 @@ void MusicXmlNoteDuration::duration(muse::XmlStreamReader& e)
  Return true if handled.
  */
 
-bool MusicXmlNoteDuration::readProperties(muse::XmlStreamReader& e)
-{
+bool MusicXmlNoteDuration::readProperties(muse::XmlStreamReader &e) {
     const AsciiStringView tag(e.name());
     //LOGD("tag %s", muPrintable(tag.toString()));
     if (tag == "dot") {
         m_dots++;
-        e.skipCurrentElement();  // skip but don't log
+        e.skipCurrentElement(); // skip but don't log
         return true;
     } else if (tag == "duration") {
         duration(e);
@@ -239,8 +234,7 @@ bool MusicXmlNoteDuration::readProperties(muse::XmlStreamReader& e)
  Parse the /score-partwise/part/measure/note/time-modification node.
  */
 
-void MusicXmlNoteDuration::timeModification(muse::XmlStreamReader& e)
-{
+void MusicXmlNoteDuration::timeModification(muse::XmlStreamReader &e) {
     m_logger->logDebugTrace(u"MusicXmlParserPass1::timeModification", &e);
 
     int intActual = 0;
@@ -274,8 +268,7 @@ void MusicXmlNoteDuration::timeModification(muse::XmlStreamReader& e)
         m_timeMod.set(intNormal, intActual);
     } else {
         m_timeMod.set(1, 1);
-        m_logger->logError(String(u"illegal time-modification: actual-notes %1 normal-notes %2")
-                           .arg(strActual, strNormal), &e);
+        m_logger->logError(String(u"illegal time-modification: actual-notes %1 normal-notes %2").arg(strActual, strNormal), &e);
     }
 }
-}
+} // namespace mu::iex::musicxml

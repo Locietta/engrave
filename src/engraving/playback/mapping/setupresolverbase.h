@@ -30,12 +30,10 @@
 #include "dom/instrument.h"
 
 namespace mu::engraving {
-template<class T>
-class SetupDataResolverBase
-{
+template <class T>
+class SetupDataResolverBase {
 public:
-    static bool resolve(const Instrument* instrument, muse::mpe::PlaybackSetupData& result)
-    {
+    static bool resolve(const Instrument *instrument, muse::mpe::PlaybackSetupData &result) {
         assert(instrument);
         if (!instrument) {
             return false;
@@ -48,6 +46,6 @@ public:
         return result.isValid();
     }
 };
-}
+} // namespace mu::engraving
 
 #endif // MU_ENGRAVING_SETUPRESOLVERBASE_H

@@ -19,12 +19,12 @@ namespace engrave {
 struct ElementId {
     std::uint64_t hi = 0;
     std::uint64_t lo = 0;
-    friend auto operator<=>(const ElementId&, const ElementId&) = default;
+    friend auto operator<=>(const ElementId &, const ElementId &) = default;
 };
 
 // The id's MSCX text, e.g. "Zt3Ql7kQ0f_BCAEMZTgx3K", so a value can be looked up
 // in a saved score.
-std::string to_string(const ElementId& id);
+std::string to_string(const ElementId &id);
 // The id that text names, or nothing when the text is not a valid id.
 std::optional<ElementId> element_id_from_string(std::string_view text);
 

@@ -32,25 +32,25 @@ namespace mu::engraving {
 //    to keep track of staff type changes
 //---------------------------------------------------------
 
-class StaffTypeList
-{
+class StaffTypeList {
 public:
-    StaffType& staffType(const Fraction&);
-    const StaffType& staffType(const Fraction& f) const;
-    StaffType* setStaffType(const Fraction&, const StaffType&);
-    bool removeStaffType(const Fraction&);
-    bool isStaffTypeStartFrom(const Fraction&) const;
-    void moveStaffType(const Fraction& from, const Fraction& to);
+    StaffType &staffType(const Fraction &);
+    const StaffType &staffType(const Fraction &f) const;
+    StaffType *setStaffType(const Fraction &, const StaffType &);
+    bool removeStaffType(const Fraction &);
+    bool isStaffTypeStartFrom(const Fraction &) const;
+    void moveStaffType(const Fraction &from, const Fraction &to);
 
     bool uniqueStaffType() const { return m_staffTypeChanges.empty(); }
-    std::pair<int, int> staffTypeRange(const Fraction&) const;
 
-    const std::map<int, StaffType>& staffTypeChanges() const { return m_staffTypeChanges; }
+    std::pair<int, int> staffTypeRange(const Fraction &) const;
+
+    const std::map<int, StaffType> &staffTypeChanges() const { return m_staffTypeChanges; }
 
 private:
-    StaffType m_firstStaffType;   // staff type at tick 0
+    StaffType m_firstStaffType; // staff type at tick 0
     std::map<int, StaffType> m_staffTypeChanges;
 };
-}
+} // namespace mu::engraving
 
 #endif

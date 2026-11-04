@@ -27,18 +27,18 @@
 #include "draw/types/font.h"
 
 namespace mu::engraving {
-class IndicatorIcon : public EngravingItem
-{
+class IndicatorIcon : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, IndicatorIcon)
 
 public:
-    IndicatorIcon(const ElementType& type, DummyParentOr<System> parent, ElementFlags = ElementFlag::NOTHING);
-    IndicatorIcon* clone() const override { return new IndicatorIcon(*this); }
+    IndicatorIcon(const ElementType &type, DummyParentOr<System> parent, ElementFlags = ElementFlag::NOTHING);
 
-    System* system() const { return toSystem(ownershipParent()); }
+    IndicatorIcon *clone() const override { return new IndicatorIcon(*this); }
+
+    System *system() const { return toSystem(ownershipParent()); }
 
     struct LayoutData : public EngravingItem::LayoutData {
-        ld_field<RectF> rangeRect = { "[IndicatorIcon] rangeRect", RectF() };
+        ld_field<RectF> rangeRect = {"[IndicatorIcon] rangeRect", RectF()};
     };
     DECLARE_LAYOUTDATA_METHODS(IndicatorIcon)
 
@@ -48,6 +48,6 @@ public:
 
     virtual char16_t iconCode() const { return 0x000; }
 
-    void undoChangeProperty(Pid, const PropertyValue&, PropertyFlags) override { return; } // not editable
+    void undoChangeProperty(Pid, const PropertyValue &, PropertyFlags) override { return; } // not editable
 };
-}
+} // namespace mu::engraving

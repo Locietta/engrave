@@ -45,85 +45,85 @@ namespace mu::engraving {
 //   hairpinStyle
 //---------------------------------------------------------
 
-static const ElementStyle hairpinStyle {
-    { Sid::hairpinFontFace,                    Pid::BEGIN_FONT_FACE },
-    { Sid::hairpinFontSize,                    Pid::BEGIN_FONT_SIZE },
-    { Sid::hairpinFontStyle,                   Pid::BEGIN_FONT_STYLE },
-    { Sid::hairpinText,                        Pid::BEGIN_TEXT },
-    { Sid::hairpinTextAlign,                   Pid::BEGIN_TEXT_ALIGN },
-    { Sid::hairpinPosition,                    Pid::BEGIN_TEXT_POSITION },
-    { Sid::hairpinFontFace,                    Pid::CONTINUE_FONT_FACE },
-    { Sid::hairpinFontSize,                    Pid::CONTINUE_FONT_SIZE },
-    { Sid::hairpinFontStyle,                   Pid::CONTINUE_FONT_STYLE },
-    { Sid::hairpinText,                        Pid::CONTINUE_TEXT },
-    { Sid::hairpinTextAlign,                   Pid::CONTINUE_TEXT_ALIGN },
-    { Sid::hairpinPosition,                    Pid::CONTINUE_TEXT_POSITION },
-    { Sid::hairpinFontFace,                    Pid::END_FONT_FACE },
-    { Sid::hairpinFontSize,                    Pid::END_FONT_SIZE },
-    { Sid::hairpinFontStyle,                   Pid::END_FONT_STYLE },
-    { Sid::hairpinTextAlign,                   Pid::END_TEXT_ALIGN },
-    { Sid::hairpinPosition,                    Pid::END_TEXT_POSITION },
-    { Sid::hairpinLineWidth,                   Pid::LINE_WIDTH },
-    { Sid::hairpinHeight,                      Pid::HAIRPIN_HEIGHT },
-    { Sid::hairpinContHeight,                  Pid::HAIRPIN_CONT_HEIGHT },
-    { Sid::hairpinLineStyle,                   Pid::LINE_STYLE },
-    { Sid::hairpinLineDashLineLen,             Pid::DASH_LINE_LEN },
-    { Sid::hairpinLineDashGapLen,              Pid::DASH_GAP_LEN },
-    { Sid::hairpinFontSpatiumDependent,        Pid::TEXT_SIZE_SPATIUM_DEPENDENT, },
-    { Sid::hairpinEndLineArrowHeight,          Pid::END_LINE_ARROW_HEIGHT },
-    { Sid::hairpinEndLineArrowWidth,           Pid::END_LINE_ARROW_WIDTH },
-    { Sid::hairpinBeginLineArrowHeight,        Pid::BEGIN_LINE_ARROW_HEIGHT },
-    { Sid::hairpinBeginLineArrowWidth,         Pid::BEGIN_LINE_ARROW_WIDTH },
-    { Sid::hairpinEndFilledArrowHeight,        Pid::END_FILLED_ARROW_HEIGHT },
-    { Sid::hairpinEndFilledArrowWidth,         Pid::END_FILLED_ARROW_WIDTH },
-    { Sid::hairpinBeginFilledArrowHeight,      Pid::BEGIN_FILLED_ARROW_HEIGHT },
-    { Sid::hairpinBeginFilledArrowWidth,       Pid::BEGIN_FILLED_ARROW_WIDTH },
-    { Sid::hairpinMusicalSymbolSize,           Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE },
-    { Sid::hairpinMusicalSymbolSize,           Pid::CONTINUE_TEXT_MUSIC_SYMBOLS_SIZE },
-    { Sid::hairpinMusicalSymbolSize,           Pid::END_TEXT_MUSIC_SYMBOLS_SIZE },
-    { Sid::dummyMusicalSymbolsScale,           Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE },
-    { Sid::dummyMusicalSymbolsScale,           Pid::CONTINUE_TEXT_MUSICAL_SYMBOLS_SCALE },
-    { Sid::dummyMusicalSymbolsScale,           Pid::END_TEXT_MUSICAL_SYMBOLS_SCALE },
+static const ElementStyle hairpinStyle{
+    {Sid::hairpinFontFace, Pid::BEGIN_FONT_FACE},
+    {Sid::hairpinFontSize, Pid::BEGIN_FONT_SIZE},
+    {Sid::hairpinFontStyle, Pid::BEGIN_FONT_STYLE},
+    {Sid::hairpinText, Pid::BEGIN_TEXT},
+    {Sid::hairpinTextAlign, Pid::BEGIN_TEXT_ALIGN},
+    {Sid::hairpinPosition, Pid::BEGIN_TEXT_POSITION},
+    {Sid::hairpinFontFace, Pid::CONTINUE_FONT_FACE},
+    {Sid::hairpinFontSize, Pid::CONTINUE_FONT_SIZE},
+    {Sid::hairpinFontStyle, Pid::CONTINUE_FONT_STYLE},
+    {Sid::hairpinText, Pid::CONTINUE_TEXT},
+    {Sid::hairpinTextAlign, Pid::CONTINUE_TEXT_ALIGN},
+    {Sid::hairpinPosition, Pid::CONTINUE_TEXT_POSITION},
+    {Sid::hairpinFontFace, Pid::END_FONT_FACE},
+    {Sid::hairpinFontSize, Pid::END_FONT_SIZE},
+    {Sid::hairpinFontStyle, Pid::END_FONT_STYLE},
+    {Sid::hairpinTextAlign, Pid::END_TEXT_ALIGN},
+    {Sid::hairpinPosition, Pid::END_TEXT_POSITION},
+    {Sid::hairpinLineWidth, Pid::LINE_WIDTH},
+    {Sid::hairpinHeight, Pid::HAIRPIN_HEIGHT},
+    {Sid::hairpinContHeight, Pid::HAIRPIN_CONT_HEIGHT},
+    {Sid::hairpinLineStyle, Pid::LINE_STYLE},
+    {Sid::hairpinLineDashLineLen, Pid::DASH_LINE_LEN},
+    {Sid::hairpinLineDashGapLen, Pid::DASH_GAP_LEN},
+    {
+        Sid::hairpinFontSpatiumDependent,
+        Pid::TEXT_SIZE_SPATIUM_DEPENDENT,
+    },
+    {Sid::hairpinEndLineArrowHeight, Pid::END_LINE_ARROW_HEIGHT},
+    {Sid::hairpinEndLineArrowWidth, Pid::END_LINE_ARROW_WIDTH},
+    {Sid::hairpinBeginLineArrowHeight, Pid::BEGIN_LINE_ARROW_HEIGHT},
+    {Sid::hairpinBeginLineArrowWidth, Pid::BEGIN_LINE_ARROW_WIDTH},
+    {Sid::hairpinEndFilledArrowHeight, Pid::END_FILLED_ARROW_HEIGHT},
+    {Sid::hairpinEndFilledArrowWidth, Pid::END_FILLED_ARROW_WIDTH},
+    {Sid::hairpinBeginFilledArrowHeight, Pid::BEGIN_FILLED_ARROW_HEIGHT},
+    {Sid::hairpinBeginFilledArrowWidth, Pid::BEGIN_FILLED_ARROW_WIDTH},
+    {Sid::hairpinMusicalSymbolSize, Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE},
+    {Sid::hairpinMusicalSymbolSize, Pid::CONTINUE_TEXT_MUSIC_SYMBOLS_SIZE},
+    {Sid::hairpinMusicalSymbolSize, Pid::END_TEXT_MUSIC_SYMBOLS_SIZE},
+    {Sid::dummyMusicalSymbolsScale, Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE},
+    {Sid::dummyMusicalSymbolsScale, Pid::CONTINUE_TEXT_MUSICAL_SYMBOLS_SCALE},
+    {Sid::dummyMusicalSymbolsScale, Pid::END_TEXT_MUSICAL_SYMBOLS_SCALE},
 };
 
 //---------------------------------------------------------
 //   HairpinSegment
 //---------------------------------------------------------
 
-HairpinSegment::HairpinSegment(Hairpin* sp)
-    : TextLineBaseSegment(ElementType::HAIRPIN_SEGMENT, sp, ElementFlag::MOVABLE | ElementFlag::ON_STAFF)
-{
+HairpinSegment::HairpinSegment(Hairpin *sp)
+    : TextLineBaseSegment(ElementType::HAIRPIN_SEGMENT, sp, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
     m_text->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
     m_endText->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
 }
 
-bool HairpinSegment::acceptDrop(EditData& data) const
-{
-    EngravingItem* e = data.dropElement;
+bool HairpinSegment::acceptDrop(EditData &data) const {
+    EngravingItem *e = data.dropElement;
     if (e->isDynamic()) {
         return true;
     }
     return false;
 }
 
-EngravingItem* HairpinSegment::drop(Transaction& tx, EditData& data)
-{
-    EngravingItem* e = data.dropElement;
+EngravingItem *HairpinSegment::drop(Transaction &tx, EditData &data) {
+    EngravingItem *e = data.dropElement;
     if (!e->isDynamic()) {
         return nullptr;
     }
 
-    if (EngravingItem* item = ldata()->itemSnappedAfter()) {
+    if (EngravingItem *item = ldata()->itemSnappedAfter()) {
         if (item->isDynamic()) {
             return item->drop(tx, data);
         }
     }
 
     Fraction endTick = hairpin()->tick2();
-    Measure* measure = score()->tick2measure(endTick);
-    Segment* segment = measure->getChordRestOrTimeTickSegment(endTick);
+    Measure *measure = score()->tick2measure(endTick);
+    Segment *segment = measure->getChordRestOrTimeTickSegment(endTick);
 
-    Dynamic* d = toDynamic(e->clone());
+    Dynamic *d = toDynamic(e->clone());
     d->setTrack(hairpin()->track());
     d->setOwnershipParent(segment);
     d->setVoiceAssignment(hairpin()->voiceAssignment());
@@ -132,8 +132,7 @@ EngravingItem* HairpinSegment::drop(Transaction& tx, EditData& data)
     return d;
 }
 
-void HairpinSegment::setPropertyFlags(Pid id, PropertyFlags f)
-{
+void HairpinSegment::setPropertyFlags(Pid id, PropertyFlags f) {
     int i = getPropertyFlagsIdx(id);
     if (i == -1) {
         // Can happen (for example when edit-dragging the aperture) that we're editing
@@ -148,20 +147,10 @@ void HairpinSegment::setPropertyFlags(Pid id, PropertyFlags f)
 //   propertyDelegate
 //---------------------------------------------------------
 
-EngravingObject* HairpinSegment::propertyDelegate(Pid pid) const
-{
-    if (pid == Pid::HAIRPIN_TYPE
-        || pid == Pid::VELO_CHANGE
-        || pid == Pid::VELO_CHANGE_METHOD
-        || pid == Pid::SINGLE_NOTE_DYNAMICS
-        || pid == Pid::HAIRPIN_CIRCLEDTIP
-        || pid == Pid::HAIRPIN_HEIGHT
-        || pid == Pid::HAIRPIN_CONT_HEIGHT
-        || pid == Pid::LINE_STYLE
-        || pid == Pid::VOICE_ASSIGNMENT
-        || pid == Pid::DIRECTION
-        || pid == Pid::CENTER_BETWEEN_STAVES
-        ) {
+EngravingObject *HairpinSegment::propertyDelegate(Pid pid) const {
+    if (pid == Pid::HAIRPIN_TYPE || pid == Pid::VELO_CHANGE || pid == Pid::VELO_CHANGE_METHOD || pid == Pid::SINGLE_NOTE_DYNAMICS ||
+        pid == Pid::HAIRPIN_CIRCLEDTIP || pid == Pid::HAIRPIN_HEIGHT || pid == Pid::HAIRPIN_CONT_HEIGHT || pid == Pid::LINE_STYLE ||
+        pid == Pid::VOICE_ASSIGNMENT || pid == Pid::DIRECTION || pid == Pid::CENTER_BETWEEN_STAVES) {
         return spanner();
     }
     return TextLineBaseSegment::propertyDelegate(pid);
@@ -171,64 +160,51 @@ EngravingObject* HairpinSegment::propertyDelegate(Pid pid) const
 //   getPropertyStyle
 //---------------------------------------------------------
 
-Sid HairpinSegment::getPropertyStyle(Pid pid) const
-{
+Sid HairpinSegment::getPropertyStyle(Pid pid) const {
     switch (pid) {
-    case Pid::BEGIN_TEXT:
-        switch (hairpin()->hairpinType()) {
-        default:
-            return Sid::hairpinText;
-        case HairpinType::CRESC_LINE:
-            return Sid::hairpinCrescText;
-        case HairpinType::DIM_LINE:
-            return Sid::hairpinDecrescText;
-        }
-        break;
-    case Pid::CONTINUE_TEXT:
-        switch (hairpin()->hairpinType()) {
-        default:
-            return Sid::hairpinText;
-        case HairpinType::CRESC_LINE:
-            return Sid::hairpinCrescContText;
-        case HairpinType::DIM_LINE:
-            return Sid::hairpinDecrescContText;
-        }
-        break;
-    case Pid::LINE_STYLE:
-        return hairpin()->isLineType() ? Sid::hairpinLineLineStyle : Sid::hairpinLineStyle;
-    case Pid::DASH_LINE_LEN:
-        return hairpin()->isLineType() ? Sid::hairpinLineDashLineLen : Sid::hairpinDashLineLen;
-    case Pid::DASH_GAP_LEN:
-        return hairpin()->isLineType() ? Sid::hairpinLineDashGapLen : Sid::hairpinDashGapLen;
-    default:
-        break;
+        case Pid::BEGIN_TEXT:
+            switch (hairpin()->hairpinType()) {
+                default: return Sid::hairpinText;
+                case HairpinType::CRESC_LINE: return Sid::hairpinCrescText;
+                case HairpinType::DIM_LINE: return Sid::hairpinDecrescText;
+            }
+            break;
+        case Pid::CONTINUE_TEXT:
+            switch (hairpin()->hairpinType()) {
+                default: return Sid::hairpinText;
+                case HairpinType::CRESC_LINE: return Sid::hairpinCrescContText;
+                case HairpinType::DIM_LINE: return Sid::hairpinDecrescContText;
+            }
+            break;
+        case Pid::LINE_STYLE: return hairpin()->isLineType() ? Sid::hairpinLineLineStyle : Sid::hairpinLineStyle;
+        case Pid::DASH_LINE_LEN: return hairpin()->isLineType() ? Sid::hairpinLineDashLineLen : Sid::hairpinDashLineLen;
+        case Pid::DASH_GAP_LEN: return hairpin()->isLineType() ? Sid::hairpinLineDashGapLen : Sid::hairpinDashGapLen;
+        default: break;
     }
     return TextLineBaseSegment::getPropertyStyle(pid);
 }
 
-EngravingItem* HairpinSegment::findElementToSnapBefore(bool ignoreInvisible) const
-{
-    TextBase* startDynOrExpr = findStartDynamicOrExpression(ignoreInvisible);
+EngravingItem *HairpinSegment::findElementToSnapBefore(bool ignoreInvisible) const {
+    TextBase *startDynOrExpr = findStartDynamicOrExpression(ignoreInvisible);
     if (startDynOrExpr) {
         return startDynOrExpr;
     }
 
-    Hairpin* thisHairpin = hairpin();
+    Hairpin *thisHairpin = hairpin();
     Fraction startTick = hairpin()->tick();
 
     auto intervals = score()->spannerMap().findOverlapping(startTick.ticks(), startTick.ticks());
     for (auto interval : intervals) {
-        Spanner* spanner = interval.value;
-        bool isValidHairpin = spanner->isHairpin() && !spanner->segmentsEmpty() && spanner != thisHairpin
-                              && (spanner->addToSkyline() || !ignoreInvisible);
+        Spanner *spanner = interval.value;
+        bool isValidHairpin =
+            spanner->isHairpin() && !spanner->segmentsEmpty() && spanner != thisHairpin && (spanner->addToSkyline() || !ignoreInvisible);
         if (!isValidHairpin) {
             continue;
         }
-        Hairpin* precedingHairpin = toHairpin(spanner);
-        bool endsMatch = precedingHairpin->track() == thisHairpin->track()
-                         && precedingHairpin->tick2() == startTick
-                         && precedingHairpin->placeAbove() == thisHairpin->placeAbove()
-                         && toHairpin(spanner)->voiceAssignment() == thisHairpin->voiceAssignment();
+        Hairpin *precedingHairpin = toHairpin(spanner);
+        bool endsMatch = precedingHairpin->track() == thisHairpin->track() && precedingHairpin->tick2() == startTick &&
+                         precedingHairpin->placeAbove() == thisHairpin->placeAbove() &&
+                         toHairpin(spanner)->voiceAssignment() == thisHairpin->voiceAssignment();
         if (endsMatch && precedingHairpin->snapToItemAfter()) {
             return precedingHairpin->backSegment();
         }
@@ -237,25 +213,23 @@ EngravingItem* HairpinSegment::findElementToSnapBefore(bool ignoreInvisible) con
     return nullptr;
 }
 
-EngravingItem* HairpinSegment::findElementToSnapAfter(bool ignoreInvisible, bool requirePlayable) const
-{
+EngravingItem *HairpinSegment::findElementToSnapAfter(bool ignoreInvisible, bool requirePlayable) const {
     // Note: we don't need to look for a hairpin after.
     // It is the next hairpin which looks for a hairpin before.
     return findEndDynamicOrExpression(ignoreInvisible, requirePlayable);
 }
 
-TextBase* HairpinSegment::findStartDynamicOrExpression(bool ignoreInvisible) const
-{
+TextBase *HairpinSegment::findStartDynamicOrExpression(bool ignoreInvisible) const {
     Fraction refTick = hairpin()->tick();
-    Measure* measure = score()->tick2measure(refTick);
+    Measure *measure = score()->tick2measure(refTick);
     if (!measure) {
         return nullptr;
     }
 
-    std::vector<TextBase*> dynamicsAndExpr;
+    std::vector<TextBase *> dynamicsAndExpr;
     dynamicsAndExpr.reserve(2);
 
-    for (Segment* segment = measure->last(); segment; segment = segment->prev1()) {
+    for (Segment *segment = measure->last(); segment; segment = segment->prev1()) {
         Fraction segmentTick = segment->tick();
         if (segmentTick > refTick) {
             continue;
@@ -263,16 +237,15 @@ TextBase* HairpinSegment::findStartDynamicOrExpression(bool ignoreInvisible) con
         if (segmentTick < refTick) {
             break;
         }
-        for (EngravingItem* item : segment->annotations()) {
+        for (EngravingItem *item : segment->annotations()) {
             if (!item->isDynamic() && !item->isExpression()) {
                 continue;
             }
             if (ignoreInvisible && !item->addToSkyline()) {
                 continue;
             }
-            bool endsMatch = item->track() == hairpin()->track()
-                             && item->placement() == placement()
-                             && item->getProperty(Pid::VOICE_ASSIGNMENT) == hairpin()->getProperty(Pid::VOICE_ASSIGNMENT);
+            bool endsMatch = item->track() == hairpin()->track() && item->placement() == placement() &&
+                             item->getProperty(Pid::VOICE_ASSIGNMENT) == hairpin()->getProperty(Pid::VOICE_ASSIGNMENT);
             if (endsMatch) {
                 dynamicsAndExpr.push_back(toTextBase(item));
             }
@@ -287,10 +260,10 @@ TextBase* HairpinSegment::findStartDynamicOrExpression(bool ignoreInvisible) con
     }
 
     if (dynamicsAndExpr.size() > 1) {
-        std::sort(dynamicsAndExpr.begin(), dynamicsAndExpr.end(), [](TextBase* item1, TextBase* item2) {
+        std::sort(dynamicsAndExpr.begin(), dynamicsAndExpr.end(), [](TextBase *item1, TextBase *item2) {
             bool dynamicBeforeExpression = item1->isDynamic() && item2->isExpression();
-            bool oneIsAnchorToPrevious = item1->isDynamic() && toDynamic(item1)->anchorToEndOfPrevious()
-                                         && item2->isDynamic() && !toDynamic(item2)->anchorToEndOfPrevious();
+            bool oneIsAnchorToPrevious = item1->isDynamic() && toDynamic(item1)->anchorToEndOfPrevious() && item2->isDynamic() &&
+                                         !toDynamic(item2)->anchorToEndOfPrevious();
             return dynamicBeforeExpression || oneIsAnchorToPrevious;
         });
     }
@@ -298,18 +271,17 @@ TextBase* HairpinSegment::findStartDynamicOrExpression(bool ignoreInvisible) con
     return dynamicsAndExpr.back();
 }
 
-TextBase* HairpinSegment::findEndDynamicOrExpression(bool ignoreInvisible, bool requirePlayable) const
-{
+TextBase *HairpinSegment::findEndDynamicOrExpression(bool ignoreInvisible, bool requirePlayable) const {
     Fraction refTick = hairpin()->tick2();
-    Measure* measure = score()->tick2measure(refTick - Fraction::eps());
+    Measure *measure = score()->tick2measure(refTick - Fraction::eps());
     if (!measure) {
         return nullptr;
     }
 
-    std::vector<TextBase*> dynamicsAndExpr;
+    std::vector<TextBase *> dynamicsAndExpr;
     dynamicsAndExpr.reserve(2);
 
-    for (Segment* segment = measure->first(); segment; segment = segment->next1()) {
+    for (Segment *segment = measure->first(); segment; segment = segment->next1()) {
         Fraction segmentTick = segment->tick();
         if (segmentTick < refTick) {
             continue;
@@ -317,7 +289,7 @@ TextBase* HairpinSegment::findEndDynamicOrExpression(bool ignoreInvisible, bool 
         if (segmentTick > refTick) {
             break;
         }
-        for (EngravingItem* item : segment->annotations()) {
+        for (EngravingItem *item : segment->annotations()) {
             if (!item->isDynamic() && !item->isExpression()) {
                 continue;
             }
@@ -327,9 +299,8 @@ TextBase* HairpinSegment::findEndDynamicOrExpression(bool ignoreInvisible, bool 
             if (requirePlayable && (!item->isDynamic() || !toDynamic(item)->playDynamic())) {
                 continue;
             }
-            bool endsMatch = item->track() == hairpin()->track()
-                             && item->placement() == placement()
-                             && item->getProperty(Pid::VOICE_ASSIGNMENT) == hairpin()->getProperty(Pid::VOICE_ASSIGNMENT);
+            bool endsMatch = item->track() == hairpin()->track() && item->placement() == placement() &&
+                             item->getProperty(Pid::VOICE_ASSIGNMENT) == hairpin()->getProperty(Pid::VOICE_ASSIGNMENT);
             if (endsMatch) {
                 dynamicsAndExpr.push_back(toTextBase(item));
             }
@@ -344,10 +315,10 @@ TextBase* HairpinSegment::findEndDynamicOrExpression(bool ignoreInvisible, bool 
     }
 
     if (dynamicsAndExpr.size() > 1) {
-        std::sort(dynamicsAndExpr.begin(), dynamicsAndExpr.end(), [](TextBase* item1, TextBase* item2) {
+        std::sort(dynamicsAndExpr.begin(), dynamicsAndExpr.end(), [](TextBase *item1, TextBase *item2) {
             bool dynamicBeforeExpression = item1->isDynamic() && item2->isExpression();
-            bool oneIsAnchorToPrevious = item1->isDynamic() && toDynamic(item1)->anchorToEndOfPrevious()
-                                         && item2->isDynamic() && !toDynamic(item2)->anchorToEndOfPrevious();
+            bool oneIsAnchorToPrevious = item1->isDynamic() && toDynamic(item1)->anchorToEndOfPrevious() && item2->isDynamic() &&
+                                         !toDynamic(item2)->anchorToEndOfPrevious();
             return dynamicBeforeExpression || oneIsAnchorToPrevious;
         });
     }
@@ -355,39 +326,27 @@ TextBase* HairpinSegment::findEndDynamicOrExpression(bool ignoreInvisible, bool 
     return dynamicsAndExpr.front();
 }
 
-Sid Hairpin::getPropertyStyle(Pid pid) const
-{
+Sid Hairpin::getPropertyStyle(Pid pid) const {
     switch (pid) {
-    case Pid::BEGIN_TEXT:
-        switch (hairpinType()) {
-        default:
-            return Sid::hairpinText;
-        case HairpinType::CRESC_LINE:
-            return Sid::hairpinCrescText;
-        case HairpinType::DIM_LINE:
-            return Sid::hairpinDecrescText;
-        }
-        break;
-    case Pid::CONTINUE_TEXT:
-        switch (hairpinType()) {
-        default:
-            return Sid::hairpinText;
-        case HairpinType::CRESC_LINE:
-            return Sid::hairpinCrescContText;
-        case HairpinType::DIM_LINE:
-            return Sid::hairpinDecrescContText;
-        }
-        break;
-    case Pid::LINE_STYLE:
-        return isLineType() ? Sid::hairpinLineLineStyle : Sid::hairpinLineStyle;
-    case Pid::DASH_LINE_LEN:
-        return isLineType() ? Sid::hairpinLineDashLineLen : Sid::hairpinDashLineLen;
-    case Pid::DASH_GAP_LEN:
-        return isLineType() ? Sid::hairpinLineDashGapLen : Sid::hairpinDashGapLen;
-    case Pid::PLACEMENT:
-        return Sid::hairpinPlacement;
-    default:
-        break;
+        case Pid::BEGIN_TEXT:
+            switch (hairpinType()) {
+                default: return Sid::hairpinText;
+                case HairpinType::CRESC_LINE: return Sid::hairpinCrescText;
+                case HairpinType::DIM_LINE: return Sid::hairpinDecrescText;
+            }
+            break;
+        case Pid::CONTINUE_TEXT:
+            switch (hairpinType()) {
+                default: return Sid::hairpinText;
+                case HairpinType::CRESC_LINE: return Sid::hairpinCrescContText;
+                case HairpinType::DIM_LINE: return Sid::hairpinDecrescContText;
+            }
+            break;
+        case Pid::LINE_STYLE: return isLineType() ? Sid::hairpinLineLineStyle : Sid::hairpinLineStyle;
+        case Pid::DASH_LINE_LEN: return isLineType() ? Sid::hairpinLineDashLineLen : Sid::hairpinDashLineLen;
+        case Pid::DASH_GAP_LEN: return isLineType() ? Sid::hairpinLineDashGapLen : Sid::hairpinDashGapLen;
+        case Pid::PLACEMENT: return Sid::hairpinPlacement;
+        default: break;
     }
     return TextLineBase::getPropertyStyle(pid);
 }
@@ -396,9 +355,7 @@ Sid Hairpin::getPropertyStyle(Pid pid) const
 //   Hairpin
 //---------------------------------------------------------
 
-Hairpin::Hairpin(DummyParentOr<EngravingItem> parent)
-    : TextLineBase(ElementType::HAIRPIN, parent)
-{
+Hairpin::Hairpin(DummyParentOr<EngravingItem> parent) : TextLineBase(ElementType::HAIRPIN, parent) {
     initElementStyle(&hairpinStyle);
 
     resetProperty(Pid::BEGIN_TEXT_PLACE);
@@ -409,14 +366,13 @@ Hairpin::Hairpin(DummyParentOr<EngravingItem> parent)
     resetProperty(Pid::HAIRPIN_TYPE);
     resetProperty(Pid::LINE_VISIBLE);
 
-    m_hairpinCircledTip     = false;
-    m_veloChange            = 0;
-    m_singleNoteDynamics    = true;
-    m_veloChangeMethod      = ChangeMethod::NORMAL;
+    m_hairpinCircledTip = false;
+    m_veloChange = 0;
+    m_singleNoteDynamics = true;
+    m_veloChangeMethod = ChangeMethod::NORMAL;
 }
 
-DynamicType Hairpin::dynamicTypeFrom() const
-{
+DynamicType Hairpin::dynamicTypeFrom() const {
     if (m_hairpinType == HairpinType::CRESC_HAIRPIN && hairpinCircledTip()) {
         return DynamicType::N;
     }
@@ -425,8 +381,7 @@ DynamicType Hairpin::dynamicTypeFrom() const
     return TConv::dynamicType(ba.constChar());
 }
 
-DynamicType Hairpin::dynamicTypeTo() const
-{
+DynamicType Hairpin::dynamicTypeTo() const {
     if (m_hairpinType == HairpinType::DIM_HAIRPIN && hairpinCircledTip()) {
         return DynamicType::N;
     }
@@ -435,14 +390,13 @@ DynamicType Hairpin::dynamicTypeTo() const
     return TConv::dynamicType(ba.constChar());
 }
 
-const Dynamic* Hairpin::dynamicSnappedBefore() const
-{
-    const LineSegment* seg = frontSegment();
+const Dynamic *Hairpin::dynamicSnappedBefore() const {
+    const LineSegment *seg = frontSegment();
     if (!seg) {
         return nullptr;
     }
 
-    const EngravingItem* item = seg->ldata()->itemSnappedBefore();
+    const EngravingItem *item = seg->ldata()->itemSnappedBefore();
     if (!item || !item->isDynamic()) {
         return nullptr;
     }
@@ -450,14 +404,13 @@ const Dynamic* Hairpin::dynamicSnappedBefore() const
     return toDynamic(item);
 }
 
-const Dynamic* Hairpin::dynamicSnappedAfter() const
-{
-    const LineSegment* seg = backSegment();
+const Dynamic *Hairpin::dynamicSnappedAfter() const {
+    const LineSegment *seg = backSegment();
     if (!seg) {
         return nullptr;
     }
 
-    const EngravingItem* item = seg->ldata()->itemSnappedAfter();
+    const EngravingItem *item = seg->ldata()->itemSnappedAfter();
     if (!item || !item->isDynamic()) {
         return nullptr;
     }
@@ -469,8 +422,7 @@ const Dynamic* Hairpin::dynamicSnappedAfter() const
 //   setHairpinType
 //---------------------------------------------------------
 
-void Hairpin::setHairpinType(HairpinType val)
-{
+void Hairpin::setHairpinType(HairpinType val) {
     if (m_hairpinType == val) {
         return;
     }
@@ -482,13 +434,12 @@ void Hairpin::setHairpinType(HairpinType val)
 //   createLineSegment
 //---------------------------------------------------------
 
-static const ElementStyle hairpinSegmentStyle {
-    { Sid::hairpinMinDistance, Pid::MIN_DISTANCE },
+static const ElementStyle hairpinSegmentStyle{
+    {Sid::hairpinMinDistance, Pid::MIN_DISTANCE},
 };
 
-LineSegment* Hairpin::createLineSegment()
-{
-    HairpinSegment* h = new HairpinSegment(this);
+LineSegment *Hairpin::createLineSegment() {
+    HairpinSegment *h = new HairpinSegment(this);
     h->setTrack(track());
     h->initElementStyle(&hairpinSegmentStyle);
     return h;
@@ -498,36 +449,22 @@ LineSegment* Hairpin::createLineSegment()
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Hairpin::getProperty(Pid id) const
-{
+PropertyValue Hairpin::getProperty(Pid id) const {
     switch (id) {
-    case Pid::HAIRPIN_CIRCLEDTIP:
-        return m_hairpinCircledTip;
-    case Pid::HAIRPIN_TYPE:
-        return int(m_hairpinType);
-    case Pid::VELO_CHANGE:
-        return m_veloChange;
-    case Pid::HAIRPIN_HEIGHT:
-        return m_hairpinHeight;
-    case Pid::HAIRPIN_CONT_HEIGHT:
-        return m_hairpinContHeight;
-    case Pid::SINGLE_NOTE_DYNAMICS:
-        return m_singleNoteDynamics;
-    case Pid::VELO_CHANGE_METHOD:
-        return m_veloChangeMethod;
-    case Pid::VOICE_ASSIGNMENT:
-        return voiceAssignment();
-    case Pid::CENTER_BETWEEN_STAVES:
-        return centerBetweenStaves();
-    case Pid::DIRECTION:
-        return direction();
-    case Pid::SNAP_BEFORE:
-        return snapToItemBefore();
-    case Pid::SNAP_AFTER:
-        return snapToItemAfter();
+        case Pid::HAIRPIN_CIRCLEDTIP: return m_hairpinCircledTip;
+        case Pid::HAIRPIN_TYPE: return int(m_hairpinType);
+        case Pid::VELO_CHANGE: return m_veloChange;
+        case Pid::HAIRPIN_HEIGHT: return m_hairpinHeight;
+        case Pid::HAIRPIN_CONT_HEIGHT: return m_hairpinContHeight;
+        case Pid::SINGLE_NOTE_DYNAMICS: return m_singleNoteDynamics;
+        case Pid::VELO_CHANGE_METHOD: return m_veloChangeMethod;
+        case Pid::VOICE_ASSIGNMENT: return voiceAssignment();
+        case Pid::CENTER_BETWEEN_STAVES: return centerBetweenStaves();
+        case Pid::DIRECTION: return direction();
+        case Pid::SNAP_BEFORE: return snapToItemBefore();
+        case Pid::SNAP_AFTER: return snapToItemAfter();
 
-    default:
-        return TextLineBase::getProperty(id);
+        default: return TextLineBase::getProperty(id);
     }
 }
 
@@ -535,47 +472,21 @@ PropertyValue Hairpin::getProperty(Pid id) const
 //   setProperty
 //---------------------------------------------------------
 
-bool Hairpin::setProperty(Pid id, const PropertyValue& v)
-{
+bool Hairpin::setProperty(Pid id, const PropertyValue &v) {
     switch (id) {
-    case Pid::HAIRPIN_CIRCLEDTIP:
-        m_hairpinCircledTip = v.toBool();
-        break;
-    case Pid::HAIRPIN_TYPE:
-        setHairpinType(HairpinType(v.toInt()));
-        break;
-    case Pid::VELO_CHANGE:
-        m_veloChange = v.toInt();
-        break;
-    case Pid::HAIRPIN_HEIGHT:
-        m_hairpinHeight = v.value<Spatium>();
-        break;
-    case Pid::HAIRPIN_CONT_HEIGHT:
-        m_hairpinContHeight = v.value<Spatium>();
-        break;
-    case Pid::SINGLE_NOTE_DYNAMICS:
-        m_singleNoteDynamics = v.toBool();
-        break;
-    case Pid::VELO_CHANGE_METHOD:
-        m_veloChangeMethod = v.value<ChangeMethod>();
-        break;
-    case Pid::VOICE_ASSIGNMENT:
-        setVoiceAssignment(v.value<VoiceAssignment>());
-        break;
-    case Pid::CENTER_BETWEEN_STAVES:
-        setCenterBetweenStaves(v.value<AutoOnOff>());
-        break;
-    case Pid::DIRECTION:
-        setDirection(v.value<DirectionV>());
-        break;
-    case Pid::SNAP_BEFORE:
-        setSnapToItemBefore(v.toBool());
-        break;
-    case Pid::SNAP_AFTER:
-        setSnapToItemAfter(v.toBool());
-        break;
-    default:
-        return TextLineBase::setProperty(id, v);
+        case Pid::HAIRPIN_CIRCLEDTIP: m_hairpinCircledTip = v.toBool(); break;
+        case Pid::HAIRPIN_TYPE: setHairpinType(HairpinType(v.toInt())); break;
+        case Pid::VELO_CHANGE: m_veloChange = v.toInt(); break;
+        case Pid::HAIRPIN_HEIGHT: m_hairpinHeight = v.value<Spatium>(); break;
+        case Pid::HAIRPIN_CONT_HEIGHT: m_hairpinContHeight = v.value<Spatium>(); break;
+        case Pid::SINGLE_NOTE_DYNAMICS: m_singleNoteDynamics = v.toBool(); break;
+        case Pid::VELO_CHANGE_METHOD: m_veloChangeMethod = v.value<ChangeMethod>(); break;
+        case Pid::VOICE_ASSIGNMENT: setVoiceAssignment(v.value<VoiceAssignment>()); break;
+        case Pid::CENTER_BETWEEN_STAVES: setCenterBetweenStaves(v.value<AutoOnOff>()); break;
+        case Pid::DIRECTION: setDirection(v.value<DirectionV>()); break;
+        case Pid::SNAP_BEFORE: setSnapToItemBefore(v.toBool()); break;
+        case Pid::SNAP_AFTER: setSnapToItemAfter(v.toBool()); break;
+        default: return TextLineBase::setProperty(id, v);
     }
     triggerLayout();
     return true;
@@ -585,88 +496,68 @@ bool Hairpin::setProperty(Pid id, const PropertyValue& v)
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Hairpin::propertyDefault(Pid id) const
-{
+PropertyValue Hairpin::propertyDefault(Pid id) const {
     switch (id) {
-    case Pid::HAIRPIN_CIRCLEDTIP:
-        return false;
+        case Pid::HAIRPIN_CIRCLEDTIP: return false;
 
-    case Pid::VELO_CHANGE:
-        return 0;
+        case Pid::VELO_CHANGE: return 0;
 
-    case Pid::BEGIN_TEXT:
-        if (m_hairpinType == HairpinType::CRESC_LINE) {
-            return style().styleV(Sid::hairpinCrescText);
-        }
-        if (m_hairpinType == HairpinType::DIM_LINE) {
-            return style().styleV(Sid::hairpinDecrescText);
-        }
-        return String();
+        case Pid::BEGIN_TEXT:
+            if (m_hairpinType == HairpinType::CRESC_LINE) {
+                return style().styleV(Sid::hairpinCrescText);
+            }
+            if (m_hairpinType == HairpinType::DIM_LINE) {
+                return style().styleV(Sid::hairpinDecrescText);
+            }
+            return String();
 
-    case Pid::CONTINUE_TEXT:
-        if (m_hairpinType == HairpinType::CRESC_LINE) {
-            return style().styleV(Sid::hairpinCrescContText);
-        }
-        if (m_hairpinType == HairpinType::DIM_LINE) {
-            return style().styleV(Sid::hairpinDecrescContText);
-        }
-        return String();
+        case Pid::CONTINUE_TEXT:
+            if (m_hairpinType == HairpinType::CRESC_LINE) {
+                return style().styleV(Sid::hairpinCrescContText);
+            }
+            if (m_hairpinType == HairpinType::DIM_LINE) {
+                return style().styleV(Sid::hairpinDecrescContText);
+            }
+            return String();
 
-    case Pid::END_TEXT:
-        return String();
+        case Pid::END_TEXT: return String();
 
-    case Pid::BEGIN_TEXT_PLACE:
-    case Pid::CONTINUE_TEXT_PLACE:
-    case Pid::END_TEXT_PLACE:
-        return TextPlace::LEFT;
+        case Pid::BEGIN_TEXT_PLACE:
+        case Pid::CONTINUE_TEXT_PLACE:
+        case Pid::END_TEXT_PLACE: return TextPlace::LEFT;
 
-    case Pid::BEGIN_TEXT_OFFSET:
-    case Pid::CONTINUE_TEXT_OFFSET:
-    case Pid::END_TEXT_OFFSET:
-        return PropertyValue::fromValue(PointF());
+        case Pid::BEGIN_TEXT_OFFSET:
+        case Pid::CONTINUE_TEXT_OFFSET:
+        case Pid::END_TEXT_OFFSET: return PropertyValue::fromValue(PointF());
 
-    case Pid::BEGIN_HOOK_TYPE:
-    case Pid::END_HOOK_TYPE:
-        return HookType::NONE;
+        case Pid::BEGIN_HOOK_TYPE:
+        case Pid::END_HOOK_TYPE: return HookType::NONE;
 
-    case Pid::BEGIN_HOOK_HEIGHT:
-    case Pid::END_HOOK_HEIGHT:
-        return 1.9_sp;
+        case Pid::BEGIN_HOOK_HEIGHT:
+        case Pid::END_HOOK_HEIGHT: return 1.9_sp;
 
-    case Pid::LINE_VISIBLE:
-        return true;
+        case Pid::LINE_VISIBLE: return true;
 
-    case Pid::HAIRPIN_TYPE:
-        return int(HairpinType::CRESC_HAIRPIN);
+        case Pid::HAIRPIN_TYPE: return int(HairpinType::CRESC_HAIRPIN);
 
-    case Pid::SINGLE_NOTE_DYNAMICS:
-        return true;
+        case Pid::SINGLE_NOTE_DYNAMICS: return true;
 
-    case Pid::VELO_CHANGE_METHOD:
-        return ChangeMethod::NORMAL;
+        case Pid::VELO_CHANGE_METHOD: return ChangeMethod::NORMAL;
 
-    case Pid::PLACEMENT:
-        return style().styleV(Sid::hairpinPlacement);
+        case Pid::PLACEMENT: return style().styleV(Sid::hairpinPlacement);
 
-    case Pid::VOICE_ASSIGNMENT:
-        return VoiceAssignment::ALL_VOICE_IN_INSTRUMENT;
+        case Pid::VOICE_ASSIGNMENT: return VoiceAssignment::ALL_VOICE_IN_INSTRUMENT;
 
-    case Pid::CENTER_BETWEEN_STAVES:
-        return AutoOnOff::AUTO;
+        case Pid::CENTER_BETWEEN_STAVES: return AutoOnOff::AUTO;
 
-    case Pid::DIRECTION:
-        return DirectionV::AUTO;
+        case Pid::DIRECTION: return DirectionV::AUTO;
 
-    case Pid::SNAP_BEFORE:
-        return true;
-    case Pid::SNAP_AFTER:
-        return true;
+        case Pid::SNAP_BEFORE: return true;
+        case Pid::SNAP_AFTER: return true;
 
-    case Pid::TEXT_STYLE:
-        return TextStyleType::HAIRPIN;
+        case Pid::TEXT_STYLE: return TextStyleType::HAIRPIN;
 
-    default:
-        return TextLineBase::propertyDefault(id);
+        default: return TextLineBase::propertyDefault(id);
     }
 }
 
@@ -674,18 +565,17 @@ PropertyValue Hairpin::propertyDefault(Pid id) const
 //   accessibleInfo
 //---------------------------------------------------------
 
-PointF Hairpin::linePos(Grip grip, System** system) const
-{
+PointF Hairpin::linePos(Grip grip, System **system) const {
     bool start = grip == Grip::START;
 
-    Segment* segment = start ? startSegment() : endSegment();
+    Segment *segment = start ? startSegment() : endSegment();
     if (!segment) {
         return PointF();
     }
 
     if (!start) {
         Fraction curTick = segment->tick();
-        Segment* prevSeg = segment->prev1(SegmentType::EndBarLine);
+        Segment *prevSeg = segment->prev1(SegmentType::EndBarLine);
         if (prevSeg && prevSeg->tick() == curTick) {
             segment = prevSeg;
         }
@@ -700,34 +590,26 @@ PointF Hairpin::linePos(Grip grip, System** system) const
     return PointF(x, 0.0);
 }
 
-void Hairpin::reset()
-{
+void Hairpin::reset() {
     undoResetProperty(Pid::DIRECTION);
     undoResetProperty(Pid::CENTER_BETWEEN_STAVES);
     TextLineBase::reset();
 }
 
-muse::TranslatableString Hairpin::subtypeUserName() const
-{
+muse::TranslatableString Hairpin::subtypeUserName() const {
     switch (hairpinType()) {
-    case HairpinType::CRESC_HAIRPIN:
-        return TranslatableString("engraving/hairpintype", "Crescendo hairpin");
-    case HairpinType::DIM_HAIRPIN:
-        return TranslatableString("engraving/hairpintype", "Diminuendo hairpin");
-    case HairpinType::CRESC_LINE:
-        return TranslatableString("engraving/hairpintype", "Crescendo line");
-    case HairpinType::DIM_LINE:
-        return TranslatableString("engraving/hairpintype", "Diminuendo line");
-    default:
-        return TranslatableString("engraving/hairpintype", "Custom");
+        case HairpinType::CRESC_HAIRPIN: return TranslatableString("engraving/hairpintype", "Crescendo hairpin");
+        case HairpinType::DIM_HAIRPIN: return TranslatableString("engraving/hairpintype", "Diminuendo hairpin");
+        case HairpinType::CRESC_LINE: return TranslatableString("engraving/hairpintype", "Crescendo line");
+        case HairpinType::DIM_LINE: return TranslatableString("engraving/hairpintype", "Diminuendo line");
+        default: return TranslatableString("engraving/hairpintype", "Custom");
     }
 }
 
-Sid Hairpin::defaultPosSid() const
-{
+Sid Hairpin::defaultPosSid() const {
     if (isLineType()) {
         return placeAbove() ? Sid::hairpinLinePosAbove : Sid::hairpinLinePosBelow;
     }
     return placeAbove() ? Sid::hairpinPosAbove : Sid::hairpinPosBelow;
 }
-}
+} // namespace mu::engraving

@@ -26,24 +26,23 @@
 
 namespace muse::io {
 class IODevice;
-}
+} // namespace muse::io
 
 namespace muse::audio::encode {
-class WavEncoder : public AbstractAudioEncoder
-{
+class WavEncoder : public AbstractAudioEncoder {
 public:
-    WavEncoder(const SoundTrackFormat&, io::IODevice&);
+    WavEncoder(const SoundTrackFormat &, io::IODevice &);
 
     bool begin(samples_t totalSamplesNumber) override;
-    size_t encode(samples_t samplesPerChannel, const float* input) override;
+    size_t encode(samples_t samplesPerChannel, const float *input) override;
     Ret end() override;
 
 private:
     bool writePlaceholderHeader();
     bool patchHeaderSizes();
 
-    muse::io::IODevice* m_dstDevice = nullptr;
+    muse::io::IODevice *m_dstDevice = nullptr;
     bool m_headerWritten = false;
     size_t m_pcmStartPos = 0;
 };
-}
+} // namespace muse::audio::encode

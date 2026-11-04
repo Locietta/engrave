@@ -33,75 +33,53 @@ using namespace mu::engraving;
 //    MMRest
 //--------------------------------------------------------
 
-MMRest::MMRest(DummyParentOr<Segment> s)
-    : Rest(ElementType::MMREST, s)
-{
+MMRest::MMRest(DummyParentOr<Segment> s) : Rest(ElementType::MMREST, s) {
     m_numberVisible = true;
     setPlacement(PlacementV::ABOVE);
 }
 
-MMRest::MMRest(const MMRest& r, bool link)
-    : Rest(r, link)
-{
-    m_numberVisible = r.m_numberVisible;
-}
+MMRest::MMRest(const MMRest &r, bool link) : Rest(r, link) { m_numberVisible = r.m_numberVisible; }
 
-bool MMRest::shouldShowNumberByDefault() const
-{
+bool MMRest::shouldShowNumberByDefault() const {
     bool shouldShow = isOldStyle() && ldata()->number == 1 ? style().styleB(Sid::singleMeasureMMRestShowNumber) : true;
 
-    const Part* itemPart = part();
-    const System* system = measure()->system();
-    bool isTopStaffOfPartAndCenteringIsActive = itemPart->nstaves() > 1 && staff() == itemPart->staves().front()
-                                                && (system && system->nextVisibleStaff(staffIdx()) != muse::nidx)
-                                                && style().styleB(Sid::mmRestBetweenStaves);
+    const Part *itemPart = part();
+    const System *system = measure()->system();
+    bool isTopStaffOfPartAndCenteringIsActive = itemPart->nstaves() > 1 && staff() == itemPart->staves().front() &&
+                                                (system && system->nextVisibleStaff(staffIdx()) != muse::nidx) &&
+                                                style().styleB(Sid::mmRestBetweenStaves);
 
     return shouldShow && !isTopStaffOfPartAndCenteringIsActive;
 }
 
-bool MMRest::showNumber() const
-{
-    return shouldShowNumberByDefault() && m_numberVisible;
-}
+bool MMRest::showNumber() const { return shouldShowNumberByDefault() && m_numberVisible; }
 
-bool MMRest::isOldStyle() const
-{
+bool MMRest::isOldStyle() const {
     int number = ldata()->number;
-    return (style().styleB(Sid::oldStyleMultiMeasureRests) && number <= style().styleI(Sid::mmRestOldStyleMaxMeasures))
-           || (number == 1 && style().styleB(Sid::singleMeasureMMRestUseNormalRest));
+    return (style().styleB(Sid::oldStyleMultiMeasureRests) && number <= style().styleI(Sid::mmRestOldStyleMaxMeasures)) ||
+           (number == 1 && style().styleB(Sid::singleMeasureMMRestUseNormalRest));
 }
 
-RectF MMRest::numberRect() const
-{
-    return symBbox(ldata()->numberSym);
-}
+RectF MMRest::numberRect() const { return symBbox(ldata()->numberSym); }
 
-PointF MMRest::numberPos() const
-{
+PointF MMRest::numberPos() const {
     RectF numBBox = numberRect();
     double x = 0.5 * (ldata()->restWidth - numBBox.width());
     double y = -pos().y() + yNumberPos() - 0.5 * numBBox.height();
     return PointF(x, y);
 }
 
-double MMRest::yNumberPos() const
-{
-    return ldata()->yNumberPos + absoluteFromSpatium(m_numberOffset);
-}
+double MMRest::yNumberPos() const { return ldata()->yNumberPos + absoluteFromSpatium(m_numberOffset); }
 
 //---------------------------------------------------------
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue MMRest::propertyDefault(Pid propertyId) const
-{
+PropertyValue MMRest::propertyDefault(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::MMREST_NUMBER_OFFSET:
-        return 0.0_sp;
-    case Pid::MMREST_NUMBER_VISIBLE:
-        return true;
-    default:
-        return Rest::propertyDefault(propertyId);
+        case Pid::MMREST_NUMBER_OFFSET: return 0.0_sp;
+        case Pid::MMREST_NUMBER_VISIBLE: return true;
+        default: return Rest::propertyDefault(propertyId);
     }
 }
 
@@ -109,15 +87,11 @@ PropertyValue MMRest::propertyDefault(Pid propertyId) const
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue MMRest::getProperty(Pid propertyId) const
-{
+PropertyValue MMRest::getProperty(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::MMREST_NUMBER_OFFSET:
-        return m_numberOffset;
-    case Pid::MMREST_NUMBER_VISIBLE:
-        return m_numberVisible;
-    default:
-        return Rest::getProperty(propertyId);
+        case Pid::MMREST_NUMBER_OFFSET: return m_numberOffset;
+        case Pid::MMREST_NUMBER_VISIBLE: return m_numberVisible;
+        default: return Rest::getProperty(propertyId);
     }
 }
 
@@ -125,19 +99,17 @@ PropertyValue MMRest::getProperty(Pid propertyId) const
 //   setProperty
 //---------------------------------------------------------
 
-bool MMRest::setProperty(Pid propertyId, const PropertyValue& v)
-{
+bool MMRest::setProperty(Pid propertyId, const PropertyValue &v) {
     switch (propertyId) {
-    case Pid::MMREST_NUMBER_OFFSET:
-        m_numberOffset = v.value<Spatium>();
-        triggerLayout();
-        break;
-    case Pid::MMREST_NUMBER_VISIBLE:
-        m_numberVisible = v.toBool();
-        triggerLayout();
-        break;
-    default:
-        return Rest::setProperty(propertyId, v);
+        case Pid::MMREST_NUMBER_OFFSET:
+            m_numberOffset = v.value<Spatium>();
+            triggerLayout();
+            break;
+        case Pid::MMREST_NUMBER_VISIBLE:
+            m_numberVisible = v.toBool();
+            triggerLayout();
+            break;
+        default: return Rest::setProperty(propertyId, v);
     }
     return true;
 }

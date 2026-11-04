@@ -47,8 +47,7 @@ using namespace mu::engraving;
 using namespace muse;
 using namespace muse::io;
 
-class Engraving_SaveHiddenPartsTests : public ::testing::Test
-{
+class Engraving_SaveHiddenPartsTests : public ::testing::Test {
 public:
     static constexpr int NUM_MEASURES = 10;
 
@@ -60,11 +59,10 @@ public:
      *   so its staff is still visible on its own (unlike hiding it from the Layout panel,
      *   which also hides its staves).
     */
-    std::unique_ptr<MasterScore> createScoreWithHiddenInstrument(int hiddenNoteMeasure)
-    {
-        MasterScore* score = compat::ScoreAccess::createMasterScore(ScoreRW::services());
+    std::unique_ptr<MasterScore> createScoreWithHiddenInstrument(int hiddenNoteMeasure) {
+        MasterScore *score = compat::ScoreAccess::createMasterScore(ScoreRW::services());
         for (int i = 0; i < 2; ++i) {
-            Part* part = new Part(score);
+            Part *part = new Part(score);
             score->appendPart(part);
             score->appendStaff(Factory::createStaff(part));
         }
@@ -72,7 +70,7 @@ public:
 
         score->startCmd(TranslatableString::untranslatable("Save hidden parts tests"));
         auto addNote = [score](int measureNumber, staff_idx_t staffIdx) {
-            Segment* segment = score->crMeasure(measureNumber - 1)->first(SegmentType::ChordRest);
+            Segment *segment = score->crMeasure(measureNumber - 1)->first(SegmentType::ChordRest);
             score->setNoteRest(segment, staffIdx * VOICES, NoteVal(60), Fraction(1, 4));
         };
         addNote(1, 0);
@@ -85,8 +83,7 @@ public:
         return std::unique_ptr<MasterScore>(score);
     }
 
-    ByteArray saveScore(MasterScore* score)
-    {
+    ByteArray saveScore(MasterScore *score) {
         ByteArray data;
         Buffer buffer(&data);
 
@@ -101,8 +98,7 @@ public:
         return data;
     }
 
-    std::unique_ptr<MasterScore> loadScore(ByteArray data)
-    {
+    std::unique_ptr<MasterScore> loadScore(ByteArray data) {
         Buffer buffer(&data);
 
         MscReader::Params params;
@@ -111,7 +107,7 @@ public:
         MscReader reader(params);
         EXPECT_TRUE(reader.open());
 
-        MasterScore* score = compat::ScoreAccess::createMasterScore(ScoreRW::services());
+        MasterScore *score = compat::ScoreAccess::createMasterScore(ScoreRW::services());
         score->setFileInfoProvider(std::make_shared<LocalFileInfoProvider>(path_t()));
         EXPECT_TRUE(MscLoader().loadMscz(score, reader, nullptr, /*ignoreVersionError*/ true));
         score->doLayout();
@@ -120,42 +116,38 @@ public:
     }
 
     // Pairs of (first measure number, number of measures) for every multimeasure rest
-    std::vector<std::pair<int, int> > mmRests(const Score* score)
-    {
-        std::vector<std::pair<int, int> > result;
-        for (const Measure* m = score->firstMeasure(); m; m = m->nextMeasure()) {
-            if (const Measure* mmRest = m->mmRest()) {
+    std::vector<std::pair<int, int>> mmRests(const Score *score) {
+        std::vector<std::pair<int, int>> result;
+        for (const Measure *m = score->firstMeasure(); m; m = m->nextMeasure()) {
+            if (const Measure *mmRest = m->mmRest()) {
                 result.emplace_back(static_cast<int>(m->measureIndex()) + 1, mmRest->mmRestCount());
             }
         }
         return result;
     }
 
-    bool hasNote(const Score* score, int measureNumber, staff_idx_t staffIdx)
-    {
-        const Segment* segment = score->crMeasure(measureNumber - 1)->first(SegmentType::ChordRest);
-        const EngravingItem* item = segment->element(staffIdx * VOICES);
+    bool hasNote(const Score *score, int measureNumber, staff_idx_t staffIdx) {
+        const Segment *segment = score->crMeasure(measureNumber - 1)->first(SegmentType::ChordRest);
+        const EngravingItem *item = segment->element(staffIdx * VOICES);
         return item && item->isChord();
     }
 
-    void showAllParts(MasterScore* score)
-    {
+    void showAllParts(MasterScore *score) {
         score->startCmd(TranslatableString::untranslatable("Save hidden parts tests"));
-        for (Part* part : score->parts()) {
+        for (Part *part : score->parts()) {
             EditPart::setPartVisible(score, part, true);
         }
         score->endCmd();
     }
 };
 
-TEST_F(Engraving_SaveHiddenPartsTests, SavingDoesNotChangeOrRelayoutTheScore)
-{
+TEST_F(Engraving_SaveHiddenPartsTests, SavingDoesNotChangeOrRelayoutTheScore) {
     // [GIVEN] A laid out score with MM rests and a hidden instrument
     std::unique_ptr<MasterScore> score = createScoreWithHiddenInstrument(5);
-    ASSERT_EQ(mmRests(score.get()), (std::vector<std::pair<int, int> > { { 2, 8 } }));
+    ASSERT_EQ(mmRests(score.get()), (std::vector<std::pair<int, int>>{{2, 8}}));
 
-    const std::vector<System*> systemsBefore = score->systems();
-    const Measure* mmRestBefore = score->crMeasure(1)->mmRest();
+    const std::vector<System *> systemsBefore = score->systems();
+    const Measure *mmRestBefore = score->crMeasure(1)->mmRest();
     const size_t undoStackSizeBefore = score->undoStack()->size();
     const size_t undoStackIndexBefore = score->undoStack()->currentIndex();
 
@@ -174,11 +166,10 @@ TEST_F(Engraving_SaveHiddenPartsTests, SavingDoesNotChangeOrRelayoutTheScore)
 }
 
 // see musescore.org/en/node/27861
-TEST_F(Engraving_SaveHiddenPartsTests, HiddenInstrumentSurvivesSaveAndReload)
-{
+TEST_F(Engraving_SaveHiddenPartsTests, HiddenInstrumentSurvivesSaveAndReload) {
     // [GIVEN] A score with MM rests and a hidden instrument that has a note inside the MM rest of the visible one
     std::unique_ptr<MasterScore> score = createScoreWithHiddenInstrument(5);
-    ASSERT_EQ(mmRests(score.get()), (std::vector<std::pair<int, int> > { { 2, 8 } }));
+    ASSERT_EQ(mmRests(score.get()), (std::vector<std::pair<int, int>>{{2, 8}}));
 
     // [WHEN] The score is saved and reloaded
     std::unique_ptr<MasterScore> reloaded = loadScore(saveScore(score.get()));
@@ -195,19 +186,18 @@ TEST_F(Engraving_SaveHiddenPartsTests, HiddenInstrumentSurvivesSaveAndReload)
     showAllParts(reloaded.get());
 
     // [THEN] Its note breaks the MM rest in the same way as if it had never been saved
-    EXPECT_EQ(mmRests(score.get()), (std::vector<std::pair<int, int> > { { 2, 3 }, { 6, 4 } }));
+    EXPECT_EQ(mmRests(score.get()), (std::vector<std::pair<int, int>>{{2, 3}, {6, 4}}));
     EXPECT_EQ(mmRests(reloaded.get()), mmRests(score.get()));
 }
 
-TEST_F(Engraving_SaveHiddenPartsTests, EditOnMMRestOfHiddenLayoutSurvivesSaveAndReload)
-{
+TEST_F(Engraving_SaveHiddenPartsTests, EditOnMMRestOfHiddenLayoutSurvivesSaveAndReload) {
     // [GIVEN] A score where the hidden instrument has a note in the first measure of the MM rest,
     // so that this MM rest only exists while the instrument is hidden
     std::unique_ptr<MasterScore> score = createScoreWithHiddenInstrument(2);
-    ASSERT_EQ(mmRests(score.get()), (std::vector<std::pair<int, int> > { { 2, 8 } }));
+    ASSERT_EQ(mmRests(score.get()), (std::vector<std::pair<int, int>>{{2, 8}}));
 
     // [GIVEN] Its number has been moved by the user
-    MMRest* mmRest = toMMRest(score->crMeasure(1)->mmRest()->first(SegmentType::ChordRest)->element(0));
+    MMRest *mmRest = toMMRest(score->crMeasure(1)->mmRest()->first(SegmentType::ChordRest)->element(0));
     ASSERT_TRUE(mmRest);
     score->startCmd(TranslatableString::untranslatable("Save hidden parts tests"));
     mmRest->undoChangeProperty(Pid::MMREST_NUMBER_OFFSET, Spatium(2.5));
@@ -217,8 +207,8 @@ TEST_F(Engraving_SaveHiddenPartsTests, EditOnMMRestOfHiddenLayoutSurvivesSaveAnd
     std::unique_ptr<MasterScore> reloaded = loadScore(saveScore(score.get()));
 
     // [THEN] The edit is kept
-    ASSERT_EQ(mmRests(reloaded.get()), (std::vector<std::pair<int, int> > { { 2, 8 } }));
-    const MMRest* reloadedMMRest = toMMRest(reloaded->crMeasure(1)->mmRest()->first(SegmentType::ChordRest)->element(0));
+    ASSERT_EQ(mmRests(reloaded.get()), (std::vector<std::pair<int, int>>{{2, 8}}));
+    const MMRest *reloadedMMRest = toMMRest(reloaded->crMeasure(1)->mmRest()->first(SegmentType::ChordRest)->element(0));
     ASSERT_TRUE(reloadedMMRest);
     EXPECT_EQ(reloadedMMRest->getProperty(Pid::MMREST_NUMBER_OFFSET).value<Spatium>(), Spatium(2.5));
 }

@@ -33,26 +33,26 @@ class Accidental;
 //   @@ TrillSegment
 //---------------------------------------------------------
 
-class TrillSegment final : public LineSegment
-{
+class TrillSegment final : public LineSegment {
     OBJECT_ALLOCATOR(engraving, TrillSegment)
     DECLARE_CLASSOF(ElementType::TRILL_SEGMENT)
 
 public:
-    TrillSegment(Trill* sp);
+    TrillSegment(Trill *sp);
 
-    Trill* trill() const { return (Trill*)spanner(); }
+    Trill *trill() const { return (Trill *) spanner(); }
 
-    TrillSegment* clone() const override { return new TrillSegment(*this); }
+    TrillSegment *clone() const override { return new TrillSegment(*this); }
 
-    void scanElements(std::function<void(EngravingItem*)> func) override;
+    void scanElements(std::function<void(EngravingItem *)> func) override;
 
-    EngravingObject* propertyDelegate(Pid) const override;
+    EngravingObject *propertyDelegate(Pid) const override;
 
-    void remove(EngravingItem*) override;
+    void remove(EngravingItem *) override;
 
-    const SymIdList& symbols() const { return m_symbols; }
-    void setSymbols(const SymIdList& s) { m_symbols = s; }
+    const SymIdList &symbols() const { return m_symbols; }
+
+    void setSymbols(const SymIdList &s) { m_symbols = s; }
 
     void symbolLine(SymId start, SymId fill);
     void symbolLine(SymId start, SymId fill, SymId end);
@@ -68,49 +68,60 @@ private:
 //   @P trillType  enum (Trill.DOWNPRALL_LINE, .PRALLPRALL_LINE, .PURE_LINE, .TRILL_LINE, .UPPRALL_LINE)
 //---------------------------------------------------------
 
-class Trill final : public SLine
-{
+class Trill final : public SLine {
     OBJECT_ALLOCATOR(engraving, Trill)
     DECLARE_CLASSOF(ElementType::TRILL)
 
 public:
     Trill(DummyParentOr<EngravingItem> parent);
-    Trill(const Trill& t);
+    Trill(const Trill &t);
 
-    Trill* clone() const override { return new Trill(*this); }
-    EngravingItem* linkedClone() override;
+    Trill *clone() const override { return new Trill(*this); }
+
+    EngravingItem *linkedClone() override;
 
     Anchor anchor() const override { return Anchor::SEGMENT; }
 
-    LineSegment* createLineSegment() override;
-    void remove(EngravingItem*) override;
+    LineSegment *createLineSegment() override;
+    void remove(EngravingItem *) override;
 
     void setTrack(track_idx_t n) override;
-    void setScore(Score* s) override;
+    void setScore(Score *s) override;
     void computeStartElement() override;
-    static PointF trillLinePos(const SLine* line, Grip grip, System** system);
-    PointF linePos(Grip grip, System** system) const override;
+    static PointF trillLinePos(const SLine *line, Grip grip, System **system);
+    PointF linePos(Grip grip, System **system) const override;
 
     void setTrillType(TrillType tt);
-    TrillType trillType() const { return m_trillType; }
-    int subtype() const override { return int(m_trillType); }
-    TranslatableString subtypeUserName() const override;
-    void setOrnamentStyle(OrnamentStyle val) { m_ornamentStyle = val; }
-    OrnamentStyle ornamentStyle() const { return m_ornamentStyle; }
-    String trillTypeUserName() const;
-    Accidental* accidental() const { return m_accidental; }
-    void setAccidental(Accidental* a) { m_accidental = a; }
-    Chord* cueNoteChord() const { return m_cueNoteChord; }
-    void setCueNoteChord(Chord* c) { m_cueNoteChord = c; }
 
-    Segment* segment() const { return (Segment*)ownershipParent(); }
+    TrillType trillType() const { return m_trillType; }
+
+    int subtype() const override { return int(m_trillType); }
+
+    TranslatableString subtypeUserName() const override;
+
+    void setOrnamentStyle(OrnamentStyle val) { m_ornamentStyle = val; }
+
+    OrnamentStyle ornamentStyle() const { return m_ornamentStyle; }
+
+    String trillTypeUserName() const;
+
+    Accidental *accidental() const { return m_accidental; }
+
+    void setAccidental(Accidental *a) { m_accidental = a; }
+
+    Chord *cueNoteChord() const { return m_cueNoteChord; }
+
+    void setCueNoteChord(Chord *c) { m_cueNoteChord = c; }
+
+    Segment *segment() const { return (Segment *) ownershipParent(); }
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid) const override;
 
-    Ornament* ornament() const { return m_ornament; }
-    void setOrnament(Ornament* o) { m_ornament = o; }
+    Ornament *ornament() const { return m_ornament; }
+
+    void setOrnament(Ornament *o) { m_ornament = o; }
 
     Sid defaultPosSid() const override;
 
@@ -119,10 +130,10 @@ protected:
 
 private:
     TrillType m_trillType = TrillType::TRILL_LINE;
-    Accidental* m_accidental = nullptr;
-    Chord* m_cueNoteChord = nullptr;
-    OrnamentStyle m_ornamentStyle = OrnamentStyle::DEFAULT;   // for use in ornaments such as trill
-    Ornament* m_ornament = nullptr;
+    Accidental *m_accidental = nullptr;
+    Chord *m_cueNoteChord = nullptr;
+    OrnamentStyle m_ornamentStyle = OrnamentStyle::DEFAULT; // for use in ornaments such as trill
+    Ornament *m_ornament = nullptr;
 };
 } // namespace mu::engraving
 

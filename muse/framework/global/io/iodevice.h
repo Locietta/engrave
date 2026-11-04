@@ -28,13 +28,10 @@
 #include "global/types/bytearray.h"
 
 namespace muse::io {
-class IODevice
-{
+class IODevice {
 public:
 
-    enum OpenMode {
-        Unknown, ReadOnly, WriteOnly, ReadWrite, Append
-    };
+    enum OpenMode { Unknown, ReadOnly, WriteOnly, ReadWrite, Append };
 
     IODevice() = default;
     virtual ~IODevice() = default;
@@ -52,41 +49,42 @@ public:
 
     bool seek(size_t pos);
 
-    size_t read(uint8_t* data, size_t len);
+    size_t read(uint8_t *data, size_t len);
     ByteArray read(size_t count);
     ByteArray readAll();
 
-    const uint8_t* readData();
+    const uint8_t *readData();
 
-    size_t write(const uint8_t* data, size_t len);
-    size_t write(const ByteArray& ba);
+    size_t write(const uint8_t *data, size_t len);
+    size_t write(const ByteArray &ba);
 
-
-    const std::string& meta(const std::string& key) const;
-    void setMeta(const std::string& key, const std::string& val);
+    const std::string &meta(const std::string &key) const;
+    void setMeta(const std::string &key, const std::string &val);
 
     bool hasError() const;
     int error() const;
-    const std::string& errorString() const;
+    const std::string &errorString() const;
 
 protected:
 
     virtual bool doOpen(OpenMode m) = 0;
+
     virtual void doClose() {}
+
     virtual ByteArray doReadAll();
     virtual size_t dataSize() const = 0;
-    virtual const uint8_t* rawData() const = 0;
+    virtual const uint8_t *rawData() const = 0;
     virtual bool resizeData(size_t size) = 0;
-    virtual size_t writeData(const uint8_t* data, size_t len) = 0;
+    virtual size_t writeData(const uint8_t *data, size_t len) = 0;
 
     bool isOpenModeReadable() const;
     bool isOpenModeWriteable() const;
 
-    void setError(int error, const std::string& errorString);
+    void setError(int error, const std::string &errorString);
 
 private:
 
-    const uint8_t* cdataOffsetted() const;
+    const uint8_t *cdataOffsetted() const;
 
     OpenMode m_mode = OpenMode::Unknown;
     size_t m_pos = 0;
@@ -95,4 +93,4 @@ private:
     int m_error = 0;
     std::string m_errorString;
 };
-}
+} // namespace muse::io

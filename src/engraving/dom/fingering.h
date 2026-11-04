@@ -34,8 +34,7 @@ class Note;
 //   @@ Fingering
 //---------------------------------------------------------
 
-class Fingering final : public TextBase
-{
+class Fingering final : public TextBase {
     OBJECT_ALLOCATOR(engraving, Fingering)
     DECLARE_CLASSOF(ElementType::FINGERING)
 
@@ -43,9 +42,10 @@ public:
     Fingering(DummyParentOr<Note> parent, TextStyleType tid, ElementFlags ef = ElementFlag::ON_STAFF);
     Fingering(DummyParentOr<Note> parent, ElementFlags ef = ElementFlag::ON_STAFF);
 
-    Fingering* clone() const override { return new Fingering(*this); }
+    Fingering *clone() const override { return new Fingering(*this); }
 
-    Note* note() const { return toNote(ownershipParent()); }
+    Note *note() const { return toNote(ownershipParent()); }
+
     ElementType layoutType() const;
     PlacementV calculatePlacement() const;
 

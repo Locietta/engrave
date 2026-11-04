@@ -9,8 +9,11 @@
 
 // Imports a MusicXML file, lays it out and exports MusicXML and MIDI through the
 // engine context, without Qt or a desktop install.
-int main(int argc, char** argv) {
-    if (argc != 4) { std::cerr << "Usage: noqt_probe ASSETS INPUT.musicxml OUTPUT.musicxml\n"; return 2; }
+int main(int argc, char **argv) {
+    if (argc != 4) {
+        std::cerr << "Usage: noqt_probe ASSETS INPUT.musicxml OUTPUT.musicxml\n";
+        return 2;
+    }
     try {
         music::EngineContext context(argv[1]);
         std::ifstream in(std::filesystem::u8path(argv[2]), std::ios::binary);
@@ -21,8 +24,11 @@ int main(int argc, char** argv) {
         const std::string midi = music::export_native_score(context, project, "midi", 0, {});
         std::ofstream(std::filesystem::u8path(argv[3]), std::ios::binary) << xml;
         std::ofstream(std::filesystem::u8path(std::string(argv[3]) + ".mid"), std::ios::binary) << midi;
-        auto* score = project->masterScore();
+        auto *score = project->masterScore();
         std::cout << "Qt-free import/layout/export: parts=" << score->parts().size() << " pages=" << score->npages()
                   << " bytes=" << xml.size() << '\n';
-    } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
+    } catch (const std::exception &e) {
+        std::cerr << e.what() << '\n';
+        return 1;
+    }
 }

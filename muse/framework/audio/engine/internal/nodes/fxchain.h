@@ -26,23 +26,20 @@
 #include "audio/engine/ifxprocessor.h"
 #include "audio/engine/iplayhead.h"
 
-
 namespace muse::audio {
-struct FxChainTag
-{
-    static constexpr const char* name = "FxChain";
+struct FxChainTag {
+    static constexpr const char *name = "FxChain";
 };
-}
+} // namespace muse::audio
 
 namespace muse::audio::engine {
-class FxChain : public ChainNode<FxChainTag>
-{
+class FxChain : public ChainNode<FxChainTag> {
 public:
-    void setFxList(const std::vector<IFxProcessorPtr>& fxList);
+    void setFxList(const std::vector<IFxProcessorPtr> &fxList);
 
     //! NOTE Must be set after adding all nodes to the chain
-    void setFxChainSpec(const AudioFxChain& fxChainSpec);
-    const AudioFxChain& fxChainSpec() const;
+    void setFxChainSpec(const AudioFxChain &fxChainSpec);
+    const AudioFxChain &fxChainSpec() const;
 
     void setPlayheadPosition(PlayheadPositionPtr playheadPosition);
 
@@ -50,7 +47,7 @@ public:
 
 private:
     void rebuild() override;
-    void doSelfProcess(float* buffer, samples_t samplesPerChannel) override;
+    void doSelfProcess(float *buffer, samples_t samplesPerChannel) override;
 
     void updateShouldProcessDuringSilence();
 
@@ -60,4 +57,4 @@ private:
 };
 
 using FxChainPtr = std::shared_ptr<FxChain>;
-}
+} // namespace muse::audio::engine

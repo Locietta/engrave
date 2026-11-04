@@ -30,30 +30,22 @@ using namespace mu;
 using namespace mu::engraving;
 
 // Staff line and pitch for every bagpipe note
-const BagpipeNoteInfo BagpipeEmbellishment::BAGPIPE_NOTEINFO_LIST[] = {
-    { "LG",  6,  65 },
-    { "LA",  5,  67 },
-    { "B",   4,  69 },
-    { "C",   3,  71 },  // actually C#
-    { "D",   2,  72 },
-    { "E",   1,  74 },
-    { "F",   0,  76 },  // actually F#
-    { "HG", -1,  77 },
-    { "HA", -2,  79 }
-};
+const BagpipeNoteInfo BagpipeEmbellishment::BAGPIPE_NOTEINFO_LIST[] = {{"LG", 6, 65},  {"LA", 5, 67}, {"B", 4, 69},
+                                                                       {"C", 3, 71},                                // actually C#
+                                                                       {"D", 2, 72},   {"E", 1, 74},  {"F", 0, 76}, // actually F#
+                                                                       {"HG", -1, 77}, {"HA", -2, 79}};
 
 //---------------------------------------------------------
 //   resolveNoteList
 //     return notes as list of indices in BagpipeNoteInfoList
 //---------------------------------------------------------
 
-BagpipeNoteList BagpipeEmbellishment::resolveNoteList() const
-{
+BagpipeNoteList BagpipeEmbellishment::resolveNoteList() const {
     BagpipeNoteList nl;
 
     StringList notes = TConv::embellishmentNotes(m_embelType);
     int noteInfoSize = sizeof(BAGPIPE_NOTEINFO_LIST) / sizeof(*BAGPIPE_NOTEINFO_LIST);
-    for (const String& note : notes) {
+    for (const String &note : notes) {
         // search for note in BagpipeNoteInfoList
         for (int i = 0; i < noteInfoSize; ++i) {
             if (String::fromAscii(BAGPIPE_NOTEINFO_LIST[i].name.ascii()) == note) {
@@ -72,7 +64,4 @@ BagpipeNoteList BagpipeEmbellishment::resolveNoteList() const
 //      return fixed magnification
 //---------------------------------------------------------
 
-double BagpipeEmbellishment::mag() const
-{
-    return 0.7;
-}
+double BagpipeEmbellishment::mag() const { return 0.7; }

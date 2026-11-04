@@ -51,14 +51,12 @@ namespace mu::iex::mnxio {
 //   Helper to add a specific articulation to a chord.
 //---------------------------------------------------------
 
-Articulation* MnxImporter::addArticulation(ChordRest* cr, const mnx::sequence::EventMarkingBase& marking, SymId symId, const char* name)
-{
+Articulation *MnxImporter::addArticulation(ChordRest *cr, const mnx::sequence::EventMarkingBase &marking, SymId symId, const char *name) {
     if (!cr->isChord()) {
-        LOGW() << "Skipping MNX articulation \"" << name << "\" on rest at "
-               << marking.pointer().to_string();
+        LOGW() << "Skipping MNX articulation \"" << name << "\" on rest at " << marking.pointer().to_string();
         return nullptr;
     }
-    Articulation* articulation = Factory::createArticulation(cr);
+    Articulation *articulation = Factory::createArticulation(cr);
     articulation->setSymId(symId);
     setAndStyleProperty(articulation, Pid::ARTICULATION_ANCHOR, int(toMuseScoreArticulationAnchor(marking.orient())));
     cr->add(articulation);
@@ -70,13 +68,12 @@ Articulation* MnxImporter::addArticulation(ChordRest* cr, const mnx::sequence::E
 //   Helper to create and add a fermata to a segment.
 //---------------------------------------------------------
 
-void MnxImporter::addFermata(Segment* seg, const mnx::Fermata& mnxFermata, track_idx_t track)
-{
+void MnxImporter::addFermata(Segment *seg, const mnx::Fermata &mnxFermata, track_idx_t track) {
     IF_ASSERT_FAILED(seg) {
         LOGE() << "Null segment passed to addFermata";
         return;
     }
-    Fermata* fermata = Factory::createFermata(seg);
+    Fermata *fermata = Factory::createFermata(seg);
     fermata->setTrack(track);
     /// @note MNX decouples fermata symbol from duration, but MuseScore does not currently model
     /// an independently round-trippable fermata duration separate from the fermata subtype/symbol.
@@ -92,8 +89,7 @@ void MnxImporter::addFermata(Segment* seg, const mnx::Fermata& mnxFermata, track
 //   Import all articulations/markings for an MNX event.
 //---------------------------------------------------------
 
-void MnxImporter::importMarkings(const mnx::sequence::Event& mnxEvent, ChordRest* cr, const Fraction& eventEndTick, Measure* measure)
-{
+void MnxImporter::importMarkings(const mnx::sequence::Event &mnxEvent, ChordRest *cr, const Fraction &eventEndTick, Measure *measure) {
     if (!mnxEvent.markings()) {
         return;
     }
@@ -141,8 +137,7 @@ void MnxImporter::importMarkings(const mnx::sequence::Event& mnxEvent, ChordRest
 //   Import MNX accent marking.
 //---------------------------------------------------------
 
-void MnxImporter::importAccent(const mnx::sequence::Accent& accent, ChordRest* cr)
-{
+void MnxImporter::importAccent(const mnx::sequence::Accent &accent, ChordRest *cr) {
     addArticulation(cr, accent, SymId::articAccentAbove, "accent");
 }
 
@@ -151,15 +146,10 @@ void MnxImporter::importAccent(const mnx::sequence::Accent& accent, ChordRest* c
 //   Import MNX bow direction marking.
 //---------------------------------------------------------
 
-void MnxImporter::importBowDirection(const mnx::sequence::BowDirection& bowDirection, ChordRest* cr)
-{
+void MnxImporter::importBowDirection(const mnx::sequence::BowDirection &bowDirection, ChordRest *cr) {
     switch (bowDirection.direction()) {
-    case mnx::MarkingUpDown::Down:
-        addArticulation(cr, bowDirection, SymId::stringsDownBow, "downBow");
-        break;
-    case mnx::MarkingUpDown::Up:
-        addArticulation(cr, bowDirection, SymId::stringsUpBow, "upBow");
-        break;
+        case mnx::MarkingUpDown::Down: addArticulation(cr, bowDirection, SymId::stringsDownBow, "downBow"); break;
+        case mnx::MarkingUpDown::Up: addArticulation(cr, bowDirection, SymId::stringsUpBow, "upBow"); break;
     }
 }
 
@@ -168,15 +158,12 @@ void MnxImporter::importBowDirection(const mnx::sequence::BowDirection& bowDirec
 //   Import MNX breath mark.
 //---------------------------------------------------------
 
-void MnxImporter::importBreath(const mnx::sequence::BreathMark& breath, ChordRest* cr, const Fraction& eventEndTick, Measure* measure)
-{
+void MnxImporter::importBreath(const mnx::sequence::BreathMark &breath, ChordRest *cr, const Fraction &eventEndTick, Measure *measure) {
     // cr->track() is read unconditionally below, so a null cr is not survivable here.
-    IF_ASSERT_FAILED(cr) {
-        return;
-    }
-    Measure* targetMeasure = measure;
+    IF_ASSERT_FAILED(cr) { return; }
+    Measure *targetMeasure = measure;
     if (!targetMeasure) {
-        Segment* chordRestSegment = cr->segment();
+        Segment *chordRestSegment = cr->segment();
         targetMeasure = chordRestSegment ? chordRestSegment->measure() : nullptr;
     }
     IF_ASSERT_FAILED(targetMeasure) {
@@ -184,8 +171,8 @@ void MnxImporter::importBreath(const mnx::sequence::BreathMark& breath, ChordRes
         return;
     }
 
-    Segment* segment = targetMeasure->getSegmentR(SegmentType::Breath, eventEndTick);
-    Breath* breathMark = Factory::createBreath(segment);
+    Segment *segment = targetMeasure->getSegmentR(SegmentType::Breath, eventEndTick);
+    Breath *breathMark = Factory::createBreath(segment);
     breathMark->setTrack(cr->track());
     breathMark->setSymId(toMuseScoreBreathMarkSym(breath.symbol()));
     setAndStyleProperty(breathMark, Pid::PLACEMENT, toMuseScorePlacementV(breath.orient(), breathMark));
@@ -197,8 +184,7 @@ void MnxImporter::importBreath(const mnx::sequence::BreathMark& breath, ChordRes
 //   Import MNX soft accent marking.
 //---------------------------------------------------------
 
-void MnxImporter::importSoftAccent(const mnx::sequence::SoftAccent& softAccent, ChordRest* cr)
-{
+void MnxImporter::importSoftAccent(const mnx::sequence::SoftAccent &softAccent, ChordRest *cr) {
     addArticulation(cr, softAccent, SymId::articSoftAccentAbove, "softAccent");
 }
 
@@ -207,8 +193,7 @@ void MnxImporter::importSoftAccent(const mnx::sequence::SoftAccent& softAccent, 
 //   Import MNX spiccato marking.
 //---------------------------------------------------------
 
-void MnxImporter::importSpiccato(const mnx::sequence::Spiccato& spiccato, ChordRest* cr)
-{
+void MnxImporter::importSpiccato(const mnx::sequence::Spiccato &spiccato, ChordRest *cr) {
     addArticulation(cr, spiccato, SymId::articStaccatissimoStrokeAbove, "spiccato");
 }
 
@@ -217,8 +202,7 @@ void MnxImporter::importSpiccato(const mnx::sequence::Spiccato& spiccato, ChordR
 //   Import MNX staccatissimo marking.
 //---------------------------------------------------------
 
-void MnxImporter::importStaccatissimo(const mnx::sequence::Staccatissimo& staccatissimo, ChordRest* cr)
-{
+void MnxImporter::importStaccatissimo(const mnx::sequence::Staccatissimo &staccatissimo, ChordRest *cr) {
     addArticulation(cr, staccatissimo, SymId::articStaccatissimoAbove, "staccatissimo");
 }
 
@@ -227,8 +211,7 @@ void MnxImporter::importStaccatissimo(const mnx::sequence::Staccatissimo& stacca
 //   Import MNX staccato marking.
 //---------------------------------------------------------
 
-void MnxImporter::importStaccato(const mnx::sequence::Staccato& staccato, ChordRest* cr)
-{
+void MnxImporter::importStaccato(const mnx::sequence::Staccato &staccato, ChordRest *cr) {
     addArticulation(cr, staccato, SymId::articStaccatoAbove, "staccato");
 }
 
@@ -237,8 +220,7 @@ void MnxImporter::importStaccato(const mnx::sequence::Staccato& staccato, ChordR
 //   Import MNX stress marking.
 //---------------------------------------------------------
 
-void MnxImporter::importStress(const mnx::sequence::Stress& stress, ChordRest* cr)
-{
+void MnxImporter::importStress(const mnx::sequence::Stress &stress, ChordRest *cr) {
     addArticulation(cr, stress, SymId::articStressAbove, "stress");
 }
 
@@ -247,8 +229,7 @@ void MnxImporter::importStress(const mnx::sequence::Stress& stress, ChordRest* c
 //   Import MNX strong accent marking.
 //---------------------------------------------------------
 
-void MnxImporter::importStrongAccent(const mnx::sequence::StrongAccent& strongAccent, ChordRest* cr)
-{
+void MnxImporter::importStrongAccent(const mnx::sequence::StrongAccent &strongAccent, ChordRest *cr) {
     SymId symId = SymId::articMarcatoAbove;
     if (strongAccent.pointing() == mnx::MarkingUpDownAuto::Down) {
         symId = SymId::articMarcatoBelow;
@@ -261,8 +242,7 @@ void MnxImporter::importStrongAccent(const mnx::sequence::StrongAccent& strongAc
 //   Import MNX tenuto marking.
 //---------------------------------------------------------
 
-void MnxImporter::importTenuto(const mnx::sequence::Tenuto& tenuto, ChordRest* cr)
-{
+void MnxImporter::importTenuto(const mnx::sequence::Tenuto &tenuto, ChordRest *cr) {
     addArticulation(cr, tenuto, SymId::articTenutoAbove, "tenuto");
 }
 
@@ -271,8 +251,7 @@ void MnxImporter::importTenuto(const mnx::sequence::Tenuto& tenuto, ChordRest* c
 //   Import MNX single-note tremolo marking.
 //---------------------------------------------------------
 
-void MnxImporter::importTremolo(const mnx::sequence::SingleNoteTremolo& tremolo, ChordRest* cr)
-{
+void MnxImporter::importTremolo(const mnx::sequence::SingleNoteTremolo &tremolo, ChordRest *cr) {
     if (!cr->isChord()) {
         LOGW() << "Skipping MNX tremolo on rest at " << tremolo.pointer().to_string();
         return;
@@ -287,7 +266,7 @@ void MnxImporter::importTremolo(const mnx::sequence::SingleNoteTremolo& tremolo,
     if (type == TremoloType::INVALID_TREMOLO) {
         return;
     }
-    TremoloSingleChord* tremoloMark = Factory::createTremoloSingleChord(toChord(cr));
+    TremoloSingleChord *tremoloMark = Factory::createTremoloSingleChord(toChord(cr));
     tremoloMark->setTremoloType(type);
     cr->add(tremoloMark);
 }
@@ -297,8 +276,7 @@ void MnxImporter::importTremolo(const mnx::sequence::SingleNoteTremolo& tremolo,
 //   Import MNX unstress marking.
 //---------------------------------------------------------
 
-void MnxImporter::importUnstress(const mnx::sequence::Unstress& unstress, ChordRest* cr)
-{
+void MnxImporter::importUnstress(const mnx::sequence::Unstress &unstress, ChordRest *cr) {
     addArticulation(cr, unstress, SymId::articUnstressAbove, "unstress");
 }
 
@@ -307,9 +285,8 @@ void MnxImporter::importUnstress(const mnx::sequence::Unstress& unstress, ChordR
 //   Import MNX fermata
 //---------------------------------------------------------
 
-void MnxImporter::importFermata(const mnx::Fermata& mnxFermata, engraving::ChordRest* cr)
-{
-    Segment* seg = cr->segment();
+void MnxImporter::importFermata(const mnx::Fermata &mnxFermata, engraving::ChordRest *cr) {
+    Segment *seg = cr->segment();
     IF_ASSERT_FAILED(seg) {
         LOGE() << "cr has no segment when importing fermata";
         return;

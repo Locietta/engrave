@@ -36,7 +36,7 @@ using BagpipeNoteList = std::vector<int>;
 //---------------------------------------------------------
 
 struct BagpipeEmbellishmentInfo {
-    const char* name = 0;
+    const char *name = 0;
     AsciiStringView notes;
 };
 
@@ -56,19 +56,20 @@ struct BagpipeNoteInfo {
 //    dummy element, used for drag&drop
 //---------------------------------------------------------
 
-class BagpipeEmbellishment final : public EngravingItem
-{
+class BagpipeEmbellishment final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, BagpipeEmbellishment)
     DECLARE_CLASSOF(ElementType::BAGPIPE_EMBELLISHMENT)
 
 public:
     BagpipeEmbellishment(DummyParentOr<EngravingItem> parent)
-        : EngravingItem(ElementType::BAGPIPE_EMBELLISHMENT, parent), m_embelType(EmbellishmentType(0)) { }
+        : EngravingItem(ElementType::BAGPIPE_EMBELLISHMENT, parent), m_embelType(EmbellishmentType(0)) {}
 
-    BagpipeEmbellishment* clone() const override { return new BagpipeEmbellishment(*this); }
+    BagpipeEmbellishment *clone() const override { return new BagpipeEmbellishment(*this); }
 
     EmbellishmentType embelType() const { return m_embelType; }
+
     void setEmbelType(EmbellishmentType val) { m_embelType = val; }
+
     double mag() const override;
 
     static const BagpipeNoteInfo BAGPIPE_NOTEINFO_LIST[];
@@ -83,7 +84,7 @@ public:
         };
 
         struct BeamData {
-            double width = 0.0;         // line width for beam
+            double width = 0.0; // line width for beam
             double y = 0.0;
             double x1 = 0.0;
             double x2 = 0.0;
@@ -91,10 +92,10 @@ public:
 
         bool isDrawBeam = false;
         bool isDrawFlag = false;
-        double spatium = 1.0;           // spatium
-        SymId headsym = SymId::noSym;   // grace note head symbol
-        SymId flagsym = SymId::noSym;   // grace note flag symbol
-        double stemLineW = 0.0;         // line width for stem
+        double spatium = 1.0;         // spatium
+        SymId headsym = SymId::noSym; // grace note head symbol
+        SymId flagsym = SymId::noSym; // grace note flag symbol
+        double stemLineW = 0.0;       // line width for stem
         std::map<size_t /*note index*/, NoteData> notesData;
         BeamData beamData;
     };

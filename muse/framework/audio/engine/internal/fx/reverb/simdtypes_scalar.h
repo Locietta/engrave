@@ -35,54 +35,32 @@
 #endif
 
 namespace muse::audio::fx::simd {
-struct float_x4
-{
+struct float_x4 {
     float v[4];
 
-    __finl float_x4()
-    {
-    }
+    __finl float_x4() {}
 
     /// enables math like: float_x4 a = 0.5f * float_x4{1.f, 2.f, 3.f, 4.f};
-    __finl float_x4(float val)
-    {
-        v[0] = v[1] = v[2] = v[3] = val;
-    }
+    __finl float_x4(float val) { v[0] = v[1] = v[2] = v[3] = val; }
 
     /// enables assignments like: float_x4 a = {1.f, 2.f, 3.f, 4.f};
-    __finl float_x4(float v0, float v1, float v2, float v3)
-    {
+    __finl float_x4(float v0, float v1, float v2, float v3) {
         v[0] = v0;
         v[1] = v1;
         v[2] = v2;
         v[3] = v3;
     }
 
-    __finl float& operator[](int n)
-    {
-        return v[n];
-    }
+    __finl float &operator[](int n) { return v[n]; }
 
-    __finl const float& operator[](int n) const
-    {
-        return v[n];
-    }
+    __finl const float &operator[](int n) const { return v[n]; }
 };
 
-__finl float_x4 __vecc operator+(float_x4 a, float_x4 b)
-{
-    return { a[0] + b[0], a[1] + b[1], a[2] + b[2], a[3] + b[3] };
-}
+__finl float_x4 __vecc operator+(float_x4 a, float_x4 b) { return {a[0] + b[0], a[1] + b[1], a[2] + b[2], a[3] + b[3]}; }
 
-__finl float_x4 __vecc operator-(float_x4 a, float_x4 b)
-{
-    return { a[0] - b[0], a[1] - b[1], a[2] - b[2], a[3] - b[3] };
-}
+__finl float_x4 __vecc operator-(float_x4 a, float_x4 b) { return {a[0] - b[0], a[1] - b[1], a[2] - b[2], a[3] - b[3]}; }
 
-__finl float_x4 __vecc operator*(float_x4 a, float_x4 b)
-{
-    return { a[0] * b[0], a[1] * b[1], a[2] * b[2], a[3] * b[3] };
-}
-} // namespace muse::audio::fx
+__finl float_x4 __vecc operator*(float_x4 a, float_x4 b) { return {a[0] * b[0], a[1] * b[1], a[2] * b[2], a[3] * b[3]}; }
+} // namespace muse::audio::fx::simd
 
 #endif // MUSE_AUDIO_SIMDTYPES_SCALAR_H

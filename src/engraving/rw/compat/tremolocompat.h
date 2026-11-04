@@ -7,14 +7,14 @@ namespace mu::engraving {
 class Chord;
 class TremoloSingleChord;
 class TremoloTwoChord;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::compat {
 struct TremoloCompat {
     DummyParentOr<Chord> parent;
-    TremoloSingleChord* single = nullptr;
-    TremoloTwoChord* two = nullptr;
+    TremoloSingleChord *single = nullptr;
+    TremoloTwoChord *two = nullptr;
 };
-}
+} // namespace mu::engraving::compat
 
 #endif // MU_ENGRAVING_TREMOLOCOMPAT_H

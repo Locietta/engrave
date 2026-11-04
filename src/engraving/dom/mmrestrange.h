@@ -25,14 +25,9 @@
 #include "property.h"
 
 namespace mu::engraving {
-enum class MMRestRangeBracketType : unsigned char {
-    BRACKETS,
-    PARENTHESES,
-    NONE
-};
+enum class MMRestRangeBracketType : unsigned char { BRACKETS, PARENTHESES, NONE };
 
-class MMRestRange : public MeasureNumberBase
-{
+class MMRestRange : public MeasureNumberBase {
     OBJECT_ALLOCATOR(engraving, MMRestRange)
     DECLARE_CLASSOF(ElementType::MMREST_RANGE)
 
@@ -41,13 +36,13 @@ class MMRestRange : public MeasureNumberBase
 
 public:
     MMRestRange(DummyParentOr<Measure> parent);
-    MMRestRange(const MMRestRange& other);
+    MMRestRange(const MMRestRange &other);
 
-    MMRestRange* clone() const override { return new MMRestRange(*this); }
+    MMRestRange *clone() const override { return new MMRestRange(*this); }
 
     PropertyValue getProperty(Pid id) const override;
-    bool setProperty(Pid id, const PropertyValue& val) override;
+    bool setProperty(Pid id, const PropertyValue &val) override;
 
-    void setXmlText(const String&) override;
+    void setXmlText(const String &) override;
 };
-}
+} // namespace mu::engraving

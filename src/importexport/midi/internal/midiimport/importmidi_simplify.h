@@ -26,15 +26,15 @@
 
 namespace mu::engraving {
 class TimeSigMap;
-}
+} // namespace mu::engraving
 
 namespace mu::iex::midi {
 class MTrack;
 
 namespace Simplify {
-void simplifyDurationsForDrums(std::multimap<int, MTrack>& tracks, const engraving::TimeSigMap* sigmap);
-void simplifyDurationsNotDrums(std::multimap<int, MTrack>& tracks, const engraving::TimeSigMap* sigmap);
-} // Simplify
-} // mu::iex::midi
+void simplifyDurationsForDrums(std::multimap<int, MTrack> &tracks, const engraving::TimeSigMap *sigmap);
+void simplifyDurationsNotDrums(std::multimap<int, MTrack> &tracks, const engraving::TimeSigMap *sigmap);
+} // namespace Simplify
+} // namespace mu::iex::midi
 
 #endif // IMPORTMIDI_SIMPLIFY_H

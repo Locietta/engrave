@@ -26,29 +26,28 @@
 namespace mu::engraving {
 class Measure;
 class Segment;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class MMRestLayout
-{
+class MMRestLayout {
 public:
 
-    static void createMultiMeasureRestsIfNeed(Measure* firstMeasure, LayoutContext& ctx);
-    static void layoutMMRestRange(Measure* m, LayoutContext& ctx);
+    static void createMultiMeasureRestsIfNeed(Measure *firstMeasure, LayoutContext &ctx);
+    static void layoutMMRestRange(Measure *m, LayoutContext &ctx);
 
 private:
-    static void createMMRest(LayoutContext& ctx, Measure* firstMeasure, Measure* lastMeasure, const Fraction& len);
+    static void createMMRest(LayoutContext &ctx, Measure *firstMeasure, Measure *lastMeasure, const Fraction &len);
 
-    static void reuseExistingMMRest(LayoutContext& ctx, Measure* mmrMeasure, Measure* lastMeasure, Fraction len);
-    static void removeMMRestElements(Measure* mmRestMeasure, LayoutContext& ctx);
-    static void changeMeasureElParents(Measure* firstMeasure, Measure* lastMeasure, Measure* mmrMeasure, LayoutContext& ctx);
-    static void restoreMeasureElParents(Measure* firstMeasure, Measure* lastMeasure, Measure* mmrMeasure, LayoutContext& ctx);
-    static void changeAnnotationsParent(Segment* oldParent, Segment* newParent, const LayoutContext& ctx, bool checkVisibility);
-    static Segment* changeElementsParent(Segment* oldSeg, Measure* newMeasure, const Fraction& newSegTick, LayoutContext& ctx,
+    static void reuseExistingMMRest(LayoutContext &ctx, Measure *mmrMeasure, Measure *lastMeasure, Fraction len);
+    static void removeMMRestElements(Measure *mmRestMeasure, LayoutContext &ctx);
+    static void changeMeasureElParents(Measure *firstMeasure, Measure *lastMeasure, Measure *mmrMeasure, LayoutContext &ctx);
+    static void restoreMeasureElParents(Measure *firstMeasure, Measure *lastMeasure, Measure *mmrMeasure, LayoutContext &ctx);
+    static void changeAnnotationsParent(Segment *oldParent, Segment *newParent, const LayoutContext &ctx, bool checkVisibility);
+    static Segment *changeElementsParent(Segment *oldSeg, Measure *newMeasure, const Fraction &newSegTick, LayoutContext &ctx,
                                          bool checkVisibility);
 
-    static bool validMMRestMeasure(const LayoutContext& ctx, const Measure* m);
-    static bool breakMMRForElement(Measure* measure, Measure* prevMeasure, const LayoutContext& ctx);
-    static bool breakMultiMeasureRest(const LayoutContext& ctx, Measure* m);
+    static bool validMMRestMeasure(const LayoutContext &ctx, const Measure *m);
+    static bool breakMMRForElement(Measure *measure, Measure *prevMeasure, const LayoutContext &ctx);
+    static bool breakMultiMeasureRest(const LayoutContext &ctx, Measure *m);
 };
-}
+} // namespace mu::engraving::rendering::score

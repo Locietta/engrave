@@ -36,4 +36,4 @@ enum class SmuflAnchorId : unsigned char {
 };
 
 #include "symid_p.h"
-}
+} // namespace mu::engraving

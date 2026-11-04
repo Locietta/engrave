@@ -24,48 +24,25 @@
 using namespace muse;
 using namespace muse::io;
 
-Dir::Dir(const path_t& path)
-    : m_path(path)
-{
-}
+Dir::Dir(const path_t &path) : m_path(path) {}
 
-path_t Dir::path() const
-{
-    return m_path;
-}
+path_t Dir::path() const { return m_path; }
 
-path_t Dir::absolutePath() const
-{
-    return fileSystem()->absoluteFilePath(m_path);
-}
+path_t Dir::absolutePath() const { return fileSystem()->absoluteFilePath(m_path); }
 
-bool Dir::exists() const
-{
-    return fileSystem()->exists(m_path);
-}
+bool Dir::exists() const { return fileSystem()->exists(m_path); }
 
-Ret Dir::removeRecursively()
-{
-    return fileSystem()->remove(m_path);
-}
+Ret Dir::removeRecursively() { return fileSystem()->remove(m_path); }
 
-Ret Dir::mkpath()
-{
-    return mkpath(m_path);
-}
+Ret Dir::mkpath() { return mkpath(m_path); }
 
-Ret Dir::mkpath(const path_t& path)
-{
-    return fileSystem()->makePath(path);
-}
+Ret Dir::mkpath(const path_t &path) { return fileSystem()->makePath(path); }
 
-RetVal<io::paths_t> Dir::scanFiles(const io::path_t& rootDir, const std::vector<std::string>& filters, ScanMode mode)
-{
+RetVal<io::paths_t> Dir::scanFiles(const io::path_t &rootDir, const std::vector<std::string> &filters, ScanMode mode) {
     return fileSystem()->scanFiles(rootDir, filters, mode);
 }
 
-path_t Dir::fromNativeSeparators(const path_t& pathName)
-{
+path_t Dir::fromNativeSeparators(const path_t &pathName) {
 #if defined(_WIN32)
     String path = pathName.toString();
     size_t i = path.indexOf(u'\\');
@@ -91,12 +68,6 @@ path_t Dir::fromNativeSeparators(const path_t& pathName)
     return pathName;
 }
 
-path_t Dir::cleanPath(const path_t& path)
-{
-    return fileSystem()->cleanPath(path);
-}
+path_t Dir::cleanPath(const path_t &path) { return fileSystem()->cleanPath(path); }
 
-path_t Dir::tempPath()
-{
-    return fileSystem()->temporaryDirectoryPath();
-}
+path_t Dir::tempPath() { return fileSystem()->temporaryDirectoryPath(); }

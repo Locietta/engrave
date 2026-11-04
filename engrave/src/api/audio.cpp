@@ -45,43 +45,36 @@ using mu::engraving::MasterScore;
 
 constexpr std::size_t audio_chunk_bytes = 1 << 20;
 
-std::unexpected<Error> fail(ErrorCode code, std::string message) {
-    return std::unexpected(Error{code, std::move(message)});
-}
+std::unexpected<Error> fail(ErrorCode code, std::string message) { return std::unexpected(Error{code, std::move(message)}); }
 
 music::EngineAudioFormat engine_format(AudioFormat format) {
     switch (format) {
-    case AudioFormat::Wav: return music::EngineAudioFormat::Wav;
-    case AudioFormat::Flac: return music::EngineAudioFormat::Flac;
-    case AudioFormat::Opus: return music::EngineAudioFormat::Ogg;
-    case AudioFormat::Mp3: return music::EngineAudioFormat::Mp3;
-    case AudioFormat::Aac: return music::EngineAudioFormat::Aac;
+        case AudioFormat::Wav: return music::EngineAudioFormat::Wav;
+        case AudioFormat::Flac: return music::EngineAudioFormat::Flac;
+        case AudioFormat::Opus: return music::EngineAudioFormat::Ogg;
+        case AudioFormat::Mp3: return music::EngineAudioFormat::Mp3;
+        case AudioFormat::Aac: return music::EngineAudioFormat::Aac;
     }
     return music::EngineAudioFormat::Wav;
 }
 
-const char* file_extension(AudioFormat format) {
+const char *file_extension(AudioFormat format) {
     switch (format) {
-    case AudioFormat::Wav: return ".wav";
-    case AudioFormat::Flac: return ".flac";
-    case AudioFormat::Opus: return ".ogg";
-    case AudioFormat::Mp3: return ".mp3";
-    case AudioFormat::Aac: return ".aac";
+        case AudioFormat::Wav: return ".wav";
+        case AudioFormat::Flac: return ".flac";
+        case AudioFormat::Opus: return ".ogg";
+        case AudioFormat::Mp3: return ".mp3";
+        case AudioFormat::Aac: return ".aac";
     }
     return ".audio";
 }
 
-bool is_lossy(AudioFormat format) {
-    return format == AudioFormat::Opus || format == AudioFormat::Mp3 || format == AudioFormat::Aac;
-}
+bool is_lossy(AudioFormat format) { return format == AudioFormat::Opus || format == AudioFormat::Mp3 || format == AudioFormat::Aac; }
 
-AudioMix to_mix(const music::AudioOutputParams& output) {
-    return { output.volume_db, output.balance, output.muted, output.solo };
-}
+AudioMix to_mix(const music::AudioOutputParams &output) { return {output.volume_db, output.balance, output.muted, output.solo}; }
 
 // A mix value the engine accepts; the ranges are the ones the A2 host enforced.
-std::optional<Error> mix_error(std::optional<double> volume_db, std::optional<double> balance,
-                               std::string_view label) {
+std::optional<Error> mix_error(std::optional<double> volume_db, std::optional<double> balance, std::string_view label) {
     if (volume_db && (!std::isfinite(*volume_db) || *volume_db < -120.0 || *volume_db > 24.0))
         return Error{ErrorCode::InvalidArgument, std::format("{} volume_db must be finite and in [-120, 24]", label)};
     if (balance && (!std::isfinite(*balance) || *balance < -1.0 || *balance > 1.0))
@@ -91,24 +84,25 @@ std::optional<Error> mix_error(std::optional<double> volume_db, std::optional<do
 
 // The index of the SoundFont a track plays: the default (the first) unless the
 // track names one by index or by name.
-Result<int> soundfont_index(const SoundFontSelection& selection, const std::vector<std::filesystem::path>& fonts) {
+Result<int> soundfont_index(const SoundFontSelection &selection, const std::vector<std::filesystem::path> &fonts) {
     if (std::holds_alternative<std::monostate>(selection)) return 0;
-    if (const auto* index = std::get_if<std::int32_t>(&selection)) {
+    if (const auto *index = std::get_if<std::int32_t>(&selection)) {
         if (*index < 0 || static_cast<std::size_t>(*index) >= fonts.size())
             return fail(ErrorCode::InvalidArgument, std::format("no SoundFont {} of {}", *index, fonts.size()));
         return *index;
     }
-    const std::string& name = std::get<std::string>(selection);
+    const std::string &name = std::get<std::string>(selection);
     for (std::size_t index = 0; index < fonts.size(); ++index) {
         if (utf8(fonts[index].stem()) == name || utf8(fonts[index]) == name) return static_cast<int>(index);
     }
     std::string available;
-    for (const auto& font : fonts) available += (available.empty() ? "" : ", ") + utf8(font.stem());
+    for (const auto &font : fonts) available += (available.empty() ? "" : ", ") + utf8(font.stem());
     return fail(ErrorCode::NotFound, std::format("no SoundFont named '{}' (available: {})", name, available));
 }
 
 struct TempFile {
     std::filesystem::path path;
+
     ~TempFile() {
         std::error_code ignored;
         std::filesystem::remove(path, ignored);
@@ -122,45 +116,44 @@ struct MixContext {
     music::AudioMix defaults;
 };
 
-Result<MixContext> resolve_mix(const music::ScoreAudioMixDefaults& audio_defaults, int excerpt_id,
-                               mu::engraving::Score& selected, const std::string& excerpt_name) {
+Result<MixContext> resolve_mix(const music::ScoreAudioMixDefaults &audio_defaults, int excerpt_id, mu::engraving::Score &selected,
+                               const std::string &excerpt_name) {
     MixContext context;
     try {
         context.tracks = music::score_audio_track_info(&selected);
-    } catch (const std::invalid_argument& error) {
+    } catch (const std::invalid_argument &error) {
         return fail(ErrorCode::InvalidArgument, error.what());
     }
     context.defaults = music::score_audio_default_mix(audio_defaults, context.tracks, excerpt_id, excerpt_name);
     return context;
 }
 
-std::string excerpt_name_of(const music::ScoreProject& project, int excerpt_id) {
+std::string excerpt_name_of(const music::ScoreProject &project, int excerpt_id) {
     if (excerpt_id < 0) return {};
-    const auto& excerpts = project->masterScore()->excerpts();
-    if (static_cast<std::size_t>(excerpt_id) < excerpts.size() && excerpts[excerpt_id])
-        return excerpts[excerpt_id]->name().toStdString();
+    const auto &excerpts = project->masterScore()->excerpts();
+    if (static_cast<std::size_t>(excerpt_id) < excerpts.size() && excerpts[excerpt_id]) return excerpts[excerpt_id]->name().toStdString();
     return {};
 }
 
 } // namespace
 
-Result<AudioTracks> Document::audio_tracks(const ScoreSel& selection) {
+Result<AudioTracks> Document::audio_tracks(const ScoreSel &selection) {
     impl_->engine->check_thread();
     if (impl_->poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
-    MasterScore& master = *impl_->project->masterScore();
+    MasterScore &master = *impl_->project->masterScore();
     const Result<int> excerpt_id = excerpt_id_of(master, selection);
     if (!excerpt_id) return std::unexpected(excerpt_id.error());
-    const Result<mu::engraving::Score*> selected = select_score(master, selection);
+    const Result<mu::engraving::Score *> selected = select_score(master, selection);
     if (!selected) return std::unexpected(selected.error());
-    const Result<MixContext> context = resolve_mix(impl_->audio_defaults, *excerpt_id, **selected,
-                                                   excerpt_name_of(impl_->project, *excerpt_id));
+    const Result<MixContext> context =
+        resolve_mix(impl_->audio_defaults, *excerpt_id, **selected, excerpt_name_of(impl_->project, *excerpt_id));
     if (!context) return std::unexpected(context.error());
 
     AudioTracks result;
     result.master = to_mix(context->defaults.master);
     result.tracks.reserve(context->tracks.size());
     for (std::size_t index = 0; index < context->tracks.size(); ++index) {
-        const music::ScoreAudioTrackInfo& track = context->tracks[index];
+        const music::ScoreAudioTrackInfo &track = context->tracks[index];
         AudioTrackInfo info;
         info.track = static_cast<std::int32_t>(index);
         info.part_id = track.part_id;
@@ -174,60 +167,53 @@ Result<AudioTracks> Document::audio_tracks(const ScoreSel& selection) {
     return result;
 }
 
-Result<AudioRenderResult> Document::render_audio(const AudioOptions& options, const ByteSink& sink) {
+Result<AudioRenderResult> Document::render_audio(const AudioOptions &options, const ByteSink &sink) {
     impl_->engine->check_thread();
     if (impl_->poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
     if (options.cancelled && options.cancelled()) return fail(ErrorCode::Cancelled, "audio render cancelled");
-    EngineState& engine = *impl_->engine;
-    MasterScore& master = *impl_->project->masterScore();
+    EngineState &engine = *impl_->engine;
+    MasterScore &master = *impl_->project->masterScore();
     const Result<int> excerpt_id = excerpt_id_of(master, options.score);
     if (!excerpt_id) return std::unexpected(excerpt_id.error());
-    const Result<mu::engraving::Score*> selected = select_score(master, options.score);
+    const Result<mu::engraving::Score *> selected = select_score(master, options.score);
     if (!selected) return std::unexpected(selected.error());
 
-    if (engine.soundfonts.empty())
-        return fail(ErrorCode::Unsupported, "no SoundFont is selected (an empty list disables audio)");
+    if (engine.soundfonts.empty()) return fail(ErrorCode::Unsupported, "no SoundFont is selected (an empty list disables audio)");
     if (options.sample_rate != 0 && options.sample_rate != engine.audio_sample_rate) {
         return fail(ErrorCode::Unsupported,
                     std::format("the Engine renders at {} Hz, not {}", engine.audio_sample_rate, options.sample_rate));
     }
     if (options.bit_depth != 0) {
-        if (is_lossy(options.format))
-            return fail(ErrorCode::InvalidArgument, "bit_depth applies to WAV and FLAC, not to a lossy format");
-        const bool allowed = options.format == AudioFormat::Wav
-                             ? options.bit_depth == 16 || options.bit_depth == 24 || options.bit_depth == 32
-                             : options.bit_depth == 16 || options.bit_depth == 24;
+        if (is_lossy(options.format)) return fail(ErrorCode::InvalidArgument, "bit_depth applies to WAV and FLAC, not to a lossy format");
+        const bool allowed = options.format == AudioFormat::Wav ?
+                                 options.bit_depth == 16 || options.bit_depth == 24 || options.bit_depth == 32 :
+                                 options.bit_depth == 16 || options.bit_depth == 24;
         if (!allowed)
-            return fail(ErrorCode::InvalidArgument, std::format("{} does not take a bit depth of {}", to_string(options.format),
-                                                                options.bit_depth));
+            return fail(ErrorCode::InvalidArgument,
+                        std::format("{} does not take a bit depth of {}", to_string(options.format), options.bit_depth));
     }
     if (options.bitrate_kbps != 0) {
         if (!is_lossy(options.format))
             return fail(ErrorCode::InvalidArgument, "bitrate_kbps applies to Opus, MP3 and AAC, not to a lossless format");
         if (options.bitrate_kbps < 32 || options.bitrate_kbps > 512)
-            return fail(ErrorCode::InvalidArgument,
-                        std::format("bitrate_kbps must be between 32 and 512, not {}", options.bitrate_kbps));
+            return fail(ErrorCode::InvalidArgument, std::format("bitrate_kbps must be between 32 and 512, not {}", options.bitrate_kbps));
     }
     if (!std::isfinite(options.reverb_send) || options.reverb_send < 0.0 || options.reverb_send > 1.0)
         return fail(ErrorCode::InvalidArgument, "reverb_send must be in [0, 1]");
-    if (const auto error = mix_error(options.master_volume_db, options.master_balance, "master"))
-        return std::unexpected(*error);
+    if (const auto error = mix_error(options.master_volume_db, options.master_balance, "master")) return std::unexpected(*error);
 
-    const Result<MixContext> context = resolve_mix(impl_->audio_defaults, *excerpt_id, **selected,
-                                                   excerpt_name_of(impl_->project, *excerpt_id));
+    const Result<MixContext> context =
+        resolve_mix(impl_->audio_defaults, *excerpt_id, **selected, excerpt_name_of(impl_->project, *excerpt_id));
     if (!context) return std::unexpected(context.error());
 
-    std::vector<const AudioTrackOptions*> by_track(context->tracks.size(), nullptr);
-    for (const AudioTrackOptions& track : options.tracks) {
+    std::vector<const AudioTrackOptions *> by_track(context->tracks.size(), nullptr);
+    for (const AudioTrackOptions &track : options.tracks) {
         if (track.track < 0 || static_cast<std::size_t>(track.track) >= context->tracks.size())
-            return fail(ErrorCode::InvalidArgument,
-                        std::format("no track {} of {}", track.track, context->tracks.size()));
+            return fail(ErrorCode::InvalidArgument, std::format("no track {} of {}", track.track, context->tracks.size()));
         if (by_track[static_cast<std::size_t>(track.track)])
             return fail(ErrorCode::InvalidArgument, std::format("track {} is named twice", track.track));
-        if (!track.preset.empty())
-            return fail(ErrorCode::Unsupported, "choosing a preset is not supported");
-        if (const auto error = mix_error(track.volume_db, track.balance,
-                                         std::format("track {}", track.track))) {
+        if (!track.preset.empty()) return fail(ErrorCode::Unsupported, "choosing a preset is not supported");
+        if (const auto error = mix_error(track.volume_db, track.balance, std::format("track {}", track.track))) {
             return std::unexpected(*error);
         }
         by_track[static_cast<std::size_t>(track.track)] = &track;
@@ -248,13 +234,13 @@ Result<AudioRenderResult> Document::render_audio(const AudioOptions& options, co
     request.reverb_send = options.reverb_send;
     request.tracks.resize(context->tracks.size());
     for (std::size_t index = 0; index < context->tracks.size(); ++index) {
-        const music::AudioOutputParams& defaults = context->defaults.tracks[index].output;
-        music::EngineAudioTrackParams& track = request.tracks[index];
+        const music::AudioOutputParams &defaults = context->defaults.tracks[index].output;
+        music::EngineAudioTrackParams &track = request.tracks[index];
         track.volume_db = defaults.volume_db;
         track.balance = defaults.balance;
         track.muted = defaults.muted;
         track.solo = defaults.solo;
-        if (const AudioTrackOptions* override = by_track[index]) {
+        if (const AudioTrackOptions *override = by_track[index]) {
             track.volume_db = override->volume_db.value_or(track.volume_db);
             track.balance = override->balance.value_or(track.balance);
             track.muted = override->mute.value_or(track.muted);
@@ -269,7 +255,7 @@ Result<AudioRenderResult> Document::render_audio(const AudioOptions& options, co
     // Engine::create: a caller that only reads or draws pages pays nothing.
     music::EngineAudioSetup setup;
     setup.sample_rate = engine.audio_sample_rate;
-    for (const auto& soundfont : engine.soundfonts) setup.soundfonts.push_back(utf8(soundfont));
+    for (const auto &soundfont : engine.soundfonts) setup.soundfonts.push_back(utf8(soundfont));
     std::string error;
     // This is also a cheap no-op for an unchanged selection; a replacement is
     // refreshed here rather than by set_soundfonts().
@@ -284,20 +270,19 @@ Result<AudioRenderResult> Document::render_audio(const AudioOptions& options, co
 #else
     const int process = getpid();
 #endif
-    TempFile file{ engine.cache_dir
-                   / std::format("engrave-audio-{}-{}{}", process, ++engine.audio_render_index,
-                                 file_extension(options.format)) };
+    TempFile file{engine.cache_dir /
+                  std::format("engrave-audio-{}-{}{}", process, ++engine.audio_render_index, file_extension(options.format))};
     request.output_path = utf8(file.path);
 
     const music::AudioRenderResult rendered = music::export_score_audio(engine.context->audio(), &master, request);
     if (!rendered.ok) {
         switch (rendered.failure) {
-        case music::AudioRenderResult::Failure::Cancelled: return fail(ErrorCode::Cancelled, rendered.error);
-        case music::AudioRenderResult::Failure::ResourceLimit: return fail(ErrorCode::ResourceLimit, rendered.error);
-        case music::AudioRenderResult::Failure::InvalidScore: return fail(ErrorCode::InvalidArgument, rendered.error);
-        case music::AudioRenderResult::Failure::Io: return fail(ErrorCode::Io, rendered.error);
-        case music::AudioRenderResult::Failure::EngineFailure:
-        case music::AudioRenderResult::Failure::None: throw std::runtime_error(rendered.error);
+            case music::AudioRenderResult::Failure::Cancelled: return fail(ErrorCode::Cancelled, rendered.error);
+            case music::AudioRenderResult::Failure::ResourceLimit: return fail(ErrorCode::ResourceLimit, rendered.error);
+            case music::AudioRenderResult::Failure::InvalidScore: return fail(ErrorCode::InvalidArgument, rendered.error);
+            case music::AudioRenderResult::Failure::Io: return fail(ErrorCode::Io, rendered.error);
+            case music::AudioRenderResult::Failure::EngineFailure:
+            case music::AudioRenderResult::Failure::None: throw std::runtime_error(rendered.error);
         }
     }
 
@@ -309,14 +294,14 @@ Result<AudioRenderResult> Document::render_audio(const AudioOptions& options, co
     std::vector<std::byte> chunk(audio_chunk_bytes);
     while (in) {
         if (options.cancelled && options.cancelled()) return fail(ErrorCode::Cancelled, "audio render cancelled");
-        in.read(reinterpret_cast<char*>(chunk.data()), static_cast<std::streamsize>(chunk.size()));
+        in.read(reinterpret_cast<char *>(chunk.data()), static_cast<std::streamsize>(chunk.size()));
         const auto count = in.gcount();
         if (count <= 0) break;
         sink(std::span<const std::byte>(chunk.data(), static_cast<std::size_t>(count)));
         bytes += static_cast<std::uint64_t>(count);
     }
     if (in.bad()) return fail(ErrorCode::Io, "cannot read the rendered audio '" + utf8(file.path) + "'");
-    return AudioRenderResult{ bytes, rendered.frames, rendered.duration_secs };
+    return AudioRenderResult{bytes, rendered.frames, rendered.duration_secs};
 }
 
 } // namespace engrave

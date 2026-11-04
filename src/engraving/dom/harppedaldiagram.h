@@ -32,42 +32,39 @@ enum class PedalPosition : unsigned char {
     NATURAL,
     SHARP,
 
-    UNSET                   // Only used in setDiagramText to represent the beginning of a score
+    UNSET // Only used in setDiagramText to represent the beginning of a score
 };
 
 // Use for indexes of _pedalState
-enum HarpStringType : unsigned char {
-    D, C, B, E, F, G, A
-};
+enum HarpStringType : unsigned char { D, C, B, E, F, G, A };
 
 // Number of strings per octave on a harp
 static constexpr int HARP_STRING_NO = 7;
 
-class HarpPedalDiagram final : public TextBase
-{
+class HarpPedalDiagram final : public TextBase {
     OBJECT_ALLOCATOR(engraving, HarpPedalDiagram)
     DECLARE_CLASSOF(ElementType::HARP_DIAGRAM)
 
 public:
     HarpPedalDiagram(DummyParentOr<Segment> parent);
-    HarpPedalDiagram(const HarpPedalDiagram& h);
+    HarpPedalDiagram(const HarpPedalDiagram &h);
 
-    HarpPedalDiagram* clone() const override { return new HarpPedalDiagram(*this); }
+    HarpPedalDiagram *clone() const override { return new HarpPedalDiagram(*this); }
 
-    Segment* segment() const { return (Segment*)ownershipParent(); }
-    Measure* measure() const { return (Measure*)ownershipParent()->ownershipParent(); }
+    Segment *segment() const { return (Segment *) ownershipParent(); }
+
+    Measure *measure() const { return (Measure *) ownershipParent()->ownershipParent(); }
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue& v) override;
+    bool setProperty(Pid propertyId, const PropertyValue &v) override;
     PropertyValue propertyDefault(Pid id) const override;
 
-
-
-
     void setIsDiagram(bool diagram);
+
     bool isDiagram() const { return m_isDiagram; }
 
     std::array<PedalPosition, HARP_STRING_NO> getPedalState() const { return m_pedalState; }
+
     void setPedalState(std::array<PedalPosition, HARP_STRING_NO> state);
 
     void setPedal(HarpStringType harpString, PedalPosition pedal);
@@ -80,7 +77,8 @@ public:
     void undoChangePedalState(std::array<PedalPosition, HARP_STRING_NO> _pedalState);
 
     bool isTpcPlayable(int tpc);
-    const std::set<int>& playableTpcs() const { return m_playableTpcs; }
+
+    const std::set<int> &playableTpcs() const { return m_playableTpcs; }
 
     bool positionRelativeToNoteheadRest() const override { return true; }
 
@@ -92,4 +90,4 @@ private:
 
     bool m_isDiagram = true;
 };
-}
+} // namespace mu::engraving

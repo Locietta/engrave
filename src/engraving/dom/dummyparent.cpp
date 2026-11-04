@@ -26,18 +26,8 @@
 
 using namespace mu::engraving;
 
-DummyParent::DummyParent(Score* score)
-    : EngravingObject(ElementType::DUMMY, score)
-{
-}
+DummyParent::DummyParent(Score *score) : EngravingObject(ElementType::DUMMY, score) {}
 
-DummyParent::~DummyParent()
-{
-    delete m_root;
-}
+DummyParent::~DummyParent() { delete m_root; }
 
-void DummyParent::init()
-{
-    m_root = new RootItem(score(), RootItem::Kind::Dummy);
-
-}
+void DummyParent::init() { m_root = new RootItem(score(), RootItem::Kind::Dummy); }

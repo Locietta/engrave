@@ -32,34 +32,33 @@ namespace mu::engraving {
 class Note;
 class Chord;
 class Score;
-}
+} // namespace mu::engraving
 
 namespace mu::iex::guitarpro {
-class BendDataCollector
-{
+class BendDataCollector {
 public:
 
-    BendDataCollector(mu::engraving::Score* score);
-    void storeBendData(const mu::engraving::Note* note, const mu::engraving::PitchValues& pitchValues);
+    BendDataCollector(mu::engraving::Score *score);
+    void storeBendData(const mu::engraving::Note *note, const mu::engraving::PitchValues &pitchValues);
     BendDataContext collectBendDataContext();
 
 private:
-    mu::engraving::Score* m_score = nullptr;
+    mu::engraving::Score *m_score = nullptr;
     std::unordered_map<mu::engraving::track_idx_t,
-                       std::map<mu::engraving::Fraction,
-                                std::unordered_map<const mu::engraving::Note*, ImportedBendInfo> > > m_bendInfoForNote;
+                       std::map<mu::engraving::Fraction, std::unordered_map<const mu::engraving::Note *, ImportedBendInfo>>>
+        m_bendInfoForNote;
 
-    std::unordered_map<mu::engraving::track_idx_t,
-                       std::map<mu::engraving::Fraction, tied_chords_bend_data_chunk_t> > m_regroupedDataByTiedChords;
+    std::unordered_map<mu::engraving::track_idx_t, std::map<mu::engraving::Fraction, tied_chords_bend_data_chunk_t>>
+        m_regroupedDataByTiedChords;
 
     std::unique_ptr<BendDataCollectorSplitChord> m_bendDataCollectorSplitChord;
 
     // converts m_bendInfoForNote to m_regroupedData, leaves m_bendInfoForNote empty
     // m_bendInfoForNote is needed to store separate bend data for each note, while m_regroupedData stores in format, comfortoble for import
     void regroupBendDataByTiedChords();
-    void fillBendDataContext(BendDataContext& bendDataCtx);
+    void fillBendDataContext(BendDataContext &bendDataCtx);
 
     // if first chord in chunk has more segments than tied notes, move segments forward to other notes
-    void moveSegmentsToTiedNotes(tied_chords_bend_data_chunk_t& dataChunk, ImportedBendInfo& dataForFirstNote, size_t noteIdx);
+    void moveSegmentsToTiedNotes(tied_chords_bend_data_chunk_t &dataChunk, ImportedBendInfo &dataForFirstNote, size_t noteIdx);
 };
-} // mu::iex::guitarpro
+} // namespace mu::iex::guitarpro

@@ -29,10 +29,10 @@ namespace muse::audio {
 #define START_INPUT_LAG_TIMER TIMER_START("InputLag")
 
 #define STOP_INPUT_LAG_TIMER \
-    TIMER_PRINT("InputLag") \
+    TIMER_PRINT("InputLag")  \
     TIMER_STOP("InputLag")
 
 #define INPUT_LAG_TIMER_STARTED TIMER_STARTED("InputLag")
-}
+} // namespace muse::audio
 
 #endif // MUSE_AUDIO_INPUTLAG_H

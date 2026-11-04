@@ -13,8 +13,8 @@ namespace engrave {
 // or that holds Content/score.gpif (GP7); a MIDI header; an XML document whose
 // root is <museScore> (MSCX) or <score-partwise>/<score-timewise> (MusicXML);
 // the Guitar Pro and Power Tab magics.
-std::optional<Format> sniff_format(const std::string& data);
+std::optional<Format> sniff_format(const std::string &data);
 
-std::optional<Format> format_from_extension(const std::filesystem::path& name);
+std::optional<Format> format_from_extension(const std::filesystem::path &name);
 
 } // namespace engrave

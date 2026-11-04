@@ -40,18 +40,14 @@
 
 using namespace mu::engraving;
 
-Ornament::Ornament(DummyParentOr<ChordRest> parent)
-    : Articulation(parent, ElementType::ORNAMENT)
-{
+Ornament::Ornament(DummyParentOr<ChordRest> parent) : Articulation(parent, ElementType::ORNAMENT) {
     _intervalAbove = DEFAULT_ORNAMENT_INTERVAL;
     _intervalBelow = DEFAULT_ORNAMENT_INTERVAL;
     _showAccidental = OrnamentShowAccidental::DEFAULT;
     _startOnUpperNote = false;
 }
 
-Ornament::Ornament(const Ornament& o)
-    : Articulation(o)
-{
+Ornament::Ornament(const Ornament &o) : Articulation(o) {
     _intervalAbove = o._intervalAbove;
     _intervalBelow = o._intervalBelow;
     _showAccidental = o._showAccidental;
@@ -63,18 +59,17 @@ Ornament::Ornament(const Ornament& o)
     }
 
     for (size_t i = 0; i < m_accidentalsAboveAndBelow.size(); ++i) {
-        Accidental* oldAccidental = o.m_accidentalsAboveAndBelow[i];
+        Accidental *oldAccidental = o.m_accidentalsAboveAndBelow[i];
         if (!oldAccidental) {
             continue;
         }
-        Accidental* newAccidental = oldAccidental->clone();
+        Accidental *newAccidental = oldAccidental->clone();
         newAccidental->setOwnershipParent(this);
         m_accidentalsAboveAndBelow[i] = newAccidental;
     }
 }
 
-Ornament::~Ornament()
-{
+Ornament::~Ornament() {
     std::fill(std::begin(m_notesAboveAndBelow), std::end(m_notesAboveAndBelow), nullptr);
     std::fill(std::begin(m_accidentalsAboveAndBelow), std::end(m_accidentalsAboveAndBelow), nullptr);
 
@@ -85,10 +80,9 @@ Ornament::~Ornament()
     m_cueNoteChord = nullptr;
 }
 
-void Ornament::remove(EngravingItem* e)
-{
+void Ornament::remove(EngravingItem *e) {
     if (e->isAccidental()) {
-        for (Accidental*& acc : m_accidentalsAboveAndBelow) {
+        for (Accidental *&acc : m_accidentalsAboveAndBelow) {
             if (e == acc) {
                 acc = nullptr;
                 e->removed();
@@ -97,8 +91,7 @@ void Ornament::remove(EngravingItem* e)
     }
 }
 
-muse::TranslatableString Ornament::typeUserName() const
-{
+muse::TranslatableString Ornament::typeUserName() const {
     if (textType() != ArticulationTextType::NO_TEXT) {
         return TranslatableString("engraving", "Ornament text");
     }
@@ -106,9 +99,8 @@ muse::TranslatableString Ornament::typeUserName() const
     return TranslatableString("engraving", "Ornament");
 }
 
-void Ornament::setTrack(track_idx_t val)
-{
-    for (Note* note : m_notesAboveAndBelow) {
+void Ornament::setTrack(track_idx_t val) {
+    for (Note *note : m_notesAboveAndBelow) {
         if (note) {
             note->setTrack(val);
         }
@@ -119,10 +111,9 @@ void Ornament::setTrack(track_idx_t val)
     m_track = val;
 }
 
-void Ornament::scanElements(std::function<void(EngravingItem*)> func)
-{
+void Ornament::scanElements(std::function<void(EngravingItem *)> func) {
     func(this);
-    for (Accidental* accidental : m_accidentalsAboveAndBelow) {
+    for (Accidental *accidental : m_accidentalsAboveAndBelow) {
         if (accidental) {
             func(accidental);
         }
@@ -132,117 +123,71 @@ void Ornament::scanElements(std::function<void(EngravingItem*)> func)
     }
 }
 
-PropertyValue Ornament::getProperty(Pid propertyId) const
-{
+PropertyValue Ornament::getProperty(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::INTERVAL_ABOVE:
-        return _intervalAbove;
-    case Pid::INTERVAL_BELOW:
-        return _intervalBelow;
-    case Pid::ORNAMENT_SHOW_ACCIDENTAL:
-        return _showAccidental;
-    case Pid::ORNAMENT_SHOW_CUE_NOTE:
-        return m_showCueNote;
-    case Pid::START_ON_UPPER_NOTE:
-        return _startOnUpperNote;
-    default:
-        return Articulation::getProperty(propertyId);
+        case Pid::INTERVAL_ABOVE: return _intervalAbove;
+        case Pid::INTERVAL_BELOW: return _intervalBelow;
+        case Pid::ORNAMENT_SHOW_ACCIDENTAL: return _showAccidental;
+        case Pid::ORNAMENT_SHOW_CUE_NOTE: return m_showCueNote;
+        case Pid::START_ON_UPPER_NOTE: return _startOnUpperNote;
+        default: return Articulation::getProperty(propertyId);
     }
 }
 
-Sid Ornament::getPropertyStyle(Pid propertyId) const
-{
+Sid Ornament::getPropertyStyle(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::ARTICULATION_ANCHOR:
-        return Sid::articulationAnchorDefault;
-    default:
-        return Articulation::getPropertyStyle(propertyId);
+        case Pid::ARTICULATION_ANCHOR: return Sid::articulationAnchorDefault;
+        default: return Articulation::getPropertyStyle(propertyId);
     }
 }
 
-PropertyValue Ornament::propertyDefault(Pid id) const
-{
+PropertyValue Ornament::propertyDefault(Pid id) const {
     switch (id) {
-    case Pid::INTERVAL_ABOVE:
-    case Pid::INTERVAL_BELOW:
-        return DEFAULT_ORNAMENT_INTERVAL;
-    case Pid::ORNAMENT_SHOW_ACCIDENTAL:
-        return OrnamentShowAccidental::DEFAULT;
-    case Pid::ORNAMENT_SHOW_CUE_NOTE:
-        return AutoOnOff::AUTO;
-    case Pid::START_ON_UPPER_NOTE:
-        return false;
-    case Pid::ARTICULATION_ANCHOR:
-        return static_cast<int>(ArticulationAnchor::AUTO);
-    default:
-        return Articulation::propertyDefault(id);
+        case Pid::INTERVAL_ABOVE:
+        case Pid::INTERVAL_BELOW: return DEFAULT_ORNAMENT_INTERVAL;
+        case Pid::ORNAMENT_SHOW_ACCIDENTAL: return OrnamentShowAccidental::DEFAULT;
+        case Pid::ORNAMENT_SHOW_CUE_NOTE: return AutoOnOff::AUTO;
+        case Pid::START_ON_UPPER_NOTE: return false;
+        case Pid::ARTICULATION_ANCHOR: return static_cast<int>(ArticulationAnchor::AUTO);
+        default: return Articulation::propertyDefault(id);
     }
 }
 
-bool Ornament::setProperty(Pid propertyId, const PropertyValue& v)
-{
+bool Ornament::setProperty(Pid propertyId, const PropertyValue &v) {
     switch (propertyId) {
-    case Pid::INTERVAL_ABOVE:
-        setIntervalAbove(v.value<OrnamentInterval>());
-        break;
-    case Pid::INTERVAL_BELOW:
-        setIntervalBelow(v.value<OrnamentInterval>());
-        break;
-    case Pid::ORNAMENT_SHOW_ACCIDENTAL:
-        setShowAccidental(v.value<OrnamentShowAccidental>());
-        break;
-    case Pid::ORNAMENT_SHOW_CUE_NOTE:
-        setShowCueNote(v.value<AutoOnOff>());
-        break;
-    case Pid::START_ON_UPPER_NOTE:
-        setStartOnUpperNote(v.toBool());
-        break;
-    default:
-        return Articulation::setProperty(propertyId, v);
+        case Pid::INTERVAL_ABOVE: setIntervalAbove(v.value<OrnamentInterval>()); break;
+        case Pid::INTERVAL_BELOW: setIntervalBelow(v.value<OrnamentInterval>()); break;
+        case Pid::ORNAMENT_SHOW_ACCIDENTAL: setShowAccidental(v.value<OrnamentShowAccidental>()); break;
+        case Pid::ORNAMENT_SHOW_CUE_NOTE: setShowCueNote(v.value<AutoOnOff>()); break;
+        case Pid::START_ON_UPPER_NOTE: setStartOnUpperNote(v.toBool()); break;
+        default: return Articulation::setProperty(propertyId, v);
     }
     triggerLayout();
     return true;
 }
 
-bool Ornament::hasIntervalAbove() const
-{
+bool Ornament::hasIntervalAbove() const {
     SymId id = symId();
-    return id == SymId::ornamentTurnInverted
-           || id == SymId::ornamentTrill
-           || id == SymId::ornamentTurnSlash
-           || id == SymId::ornamentTurn
-           || id == SymId::ornamentShortTrill
-           || id == SymId::ornamentTremblement
-           || id == SymId::ornamentPrallMordent
-           || id == SymId::ornamentUpPrall
-           || id == SymId::ornamentPrecompMordentUpperPrefix
-           || id == SymId::ornamentUpMordent
-           || id == SymId::ornamentPrallUp;
+    return id == SymId::ornamentTurnInverted || id == SymId::ornamentTrill || id == SymId::ornamentTurnSlash || id == SymId::ornamentTurn ||
+           id == SymId::ornamentShortTrill || id == SymId::ornamentTremblement || id == SymId::ornamentPrallMordent ||
+           id == SymId::ornamentUpPrall || id == SymId::ornamentPrecompMordentUpperPrefix || id == SymId::ornamentUpMordent ||
+           id == SymId::ornamentPrallUp;
 }
 
-bool Ornament::hasIntervalBelow() const
-{
+bool Ornament::hasIntervalBelow() const {
     SymId id = symId();
-    return id == SymId::ornamentTurnInverted
-           || id == SymId::ornamentMordent
-           || id == SymId::ornamentTurnSlash
-           || id == SymId::ornamentTurn
-           || id == SymId::ornamentTremblement
-           || id == SymId::ornamentPrallMordent
-           || id == SymId::ornamentDownMordent
-           || id == SymId::ornamentPrallDown
-           || id == SymId::ornamentPrallMordent
-           || id == SymId::ornamentPrallMordent;
+    return id == SymId::ornamentTurnInverted || id == SymId::ornamentMordent || id == SymId::ornamentTurnSlash ||
+           id == SymId::ornamentTurn || id == SymId::ornamentTremblement || id == SymId::ornamentPrallMordent ||
+           id == SymId::ornamentDownMordent || id == SymId::ornamentPrallDown || id == SymId::ornamentPrallMordent ||
+           id == SymId::ornamentPrallMordent;
 }
 
-bool Ornament::hasFullIntervalChoice() const
-{
+bool Ornament::hasFullIntervalChoice() const {
     SymId id = symId();
     return id == SymId::ornamentTrill;
 }
 
-bool Ornament::showCueNote()
-{
+bool Ornament::showCueNote() {
     if (m_showCueNote == AutoOnOff::AUTO) {
         return (hasFullIntervalChoice() && style().styleB(Sid::trillAlwaysShowCueNote)) || _intervalAbove.step != IntervalStep::SECOND;
     }
@@ -250,12 +195,11 @@ bool Ornament::showCueNote()
     return m_showCueNote == AutoOnOff::ON;
 }
 
-void Ornament::computeNotesAboveAndBelow(AccidentalState* accState)
-{
-    ChordRest* parentChordRest = chordRest();
-    Chord* parentChord = parentChordRest && parentChordRest->isChord() ? toChord(parentChordRest) : nullptr;
+void Ornament::computeNotesAboveAndBelow(AccidentalState *accState) {
+    ChordRest *parentChordRest = chordRest();
+    Chord *parentChord = parentChordRest && parentChordRest->isChord() ? toChord(parentChordRest) : nullptr;
 
-    const Note* mainNote = parentChord ? parentChord->upNote() : nullptr;
+    const Note *mainNote = parentChord ? parentChord->upNote() : nullptr;
 
     if (!mainNote) {
         return;
@@ -274,16 +218,16 @@ void Ornament::computeNotesAboveAndBelow(AccidentalState* accState)
             continue;
         }
 
-        Note*& note = m_notesAboveAndBelow.at(i);
+        Note *&note = m_notesAboveAndBelow.at(i);
         if (!note && above && m_cueNoteChord) {
             note = m_cueNoteChord->upNote();
         }
 
         if (!note) {
             note = mainNote->clone();
-            Tie* tie = note->tieFor();
+            Tie *tie = note->tieFor();
             if (tie) {
-                score()->undoRemoveElement((EngravingItem*)tie);
+                score()->undoRemoveElement((EngravingItem *) tie);
             }
         } else {
             note->setTpc1(mainNote->tpc1());
@@ -335,8 +279,7 @@ void Ornament::computeNotesAboveAndBelow(AccidentalState* accState)
     updateCueNote();
 }
 
-void Ornament::manageAccidentalVisibilityRules(Note* note)
-{
+void Ornament::manageAccidentalVisibilityRules(Note *note) {
     if (_showAccidental == OrnamentShowAccidental::DEFAULT) {
         return;
     }
@@ -368,12 +311,11 @@ void Ornament::manageAccidentalVisibilityRules(Note* note)
     }
 }
 
-void Ornament::updateAccidentalsAboveAndBelow()
-{
+void Ornament::updateAccidentalsAboveAndBelow() {
     for (size_t i = 0; i < m_notesAboveAndBelow.size(); ++i) {
-        Note* note = m_notesAboveAndBelow[i];
-        Accidental* accidental = note ? note->accidental() : nullptr;
-        Accidental*& curAccidental = m_accidentalsAboveAndBelow[i];
+        Note *note = m_notesAboveAndBelow[i];
+        Accidental *accidental = note ? note->accidental() : nullptr;
+        Accidental *&curAccidental = m_accidentalsAboveAndBelow[i];
         if (showCueNote() || !accidental) {
             if (curAccidental) {
                 delete curAccidental;
@@ -394,10 +336,9 @@ void Ornament::updateAccidentalsAboveAndBelow()
     }
 }
 
-void Ornament::updateCueNote()
-{
-    ChordRest* parentChordRest = chordRest();
-    Chord* parentChord = parentChordRest && parentChordRest->isChord() ? toChord(parentChordRest) : nullptr;
+void Ornament::updateCueNote() {
+    ChordRest *parentChordRest = chordRest();
+    Chord *parentChord = parentChordRest && parentChordRest->isChord() ? toChord(parentChordRest) : nullptr;
 
     if (!showCueNote()) {
         if (noteAbove() && ownershipParent()) {
@@ -415,7 +356,7 @@ void Ornament::updateCueNote()
         return;
     }
 
-    Note* cueNote = noteAbove();
+    Note *cueNote = noteAbove();
     // If needed, create cue note
     if (!m_cueNoteChord) {
         m_cueNoteChord = Factory::createChord(parentChord->segment());
@@ -424,8 +365,8 @@ void Ornament::updateCueNote()
         m_cueNoteChord->add(cueNote);
         cueNote->setOwnershipParent(m_cueNoteChord);
 
-        Transaction& tx = score()->transactionManager()->currentOrDummyTransaction();
-        EditParentheses::addParenthesesToNotes(tx, { cueNote });
+        Transaction &tx = score()->transactionManager()->currentOrDummyTransaction();
+        EditParentheses::addParenthesesToNotes(tx, {cueNote});
     }
     m_cueNoteChord->setTrack(track());
     m_cueNoteChord->setOwnershipParent(parentChord->segment());
@@ -434,24 +375,17 @@ void Ornament::updateCueNote()
     cueNote->setIsTrillCueNote(true);
 }
 
-SymId Ornament::fromTrillType(TrillType trillType)
-{
+SymId Ornament::fromTrillType(TrillType trillType) {
     switch (trillType) {
-    case TrillType::TRILL_LINE:
-        return SymId::ornamentTrill;
-    case TrillType::UPPRALL_LINE:
-        return SymId::ornamentUpPrall;
-    case TrillType::DOWNPRALL_LINE:
-        return SymId::ornamentDownMordent;
-    case TrillType::PRALLPRALL_LINE:
-        return SymId::ornamentTrill;
-    default:
-        return SymId::noSym;
+        case TrillType::TRILL_LINE: return SymId::ornamentTrill;
+        case TrillType::UPPRALL_LINE: return SymId::ornamentUpPrall;
+        case TrillType::DOWNPRALL_LINE: return SymId::ornamentDownMordent;
+        case TrillType::PRALLPRALL_LINE: return SymId::ornamentTrill;
+        default: return SymId::noSym;
     }
 }
 
-void Ornament::mapOldTrillAccidental(Note* note, const Note* mainNote)
-{
+void Ornament::mapOldTrillAccidental(Note *note, const Note *mainNote) {
     // Compatibility with trills pre-4.1
     AccidentalVal oldCompatValue = Accidental::subtype2value(m_trillOldCompatAccidental->accidentalType());
     AccidentalVal noteAccidentalVal = tpc2alter(note->tpc());
@@ -459,19 +393,10 @@ void Ornament::mapOldTrillAccidental(Note* note, const Note* mainNote)
     note->transpose(Interval(0, accidentalDiff), true);
     int semitones = note->pitch() - mainNote->pitch();
     switch (semitones) {
-    case 0:
-        _intervalAbove.type = IntervalType::DIMINISHED;
-        break;
-    case 1:
-        _intervalAbove.type = IntervalType::MINOR;
-        break;
-    case 2:
-        _intervalAbove.type = IntervalType::MAJOR;
-        break;
-    case 3:
-        _intervalAbove.type = IntervalType::AUGMENTED;
-        break;
-    default:
-        break;
+        case 0: _intervalAbove.type = IntervalType::DIMINISHED; break;
+        case 1: _intervalAbove.type = IntervalType::MINOR; break;
+        case 2: _intervalAbove.type = IntervalType::MAJOR; break;
+        case 3: _intervalAbove.type = IntervalType::AUGMENTED; break;
+        default: break;
     }
 }

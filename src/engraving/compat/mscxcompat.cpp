@@ -35,16 +35,13 @@ using namespace muse;
 using namespace muse::io;
 using namespace mu::engraving;
 
-Ret mu::engraving::compat::loadMsczOrMscx(MasterScore* score, const io::path_t& path, bool ignoreVersionError)
-{
+Ret mu::engraving::compat::loadMsczOrMscx(MasterScore *score, const io::path_t &path, bool ignoreVersionError) {
     std::string suffix = io::suffix(path);
 
     MscReader::Params params;
     params.filePath = path;
     params.mode = mscIoModeBySuffix(suffix);
-    IF_ASSERT_FAILED(params.mode != MscIoMode::Unknown) {
-        return make_ret(Err::FileUnknownType, path);
-    }
+    IF_ASSERT_FAILED(params.mode != MscIoMode::Unknown) { return make_ret(Err::FileUnknownType, path); }
 
     MscReader reader(params);
     Ret ret = reader.open();
@@ -58,16 +55,13 @@ Ret mu::engraving::compat::loadMsczOrMscx(MasterScore* score, const io::path_t& 
     return scoreReader.loadMscz(score, reader, nullptr, ignoreVersionError);
 }
 
-Ret mu::engraving::compat::loadMsczOrMscx(EngravingProjectPtr project, const io::path_t& path, bool ignoreVersionError)
-{
+Ret mu::engraving::compat::loadMsczOrMscx(EngravingProjectPtr project, const io::path_t &path, bool ignoreVersionError) {
     std::string suffix = io::suffix(path);
 
     MscReader::Params params;
     params.filePath = path;
     params.mode = mscIoModeBySuffix(suffix);
-    IF_ASSERT_FAILED(params.mode != MscIoMode::Unknown) {
-        return make_ret(Err::FileUnknownType, path);
-    }
+    IF_ASSERT_FAILED(params.mode != MscIoMode::Unknown) { return make_ret(Err::FileUnknownType, path); }
 
     MscReader reader(params);
     Ret ret = reader.open();

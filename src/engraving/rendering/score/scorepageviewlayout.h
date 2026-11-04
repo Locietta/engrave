@@ -25,24 +25,23 @@
 #include "layoutcontext.h"
 
 namespace mu::engraving::rendering::score {
-class ScorePageViewLayout
-{
+class ScorePageViewLayout {
 public:
 
-    static void layoutPageView(Score* score, LayoutContext& ctx, const Fraction& stick, const Fraction& etick);
-    static void layoutHeadersFooters(LayoutContext& ctx);
+    static void layoutPageView(Score *score, LayoutContext &ctx, const Fraction &stick, const Fraction &etick);
+    static void layoutHeadersFooters(LayoutContext &ctx);
 
 private:
 
-    static void initLayoutContext(const Score* score, LayoutContext& ctx, const Fraction& stick, const Fraction& etick);
-    static void prepareScore(Score* score, const LayoutContext& ctx);
+    static void initLayoutContext(const Score *score, LayoutContext &ctx, const Fraction &stick, const Fraction &etick);
+    static void prepareScore(Score *score, const LayoutContext &ctx);
 
-    static void doLayout(LayoutContext& ctx);
+    static void doLayout(LayoutContext &ctx);
 
-    static void doLayoutHeadersFooters(LayoutContext& ctx);
+    static void doLayoutHeadersFooters(LayoutContext &ctx);
 
-    static void layoutFinished(Score* score, LayoutContext& ctx);
+    static void layoutFinished(Score *score, LayoutContext &ctx);
 };
-}
+} // namespace mu::engraving::rendering::score
 
 #endif // MU_ENGRAVING_SCOREPAGEVIEWLAYOUT_DEV_H

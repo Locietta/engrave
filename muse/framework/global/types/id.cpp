@@ -24,79 +24,38 @@
 
 using namespace muse;
 
-ID::ID()
-    : m_id(0)
-{
-}
+ID::ID() : m_id(0) {}
 
-ID::ID(const ID& id)
-    : m_id(id.m_id)
-{
-}
+ID::ID(const ID &id) : m_id(id.m_id) {}
 
-ID::ID(const std::string& id)
-    : m_id(!id.empty() ? std::stoul(id) : 0)
-{
-}
+ID::ID(const std::string &id) : m_id(!id.empty() ? std::stoul(id) : 0) {}
 
-bool ID::isValid() const
-{
-    return m_id != 0;
-}
+bool ID::isValid() const { return m_id != 0; }
 
-ID& ID::operator=(const ID& id)
-{
+ID &ID::operator=(const ID &id) {
     m_id = id.m_id;
     return *this;
 }
 
-ID& ID::operator+=(const ID& id)
-{
+ID &ID::operator+=(const ID &id) {
     m_id += id.m_id;
     return *this;
 }
 
-ID ID::operator+(const ID& id) const
-{
-    return ID(m_id + id.m_id);
-}
+ID ID::operator+(const ID &id) const { return ID(m_id + id.m_id); }
 
-ID ID::operator^(const ID& id) const
-{
-    return ID(m_id ^ id.m_id);
-}
+ID ID::operator^(const ID &id) const { return ID(m_id ^ id.m_id); }
 
-bool ID::operator==(const ID& id) const
-{
-    return m_id == id.m_id;
-}
+bool ID::operator==(const ID &id) const { return m_id == id.m_id; }
 
-bool ID::operator==(uint64_t id) const
-{
-    return m_id == id;
-}
+bool ID::operator==(uint64_t id) const { return m_id == id; }
 
-bool ID::operator!=(const ID& id) const
-{
-    return m_id != id.m_id;
-}
+bool ID::operator!=(const ID &id) const { return m_id != id.m_id; }
 
-bool ID::operator<(const ID& id) const
-{
-    return m_id < id.m_id;
-}
+bool ID::operator<(const ID &id) const { return m_id < id.m_id; }
 
-bool ID::operator>(const ID& id) const
-{
-    return m_id > id.m_id;
-}
+bool ID::operator>(const ID &id) const { return m_id > id.m_id; }
 
-uint64_t ID::toUint64() const
-{
-    return m_id;
-}
+uint64_t ID::toUint64() const { return m_id; }
 
-std::string ID::toStdString() const
-{
-    return std::to_string(m_id);
-}
+std::string ID::toStdString() const { return std::to_string(m_id); }

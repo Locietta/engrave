@@ -27,14 +27,13 @@
 #include "../dom/measure.h"
 
 namespace mu::engraving {
-class InsertRemoveMeasures : public UndoableCommand
-{
+class InsertRemoveMeasures : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, InsertRemoveMeasures)
 
-    MeasureBase* fm = nullptr;
-    MeasureBase* lm = nullptr;
+    MeasureBase *fm = nullptr;
+    MeasureBase *lm = nullptr;
 
-    static std::vector<Clef*> getCourtesyClefs(Measure* m);
+    static std::vector<Clef *> getCourtesyClefs(Measure *m);
 
     bool moveStc = true;
 
@@ -43,127 +42,118 @@ protected:
     void insertMeasures();
 
 public:
-    InsertRemoveMeasures(MeasureBase* _fm, MeasureBase* _lm, bool _moveStc)
-        : fm(_fm), lm(_lm), moveStc(_moveStc) {}
+    InsertRemoveMeasures(MeasureBase *_fm, MeasureBase *_lm, bool _moveStc) : fm(_fm), lm(_lm), moveStc(_moveStc) {}
+
     virtual void undo() override = 0;
     virtual void redo() override = 0;
-    UNDO_CHANGED_OBJECTS({ fm, lm })
+    UNDO_CHANGED_OBJECTS({fm, lm})
 };
 
-class RemoveMeasures : public InsertRemoveMeasures
-{
+class RemoveMeasures : public InsertRemoveMeasures {
     OBJECT_ALLOCATOR(engraving, RemoveMeasures)
 public:
-    RemoveMeasures(MeasureBase* m1, MeasureBase* m2, bool moveStc = true)
-        : InsertRemoveMeasures(m1, m2, moveStc) {}
+    RemoveMeasures(MeasureBase *m1, MeasureBase *m2, bool moveStc = true) : InsertRemoveMeasures(m1, m2, moveStc) {}
+
     void undo() override { insertMeasures(); }
+
     void redo() override { removeMeasures(); }
 
     UNDO_TYPE(CommandType::RemoveMeasures)
     UNDO_NAME("RemoveMeasures")
 };
 
-class InsertMeasures : public InsertRemoveMeasures
-{
+class InsertMeasures : public InsertRemoveMeasures {
     OBJECT_ALLOCATOR(engraving, InsertMeasures)
 public:
-    InsertMeasures(MeasureBase* m1, MeasureBase* m2, bool moveStc = true)
-        : InsertRemoveMeasures(m1, m2, moveStc) {}
+    InsertMeasures(MeasureBase *m1, MeasureBase *m2, bool moveStc = true) : InsertRemoveMeasures(m1, m2, moveStc) {}
+
     void redo() override { insertMeasures(); }
+
     void undo() override { removeMeasures(); }
 
     UNDO_TYPE(CommandType::InsertMeasures)
     UNDO_NAME("InsertMeasures")
 };
 
-class ChangeMeasureLen : public UndoableCommand
-{
+class ChangeMeasureLen : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeMeasureLen)
 
-    Measure* measure = nullptr;
+    Measure *measure = nullptr;
     Fraction len;
 
     void flip() override;
 
 public:
-    ChangeMeasureLen(Measure*, Fraction);
+    ChangeMeasureLen(Measure *, Fraction);
 
     UNDO_TYPE(CommandType::ChangeMeasureLen)
     UNDO_NAME("ChangeMeasureLen")
-    UNDO_CHANGED_OBJECTS({ measure })
+    UNDO_CHANGED_OBJECTS({measure})
 };
 
-class ChangeMMRest : public UndoableCommand
-{
+class ChangeMMRest : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeMMRest)
 
-    Measure* m;
-    Measure* mmrest;
+    Measure *m;
+    Measure *mmrest;
 
     void flip() override;
 
 public:
-    ChangeMMRest(Measure* _m, Measure* _mmr)
-        : m(_m), mmrest(_mmr) {}
+    ChangeMMRest(Measure *_m, Measure *_mmr) : m(_m), mmrest(_mmr) {}
 
     UNDO_TYPE(CommandType::ChangeMMRest)
     UNDO_NAME("ChangeMMRest")
-    UNDO_CHANGED_OBJECTS({ m, mmrest })
+    UNDO_CHANGED_OBJECTS({m, mmrest})
 };
 
 // ChangeMMRestNext & ChangeMMRestPrev SHOULD ONLY BE USED FOR MMRests
 // Setting m_next & m_prev involves the score's MeasureList for regular measures
 // This is handled through undo commands above
-class ChangeMMRestNext : public UndoableCommand
-{
+class ChangeMMRestNext : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeMMRestNext)
 
-    Measure* m_mmrest = nullptr;
-    MeasureBase* m_next = nullptr;
+    Measure *m_mmrest = nullptr;
+    MeasureBase *m_next = nullptr;
 
     void flip() override;
 
 public:
-    ChangeMMRestNext(Measure* mmrest, MeasureBase* next)
-        : m_mmrest(mmrest), m_next(next) {}
+    ChangeMMRestNext(Measure *mmrest, MeasureBase *next) : m_mmrest(mmrest), m_next(next) {}
 
     UNDO_NAME("ChangeMMRestNext")
-    UNDO_CHANGED_OBJECTS({ m_mmrest })
+    UNDO_CHANGED_OBJECTS({m_mmrest})
 };
 
-class ChangeMMRestPrev : public UndoableCommand
-{
+class ChangeMMRestPrev : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeMMRestPrev)
 
-    Measure* m_mmrest = nullptr;
-    MeasureBase* m_prev = nullptr;
+    Measure *m_mmrest = nullptr;
+    MeasureBase *m_prev = nullptr;
 
     void flip() override;
 
 public:
-    ChangeMMRestPrev(Measure* mmrest, MeasureBase* prev)
-        : m_mmrest(mmrest), m_prev(prev) {}
+    ChangeMMRestPrev(Measure *mmrest, MeasureBase *prev) : m_mmrest(mmrest), m_prev(prev) {}
 
     UNDO_NAME("ChangeMMRestPrev")
-    UNDO_CHANGED_OBJECTS({ m_mmrest })
+    UNDO_CHANGED_OBJECTS({m_mmrest})
 };
 
-class ChangeMeasureRepeatCount : public UndoableCommand
-{
+class ChangeMeasureRepeatCount : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeMeasureRepeatCount)
 
-    Measure* m = nullptr;
+    Measure *m = nullptr;
     int count = 0;
     staff_idx_t staffIdx = muse::nidx;
 
     void flip() override;
 
 public:
-    ChangeMeasureRepeatCount(Measure* _m, int _count, staff_idx_t _staffIdx)
-        : m(_m), count(_count), staffIdx(_staffIdx) {}
+    ChangeMeasureRepeatCount(Measure *_m, int _count, staff_idx_t _staffIdx) : m(_m), count(_count), staffIdx(_staffIdx) {}
 
     UNDO_TYPE(CommandType::ChangeMeasureRepeatCount)
     UNDO_NAME("ChangeMeasureRepeatCount")
-    UNDO_CHANGED_OBJECTS({ m })
+    UNDO_CHANGED_OBJECTS({m})
 };
-}
+} // namespace mu::engraving

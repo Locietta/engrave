@@ -31,8 +31,7 @@ namespace mu::engraving {
 ///    Drum sticking
 //-----------------------------------------------------------------------------
 
-class Sticking final : public TextBase
-{
+class Sticking final : public TextBase {
     OBJECT_ALLOCATOR(engraving, Sticking)
     DECLARE_CLASSOF(ElementType::STICKING)
 
@@ -41,10 +40,11 @@ class Sticking final : public TextBase
 public:
     Sticking(DummyParentOr<Segment> parent);
 
-    Sticking* clone() const override { return new Sticking(*this); }
+    Sticking *clone() const override { return new Sticking(*this); }
 
-    Segment* segment() const { return (Segment*)ownershipParent(); }
-    Measure* measure() const { return (Measure*)ownershipParent()->ownershipParent(); }
+    Segment *segment() const { return (Segment *) ownershipParent(); }
+
+    Measure *measure() const { return (Measure *) ownershipParent()->ownershipParent(); }
 
     bool positionRelativeToNoteheadRest() const override { return true; }
 };

@@ -35,9 +35,8 @@ namespace mu::engraving {
 //   rebuildMidiMapping
 //---------------------------------------------------------
 
-void MasterScore::rebuildMidiMapping()
-{
-    Score* playbackScore = m_playbackScore ? m_playbackScore : this;
+void MasterScore::rebuildMidiMapping() {
+    Score *playbackScore = m_playbackScore ? m_playbackScore : this;
     setPlaybackScore(nullptr);
 
     removeDeletedMidiMapping();
@@ -55,25 +54,24 @@ void MasterScore::rebuildMidiMapping()
 //   don't decrease and don't have 'holes' except drum tracks
 //---------------------------------------------------------
 
-void MasterScore::checkMidiMapping()
-{
+void MasterScore::checkMidiMapping() {
     m_isSimpleMidiMapping = true;
     rebuildMidiMapping();
 
     std::vector<bool> drum;
     drum.reserve(m_midiMapping.size());
-    for (Part* part : parts()) {
-        for (const auto& pair : part->instruments()) {
-            const Instrument* instr = pair.second;
+    for (Part *part : parts()) {
+        for (const auto &pair : part->instruments()) {
+            const Instrument *instr = pair.second;
             for (size_t j = 0; j < instr->channel().size(); ++j) {
                 drum.push_back(instr->useDrumset());
             }
         }
     }
-    int lastChannel  = -1;   // port*16+channel
+    int lastChannel = -1; // port*16+channel
     int lastDrumPort = -1;
     size_t index = 0;
-    for (const MidiMapping& m : m_midiMapping) {
+    for (const MidiMapping &m : m_midiMapping) {
         if (index >= drum.size()) {
             break;
         }
@@ -103,8 +101,7 @@ void MasterScore::checkMidiMapping()
 //   getNextFreeMidiMapping
 //---------------------------------------------------------
 
-int MasterScore::getNextFreeMidiMapping(std::set<int>& occupiedMidiChannels, unsigned int& searchMidiMappingFrom, int p, int ch)
-{
+int MasterScore::getNextFreeMidiMapping(std::set<int> &occupiedMidiChannels, unsigned int &searchMidiMappingFrom, int p, int ch) {
     if (ch != -1 && p != -1) {
         return p * 16 + ch;
     } else if (ch != -1 && p == -1) {
@@ -135,8 +132,7 @@ int MasterScore::getNextFreeMidiMapping(std::set<int>& occupiedMidiChannels, uns
 //   getNextFreeDrumMidiMapping
 //---------------------------------------------------------
 
-int MasterScore::getNextFreeDrumMidiMapping(std::set<int>& occupiedMidiChannels)
-{
+int MasterScore::getNextFreeDrumMidiMapping(std::set<int> &occupiedMidiChannels) {
     for (int i = 0;; i++) {
         if (!muse::contains(occupiedMidiChannels, i * 16 + 9)) {
             occupiedMidiChannels.insert(i * 16 + 9);
@@ -149,18 +145,17 @@ int MasterScore::getNextFreeDrumMidiMapping(std::set<int>& occupiedMidiChannels)
 //   rebuildExcerptsMidiMapping
 //---------------------------------------------------------
 
-void MasterScore::rebuildExcerptsMidiMapping()
-{
-    for (Excerpt* ex : excerpts()) {
-        for (Part* p : ex->excerptScore()->parts()) {
-            const Part* masterPart = p->masterPart();
+void MasterScore::rebuildExcerptsMidiMapping() {
+    for (Excerpt *ex : excerpts()) {
+        for (Part *p : ex->excerptScore()->parts()) {
+            const Part *masterPart = p->masterPart();
             if (!masterPart->score()->isMaster()) {
                 LOGW() << "rebuildExcerptsMidiMapping: no part in master score is linked with " << p->partName();
                 continue;
             }
             assert(p->instruments().size() == masterPart->instruments().size());
-            for (const auto&[tick, iMaster] : masterPart->instruments()) {
-                Instrument* iLocal = p->instrument(Fraction::fromTicks(tick));
+            for (const auto &[tick, iMaster] : masterPart->instruments()) {
+                Instrument *iLocal = p->instrument(Fraction::fromTicks(tick));
                 const size_t nchannels = iMaster->channel().size();
                 if (iLocal->channel().size() != nchannels) {
                     // may happen, e.g., if user changes an instrument
@@ -168,8 +163,8 @@ void MasterScore::rebuildExcerptsMidiMapping()
                     continue;
                 }
                 for (size_t c = 0; c < nchannels; ++c) {
-                    InstrChannel* cLocal = iLocal->channel(static_cast<int>(c));
-                    const InstrChannel* cMaster = iMaster->channel(static_cast<int>(c));
+                    InstrChannel *cLocal = iLocal->channel(static_cast<int>(c));
+                    const InstrChannel *cMaster = iMaster->channel(static_cast<int>(c));
                     cLocal->setChannel(cMaster->channel());
                 }
             }
@@ -182,14 +177,13 @@ void MasterScore::rebuildExcerptsMidiMapping()
 //   Set mappings in order you see in Add->Instruments
 //---------------------------------------------------------
 
-void MasterScore::reorderMidiMapping()
-{
+void MasterScore::reorderMidiMapping() {
     using std::swap;
     int sequenceNumber = 0;
-    for (Part* part : parts()) {
-        for (const auto& pair : part->instruments()) {
-            const Instrument* instr = pair.second;
-            for (InstrChannel* channel : instr->channel()) {
+    for (Part *part : parts()) {
+        for (const auto &pair : part->instruments()) {
+            const Instrument *instr = pair.second;
+            for (InstrChannel *channel : instr->channel()) {
                 if (m_midiMapping[sequenceNumber].part() == part && m_midiMapping[sequenceNumber].m_masterChannel == channel) {
                     sequenceNumber++;
                     continue;
@@ -212,23 +206,22 @@ void MasterScore::reorderMidiMapping()
 //   Remove mappings to deleted instruments
 //---------------------------------------------------------
 
-void MasterScore::removeDeletedMidiMapping()
-{
+void MasterScore::removeDeletedMidiMapping() {
     int removeOffset = 0;
     int mappingSize = int(m_midiMapping.size());
     for (int index = 0; index < mappingSize; index++) {
-        Part* part = midiMapping(index)->part();
+        Part *part = midiMapping(index)->part();
         if (!muse::contains(parts(), part)) {
             removeOffset++;
             continue;
         }
         // Not all channels could exist
         bool channelExists = false;
-        for (const auto& pair : part->instruments()) {
-            const Instrument* instr = pair.second;
-            channelExists = (m_midiMapping[index].articulation()->channel() != -1
-                             && muse::contains(instr->channel(), m_midiMapping[index].m_masterChannel)
-                             && !(m_midiMapping[index].port() == -1 && m_midiMapping[index].channel() == -1));
+        for (const auto &pair : part->instruments()) {
+            const Instrument *instr = pair.second;
+            channelExists = (m_midiMapping[index].articulation()->channel() != -1 &&
+                             muse::contains(instr->channel(), m_midiMapping[index].m_masterChannel) &&
+                             !(m_midiMapping[index].port() == -1 && m_midiMapping[index].channel() == -1));
             if (channelExists) {
                 break;
             }
@@ -256,27 +249,26 @@ void MasterScore::removeDeletedMidiMapping()
 //   Add mappings to new instruments and repair existing ones
 //---------------------------------------------------------
 
-int MasterScore::updateMidiMapping()
-{
+int MasterScore::updateMidiMapping() {
     int maxport = 0;
-    std::set<int> occupiedMidiChannels; // each entry is port*16+channel, port range: 0-inf, channel: 0-15
+    std::set<int> occupiedMidiChannels;     // each entry is port*16+channel, port range: 0-inf, channel: 0-15
     unsigned int searchMidiMappingFrom = 0; // makes getting next free MIDI mapping faster
 
-    for (const MidiMapping& mm :m_midiMapping) {
+    for (const MidiMapping &mm : m_midiMapping) {
         if (mm.port() == -1 || mm.channel() == -1) {
             continue;
         }
-        occupiedMidiChannels.insert(static_cast<int>(mm.port()) * 16 + (int)mm.channel());
+        occupiedMidiChannels.insert(static_cast<int>(mm.port()) * 16 + (int) mm.channel());
         if (maxport < mm.port()) {
             maxport = mm.port();
         }
     }
 
-    for (Part* part : parts()) {
-        for (const auto& pair : part->instruments()) {
-            const Instrument* instr = pair.second;
+    for (Part *part : parts()) {
+        for (const auto &pair : part->instruments()) {
+            const Instrument *instr = pair.second;
             const bool useDrumset = instr->useDrumset();
-            for (InstrChannel* channel : instr->channel()) {
+            for (InstrChannel *channel : instr->channel()) {
                 doUpdateMidiMapping(maxport, occupiedMidiChannels, searchMidiMappingFrom, part, channel, useDrumset);
             }
         }
@@ -285,11 +277,10 @@ int MasterScore::updateMidiMapping()
     return maxport;
 }
 
-void MasterScore::doUpdateMidiMapping(int& maxport, std::set<int>& occupiedMidiChannels, unsigned int& searchMidiMappingFrom,
-                                      Part* part, InstrChannel* channel, bool useDrumset)
-{
+void MasterScore::doUpdateMidiMapping(int &maxport, std::set<int> &occupiedMidiChannels, unsigned int &searchMidiMappingFrom, Part *part,
+                                      InstrChannel *channel, bool useDrumset) {
     bool channelExists = false;
-    for (const MidiMapping& mapping : m_midiMapping) {
+    for (const MidiMapping &mapping : m_midiMapping) {
         const bool validChannelIndex = channel->channel() >= 0 && channel->channel() < static_cast<int>(m_midiMapping.size());
         if (channel == mapping.m_masterChannel && validChannelIndex) {
             channelExists = true;
@@ -306,7 +297,7 @@ void MasterScore::doUpdateMidiMapping(int& maxport, std::set<int>& occupiedMidiC
             midiChannel = 9;
         } else {
             const int nm = getNextFreeMidiMapping(occupiedMidiChannels, searchMidiMappingFrom);
-            midiPort    = nm / 16;
+            midiPort = nm / 16;
             midiChannel = nm % 16;
         }
 
@@ -319,7 +310,7 @@ void MasterScore::doUpdateMidiMapping(int& maxport, std::set<int>& occupiedMidiC
     }
 
     // Channel could already exist, but have unassigned port or channel...
-    MidiMapping& mapping = m_midiMapping.at(channel->channel());
+    MidiMapping &mapping = m_midiMapping.at(channel->channel());
 
     if (mapping.port() == -1) {
         const int nm = getNextFreeMidiMapping(occupiedMidiChannels, searchMidiMappingFrom, -1, mapping.channel());
@@ -333,8 +324,8 @@ void MasterScore::doUpdateMidiMapping(int& maxport, std::set<int>& occupiedMidiC
             mapping.m_channel = 9;
             return;
         }
-        const int nm = getNextFreeMidiMapping(occupiedMidiChannels, searchMidiMappingFrom,  mapping.port());
-        mapping.m_port    = nm / 16;
+        const int nm = getNextFreeMidiMapping(occupiedMidiChannels, searchMidiMappingFrom, mapping.port());
+        mapping.m_port = nm / 16;
         mapping.m_channel = nm % 16;
     }
 }
@@ -343,8 +334,7 @@ void MasterScore::doUpdateMidiMapping(int& maxport, std::set<int>& occupiedMidiC
 //   addMidiMapping
 //---------------------------------------------------------
 
-void MasterScore::addMidiMapping(InstrChannel* channel, Part* part, int midiPort, int midiChannel)
-{
+void MasterScore::addMidiMapping(InstrChannel *channel, Part *part, int midiPort, int midiChannel) {
     if (!part->score()->isMaster()) {
         return;
     }
@@ -369,8 +359,7 @@ void MasterScore::addMidiMapping(InstrChannel* channel, Part* part, int midiPort
 //   updateMidiMapping
 //---------------------------------------------------------
 
-void MasterScore::updateMidiMapping(InstrChannel* channel, Part* part, int midiPort, int midiChannel)
-{
+void MasterScore::updateMidiMapping(InstrChannel *channel, Part *part, int midiPort, int midiChannel) {
     const int c = channel->channel();
     if (c < 0) {
         return;
@@ -379,7 +368,7 @@ void MasterScore::updateMidiMapping(InstrChannel* channel, Part* part, int midiP
         LOGD("Can't set midi channel: midiMapping is empty!");
         return;
     }
-    MidiMapping& mm = m_midiMapping[c];
+    MidiMapping &mm = m_midiMapping[c];
 
     if (midiChannel != -1) {
         mm.m_channel = midiChannel;

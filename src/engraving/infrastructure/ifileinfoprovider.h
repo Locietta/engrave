@@ -28,8 +28,7 @@
 #include "io/path.h"
 
 namespace mu::engraving {
-class IFileInfoProvider
-{
+class IFileInfoProvider {
 public:
     virtual ~IFileInfoProvider() = default;
 
@@ -47,4 +46,4 @@ public:
 };
 
 using IFileInfoProviderPtr = std::shared_ptr<IFileInfoProvider>;
-}
+} // namespace mu::engraving

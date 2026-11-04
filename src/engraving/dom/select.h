@@ -49,17 +49,17 @@ class Box;
 //---------------------------------------------------------
 
 struct ElementPattern {
-    std::vector<EngravingItem*> el;
+    std::vector<EngravingItem *> el;
     int type = 0;
     int subtype = 0;
     staff_idx_t staffStart = 0;
-    staff_idx_t staffEnd = 0;   // exclusive
+    staff_idx_t staffEnd = 0; // exclusive
     voice_idx_t voice = 0;
     bool subtypeValid = false;
-    Fraction durationTicks { -1, 1 };
-    Fraction beat { 0, 0 };
-    const Measure* measure = nullptr;
-    const System* system = nullptr;
+    Fraction durationTicks{-1, 1};
+    Fraction beat{0, 0};
+    const Measure *measure = nullptr;
+    const System *system = nullptr;
 };
 
 //---------------------------------------------------------
@@ -67,7 +67,7 @@ struct ElementPattern {
 //---------------------------------------------------------
 
 struct NotePattern : ElementPattern {
-    std::vector<Note*> el;
+    std::vector<Note *> el;
     int pitch = -1;
     int string = INVALID_STRING_INDEX;
     int tpc = Tpc::TPC_INVALID;
@@ -81,9 +81,9 @@ struct NotePattern : ElementPattern {
 //---------------------------------------------------------
 
 enum class SelState : char {
-    NONE,     // nothing is selected
-    LIST,     // disjoint selection
-    RANGE,    // adjacent selection, a range in one or more staves
+    NONE,  // nothing is selected
+    LIST,  // disjoint selection
+    RANGE, // adjacent selection, a range in one or more staves
     // is selected
 };
 
@@ -95,7 +95,7 @@ struct SelectedSymbol {
     track_idx_t track = muse::nidx;
     int tickOffset = 0;
     int segDelta = 0;
-    EngravingItem* element = nullptr;
+    EngravingItem *element = nullptr;
 };
 
 //-------------------------------------------------------------------
@@ -104,130 +104,160 @@ struct SelectedSymbol {
 //    (no Chord element etc.).
 //-------------------------------------------------------------------
 
-class Selection
-{
+class Selection {
 public:
-    Selection() { m_score = 0; m_state = SelState::NONE; }
-    Selection(Score*);
-    Score* score() const { return m_score; }
+    Selection() {
+        m_score = 0;
+        m_state = SelState::NONE;
+    }
+
+    Selection(Score *);
+
+    Score *score() const { return m_score; }
+
     SelState state() const { return m_state; }
+
     bool isNone() const { return m_state == SelState::NONE; }
+
     bool isRange() const { return m_state == SelState::RANGE; }
+
     bool isList() const { return m_state == SelState::LIST; }
+
     void setState(SelState s);
 
     //! NOTE If locked, the selected items should not be changed.
-    void lock(const String& reason) { m_lockReason = reason; }
-    void unlock(const String& /*reason*/) { m_lockReason.clear(); }    // reason for clarity
+    void lock(const String &reason) { m_lockReason = reason; }
+
+    void unlock(const String & /*reason*/) { m_lockReason.clear(); } // reason for clarity
+
     bool isLocked() const { return !m_lockReason.isEmpty(); }
-    const String& lockReason() const { return m_lockReason; }
 
-    const std::vector<EngravingItem*>& elements() const { return m_el; }
-    std::vector<EngravingItem*> elements(ElementType type) const;
-    std::vector<Note*> noteList(track_idx_t track = muse::nidx) const;
+    const String &lockReason() const { return m_lockReason; }
 
-    const std::list<EngravingItem*> uniqueElements() const;
-    std::vector<Note*> uniqueNotes(track_idx_t track = muse::nidx, bool tied = true) const;
+    const std::vector<EngravingItem *> &elements() const { return m_el; }
+
+    std::vector<EngravingItem *> elements(ElementType type) const;
+    std::vector<Note *> noteList(track_idx_t track = muse::nidx) const;
+
+    const std::list<EngravingItem *> uniqueElements() const;
+    std::vector<Note *> uniqueNotes(track_idx_t track = muse::nidx, bool tied = true) const;
 
     bool isSingle() const { return (m_state == SelState::LIST) && (m_el.size() == 1); }
-    bool elementsSelected(const ElementTypeSet& types) const;
 
-    void add(EngravingItem*);
+    bool elementsSelected(const ElementTypeSet &types) const;
+
+    void add(EngravingItem *);
     void deselectAll();
-    void remove(EngravingItem*);
+    void remove(EngravingItem *);
     void clear();
-    EngravingItem* element() const;
-    ChordRest* cr() const;
-    ChordRest* firstChordRest(track_idx_t track = muse::nidx) const;
-    ChordRest* lastChordRest(track_idx_t track = muse::nidx) const;
-    Measure* findMeasure() const;
-    MeasureBase* startMeasureBase() const;
-    MeasureBase* endMeasureBase() const;
-    std::vector<System*> selectedSystems() const;
-    std::vector<Page*> pagesContainingSelection() const;
+    EngravingItem *element() const;
+    ChordRest *cr() const;
+    ChordRest *firstChordRest(track_idx_t track = muse::nidx) const;
+    ChordRest *lastChordRest(track_idx_t track = muse::nidx) const;
+    Measure *findMeasure() const;
+    MeasureBase *startMeasureBase() const;
+    MeasureBase *endMeasureBase() const;
+    std::vector<System *> selectedSystems() const;
+    std::vector<Page *> pagesContainingSelection() const;
     void update();
     void updateState();
     void dump();
     String mimeType() const;
     muse::ByteArray mimeData() const;
 
-    Segment* startSegment() const { return m_startSegment; }
-    Segment* endSegment() const { return m_endSegment; }
-    void setStartSegment(Segment* s);
-    void setEndSegment(Segment* s);
+    Segment *startSegment() const { return m_startSegment; }
 
-    Box* startBox() const { return m_startBox; }
-    Box* endBox() const { return m_endBox; }
+    Segment *endSegment() const { return m_endSegment; }
 
-    void setRange(Segment* startSegment, Segment* endSegment, staff_idx_t staffStart, staff_idx_t staffEnd, Box* startBox = nullptr,
-                  Box* endBox = nullptr);
-    void setRangeTicks(const Fraction& tick1, const Fraction& tick2, staff_idx_t staffStart, staff_idx_t staffEnd, Box* startBox = nullptr,
-                       Box* endBox = nullptr);
+    void setStartSegment(Segment *s);
+    void setEndSegment(Segment *s);
 
-    Segment* activeSegment() const { return m_activeSegment; }
-    void setActiveSegment(Segment* s) { m_activeSegment = s; }
-    ChordRest* activeCR() const;
+    Box *startBox() const { return m_startBox; }
+
+    Box *endBox() const { return m_endBox; }
+
+    void setRange(Segment *startSegment, Segment *endSegment, staff_idx_t staffStart, staff_idx_t staffEnd, Box *startBox = nullptr,
+                  Box *endBox = nullptr);
+    void setRangeTicks(const Fraction &tick1, const Fraction &tick2, staff_idx_t staffStart, staff_idx_t staffEnd, Box *startBox = nullptr,
+                       Box *endBox = nullptr);
+
+    Segment *activeSegment() const { return m_activeSegment; }
+
+    void setActiveSegment(Segment *s) { m_activeSegment = s; }
+
+    ChordRest *activeCR() const;
     bool isStartActive() const;
     bool isEndActive() const;
-    ChordRest* currentCR() const;
+    ChordRest *currentCR() const;
     Fraction tickStart() const;
     Fraction tickEnd() const;
+
     staff_idx_t staffStart() const { return m_staffStart; }
+
     staff_idx_t staffEnd() const { return m_staffEnd; }
+
     track_idx_t activeTrack() const { return m_activeTrack; }
+
     void setStaffStart(int v) { m_staffStart = v; }
+
     void setStaffEnd(int v) { m_staffEnd = v; }
+
     void setActiveTrack(track_idx_t v) { m_activeTrack = v; }
+
     bool canCopy() const;
     void updateSelectedElements();
-    bool measureBaseRange(MeasureBase** mb1, MeasureBase** mb2) const;
-    void extendRangeSelection(ChordRest* cr);
-    void extendRangeSelection(Segment* seg, Segment* segAfter, staff_idx_t staffIdx, const Fraction& tick, const Fraction& etick,
-                              Box* box = nullptr);
+    bool measureBaseRange(MeasureBase **mb1, MeasureBase **mb2) const;
+    void extendRangeSelection(ChordRest *cr);
+    void extendRangeSelection(Segment *seg, Segment *segAfter, staff_idx_t staffIdx, const Fraction &tick, const Fraction &etick,
+                              Box *box = nullptr);
     bool rangeContainsMultiNoteChords() const;
 
 private:
     muse::ByteArray staffMimeData() const;
     muse::ByteArray symbolListMimeData() const;
     SelectionFilter selectionFilter() const;
-    bool canSelect(const EngravingItem* e) const { return selectionFilter().canSelect(e); }
-    bool canSelectNoteIdx(size_t noteIdx, size_t totalNotesInChord, bool rangeContainsMultiNoteChords) const;
-    bool canSelectVoice(track_idx_t track) const { return selectionFilter().canSelectVoice(track); }
-    void appendFiltered(EngravingItem* e);
-    void appendFiltered(const std::unordered_set<EngravingItem*>& elems);
-    void appendChordRest(ChordRest* cr);
-    void appendTupletHierarchy(Tuplet* innermostTuplet);
-    void appendGuitarBend(GuitarBend* guitarBend);
 
-    ChordRest* firstChordRestInRange(track_idx_t preferredTrack = muse::nidx) const;
-    ChordRest* lastChordRestInRange(track_idx_t preferredTrack = muse::nidx) const;
+    bool canSelect(const EngravingItem *e) const { return selectionFilter().canSelect(e); }
+
+    bool canSelectNoteIdx(size_t noteIdx, size_t totalNotesInChord, bool rangeContainsMultiNoteChords) const;
+
+    bool canSelectVoice(track_idx_t track) const { return selectionFilter().canSelectVoice(track); }
+
+    void appendFiltered(EngravingItem *e);
+    void appendFiltered(const std::unordered_set<EngravingItem *> &elems);
+    void appendChordRest(ChordRest *cr);
+    void appendTupletHierarchy(Tuplet *innermostTuplet);
+    void appendGuitarBend(GuitarBend *guitarBend);
+
+    ChordRest *firstChordRestInRange(track_idx_t preferredTrack = muse::nidx) const;
+    ChordRest *lastChordRestInRange(track_idx_t preferredTrack = muse::nidx) const;
 
     void validateBoxesAndSegments(); // Checks that the Boxes/segments match (asserts and clears the Box if not)
 
     bool rangeIsValid() const;
 
-    Score* m_score = nullptr;
+    Score *m_score = nullptr;
     SelState m_state = SelState::NONE;
-    std::vector<EngravingItem*> m_el;            // valid in mode SelState::LIST
+    std::vector<EngravingItem *> m_el; // valid in mode SelState::LIST
 
-    staff_idx_t m_staffStart = 0;            // valid if selState is SelState::RANGE
+    staff_idx_t m_staffStart = 0; // valid if selState is SelState::RANGE
     staff_idx_t m_staffEnd = 0;
 
-    Segment* m_startSegment = nullptr;
-    Segment* m_endSegment = nullptr; // next segment after selection
+    Segment *m_startSegment = nullptr;
+    Segment *m_endSegment = nullptr; // next segment after selection
 
-    Box* m_startBox = nullptr;
-    Box* m_endBox = nullptr; // the last Box included in the selection
+    Box *m_startBox = nullptr;
+    Box *m_endBox = nullptr; // the last Box included in the selection
 
-    Fraction m_plannedTick1 { -1, 1 };   // Will be actually selected on updateSelectedElements() call.
-    Fraction m_plannedTick2 { -1, 1 };   // Used by setRangeTicks() to restore proper selection after
+    Fraction m_plannedTick1{-1, 1}; // Will be actually selected on updateSelectedElements() call.
+    Fraction m_plannedTick2{-1, 1}; // Used by setRangeTicks() to restore proper selection after
     // command end in case some changes are expected to segments'
     // structure (e.g. MMRests reconstruction).
 
-    Segment* m_activeSegment = nullptr;
+    Segment *m_activeSegment = nullptr;
     track_idx_t m_activeTrack = 0;
 
-    Fraction m_currentTick;    // tracks the most recent selection
+    Fraction m_currentTick; // tracks the most recent selection
     track_idx_t m_currentTrack = 0;
 
     bool m_rangeContainsMultiNoteChords = false; // cached - calculating this isn't free

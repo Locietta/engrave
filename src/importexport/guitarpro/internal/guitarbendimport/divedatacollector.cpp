@@ -29,8 +29,7 @@
 using namespace mu::engraving;
 
 namespace mu::iex::guitarpro {
-void DiveDataCollector::collectDiveData(const Chord* chord, const PitchValues& pitchValues)
-{
+void DiveDataCollector::collectDiveData(const Chord *chord, const PitchValues &pitchValues) {
     if (pitchValues.size() < 2) {
         return;
     }
@@ -40,13 +39,12 @@ void DiveDataCollector::collectDiveData(const Chord* chord, const PitchValues& p
 
     bool hasPrecedingWhammy = false;
     if (auto it = m_lastWhammyByTrack.find(track); it != m_lastWhammyByTrack.end()) {
-        const auto& prev = it->second;
-        hasPrecedingWhammy = (prev.destPitch == pitchValues.front().pitch)
-                             && (prev.endTick == tick);
+        const auto &prev = it->second;
+        hasPrecedingWhammy = (prev.destPitch == pitchValues.front().pitch) && (prev.endTick == tick);
     }
-    m_lastWhammyByTrack[track] = { pitchValues.back().pitch, tick + chord->actualTicks() };
+    m_lastWhammyByTrack[track] = {pitchValues.back().pitch, tick + chord->actualTicks()};
 
-    for (const Note* note : chord->notes()) {
+    for (const Note *note : chord->notes()) {
         if (note->displayFret() == Note::DisplayFretOption::Hide) {
             continue;
         }
@@ -73,7 +71,7 @@ void DiveDataCollector::collectDiveData(const Chord* chord, const PitchValues& p
             continue;
         }
 
-        GraceNotesImportInfo& graceInfo = m_ctx.graceAfterDiveData[track][tick][noteIdx];
+        GraceNotesImportInfo &graceInfo = m_ctx.graceAfterDiveData[track][tick][noteIdx];
 
         if (note->tieFor() && !info.graceDiveSegments.empty()) {
             graceInfo.lastNoteData.shouldMoveTie = true;

@@ -26,23 +26,14 @@
 using namespace muse;
 using namespace muse::draw;
 
-Bezier::Bezier(double x1, double y1,
-               double x2, double y2,
-               double x3, double y3,
-               double x4, double y4)
-    : m_x1(x1), m_y1(y1), m_x2(x2), m_y2(y2),
-    m_x3(x3), m_y3(y3), m_x4(x4), m_y4(y4)
-{
+Bezier::Bezier(double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4)
+    : m_x1(x1), m_y1(y1), m_x2(x2), m_y2(y2), m_x3(x3), m_y3(y3), m_x4(x4), m_y4(y4) {}
+
+Bezier Bezier::fromPoints(const PointF &p1, const PointF &p2, const PointF &p3, const PointF &p4) {
+    return {p1.x(), p1.y(), p2.x(), p2.y(), p3.x(), p3.y(), p4.x(), p4.y()};
 }
 
-Bezier Bezier::fromPoints(const PointF& p1, const PointF& p2,
-                          const PointF& p3, const PointF& p4)
-{
-    return { p1.x(), p1.y(), p2.x(), p2.y(), p3.x(), p3.y(), p4.x(), p4.y() };
-}
-
-void Bezier::coefficients(double t, double& a, double& b, double& c, double& d)
-{
+void Bezier::coefficients(double t, double &a, double &b, double &c, double &d) {
     double t1 = 1. - t;
     b = t1 * t1;
     c = t * t;
@@ -52,8 +43,7 @@ void Bezier::coefficients(double t, double& a, double& b, double& c, double& d)
     c *= 3. * t1;
 }
 
-Bezier Bezier::bezierOnInterval(double t0, double t1) const
-{
+Bezier Bezier::bezierOnInterval(double t0, double t1) const {
     if (RealIsNull(t0) && RealIsEqual(t1, 1)) {
         return *this;
     }
@@ -65,14 +55,13 @@ Bezier Bezier::bezierOnInterval(double t0, double t1) const
     return result;
 }
 
-void Bezier::parameterSplitLeft(double t, Bezier* left)
-{
+void Bezier::parameterSplitLeft(double t, Bezier *left) {
     left->m_x1 = m_x1;
     left->m_y1 = m_y1;
     left->m_x2 = m_x1 + t * (m_x2 - m_x1);
     left->m_y2 = m_y1 + t * (m_y2 - m_y1);
-    left->m_x3 = m_x2 + t * (m_x3 - m_x2);   // temporary holding spot
-    left->m_y3 = m_y2 + t * (m_y3 - m_y2);   // temporary holding spot
+    left->m_x3 = m_x2 + t * (m_x3 - m_x2); // temporary holding spot
+    left->m_y3 = m_y2 + t * (m_y3 - m_y2); // temporary holding spot
     m_x3 = m_x3 + t * (m_x4 - m_x3);
     m_y3 = m_y3 + t * (m_y4 - m_y3);
     m_x2 = left->m_x3 + t * (m_x3 - left->m_x3);
@@ -83,8 +72,7 @@ void Bezier::parameterSplitLeft(double t, Bezier* left)
     left->m_y4 = m_y1 = left->m_y3 + t * (m_y2 - left->m_y3);
 }
 
-PointF Bezier::pointAt(double t) const
-{
+PointF Bezier::pointAt(double t) const {
     // numerically more stable:
     double x, y;
     double t1 = 1. - t;

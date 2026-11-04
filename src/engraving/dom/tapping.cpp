@@ -27,19 +27,11 @@
 #include "types/typesconv.h"
 
 namespace mu::engraving {
-Tapping::Tapping(DummyParentOr<ChordRest> parent)
-    : Articulation(parent, ElementType::TAPPING)
-{
-}
+Tapping::Tapping(DummyParentOr<ChordRest> parent) : Articulation(parent, ElementType::TAPPING) {}
 
-Tapping::Tapping(const Tapping& other)
-    : Articulation(other)
-{
-    m_hand = other.m_hand;
-}
+Tapping::Tapping(const Tapping &other) : Articulation(other) { m_hand = other.m_hand; }
 
-void Tapping::setSelected(bool f)
-{
+void Tapping::setSelected(bool f) {
     if (m_text) {
         m_text->setSelected(f);
     }
@@ -53,86 +45,55 @@ void Tapping::setSelected(bool f)
     EngravingItem::setSelected(f);
 }
 
-LHTappingShowItems Tapping::lhShowItems() const
-{
+LHTappingShowItems Tapping::lhShowItems() const {
     DO_ASSERT(m_hand == TappingHand::LEFT);
 
-    const MStyle& s = style();
+    const MStyle &s = style();
     bool tabStaff = staffType()->isTabStaff();
 
     return s.styleV(tabStaff ? Sid::lhTappingShowItemsTab : Sid::lhTappingShowItemsNormalStave).value<LHTappingShowItems>();
 }
 
-void Tapping::styleChanged()
-{
+void Tapping::styleChanged() {
     if (m_text) {
         m_text->styleChanged();
     }
     Articulation::styleChanged();
 }
 
-double Tapping::mag() const
-{
-    return ldata()->mag() * Articulation::mag();
-}
+double Tapping::mag() const { return ldata()->mag() * Articulation::mag(); }
 
-int Tapping::subtype() const
-{
-    return static_cast<int>(m_hand);
-}
+int Tapping::subtype() const { return static_cast<int>(m_hand); }
 
+TranslatableString Tapping::typeUserName() const { return EngravingItem::typeUserName(); }
 
-
-TranslatableString Tapping::typeUserName() const
-{
-    return EngravingItem::typeUserName();
-}
-
-TranslatableString Tapping::subtypeUserName() const
-{
+TranslatableString Tapping::subtypeUserName() const {
     return m_hand == TappingHand::LEFT ? TranslatableString("engraving", "Left-hand") : TranslatableString("engraving", "Right-hand");
 }
 
-TappingHalfSlur::TappingHalfSlur(EngravingItem* parent)
-    : Slur(parent, ElementType::TAPPING_HALF_SLUR)
-{
-}
+TappingHalfSlur::TappingHalfSlur(EngravingItem *parent) : Slur(parent, ElementType::TAPPING_HALF_SLUR) {}
 
-TappingHalfSlur::TappingHalfSlur(const TappingHalfSlur& other)
-    : Slur(other)
-{
-}
+TappingHalfSlur::TappingHalfSlur(const TappingHalfSlur &other) : Slur(other) {}
 
-TappingHalfSlurSegment::TappingHalfSlurSegment(TappingHalfSlur* sp)
-    : SlurSegment(sp, ElementType::TAPPING_HALF_SLUR_SEGMENT)
-{
-}
+TappingHalfSlurSegment::TappingHalfSlurSegment(TappingHalfSlur *sp) : SlurSegment(sp, ElementType::TAPPING_HALF_SLUR_SEGMENT) {}
 
-TappingHalfSlurSegment::TappingHalfSlurSegment(const TappingHalfSlurSegment& other)
-    : SlurSegment(other)
-{
-}
+TappingHalfSlurSegment::TappingHalfSlurSegment(const TappingHalfSlurSegment &other) : SlurSegment(other) {}
 
 static ElementStyle tapTextStyle;
 
-TappingText::TappingText(Tapping* parent)
+TappingText::TappingText(Tapping *parent)
     : TextBase(ElementType::TAPPING_TEXT, parent, TextStyleType::HAMMER_ON_PULL_OFF,
-               ElementFlag::MOVABLE | ElementFlag::GENERATED | ElementFlag::ON_STAFF)
-{
+               ElementFlag::MOVABLE | ElementFlag::GENERATED | ElementFlag::ON_STAFF) {
     initElementStyle(&tapTextStyle);
 }
 
-TappingText::TappingText(const TappingText& t)
-    : TextBase(t)
-{
-}
+TappingText::TappingText(const TappingText &t) : TextBase(t) {}
 
-Color TappingText::curColor(const rendering::PaintOptions& opt) const
-{
-    if (Tapping* t = tapping()) {
+Color TappingText::curColor(const rendering::PaintOptions &opt) const {
+    if (Tapping *t = tapping()) {
         return t->curColor(opt);
     }
 
     return EngravingItem::curColor(opt);
 }
-}
+} // namespace mu::engraving

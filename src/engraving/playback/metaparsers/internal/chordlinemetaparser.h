@@ -26,15 +26,14 @@
 #include "playback/metaparsers/metaparserbase.h"
 
 namespace mu::engraving {
-class ChordLineMetaParser : public MetaParserBase<ChordLineMetaParser>
-{
+class ChordLineMetaParser : public MetaParserBase<ChordLineMetaParser> {
 protected:
     friend MetaParserBase;
 
-    static void doParse(const EngravingItem* item, const RenderingContext& ctx, muse::mpe::ArticulationMap& result);
+    static void doParse(const EngravingItem *item, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
 
     static muse::mpe::ArticulationType chordLineArticulationType(const ChordLineType chordLineType);
 };
-}
+} // namespace mu::engraving
 
 #endif // MU_ENGRAVING_CHORDLINEMETAPARSER_H

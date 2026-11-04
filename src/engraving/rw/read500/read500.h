@@ -26,24 +26,24 @@
 namespace mu::engraving {
 class Score;
 class XmlReader;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::read500 {
 class ReadContext;
-class Read500 : public rw::IReader
-{
+
+class Read500 : public rw::IReader {
 public:
 
-    muse::Ret readScoreFile(Score* score, XmlReader& e, rw::ReadInOutData* data) override;
+    muse::Ret readScoreFile(Score *score, XmlReader &e, rw::ReadInOutData *data) override;
 
-    static bool readScoreTag(Score* score, XmlReader& e, ReadContext& ctx);
+    static bool readScoreTag(Score *score, XmlReader &e, ReadContext &ctx);
 
-    bool pasteStaff(XmlReader& e, Segment* dst, staff_idx_t dstStaff, Fraction scale) override;
-    void pasteSymbols(XmlReader& e, ChordRest* dst) override;
-    void readTremoloCompat(compat::TremoloCompat* item, XmlReader& xml) override;
+    bool pasteStaff(XmlReader &e, Segment *dst, staff_idx_t dstStaff, Fraction scale) override;
+    void pasteSymbols(XmlReader &e, ChordRest *dst) override;
+    void readTremoloCompat(compat::TremoloCompat *item, XmlReader &xml) override;
 
 private:
-    bool preparePasteDurationElement(Score* score, const Fraction& tick, const Fraction& ticks, const track_idx_t track);
-    void doReadItem(EngravingItem* item, XmlReader& xml) override;
+    bool preparePasteDurationElement(Score *score, const Fraction &tick, const Fraction &ticks, const track_idx_t track);
+    void doReadItem(EngravingItem *item, XmlReader &xml) override;
 };
-}
+} // namespace mu::engraving::read500

@@ -44,33 +44,29 @@ using namespace mu::engraving;
 
 namespace mu::iex::mnxio {
 namespace {
-class MeasureNumberState
-{
+class MeasureNumberState {
 public:
     MeasureNumberState() { init(); }
 
-    int displayNumber(const Measure* measure)
-    {
+    int displayNumber(const Measure *measure) {
         updateForMeasure(measure);
         return m_displayNumber;
     }
 
 private:
-    void init()
-    {
+    void init() {
         m_measureNumber = 1;
         m_measureNumberOffset = 0;
         m_displayNumber = 1;
     }
 
-    void updateForMeasure(const Measure* measure)
-    {
-        const MeasureBase* previousMB = measure->prev();
+    void updateForMeasure(const Measure *measure) {
+        const MeasureBase *previousMB = measure->prev();
         if (previousMB) {
             previousMB = previousMB->mbWithPrecedingSectionBreak();
         }
         if (previousMB) {
-            const LayoutBreak* layoutBreak = previousMB->sectionBreakElement();
+            const LayoutBreak *layoutBreak = previousMB->sectionBreakElement();
             if (layoutBreak && layoutBreak->startWithMeasureOne()) {
                 init();
             }
@@ -99,13 +95,12 @@ private:
 
 /// Finds the time signature element that this measure introduces, if any. The
 /// measure's own timesig() is only a fraction, so this is the only source for the glyph.
-static const TimeSig* findTimeSigElement(const Measure* measure)
-{
-    const Segment* segment = measure->findSegmentR(SegmentType::TimeSig, Fraction(0, 1));
+static const TimeSig *findTimeSigElement(const Measure *measure) {
+    const Segment *segment = measure->findSegmentR(SegmentType::TimeSig, Fraction(0, 1));
     if (!segment) {
         return nullptr;
     }
-    for (const EngravingItem* item : segment->elist()) {
+    for (const EngravingItem *item : segment->elist()) {
         if (item && item->isTimeSig()) {
             return toTimeSig(item);
         }
@@ -113,12 +108,10 @@ static const TimeSig* findTimeSigElement(const Measure* measure)
     return nullptr;
 }
 
-static void assignTimeSignature(mnx::global::Measure& mnxMeasure, const Measure* measure,
-                                std::optional<Fraction>& prevTimeSig,
-                                std::optional<mnx::TimeSignatureDisplay>& prevDisplay)
-{
+static void assignTimeSignature(mnx::global::Measure &mnxMeasure, const Measure *measure, std::optional<Fraction> &prevTimeSig,
+                                std::optional<mnx::TimeSignatureDisplay> &prevDisplay) {
     const Fraction timeSig = measure->timesig();
-    const TimeSig* timeSigElement = findTimeSigElement(measure);
+    const TimeSig *timeSigElement = findTimeSigElement(measure);
     const auto display = toMnxTimeSignatureDisplay(timeSigElement ? timeSigElement->timeSigType() : TimeSigType::NORMAL);
 
     // A change of glyph alone (2/2 to cut time, say) still needs to be emitted.
@@ -146,14 +139,13 @@ static void assignTimeSignature(mnx::global::Measure& mnxMeasure, const Measure*
 //   assignKeySignature
 //---------------------------------------------------------
 
-static void assignKeySignature(mnx::global::Measure& mnxMeasure, const Score* score, const Measure* measure,
-                               std::optional<int>& prevKeyFifths)
-{
+static void assignKeySignature(mnx::global::Measure &mnxMeasure, const Score *score, const Measure *measure,
+                               std::optional<int> &prevKeyFifths) {
     if (score->staves().empty()) {
         return;
     }
 
-    const Staff* staff = score->staff(0);
+    const Staff *staff = score->staff(0);
     const KeySigEvent keySigEvent = staff->keySigEvent(measure->tick());
     if (!keySigEvent.isValid()) {
         return;
@@ -172,8 +164,7 @@ static void assignKeySignature(mnx::global::Measure& mnxMeasure, const Score* sc
 //   assignBarline
 //---------------------------------------------------------
 
-static void assignBarline(mnx::global::Measure& mnxMeasure, const Measure* measure)
-{
+static void assignBarline(mnx::global::Measure &mnxMeasure, const Measure *measure) {
     if (!measure->endBarLineVisible()) {
         mnxMeasure.ensure_barline(mnx::BarlineType::NoBarline);
         return;
@@ -181,14 +172,14 @@ static void assignBarline(mnx::global::Measure& mnxMeasure, const Measure* measu
 
     mnx::BarlineType barlineType = toMnxBarLineType(measure->endBarLineType());
     if (barlineType == mnx::BarlineType::Regular) {
-        if (const BarLine* barline = measure->endBarLine()) {
+        if (const BarLine *barline = measure->endBarLine()) {
             const int spanFrom = barline->spanFrom();
             const int spanTo = barline->spanTo();
-            const bool isShort = (spanFrom == BARLINE_SPAN_SHORT1_FROM && spanTo == BARLINE_SPAN_SHORT1_TO)
-                                 || (spanFrom == BARLINE_SPAN_SHORT2_FROM && spanTo == BARLINE_SPAN_SHORT2_TO);
+            const bool isShort = (spanFrom == BARLINE_SPAN_SHORT1_FROM && spanTo == BARLINE_SPAN_SHORT1_TO) ||
+                                 (spanFrom == BARLINE_SPAN_SHORT2_FROM && spanTo == BARLINE_SPAN_SHORT2_TO);
             if (isShort) {
                 barlineType = mnx::BarlineType::Short;
-            } else if (const Staff* staff = barline->staff()) {
+            } else if (const Staff *staff = barline->staff()) {
                 const Fraction tick = barline->segment() ? barline->segment()->tick() : measure->tick();
                 const int lines = staff->lines(tick - Fraction::eps()) - 1;
                 const bool isOneLine = (lines <= 0);
@@ -199,8 +190,8 @@ static void assignBarline(mnx::global::Measure& mnxMeasure, const Measure* measu
                         barlineType = mnx::BarlineType::Tick;
                     }
                 } else {
-                    const bool isTick = (spanFrom == BARLINE_SPAN_TICK1_FROM && spanTo == BARLINE_SPAN_TICK1_TO)
-                                        || (spanFrom == BARLINE_SPAN_TICK2_FROM && spanTo == BARLINE_SPAN_TICK2_TO);
+                    const bool isTick = (spanFrom == BARLINE_SPAN_TICK1_FROM && spanTo == BARLINE_SPAN_TICK1_TO) ||
+                                        (spanFrom == BARLINE_SPAN_TICK2_FROM && spanTo == BARLINE_SPAN_TICK2_TO);
                     if (isTick) {
                         barlineType = mnx::BarlineType::Tick;
                     }
@@ -221,8 +212,7 @@ static void assignBarline(mnx::global::Measure& mnxMeasure, const Measure* measu
 //   assignRepeats
 //---------------------------------------------------------
 
-static void assignRepeats(mnx::global::Measure& mnxMeasure, const Measure* measure)
-{
+static void assignRepeats(mnx::global::Measure &mnxMeasure, const Measure *measure) {
     if (measure->repeatStart()) {
         mnxMeasure.ensure_repeatStart();
     }
@@ -241,11 +231,8 @@ static void assignRepeats(mnx::global::Measure& mnxMeasure, const Measure* measu
 //   emit a MNX tempo entry from a TempoText item
 //---------------------------------------------------------
 
-static void createTempo(mnx::global::Measure& mnxMeasure, const TempoText* tempo, const Fraction& relTick)
-{
-    IF_ASSERT_FAILED(tempo) {
-        return;
-    }
+static void createTempo(mnx::global::Measure &mnxMeasure, const TempoText *tempo, const Fraction &relTick) {
+    IF_ASSERT_FAILED(tempo) { return; }
 
     const auto location = toMnxFractionValue(relTick).reduced();
     const double bpm = tempo->tempoBpm();
@@ -272,12 +259,9 @@ static void createTempo(mnx::global::Measure& mnxMeasure, const TempoText* tempo
 //   export measure-level elements (jumps, markers, tempos)
 //---------------------------------------------------------
 
-static void exportMeasureElements(mnx::global::Measure& mnxMeasure, const Measure* measure)
-{
-    for (EngravingItem* item : measure->el()) {
-        IF_ASSERT_FAILED(item) {
-            continue;
-        }
+static void exportMeasureElements(mnx::global::Measure &mnxMeasure, const Measure *measure) {
+    for (EngravingItem *item : measure->el()) {
+        IF_ASSERT_FAILED(item) { continue; }
 
         const Fraction relTick = item->tick() - measure->tick();
         const auto location = toMnxFractionValue(relTick).reduced();
@@ -285,61 +269,49 @@ static void exportMeasureElements(mnx::global::Measure& mnxMeasure, const Measur
         const auto locationOrEnd = relTick.isZero() ? locationEnd : location;
 
         switch (item->type()) {
-        case ElementType::JUMP: {
-            const Jump* jump = toJump(item);
-            IF_ASSERT_FAILED(jump) {
+            case ElementType::JUMP: {
+                const Jump *jump = toJump(item);
+                IF_ASSERT_FAILED(jump) { break; }
+                if (const auto mnxJt = toMnxJumpType(jump->jumpType())) {
+                    /// @note Current jump types default to measure end when stored at tick 0.
+                    /// When MNX adds new types, revisit placement of new types.
+                    mnxMeasure.ensure_jump(*mnxJt, locationOrEnd);
+                }
                 break;
             }
-            if (const auto mnxJt = toMnxJumpType(jump->jumpType())) {
-                /// @note Current jump types default to measure end when stored at tick 0.
-                /// When MNX adds new types, revisit placement of new types.
-                mnxMeasure.ensure_jump(*mnxJt, locationOrEnd);
-            }
-            break;
-        }
-        case ElementType::MARKER: {
-            const Marker* marker = toMarker(item);
-            IF_ASSERT_FAILED(marker) {
+            case ElementType::MARKER: {
+                const Marker *marker = toMarker(item);
+                IF_ASSERT_FAILED(marker) { break; }
+                if (marker->markerType() == MarkerType::FINE) {
+                    mnxMeasure.ensure_fine(locationOrEnd);
+                } else if (marker->isSegno()) {
+                    mnxMeasure.ensure_segno(location);
+                    /// @todo Export segno glyph when appropriate (defer pending MNX spec clarifications).
+                }
                 break;
             }
-            if (marker->markerType() == MarkerType::FINE) {
-                mnxMeasure.ensure_fine(locationOrEnd);
-            } else if (marker->isSegno()) {
-                mnxMeasure.ensure_segno(location);
-                /// @todo Export segno glyph when appropriate (defer pending MNX spec clarifications).
-            }
-            break;
-        }
-        default:
-            break;
+            default: break;
         }
     }
 
-    for (const Segment* segment = measure->first(); segment; segment = segment->next()) {
-        for (const EngravingItem* item : segment->annotations()) {
-            IF_ASSERT_FAILED(item) {
-                continue;
-            }
+    for (const Segment *segment = measure->first(); segment; segment = segment->next()) {
+        for (const EngravingItem *item : segment->annotations()) {
+            IF_ASSERT_FAILED(item) { continue; }
 
             const Fraction relTick = item->tick() - measure->tick();
             switch (item->type()) {
-            case ElementType::TEMPO_TEXT:
-                createTempo(mnxMeasure, toTempoText(item), relTick);
-                break;
-            default:
-                break;
+                case ElementType::TEMPO_TEXT: createTempo(mnxMeasure, toTempoText(item), relTick); break;
+                default: break;
             }
         }
     }
 
-    if (const BarLine* barLine = measure->endBarLine()) {
-        if (const Segment* seg = barLine->segment()) {
-            for (const EngravingItem* item : seg->annotations()) {
-                IF_ASSERT_FAILED(item) {
-                    continue;
-                }
+    if (const BarLine *barLine = measure->endBarLine()) {
+        if (const Segment *seg = barLine->segment()) {
+            for (const EngravingItem *item : seg->annotations()) {
+                IF_ASSERT_FAILED(item) { continue; }
                 if (item->isFermata()) {
-                    const Fermata* fermata = toFermata(item);
+                    const Fermata *fermata = toFermata(item);
                     DO_ASSERT(fermata);
                     if (fermata) {
                         mnxMeasure.set_fermata(MnxExporter::mnxFermataFromFermata(fermata));
@@ -354,8 +326,7 @@ static void exportMeasureElements(mnx::global::Measure& mnxMeasure, const Measur
 //   createGlobal
 //---------------------------------------------------------
 
-void MnxExporter::createGlobal()
-{
+void MnxExporter::createGlobal() {
     /// @note Lyrics metadata is exported at the end of `createParts`.
     /// @todo Export global sounds dictionary (mnx::global::Sound).
 
@@ -370,9 +341,9 @@ void MnxExporter::createGlobal()
     std::optional<int> prevKeyFifths;
     size_t measureIndex = 0;
 
-    for (const Measure* measure = m_score->firstMeasure(); measure; measure = measure->nextMeasure()) {
+    for (const Measure *measure = m_score->firstMeasure(); measure; measure = measure->nextMeasure()) {
         auto mnxMeasure = mnxMeasures.append();
-        mnxMeasure.set_id(getOrAssignEID(const_cast<Measure*>(measure)).toStdString());
+        mnxMeasure.set_id(getOrAssignEID(const_cast<Measure *>(measure)).toStdString());
         m_measToMnxMeas.emplace(measure, measureIndex);
 
         assignBarline(mnxMeasure, measure);

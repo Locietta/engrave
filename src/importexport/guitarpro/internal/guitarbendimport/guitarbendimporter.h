@@ -29,17 +29,16 @@ namespace mu::engraving {
 class Note;
 class Chord;
 class Score;
-}
+} // namespace mu::engraving
 
 namespace mu::iex::guitarpro {
-class GuitarBendImporter
-{
+class GuitarBendImporter {
 public:
 
-    GuitarBendImporter(mu::engraving::Score* score);
+    GuitarBendImporter(mu::engraving::Score *score);
 
-    void collectBend(mu::engraving::Note* note, const mu::engraving::PitchValues& pitchValues);
-    void collectDive(const mu::engraving::Chord* chord, const mu::engraving::PitchValues& pitchValues);
+    void collectBend(mu::engraving::Note *note, const mu::engraving::PitchValues &pitchValues);
+    void collectDive(const mu::engraving::Chord *chord, const mu::engraving::PitchValues &pitchValues);
     void addElementsToScore();
 
 private:
@@ -47,6 +46,6 @@ private:
     BendDataCollector m_bendCollector;
     DiveDataCollector m_diveCollector;
     BendBuilder m_bendBuilder;
-    mu::engraving::Score* m_score = nullptr;
+    mu::engraving::Score *m_score = nullptr;
 };
-} // mu::iex::guitarpro
+} // namespace mu::iex::guitarpro

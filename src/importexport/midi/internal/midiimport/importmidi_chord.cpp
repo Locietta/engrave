@@ -38,56 +38,76 @@
 
 #include "log.h"
 
-namespace mu::iex::midi {
-namespace MChord {
-bool isGrandStaffProgram(GM1Program program)
-{
+namespace mu::iex::midi { namespace MChord {
+bool isGrandStaffProgram(GM1Program program) {
     static constexpr std::array grandStaffPrograms = {
-        GM1Program::AcousticGrandPiano, GM1Program::BrightAcousticPiano,
-        GM1Program::ElectricGrandPiano, GM1Program::HonkyTonkPiano,
-        GM1Program::ElectricPiano1,     GM1Program::ElectricPiano2,
-        GM1Program::Harpsichord,        GM1Program::Clavi,
+        GM1Program::AcousticGrandPiano,
+        GM1Program::BrightAcousticPiano,
+        GM1Program::ElectricGrandPiano,
+        GM1Program::HonkyTonkPiano,
+        GM1Program::ElectricPiano1,
+        GM1Program::ElectricPiano2,
+        GM1Program::Harpsichord,
+        GM1Program::Clavi,
 
-        GM1Program::Celesta,    GM1Program::MusicBox,
-        GM1Program::Vibraphone, GM1Program::Marimba,
-        GM1Program::Xylophone,  GM1Program::Dulcimer,
+        GM1Program::Celesta,
+        GM1Program::MusicBox,
+        GM1Program::Vibraphone,
+        GM1Program::Marimba,
+        GM1Program::Xylophone,
+        GM1Program::Dulcimer,
 
-        GM1Program::DrawbarOrgan,   GM1Program::PercussiveOrgan,
-        GM1Program::RockOrgan,      GM1Program::ChurchOrgan,
-        GM1Program::ReedOrgan,      GM1Program::Accordion,
+        GM1Program::DrawbarOrgan,
+        GM1Program::PercussiveOrgan,
+        GM1Program::RockOrgan,
+        GM1Program::ChurchOrgan,
+        GM1Program::ReedOrgan,
+        GM1Program::Accordion,
         GM1Program::TangoAccordion,
 
         GM1Program::OrchestralHarp,
 
-        GM1Program::SynthStrings1, GM1Program::SynthStrings2,
+        GM1Program::SynthStrings1,
+        GM1Program::SynthStrings2,
         GM1Program::SynthVoice,
 
-        GM1Program::SynthBrass1, GM1Program::SynthBrass2,
+        GM1Program::SynthBrass1,
+        GM1Program::SynthBrass2,
 
-        GM1Program::Lead1Square,   GM1Program::Lead2Sawtooth,
-        GM1Program::Lead3Calliope, GM1Program::Lead4Chiff,
-        GM1Program::Lead5Charang,  GM1Program::Lead6Voice,
-        GM1Program::Lead7Fifths,   GM1Program::Lead8BassAndLead,
+        GM1Program::Lead1Square,
+        GM1Program::Lead2Sawtooth,
+        GM1Program::Lead3Calliope,
+        GM1Program::Lead4Chiff,
+        GM1Program::Lead5Charang,
+        GM1Program::Lead6Voice,
+        GM1Program::Lead7Fifths,
+        GM1Program::Lead8BassAndLead,
 
-        GM1Program::Pad1NewAge,    GM1Program::Pad2Warm,
-        GM1Program::Pad3Polysynth, GM1Program::Pad4Choir,
-        GM1Program::Pad5Bowed,     GM1Program::Pad6Metallic,
-        GM1Program::Pad7Halo,      GM1Program::Pad8Sweep,
+        GM1Program::Pad1NewAge,
+        GM1Program::Pad2Warm,
+        GM1Program::Pad3Polysynth,
+        GM1Program::Pad4Choir,
+        GM1Program::Pad5Bowed,
+        GM1Program::Pad6Metallic,
+        GM1Program::Pad7Halo,
+        GM1Program::Pad8Sweep,
 
-        GM1Program::FX1Rain,       GM1Program::FX2Soundtrack,
-        GM1Program::FX3Crystal,    GM1Program::FX4Atmosphere,
-        GM1Program::FX5Brightness, GM1Program::FX6Goblins,
-        GM1Program::FX7Echoes,     GM1Program::FX8SciFi,
+        GM1Program::FX1Rain,
+        GM1Program::FX2Soundtrack,
+        GM1Program::FX3Crystal,
+        GM1Program::FX4Atmosphere,
+        GM1Program::FX5Brightness,
+        GM1Program::FX6Goblins,
+        GM1Program::FX7Echoes,
+        GM1Program::FX8SciFi,
     };
 
     return muse::contains(grandStaffPrograms, program);
 }
 
-std::multimap<ReducedFraction, MidiChord>::iterator
-findFirstChordInRange(std::multimap<ReducedFraction, MidiChord>& chords,
-                      const ReducedFraction& startRangeTick,
-                      const ReducedFraction& endRangeTick)
-{
+std::multimap<ReducedFraction, MidiChord>::iterator findFirstChordInRange(std::multimap<ReducedFraction, MidiChord> &chords,
+                                                                          const ReducedFraction &startRangeTick,
+                                                                          const ReducedFraction &endRangeTick) {
     auto iter = chords.lower_bound(startRangeTick);
     if (iter != chords.end() && iter->first >= endRangeTick) {
         iter = chords.end();
@@ -95,11 +115,9 @@ findFirstChordInRange(std::multimap<ReducedFraction, MidiChord>& chords,
     return iter;
 }
 
-std::multimap<ReducedFraction, MidiChord>::const_iterator
-findFirstChordInRange(const std::multimap<ReducedFraction, MidiChord>& chords,
-                      const ReducedFraction& startRangeTick,
-                      const ReducedFraction& endRangeTick)
-{
+std::multimap<ReducedFraction, MidiChord>::const_iterator findFirstChordInRange(const std::multimap<ReducedFraction, MidiChord> &chords,
+                                                                                const ReducedFraction &startRangeTick,
+                                                                                const ReducedFraction &endRangeTick) {
     auto iter = chords.lower_bound(startRangeTick);
     if (iter != chords.end() && iter->first >= endRangeTick) {
         iter = chords.end();
@@ -107,16 +125,14 @@ findFirstChordInRange(const std::multimap<ReducedFraction, MidiChord>& chords,
     return iter;
 }
 
-const ReducedFraction& minAllowedDuration()
-{
+const ReducedFraction &minAllowedDuration() {
     const static auto minDuration = ReducedFraction::fromTicks(engraving::Constants::DIVISION) / 32;
     return minDuration;
 }
 
-ReducedFraction minNoteOffTime(const std::vector<MidiNote>& notes)
-{
+ReducedFraction minNoteOffTime(const std::vector<MidiNote> &notes) {
     if (notes.empty()) {
-        return { 0, 1 };
+        return {0, 1};
     }
     auto it = notes.begin();
     ReducedFraction minOffTime = it->offTime;
@@ -128,10 +144,9 @@ ReducedFraction minNoteOffTime(const std::vector<MidiNote>& notes)
     return minOffTime;
 }
 
-ReducedFraction maxNoteOffTime(const std::vector<MidiNote>& notes)
-{
+ReducedFraction maxNoteOffTime(const std::vector<MidiNote> &notes) {
     ReducedFraction maxOffTime(0, 1);
-    for (const auto& note: notes) {
+    for (const auto &note : notes) {
         if (note.offTime > maxOffTime) {
             maxOffTime = note.offTime;
         }
@@ -139,22 +154,19 @@ ReducedFraction maxNoteOffTime(const std::vector<MidiNote>& notes)
     return maxOffTime;
 }
 
-ReducedFraction minNoteLen(const std::pair<const ReducedFraction, MidiChord>& chord)
-{
+ReducedFraction minNoteLen(const std::pair<const ReducedFraction, MidiChord> &chord) {
     const auto minOffTime = minNoteOffTime(chord.second.notes);
     return minOffTime - chord.first;
 }
 
-ReducedFraction maxNoteLen(const std::pair<const ReducedFraction, MidiChord>& chord)
-{
+ReducedFraction maxNoteLen(const std::pair<const ReducedFraction, MidiChord> &chord) {
     const auto maxOffTime = maxNoteOffTime(chord.second.notes);
     return maxOffTime - chord.first;
 }
 
-void removeOverlappingNotes(std::vector<MidiNote>& notes)
-{
+void removeOverlappingNotes(std::vector<MidiNote> &notes) {
     std::list<MidiNote> tempNotes;
-    for (const auto& note: notes) {
+    for (const auto &note : notes) {
         tempNotes.push_back(note);
     }
 
@@ -162,7 +174,7 @@ void removeOverlappingNotes(std::vector<MidiNote>& notes)
         for (auto noteIt2 = std::next(noteIt1); noteIt2 != tempNotes.end();) {
             if (noteIt2->pitch == noteIt1->pitch) {
                 // overlapping notes found
-                if (noteIt2->offTime > noteIt1->offTime) {            // set max len before erase
+                if (noteIt2->offTime > noteIt1->offTime) { // set max len before erase
                     noteIt1->offTime = noteIt2->offTime;
                 }
                 noteIt2 = tempNotes.erase(noteIt2);
@@ -173,43 +185,42 @@ void removeOverlappingNotes(std::vector<MidiNote>& notes)
         }
     }
     notes.clear();
-    for (const auto& note: tempNotes) {
+    for (const auto &note : tempNotes) {
         notes.push_back(note);
     }
 }
 
 // remove overlapping notes with the same pitch
 
-void removeOverlappingNotes(std::multimap<int, MTrack>& tracks)
-{
-    for (auto& track: tracks) {
-        auto& chords = track.second.chords;
+void removeOverlappingNotes(std::multimap<int, MTrack> &tracks) {
+    for (auto &track : tracks) {
+        auto &chords = track.second.chords;
         if (chords.empty()) {
             continue;
         }
 #ifndef NDEBUG
-        Q_ASSERT_X(MidiTuplet::areTupletRangesOk(chords, track.second.tuplets),
-                   "MChord::removeOverlappingNotes", "Tuplet chord/note is outside tuplet "
-                                                     "or non-tuplet chord/note is inside tuplet before overlaps remove");
+        Q_ASSERT_X(MidiTuplet::areTupletRangesOk(chords, track.second.tuplets), "MChord::removeOverlappingNotes",
+                   "Tuplet chord/note is outside tuplet "
+                   "or non-tuplet chord/note is inside tuplet before overlaps remove");
 #endif
         for (auto i1 = chords.begin(); i1 != chords.end();) {
-            const auto& onTime1 = i1->first;
-            auto& chord1 = i1->second;
+            const auto &onTime1 = i1->first;
+            auto &chord1 = i1->second;
             removeOverlappingNotes(chord1.notes);
 
             for (auto note1It = chord1.notes.begin(); note1It != chord1.notes.end();) {
-                auto& note1 = *note1It;
+                auto &note1 = *note1It;
 
                 for (auto i2 = std::next(i1); i2 != chords.end(); ++i2) {
-                    const auto& onTime2 = i2->first;
+                    const auto &onTime2 = i2->first;
                     if (onTime2 >= note1.offTime) {
                         break;
                     }
-                    auto& chord2 = i2->second;
+                    auto &chord2 = i2->second;
                     if (chord1.voice != chord2.voice) {
                         continue;
                     }
-                    for (auto& note2: chord2.notes) {
+                    for (auto &note2 : chord2.notes) {
                         if (note2.pitch != note1.pitch) {
                             continue;
                         }
@@ -244,9 +255,9 @@ void removeOverlappingNotes(std::multimap<int, MTrack>& tracks)
 
         MidiTuplet::removeEmptyTuplets(track.second);
 #ifndef NDEBUG
-        Q_ASSERT_X(MidiTuplet::areTupletRangesOk(chords, track.second.tuplets),
-                   "MChord::removeOverlappingNotes", "Tuplet chord/note is outside tuplet "
-                                                     "or non-tuplet chord/note is inside tuplet after overlaps remove");
+        Q_ASSERT_X(MidiTuplet::areTupletRangesOk(chords, track.second.tuplets), "MChord::removeOverlappingNotes",
+                   "Tuplet chord/note is outside tuplet "
+                   "or non-tuplet chord/note is inside tuplet after overlaps remove");
 #endif
     }
 }
@@ -254,13 +265,12 @@ void removeOverlappingNotes(std::multimap<int, MTrack>& tracks)
 #ifndef NDEBUG
 
 // check for equal on time values with the same voice that is invalid
-bool areOnTimeValuesDifferent(const std::multimap<ReducedFraction, MidiChord>& chords)
-{
+bool areOnTimeValuesDifferent(const std::multimap<ReducedFraction, MidiChord> &chords) {
     std::map<ReducedFraction, int> onTimeVoices;
-    for (const auto& chordEvent: chords) {
+    for (const auto &chordEvent : chords) {
         const auto it = onTimeVoices.find(chordEvent.first);
         if (it == onTimeVoices.end()) {
-            onTimeVoices.insert({ chordEvent.first, chordEvent.second.voice });
+            onTimeVoices.insert({chordEvent.first, chordEvent.second.voice});
         } else if (chordEvent.second.voice == it->second) {
             return false;
         }
@@ -268,9 +278,8 @@ bool areOnTimeValuesDifferent(const std::multimap<ReducedFraction, MidiChord>& c
     return true;
 }
 
-bool areNotesLongEnough(const std::multimap<ReducedFraction, MidiChord>& chords)
-{
-    for (const auto& chord: chords) {
+bool areNotesLongEnough(const std::multimap<ReducedFraction, MidiChord> &chords) {
+    for (const auto &chord : chords) {
         if (minNoteLen(chord) < minAllowedDuration()) {
             return false;
         }
@@ -278,11 +287,10 @@ bool areNotesLongEnough(const std::multimap<ReducedFraction, MidiChord>& chords)
     return true;
 }
 
-bool areBarIndexesSuccessive(const std::multimap<ReducedFraction, MidiChord>& chords)
-{
+bool areBarIndexesSuccessive(const std::multimap<ReducedFraction, MidiChord> &chords) {
     int barIndex = 0;
-    for (const auto& chord: chords) {
-        const MidiChord& c = chord.second;
+    for (const auto &chord : chords) {
+        const MidiChord &c = chord.second;
         if (c.barIndex < 0) {
             return false;
         }
@@ -294,10 +302,8 @@ bool areBarIndexesSuccessive(const std::multimap<ReducedFraction, MidiChord>& ch
     return true;
 }
 
-bool isLastTickValid(const ReducedFraction& lastTick,
-                     const std::multimap<ReducedFraction, MidiChord>& chords)
-{
-    for (const auto& chord: chords) {
+bool isLastTickValid(const ReducedFraction &lastTick, const std::multimap<ReducedFraction, MidiChord> &chords) {
+    for (const auto &chord : chords) {
         if (maxNoteOffTime(chord.second.notes) > lastTick) {
             return false;
         }
@@ -305,10 +311,8 @@ bool isLastTickValid(const ReducedFraction& lastTick,
     return true;
 }
 
-bool isLastTickValid(const ReducedFraction& lastTick,
-                     const std::multimap<int, MTrack>& tracks)
-{
-    for (const auto& track: tracks) {
+bool isLastTickValid(const ReducedFraction &lastTick, const std::multimap<int, MTrack> &tracks) {
+    for (const auto &track : tracks) {
         if (!(isLastTickValid(lastTick, track.second.chords))) {
             return false;
         }
@@ -316,9 +320,8 @@ bool isLastTickValid(const ReducedFraction& lastTick,
     return true;
 }
 
-bool areBarIndexesSet(const std::multimap<ReducedFraction, MidiChord>& chords)
-{
-    for (const auto& chord: chords) {
+bool areBarIndexesSet(const std::multimap<ReducedFraction, MidiChord> &chords) {
+    for (const auto &chord : chords) {
         if (chord.second.barIndex == -1) {
             return false;
         }
@@ -328,20 +331,18 @@ bool areBarIndexesSet(const std::multimap<ReducedFraction, MidiChord>& chords)
 
 #endif
 
-void setToNegative(ReducedFraction& v1, ReducedFraction& v2, ReducedFraction& v3)
-{
+void setToNegative(ReducedFraction &v1, ReducedFraction &v2, ReducedFraction &v3) {
     v1 = ReducedFraction(-1, 1);
     v2 = ReducedFraction(-1, 1);
     v3 = ReducedFraction(-1, 1);
 }
 
-bool hasNotesWithEqualPitch(const MidiChord& chord1, const MidiChord& chord2)
-{
+bool hasNotesWithEqualPitch(const MidiChord &chord1, const MidiChord &chord2) {
     std::set<int> notes1;
-    for (const auto& note: chord1.notes) {
+    for (const auto &note : chord1.notes) {
         notes1.insert(note.pitch);
     }
-    for (const auto& note: chord2.notes) {
+    for (const auto &note : chord2.notes) {
         if (notes1.find(note.pitch) != notes1.end()) {
             return true;
         }
@@ -349,12 +350,8 @@ bool hasNotesWithEqualPitch(const MidiChord& chord1, const MidiChord& chord2)
     return false;
 }
 
-void collectChords(
-    std::multimap<int, MTrack>& tracks,
-    const ReducedFraction& humanTolCoeff,
-    const ReducedFraction& nonHumanTolCoeff)
-{
-    for (auto& track: tracks) {
+void collectChords(std::multimap<int, MTrack> &tracks, const ReducedFraction &humanTolCoeff, const ReducedFraction &nonHumanTolCoeff) {
+    for (auto &track : tracks) {
         collectChords(track.second, humanTolCoeff, nonHumanTolCoeff);
     }
 }
@@ -383,26 +380,19 @@ void collectChords(
 // ------x-------------------------------|----------------|---------------------|------
 //       |<-----------------thresh time------------------>|<--thresh ext time-->|
 //
-void collectChords(
-    MTrack& track,
-    const ReducedFraction& humanTolCoeff,
-    const ReducedFraction& nonHumanTolCoeff)
-{
-    auto& chords = track.chords;
+void collectChords(MTrack &track, const ReducedFraction &humanTolCoeff, const ReducedFraction &nonHumanTolCoeff) {
+    auto &chords = track.chords;
     if (chords.empty()) {
         return;
     }
 #ifndef NDEBUG
-    Q_ASSERT_X(areNotesLongEnough(chords),
-               "MChord::collectChords", "There are too short notes");
+    Q_ASSERT_X(areNotesLongEnough(chords), "MChord::collectChords", "There are too short notes");
 #endif
 
-    const auto& opers = midiImportOperations.data()->trackOpers;
+    const auto &opers = midiImportOperations.data()->trackOpers;
     const auto minAllowedDur = minAllowedDuration();
 
-    const auto threshTime = (opers.isHumanPerformance.value())
-                            ? minAllowedDur * humanTolCoeff
-                            : minAllowedDur * nonHumanTolCoeff;
+    const auto threshTime = (opers.isHumanPerformance.value()) ? minAllowedDur * humanTolCoeff : minAllowedDur * nonHumanTolCoeff;
     const auto fudgeTime = threshTime / 4;
     const auto threshExtTime = threshTime / 2;
 
@@ -412,7 +402,7 @@ void collectChords(
     // then this is not a chord but arpeggio
     ReducedFraction maxOffTime;
 
-    setToNegative(currentChordStart, curThreshTime, maxOffTime);   // invalidate
+    setToNegative(currentChordStart, curThreshTime, maxOffTime); // invalidate
 
     for (auto it = chords.begin(); it != chords.end();) {
         if (it->second.isInTuplet) {
@@ -424,8 +414,7 @@ void collectChords(
         const auto maxNoteOffTime = MChord::maxNoteOffTime(it->second.notes);
         if (it->first < currentChordStart + curThreshTime) {
             // this branch should not be executed when it == chords.begin()
-            Q_ASSERT_X(it != chords.begin(),
-                       "MChord: collectChords", "it == chords.begin()");
+            Q_ASSERT_X(it != chords.begin(), "MChord: collectChords", "it == chords.begin()");
 
             if (it->first <= maxOffTime - minAllowedDur) {
                 // add current note to the previous chord
@@ -437,15 +426,14 @@ void collectChords(
                 }
 
                 if (!hasNotesWithEqualPitch(chordAddTo->second, it->second)) {
-                    for (const auto& note: std::as_const(it->second.notes)) {
+                    for (const auto &note : std::as_const(it->second.notes)) {
                         chordAddTo->second.notes.push_back(note);
                     }
                     if (maxNoteOffTime > maxOffTime) {
                         maxOffTime = maxNoteOffTime;
                     }
                 }
-                if (it->first >= currentChordStart + curThreshTime - fudgeTime
-                    && curThreshTime == threshTime) {
+                if (it->first >= currentChordStart + curThreshTime - fudgeTime && curThreshTime == threshTime) {
                     curThreshTime += threshExtTime;
                 }
 
@@ -460,40 +448,30 @@ void collectChords(
         ++it;
     }
 #ifndef NDEBUG
-    Q_ASSERT_X(areOnTimeValuesDifferent(chords),
-               "MChord: collectChords",
-               "onTime values of chords are equal but should be different");
+    Q_ASSERT_X(areOnTimeValuesDifferent(chords), "MChord: collectChords", "onTime values of chords are equal but should be different");
 #endif
 }
 
-void sortNotesByPitch(std::multimap<ReducedFraction, MidiChord>& chords)
-{
+void sortNotesByPitch(std::multimap<ReducedFraction, MidiChord> &chords) {
     struct {
-        bool operator()(const MidiNote& note1, const MidiNote& note2)
-        {
-            return note1.pitch < note2.pitch;
-        }
+        bool operator()(const MidiNote &note1, const MidiNote &note2) { return note1.pitch < note2.pitch; }
     } pitchSort;
 
-    for (auto& chordEvent: chords) {
+    for (auto &chordEvent : chords) {
         // in each chord sort notes by pitches
-        auto& notes = chordEvent.second.notes;
+        auto &notes = chordEvent.second.notes;
         std::sort(notes.begin(), notes.end(), pitchSort);
     }
 }
 
-void sortNotesByLength(std::multimap<ReducedFraction, MidiChord>& chords)
-{
+void sortNotesByLength(std::multimap<ReducedFraction, MidiChord> &chords) {
     struct {
-        bool operator()(const MidiNote& note1, const MidiNote& note2)
-        {
-            return note1.offTime < note2.offTime;
-        }
+        bool operator()(const MidiNote &note1, const MidiNote &note2) { return note1.offTime < note2.offTime; }
     } lenSort;
 
-    for (auto& chordEvent: chords) {
+    for (auto &chordEvent : chords) {
         // in each chord sort notes by lengths
-        auto& notes = chordEvent.second.notes;
+        auto &notes = chordEvent.second.notes;
         std::sort(notes.begin(), notes.end(), lenSort);
     }
 }
@@ -502,18 +480,17 @@ void sortNotesByLength(std::multimap<ReducedFraction, MidiChord>& chords)
 // and separate them into different chords
 // so all notes inside every chord will have equal lengths
 
-void splitUnequalChords(std::multimap<int, MTrack>& tracks)
-{
-    for (auto& track: tracks) {
-        std::vector<std::pair<ReducedFraction, MidiChord> > newChordEvents;
-        auto& chords = track.second.chords;
+void splitUnequalChords(std::multimap<int, MTrack> &tracks) {
+    for (auto &track : tracks) {
+        std::vector<std::pair<ReducedFraction, MidiChord>> newChordEvents;
+        auto &chords = track.second.chords;
         if (chords.empty()) {
             continue;
         }
         sortNotesByLength(chords);
-        for (auto& chordEvent: chords) {
-            auto& chord = chordEvent.second;
-            auto& notes = chord.notes;
+        for (auto &chordEvent : chords) {
+            auto &chord = chordEvent.second;
+            auto &notes = chord.notes;
             ReducedFraction offTime;
             for (auto it = notes.begin(); it != notes.end();) {
                 if (it == notes.begin()) {
@@ -526,7 +503,7 @@ void splitUnequalChords(std::multimap<int, MTrack>& tracks)
                         for (int j = it - notes.begin(); j > 0; --j) {
                             newChord.notes.push_back(notes[j - 1]);
                         }
-                        newChordEvents.push_back({ chordEvent.first, newChord });
+                        newChordEvents.push_back({chordEvent.first, newChord});
                         it = notes.erase(notes.begin(), it);
                         continue;
                     }
@@ -534,21 +511,17 @@ void splitUnequalChords(std::multimap<int, MTrack>& tracks)
                 ++it;
             }
         }
-        for (const auto& event: newChordEvents) {
+        for (const auto &event : newChordEvents) {
             chords.insert(event);
         }
     }
 }
 
-ReducedFraction findMinDuration(const ReducedFraction& onTime,
-                                const std::vector<MidiChord>& midiChords,
-                                const ReducedFraction& length)
-{
+ReducedFraction findMinDuration(const ReducedFraction &onTime, const std::vector<MidiChord> &midiChords, const ReducedFraction &length) {
     ReducedFraction len = length;
-    for (const auto& chord: midiChords) {
-        for (const auto& note: chord.notes) {
-            if ((note.offTime - onTime < len)
-                && (note.offTime - onTime != ReducedFraction(0, 1))) {
+    for (const auto &chord : midiChords) {
+        for (const auto &note : chord.notes) {
+            if ((note.offTime - onTime < len) && (note.offTime - onTime != ReducedFraction(0, 1))) {
                 len = note.offTime - onTime;
             }
         }
@@ -556,26 +529,24 @@ ReducedFraction findMinDuration(const ReducedFraction& onTime,
     return len;
 }
 
-void mergeChordsWithEqualOnTimeAndVoice(std::multimap<int, MTrack>& tracks)
-{
-    for (auto& track: tracks) {
-        auto& chords = track.second.chords;
+void mergeChordsWithEqualOnTimeAndVoice(std::multimap<int, MTrack> &tracks) {
+    for (auto &track : tracks) {
+        auto &chords = track.second.chords;
         if (chords.empty()) {
             continue;
         }
         // the key is pair<onTime, voice>
-        std::map<std::pair<ReducedFraction, int>,
-                 std::multimap<ReducedFraction, MidiChord>::iterator> onTimes;
+        std::map<std::pair<ReducedFraction, int>, std::multimap<ReducedFraction, MidiChord>::iterator> onTimes;
 
         for (auto it = chords.begin(); it != chords.end();) {
-            const auto& onTime = it->first;
+            const auto &onTime = it->first;
             const int voice = it->second.voice;
-            auto fit = onTimes.find({ onTime, voice });
+            auto fit = onTimes.find({onTime, voice});
             if (fit == onTimes.end()) {
-                onTimes.insert({ { onTime, voice }, it });
+                onTimes.insert({{onTime, voice}, it});
             } else {
-                auto& oldNotes = fit->second->second.notes;
-                auto& newNotes = it->second.notes;
+                auto &oldNotes = fit->second->second.notes;
+                auto &newNotes = it->second.notes;
                 oldNotes.insert(oldNotes.end(), newNotes.begin(), newNotes.end());
                 it = chords.erase(it);
                 continue;
@@ -585,11 +556,9 @@ void mergeChordsWithEqualOnTimeAndVoice(std::multimap<int, MTrack>& tracks)
     }
 }
 
-int chordAveragePitch(const std::vector<MidiNote>& notes, int beg, int end)
-{
+int chordAveragePitch(const std::vector<MidiNote> &notes, int beg, int end) {
     Q_ASSERT_X(!notes.empty(), "MChord::chordAveragePitch", "Empty notes");
-    Q_ASSERT_X(end > 0 && beg >= 0 && end > beg,
-               "MChord::chordAveragePitch", "Invalid note indexes");
+    Q_ASSERT_X(end > 0 && beg >= 0 && end > beg, "MChord::chordAveragePitch", "Invalid note indexes");
 
     int sum = 0;
     for (int i = beg; i != end; ++i) {
@@ -598,8 +567,7 @@ int chordAveragePitch(const std::vector<MidiNote>& notes, int beg, int end)
     return static_cast<int>(std::lround(sum * 1.0 / (end - beg)));
 }
 
-int chordAveragePitch(const std::vector<MidiNote>& notes)
-{
+int chordAveragePitch(const std::vector<MidiNote> &notes) {
     Q_ASSERT_X(!notes.empty(), "MChord::chordAveragePitch", "Empty notes");
 
     return chordAveragePitch(notes, 0, notes.size());
@@ -609,11 +577,10 @@ int chordAveragePitch(const std::vector<MidiNote>& notes)
 // with (on time + max chord len) < given time moment
 // because chord cannot be longer than found max length
 
-ReducedFraction findMaxChordLength(const std::multimap<ReducedFraction, MidiChord>& chords)
-{
+ReducedFraction findMaxChordLength(const std::multimap<ReducedFraction, MidiChord> &chords) {
     ReducedFraction maxChordLength;
 
-    for (const auto& chord: chords) {
+    for (const auto &chord : chords) {
         const auto offTime = maxNoteOffTime(chord.second.notes);
         if (offTime - chord.first > maxChordLength) {
             maxChordLength = offTime - chord.first;
@@ -623,13 +590,8 @@ ReducedFraction findMaxChordLength(const std::multimap<ReducedFraction, MidiChor
 }
 
 std::vector<std::multimap<ReducedFraction, MidiChord>::const_iterator>
-findChordsForTimeRange(
-    int voice,
-    const ReducedFraction& onTime,
-    const ReducedFraction& offTime,
-    const std::multimap<ReducedFraction, MidiChord>& chords,
-    const ReducedFraction& maxChordLength)
-{
+findChordsForTimeRange(int voice, const ReducedFraction &onTime, const ReducedFraction &offTime,
+                       const std::multimap<ReducedFraction, MidiChord> &chords, const ReducedFraction &maxChordLength) {
     std::vector<std::multimap<ReducedFraction, MidiChord>::const_iterator> result;
 
     if (chords.empty()) {
@@ -643,7 +605,7 @@ findChordsForTimeRange(
     --it;
 
     while (it->first + maxChordLength > onTime) {
-        const MidiChord& chord = it->second;
+        const MidiChord &chord = it->second;
         if (chord.voice == voice) {
             const auto chordInterval = std::make_pair(it->first, maxNoteOffTime(chord.notes));
             const auto durationInterval = std::make_pair(onTime, offTime);
@@ -661,17 +623,13 @@ findChordsForTimeRange(
     return result;
 }
 
-void setBarIndexes(
-    std::multimap<ReducedFraction, MidiChord>& chords,
-    const ReducedFraction& basicQuant,
-    const ReducedFraction& lastTick,
-    const engraving::TimeSigMap* sigmap)
-{
+void setBarIndexes(std::multimap<ReducedFraction, MidiChord> &chords, const ReducedFraction &basicQuant, const ReducedFraction &lastTick,
+                   const engraving::TimeSigMap *sigmap) {
     if (chords.empty()) {
         return;
     }
     auto it = chords.begin();
-    for (int barIndex = 0;; ++barIndex) {         // iterate over all measures by indexes
+    for (int barIndex = 0;; ++barIndex) { // iterate over all measures by indexes
         const auto endBarTick = ReducedFraction::fromTicks(sigmap->bar2tick(barIndex + 1, 0));
         if (endBarTick <= it->first) {
             continue;
@@ -680,8 +638,8 @@ void setBarIndexes(
             const auto onTime = Quantize::findQuantizedChordOnTime(*it, basicQuant);
 #ifndef NDEBUG
             const auto barStart = ReducedFraction::fromTicks(sigmap->bar2tick(barIndex, 0));
-            Q_ASSERT_X(!(it->first >= barStart && onTime < barStart),
-                       "MChord::setBarIndexes", "quantized on time cannot be in previous bar");
+            Q_ASSERT_X(!(it->first >= barStart && onTime < barStart), "MChord::setBarIndexes",
+                       "quantized on time cannot be in previous bar");
 #endif
             if (onTime < endBarTick) {
                 it->second.barIndex = barIndex;
@@ -694,11 +652,8 @@ void setBarIndexes(
         }
     }
 #ifndef NDEBUG
-    Q_ASSERT_X(areBarIndexesSet(chords),
-               "MChord::setBarIndexes", "Not all bar indexes were set");
-    Q_ASSERT_X(areBarIndexesSuccessive(chords),
-               "MChord::setBarIndexes", "Bar indexes are not successive");
+    Q_ASSERT_X(areBarIndexesSet(chords), "MChord::setBarIndexes", "Not all bar indexes were set");
+    Q_ASSERT_X(areBarIndexesSuccessive(chords), "MChord::setBarIndexes", "Bar indexes are not successive");
 #endif
 }
-} // namespace MChord
-} // namespace mu::iex::midi
+}} // namespace mu::iex::midi::MChord

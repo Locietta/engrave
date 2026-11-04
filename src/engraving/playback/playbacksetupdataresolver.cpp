@@ -33,12 +33,9 @@
 using namespace mu::engraving;
 using namespace muse::mpe;
 
-static const PlaybackSetupData PIANO_SETUP_DATA = {
-    SoundId::Piano, SoundCategory::Keyboards
-};
+static const PlaybackSetupData PIANO_SETUP_DATA = {SoundId::Piano, SoundCategory::Keyboards};
 
-void PlaybackSetupDataResolver::resolveSetupData(const Instrument* instrument, PlaybackSetupData& result) const
-{
+void PlaybackSetupDataResolver::resolveSetupData(const Instrument *instrument, PlaybackSetupData &result) const {
     if (!instrument->soundId().empty()) {
         result = PlaybackSetupData::fromString(instrument->soundId());
         result.supportsSingleNoteDynamics = instrument->singleNoteDynamics();
@@ -66,20 +63,16 @@ void PlaybackSetupDataResolver::resolveSetupData(const Instrument* instrument, P
         return;
     }
 
-    LOGW() << "Unable to resolve setup data for instrument, id: " << instrument->id()
-           << ", family: " << instrument->family() << "; fallback to piano";
+    LOGW() << "Unable to resolve setup data for instrument, id: " << instrument->id() << ", family: " << instrument->family()
+           << "; fallback to piano";
 
     result = PIANO_SETUP_DATA;
 }
 
-void PlaybackSetupDataResolver::resolveChordSymbolsSetupData(const Instrument* instrument, PlaybackSetupData& result) const
-{
+void PlaybackSetupDataResolver::resolveChordSymbolsSetupData(const Instrument *instrument, PlaybackSetupData &result) const {
     if (instrument->hasStrings()) {
         static const PlaybackSetupData GUITAR_SETUP_DATA = {
-            SoundId::Guitar, SoundCategory::Strings, { SoundSubCategory::Acoustic,
-                                                       SoundSubCategory::Nylon,
-                                                       SoundSubCategory::Plucked }
-        };
+            SoundId::Guitar, SoundCategory::Strings, {SoundSubCategory::Acoustic, SoundSubCategory::Nylon, SoundSubCategory::Plucked}};
 
         result = GUITAR_SETUP_DATA;
     } else {
@@ -87,11 +80,8 @@ void PlaybackSetupDataResolver::resolveChordSymbolsSetupData(const Instrument* i
     }
 }
 
-void PlaybackSetupDataResolver::resolveMetronomeSetupData(PlaybackSetupData& result) const
-{
-    static const PlaybackSetupData METRONOME_SETUP_DATA = {
-        SoundId::Block, SoundCategory::Percussions, { SoundSubCategory::Wooden }
-    };
+void PlaybackSetupDataResolver::resolveMetronomeSetupData(PlaybackSetupData &result) const {
+    static const PlaybackSetupData METRONOME_SETUP_DATA = {SoundId::Block, SoundCategory::Percussions, {SoundSubCategory::Wooden}};
 
     result = METRONOME_SETUP_DATA;
 }

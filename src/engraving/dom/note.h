@@ -57,18 +57,18 @@ static constexpr int MAX_DOTS = 4;
 // with respect to the note. Each note can hold a vector of line attach points, which
 // it may use to make spacing decision with the surrounding items.
 //--------------------------------------------------------------------------------
-class LineAttachPoint
-{
+class LineAttachPoint {
 public:
-    LineAttachPoint(EngravingItem* l, double x, double y, bool start)
-        : m_line(l), m_pos(PointF(x, y)), m_start(start) {}
+    LineAttachPoint(EngravingItem *l, double x, double y, bool start) : m_line(l), m_pos(PointF(x, y)), m_start(start) {}
 
-    const EngravingItem* line() const { return m_line; }
+    const EngravingItem *line() const { return m_line; }
+
     const PointF pos() const { return m_pos; }
+
     bool start() const { return m_start; }
 
 private:
-    EngravingItem* m_line = nullptr;
+    EngravingItem *m_line = nullptr;
     PointF m_pos = PointF(0.0, 0.0);
     bool m_start = true;
 };
@@ -77,16 +77,16 @@ private:
 //   @@ NoteHead
 //---------------------------------------------------------
 
-class NoteHead final : public Symbol
-{
+class NoteHead final : public Symbol {
     OBJECT_ALLOCATOR(engraving, NoteHead)
     DECLARE_CLASSOF(ElementType::NOTEHEAD)
 
 public:
     NoteHead(DummyParentOr<Note> parent);
-    NoteHead(const NoteHead&) = default;
-    NoteHead& operator=(const NoteHead&) = delete;
-    NoteHead* clone() const override { return new NoteHead(*this); }
+    NoteHead(const NoteHead &) = default;
+    NoteHead &operator=(const NoteHead &) = delete;
+
+    NoteHead *clone() const override { return new NoteHead(*this); }
 
     NoteHeadGroup headGroup() const;
 };
@@ -128,43 +128,33 @@ static const int INVALID_LINE = -10000;
 //   @P veloType         enum (Note.OFFSET_VAL, Note.USER_VAL)
 //---------------------------------------------------------------------------------------
 
-class Note final : public EngravingItem
-{
+class Note final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, Note)
     DECLARE_CLASSOF(ElementType::NOTE)
 
 public:
-    enum class SlideType : unsigned char {
-        Undefined = 0,
-        UpToNote,
-        DownToNote,
-        UpFromNote,
-        DownFromNote
-    };
+    enum class SlideType : unsigned char { Undefined = 0, UpToNote, DownToNote, UpFromNote, DownFromNote };
 
-    enum DisplayFretOption : signed char {
-        Hide = -1,
-        NoHarmonic,
-        NaturalHarmonic,
-        ArtificialHarmonic
-    };
+    enum DisplayFretOption : signed char { Hide = -1, NoHarmonic, NaturalHarmonic, ArtificialHarmonic };
 
     ~Note();
 
-    std::vector<Note*> compoundNotes() const;
+    std::vector<Note *> compoundNotes() const;
 
-    Note& operator=(const Note&) = delete;
-    virtual Note* clone() const override { return new Note(*this, false); }
+    Note &operator=(const Note &) = delete;
 
-    Chord* chord() const { return (Chord*)ownershipParent(); }
+    virtual Note *clone() const override { return new Note(*this, false); }
+
+    Chord *chord() const { return (Chord *) ownershipParent(); }
+
     void setOwnershipParent(DummyParentOr<Chord> ch);
 
     void undoUnlink() override;
 
     double mag() const override;
-    EngravingItem* elementBase() const override;
+    EngravingItem *elementBase() const override;
 
-    void scanElements(std::function<void(EngravingItem*)> func) override;
+    void scanElements(std::function<void(EngravingItem *)> func) override;
     void setTrack(track_idx_t val) override;
 
     staff_idx_t vStaffIdx() const override;
@@ -174,8 +164,8 @@ public:
 
     double headWidth() const;
     double headHeight() const;
-    double tabHeadWidth(const StaffType* tab = 0) const;
-    double tabHeadHeight(const StaffType* tab = 0) const;
+    double tabHeadWidth(const StaffType *tab = 0) const;
+    double tabHeadHeight(const StaffType *tab = 0) const;
     PointF stemDownNW() const;
     PointF stemUpSE() const;
     double bboxXShift() const;
@@ -185,48 +175,69 @@ public:
     double outsideTieAttachX(bool up) const;
 
     NoteHeadScheme headScheme() const { return m_headScheme; }
+
     void updateHeadGroup(const NoteHeadGroup headGroup);
+
     NoteHeadGroup headGroup() const { return m_headGroup; }
+
     NoteHeadType headType() const { return m_headType; }
+
     void setHeadScheme(NoteHeadScheme val);
     void setHeadGroup(NoteHeadGroup val);
     void setHeadType(NoteHeadType t);
 
     int subtype() const override { return int(m_headGroup); }
+
     TranslatableString subtypeUserName() const override;
 
     void setPitch(int val, bool notifyAboutChanged = true);
     void setPitch(int pitch, int tpc1, int tpc2);
+
     int pitch() const { return m_pitch; }
 
     double centOffset() const { return m_centOffset; }
+
     void setCentOffset(double v) { m_centOffset = v; }
+
     int quarterToneOffset() const { return std::round(m_centOffset / 50); }
 
     int ottaveCapoFret() const;
     int linkedOttavaPitchOffset() const;
-    int ppitch() const;             // playback pitch
-    int epitch() const;             // effective pitch
+    int ppitch() const; // playback pitch
+    int epitch() const; // effective pitch
     int octave() const;
     int playingOctave() const;
+
     double tuning() const { return m_tuning; }
+
     void setTuning(double v) { m_tuning = v; }
+
     double playingTuning() const;
     void undoSetTpc(int v);
     int transposition() const;
+
     bool fixed() const { return m_fixed; }
+
     void setFixed(bool v) { m_fixed = v; }
+
     int fixedLine() const { return m_fixedLine; }
+
     void setFixedLine(int v) { m_fixedLine = v; }
 
     int tpc() const;
-    int tpc1() const { return m_tpc[0]; }                  // non transposed tpc
-    int tpc2() const { return m_tpc[1]; }                  // transposed tpc
+
+    int tpc1() const { return m_tpc[0]; } // non transposed tpc
+
+    int tpc2() const { return m_tpc[1]; } // transposed tpc
+
     String tpcUserName(bool explicitAccidental = false, bool full = false) const;
 
     void setTpc(int v);
+
     void setTpc1(int v) { m_tpc[0] = v; }
+
     void setTpc2(int v) { m_tpc[1] = v; }
+
     void setTpcFromPitch(Prefer prefer = Prefer::NEAREST);
     int tpc1default(int pitch) const;
     int tpc2default(int pitch) const;
@@ -234,181 +245,232 @@ public:
 
     int playingTpc() const;
 
-    Accidental* accidental() const { return m_accidental; }
-    void setAccidental(Accidental* a) { m_accidental = a; }
+    Accidental *accidental() const { return m_accidental; }
+
+    void setAccidental(Accidental *a) { m_accidental = a; }
 
     AccidentalType accidentalType() const;
     void setAccidentalType(AccidentalType type);
 
     int line() const;
+
     void setLine(int n) { m_line = n; }
 
     int fret() const { return m_fret; }
+
     void setFret(int val) { m_fret = val; }
+
     float harmonicFret() const { return m_harmonicFret; }
+
     void setHarmonicFret(float val) { m_harmonicFret = val; }
+
     int harmonicPitchOffset() const { return m_harmonicPitchOffset; }
+
     void setHarmonicPitchOffset(int val) { m_harmonicPitchOffset = val; }
+
     DisplayFretOption displayFret() const { return m_displayFret; }
+
     void setDisplayFret(DisplayFretOption val) { m_displayFret = val; }
+
     String fretString() const { return m_fretString; }
-    void setFretString(const String& s) { m_fretString = s; }
+
+    void setFretString(const String &s) { m_fretString = s; }
+
     bool negativeFretUsed() const;
+
     int string() const { return m_string; }
+
     void setString(int val) { m_string = val; }
+
     int stringOrLine() const;
 
     bool ghost() const { return m_ghost; }
+
     void setGhost(bool val) { m_ghost = val; }
+
     bool deadNote() const { return m_deadNote; }
+
     void setDeadNote(bool deadNote) { m_deadNote = deadNote; }
 
     bool fretConflict() const { return m_fretConflict; }
+
     void setFretConflict(bool val) { m_fretConflict = val; }
 
-    void add(EngravingItem*) override;
-    void remove(EngravingItem*) override;
+    void add(EngravingItem *) override;
+    void remove(EngravingItem *) override;
 
     bool isSmall() const { return m_isSmall; }
+
     void setSmall(bool val);
 
     bool play() const { return m_play; }
+
     void setPlay(bool val) { m_play = val; }
 
-    GuitarBend* bendFor() const;
-    GuitarBend* bendBack() const;
-    GuitarBend* diveFor() const;
-    GuitarBend* diveBack() const;
-    Tie* tieFor() const { return m_tieFor; }
-    Tie* tieBack() const { return m_tieBack; }
-    Tie* tieForNonPartial() const;
-    Tie* tieBackNonPartial() const;
-    LaissezVib* laissezVib() const;
-    PartialTie* incomingPartialTie() const;
-    PartialTie* outgoingPartialTie() const;
-    void setTieFor(Tie* t);
-    void setTieBack(Tie* t);
-    Note* firstTiedNote(bool ignorePlayback = true) const;
-    Note* lastTiedNote(bool ignorePlayback = true) const;
+    GuitarBend *bendFor() const;
+    GuitarBend *bendBack() const;
+    GuitarBend *diveFor() const;
+    GuitarBend *diveBack() const;
+
+    Tie *tieFor() const { return m_tieFor; }
+
+    Tie *tieBack() const { return m_tieBack; }
+
+    Tie *tieForNonPartial() const;
+    Tie *tieBackNonPartial() const;
+    LaissezVib *laissezVib() const;
+    PartialTie *incomingPartialTie() const;
+    PartialTie *outgoingPartialTie() const;
+    void setTieFor(Tie *t);
+    void setTieBack(Tie *t);
+    Note *firstTiedNote(bool ignorePlayback = true) const;
+    Note *lastTiedNote(bool ignorePlayback = true) const;
 
     int unisonIndex() const;
     void disconnectTiedNotes();
     void connectTiedNotes();
 
-    void setupAfterRead(const Fraction& tick, bool pasteMode);
+    void setupAfterRead(const Fraction &tick, bool pasteMode);
 
-    bool acceptDrop(EditData&) const override;
-    EngravingItem* drop(Transaction& tx, EditData&) override;
+    bool acceptDrop(EditData &) const override;
+    EngravingItem *drop(Transaction &tx, EditData &) override;
 
     bool hidden() const { return m_hidden; }
+
     void setHidden(bool val) { m_hidden = val; }
+
     bool dotsHidden() const { return m_dotsHidden; }
+
     void setDotsHidden(bool val) { m_dotsHidden = val; }
 
     NoteType noteType() const;
-    String  noteTypeUserName() const;
+    String noteTypeUserName() const;
 
-    ElementList& el() { return m_el; }
-    const ElementList& el() const { return m_el; }
+    ElementList &el() { return m_el; }
+
+    const ElementList &el() const { return m_el; }
 
     int subchannel() const { return m_subchannel; }
+
     void setSubchannel(int val) { m_subchannel = val; }
 
     DirectionH userMirror() const { return m_userMirror; }
+
     void setUserMirror(DirectionH d) { m_userMirror = d; }
 
     DirectionV userDotPosition() const { return m_userDotPosition; }
+
     void setUserDotPosition(DirectionV d) { m_userDotPosition = d; }
+
     DirectionV dotPosition() const { return m_dotPosition; }
+
     void setDotPosition(DirectionV d) { m_dotPosition = d; }
-    bool dotIsUp() const;                 // actual dot position
+
+    bool dotIsUp() const; // actual dot position
 
     void reset() override;
 
     float userVelocityFraction() const;
+
     int userVelocity() const { return m_userVelocity; }
+
     void setUserVelocity(int v) { m_userVelocity = v; }
 
     void setOnTimeOffset(int v);
     void setOffTimeOffset(int v);
 
     int customizeVelocity(int velo) const;
-    NoteDot* dot(int n) { return m_dots.at(n); }
-    const std::vector<NoteDot*>& dots() const { return m_dots; }
-    std::vector<NoteDot*>& dots() { return m_dots; }
 
-    void updateAccidental(AccidentalState*);
+    NoteDot *dot(int n) { return m_dots.at(n); }
+
+    const std::vector<NoteDot *> &dots() const { return m_dots; }
+
+    std::vector<NoteDot *> &dots() { return m_dots; }
+
+    void updateAccidental(AccidentalState *);
     void updateLine();
-    void setNval(const NoteVal&, Fraction = { -1, 1 });
-    NoteEventList& playEvents() { return m_playEvents; }
-    const NoteEventList& playEvents() const { return m_playEvents; }
-    NoteEvent* noteEvent(int idx) { return &m_playEvents[idx]; }
-    void setPlayEvents(const NoteEventList& l) { m_playEvents = l; }
+    void setNval(const NoteVal &, Fraction = {-1, 1});
 
-    const std::vector<Spanner*>& spannerFor() const { return m_spannerFor; }
-    const std::vector<Spanner*>& spannerBack() const { return m_spannerBack; }
+    NoteEventList &playEvents() { return m_playEvents; }
 
-    void addSpannerBack(Spanner* e)
-    {
+    const NoteEventList &playEvents() const { return m_playEvents; }
+
+    NoteEvent *noteEvent(int idx) { return &m_playEvents[idx]; }
+
+    void setPlayEvents(const NoteEventList &l) { m_playEvents = l; }
+
+    const std::vector<Spanner *> &spannerFor() const { return m_spannerFor; }
+
+    const std::vector<Spanner *> &spannerBack() const { return m_spannerBack; }
+
+    void addSpannerBack(Spanner *e) {
         if (!muse::contains(m_spannerBack, e)) {
             m_spannerBack.push_back(e);
         }
     }
 
-    bool removeSpannerBack(Spanner* e) { return muse::remove(m_spannerBack, e); }
-    void addSpannerFor(Spanner* e)
-    {
+    bool removeSpannerBack(Spanner *e) { return muse::remove(m_spannerBack, e); }
+
+    void addSpannerFor(Spanner *e) {
         if (!muse::contains(m_spannerFor, e)) {
             m_spannerFor.push_back(e);
         }
     }
 
-    bool removeSpannerFor(Spanner* e) { return muse::remove(m_spannerFor, e); }
+    bool removeSpannerFor(Spanner *e) { return muse::remove(m_spannerFor, e); }
 
     bool transposeDiatonic(int interval, bool keepAlterations, bool useDoubleAccidentals);
     bool transpose(Interval interval, bool useDoubleSharpsFlats);
 
     void localSpatiumChanged(double oldValue, double newValue) override;
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid) const override;
     void styleChanged() override;
 
     bool mark() const { return m_mark; }
+
     void setMark(bool v) const { m_mark = v; }
-    void setScore(Score* s) override;
+
+    void setScore(Score *s) override;
 
     static SymId noteHead(int direction, NoteHeadGroup, NoteHeadType, int tpc, Key key, NoteHeadScheme scheme);
     static SymId noteHead(int direction, NoteHeadGroup, NoteHeadType);
     NoteVal noteVal() const;
 
-    EngravingItem* nextInEl(EngravingItem* e);
-    EngravingItem* prevInEl(EngravingItem* e);
-    EngravingItem* nextElement() override;
-    EngravingItem* prevElement() override;
-    EngravingItem* lastElementBeforeSegment();
-    EngravingItem* nextSegmentElement() override;
-    EngravingItem* prevSegmentElement() override;
+    EngravingItem *nextInEl(EngravingItem *e);
+    EngravingItem *prevInEl(EngravingItem *e);
+    EngravingItem *nextElement() override;
+    EngravingItem *prevElement() override;
+    EngravingItem *lastElementBeforeSegment();
+    EngravingItem *nextSegmentElement() override;
+    EngravingItem *prevSegmentElement() override;
 
-    std::vector<Note*> tiedNotes() const;
+    std::vector<Note *> tiedNotes() const;
 
     void setOffTimeType(int v) { m_offTimeType = v; }
+
     void setOnTimeType(int v) { m_onTimeType = v; }
+
     int offTimeType() const { return m_offTimeType; }
+
     int onTimeType() const { return m_onTimeType; }
 
     void attachSlide(SlideType slideType);
 
     bool hasSlideToNote() const;
     bool hasSlideFromNote() const;
+
     SlideType slideToType() const { return m_slideToType; }
+
     SlideType slideFromType() const { return m_slideFromType; }
 
-    void setParenthesesMode(const ParenthesesMode& v, bool addToLinked = true, bool generated = false) override;
+    void setParenthesesMode(const ParenthesesMode &v, bool addToLinked = true, bool generated = false) override;
 
-    const NoteParenthesisInfo* parenthesisInfo() const;
+    const NoteParenthesisInfo *parenthesisInfo() const;
 
     void setHarmonic(bool val) { m_harmonic = val; }
+
     bool harmonic() const { return m_harmonic; }
 
     bool isGrace() const;
@@ -419,14 +481,18 @@ public:
 
     bool hasAnotherStraightAboveOrBelow(bool above) const;
 
-    std::vector<LineAttachPoint>& lineAttachPoints() { return m_lineAttachPoints; }
-    const std::vector<LineAttachPoint>& lineAttachPoints() const { return m_lineAttachPoints; }
-    void addStartLineAttachPoint(PointF point, EngravingItem* line) { addLineAttachPoint(point, line, true); }
-    void addEndLineAttachPoint(PointF point, EngravingItem* line) { addLineAttachPoint(point, line, false); }
+    std::vector<LineAttachPoint> &lineAttachPoints() { return m_lineAttachPoints; }
+
+    const std::vector<LineAttachPoint> &lineAttachPoints() const { return m_lineAttachPoints; }
+
+    void addStartLineAttachPoint(PointF point, EngravingItem *line) { addLineAttachPoint(point, line, true); }
+
+    void addEndLineAttachPoint(PointF point, EngravingItem *line) { addLineAttachPoint(point, line, false); }
 
     PointF posInStaffCoordinates();
 
     bool isTrillCueNote() const { return m_isTrillCueNote; }
+
     void setIsTrillCueNote(bool v);
 
     SymId noteHead() const;
@@ -439,22 +505,25 @@ public:
     void setVisible(bool v) override;
 
     bool overrideBendVisibilityRules() const { return m_overrideBendVisibilityRules; }
+
     void setOverrideBendVisibilityRules(bool v) { m_overrideBendVisibilityRules = v; }
 
     bool hideGeneratedParens() const { return m_hideGeneratedParens; }
+
     void setHideGeneratedParens(bool v) { m_hideGeneratedParens = v; }
 
-    TieJumpPointList* tieJumpPoints() { return &m_jumpPoints; }
-    const TieJumpPointList* tieJumpPoints() const { return &m_jumpPoints; }
+    TieJumpPointList *tieJumpPoints() { return &m_jumpPoints; }
 
-    bool isExactUnison(Note* other);
+    const TieJumpPointList *tieJumpPoints() const { return &m_jumpPoints; }
+
+    bool isExactUnison(Note *other);
 
     struct LayoutData : public EngravingItem::LayoutData {
-        ld_field<bool> useTablature = { "[Note] useTablature", false };
-        ld_field<SymId> cachedNoteheadSym = { "[Note] cachedNoteheadSym", SymId::noSym };    // use in draw to avoid recomputing at every update
-        ld_field<SymId> cachedSymNull = { "[Note] cachedSymNull", SymId::noSym };            // additional symbol for some transparent notehead
-        ld_field<bool> mirror = { "[Note] mirror", false };                                  // True if note is mirrored at stem.
-        ld_field<bool> hasGeneratedParens = { "[Note] hasGeneratedParens", false };          // Should generated parens be created
+        ld_field<bool> useTablature = {"[Note] useTablature", false};
+        ld_field<SymId> cachedNoteheadSym = {"[Note] cachedNoteheadSym", SymId::noSym}; // use in draw to avoid recomputing at every update
+        ld_field<SymId> cachedSymNull = {"[Note] cachedSymNull", SymId::noSym};         // additional symbol for some transparent notehead
+        ld_field<bool> mirror = {"[Note] mirror", false};                               // True if note is mirrored at stem.
+        ld_field<bool> hasGeneratedParens = {"[Note] hasGeneratedParens", false};       // Should generated parens be created
     };
     DECLARE_LAYOUTDATA_METHODS(Note)
 
@@ -462,35 +531,35 @@ private:
 
     friend class Factory;
     Note(DummyParentOr<Chord> ch);
-    Note(const Note&, bool link = false);
+    Note(const Note &, bool link = false);
 
-    void addSpanner(Spanner*);
-    void removeSpanner(Spanner*);
+    void addSpanner(Spanner *);
+    void removeSpanner(Spanner *);
     int concertPitchIdx() const;
     void updateRelLine(int absLine, bool undoable);
 
-    static std::vector<Note*> findTiedNotes(Note* startNote, bool followPartialTies = true);
+    static std::vector<Note *> findTiedNotes(Note *startNote, bool followPartialTies = true);
 
-    void getNoteListForDots(std::vector<Note*>& topDownNotes, std::vector<Note*>& bottomUpNotes, std::vector<int>& anchoredDots);
+    void getNoteListForDots(std::vector<Note *> &topDownNotes, std::vector<Note *> &bottomUpNotes, std::vector<int> &anchoredDots);
 
-    void addLineAttachPoint(PointF point, EngravingItem* line, bool start);
+    void addLineAttachPoint(PointF point, EngravingItem *line, bool start);
 
-    bool m_ghost = false;        // ghost note
-    bool m_deadNote = false;     // dead note
+    bool m_ghost = false;    // ghost note
+    bool m_deadNote = false; // dead note
 
     bool m_isTrillCueNote = false;
 
-    bool m_hidden = false;                 // marks this note as the hidden one if there are
-                                           // overlapping notes; hidden notes are not played
-                                           // and heads + accidentals are not shown
-    bool m_dotsHidden = false;        // dots of hidden notes are hidden too
-                                      // except if only one note is dotted
-    bool m_fretConflict = false;      // used by TAB staves to mark a fretting conflict:
-                                      // two or more notes on the same string
+    bool m_hidden = false;       // marks this note as the hidden one if there are
+                                 // overlapping notes; hidden notes are not played
+                                 // and heads + accidentals are not shown
+    bool m_dotsHidden = false;   // dots of hidden notes are hidden too
+                                 // except if only one note is dotted
+    bool m_fretConflict = false; // used by TAB staves to mark a fretting conflict:
+                                 // two or more notes on the same string
     bool m_isSmall = false;
-    bool m_play = true;           // note is not played if false
-    mutable bool m_mark = false;  // for use in sequencer
-    bool m_fixed = false;         // for slash notation
+    bool m_play = true;          // note is not played if false
+    mutable bool m_mark = false; // for use in sequencer
+    bool m_fixed = false;        // for slash notation
 
     bool m_overrideBendVisibilityRules = false;
 
@@ -499,9 +568,9 @@ private:
     SlideType m_slideToType = SlideType::Undefined;
     SlideType m_slideFromType = SlideType::Undefined;
 
-    DirectionH m_userMirror = DirectionH::AUTO;        ///< user override of mirror
-    DirectionV m_userDotPosition = DirectionV::AUTO;   ///< user override of dot position
-    DirectionV m_dotPosition = DirectionV::AUTO;       // used as an intermediate step when resolving dot conflicts
+    DirectionH m_userMirror = DirectionH::AUTO;      ///< user override of mirror
+    DirectionV m_userDotPosition = DirectionV::AUTO; ///< user override of dot position
+    DirectionV m_dotPosition = DirectionV::AUTO;     // used as an intermediate step when resolving dot conflicts
 
     NoteHeadScheme m_headScheme = NoteHeadScheme::HEAD_AUTO;
     NoteHeadGroup m_headGroup = NoteHeadGroup::HEAD_NORMAL;
@@ -509,42 +578,42 @@ private:
 
     VeloType m_veloType = VeloType::USER_VAL;
 
-    int m_offTimeType = 0;     // compatibility only 1 - user(absolute), 2 - offset (%)
-    int m_onTimeType = 0;      // compatibility only 1 - user, 2 - offset
+    int m_offTimeType = 0; // compatibility only 1 - user(absolute), 2 - offset (%)
+    int m_onTimeType = 0;  // compatibility only 1 - user, 2 - offset
 
-    int m_subchannel = 0;       // articulation
-    int m_line = INVALID_LINE;  // y-Position; 0 - top line.
-    int m_fret = -1;            // for tablature view
+    int m_subchannel = 0;      // articulation
+    int m_line = INVALID_LINE; // y-Position; 0 - top line.
+    int m_fret = -1;           // for tablature view
     float m_harmonicFret = -1.0;
     int m_harmonicPitchOffset = 0;
     DisplayFretOption m_displayFret = DisplayFretOption::NoHarmonic;
     int m_string = -1;
-    mutable int m_tpc[2] = { Tpc::TPC_INVALID, Tpc::TPC_INVALID };   // tonal pitch class  (concert/transposing)
-    mutable int m_pitch = 0;      // Note pitch as midi value (0 - 127).
-    mutable double m_centOffset = 0.0; // Pitch offset in cents (100 cents = 1 semitone)
+    mutable int m_tpc[2] = {Tpc::TPC_INVALID, Tpc::TPC_INVALID}; // tonal pitch class  (concert/transposing)
+    mutable int m_pitch = 0;                                     // Note pitch as midi value (0 - 127).
+    mutable double m_centOffset = 0.0;                           // Pitch offset in cents (100 cents = 1 semitone)
 
-    int m_userVelocity = 0;     // velocity user offset in percent, or absolute velocity for this note
-    int m_fixedLine = 0;        // fixed line number if _fixed == true
-    double m_tuning = 0.0;      // pitch offset in cent, playable only by internal synthesizer
+    int m_userVelocity = 0; // velocity user offset in percent, or absolute velocity for this note
+    int m_fixedLine = 0;    // fixed line number if _fixed == true
+    double m_tuning = 0.0;  // pitch offset in cent, playable only by internal synthesizer
 
-    Accidental* m_accidental = nullptr;
+    Accidental *m_accidental = nullptr;
 
-    Tie* m_tieFor = nullptr;
-    Tie* m_tieBack = nullptr;
+    Tie *m_tieFor = nullptr;
+    Tie *m_tieBack = nullptr;
 
     bool m_harmonic = false;
 
     bool m_hasParens = false;
 
-    ElementList m_el;          // fingering, other text, symbols or images
-    std::vector<NoteDot*> m_dots;
+    ElementList m_el; // fingering, other text, symbols or images
+    std::vector<NoteDot *> m_dots;
     NoteEventList m_playEvents;
-    std::vector<Spanner*> m_spannerFor;
-    std::vector<Spanner*> m_spannerBack;
+    std::vector<Spanner *> m_spannerFor;
+    std::vector<Spanner *> m_spannerBack;
 
     String m_fretString;
 
     std::vector<LineAttachPoint> m_lineAttachPoints;
-    TieJumpPointList m_jumpPoints { this };
+    TieJumpPointList m_jumpPoints{this};
 };
 } // namespace mu::engraving

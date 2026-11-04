@@ -45,18 +45,14 @@ namespace mu::engraving {
 //   KeySig
 //---------------------------------------------------------
 
-KeySig::KeySig(DummyParentOr<Segment> s)
-    : EngravingItem(ElementType::KEYSIG, s, ElementFlag::ON_STAFF)
-{
+KeySig::KeySig(DummyParentOr<Segment> s) : EngravingItem(ElementType::KEYSIG, s, ElementFlag::ON_STAFF) {
     m_showCourtesy = true;
     m_hideNaturals = false;
 }
 
-KeySig::KeySig(const KeySig& k)
-    : EngravingItem(k)
-{
+KeySig::KeySig(const KeySig &k) : EngravingItem(k) {
     m_showCourtesy = k.m_showCourtesy;
-    m_sig          = k.m_sig;
+    m_sig = k.m_sig;
     m_hideNaturals = false;
 }
 
@@ -64,27 +60,20 @@ KeySig::KeySig(const KeySig& k)
 //   mag
 //---------------------------------------------------------
 
-double KeySig::mag() const
-{
-    return staff() ? staff()->staffMag(this) : 1.0;
-}
+double KeySig::mag() const { return staff() ? staff()->staffMag(this) : 1.0; }
 
 //---------------------------------------------------------
 //   acceptDrop
 //---------------------------------------------------------
 
-bool KeySig::acceptDrop(EditData& data) const
-{
-    return data.dropElement->isKeySig();
-}
+bool KeySig::acceptDrop(EditData &data) const { return data.dropElement->isKeySig(); }
 
 //---------------------------------------------------------
 //   drop
 //---------------------------------------------------------
 
-EngravingItem* KeySig::drop(Transaction& tx, EditData& data)
-{
-    KeySig* ks = toKeySig(data.dropElement);
+EngravingItem *KeySig::drop(Transaction &tx, EditData &data) {
+    KeySig *ks = toKeySig(data.dropElement);
     if (!ks->isKeySig()) {
         delete ks;
         return 0;
@@ -98,7 +87,7 @@ EngravingItem* KeySig::drop(Transaction& tx, EditData& data)
         }
     } else {
         // apply to all staves:
-        for (Staff* s : score()->masterScore()->staves()) {
+        for (Staff *s : score()->masterScore()->staves()) {
             EditKeySig::undoChangeKeySig(tx, score(), s, tick(), k);
         }
     }
@@ -109,12 +98,11 @@ EngravingItem* KeySig::drop(Transaction& tx, EditData& data)
 //   setKey
 //---------------------------------------------------------
 
-void KeySig::setKey(Key concertKey)
-{
+void KeySig::setKey(Key concertKey) {
     KeySigEvent e;
     e.setConcertKey(concertKey);
     if (staff() && !style().styleB(Sid::concertPitch)) {
-        const Part* part = staff()->originPart(tick());
+        const Part *part = staff()->originPart(tick());
         Interval v = part->instrument(tick())->transpose();
         if (!v.isZero()) {
             v.flip();
@@ -129,8 +117,7 @@ void KeySig::setKey(Key concertKey)
 //   setKey
 //---------------------------------------------------------
 
-void KeySig::setKey(Key concertKey, Key transposedKey)
-{
+void KeySig::setKey(Key concertKey, Key transposedKey) {
     KeySigEvent e;
     e.setConcertKey(concertKey);
     e.setKey(transposedKey);
@@ -141,17 +128,13 @@ void KeySig::setKey(Key concertKey, Key transposedKey)
 //   operator==
 //---------------------------------------------------------
 
-bool KeySig::operator==(const KeySig& k) const
-{
-    return m_sig == k.m_sig;
-}
+bool KeySig::operator==(const KeySig &k) const { return m_sig == k.m_sig; }
 
 //---------------------------------------------------------
 //   isChange
 //---------------------------------------------------------
 
-bool KeySig::isChange() const
-{
+bool KeySig::isChange() const {
     if (!staff()) {
         return false;
     }
@@ -166,18 +149,16 @@ bool KeySig::isChange() const
 //   changeKeySigEvent
 //---------------------------------------------------------
 
-void KeySig::changeKeySigEvent(const KeySigEvent& t)
-{
+void KeySig::changeKeySigEvent(const KeySigEvent &t) {
     if (m_sig == t) {
         return;
     }
     setKeySigEvent(t);
 }
 
-PointF KeySig::staffOffset() const
-{
-    const Segment* seg = segment();
-    const Measure* meas = seg ? seg->measure() : nullptr;
+PointF KeySig::staffOffset() const {
+    const Segment *seg = segment();
+    const Measure *meas = seg ? seg->measure() : nullptr;
     if (meas && meas->endTick() == tick()) {
         // Courtesy key sig should be adjusted by the following staffType's offset
         return EngravingItem::staffOffset();
@@ -185,26 +166,23 @@ PointF KeySig::staffOffset() const
     return PointF(0.0, 0.0);
 }
 
-EngravingObject* KeySig::propertyDelegate(Pid propertyId) const
-{
+EngravingObject *KeySig::propertyDelegate(Pid propertyId) const {
     if (!_isCourtesy) {
         return nullptr;
     }
     switch (propertyId) {
-    case Pid::KEY:
-    case Pid::KEY_CONCERT:
-    case Pid::SHOW_COURTESY:
-    case Pid::KEYSIG_MODE:
-    {
-        Segment* thisSeg = segment();
-        Segment* nextKSSeg = thisSeg ? thisSeg->next1(SegmentType::KeySig) : nullptr;
-        if (nextKSSeg && nextKSSeg->tick() == thisSeg->tick()) {
-            return nextKSSeg->element(track());
+        case Pid::KEY:
+        case Pid::KEY_CONCERT:
+        case Pid::SHOW_COURTESY:
+        case Pid::KEYSIG_MODE: {
+            Segment *thisSeg = segment();
+            Segment *nextKSSeg = thisSeg ? thisSeg->next1(SegmentType::KeySig) : nullptr;
+            if (nextKSSeg && nextKSSeg->tick() == thisSeg->tick()) {
+                return nextKSSeg->element(track());
+            }
+            break;
         }
-        break;
-    }
-    default:
-        break;
+        default: break;
     }
 
     return nullptr;
@@ -214,24 +192,17 @@ EngravingObject* KeySig::propertyDelegate(Pid propertyId) const
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue KeySig::getProperty(Pid propertyId) const
-{
-    if (EngravingObject* e = propertyDelegate(propertyId)) {
+PropertyValue KeySig::getProperty(Pid propertyId) const {
+    if (EngravingObject *e = propertyDelegate(propertyId)) {
         return e->getProperty(propertyId);
     }
     switch (propertyId) {
-    case Pid::KEY:
-        return int(key());
-    case Pid::KEY_CONCERT:
-        return int(concertKey());
-    case Pid::SHOW_COURTESY:
-        return showCourtesy();
-    case Pid::KEYSIG_MODE:
-        return mode();
-    case Pid::IS_COURTESY:
-        return _isCourtesy;
-    default:
-        return EngravingItem::getProperty(propertyId);
+        case Pid::KEY: return int(key());
+        case Pid::KEY_CONCERT: return int(concertKey());
+        case Pid::SHOW_COURTESY: return showCourtesy();
+        case Pid::KEYSIG_MODE: return mode();
+        case Pid::IS_COURTESY: return _isCourtesy;
+        default: return EngravingItem::getProperty(propertyId);
     }
 }
 
@@ -239,45 +210,42 @@ PropertyValue KeySig::getProperty(Pid propertyId) const
 //   setProperty
 //---------------------------------------------------------
 
-bool KeySig::setProperty(Pid propertyId, const PropertyValue& v)
-{
-    if (EngravingObject* e = propertyDelegate(propertyId)) {
+bool KeySig::setProperty(Pid propertyId, const PropertyValue &v) {
+    if (EngravingObject *e = propertyDelegate(propertyId)) {
         return e->setProperty(propertyId, v);
     }
     switch (propertyId) {
-    case Pid::KEY:
-        if (generated()) {
-            return false;
-        }
-        setKey(m_sig.concertKey(), Key(v.toInt()));
-        break;
-    case Pid::KEY_CONCERT:
-        if (generated()) {
-            return false;
-        }
-        setKey(Key(v.toInt()));
-        break;
-    case Pid::SHOW_COURTESY:
-        if (generated()) {
-            return false;
-        }
-        setShowCourtesy(v.toBool());
-        break;
-    case Pid::KEYSIG_MODE:
-        if (generated()) {
-            return false;
-        }
-        setMode(v.value<KeyMode>());
-        staff()->setKey(tick(), keySigEvent());
-        break;
-    case Pid::IS_COURTESY:
-        _isCourtesy = v.toBool();
-        break;
-    default:
-        if (!EngravingItem::setProperty(propertyId, v)) {
-            return false;
-        }
-        break;
+        case Pid::KEY:
+            if (generated()) {
+                return false;
+            }
+            setKey(m_sig.concertKey(), Key(v.toInt()));
+            break;
+        case Pid::KEY_CONCERT:
+            if (generated()) {
+                return false;
+            }
+            setKey(Key(v.toInt()));
+            break;
+        case Pid::SHOW_COURTESY:
+            if (generated()) {
+                return false;
+            }
+            setShowCourtesy(v.toBool());
+            break;
+        case Pid::KEYSIG_MODE:
+            if (generated()) {
+                return false;
+            }
+            setMode(v.value<KeyMode>());
+            staff()->setKey(tick(), keySigEvent());
+            break;
+        case Pid::IS_COURTESY: _isCourtesy = v.toBool(); break;
+        default:
+            if (!EngravingItem::setProperty(propertyId, v)) {
+                return false;
+            }
+            break;
     }
     triggerLayoutAll();
     setGenerated(false);
@@ -288,9 +256,8 @@ bool KeySig::setProperty(Pid propertyId, const PropertyValue& v)
 //   undoChangeProperty
 //---------------------------------------------------------
 
-void KeySig::undoChangeProperty(Pid id, const PropertyValue& v, PropertyFlags ps)
-{
-    if (EngravingObject* e = propertyDelegate(id)) {
+void KeySig::undoChangeProperty(Pid id, const PropertyValue &v, PropertyFlags ps) {
+    if (EngravingObject *e = propertyDelegate(id)) {
         /* If this is a courtesy, we must change the property of the _real_ key signature,
          * and we want to avoid EngravingObject::undoChangeProperty unsetting GENERATED
          * unless something really has changed about the courtesy itself: */
@@ -309,21 +276,14 @@ void KeySig::undoChangeProperty(Pid id, const PropertyValue& v, PropertyFlags ps
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue KeySig::propertyDefault(Pid id) const
-{
+PropertyValue KeySig::propertyDefault(Pid id) const {
     switch (id) {
-    case Pid::KEY:
-        return int(Key::INVALID);
-    case Pid::KEY_CONCERT:
-        return int(Key::INVALID);
-    case Pid::SHOW_COURTESY:
-        return true;
-    case Pid::KEYSIG_MODE:
-        return KeyMode::UNKNOWN;
-    case Pid::IS_COURTESY:
-        return false;
-    default:
-        return EngravingItem::propertyDefault(id);
+        case Pid::KEY: return int(Key::INVALID);
+        case Pid::KEY_CONCERT: return int(Key::INVALID);
+        case Pid::SHOW_COURTESY: return true;
+        case Pid::KEYSIG_MODE: return KeyMode::UNKNOWN;
+        case Pid::IS_COURTESY: return false;
+        default: return EngravingItem::propertyDefault(id);
     }
 }
 
@@ -331,32 +291,21 @@ PropertyValue KeySig::propertyDefault(Pid id) const
 //   nextSegmentElement
 //---------------------------------------------------------
 
-EngravingItem* KeySig::nextSegmentElement()
-{
-    return segment()->firstInNextSegments(staffIdx());
-}
+EngravingItem *KeySig::nextSegmentElement() { return segment()->firstInNextSegments(staffIdx()); }
 
 //---------------------------------------------------------
 //   prevSegmentElement
 //---------------------------------------------------------
 
-EngravingItem* KeySig::prevSegmentElement()
-{
-    return segment()->lastInPrevSegments(staffIdx());
-}
+EngravingItem *KeySig::prevSegmentElement() { return segment()->lastInPrevSegments(staffIdx()); }
 
 //---------------------------------------------------------
 //   accessibleInfo
 //---------------------------------------------------------
 
-
-
 //---------------------------------------------------------
 //   translatedSubtypeUserName
 //---------------------------------------------------------
 
-muse::TranslatableString KeySig::subtypeUserName() const
-{
-    return TConv::userName(key(), isAtonal(), isCustom());
-}
-}
+muse::TranslatableString KeySig::subtypeUserName() const { return TConv::userName(key(), isAtonal(), isCustom()); }
+} // namespace mu::engraving

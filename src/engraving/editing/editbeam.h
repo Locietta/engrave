@@ -28,11 +28,10 @@ class Transaction;
 
 enum class BeamMode : signed char;
 
-class EditBeam
-{
+class EditBeam {
 public:
-    static void setBeamMode(Transaction& tx, Score* score, BeamMode mode);
-    static void beamSelectedRange(Transaction& tx, Score* score);
-    static void resetBeamMode(Transaction& tx, Score* score);
+    static void setBeamMode(Transaction &tx, Score *score, BeamMode mode);
+    static void beamSelectedRange(Transaction &tx, Score *score);
+    static void resetBeamMode(Transaction &tx, Score *score);
 };
-}
+} // namespace mu::engraving

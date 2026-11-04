@@ -7,10 +7,7 @@
 #include <iostream>
 #include <memory>
 
-
-
 #include "engrave/src/audio/engine_audio.h"
-
 
 #include "audio/engine/audioservices.h"
 #include "audio/engine/iaudioengineconfiguration.h"
@@ -18,10 +15,8 @@
 #include "audio/engine/internal/offlinerendersession.h"
 #include "audio/engine/internal/audiofactory.h"
 
-int main()
-{
+int main() {
     muse::audio::engine::AudioServices setup(nullptr);
-
 
     muse::audio::OutputSpec spec;
     spec.sampleRate = 44100;
@@ -33,7 +28,6 @@ int main()
     auto configuration = &setup.configuration();
     configuration->setConfig(config);
     setup.synthResolver().init(configuration->defaultAudioInputParams(), spec);
-
 
     auto factory = &setup.factory();
     factory->setOutputSpec(spec);

@@ -32,9 +32,8 @@
 
 using namespace mu::engraving;
 
-static void changeChordStyle(Score* score)
-{
-    const MStyle& style = score->style();
+static void changeChordStyle(Score *score) {
+    const MStyle &style = score->style();
     score->chordList()->unload();
     double emag = style.styleD(Sid::chordExtensionMag);
     double eadjust = style.styleD(Sid::chordExtensionAdjust);
@@ -58,13 +57,9 @@ static void changeChordStyle(Score* score)
 //   ChangeStyle
 //----------------------------------------------------------
 
-ChangeStyle::ChangeStyle(Score* s, const MStyle& st, const bool overlapOnly)
-    : score(s), style(st), overlap(overlapOnly)
-{
-}
+ChangeStyle::ChangeStyle(Score *s, const MStyle &st, const bool overlapOnly) : score(s), style(st), overlap(overlapOnly) {}
 
-StyleIdSet ChangeStyle::changedIds() const
-{
+StyleIdSet ChangeStyle::changedIds() const {
     StyleIdSet result;
     for (int _sid = 0; _sid < static_cast<int>(Sid::STYLES); ++_sid) {
         Sid sid = static_cast<Sid>(_sid);
@@ -75,8 +70,7 @@ StyleIdSet ChangeStyle::changedIds() const
     return result;
 }
 
-void ChangeStyle::flip()
-{
+void ChangeStyle::flip() {
     MStyle tmp = score->style();
 
     if (score->style().styleV(Sid::concertPitch) != style.value(Sid::concertPitch)) {
@@ -95,8 +89,7 @@ void ChangeStyle::flip()
     style = tmp;
 }
 
-void ChangeStyle::undo()
-{
+void ChangeStyle::undo() {
     overlap = false;
     UndoableCommand::undo();
 }
@@ -105,49 +98,41 @@ void ChangeStyle::undo()
 //   ChangeStyleValues
 //----------------------------------------------------------
 
-static void changeStyleValue(Score* score, Sid idx, const PropertyValue& oldValue, const PropertyValue& newValue)
-{
+static void changeStyleValue(Score *score, Sid idx, const PropertyValue &oldValue, const PropertyValue &newValue) {
     score->style().set(idx, newValue);
     switch (idx) {
-    case Sid::chordExtensionMag:
-    case Sid::chordExtensionAdjust:
-    case Sid::chordModifierMag:
-    case Sid::chordModifierAdjust:
-    case Sid::chordDescriptionFile:
-    case Sid::verticallyStackModifiers:
-    case Sid::chordAlignmentExcludeModifiers:
-    case Sid::musicalTextFont: {
-        changeChordStyle(score);
-    }
-    break;
-    case Sid::spatium:
-        score->spatiumChanged(oldValue.toDouble(), newValue.toDouble());
-        break;
-    case Sid::defaultsVersion:
-        score->style().setDefaultStyleVersion(newValue.toInt());
-        break;
-    case Sid::createMultiMeasureRests:
-        if (oldValue.toBool() == true && newValue.toBool() == false) {
-            Transaction& tx = score->transactionManager()->currentOrDummyTransaction();
-            EditSystemLocks::removeSystemLocksContainingMMRests(tx, score);
-            EditPageLocks::removePageLocksContainingMMRests(tx, score);
-        }
-        break;
-    default:
-        break;
+        case Sid::chordExtensionMag:
+        case Sid::chordExtensionAdjust:
+        case Sid::chordModifierMag:
+        case Sid::chordModifierAdjust:
+        case Sid::chordDescriptionFile:
+        case Sid::verticallyStackModifiers:
+        case Sid::chordAlignmentExcludeModifiers:
+        case Sid::musicalTextFont: {
+            changeChordStyle(score);
+        } break;
+        case Sid::spatium: score->spatiumChanged(oldValue.toDouble(), newValue.toDouble()); break;
+        case Sid::defaultsVersion: score->style().setDefaultStyleVersion(newValue.toInt()); break;
+        case Sid::createMultiMeasureRests:
+            if (oldValue.toBool() == true && newValue.toBool() == false) {
+                Transaction &tx = score->transactionManager()->currentOrDummyTransaction();
+                EditSystemLocks::removeSystemLocksContainingMMRests(tx, score);
+                EditPageLocks::removePageLocksContainingMMRests(tx, score);
+            }
+            break;
+        default: break;
     }
 }
 
-void ChangeStyleValues::flip()
-{
+void ChangeStyleValues::flip() {
     if (!m_score) {
         return;
     }
 
     bool styleChanged = false;
-    const MStyle& style = m_score->style();
+    const MStyle &style = m_score->style();
 
-    for (auto& pair : m_values) {
+    for (auto &pair : m_values) {
         PropertyValue oldValue = style.styleV(pair.first);
         if (oldValue == pair.second) {
             continue;
@@ -168,8 +153,7 @@ void ChangeStyleValues::flip()
 //   EditStyle
 //---------------------------------------------------------
 
-bool EditStyle::loadStyle(Transaction& tx, Score* score, muse::io::IODevice& dev, bool ign, bool overlap)
-{
+bool EditStyle::loadStyle(Transaction &tx, Score *score, muse::io::IODevice &dev, bool ign, bool overlap) {
     TRACEFUNC;
 
     if (!dev.open(muse::io::IODevice::ReadOnly)) {

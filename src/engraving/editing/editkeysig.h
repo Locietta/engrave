@@ -32,11 +32,10 @@ class Score;
 class Staff;
 class Transaction;
 
-class ChangeKeySig : public UndoableCommand
-{
+class ChangeKeySig : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeKeySig)
 
-    KeySig* keysig = nullptr;
+    KeySig *keysig = nullptr;
     KeySigEvent ks;
     bool showCourtesy = false;
     bool evtInStaff = false;
@@ -44,16 +43,15 @@ class ChangeKeySig : public UndoableCommand
     void flip() override;
 
 public:
-    ChangeKeySig(KeySig* k, KeySigEvent newKeySig, bool sc, bool addEvtToStaff = true);
+    ChangeKeySig(KeySig *k, KeySigEvent newKeySig, bool sc, bool addEvtToStaff = true);
 
     UNDO_TYPE(CommandType::ChangeKeySig)
     UNDO_NAME("ChangeKeySig")
-    UNDO_CHANGED_OBJECTS({ keysig })
+    UNDO_CHANGED_OBJECTS({keysig})
 };
 
-class EditKeySig
-{
+class EditKeySig {
 public:
-    static void undoChangeKeySig(Transaction& tx, Score* score, Staff* ostaff, const Fraction& tick, KeySigEvent key);
+    static void undoChangeKeySig(Transaction &tx, Score *score, Staff *ostaff, const Fraction &tick, KeySigEvent key);
 };
-}
+} // namespace mu::engraving

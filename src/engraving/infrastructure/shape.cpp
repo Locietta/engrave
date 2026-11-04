@@ -34,11 +34,10 @@ using namespace muse;
 using namespace muse::draw;
 using namespace mu::engraving;
 
-Shape::Shape(const std::vector<RectF>& rects, const EngravingItem* p)
-{
+Shape::Shape(const std::vector<RectF> &rects, const EngravingItem *p) {
     m_type = Type::Composite;
     m_elements.reserve(rects.size());
-    for (const RectF& rect : rects) {
+    for (const RectF &rect : rects) {
         m_elements.emplace_back(ShapeElement(rect, p));
     }
 }
@@ -52,8 +51,7 @@ Shape::Shape(const std::vector<RectF>& rects, const EngravingItem* p)
 //    above/below other elements of the staff.
 //---------------------------------------------------------
 
-void Shape::addHorizontalSpacing(EngravingItem* item, double leftEdge, double rightEdge)
-{
+void Shape::addHorizontalSpacing(EngravingItem *item, double leftEdge, double rightEdge) {
     constexpr double eps = 100 * std::numeric_limits<double>::epsilon();
     if (leftEdge == rightEdge) { // HACK zero-width shapes collide with everything currently.
         rightEdge += eps;
@@ -65,27 +63,24 @@ void Shape::addHorizontalSpacing(EngravingItem* item, double leftEdge, double ri
 //   translate
 //---------------------------------------------------------
 
-Shape& Shape::translate(const PointF& pt)
-{
-    for (RectF& r : m_elements) {
+Shape &Shape::translate(const PointF &pt) {
+    for (RectF &r : m_elements) {
         r.translate(pt);
     }
     invalidateBBox();
     return *this;
 }
 
-void Shape::translateX(double xo)
-{
-    for (RectF& r : m_elements) {
+void Shape::translateX(double xo) {
+    for (RectF &r : m_elements) {
         r.setLeft(r.left() + xo);
         r.setRight(r.right() + xo);
     }
     invalidateBBox();
 }
 
-void Shape::translateY(double yo)
-{
-    for (RectF& r : m_elements) {
+void Shape::translateY(double yo) {
+    for (RectF &r : m_elements) {
         r.setTop(r.top() + yo);
         r.setBottom(r.bottom() + yo);
     }
@@ -96,77 +91,69 @@ void Shape::translateY(double yo)
 //   translated
 //---------------------------------------------------------
 
-Shape Shape::translated(const PointF& pt) const
-{
+Shape Shape::translated(const PointF &pt) const {
     Shape s;
     s.m_elements.reserve(m_elements.size());
-    for (const ShapeElement& r : m_elements) {
+    for (const ShapeElement &r : m_elements) {
         s.add(r.translated(pt), r.item(), r.ignoreForLayout());
     }
     return s;
 }
 
-Shape& Shape::scale(const SizeF& mag)
-{
-    for (RectF& r : m_elements) {
+Shape &Shape::scale(const SizeF &mag) {
+    for (RectF &r : m_elements) {
         r.scale(mag);
     }
     invalidateBBox();
     return *this;
 }
 
-Shape Shape::scaled(const SizeF& mag) const
-{
+Shape Shape::scaled(const SizeF &mag) const {
     Shape s;
     s.m_elements.reserve(m_elements.size());
-    for (const ShapeElement& r : m_elements) {
+    for (const ShapeElement &r : m_elements) {
         s.add(r.scaled(mag), r.item(), r.ignoreForLayout());
     }
     return s;
 }
 
-Shape& Shape::adjust(double xp1, double yp1, double xp2, double yp2)
-{
-    for (ShapeElement& element : m_elements) {
+Shape &Shape::adjust(double xp1, double yp1, double xp2, double yp2) {
+    for (ShapeElement &element : m_elements) {
         element.adjust(xp1, yp1, xp2, yp2);
     }
     return *this;
 }
 
-Shape Shape::adjusted(double xp1, double yp1, double xp2, double yp2) const
-{
+Shape Shape::adjusted(double xp1, double yp1, double xp2, double yp2) const {
     Shape s;
     s.m_elements.reserve(m_elements.size());
-    for (const ShapeElement& element : m_elements) {
+    for (const ShapeElement &element : m_elements) {
         s.add(element.adjusted(xp1, yp1, xp2, yp2));
     }
 
     return s;
 }
 
-Shape& Shape::pad(double p)
-{
-    for (ShapeElement& el : m_elements) {
+Shape &Shape::pad(double p) {
+    for (ShapeElement &el : m_elements) {
         el.pad(p);
     }
     return *this;
 }
 
-Shape Shape::padded(double p) const
-{
+Shape Shape::padded(double p) const {
     Shape s;
     s.m_elements.reserve(m_elements.size());
-    for (const ShapeElement& el : m_elements) {
+    for (const ShapeElement &el : m_elements) {
         s.add(el.padded(p));
     }
     return s;
 }
 
-mu::engraving::Shape& mu::engraving::Shape::transform(const muse::draw::Transform& t)
-{
-    for (ShapeElement& el : m_elements) {
+mu::engraving::Shape &mu::engraving::Shape::transform(const muse::draw::Transform &t) {
+    for (ShapeElement &el : m_elements) {
         bool ignoreForLayout = el.ignoreForLayout();
-        const EngravingItem* item = el.item();
+        const EngravingItem *item = el.item();
         RectF rect = t.map(el);
         el = ShapeElement(rect, item, ignoreForLayout);
     }
@@ -174,19 +161,14 @@ mu::engraving::Shape& mu::engraving::Shape::transform(const muse::draw::Transfor
     return *this;
 }
 
-Shape Shape::transformed(const muse::draw::Transform& t)
-{
+Shape Shape::transformed(const muse::draw::Transform &t) {
     Shape s(*this);
     return s.transform(t);
 }
 
-void Shape::invalidateBBox()
-{
-    m_bbox = RectF();
-}
+void Shape::invalidateBBox() { m_bbox = RectF(); }
 
-const RectF& Shape::bbox() const
-{
+const RectF &Shape::bbox() const {
     if (m_elements.size() == 0) {
         static const RectF _dummy;
         return _dummy;
@@ -194,7 +176,7 @@ const RectF& Shape::bbox() const
         return m_elements.at(0);
     } else {
         if (m_bbox.isNull()) {
-            for (const ShapeElement& e : m_elements) {
+            for (const ShapeElement &e : m_elements) {
                 m_bbox.unite(e);
             }
         }
@@ -202,8 +184,7 @@ const RectF& Shape::bbox() const
     }
 }
 
-std::optional<ShapeElement> Shape::find_if(const std::function<bool(const ShapeElement&)>& func) const
-{
+std::optional<ShapeElement> Shape::find_if(const std::function<bool(const ShapeElement &)> &func) const {
     auto it = std::find_if(m_elements.begin(), m_elements.end(), func);
     if (it == m_elements.end()) {
         return std::nullopt;
@@ -211,9 +192,8 @@ std::optional<ShapeElement> Shape::find_if(const std::function<bool(const ShapeE
     return std::make_optional(*it);
 }
 
-std::optional<ShapeElement> Shape::find_first(ElementType type) const
-{
-    for (const ShapeElement& i : m_elements) {
+std::optional<ShapeElement> Shape::find_first(ElementType type) const {
+    for (const ShapeElement &i : m_elements) {
         if (i.item() && i.item()->type() == type) {
             return std::make_optional(i);
         }
@@ -222,8 +202,7 @@ std::optional<ShapeElement> Shape::find_first(ElementType type) const
     return std::nullopt;
 }
 
-std::optional<ShapeElement> Shape::get_first() const
-{
+std::optional<ShapeElement> Shape::get_first() const {
     if (m_elements.empty()) {
         return std::nullopt;
     }
@@ -236,20 +215,19 @@ std::optional<ShapeElement> Shape::get_first() const
 //    Calculates the minimum distance between two shapes.
 //-------------------------------------------------------------------
 
-double Shape::minVerticalDistance(const Shape& a, double minHorizontalClearance) const
-{
+double Shape::minVerticalDistance(const Shape &a, double minHorizontalClearance) const {
     if (empty() || a.empty()) {
         return 0.0;
     }
 
     double dist = -DBL_MAX; // min real
-    for (const RectF& r2 : a.m_elements) {
+    for (const RectF &r2 : a.m_elements) {
         if (r2.height() <= 0.0) {
             continue;
         }
         double bx1 = r2.left();
         double bx2 = r2.right();
-        for (const RectF& r1 : m_elements) {
+        for (const RectF &r1 : m_elements) {
             if (r1.height() <= 0.0) {
                 continue;
             }
@@ -271,20 +249,19 @@ double Shape::minVerticalDistance(const Shape& a, double minHorizontalClearance)
 //    to the amount of overlap.
 //-------------------------------------------------------------------
 
-double Shape::verticalClearance(const Shape& a, double minHorizontalDistance) const
-{
+double Shape::verticalClearance(const Shape &a, double minHorizontalDistance) const {
     if (empty() || a.empty()) {
         return 0.0;
     }
 
     double dist = DBL_MAX; // max real
-    for (const RectF& r2 : a.m_elements) {
+    for (const RectF &r2 : a.m_elements) {
         if (r2.height() <= 0.0) {
             continue;
         }
         double bx1 = r2.left();
         double bx2 = r2.right();
-        for (const RectF& r1 : m_elements) {
+        for (const RectF &r1 : m_elements) {
             if (r1.height() <= 0.0) {
                 continue;
             }
@@ -304,10 +281,9 @@ double Shape::verticalClearance(const Shape& a, double minHorizontalDistance) co
 // returns true if, within the horizontal width of both shapes,
 // all parts of this shape are above all parts of a
 //----------------------------------------------------------------
-bool Shape::clearsVertically(const Shape& a) const
-{
-    for (const RectF& r1 : a.m_elements) {
-        for (const RectF& r2 : m_elements) {
+bool Shape::clearsVertically(const Shape &a) const {
+    for (const RectF &r1 : a.m_elements) {
+        for (const RectF &r2 : m_elements) {
             if (mu::engraving::intersects(r1.left(), r1.right(), r2.left(), r2.right())) {
                 if (std::min(r1.top(), r1.bottom()) <= std::max(r2.top(), r2.bottom())) {
                     return false;
@@ -323,10 +299,9 @@ bool Shape::clearsVertically(const Shape& a) const
 //    compute left border
 //---------------------------------------------------------
 
-double Shape::left() const
-{
+double Shape::left() const {
     double dist = DBL_MAX;
-    for (const ShapeElement& r : m_elements) {
+    for (const ShapeElement &r : m_elements) {
         // TURBO-HACK: the only purpose of this is to ignore fingering for spacing the first CR segment after the header.
         if (!RealIsNull(r.height()) && !(r.item() && r.item()->isFingering()) && r.left() < dist) {
             dist = r.left();
@@ -340,10 +315,9 @@ double Shape::left() const
 //    compute right border
 //---------------------------------------------------------
 
-double Shape::right() const
-{
+double Shape::right() const {
     double dist = -DBL_MAX;
-    for (const RectF& r : m_elements) {
+    for (const RectF &r : m_elements) {
         if (r.right() > dist) {
             dist = r.right();
         }
@@ -355,10 +329,9 @@ double Shape::right() const
 //   top
 //---------------------------------------------------------
 
-double Shape::top() const
-{
+double Shape::top() const {
     double dist = DBL_MAX;
-    for (const RectF& r : m_elements) {
+    for (const RectF &r : m_elements) {
         if (r.top() < dist) {
             dist = r.top();
         }
@@ -370,10 +343,9 @@ double Shape::top() const
 //   bottom
 //---------------------------------------------------------
 
-double Shape::bottom() const
-{
+double Shape::bottom() const {
     double dist = -DBL_MAX;
-    for (const RectF& r : m_elements) {
+    for (const RectF &r : m_elements) {
         if (r.bottom() > dist) {
             dist = r.bottom();
         }
@@ -381,11 +353,10 @@ double Shape::bottom() const
     return dist;
 }
 
-double Shape::width() const
-{
+double Shape::width() const {
     double left = DBL_MAX;
     double right = -DBL_MAX;
-    for (const RectF& r : m_elements) {
+    for (const RectF &r : m_elements) {
         left = std::min(left, r.left());
         right = std::max(right, r.right());
     }
@@ -393,11 +364,10 @@ double Shape::width() const
     return right - left;
 }
 
-double Shape::height() const
-{
+double Shape::height() const {
     double top = DBL_MAX;
     double bottom = -DBL_MAX;
-    for (const RectF& r : m_elements) {
+    for (const RectF &r : m_elements) {
         top = std::min(top, r.top());
         bottom = std::max(bottom, r.bottom());
     }
@@ -405,10 +375,9 @@ double Shape::height() const
     return bottom - top;
 }
 
-double Shape::topAtX(double x) const
-{
+double Shape::topAtX(double x) const {
     double localTop = DBL_MAX;
-    for (const ShapeElement& el : m_elements) {
+    for (const ShapeElement &el : m_elements) {
         if (el.left() < x && el.right() > x) {
             localTop = std::min(localTop, el.top());
         }
@@ -417,10 +386,9 @@ double Shape::topAtX(double x) const
     return localTop != DBL_MAX ? localTop : top();
 }
 
-double Shape::bottomAtX(double x) const
-{
+double Shape::bottomAtX(double x) const {
     double localBottom = -DBL_MAX;
-    for (const ShapeElement& el : m_elements) {
+    for (const ShapeElement &el : m_elements) {
         if (el.left() < x && el.right() > x) {
             localBottom = std::max(localBottom, el.bottom());
         }
@@ -429,10 +397,9 @@ double Shape::bottomAtX(double x) const
     return localBottom != DBL_MAX ? localBottom : bottom();
 }
 
-double Shape::rightMostEdgeAtHeight(double yAbove, double yBelow) const
-{
+double Shape::rightMostEdgeAtHeight(double yAbove, double yBelow) const {
     double edge = -DBL_MAX;
-    for (const ShapeElement& sh : m_elements) {
+    for (const ShapeElement &sh : m_elements) {
         if (sh.bottom() > yAbove && sh.top() < yBelow) {
             edge = std::max(edge, sh.right());
         }
@@ -441,10 +408,9 @@ double Shape::rightMostEdgeAtHeight(double yAbove, double yBelow) const
     return edge;
 }
 
-double Shape::leftMostEdgeAtHeight(double yAbove, double yBelow) const
-{
+double Shape::leftMostEdgeAtHeight(double yAbove, double yBelow) const {
     double edge = DBL_MAX;
-    for (const ShapeElement& sh : m_elements) {
+    for (const ShapeElement &sh : m_elements) {
         if (sh.bottom() > yAbove && sh.top() < yBelow) {
             edge = std::min(edge, sh.left());
         }
@@ -453,11 +419,10 @@ double Shape::leftMostEdgeAtHeight(double yAbove, double yBelow) const
     return edge;
 }
 
-double Shape::leftMostEdgeAtTop() const
-{
+double Shape::leftMostEdgeAtTop() const {
     double edge = DBL_MAX;
     const double shapeTop = top();
-    for (const ShapeElement& sh : m_elements) {
+    for (const ShapeElement &sh : m_elements) {
         if (muse::RealIsEqual(sh.top(), shapeTop)) {
             edge = std::min(edge, sh.left());
         }
@@ -472,10 +437,9 @@ double Shape::leftMostEdgeAtTop() const
 //    returns negative values if there is an overlap
 //---------------------------------------------------------
 
-double Shape::topDistance(const PointF& p) const
-{
+double Shape::topDistance(const PointF &p) const {
     double dist = DBL_MAX;
-    for (const RectF& r : m_elements) {
+    for (const RectF &r : m_elements) {
         if (p.x() >= r.left() && p.x() < r.right()) {
             dist = std::min(dist, r.top() - p.y());
         }
@@ -489,10 +453,9 @@ double Shape::topDistance(const PointF& p) const
 //    returns negative values if there is an overlap
 //---------------------------------------------------------
 
-double Shape::bottomDistance(const PointF& p) const
-{
+double Shape::bottomDistance(const PointF &p) const {
     double dist = DBL_MAX;
-    for (const RectF& r : m_elements) {
+    for (const RectF &r : m_elements) {
         if (p.x() >= r.left() && p.x() < r.right()) {
             dist = std::min(dist, p.y() - r.bottom());
         }
@@ -500,11 +463,8 @@ double Shape::bottomDistance(const PointF& p) const
     return dist;
 }
 
-void Shape::setBBox(const RectF& r, const EngravingItem* p)
-{
-    IF_ASSERT_FAILED(type() == Type::Fixed) {
-        return;
-    }
+void Shape::setBBox(const RectF &r, const EngravingItem *p) {
+    IF_ASSERT_FAILED(type() == Type::Fixed) { return; }
 
     if (m_elements.empty()) {
         m_elements.push_back(ShapeElement(r, p));
@@ -513,11 +473,10 @@ void Shape::setBBox(const RectF& r, const EngravingItem* p)
     }
 }
 
-void Shape::addBBox(const RectF& r)
-{
-//    IF_ASSERT_FAILED(type() == Type::Fixed) {
-//        return;
-//    }
+void Shape::addBBox(const RectF &r) {
+    //    IF_ASSERT_FAILED(type() == Type::Fixed) {
+    //        return;
+    //    }
 
     if (m_elements.empty()) {
         m_elements.push_back(RectF());
@@ -530,15 +489,13 @@ void Shape::addBBox(const RectF& r)
 //   add
 //---------------------------------------------------------
 
-void Shape::add(const Shape& s)
-{
+void Shape::add(const Shape &s) {
     m_type = Type::Composite;
     m_elements.insert(m_elements.end(), s.m_elements.begin(), s.m_elements.end());
     invalidateBBox();
 }
 
-void Shape::add(const ShapeElement& shapeEl)
-{
+void Shape::add(const ShapeElement &shapeEl) {
     m_type = Type::Composite;
     m_elements.push_back(shapeEl);
     invalidateBBox();
@@ -548,8 +505,7 @@ void Shape::add(const ShapeElement& shapeEl)
 //   remove
 //---------------------------------------------------------
 
-void Shape::remove(const RectF& r)
-{
+void Shape::remove(const RectF &r) {
     for (auto i = m_elements.begin(); i != m_elements.end(); ++i) {
         if (*i == r) {
             m_elements.erase(i);
@@ -562,38 +518,32 @@ void Shape::remove(const RectF& r)
     invalidateBBox();
 }
 
-void Shape::remove(const Shape& s)
-{
-    for (const RectF& r : s.m_elements) {
+void Shape::remove(const Shape &s) {
+    for (const RectF &r : s.m_elements) {
         remove(r);
     }
 
     invalidateBBox();
 }
 
-std::vector<RectF> Shape::toRects() const
-{
+std::vector<RectF> Shape::toRects() const {
     std::vector<RectF> rects;
     rects.reserve(m_elements.size());
 
-    for (const RectF& shapeEl : m_elements) {
+    for (const RectF &shapeEl : m_elements) {
         rects.push_back(shapeEl);
     }
 
     return rects;
 }
 
-void Shape::removeInvisibles()
-{
-    muse::remove_if(m_elements, [](ShapeElement& shapeElement) {
-        return !shapeElement.item() || !shapeElement.item()->visible();
-    });
+void Shape::removeInvisibles() {
+    muse::remove_if(m_elements, [](ShapeElement &shapeElement) { return !shapeElement.item() || !shapeElement.item()->visible(); });
     invalidateBBox();
 }
 
-void Shape::removeTypes(const std::set<ElementType>& types)
-{
-    muse::remove_if(m_elements, [&types](ShapeElement& shapeElement) {
+void Shape::removeTypes(const std::set<ElementType> &types) {
+    muse::remove_if(m_elements, [&types](ShapeElement &shapeElement) {
         return shapeElement.item() && muse::contains(types, shapeElement.item()->type());
     });
     invalidateBBox();
@@ -603,9 +553,8 @@ void Shape::removeTypes(const std::set<ElementType>& types)
 //   contains
 //---------------------------------------------------------
 
-bool Shape::contains(const PointF& p) const
-{
-    for (const RectF& r : m_elements) {
+bool Shape::contains(const PointF &p) const {
+    for (const RectF &r : m_elements) {
         if (r.contains(p)) {
             return true;
         }
@@ -617,9 +566,8 @@ bool Shape::contains(const PointF& p) const
 //   intersects
 //---------------------------------------------------------
 
-bool Shape::intersects(const RectF& rr) const
-{
-    for (const RectF& r : m_elements) {
+bool Shape::intersects(const RectF &rr) const {
+    for (const RectF &r : m_elements) {
         if (r.intersects(rr)) {
             return true;
         }
@@ -631,9 +579,8 @@ bool Shape::intersects(const RectF& rr) const
 //   intersects
 //---------------------------------------------------------
 
-bool Shape::intersects(const Shape& other) const
-{
-    for (const RectF& r : other.m_elements) {
+bool Shape::intersects(const Shape &other) const {
+    for (const RectF &r : other.m_elements) {
         if (intersects(r)) {
             return true;
         }
@@ -641,32 +588,28 @@ bool Shape::intersects(const Shape& other) const
     return false;
 }
 
-void Shape::paint(Painter& painter) const
-{
-    for (const RectF& r : m_elements) {
+void Shape::paint(Painter &painter) const {
+    for (const RectF &r : m_elements) {
         painter.drawRect(r);
     }
 }
 
-void mu::engraving::dump(const ShapeElement& se, std::stringstream& ss)
-{
-    const RectF* r = &se;
+void mu::engraving::dump(const ShapeElement &se, std::stringstream &ss) {
+    const RectF *r = &se;
     ss << "item: " << (se.item() ? se.item()->typeName() : "no") << " rect: ";
     muse::dump(*r, ss);
 }
 
-void mu::engraving::dump(const Shape& sh, std::stringstream& ss)
-{
+void mu::engraving::dump(const Shape &sh, std::stringstream &ss) {
     ss << "Shape size: " << sh.size() << "\n";
-    for (const ShapeElement& r : sh.elements()) {
+    for (const ShapeElement &r : sh.elements()) {
         ss << "  ";
         dump(r, ss);
         ss << "\n";
     }
 }
 
-std::string mu::engraving::dump(const Shape& sh)
-{
+std::string mu::engraving::dump(const Shape &sh) {
     std::stringstream ss;
     dump(sh, ss);
     return ss.str();

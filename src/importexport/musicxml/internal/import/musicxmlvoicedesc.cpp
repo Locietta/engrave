@@ -28,25 +28,21 @@ using namespace mu::iex::musicxml;
 //   VoiceDesc
 //---------------------------------------------------------
 
-VoiceDesc::VoiceDesc()
-    : m_staff(-1), m_voice(-1), m_overlaps(false)
-{
+VoiceDesc::VoiceDesc() : m_staff(-1), m_voice(-1), m_overlaps(false) {
     for (int i = 0; i < MAX_STAVES; ++i) {
-        m_chordRests[i] =  0;
+        m_chordRests[i] = 0;
         m_staffAlloc[i] = -1;
-        m_voices[i]     = -1;
+        m_voices[i] = -1;
     }
 }
 
-void VoiceDesc::incrChordRests(int s)
-{
+void VoiceDesc::incrChordRests(int s) {
     if (0 <= s && s < MAX_STAVES) {
         m_chordRests[s]++;
     }
 }
 
-int VoiceDesc::numberChordRests() const
-{
+int VoiceDesc::numberChordRests() const {
     int res = 0;
     for (int i = 0; i < MAX_STAVES; ++i) {
         res += m_chordRests[i];
@@ -54,8 +50,7 @@ int VoiceDesc::numberChordRests() const
     return res;
 }
 
-int VoiceDesc::preferredStaff() const
-{
+int VoiceDesc::preferredStaff() const {
     int max = 0;
     int res = 0;
     for (int i = 0; i < MAX_STAVES; ++i) {
@@ -67,8 +62,7 @@ int VoiceDesc::preferredStaff() const
     return res;
 }
 
-String VoiceDesc::toString() const
-{
+String VoiceDesc::toString() const {
     String res = u"[";
     for (int i = 0; i < MAX_STAVES; ++i) {
         res += String(u" %1").arg(m_chordRests[i]);

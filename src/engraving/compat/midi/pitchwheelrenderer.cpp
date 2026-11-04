@@ -6,14 +6,11 @@
 
 using namespace mu::engraving;
 
-PitchWheelRenderer::PitchWheelRenderer(PitchWheelSpecs wheelSpec)
-    : _wheelSpec(wheelSpec)
-{}
+PitchWheelRenderer::PitchWheelRenderer(PitchWheelSpecs wheelSpec) : _wheelSpec(wheelSpec) {}
 
-void PitchWheelRenderer::addPitchWheelFunction(const PitchWheelFunction& function, uint32_t channel, staff_idx_t staffIdx,
-                                               MidiInstrumentEffect effect)
-{
-    PitchWheelFunctions& functions =  _functions[channel];
+void PitchWheelRenderer::addPitchWheelFunction(const PitchWheelFunction &function, uint32_t channel, staff_idx_t staffIdx,
+                                               MidiInstrumentEffect effect) {
+    PitchWheelFunctions &functions = _functions[channel];
     _effectByChannel[channel] = effect;
     _staffIdxByChannel[channel] = staffIdx;
 
@@ -27,11 +24,10 @@ void PitchWheelRenderer::addPitchWheelFunction(const PitchWheelFunction& functio
     functions.functions.push_back(function);
 }
 
-EventsHolder PitchWheelRenderer::renderPitchWheel() const noexcept
-{
+EventsHolder PitchWheelRenderer::renderPitchWheel() const noexcept {
     EventsHolder pitchWheelEvents;
 
-    for (const auto& function : _functions) {
+    for (const auto &function : _functions) {
         renderChannelPitchWheel(pitchWheelEvents, function.second, function.first);
     }
 
@@ -40,10 +36,8 @@ EventsHolder PitchWheelRenderer::renderPitchWheel() const noexcept
 
 //! MARK: PRIVATE METHODS
 
-void PitchWheelRenderer::renderChannelPitchWheel(EventsHolder& pitchWheelEvents,
-                                                 const PitchWheelFunctions& functions,
-                                                 uint32_t channel) const noexcept
-{
+void PitchWheelRenderer::renderChannelPitchWheel(EventsHolder &pitchWheelEvents, const PitchWheelFunctions &functions,
+                                                 uint32_t channel) const noexcept {
     if (functions.endTick < functions.startTick) {
         return;
     }
@@ -61,7 +55,7 @@ void PitchWheelRenderer::renderChannelPitchWheel(EventsHolder& pitchWheelEvents,
         staffIdx = _staffIdxByChannel.at(channel);
     }
 
-    std::map<int, int, std::greater<> > ranges;
+    std::map<int, int, std::greater<>> ranges;
     generateRanges(functions.functions, ranges);
 
     for (auto rit = ranges.crbegin(); rit != ranges.crend(); ++rit) {
@@ -71,7 +65,7 @@ void PitchWheelRenderer::renderChannelPitchWheel(EventsHolder& pitchWheelEvents,
 
         std::vector<PitchWheelFunction> functionsToProcess;
         functionsToProcess.reserve(functions.functions.size());
-        for (const auto& func : functions.functions) {
+        for (const auto &func : functions.functions) {
             if (func.mEndTick <= end) {
                 functionsToProcess.push_back(func);
             }
@@ -103,7 +97,7 @@ void PitchWheelRenderer::renderChannelPitchWheel(EventsHolder& pitchWheelEvents,
                 ++funcIt;
             }
             int finalPitch = _wheelSpec.mLimit;
-            for (const auto& pitch : pitches) {
+            for (const auto &pitch : pitches) {
                 finalPitch += pitch;
             }
             finalPitch = std::clamp(finalPitch, 0, 2 * _wheelSpec.mLimit - 1);
@@ -123,21 +117,19 @@ void PitchWheelRenderer::renderChannelPitchWheel(EventsHolder& pitchWheelEvents,
     }
 }
 
-int32_t PitchWheelRenderer::findNextStartTick(const std::vector<PitchWheelFunction>& functions) const noexcept
-{
+int32_t PitchWheelRenderer::findNextStartTick(const std::vector<PitchWheelFunction> &functions) const noexcept {
     int32_t tick = std::numeric_limits<int32_t>::max();
-    for (const auto& func : functions) {
+    for (const auto &func : functions) {
         tick = std::min(tick, func.mStartTick);
     }
 
     return tick;
 }
 
-int32_t PitchWheelRenderer::calculatePitchBend(const std::vector<PitchWheelFunction>& functions, int32_t tick) const noexcept
-{
+int32_t PitchWheelRenderer::calculatePitchBend(const std::vector<PitchWheelFunction> &functions, int32_t tick) const noexcept {
     int pitchValue = _wheelSpec.mLimit;
 
-    for (const auto& func : functions) {
+    for (const auto &func : functions) {
         if (tick < func.mStartTick || tick >= func.mEndTick) {
             continue;
         }
@@ -153,20 +145,19 @@ int32_t PitchWheelRenderer::calculatePitchBend(const std::vector<PitchWheelFunct
 // result           |--------------|
 // 3           |--------|            handleEndTick();
 // result      |-------------------|
-void PitchWheelRenderer::generateRanges(const std::vector<PitchWheelFunction>& functions, std::map<int, int, std::greater<> >& ranges)
-{
+void PitchWheelRenderer::generateRanges(const std::vector<PitchWheelFunction> &functions, std::map<int, int, std::greater<>> &ranges) {
     // !NOTE ranges map is reversed. Use reverse iterators
-    auto handleEndTick = [&](const PitchWheelFunction& func) {
+    auto handleEndTick = [&](const PitchWheelFunction &func) {
         auto lowerRange = ranges.upper_bound(func.mEndTick);
         if (lowerRange == ranges.end()) {
             return false;
         }
-        ranges.insert({ func.mStartTick, lowerRange->second });
+        ranges.insert({func.mStartTick, lowerRange->second});
         ranges.erase(lowerRange);
         return true;
     };
 
-    auto handleStartTick = [&](const PitchWheelFunction& func) {
+    auto handleStartTick = [&](const PitchWheelFunction &func) {
         auto lowerRange = ranges.upper_bound(func.mStartTick);
         if (lowerRange == ranges.end()) {
             // We are getting PW events sorted by startTick
@@ -180,13 +171,13 @@ void PitchWheelRenderer::generateRanges(const std::vector<PitchWheelFunction>& f
         return false;
     };
 
-    for (const auto& func : functions) {
+    for (const auto &func : functions) {
         if (auto key = ranges.find(func.mStartTick); key != ranges.end()) {
             key->second = std::max(key->second, func.mEndTick);
             continue;
         }
         if (!handleStartTick(func)) {
-            ranges.insert({ func.mStartTick, func.mEndTick });
+            ranges.insert({func.mStartTick, func.mEndTick});
         }
     }
 }

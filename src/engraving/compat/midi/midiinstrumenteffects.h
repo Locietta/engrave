@@ -30,6 +30,6 @@ enum class MidiInstrumentEffect {
     SLIDE,
     HAMMER_PULL,
 };
-}
+} // namespace mu::engraving
 
 #endif

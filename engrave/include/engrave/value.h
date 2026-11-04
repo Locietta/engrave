@@ -13,8 +13,8 @@ namespace engrave {
 // for the per-property units a later slice can add.
 enum struct Unit {
     None,
-    Spatium,   // staff spaces
-    Absolute,  // 1/1200 inch: the engine's DPI (a millimetre is DPMM of these)
+    Spatium,  // staff spaces
+    Absolute, // 1/1200 inch: the engine's DPI (a millimetre is DPMM of these)
     Millimetre,
     Degree,
 };
@@ -26,8 +26,7 @@ namespace detail {
 
 // Compare positive-denominator fractions without multiplying their terms. Each
 // reciprocal reverses the order; unsigned magnitudes also cover INT64_MIN.
-constexpr std::strong_ordering compare_fraction(std::int64_t a, std::int64_t b,
-                                                std::int64_t c, std::int64_t d) {
+constexpr std::strong_ordering compare_fraction(std::int64_t a, std::int64_t b, std::int64_t c, std::int64_t d) {
     if (a < 0 && c >= 0) return std::strong_ordering::less;
     if (a >= 0 && c < 0) return std::strong_ordering::greater;
     const auto magnitude = [](std::int64_t n) {
@@ -66,7 +65,7 @@ struct Fraction {
     std::int64_t num = 0;
     std::int64_t den = 1;
 
-    constexpr std::strong_ordering operator<=>(const Fraction& other) const {
+    constexpr std::strong_ordering operator<=>(const Fraction &other) const {
         // Invalid denominators are outside the API contract. Keep them safely
         // ordered by their stored terms, before valid fractions.
         if (den <= 0 || other.den <= 0) {
@@ -78,21 +77,21 @@ struct Fraction {
         return detail::compare_fraction(num, den, other.num, other.den);
     }
 
-    constexpr bool operator==(const Fraction& other) const { return (*this <=> other) == 0; }
+    constexpr bool operator==(const Fraction &other) const { return (*this <=> other) == 0; }
 };
 
 struct Point {
     double x = 0;
     double y = 0;
 
-    bool operator==(const Point&) const = default;
+    bool operator==(const Point &) const = default;
 };
 
 struct Size {
     double w = 0;
     double h = 0;
 
-    bool operator==(const Size&) const = default;
+    bool operator==(const Size &) const = default;
 };
 
 struct Color {
@@ -101,7 +100,7 @@ struct Color {
     std::uint8_t b = 0;
     std::uint8_t a = 255;
 
-    bool operator==(const Color&) const = default;
+    bool operator==(const Color &) const = default;
 };
 
 // An enum value as its MSCX token: the text the engine's TConv writes for it, so
@@ -112,7 +111,7 @@ struct Color {
 struct Enum {
     std::string token;
 
-    bool operator==(const Enum&) const = default;
+    bool operator==(const Enum &) const = default;
 };
 
 // A value the engine keeps as an object and the API does not map: read-only.
@@ -120,12 +119,12 @@ struct Enum {
 struct Opaque {
     std::string type;
 
-    bool operator==(const Opaque&) const = default;
+    bool operator==(const Opaque &) const = default;
 };
 
 // The value of one property or style.  A default-constructed Value is
 // std::monostate: no value at all.
-using Value = std::variant<std::monostate, bool, std::int64_t, double, std::string, Fraction, Point, Size, Color,
-                           Enum, std::vector<std::int64_t>, Opaque>;
+using Value = std::variant<std::monostate, bool, std::int64_t, double, std::string, Fraction, Point, Size, Color, Enum,
+                           std::vector<std::int64_t>, Opaque>;
 
 } // namespace engrave

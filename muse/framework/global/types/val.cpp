@@ -27,7 +27,6 @@
 #include <iomanip>
 #include <string_view>
 
-
 #include "log.h"
 
 using namespace muse;
@@ -35,186 +34,151 @@ using namespace muse;
 static const std::string VAL_TRUE("true");
 static const std::string VAL_FALSE("false");
 
-Val::Val(bool val)
-    : m_val(val), m_type(Type::Bool) {}
+Val::Val(bool val) : m_val(val), m_type(Type::Bool) {}
 
-Val::Val(int val)
-    : m_val(val), m_type(Type::Int) {}
+Val::Val(int val) : m_val(val), m_type(Type::Int) {}
 
-Val::Val(int64_t val)
-    : m_val(val), m_type(Type::Int64) {}
+Val::Val(int64_t val) : m_val(val), m_type(Type::Int64) {}
 
-Val::Val(double val)
-    : m_val(val), m_type(Type::Double) {}
+Val::Val(double val) : m_val(val), m_type(Type::Double) {}
 
-Val::Val(const std::string& str)
-    : m_val(str), m_type(Type::String) {}
+Val::Val(const std::string &str) : m_val(str), m_type(Type::String) {}
 
-Val::Val(const char* str)
-    : m_val(std::string(str)), m_type(Type::String) {}
+Val::Val(const char *str) : m_val(std::string(str)), m_type(Type::String) {}
 
-Val::Val(const io::path_t& path)
-    : m_val(path.toStdString()), m_type(Type::String) {}
+Val::Val(const io::path_t &path) : m_val(path.toStdString()), m_type(Type::String) {}
 
-Val::Val(const ValList& list)
-    : m_val(list), m_type(Type::List) {}
+Val::Val(const ValList &list) : m_val(list), m_type(Type::List) {}
 
-Val::Val(const ValMap& map)
-    : m_val(map), m_type(Type::Map) {}
+Val::Val(const ValMap &map) : m_val(map), m_type(Type::Map) {}
 
-Val::Type Val::valueType() const
-{
+Val::Type Val::valueType() const {
     // std::monostate, bool, int, int64_t, double, std::string, ValList, ValMap
     switch (m_val.index()) {
-    case 0: return Type::Undefined;
-    case 1: return Type::Bool;
-    case 2: return Type::Int;
-    case 3: return Type::Int64;
-    case 4: return Type::Double;
-    case 5: return Type::String;
-    case 6: return Type::List;
-    case 7: return Type::Map;
+        case 0: return Type::Undefined;
+        case 1: return Type::Bool;
+        case 2: return Type::Int;
+        case 3: return Type::Int64;
+        case 4: return Type::Double;
+        case 5: return Type::String;
+        case 6: return Type::List;
+        case 7: return Type::Map;
     }
     return Type::Undefined;
 }
 
-void Val::setType(Type t)
-{
-    m_type = t;
-}
+void Val::setType(Type t) { m_type = t; }
 
-Val::Type Val::type() const
-{
-    return m_type;
-}
+Val::Type Val::type() const { return m_type; }
 
-bool Val::isNull() const
-{
-    return m_val.index() == 0;
-}
+bool Val::isNull() const { return m_val.index() == 0; }
 
-std::optional<bool> Val::doToBool() const
-{
+std::optional<bool> Val::doToBool() const {
     switch (valueType()) {
-    case Type::Bool:    return std::get<bool>(m_val);
-    case Type::Int:     return muse::is_zero(std::get<int>(m_val)) ? false : true;
-    case Type::Int64:   return muse::is_zero(std::get<int64_t>(m_val)) ? false : true;
-    case Type::Double:  return muse::is_zero(std::get<double>(m_val)) ? false : true;
-    case Type::String: {
-        std::string str = std::get<std::string>(m_val);
-        return !str.empty() && str != VAL_FALSE && str != "0" && str != "0.0";
-    }
-    case Type::List: return std::get<ValList>(m_val).size() > 0;
-    case Type::Map: return std::get<ValMap>(m_val).size() > 0;
-    default:
-        break;
+        case Type::Bool: return std::get<bool>(m_val);
+        case Type::Int: return muse::is_zero(std::get<int>(m_val)) ? false : true;
+        case Type::Int64: return muse::is_zero(std::get<int64_t>(m_val)) ? false : true;
+        case Type::Double: return muse::is_zero(std::get<double>(m_val)) ? false : true;
+        case Type::String: {
+            std::string str = std::get<std::string>(m_val);
+            return !str.empty() && str != VAL_FALSE && str != "0" && str != "0.0";
+        }
+        case Type::List: return std::get<ValList>(m_val).size() > 0;
+        case Type::Map: return std::get<ValMap>(m_val).size() > 0;
+        default: break;
     }
     return std::nullopt;
 }
 
-bool Val::toBool() const
-{
+bool Val::toBool() const {
     auto value = doToBool();
     return value ? *value : false;
 }
 
-std::optional<int> Val::doToInt() const
-{
+std::optional<int> Val::doToInt() const {
     switch (valueType()) {
-    case Type::Bool: return std::get<bool>(m_val) ? 1 : 0;
-    case Type::Int: return std::get<int>(m_val);
-    case Type::Int64: return static_cast<int>(std::get<int64_t>(m_val));
-    case Type::Double: return static_cast<int>(std::get<double>(m_val));
-    case Type::String: {
-        std::string str = std::get<std::string>(m_val);
-        if (str == VAL_TRUE) {
-            return 1;
+        case Type::Bool: return std::get<bool>(m_val) ? 1 : 0;
+        case Type::Int: return std::get<int>(m_val);
+        case Type::Int64: return static_cast<int>(std::get<int64_t>(m_val));
+        case Type::Double: return static_cast<int>(std::get<double>(m_val));
+        case Type::String: {
+            std::string str = std::get<std::string>(m_val);
+            if (str == VAL_TRUE) {
+                return 1;
+            }
+            try {
+                return std::stoi(str);
+            } catch (const std::exception &e) {
+                return std::nullopt;
+            }
         }
-        try {
-            return std::stoi(str);
-        } catch (const std::exception& e) {
-            return std::nullopt;
-        }
-    }
-    default:
-        break;
+        default: break;
     }
     return std::nullopt;
 }
 
-int Val::toInt() const
-{
+int Val::toInt() const {
     auto value = doToInt();
     return value ? *value : 0;
 }
 
-std::optional<int64_t> Val::doToInt64() const
-{
+std::optional<int64_t> Val::doToInt64() const {
     switch (valueType()) {
-    case Type::Bool: return std::get<bool>(m_val) ? 1 : 0;
-    case Type::Int: return std::get<int>(m_val);
-    case Type::Int64: return std::get<int64_t>(m_val);
-    case Type::Double: return static_cast<int64_t>(std::get<double>(m_val));
-    case Type::String: {
-        std::string str = std::get<std::string>(m_val);
-        if (str == VAL_TRUE) {
-            return 1LL;
+        case Type::Bool: return std::get<bool>(m_val) ? 1 : 0;
+        case Type::Int: return std::get<int>(m_val);
+        case Type::Int64: return std::get<int64_t>(m_val);
+        case Type::Double: return static_cast<int64_t>(std::get<double>(m_val));
+        case Type::String: {
+            std::string str = std::get<std::string>(m_val);
+            if (str == VAL_TRUE) {
+                return 1LL;
+            }
+            try {
+                return std::stoll(str);
+            } catch (const std::exception &e) {
+                return std::nullopt;
+            }
         }
-        try {
-            return std::stoll(str);
-        } catch (const std::exception& e) {
-            return std::nullopt;
-        }
-    }
-    default:
-        break;
+        default: break;
     }
     return std::nullopt;
 }
 
-int64_t Val::toInt64() const
-{
+int64_t Val::toInt64() const {
     auto value = doToInt64();
     return value ? *value : 0;
 }
 
-std::optional<double> Val::doToDouble() const
-{
+std::optional<double> Val::doToDouble() const {
     switch (valueType()) {
-    case Type::Bool: return std::get<bool>(m_val) ? 1.0 : 0.0;
-    case Type::Int: return static_cast<double>(std::get<int>(m_val));
-    case Type::Int64: return static_cast<double>(std::get<int64_t>(m_val));
-    case Type::Double: return std::get<double>(m_val);
-    case Type::String: {
-        std::string str = std::get<std::string>(m_val);
-        if (str == VAL_TRUE) {
-            return 1.0;
+        case Type::Bool: return std::get<bool>(m_val) ? 1.0 : 0.0;
+        case Type::Int: return static_cast<double>(std::get<int>(m_val));
+        case Type::Int64: return static_cast<double>(std::get<int64_t>(m_val));
+        case Type::Double: return std::get<double>(m_val);
+        case Type::String: {
+            std::string str = std::get<std::string>(m_val);
+            if (str == VAL_TRUE) {
+                return 1.0;
+            }
+            try {
+                return std::stod(str);
+            } catch (const std::exception &e) {
+                return std::nullopt;
+            }
         }
-        try {
-            return std::stod(str);
-        } catch (const std::exception& e) {
-            return std::nullopt;
-        }
-    }
-    default:
-        break;
+        default: break;
     }
     return std::nullopt;
 }
 
-double Val::toDouble() const
-{
+double Val::toDouble() const {
     auto value = doToDouble();
     return value ? *value : 0.0;
 }
 
-float Val::toFloat() const
-{
-    return static_cast<float>(toDouble());
-}
+float Val::toFloat() const { return static_cast<float>(toDouble()); }
 
-static std::string doubleToString(double n, int prec = 6)
-{
+static std::string doubleToString(double n, int prec = 6) {
     std::stringstream stream;
     stream << std::fixed << std::setprecision(prec) << n;
     std::string s = stream.str();
@@ -237,108 +201,93 @@ static std::string doubleToString(double n, int prec = 6)
     return std::string(s.c_str(), correctedIdx + 1);
 }
 
-std::optional<std::string> Val::doToString() const
-{
+std::optional<std::string> Val::doToString() const {
     switch (valueType()) {
-    case Type::Bool: return toBool() ? VAL_TRUE : VAL_FALSE;
-    case Type::Int: return std::to_string(std::get<int>(m_val));
-    case Type::Int64: return std::to_string(std::get<int64_t>(m_val));
-    case Type::Double: return doubleToString(std::get<double>(m_val));
-    case Type::String: return std::get<std::string>(m_val);
-    case Type::List: {
-        std::string str;
-        if (!ValJson::toString(std::get<ValList>(m_val), str)) {
-            return std::nullopt;
+        case Type::Bool: return toBool() ? VAL_TRUE : VAL_FALSE;
+        case Type::Int: return std::to_string(std::get<int>(m_val));
+        case Type::Int64: return std::to_string(std::get<int64_t>(m_val));
+        case Type::Double: return doubleToString(std::get<double>(m_val));
+        case Type::String: return std::get<std::string>(m_val);
+        case Type::List: {
+            std::string str;
+            if (!ValJson::toString(std::get<ValList>(m_val), str)) {
+                return std::nullopt;
+            }
+            return str;
         }
-        return str;
-    }
-    case Type::Map: {
-        std::string str;
-        if (!ValJson::toString(std::get<ValMap>(m_val), str)) {
-            return std::nullopt;
+        case Type::Map: {
+            std::string str;
+            if (!ValJson::toString(std::get<ValMap>(m_val), str)) {
+                return std::nullopt;
+            }
+            return str;
         }
-        return str;
-    }
-    default:
-        break;
+        default: break;
     }
     return std::nullopt;
 }
 
-std::string Val::toString() const
-{
+std::string Val::toString() const {
     auto value = doToString();
     return value ? *value : std::string();
 }
 
-std::optional<io::path_t> Val::doToPath() const
-{
+std::optional<io::path_t> Val::doToPath() const {
     if (valueType() == Type::String) {
         return std::get<std::string>(m_val);
     }
     return std::nullopt;
 }
 
-io::path_t Val::toPath() const
-{
+io::path_t Val::toPath() const {
     auto value = doToPath();
     return value ? *value : io::path_t();
 }
 
-std::optional<ValList> Val::doToList() const
-{
+std::optional<ValList> Val::doToList() const {
     switch (valueType()) {
-    case Type::List: return std::get<ValList>(m_val);
-    case Type::String: {
-        ValList list;
-        if (!ValJson::fromString(std::get<std::string>(m_val), list)) {
-            return std::nullopt;
+        case Type::List: return std::get<ValList>(m_val);
+        case Type::String: {
+            ValList list;
+            if (!ValJson::fromString(std::get<std::string>(m_val), list)) {
+                return std::nullopt;
+            }
+            return list;
         }
-        return list;
-    }
-    default:
-        break;
+        default: break;
     }
 
     return std::nullopt;
 }
 
-ValList Val::toList() const
-{
+ValList Val::toList() const {
     auto value = doToList();
     return value ? *value : ValList();
 }
 
-std::optional<ValMap> Val::doToMap() const
-{
+std::optional<ValMap> Val::doToMap() const {
     switch (valueType()) {
-    case Type::Map: return std::get<ValMap>(m_val);
-    case Type::String: {
-        ValMap map;
-        if (!ValJson::fromString(std::get<std::string>(m_val), map)) {
-            return std::nullopt;
+        case Type::Map: return std::get<ValMap>(m_val);
+        case Type::String: {
+            ValMap map;
+            if (!ValJson::fromString(std::get<std::string>(m_val), map)) {
+                return std::nullopt;
+            }
+            return map;
         }
-        return map;
-    }
-    default:
-        break;
+        default: break;
     }
     return std::nullopt;
 }
 
-ValMap Val::toMap() const
-{
+ValMap Val::toMap() const {
     auto value = doToMap();
     return value ? *value : ValMap();
 }
 
-bool Val::operator ==(const Val& v) const
-{
-    return v.m_type == m_type && v.m_val == m_val;
-}
+bool Val::operator==(const Val &v) const { return v.m_type == m_type && v.m_val == m_val; }
 
-bool Val::operator <(const Val& v) const
-{
+bool Val::operator<(const Val &v) const {
     if (m_val.index() != v.m_val.index()) {
         return false;
     }
@@ -346,42 +295,32 @@ bool Val::operator <(const Val& v) const
     return m_val < v.m_val;
 }
 
-
-static void appendQuoted(std::ostream& out, std::string_view text)
-{
-    static const char* hex = "0123456789abcdef";
+static void appendQuoted(std::ostream &out, std::string_view text) {
+    static const char *hex = "0123456789abcdef";
     out << '"';
     for (size_t i = 0; i < text.size(); ++i) {
         const unsigned char c = static_cast<unsigned char>(text[i]);
         switch (c) {
-        case '"': out << "\\\"";
-            break;
-        case '\\': out << "\\\\";
-            break;
-        case '\b': out << "\\b";
-            break;
-        case '\f': out << "\\f";
-            break;
-        case '\n': out << "\\n";
-            break;
-        case '\r': out << "\\r";
-            break;
-        case '\t': out << "\\t";
-            break;
-        default:
-            if (c < 0x20) {
-                out << "\\u00" << hex[c >> 4] << hex[c & 0x0f];
-            } else {
-                out << static_cast<char>(c);
-            }
-            break;
+            case '"': out << "\\\""; break;
+            case '\\': out << "\\\\"; break;
+            case '\b': out << "\\b"; break;
+            case '\f': out << "\\f"; break;
+            case '\n': out << "\\n"; break;
+            case '\r': out << "\\r"; break;
+            case '\t': out << "\\t"; break;
+            default:
+                if (c < 0x20) {
+                    out << "\\u00" << hex[c >> 4] << hex[c & 0x0f];
+                } else {
+                    out << static_cast<char>(c);
+                }
+                break;
         }
     }
     out << '"';
 }
 
-static bool appendValue(std::ostream& out, const Val& value)
-{
+static bool appendValue(std::ostream &out, const Val &value) {
     const std::optional<std::string> text = value.toType<std::string>();
     if (!text) {
         return false;
@@ -394,8 +333,7 @@ static bool appendValue(std::ostream& out, const Val& value)
     return true;
 }
 
-static int hexDigit(char c)
-{
+static int hexDigit(char c) {
     if (c >= '0' && c <= '9') {
         return c - '0';
     }
@@ -408,8 +346,7 @@ static int hexDigit(char c)
     return -1;
 }
 
-static std::optional<std::string> unquote(std::string_view token)
-{
+static std::optional<std::string> unquote(std::string_view token) {
     if (token.size() < 2 || token.front() != '"') {
         return std::nullopt;
     }
@@ -420,51 +357,43 @@ static std::optional<std::string> unquote(std::string_view token)
         const char c = token[i];
         if (escaped) {
             switch (c) {
-            case '"':
-            case '\\':
-            case '/':
-                result.push_back(c);
-                break;
-            case 'b': result.push_back('\b');
-                break;
-            case 'f': result.push_back('\f');
-                break;
-            case 'n': result.push_back('\n');
-                break;
-            case 'r': result.push_back('\r');
-                break;
-            case 't': result.push_back('\t');
-                break;
-            case 'u': {
-                if (i + 4 >= token.size()) {
-                    return std::nullopt;
-                }
-                int code = 0;
-                for (int h = 0; h < 4; ++h) {
-                    const int digit = hexDigit(token[i + 1 + h]);
-                    if (digit < 0) {
+                case '"':
+                case '\\':
+                case '/': result.push_back(c); break;
+                case 'b': result.push_back('\b'); break;
+                case 'f': result.push_back('\f'); break;
+                case 'n': result.push_back('\n'); break;
+                case 'r': result.push_back('\r'); break;
+                case 't': result.push_back('\t'); break;
+                case 'u': {
+                    if (i + 4 >= token.size()) {
                         return std::nullopt;
                     }
-                    code = (code << 4) | digit;
+                    int code = 0;
+                    for (int h = 0; h < 4; ++h) {
+                        const int digit = hexDigit(token[i + 1 + h]);
+                        if (digit < 0) {
+                            return std::nullopt;
+                        }
+                        code = (code << 4) | digit;
+                    }
+                    if (code >= 0xd800 && code <= 0xdfff) {
+                        return std::nullopt;
+                    }
+                    if (code < 0x80) {
+                        result.push_back(static_cast<char>(code));
+                    } else if (code < 0x800) {
+                        result.push_back(static_cast<char>(0xc0 | (code >> 6)));
+                        result.push_back(static_cast<char>(0x80 | (code & 0x3f)));
+                    } else {
+                        result.push_back(static_cast<char>(0xe0 | (code >> 12)));
+                        result.push_back(static_cast<char>(0x80 | ((code >> 6) & 0x3f)));
+                        result.push_back(static_cast<char>(0x80 | (code & 0x3f)));
+                    }
+                    i += 4;
+                    break;
                 }
-                if (code >= 0xd800 && code <= 0xdfff) {
-                    return std::nullopt;
-                }
-                if (code < 0x80) {
-                    result.push_back(static_cast<char>(code));
-                } else if (code < 0x800) {
-                    result.push_back(static_cast<char>(0xc0 | (code >> 6)));
-                    result.push_back(static_cast<char>(0x80 | (code & 0x3f)));
-                } else {
-                    result.push_back(static_cast<char>(0xe0 | (code >> 12)));
-                    result.push_back(static_cast<char>(0x80 | ((code >> 6) & 0x3f)));
-                    result.push_back(static_cast<char>(0x80 | (code & 0x3f)));
-                }
-                i += 4;
-                break;
-            }
-            default:
-                return std::nullopt;
+                default: return std::nullopt;
             }
             escaped = false;
             continue;
@@ -485,8 +414,7 @@ static std::optional<std::string> unquote(std::string_view token)
 }
 
 //! NOTE Quoted text is not structural: commas, colons and brackets inside it are data.
-static bool skipQuoted(bool& inString, bool& escaped, char c)
-{
+static bool skipQuoted(bool &inString, bool &escaped, char c) {
     if (inString) {
         if (escaped) {
             escaped = false;
@@ -508,8 +436,7 @@ static bool skipQuoted(bool& inString, bool& escaped, char c)
     return false;
 }
 
-bool ValJson::toString(const ValList& list, std::string& str)
-{
+bool ValJson::toString(const ValList &list, std::string &str) {
     std::stringstream stream;
     stream << "[";
     for (size_t i = 0; i < list.size(); ++i) {
@@ -525,12 +452,11 @@ bool ValJson::toString(const ValList& list, std::string& str)
     return true;
 }
 
-bool ValJson::toString(const ValMap& map, std::string& str)
-{
+bool ValJson::toString(const ValMap &map, std::string &str) {
     std::stringstream stream;
     stream << "{";
     std::string sep;
-    for (const auto& item : map) {
+    for (const auto &item : map) {
         stream << sep;
         appendQuoted(stream, item.first);
         stream << ": ";
@@ -544,18 +470,11 @@ bool ValJson::toString(const ValMap& map, std::string& str)
     return true;
 }
 
-bool ValJson::fromString(const std::string& str, ValList& list)
-{
-    return parseList(str, list);
-}
+bool ValJson::fromString(const std::string &str, ValList &list) { return parseList(str, list); }
 
-bool ValJson::fromString(const std::string& str, ValMap& map)
-{
-    return parseMap(str, map);
-}
+bool ValJson::fromString(const std::string &str, ValMap &map) { return parseMap(str, map); }
 
-std::string_view ValJson::trim(std::string_view str)
-{
+std::string_view ValJson::trim(std::string_view str) {
     while (!str.empty() && std::isspace(static_cast<unsigned char>(str.front()))) {
         str.remove_prefix(1);
     }
@@ -565,8 +484,7 @@ std::string_view ValJson::trim(std::string_view str)
     return str;
 }
 
-bool ValJson::isIntegerToken(std::string_view str)
-{
+bool ValJson::isIntegerToken(std::string_view str) {
     if (str.empty()) {
         return false;
     }
@@ -582,8 +500,7 @@ bool ValJson::isIntegerToken(std::string_view str)
     return true;
 }
 
-bool ValJson::isDoubleToken(std::string_view str)
-{
+bool ValJson::isDoubleToken(std::string_view str) {
     if (str.empty()) {
         return false;
     }
@@ -603,8 +520,7 @@ bool ValJson::isDoubleToken(std::string_view str)
     return hasDot && hasDigit;
 }
 
-bool ValJson::splitTopLevel(std::string_view str, std::vector<std::string_view>& out)
-{
+bool ValJson::splitTopLevel(std::string_view str, std::vector<std::string_view> &out) {
     out.clear();
     if (str.empty()) {
         return true;
@@ -640,8 +556,7 @@ bool ValJson::splitTopLevel(std::string_view str, std::vector<std::string_view>&
     return true;
 }
 
-size_t ValJson::topLevelColon(std::string_view str)
-{
+size_t ValJson::topLevelColon(std::string_view str) {
     int depth = 0;
     bool inString = false;
     bool escaped = false;
@@ -664,8 +579,7 @@ size_t ValJson::topLevelColon(std::string_view str)
     return std::string_view::npos;
 }
 
-std::optional<Val> ValJson::parseValue(std::string_view token)
-{
+std::optional<Val> ValJson::parseValue(std::string_view token) {
     token = trim(token);
     if (token.empty()) {
         return std::nullopt;
@@ -714,7 +628,7 @@ std::optional<Val> ValJson::parseValue(std::string_view token)
                 return Val(static_cast<int>(value));
             }
             return Val(static_cast<int64_t>(value));
-        } catch (const std::exception&) {
+        } catch (const std::exception &) {
             return Val(text);
         }
     }
@@ -727,7 +641,7 @@ std::optional<Val> ValJson::parseValue(std::string_view token)
                 return std::nullopt;
             }
             return Val(value);
-        } catch (const std::exception&) {
+        } catch (const std::exception &) {
             return Val(text);
         }
     }
@@ -735,8 +649,7 @@ std::optional<Val> ValJson::parseValue(std::string_view token)
     return Val(text);
 }
 
-bool ValJson::parseList(std::string_view str, ValList& list)
-{
+bool ValJson::parseList(std::string_view str, ValList &list) {
     str = trim(str);
     if (str.size() < 2 || str.front() != '[' || str.back() != ']') {
         return false;
@@ -761,8 +674,7 @@ bool ValJson::parseList(std::string_view str, ValList& list)
     return true;
 }
 
-bool ValJson::parseMap(std::string_view str, ValMap& map)
-{
+bool ValJson::parseMap(std::string_view str, ValMap &map) {
     str = trim(str);
     if (str.size() < 2 || str.front() != '{' || str.back() != '}') {
         return false;

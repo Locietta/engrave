@@ -26,13 +26,12 @@
 #include "playback/metaparsers/metaparserbase.h"
 
 namespace mu::engraving {
-class AnnotationsMetaParser : public MetaParserBase<AnnotationsMetaParser>
-{
+class AnnotationsMetaParser : public MetaParserBase<AnnotationsMetaParser> {
 protected:
     friend MetaParserBase;
 
-    static void doParse(const EngravingItem* item, const RenderingContext& ctx, muse::mpe::ArticulationMap& result);
+    static void doParse(const EngravingItem *item, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
 };
-}
+} // namespace mu::engraving
 
 #endif // MU_ENGRAVING_ANNOTATIONSMETAPARSER_H

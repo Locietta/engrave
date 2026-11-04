@@ -27,17 +27,16 @@
 
 namespace mu::engraving {
 class Note;
-}
+} // namespace mu::engraving
 
 namespace mu::iex::guitarpro {
 int gpPitchToQuarterTones(int gpPitch);
 
-class DiveInfoConverter
-{
+class DiveInfoConverter {
 public:
-    static ImportedDiveInfo fillDiveInfo(const mu::engraving::Note* note, const mu::engraving::PitchValues& pitchValues,
+    static ImportedDiveInfo fillDiveInfo(const mu::engraving::Note *note, const mu::engraving::PitchValues &pitchValues,
                                          bool isContinuedWhammy = false);
 
-    static ImportedDiveInfo fromPitchValues(const mu::engraving::PitchValues& pitchValues, bool isContinuedWhammy = false);
+    static ImportedDiveInfo fromPitchValues(const mu::engraving::PitchValues &pitchValues, bool isContinuedWhammy = false);
 };
 } // namespace mu::iex::guitarpro

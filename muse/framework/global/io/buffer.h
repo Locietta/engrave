@@ -27,32 +27,31 @@
 #include "global/types/bytearray.h"
 
 namespace muse::io {
-class Buffer : public IODevice
-{
+class Buffer : public IODevice {
 public:
-    static Buffer opened(OpenMode, ByteArray* = nullptr);
-    static Buffer opened(OpenMode, ByteArray&&);
+    static Buffer opened(OpenMode, ByteArray * = nullptr);
+    static Buffer opened(OpenMode, ByteArray &&);
 
     Buffer();
     Buffer(size_t size);
-    Buffer(const uint8_t* data, size_t size);
-    Buffer(ByteArray* ba);
-    Buffer(ByteArray&& ba);
+    Buffer(const uint8_t *data, size_t size);
+    Buffer(ByteArray *ba);
+    Buffer(ByteArray &&ba);
 
-    const ByteArray& data() const;
+    const ByteArray &data() const;
 
 protected:
 
     bool doOpen(OpenMode m) override;
     ByteArray doReadAll() override;
     size_t dataSize() const override;
-    const uint8_t* rawData() const override;
+    const uint8_t *rawData() const override;
     bool resizeData(size_t size) override;
-    size_t writeData(const uint8_t* data, size_t len) override;
+    size_t writeData(const uint8_t *data, size_t len) override;
 
 private:
 
-    ByteArray* m_ref = nullptr;
+    ByteArray *m_ref = nullptr;
     ByteArray m_ba;
 };
-}
+} // namespace muse::io

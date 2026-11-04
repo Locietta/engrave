@@ -45,23 +45,13 @@ using namespace mu::engraving;
 //   MeasureBase
 //---------------------------------------------------------
 
-MeasureBase::MeasureBase(const ElementType& type, Score* parent)
-    : EngravingItem(type, parent)
-{
-}
+MeasureBase::MeasureBase(const ElementType &type, Score *parent) : EngravingItem(type, parent) {}
 
-void MeasureBase::setOwnershipParent(Score* score)
-{
-    EngravingItem::setOwnershipParent(score);
-}
+void MeasureBase::setOwnershipParent(Score *score) { EngravingItem::setOwnershipParent(score); }
 
-void MeasureBase::setOwnershipParent(Box* box)
-{
-    EngravingItem::setOwnershipParent(box);
-}
+void MeasureBase::setOwnershipParent(Box *box) { EngravingItem::setOwnershipParent(box); }
 
-EngravingItem* MeasureBase::layoutParent() const
-{
+EngravingItem *MeasureBase::layoutParent() const {
     if (m_system) {
         return m_system;
     }
@@ -69,14 +59,12 @@ EngravingItem* MeasureBase::layoutParent() const
     return EngravingItem::layoutParent();
 }
 
-MeasureBase::MeasureBase(const MeasureBase& m)
-    : EngravingItem(m)
-{
-    m_next     = m.m_next;
-    m_prev     = m.m_prev;
-    m_tick     = m.m_tick;
+MeasureBase::MeasureBase(const MeasureBase &m) : EngravingItem(m) {
+    m_next = m.m_next;
+    m_prev = m.m_prev;
+    m_tick = m.m_tick;
 
-    for (EngravingItem* e : m.m_el) {
+    for (EngravingItem *e : m.m_el) {
         add(e->clone());
     }
 }
@@ -85,8 +73,7 @@ MeasureBase::MeasureBase(const MeasureBase& m)
 //   clearElements
 //---------------------------------------------------------
 
-void MeasureBase::clearElements()
-{
+void MeasureBase::clearElements() {
     muse::DeleteAll(m_el);
     m_el.clear();
 }
@@ -95,8 +82,7 @@ void MeasureBase::clearElements()
 //   takeElements
 //---------------------------------------------------------
 
-ElementList MeasureBase::takeElements()
-{
+ElementList MeasureBase::takeElements() {
     ElementList l;
     l.swap(m_el);
     return l;
@@ -106,10 +92,9 @@ ElementList MeasureBase::takeElements()
 //   setScore
 //---------------------------------------------------------
 
-void MeasureBase::setScore(Score* score)
-{
+void MeasureBase::setScore(Score *score) {
     EngravingItem::setScore(score);
-    for (EngravingItem* e : m_el) {
+    for (EngravingItem *e : m_el) {
         e->setScore(score);
     }
 }
@@ -118,83 +103,64 @@ void MeasureBase::setScore(Score* score)
 //   MeasureBase
 //---------------------------------------------------------
 
-MeasureBase::~MeasureBase()
-{
-    muse::DeleteAll(m_el);
-}
+MeasureBase::~MeasureBase() { muse::DeleteAll(m_el); }
 
-System* MeasureBase::prevNonVBoxSystem() const
-{
-    const System* currSystem = system();
-    const MeasureBase* firstInCurrSystem = currSystem ? currSystem->first() : nullptr;
-    IF_ASSERT_FAILED(firstInCurrSystem) {
-        return nullptr;
-    }
+System *MeasureBase::prevNonVBoxSystem() const {
+    const System *currSystem = system();
+    const MeasureBase *firstInCurrSystem = currSystem ? currSystem->first() : nullptr;
+    IF_ASSERT_FAILED(firstInCurrSystem) { return nullptr; }
 
     // TODO: This logic is coupled to moveMeasureToPrevSystem - it should be possible to
     // move a MeasureBase from below a VBox (or n VBoxes) to above. Once that's achieved,
     // we can remove lastIsValid and simply iterate until we find a "non VBox system"...
-    const MeasureBase* lastInPrevSystem = firstInCurrSystem->prevMM();
+    const MeasureBase *lastInPrevSystem = firstInCurrSystem->prevMM();
     const bool lastIsValid = lastInPrevSystem && !lastInPrevSystem->isVBoxBase();
 
     return lastIsValid ? lastInPrevSystem->system() : nullptr;
 }
 
-System* MeasureBase::nextNonVBoxSystem() const
-{
-    const System* currSystem = system();
-    const MeasureBase* lastInCurrSystem = currSystem ? currSystem->last() : nullptr;
-    IF_ASSERT_FAILED(lastInCurrSystem) {
-        return nullptr;
-    }
+System *MeasureBase::nextNonVBoxSystem() const {
+    const System *currSystem = system();
+    const MeasureBase *lastInCurrSystem = currSystem ? currSystem->last() : nullptr;
+    IF_ASSERT_FAILED(lastInCurrSystem) { return nullptr; }
 
     // TODO: This logic is coupled to moveMeasureToNextSystem - it should be possible to
     // move a MeasureBase from above a VBox (or n VBoxes) to below. Once that's achieved,
     // we can remove firstIsValid and simply iterate until we find a "non VBox system"...
-    const MeasureBase* firstInNextSystem = lastInCurrSystem->nextMM();
+    const MeasureBase *firstInNextSystem = lastInCurrSystem->nextMM();
     const bool firstIsValid = firstInNextSystem && !firstInNextSystem->isVBoxBase();
 
     return firstIsValid ? firstInNextSystem->system() : nullptr;
 }
 
-Page* MeasureBase::page() const
-{
-    return system() ? system()->page() : nullptr;
-}
+Page *MeasureBase::page() const { return system() ? system()->page() : nullptr; }
 
-Page* MeasureBase::prevPage() const
-{
-    Page* curPage = page();
-    IF_ASSERT_FAILED(curPage) {
-        return nullptr;
-    }
+Page *MeasureBase::prevPage() const {
+    Page *curPage = page();
+    IF_ASSERT_FAILED(curPage) { return nullptr; }
 
-    Page* prevPage = curPage;
-    for (const MeasureBase* mb = this; mb && prevPage == curPage; mb = mb->prevMM()) {
+    Page *prevPage = curPage;
+    for (const MeasureBase *mb = this; mb && prevPage == curPage; mb = mb->prevMM()) {
         prevPage = mb->system()->page();
     }
 
     return prevPage != curPage ? prevPage : nullptr;
 }
 
-Page* MeasureBase::nextPage() const
-{
-    Page* curPage = page();
-    IF_ASSERT_FAILED(curPage) {
-        return nullptr;
-    }
+Page *MeasureBase::nextPage() const {
+    Page *curPage = page();
+    IF_ASSERT_FAILED(curPage) { return nullptr; }
 
-    Page* nextPage = curPage;
-    for (const MeasureBase* mb = this; mb && nextPage == curPage; mb = mb->nextMM()) {
+    Page *nextPage = curPage;
+    for (const MeasureBase *mb = this; mb && nextPage == curPage; mb = mb->nextMM()) {
         nextPage = mb->system()->page();
     }
 
     return nextPage != curPage ? nextPage : nullptr;
 }
 
-bool MeasureBase::acceptDrop(EditData& data) const
-{
-    const EngravingItem* e = data.dropElement;
+bool MeasureBase::acceptDrop(EditData &data) const {
+    const EngravingItem *e = data.dropElement;
     if (!e || !system() || !page()) {
         return false;
     }
@@ -205,72 +171,69 @@ bool MeasureBase::acceptDrop(EditData& data) const
 
     if (e->isActionIcon()) {
         switch (toActionIcon(e)->actionType()) {
-        case ActionIconType::PAGE_LOCK:
-        {
-            LayoutMode layoutMode = score()->layoutMode();
-            return layoutMode == LayoutMode::PAGE;
-        }
-        case ActionIconType::SYSTEM_LOCK:
-        {
-            LayoutMode layoutMode = score()->layoutMode();
-            return layoutMode == LayoutMode::PAGE || layoutMode == LayoutMode::SYSTEM;
-        }
-        default: break;
+            case ActionIconType::PAGE_LOCK: {
+                LayoutMode layoutMode = score()->layoutMode();
+                return layoutMode == LayoutMode::PAGE;
+            }
+            case ActionIconType::SYSTEM_LOCK: {
+                LayoutMode layoutMode = score()->layoutMode();
+                return layoutMode == LayoutMode::PAGE || layoutMode == LayoutMode::SYSTEM;
+            }
+            default: break;
         }
     }
     return false;
 }
 
-EngravingItem* MeasureBase::drop(Transaction& tx, EditData& data)
-{
-    EngravingItem* e = data.dropElement;
+EngravingItem *MeasureBase::drop(Transaction &tx, EditData &data) {
+    EngravingItem *e = data.dropElement;
     if (!e || !system() || !page()) {
         delete e;
         return nullptr;
     }
     if (e->isLayoutBreak()) {
-        LayoutBreak* b = toLayoutBreak(e);
-        MeasureBase* mb = this;
+        LayoutBreak *b = toLayoutBreak(e);
+        MeasureBase *mb = this;
         if (isMeasure()) {
-            Measure* m = toMeasure(this);
+            Measure *m = toMeasure(this);
             if (m->isMMRest()) {
                 mb = m->mmRestLast();
             }
         }
         switch (b->layoutBreakType()) {
-        case  LayoutBreakType::PAGE:
-            if (mb->pageBreak()) {
-                delete b;
-                b = nullptr;
-            } else {
-                mb->setLineBreak(false);
-            }
-            break;
-        case  LayoutBreakType::LINE:
-            if (mb->lineBreak()) {
-                delete b;
-                b = nullptr;
-            } else {
-                mb->setPageBreak(false);
-            }
-            break;
-        case  LayoutBreakType::SECTION:
-            if (mb->sectionBreak()) {
-                delete b;
-                b = nullptr;
-            } else {
-                mb->setLineBreak(false);
-            }
-            break;
-        case LayoutBreakType::NOBREAK:
-            if (mb->noBreak() || mb->isEndOfSystemLock() || mb->isEndOfPageLock()) {
-                delete b;
-                b = nullptr;
-            } else {
-                mb->setLineBreak(false);
-                mb->setPageBreak(false);
-            }
-            break;
+            case LayoutBreakType::PAGE:
+                if (mb->pageBreak()) {
+                    delete b;
+                    b = nullptr;
+                } else {
+                    mb->setLineBreak(false);
+                }
+                break;
+            case LayoutBreakType::LINE:
+                if (mb->lineBreak()) {
+                    delete b;
+                    b = nullptr;
+                } else {
+                    mb->setPageBreak(false);
+                }
+                break;
+            case LayoutBreakType::SECTION:
+                if (mb->sectionBreak()) {
+                    delete b;
+                    b = nullptr;
+                } else {
+                    mb->setLineBreak(false);
+                }
+                break;
+            case LayoutBreakType::NOBREAK:
+                if (mb->noBreak() || mb->isEndOfSystemLock() || mb->isEndOfPageLock()) {
+                    delete b;
+                    b = nullptr;
+                } else {
+                    mb->setLineBreak(false);
+                    mb->setPageBreak(false);
+                }
+                break;
         }
         if (b) {
             if (b->layoutBreakType() != LayoutBreakType::NOBREAK) {
@@ -285,15 +248,9 @@ EngravingItem* MeasureBase::drop(Transaction& tx, EditData& data)
     }
     if (e->isActionIcon()) {
         switch (toActionIcon(e)->actionType()) {
-        case ActionIconType::SYSTEM_LOCK:
-            EditSystemLocks::makeIntoSystem(tx, score(), system()->first(), this);
-            break;
-        case ActionIconType::PAGE_LOCK:
-            EditPageLocks::makeIntoPage(tx, score(), page()->firstMeasureBase(), this);
-            break;
-        default:
-            LOGD("MeasureBase: cannot drop %s here", e->typeName());
-            break;
+            case ActionIconType::SYSTEM_LOCK: EditSystemLocks::makeIntoSystem(tx, score(), system()->first(), this); break;
+            case ActionIconType::PAGE_LOCK: EditPageLocks::makeIntoPage(tx, score(), page()->firstMeasureBase(), this); break;
+            default: LOGD("MeasureBase: cannot drop %s here", e->typeName()); break;
         }
     }
     delete e;
@@ -305,40 +262,39 @@ EngravingItem* MeasureBase::drop(Transaction& tx, EditData& data)
 ///   Add new EngravingItem \a el to MeasureBase
 //---------------------------------------------------------
 
-void MeasureBase::add(EngravingItem* e)
-{
+void MeasureBase::add(EngravingItem *e) {
     if (e->ownershipParent() != this) {
         e->setOwnershipParent(this);
     }
 
     if (e->isLayoutBreak()) {
-        LayoutBreak* b = toLayoutBreak(e);
+        LayoutBreak *b = toLayoutBreak(e);
         switch (b->layoutBreakType()) {
-        case LayoutBreakType::PAGE:
-            setPageBreak(true);
-            setLineBreak(false);
-            setNoBreak(false);
-            break;
-        case LayoutBreakType::LINE:
-            setPageBreak(false);
-            setLineBreak(true);
-            setSectionBreak(false);
-            setNoBreak(false);
-            break;
-        case LayoutBreakType::SECTION:
-            setLineBreak(false);
-            setSectionBreak(true);
-            setNoBreak(false);
-            if (b->startWithMeasureOne()) {
-                triggerLayoutToEnd();
-            }
-            break;
-        case LayoutBreakType:: NOBREAK:
-            setPageBreak(false);
-            setLineBreak(false);
-            setSectionBreak(false);
-            setNoBreak(true);
-            break;
+            case LayoutBreakType::PAGE:
+                setPageBreak(true);
+                setLineBreak(false);
+                setNoBreak(false);
+                break;
+            case LayoutBreakType::LINE:
+                setPageBreak(false);
+                setLineBreak(true);
+                setSectionBreak(false);
+                setNoBreak(false);
+                break;
+            case LayoutBreakType::SECTION:
+                setLineBreak(false);
+                setSectionBreak(true);
+                setNoBreak(false);
+                if (b->startWithMeasureOne()) {
+                    triggerLayoutToEnd();
+                }
+                break;
+            case LayoutBreakType::NOBREAK:
+                setPageBreak(false);
+                setLineBreak(false);
+                setSectionBreak(false);
+                setNoBreak(true);
+                break;
         }
         if (next()) {
             next()->triggerLayout();
@@ -354,26 +310,19 @@ void MeasureBase::add(EngravingItem* e)
 ///   Remove EngravingItem \a el from MeasureBase.
 //---------------------------------------------------------
 
-void MeasureBase::remove(EngravingItem* el)
-{
+void MeasureBase::remove(EngravingItem *el) {
     if (el->isLayoutBreak()) {
-        LayoutBreak* lb = toLayoutBreak(el);
+        LayoutBreak *lb = toLayoutBreak(el);
         switch (lb->layoutBreakType()) {
-        case LayoutBreakType::PAGE:
-            setPageBreak(false);
-            break;
-        case LayoutBreakType::LINE:
-            setLineBreak(false);
-            break;
-        case LayoutBreakType::SECTION:
-            setSectionBreak(false);
-            if (lb->startWithMeasureOne()) {
-                triggerLayoutToEnd();
-            }
-            break;
-        case LayoutBreakType::NOBREAK:
-            setNoBreak(false);
-            break;
+            case LayoutBreakType::PAGE: setPageBreak(false); break;
+            case LayoutBreakType::LINE: setLineBreak(false); break;
+            case LayoutBreakType::SECTION:
+                setSectionBreak(false);
+                if (lb->startWithMeasureOne()) {
+                    triggerLayoutToEnd();
+                }
+                break;
+            case LayoutBreakType::NOBREAK: setNoBreak(false); break;
         }
     }
 
@@ -393,9 +342,8 @@ void MeasureBase::remove(EngravingItem* el)
 //   nextMeasure
 //---------------------------------------------------------
 
-Measure* MeasureBase::nextMeasure() const
-{
-    MeasureBase* m = m_next;
+Measure *MeasureBase::nextMeasure() const {
+    MeasureBase *m = m_next;
     for (;;) {
         if (m == 0 || m->isMeasure()) {
             break;
@@ -409,9 +357,8 @@ Measure* MeasureBase::nextMeasure() const
 //   nextMeasureMM
 //---------------------------------------------------------
 
-Measure* MeasureBase::nextMeasureMM() const
-{
-    Measure* mm = nextMeasure();
+Measure *MeasureBase::nextMeasureMM() const {
+    Measure *mm = nextMeasure();
     if (mm && style().styleB(Sid::createMultiMeasureRests) && mm->hasMMRest()) {
         return mm->mmRest();
     }
@@ -422,9 +369,8 @@ Measure* MeasureBase::nextMeasureMM() const
 //   prevMeasure
 //---------------------------------------------------------
 
-Measure* MeasureBase::prevMeasure() const
-{
-    MeasureBase* m = prev();
+Measure *MeasureBase::prevMeasure() const {
+    MeasureBase *m = prev();
     while (m) {
         if (m->isMeasure()) {
             return toMeasure(m);
@@ -438,9 +384,8 @@ Measure* MeasureBase::prevMeasure() const
 //   prevMeasureMM
 //---------------------------------------------------------
 
-Measure* MeasureBase::prevMeasureMM() const
-{
-    Measure* m = prevMeasure();
+Measure *MeasureBase::prevMeasureMM() const {
+    Measure *m = prevMeasure();
     if (m) {
         return m->coveringMMRestOrThis();
     }
@@ -448,13 +393,12 @@ Measure* MeasureBase::prevMeasureMM() const
     return nullptr;
 }
 
-const MeasureBase* MeasureBase::mbWithPrecedingSectionBreak() const
-{
+const MeasureBase *MeasureBase::mbWithPrecedingSectionBreak() const {
     // we're trying to find the MeasureBase that determines
     // if the next one after this starts a new section
     // if this is a measure, it's the one that determines this
     // but if it is a frame, we may need to look backwards
-    const MeasureBase* mb = this;
+    const MeasureBase *mb = this;
     while (mb && !mb->isMeasure() && !mb->sectionBreak()) {
         mb = mb->prev();
     }
@@ -465,9 +409,8 @@ const MeasureBase* MeasureBase::mbWithPrecedingSectionBreak() const
 //   pause
 //---------------------------------------------------------
 
-double MeasureBase::pause() const
-{
-    const LayoutBreak* layoutBreak = sectionBreakElement();
+double MeasureBase::pause() const {
+    const LayoutBreak *layoutBreak = sectionBreakElement();
     return layoutBreak ? layoutBreak->pause() : 0.0;
 }
 
@@ -475,9 +418,8 @@ double MeasureBase::pause() const
 //   top
 //---------------------------------------------------------
 
-MeasureBase* MeasureBase::top() const
-{
-    const MeasureBase* mb = this;
+MeasureBase *MeasureBase::top() const {
+    const MeasureBase *mb = this;
     while (mb->ownershipParent()) {
         if (mb->ownershipParent()->isMeasureBase()) {
             mb = toMeasureBase(mb->ownershipParent());
@@ -485,16 +427,15 @@ MeasureBase* MeasureBase::top() const
             break;
         }
     }
-    return const_cast<MeasureBase*>(mb);
+    return const_cast<MeasureBase *>(mb);
 }
 
 //---------------------------------------------------------
 //   getInScore
 //---------------------------------------------------------
 
-MeasureBase* MeasureBase::getInScore(Score* score, bool useNextMeasureFallback) const
-{
-    MeasureBase* newMB = nullptr;
+MeasureBase *MeasureBase::getInScore(Score *score, bool useNextMeasureFallback) const {
+    MeasureBase *newMB = nullptr;
     if (!isMeasure() && !excludeFromOtherParts()) {
         for (auto e : linkList()) {
             if (e->score() == score) {
@@ -516,25 +457,20 @@ MeasureBase* MeasureBase::getInScore(Score* score, bool useNextMeasureFallback) 
 //   tick
 //---------------------------------------------------------
 
-Fraction MeasureBase::tick() const
-{
-    const MeasureBase* mb = top();
+Fraction MeasureBase::tick() const {
+    const MeasureBase *mb = top();
     return mb ? mb->m_tick : Fraction(-1, 1);
 }
 
-void MeasureBase::setTick(const Fraction& f)
-{
-    m_tick = f;
-}
+void MeasureBase::setTick(const Fraction &f) { m_tick = f; }
 
 //---------------------------------------------------------
 //   triggerLayout
 //---------------------------------------------------------
 
-void MeasureBase::triggerLayout() const
-{
+void MeasureBase::triggerLayout() const {
     // for measurebases within other measurebases (e.g., hbox within vbox), use top level
-    const MeasureBase* mb = top();
+    const MeasureBase *mb = top();
     // avoid triggering layout before getting added to a score
     if (mb->prev() || mb->next()) {
         score()->setLayout(mb->tick(), muse::nidx, mb);
@@ -545,10 +481,9 @@ void MeasureBase::triggerLayout() const
 //   scanElements
 //---------------------------------------------------------
 
-void MeasureBase::scanElements(std::function<void(EngravingItem*)> func)
-{
+void MeasureBase::scanElements(std::function<void(EngravingItem *)> func) {
     if (isMeasure()) {
-        for (EngravingItem* e : m_el) {
+        for (EngravingItem *e : m_el) {
             staff_idx_t staffIdx = e->staffIdx();
             if (staffIdx != muse::nidx && staffIdx >= score()->staves().size()) {
                 LOGD("MeasureBase::scanElements: bad staffIdx %zu in element %s", staffIdx, e->typeName());
@@ -558,7 +493,7 @@ void MeasureBase::scanElements(std::function<void(EngravingItem*)> func)
             }
         }
     } else {
-        for (EngravingItem* e : m_el) {
+        for (EngravingItem *e : m_el) {
             e->scanElements(func);
         }
     }
@@ -571,67 +506,60 @@ void MeasureBase::scanElements(std::function<void(EngravingItem*)> func)
 //   first
 //---------------------------------------------------------
 
-MeasureBase* Score::first() const
-{
-    return m_measures.first();
-}
+MeasureBase *Score::first() const { return m_measures.first(); }
 
 //---------------------------------------------------------
 //   last
 //---------------------------------------------------------
 
-MeasureBase* Score::last()  const
-{
-    return m_measures.last();
-}
+MeasureBase *Score::last() const { return m_measures.last(); }
 
 //---------------------------------------------------------
 //   undoSetBreak
 //---------------------------------------------------------
 
-void MeasureBase::undoSetBreak(bool v, LayoutBreakType type)
-{
+void MeasureBase::undoSetBreak(bool v, LayoutBreakType type) {
     switch (type) {
-    case LayoutBreakType::LINE:
-        if (lineBreak() == v) {
-            return;
-        }
-        setLineBreak(v);
-        break;
-    case LayoutBreakType::PAGE:
-        if (pageBreak() == v) {
-            return;
-        }
-        if (v && lineBreak()) {
-            setLineBreak(false);
-        }
-        setPageBreak(v);
-        break;
-    case LayoutBreakType::SECTION:
-        if (sectionBreak() == v) {
-            return;
-        }
-        if (v && lineBreak()) {
-            setLineBreak(false);
-        }
-        setSectionBreak(v);
-        break;
-    case LayoutBreakType::NOBREAK:
-        if (noBreak() == v) {
-            return;
-        }
-        if (v) {
-            setLineBreak(false);
-            setPageBreak(false);
-            setSectionBreak(false);
-        }
-        setNoBreak(v);
-        break;
+        case LayoutBreakType::LINE:
+            if (lineBreak() == v) {
+                return;
+            }
+            setLineBreak(v);
+            break;
+        case LayoutBreakType::PAGE:
+            if (pageBreak() == v) {
+                return;
+            }
+            if (v && lineBreak()) {
+                setLineBreak(false);
+            }
+            setPageBreak(v);
+            break;
+        case LayoutBreakType::SECTION:
+            if (sectionBreak() == v) {
+                return;
+            }
+            if (v && lineBreak()) {
+                setLineBreak(false);
+            }
+            setSectionBreak(v);
+            break;
+        case LayoutBreakType::NOBREAK:
+            if (noBreak() == v) {
+                return;
+            }
+            if (v) {
+                setLineBreak(false);
+                setPageBreak(false);
+                setSectionBreak(false);
+            }
+            setNoBreak(v);
+            break;
     }
 
     if (v) {
-        MeasureBase* mb = (isMeasure() && toMeasure(this)->isMMRest()) ? toMeasure(this)->mmRestLast() : this;
-        LayoutBreak* lb = Factory::createLayoutBreak(mb);
+        MeasureBase *mb = (isMeasure() && toMeasure(this)->isMMRest()) ? toMeasure(this)->mmRestLast() : this;
+        LayoutBreak *lb = Factory::createLayoutBreak(mb);
         lb->setLayoutBreakType(type);
         lb->setTrack(0);
         score()->undoAddElement(lb);
@@ -643,37 +571,36 @@ void MeasureBase::undoSetBreak(bool v, LayoutBreakType type)
 //   cleanupLayoutBreaks
 //---------------------------------------------------------
 
-void MeasureBase::cleanupLayoutBreaks(bool undo)
-{
+void MeasureBase::cleanupLayoutBreaks(bool undo) {
     // remove unneeded layout breaks
-    std::vector<EngravingItem*> toDelete;
-    for (EngravingItem* e : el()) {
+    std::vector<EngravingItem *> toDelete;
+    for (EngravingItem *e : el()) {
         if (e->isLayoutBreak()) {
             switch (toLayoutBreak(e)->layoutBreakType()) {
-            case LayoutBreakType::LINE:
-                if (!lineBreak()) {
-                    toDelete.push_back(e);
-                }
-                break;
-            case LayoutBreakType::PAGE:
-                if (!pageBreak()) {
-                    toDelete.push_back(e);
-                }
-                break;
-            case LayoutBreakType::SECTION:
-                if (!sectionBreak()) {
-                    toDelete.push_back(e);
-                }
-                break;
-            case LayoutBreakType::NOBREAK:
-                if (!noBreak()) {
-                    toDelete.push_back(e);
-                }
-                break;
+                case LayoutBreakType::LINE:
+                    if (!lineBreak()) {
+                        toDelete.push_back(e);
+                    }
+                    break;
+                case LayoutBreakType::PAGE:
+                    if (!pageBreak()) {
+                        toDelete.push_back(e);
+                    }
+                    break;
+                case LayoutBreakType::SECTION:
+                    if (!sectionBreak()) {
+                        toDelete.push_back(e);
+                    }
+                    break;
+                case LayoutBreakType::NOBREAK:
+                    if (!noBreak()) {
+                        toDelete.push_back(e);
+                    }
+                    break;
             }
         }
     }
-    for (EngravingItem* e : toDelete) {
+    for (EngravingItem *e : toDelete) {
         if (undo) {
             score()->undoRemoveElement(e);
         } else {
@@ -686,12 +613,8 @@ void MeasureBase::cleanupLayoutBreaks(bool undo)
 //   nextMM
 //---------------------------------------------------------
 
-MeasureBase* MeasureBase::nextMM() const
-{
-    if (m_next
-        && m_next->isMeasure()
-        && style().styleB(Sid::createMultiMeasureRests)
-        && toMeasure(m_next)->hasMMRest()) {
+MeasureBase *MeasureBase::nextMM() const {
+    if (m_next && m_next->isMeasure() && style().styleB(Sid::createMultiMeasureRests) && toMeasure(m_next)->hasMMRest()) {
         return toMeasure(m_next)->mmRest();
     }
     return m_next;
@@ -701,12 +624,9 @@ MeasureBase* MeasureBase::nextMM() const
 //   prevMM
 //---------------------------------------------------------
 
-MeasureBase* MeasureBase::prevMM() const
-{
-    if (m_prev
-        && m_prev->isMeasure()
-        && style().styleB(Sid::createMultiMeasureRests)) {
-        return const_cast<Measure*>(toMeasure(m_prev)->coveringMMRestOrThis());
+MeasureBase *MeasureBase::prevMM() const {
+    if (m_prev && m_prev->isMeasure() && style().styleB(Sid::createMultiMeasureRests)) {
+        return const_cast<Measure *>(toMeasure(m_prev)->coveringMMRestOrThis());
     }
     return m_prev;
 }
@@ -715,11 +635,10 @@ MeasureBase* MeasureBase::prevMM() const
 //   index
 //---------------------------------------------------------
 
-int MeasureBase::index() const
-{
+int MeasureBase::index() const {
     int idx = 0;
-    MeasureBase* m = score()->first();
-    Measure* mmRestFirst = nullptr;
+    MeasureBase *m = score()->first();
+    Measure *mmRestFirst = nullptr;
     if (isMeasure() && toMeasure(this)->isMMRest()) {
         mmRestFirst = toMeasure(this)->mmRestFirst();
     }
@@ -739,11 +658,10 @@ int MeasureBase::index() const
 //    skipping other MeasureBase descendants
 //---------------------------------------------------------
 
-int MeasureBase::measureIndex() const
-{
+int MeasureBase::measureIndex() const {
     int idx = 0;
-    MeasureBase* m = score()->firstMeasure();
-    Measure* mmRestFirst = nullptr;
+    MeasureBase *m = score()->firstMeasure();
+    Measure *mmRestFirst = nullptr;
     if (isMeasure() && toMeasure(this)->isMMRest()) {
         mmRestFirst = toMeasure(this)->mmRestFirst();
     }
@@ -759,18 +677,16 @@ int MeasureBase::measureIndex() const
     return -1;
 }
 
-bool MeasureBase::isBefore(const EngravingItem* other) const
-{
+bool MeasureBase::isBefore(const EngravingItem *other) const {
     if (other->isMeasureBase()) {
-        const MeasureBase* otherMb = toMeasureBase(other);
+        const MeasureBase *otherMb = toMeasureBase(other);
         return isBefore(otherMb);
     }
 
     return EngravingItem::isBefore(other);
 }
 
-bool MeasureBase::isBefore(const MeasureBase* other) const
-{
+bool MeasureBase::isBefore(const MeasureBase *other) const {
     if (this == other) {
         return false;
     }
@@ -788,7 +704,7 @@ bool MeasureBase::isBefore(const MeasureBase* other) const
     }
 
     bool otherIsMMRest = other->isMeasure() && toMeasure(other)->isMMRest();
-    for (const MeasureBase* mb = otherIsMMRest ? nextMM() : next(); mb && mb->tick() == m_tick;
+    for (const MeasureBase *mb = otherIsMMRest ? nextMM() : next(); mb && mb->tick() == m_tick;
          mb = otherIsMMRest ? mb->nextMM() : mb->next()) {
         if (mb == other) {
             return true;
@@ -798,37 +714,27 @@ bool MeasureBase::isBefore(const MeasureBase* other) const
     return false;
 }
 
-const RangeLock* MeasureBase::systemLock() const
-{
-    return score()->systemLocks()->lockContaining(this);
-}
+const RangeLock *MeasureBase::systemLock() const { return score()->systemLocks()->lockContaining(this); }
 
-bool MeasureBase::isStartOfSystemLock() const
-{
-    const RangeLock* lock = score()->systemLocks()->lockStartingAt(this);
+bool MeasureBase::isStartOfSystemLock() const {
+    const RangeLock *lock = score()->systemLocks()->lockStartingAt(this);
     return lock != nullptr;
 }
 
-bool MeasureBase::isEndOfSystemLock() const
-{
-    const RangeLock* lock = systemLock();
+bool MeasureBase::isEndOfSystemLock() const {
+    const RangeLock *lock = systemLock();
     return lock && lock->endMB() == this;
 }
 
-const RangeLock* MeasureBase::pageLock() const
-{
-    return score()->pageLocks()->lockContaining(this);
-}
+const RangeLock *MeasureBase::pageLock() const { return score()->pageLocks()->lockContaining(this); }
 
-bool MeasureBase::isStartOfPageLock() const
-{
-    const RangeLock* lock = score()->pageLocks()->lockStartingAt(this);
+bool MeasureBase::isStartOfPageLock() const {
+    const RangeLock *lock = score()->pageLocks()->lockStartingAt(this);
     return lock != nullptr;
 }
 
-bool MeasureBase::isEndOfPageLock() const
-{
-    const RangeLock* lock = pageLock();
+bool MeasureBase::isEndOfPageLock() const {
+    const RangeLock *lock = pageLock();
     return lock && lock->endMB() == this;
 }
 
@@ -836,10 +742,9 @@ bool MeasureBase::isEndOfPageLock() const
 //   sectionBreakElement
 //---------------------------------------------------------
 
-LayoutBreak* MeasureBase::sectionBreakElement() const
-{
+LayoutBreak *MeasureBase::sectionBreakElement() const {
     if (sectionBreak()) {
-        for (EngravingItem* e : el()) {
+        for (EngravingItem *e : el()) {
             if (e->isLayoutBreak() && toLayoutBreak(e)->isSectionBreak()) {
                 return toLayoutBreak(e);
             }
@@ -853,15 +758,13 @@ LayoutBreak* MeasureBase::sectionBreakElement() const
 //   MeasureBaseList
 //---------------------------------------------------------
 
-MeasureBaseList::MeasureBaseList()
-{
+MeasureBaseList::MeasureBaseList() {
     m_first = nullptr;
-    m_last  = nullptr;
-    m_size  = 0;
+    m_last = nullptr;
+    m_size = 0;
 }
 
-void MeasureBaseList::clear()
-{
+void MeasureBaseList::clear() {
     m_first = nullptr;
     m_last = nullptr;
     m_size = 0;
@@ -872,8 +775,7 @@ void MeasureBaseList::clear()
 //   push_back
 //---------------------------------------------------------
 
-void MeasureBaseList::push_back(MeasureBase* m)
-{
+void MeasureBaseList::push_back(MeasureBase *m) {
     ++m_size;
     if (m_last) {
         m_last->setNext(m);
@@ -891,8 +793,7 @@ void MeasureBaseList::push_back(MeasureBase* m)
 //   push_front
 //---------------------------------------------------------
 
-void MeasureBaseList::push_front(MeasureBase* m)
-{
+void MeasureBaseList::push_front(MeasureBase *m) {
     ++m_size;
     if (m_first) {
         m_first->setPrev(m);
@@ -911,9 +812,8 @@ void MeasureBaseList::push_front(MeasureBase* m)
 //    insert m before m->next()
 //---------------------------------------------------------
 
-void MeasureBaseList::add(MeasureBase* m)
-{
-    MeasureBase* el = m->next();
+void MeasureBaseList::add(MeasureBase *m) {
+    MeasureBase *el = m->next();
     if (el == 0) {
         append(m);
         return;
@@ -932,8 +832,7 @@ void MeasureBaseList::add(MeasureBase* m)
 //   remove
 //---------------------------------------------------------
 
-void MeasureBaseList::remove(MeasureBase* m)
-{
+void MeasureBaseList::remove(MeasureBase *m) {
     --m_size;
     if (m->prev()) {
         m->prev()->setNext(m->next());
@@ -951,19 +850,18 @@ void MeasureBaseList::remove(MeasureBase* m)
 //   insert
 //---------------------------------------------------------
 
-void MeasureBaseList::insert(MeasureBase* fm, MeasureBase* lm)
-{
-    for (MeasureBase* m = fm; m != lm; m = m->next()) {
+void MeasureBaseList::insert(MeasureBase *fm, MeasureBase *lm) {
+    for (MeasureBase *m = fm; m != lm; m = m->next()) {
         ++m_size;
     }
     ++m_size;
-    MeasureBase* pm = fm->prev();
+    MeasureBase *pm = fm->prev();
     if (pm) {
         pm->setNext(fm);
     } else {
         m_first = fm;
     }
-    MeasureBase* nm = lm->next();
+    MeasureBase *nm = lm->next();
     if (nm) {
         nm->setPrev(lm);
     } else {
@@ -975,14 +873,13 @@ void MeasureBaseList::insert(MeasureBase* fm, MeasureBase* lm)
 //   remove
 //---------------------------------------------------------
 
-void MeasureBaseList::remove(MeasureBase* fm, MeasureBase* lm)
-{
-    for (MeasureBase* m = fm; m != lm; m = m->next()) {
+void MeasureBaseList::remove(MeasureBase *fm, MeasureBase *lm) {
+    for (MeasureBase *m = fm; m != lm; m = m->next()) {
         --m_size;
     }
     --m_size;
-    MeasureBase* pm = fm->prev();
-    MeasureBase* nm = lm->next();
+    MeasureBase *pm = fm->prev();
+    MeasureBase *nm = lm->next();
     if (pm) {
         pm->setNext(nm);
     } else {
@@ -999,8 +896,7 @@ void MeasureBaseList::remove(MeasureBase* fm, MeasureBase* lm)
 //   change
 //---------------------------------------------------------
 
-void MeasureBaseList::change(MeasureBase* ob, MeasureBase* nb)
-{
+void MeasureBaseList::change(MeasureBase *ob, MeasureBase *nb) {
     nb->setPrev(ob->prev());
     nb->setNext(ob->next());
     if (ob->prev()) {
@@ -1018,7 +914,7 @@ void MeasureBaseList::change(MeasureBase* ob, MeasureBase* nb)
     if (nb->isBox()) {
         nb->setSystem(ob->system());
     }
-    for (EngravingItem* e : nb->el()) {
+    for (EngravingItem *e : nb->el()) {
         e->setOwnershipParent(nb);
     }
 }
@@ -1029,8 +925,7 @@ void MeasureBaseList::change(MeasureBase* ob, MeasureBase* nb)
 //    tick index
 //---------------------------------------------------------
 
-void MeasureBaseList::append(MeasureBase* m)
-{
+void MeasureBaseList::append(MeasureBase *m) {
     assert(!m->next());
     assert(!m->prev() || m->prev() == m_last);
 
@@ -1038,8 +933,7 @@ void MeasureBaseList::append(MeasureBase* m)
     m_tickIndex.emplace(std::make_pair(m->tick().ticks(), m));
 }
 
-Measure* MeasureBaseList::measureByTick(int tick) const
-{
+Measure *MeasureBaseList::measureByTick(int tick) const {
     if (empty() || tick > m_last->endTick().ticks()) {
         return nullptr;
     }
@@ -1047,7 +941,7 @@ Measure* MeasureBaseList::measureByTick(int tick) const
     auto it = m_tickIndex.upper_bound(tick);
 
     if (it == m_tickIndex.begin()) {
-        MeasureBase* mb = it->second;
+        MeasureBase *mb = it->second;
 
         if (mb->isMeasure()) {
             return toMeasure(mb);
@@ -1058,7 +952,7 @@ Measure* MeasureBaseList::measureByTick(int tick) const
     --it;
     for (;; --it) {
         if (it == m_tickIndex.begin()) {
-            MeasureBase* mb = it->second;
+            MeasureBase *mb = it->second;
 
             if (mb->isMeasure()) {
                 return toMeasure(mb);
@@ -1066,7 +960,7 @@ Measure* MeasureBaseList::measureByTick(int tick) const
             return nullptr;
         }
 
-        MeasureBase* mb = it->second;
+        MeasureBase *mb = it->second;
         if (!mb) {
             break;
         }
@@ -1079,8 +973,7 @@ Measure* MeasureBaseList::measureByTick(int tick) const
     return nullptr;
 }
 
-MeasureBase* MeasureBaseList::firstMeasureBaseAtTick(int tick) const
-{
+MeasureBase *MeasureBaseList::firstMeasureBaseAtTick(int tick) const {
     if (empty() || tick > m_last->endTick().ticks()) {
         return nullptr;
     }
@@ -1093,9 +986,8 @@ MeasureBase* MeasureBaseList::firstMeasureBaseAtTick(int tick) const
     return it->second;
 }
 
-std::vector<MeasureBase*> MeasureBaseList::measureBasesAtTick(int tick) const
-{
-    std::vector<MeasureBase*> result;
+std::vector<MeasureBase *> MeasureBaseList::measureBasesAtTick(int tick) const {
+    std::vector<MeasureBase *> result;
     if (empty() || tick > m_last->endTick().ticks()) {
         return result;
     }
@@ -1105,11 +997,10 @@ std::vector<MeasureBase*> MeasureBaseList::measureBasesAtTick(int tick) const
     return result;
 }
 
-void MeasureBaseList::updateTickIndex()
-{
+void MeasureBaseList::updateTickIndex() {
     m_tickIndex.clear();
 
-    for (MeasureBase* mb = m_first; mb; mb = mb->next()) {
+    for (MeasureBase *mb = m_first; mb; mb = mb->next()) {
         m_tickIndex.emplace(std::make_pair(mb->tick().ticks(), mb));
     }
 }

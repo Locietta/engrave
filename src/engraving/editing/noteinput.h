@@ -53,59 +53,58 @@ struct NoteInputParams {
     int drumPitch = -1;
 };
 
-class NoteInput
-{
+class NoteInput {
 public:
     //! NOTE: Methods related to entering notes/rests into the score.
 
-    static bool resolveNoteInputParams(const Score* score, int note, bool addFlag, NoteInputParams& out);
+    static bool resolveNoteInputParams(const Score *score, int note, bool addFlag, NoteInputParams &out);
 
-    static NoteVal noteVal(const Score* score, int pitch, staff_idx_t staffIdx, bool allowTransposition);
-    static NoteVal noteValForPosition(const Score* score, Position pos, AccidentalType at, bool& error);
+    static NoteVal noteVal(const Score *score, int pitch, staff_idx_t staffIdx, bool allowTransposition);
+    static NoteVal noteValForPosition(const Score *score, Position pos, AccidentalType at, bool &error);
 
-    static Note* addNoteToChord(Score* score, Chord* chord, const NoteVal& noteVal,
-                                bool forceAccidental = false, const std::set<SymId>& articulationIds = {});
-    static Note* addNote(Transaction& tx, Score* score, Chord* chord, const NoteVal& noteVal, bool forceAccidental = false,
-                         const std::set<SymId>& articulationIds = {}, InputState* externalInputState = nullptr);
-    static Note* addNoteToTiedChord(Transaction& tx, Score* score, Chord* chord, const NoteVal& noteVal, bool forceAccidental = false,
-                                    const std::set<SymId>& articulationIds = {});
+    static Note *addNoteToChord(Score *score, Chord *chord, const NoteVal &noteVal, bool forceAccidental = false,
+                                const std::set<SymId> &articulationIds = {});
+    static Note *addNote(Transaction &tx, Score *score, Chord *chord, const NoteVal &noteVal, bool forceAccidental = false,
+                         const std::set<SymId> &articulationIds = {}, InputState *externalInputState = nullptr);
+    static Note *addNoteToTiedChord(Transaction &tx, Score *score, Chord *chord, const NoteVal &noteVal, bool forceAccidental = false,
+                                    const std::set<SymId> &articulationIds = {});
 
-    static Note* addPitch(Transaction& tx, Score* score, NoteVal& nval, bool addFlag, InputState* externalInputState = nullptr);
-    static Note* addPitchToChord(Transaction& tx, Score* score, NoteVal& nval, Chord* chord, InputState* externalInputState = nullptr,
+    static Note *addPitch(Transaction &tx, Score *score, NoteVal &nval, bool addFlag, InputState *externalInputState = nullptr);
+    static Note *addPitchToChord(Transaction &tx, Score *score, NoteVal &nval, Chord *chord, InputState *externalInputState = nullptr,
                                  bool forceAccidental = false);
 
-    static Note* addMidiPitch(Transaction& tx, Score* score, int pitch, bool addFlag, bool allowTransposition);
-    static Note* addTiedMidiPitch(Transaction& tx, Score* score, int pitch, bool addFlag, Chord* prevChord, bool allowTransposition);
+    static Note *addMidiPitch(Transaction &tx, Score *score, int pitch, bool addFlag, bool allowTransposition);
+    static Note *addTiedMidiPitch(Transaction &tx, Score *score, int pitch, bool addFlag, Chord *prevChord, bool allowTransposition);
 
-    static std::pair<Note*, Note*> repitchReplaceNote(Transaction& tx, Score* score, Chord* chord, const NoteVal& nval,
-                                                      bool forceAccidental = false);
+    static std::pair<Note *, Note *> repitchReplaceNote(Transaction &tx, Score *score, Chord *chord, const NoteVal &nval,
+                                                        bool forceAccidental = false);
 
-    static muse::Ret putNote(Transaction& tx, Score* score, const muse::PointF& pos, bool replace, bool insert);
-    static muse::Ret putNote(Transaction& tx, Score* score, const Position& pos, bool replace);
-    static muse::Ret repitchNote(Transaction& tx, Score* score, const Position& pos, bool replace);
-    static muse::Ret insertChordByInsertingTime(Transaction& tx, Score* score, const Position& pos);
+    static muse::Ret putNote(Transaction &tx, Score *score, const muse::PointF &pos, bool replace, bool insert);
+    static muse::Ret putNote(Transaction &tx, Score *score, const Position &pos, bool replace);
+    static muse::Ret repitchNote(Transaction &tx, Score *score, const Position &pos, bool replace);
+    static muse::Ret insertChordByInsertingTime(Transaction &tx, Score *score, const Position &pos);
 
-    static void truncateChordRest(Transaction& tx, Score* score, ChordRest* cr, const Fraction& tick, bool fillWithRest);
+    static void truncateChordRest(Transaction &tx, Score *score, ChordRest *cr, const Fraction &tick, bool fillWithRest);
 
-    static void nextInputPos(Transaction& tx, Score* score, const ChordRest* cr, bool doSelect);
+    static void nextInputPos(Transaction &tx, Score *score, const ChordRest *cr, bool doSelect);
 
     // Command entry points
-    static void addPitch(Transaction& tx, Score* score, const NoteInputParams& params, bool addFlag, bool insert);
-    static void addPitch(Transaction& tx, Score* score, int step, bool addFlag, bool insert);
-    static void addFret(Transaction& tx, Score* score, int fret);
+    static void addPitch(Transaction &tx, Score *score, const NoteInputParams &params, bool addFlag, bool insert);
+    static void addPitch(Transaction &tx, Score *score, int step, bool addFlag, bool insert);
+    static void addFret(Transaction &tx, Score *score, int fret);
 
-    static void setDuration(Transaction& tx, Score* score, DurationType duration);
-    static void toggleRest(Transaction& tx, Score* score);
-    static void toggleDots(Transaction& tx, Score* score, int dots, bool toggleForSelectionOnly = false);
-    static void increaseDuration(Transaction& tx, Score* score);
-    static void decreaseDuration(Transaction& tx, Score* score);
+    static void setDuration(Transaction &tx, Score *score, DurationType duration);
+    static void toggleRest(Transaction &tx, Score *score);
+    static void toggleDots(Transaction &tx, Score *score, int dots, bool toggleForSelectionOnly = false);
+    static void increaseDuration(Transaction &tx, Score *score);
+    static void decreaseDuration(Transaction &tx, Score *score);
 
-    static void realtimeAdvance(Transaction& tx, Score* score, bool allowTransposition, const std::vector<int>& activeMidiPitches);
+    static void realtimeAdvance(Transaction &tx, Score *score, bool allowTransposition, const std::vector<int> &activeMidiPitches);
 
 private:
     //! NOTE: Shared prologue/epilogue for the setDuration/toggleRest/toggleDots commands above.
-    static bool noteValueChangeAllowed(const Score* score);
-    static void applyToSelection(Score* score, const TDuration& oldDuration, bool oldRest, AccidentalType oldAccidentalType,
+    static bool noteValueChangeAllowed(const Score *score);
+    static void applyToSelection(Score *score, const TDuration &oldDuration, bool oldRest, AccidentalType oldAccidentalType,
                                  bool toggleForSelectionOnly, bool restToggle);
 };
-}
+} // namespace mu::engraving

@@ -37,32 +37,31 @@ extern "C" {
 /**
  * Sequencer event type enumeration.
  */
-enum fluid_seq_event_type
-{
-    FLUID_SEQ_NOTE = 0,		/**< Note event with duration */
-    FLUID_SEQ_NOTEON,		/**< Note on event */
-    FLUID_SEQ_NOTEOFF,		/**< Note off event */
-    FLUID_SEQ_ALLSOUNDSOFF,	/**< All sounds off event */
-    FLUID_SEQ_ALLNOTESOFF,	/**< All notes off event */
-    FLUID_SEQ_BANKSELECT,		/**< Bank select message */
-    FLUID_SEQ_PROGRAMCHANGE,	/**< Program change message */
-    FLUID_SEQ_PROGRAMSELECT,	/**< Program select message */
-    FLUID_SEQ_PITCHBEND,		/**< Pitch bend message */
-    FLUID_SEQ_PITCHWHEELSENS,	/**< Pitch wheel sensitivity set message @since 1.1.0 was misspelled previously */
-    FLUID_SEQ_MODULATION,		/**< Modulation controller event */
-    FLUID_SEQ_SUSTAIN,		/**< Sustain controller event */
-    FLUID_SEQ_CONTROLCHANGE,	/**< MIDI control change event */
-    FLUID_SEQ_PAN,		/**< Stereo pan set event */
-    FLUID_SEQ_VOLUME,		/**< Volume set event */
-    FLUID_SEQ_REVERBSEND,		/**< Reverb send set event */
-    FLUID_SEQ_CHORUSSEND,		/**< Chorus send set event */
-    FLUID_SEQ_TIMER,		/**< Timer event (useful for giving a callback at a certain time) */
-    FLUID_SEQ_CHANNELPRESSURE,    /**< Channel aftertouch event @since 1.1.0 */
-    FLUID_SEQ_KEYPRESSURE,        /**< Polyphonic aftertouch event @since 2.0.0 */
-    FLUID_SEQ_SYSTEMRESET,        /**< System reset event @since 1.1.0 */
-    FLUID_SEQ_UNREGISTERING,      /**< Called when a sequencer client is being unregistered. @since 1.1.0 */
-    FLUID_SEQ_SCALE,              /**< Sets a new time scale for the sequencer @since 2.2.0 */
-    FLUID_SEQ_LASTEVENT		/**< @internal Defines the count of events enums @warning This symbol 
+enum fluid_seq_event_type {
+    FLUID_SEQ_NOTE = 0,        /**< Note event with duration */
+    FLUID_SEQ_NOTEON,          /**< Note on event */
+    FLUID_SEQ_NOTEOFF,         /**< Note off event */
+    FLUID_SEQ_ALLSOUNDSOFF,    /**< All sounds off event */
+    FLUID_SEQ_ALLNOTESOFF,     /**< All notes off event */
+    FLUID_SEQ_BANKSELECT,      /**< Bank select message */
+    FLUID_SEQ_PROGRAMCHANGE,   /**< Program change message */
+    FLUID_SEQ_PROGRAMSELECT,   /**< Program select message */
+    FLUID_SEQ_PITCHBEND,       /**< Pitch bend message */
+    FLUID_SEQ_PITCHWHEELSENS,  /**< Pitch wheel sensitivity set message @since 1.1.0 was misspelled previously */
+    FLUID_SEQ_MODULATION,      /**< Modulation controller event */
+    FLUID_SEQ_SUSTAIN,         /**< Sustain controller event */
+    FLUID_SEQ_CONTROLCHANGE,   /**< MIDI control change event */
+    FLUID_SEQ_PAN,             /**< Stereo pan set event */
+    FLUID_SEQ_VOLUME,          /**< Volume set event */
+    FLUID_SEQ_REVERBSEND,      /**< Reverb send set event */
+    FLUID_SEQ_CHORUSSEND,      /**< Chorus send set event */
+    FLUID_SEQ_TIMER,           /**< Timer event (useful for giving a callback at a certain time) */
+    FLUID_SEQ_CHANNELPRESSURE, /**< Channel aftertouch event @since 1.1.0 */
+    FLUID_SEQ_KEYPRESSURE,     /**< Polyphonic aftertouch event @since 2.0.0 */
+    FLUID_SEQ_SYSTEMRESET,     /**< System reset event @since 1.1.0 */
+    FLUID_SEQ_UNREGISTERING,   /**< Called when a sequencer client is being unregistered. @since 1.1.0 */
+    FLUID_SEQ_SCALE,           /**< Sets a new time scale for the sequencer @since 2.2.0 */
+    FLUID_SEQ_LASTEVENT        /**< @internal Defines the count of events enums @warning This symbol 
                               is not part of the public API and ABI stability guarantee and 
                               may change at any time! */
 };
@@ -81,9 +80,7 @@ FLUIDSYNTH_API void fluid_event_set_dest(fluid_event_t *evt, fluid_seq_id_t dest
 FLUIDSYNTH_API void fluid_event_timer(fluid_event_t *evt, void *data);
 
 /* Note events */
-FLUIDSYNTH_API void fluid_event_note(fluid_event_t *evt, int channel,
-                                     short key, short vel,
-                                     unsigned int duration);
+FLUIDSYNTH_API void fluid_event_note(fluid_event_t *evt, int channel, short key, short vel, unsigned int duration);
 
 FLUIDSYNTH_API void fluid_event_noteon(fluid_event_t *evt, int channel, short key, short vel);
 FLUIDSYNTH_API void fluid_event_noteoff(fluid_event_t *evt, int channel, short key);

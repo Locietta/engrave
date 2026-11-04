@@ -28,27 +28,22 @@
 
 using namespace mu::engraving;
 
-static const ElementStyle CAPO_STYLE {
-    { Sid::staffTextPlacement, Pid::PLACEMENT },
-    { Sid::staffTextMinDistance, Pid::MIN_DISTANCE },
+static const ElementStyle CAPO_STYLE{
+    {Sid::staffTextPlacement, Pid::PLACEMENT},
+    {Sid::staffTextMinDistance, Pid::MIN_DISTANCE},
 };
 
 Capo::Capo(DummyParentOr<Segment> parent, TextStyleType textStyleType)
-    : StaffTextBase(ElementType::CAPO, parent, textStyleType, ElementFlag::MOVABLE | ElementFlag::ON_STAFF)
-{
+    : StaffTextBase(ElementType::CAPO, parent, textStyleType, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
     initElementStyle(&CAPO_STYLE);
 
     m_params.active = true;
     m_params.fretPosition = 1;
 }
 
-Capo* Capo::clone() const
-{
-    return new Capo(*this);
-}
+Capo *Capo::clone() const { return new Capo(*this); }
 
-PropertyValue Capo::getProperty(Pid id) const
-{
+PropertyValue Capo::getProperty(Pid id) const {
     if (id == Pid::ACTIVE) {
         return m_params.active;
     } else if (id == Pid::CAPO_FRET_POSITION) {
@@ -69,8 +64,7 @@ PropertyValue Capo::getProperty(Pid id) const
     return StaffTextBase::getProperty(id);
 }
 
-PropertyValue Capo::propertyDefault(Pid id) const
-{
+PropertyValue Capo::propertyDefault(Pid id) const {
     if (id == Pid::ACTIVE) {
         return true;
     } else if (id == Pid::CAPO_FRET_POSITION) {
@@ -86,15 +80,14 @@ PropertyValue Capo::propertyDefault(Pid id) const
     return StaffTextBase::propertyDefault(id);
 }
 
-bool Capo::setProperty(Pid id, const PropertyValue& val)
-{
+bool Capo::setProperty(Pid id, const PropertyValue &val) {
     if (id == Pid::ACTIVE) {
         m_params.active = val.toBool();
     } else if (id == Pid::CAPO_FRET_POSITION) {
         m_params.fretPosition = val.toInt();
     } else if (id == Pid::CAPO_IGNORED_STRINGS) {
         m_params.ignoredStrings.clear();
-        auto ignoredStrings = val.value<std::vector<int> >();
+        auto ignoredStrings = val.value<std::vector<int>>();
         for (int string : ignoredStrings) {
             m_params.ignoredStrings.insert(static_cast<string_idx_t>(string));
         }
@@ -112,15 +105,14 @@ bool Capo::setProperty(Pid id, const PropertyValue& val)
 
     triggerLayout();
 
-    if (Score* s = score()) {
+    if (Score *s = score()) {
         s->updateCapo();
     }
 
     return true;
 }
 
-void Capo::setXmlText(const String& text)
-{
+void Capo::setXmlText(const String &text) {
     if (!m_shouldAutomaticallyGenerateText) {
         m_customText = text;
     }
@@ -128,24 +120,13 @@ void Capo::setXmlText(const String& text)
     StaffTextBase::setXmlText(text);
 }
 
+const CapoParams &Capo::params() const { return m_params; }
 
-const CapoParams& Capo::params() const
-{
-    return m_params;
-}
+void Capo::setParams(const CapoParams &params) { m_params = params; }
 
-void Capo::setParams(const CapoParams& params)
-{
-    m_params = params;
-}
+bool Capo::shouldAutomaticallyGenerateText() const { return m_shouldAutomaticallyGenerateText; }
 
-bool Capo::shouldAutomaticallyGenerateText() const
-{
-    return m_shouldAutomaticallyGenerateText;
-}
-
-muse::String Capo::generateText(size_t stringCount) const
-{
+muse::String Capo::generateText(size_t stringCount) const {
     if (!m_params.active || m_params.fretPosition == 0) {
         return muse::mtrc("engraving", "No capo");
     }
@@ -168,27 +149,24 @@ muse::String Capo::generateText(size_t stringCount) const
         return muse::mtrc("engraving", "No capo");
     }
 
-    String text = muse::mtrc("engraving", "Partial capo:\nFret %1 on strings %2")
-                  .arg(m_params.fretPosition)
-                  .arg(stringsToApply.join(u", "));
+    String text =
+        muse::mtrc("engraving", "Partial capo:\nFret %1 on strings %2").arg(m_params.fretPosition).arg(stringsToApply.join(u", "));
 
     return text;
 }
 
-void Capo::added()
-{
+void Capo::added() {
     StaffTextBase::added();
 
-    if (Score* s = score()) {
+    if (Score *s = score()) {
         s->updateCapo();
     }
 }
 
-void Capo::removed()
-{
+void Capo::removed() {
     StaffTextBase::removed();
 
-    if (Score* s = score()) {
+    if (Score *s = score()) {
         s->updateCapo();
     }
 }

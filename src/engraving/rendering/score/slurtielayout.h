@@ -42,94 +42,96 @@ class PartialTie;
 class PartialTieSegment;
 class TappingHalfSlur;
 class TappingHalfSlurSegment;
-}
+} // namespace mu::engraving
 
 namespace muse::draw {
 class Transform;
-}
+} // namespace muse::draw
 
 namespace mu::engraving::rendering::score {
-class SlurTieLayout
-{
+class SlurTieLayout {
 public:
-    static SpannerSegment* layoutSystem(Slur* item, System* system, LayoutContext& ctx);
+    static SpannerSegment *layoutSystem(Slur *item, System *system, LayoutContext &ctx);
 
-    static TieSegment* layoutTieFor(Tie* item, System* system);
-    static TieSegment* layoutTieBack(Tie* item, System* system, LayoutContext& ctx);
-    static void resolveVerticalTieCollisions(const std::vector<TieSegment*>& stackedTies);
+    static TieSegment *layoutTieFor(Tie *item, System *system);
+    static TieSegment *layoutTieBack(Tie *item, System *system, LayoutContext &ctx);
+    static void resolveVerticalTieCollisions(const std::vector<TieSegment *> &stackedTies);
 
-    static void computeUp(Slur* slur, LayoutContext& ctx);
-    static void calculateDirection(Tie* item);
+    static void computeUp(Slur *slur, LayoutContext &ctx);
+    static void calculateDirection(Tie *item);
 
-    static void computeBezier(TieSegment* tieSeg, PointF shoulderOffset = PointF());
-    static void computeBezier(SlurSegment* slurSeg, PointF shoulderOffset = PointF());
-    static double noteOpticalCenterForTie(const Note* note, bool up);
-    static void createSlurSegments(Slur* item, LayoutContext& ctx);
+    static void computeBezier(TieSegment *tieSeg, PointF shoulderOffset = PointF());
+    static void computeBezier(SlurSegment *slurSeg, PointF shoulderOffset = PointF());
+    static double noteOpticalCenterForTie(const Note *note, bool up);
+    static void createSlurSegments(Slur *item, LayoutContext &ctx);
 
-    static void adjustOverlappingSlurs(const std::list<SpannerSegment*>& spannerSegments);
+    static void adjustOverlappingSlurs(const std::list<SpannerSegment *> &spannerSegments);
 
-    static void layoutLaissezVibChord(Chord* chord, LayoutContext& ctx);
+    static void layoutLaissezVibChord(Chord *chord, LayoutContext &ctx);
 private:
 
-    static void slurPos(Slur* item, SlurTiePos* sp, LayoutContext& ctx);
-    static void adjustForTappingHalfSlurs(TappingHalfSlur* item, SlurTiePos* sp, Note* endNote);
-    static void avoidPreBendsOnTab(const Chord* sc, const Chord* ec, SlurTiePos* sp);
-    static void fixArticulations(Slur* item, PointF& pt, Chord* c, double up, bool stemSide);
-    static void adjustEndPoints(SlurSegment* slurSeg);
-    static void adjustSlurFloatingEndPointAngles(SlurSegment* slurSeg, PointF& p1, PointF& p2, bool incomingPartial, bool outgoingPartial);
+    static void slurPos(Slur *item, SlurTiePos *sp, LayoutContext &ctx);
+    static void adjustForTappingHalfSlurs(TappingHalfSlur *item, SlurTiePos *sp, Note *endNote);
+    static void avoidPreBendsOnTab(const Chord *sc, const Chord *ec, SlurTiePos *sp);
+    static void fixArticulations(Slur *item, PointF &pt, Chord *c, double up, bool stemSide);
+    static void adjustEndPoints(SlurSegment *slurSeg);
+    static void adjustSlurFloatingEndPointAngles(SlurSegment *slurSeg, PointF &p1, PointF &p2, bool incomingPartial, bool outgoingPartial);
 
-    static void layoutSegment(SlurSegment* item, const PointF& p1, const PointF& p2);
-    static void avoidCollisions(SlurSegment* slurSeg, PointF& pp1, PointF& p2, PointF& p3, PointF& p4,
-                                muse::draw::Transform& toSystemCoordinates, double& slurAngle);
-    static Shape getSegmentShapes(SlurSegment* slurSeg, ChordRest* startCR, ChordRest* endCR);
-    static Shape getSegmentShape(SlurSegment* slurSeg, Segment* seg, ChordRest* startCR, ChordRest* endCR);
-    static void addMinClearanceToShapes(Shape& segShapes, double spatium, bool slurUp, const ChordRest* startCR, const ChordRest* endCR);
+    static void layoutSegment(SlurSegment *item, const PointF &p1, const PointF &p2);
+    static void avoidCollisions(SlurSegment *slurSeg, PointF &pp1, PointF &p2, PointF &p3, PointF &p4,
+                                muse::draw::Transform &toSystemCoordinates, double &slurAngle);
+    static Shape getSegmentShapes(SlurSegment *slurSeg, ChordRest *startCR, ChordRest *endCR);
+    static Shape getSegmentShape(SlurSegment *slurSeg, Segment *seg, ChordRest *startCR, ChordRest *endCR);
+    static void addMinClearanceToShapes(Shape &segShapes, double spatium, bool slurUp, const ChordRest *startCR, const ChordRest *endCR);
     static double computeArcClearance(double spatium, double slurLength, double slurAngle);
-    static void computeAdjustmentBalance(SlurSegment* slurSeg, const ChordRest* startCR, const ChordRest* endCR, double& leftBalance,
-                                         double& rightBalance);
-    static bool hasArticulationAbove(SlurSegment* slurSeg, const ChordRest* chordRest);
+    static void computeAdjustmentBalance(SlurSegment *slurSeg, const ChordRest *startCR, const ChordRest *endCR, double &leftBalance,
+                                         double &rightBalance);
+    static bool hasArticulationAbove(SlurSegment *slurSeg, const ChordRest *chordRest);
     static double computeAdjustmentStep(int upSign, double spatium, double slurLength);
-    static bool stemSideForBeam(Slur* slur, bool start);
-    static bool stemSideStartForBeam(Slur* slur) { return stemSideForBeam(slur, true); }
-    static bool stemSideEndForBeam(Slur* slur) { return stemSideForBeam(slur, false); }
-    static bool isOverBeams(Slur* slur);
-    static double computeShoulderHeight(SlurSegment* slurSeg, double slurLengthInSp, PointF shoulderOffset);
+    static bool stemSideForBeam(Slur *slur, bool start);
 
-    static double endingXForOpenEndedSlurTie(const Measure* measure, staff_idx_t staffIdx);
+    static bool stemSideStartForBeam(Slur *slur) { return stemSideForBeam(slur, true); }
 
-    static bool tieSegmentShouldBeSkipped(const Tie* item);
-    static void computeStartAndEndSystem(Tie* item, SlurTiePos& slurTiePos);
-    static PointF computeDefaultStartOrEndPoint(const Tie* tie, Grip startOrEnd);
-    static void correctForCrossStaff(Tie* tie, SlurTiePos& sPos, SpannerSegmentType type);
-    static void forceHorizontal(Tie* tie, SlurTiePos& sPos);
-    static void adjustX(TieSegment* tieSegment, SlurTiePos& sPos, Grip startOrEnd);
-    static void adjustXforLedgerLines(TieSegment* tieSegment, bool start, Chord* chord, Note* note, const PointF& chordSystemPos,
-                                      double padding, double& resultingX);
-    static void adjustYforLedgerLines(TieSegment* tieSegment, SlurTiePos& sPos);
-    static void adjustY(TieSegment* tieSegment);
-    static bool hasEndPointAboveNote(TieSegment* tieSegment);
+    static bool stemSideEndForBeam(Slur *slur) { return stemSideForBeam(slur, false); }
 
-    static double defaultStemLengthStart(TremoloTwoChord* tremolo);
-    static double defaultStemLengthEnd(TremoloTwoChord* tremolo);
+    static bool isOverBeams(Slur *slur);
+    static double computeShoulderHeight(SlurSegment *slurSeg, double slurLengthInSp, PointF shoulderOffset);
 
-    static bool isDirectionMixture(const Chord* c1, const Chord* c2, LayoutContext& ctx);
+    static double endingXForOpenEndedSlurTie(const Measure *measure, staff_idx_t staffIdx);
 
-    static void computeMidThickness(SlurTieSegment* slurTieSeg, double slurTieLengthInSp);
-    static void fillShape(SlurTieSegment* slurTieSeg, double slurTieLengthInSp);
-    static bool shouldHideSlurSegment(SlurSegment* item);
+    static bool tieSegmentShouldBeSkipped(const Tie *item);
+    static void computeStartAndEndSystem(Tie *item, SlurTiePos &slurTiePos);
+    static PointF computeDefaultStartOrEndPoint(const Tie *tie, Grip startOrEnd);
+    static void correctForCrossStaff(Tie *tie, SlurTiePos &sPos, SpannerSegmentType type);
+    static void forceHorizontal(Tie *tie, SlurTiePos &sPos);
+    static void adjustX(TieSegment *tieSegment, SlurTiePos &sPos, Grip startOrEnd);
+    static void adjustXforLedgerLines(TieSegment *tieSegment, bool start, Chord *chord, Note *note, const PointF &chordSystemPos,
+                                      double padding, double &resultingX);
+    static void adjustYforLedgerLines(TieSegment *tieSegment, SlurTiePos &sPos);
+    static void adjustY(TieSegment *tieSegment);
+    static bool hasEndPointAboveNote(TieSegment *tieSegment);
 
-    static void addLineAttachPoints(TieSegment* segment);
-    static void addLineAttachPoints(PartialTieSegment* segment);
+    static double defaultStemLengthStart(TremoloTwoChord *tremolo);
+    static double defaultStemLengthEnd(TremoloTwoChord *tremolo);
 
-    static void calculateIsInside(Tie* item);
+    static bool isDirectionMixture(const Chord *c1, const Chord *c2, LayoutContext &ctx);
 
-    static LaissezVibSegment* createLaissezVibSegment(LaissezVib* item);
-    static void calculateLaissezVibX(LaissezVibSegment* segment, SlurTiePos& sPos, bool smufl);
-    static void calculateLaissezVibY(LaissezVibSegment* segment, SlurTiePos& sPos);
+    static void computeMidThickness(SlurTieSegment *slurTieSeg, double slurTieLengthInSp);
+    static void fillShape(SlurTieSegment *slurTieSeg, double slurTieLengthInSp);
+    static bool shouldHideSlurSegment(SlurSegment *item);
 
-    static PartialTieSegment* createPartialTieSegment(PartialTie* item);
-    static PartialTieSegment* layoutPartialTie(PartialTie* item);
+    static void addLineAttachPoints(TieSegment *segment);
+    static void addLineAttachPoints(PartialTieSegment *segment);
 
-    static void setPartialTieEndPos(PartialTie* item, SlurTiePos& sPos);
+    static void calculateIsInside(Tie *item);
+
+    static LaissezVibSegment *createLaissezVibSegment(LaissezVib *item);
+    static void calculateLaissezVibX(LaissezVibSegment *segment, SlurTiePos &sPos, bool smufl);
+    static void calculateLaissezVibY(LaissezVibSegment *segment, SlurTiePos &sPos);
+
+    static PartialTieSegment *createPartialTieSegment(PartialTie *item);
+    static PartialTieSegment *layoutPartialTie(PartialTie *item);
+
+    static void setPartialTieEndPos(PartialTie *item, SlurTiePos &sPos);
 };
-}
+} // namespace mu::engraving::rendering::score

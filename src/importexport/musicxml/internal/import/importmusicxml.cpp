@@ -23,7 +23,6 @@
 #include "log.h"
 #include "global/translation.h"
 
-
 #include "global/io/file.h"
 #include "global/serialization/zipreader.h"
 #include "global/serialization/xmlstreamreader.h"
@@ -39,7 +38,6 @@
 #include "importmusicxmlpass1.h"
 #include "importmusicxmlpass2.h"
 #include "musicxmlvalidation.h"
-
 
 using namespace muse;
 using namespace mu::engraving;
@@ -57,11 +55,9 @@ namespace mu::iex::musicxml {
 //   importMusicXmlfromBuffer
 //---------------------------------------------------------
 
-Err importMusicXmlfromBuffer(Score* score, const String& /*name*/, const ByteArray& data,
-                             const IMusicXmlConfiguration& configuration)
-{
+Err importMusicXmlfromBuffer(Score *score, const String & /*name*/, const ByteArray &data, const IMusicXmlConfiguration &configuration) {
     MusicXmlLogger logger;
-    logger.setLoggingLevel(MusicXmlLogger::Level::MXML_ERROR);   // errors only
+    logger.setLoggingLevel(MusicXmlLogger::Level::MXML_ERROR); // errors only
     //logger.setLoggingLevel(MusicXmlLogger::Level::MXML_INFO);
     //logger.setLoggingLevel(MusicXmlLogger::Level::MXML_TRACE); // also include tracing
 
@@ -76,16 +72,15 @@ Err importMusicXmlfromBuffer(Score* score, const String& /*name*/, const ByteArr
         res = pass2.parse(data);
     }
 
-    for (const Part* part : score->parts()) {
-        for (const auto& pair : part->instruments()) {
+    for (const Part *part : score->parts()) {
+        for (const auto &pair : part->instruments()) {
             pair.second->updateInstrumentId();
         }
     }
 
     // report result
     const String pass2_errors = pass2.errors();
-    if (!(pass1_errors.isEmpty() && pass2_errors.isEmpty())) {
-    }
+    if (!(pass1_errors.isEmpty() && pass2_errors.isEmpty())) {}
 
     return res;
 }
@@ -99,18 +94,15 @@ Err importMusicXmlfromBuffer(Score* score, const String& /*name*/, const ByteArr
  import will almost certainly break in non-obvious ways.
  */
 
-static_assert(int(DurationType::V_BREVE) == int(DurationType::V_LONG) + 1
-              && int(DurationType::V_WHOLE) == int(DurationType::V_BREVE) + 1
-              && int(DurationType::V_HALF) == int(DurationType::V_WHOLE) + 1
-              && int(DurationType::V_QUARTER) == int(DurationType::V_HALF) + 1
-              && int(DurationType::V_EIGHTH) == int(DurationType::V_QUARTER) + 1
-              && int(DurationType::V_16TH) == int(DurationType::V_EIGHTH) + 1
-              && int(DurationType::V_32ND) == int(DurationType::V_16TH) + 1
-              && int(DurationType::V_64TH) == int(DurationType::V_32ND) + 1
-              && int(DurationType::V_128TH) == int(DurationType::V_64TH) + 1
-              && int(DurationType::V_256TH) == int(DurationType::V_128TH) + 1
-              && int(DurationType::V_512TH) == int(DurationType::V_256TH) + 1
-              && int(DurationType::V_1024TH) == int(DurationType::V_512TH) + 1);
+static_assert(int(DurationType::V_BREVE) == int(DurationType::V_LONG) + 1 && int(DurationType::V_WHOLE) == int(DurationType::V_BREVE) + 1 &&
+              int(DurationType::V_HALF) == int(DurationType::V_WHOLE) + 1 &&
+              int(DurationType::V_QUARTER) == int(DurationType::V_HALF) + 1 &&
+              int(DurationType::V_EIGHTH) == int(DurationType::V_QUARTER) + 1 &&
+              int(DurationType::V_16TH) == int(DurationType::V_EIGHTH) + 1 && int(DurationType::V_32ND) == int(DurationType::V_16TH) + 1 &&
+              int(DurationType::V_64TH) == int(DurationType::V_32ND) + 1 && int(DurationType::V_128TH) == int(DurationType::V_64TH) + 1 &&
+              int(DurationType::V_256TH) == int(DurationType::V_128TH) + 1 &&
+              int(DurationType::V_512TH) == int(DurationType::V_256TH) + 1 &&
+              int(DurationType::V_1024TH) == int(DurationType::V_512TH) + 1);
 
 //---------------------------------------------------------
 //   extractRootfile
@@ -120,8 +112,7 @@ static_assert(int(DurationType::V_BREVE) == int(DurationType::V_LONG) + 1
 Extract rootfile from compressed MusicXML file \a qf, return true if OK and false on error.
 */
 
-static bool extractRootfile(const String& name, ByteArray& data)
-{
+static bool extractRootfile(const String &name, ByteArray &data) {
     ZipReader zip(name);
 
     ByteArray ba = zip.fileData("META-INF/container.xml");
@@ -158,9 +149,8 @@ static bool extractRootfile(const String& name, ByteArray& data)
  Validate and import MusicXML data from file \a name contained in ByteArray \a data into score \a score.
  */
 
-static Err doValidateAndImport(Score* score, const String& name, const ByteArray& data, bool forceMode,
-                               const IMusicXmlConfiguration& configuration)
-{
+static Err doValidateAndImport(Score *score, const String &name, const ByteArray &data, bool forceMode,
+                               const IMusicXmlConfiguration &configuration) {
     Err res;
 
     if (!forceMode) {
@@ -182,9 +172,8 @@ static Err doValidateAndImport(Score* score, const String& name, const ByteArray
 //    return Err::File* errors
 //---------------------------------------------------------
 
-Err importMusicXml(MasterScore* score, const String& name, bool forceMode, const IMusicXmlConfiguration& configuration)
-{
-    ScoreLoad sl;     // suppress warnings for undo push/pop
+Err importMusicXml(MasterScore *score, const String &name, bool forceMode, const IMusicXmlConfiguration &configuration) {
+    ScoreLoad sl; // suppress warnings for undo push/pop
 
     //LOGD("importMusicXml(%p, %s)", score, muPrintable(name));
 
@@ -215,9 +204,7 @@ Err importMusicXml(MasterScore* score, const String& name, bool forceMode, const
  Import compressed MusicXML file \a name into the Score.
  */
 
-Err importCompressedMusicXml(MasterScore* score, const String& name, bool forceMode,
-                             const IMusicXmlConfiguration& configuration)
-{
+Err importCompressedMusicXml(MasterScore *score, const String &name, bool forceMode, const IMusicXmlConfiguration &configuration) {
     //LOGD("importCompressedMusicXml(%p, %s)", score, muPrintable(name));
 
     if (!io::File::exists(name)) {
@@ -227,10 +214,10 @@ Err importCompressedMusicXml(MasterScore* score, const String& name, bool forceM
     // extract the root file
     ByteArray data;
     if (!extractRootfile(name, data)) {
-        return Err::FileBadFormat;      // appropriate error message has been printed by extractRootfile
+        return Err::FileBadFormat; // appropriate error message has been printed by extractRootfile
     }
 
     // and import it
     return doValidateAndImport(score, name, data, forceMode, configuration);
 }
-} // namespace Ms
+} // namespace mu::iex::musicxml

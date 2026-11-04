@@ -32,17 +32,16 @@ class LetRing;
 //   @@ LetRingSegment
 //---------------------------------------------------------
 
-class LetRingSegment final : public TextLineBaseSegment
-{
+class LetRingSegment final : public TextLineBaseSegment {
     OBJECT_ALLOCATOR(engraving, LetRingSegment)
     DECLARE_CLASSOF(ElementType::LET_RING_SEGMENT)
 
 public:
-    LetRingSegment(LetRing* sp);
+    LetRingSegment(LetRing *sp);
 
-    LetRingSegment* clone() const override { return new LetRingSegment(*this); }
+    LetRingSegment *clone() const override { return new LetRingSegment(*this); }
 
-    LetRing* letRing() const { return (LetRing*)spanner(); }
+    LetRing *letRing() const { return (LetRing *) spanner(); }
 
     friend class LetRing;
 };
@@ -51,19 +50,18 @@ public:
 //   @@ LetRing
 //---------------------------------------------------------
 
-class LetRing final : public ChordTextLineBase
-{
+class LetRing final : public ChordTextLineBase {
     OBJECT_ALLOCATOR(engraving, LetRing)
     DECLARE_CLASSOF(ElementType::LET_RING)
 
 public:
     LetRing(DummyParentOr<EngravingItem> parent);
 
-    LetRing* clone() const override { return new LetRing(*this); }
+    LetRing *clone() const override { return new LetRing(*this); }
 
     Anchor anchor() const override { return Anchor::SEGMENT; }
 
-    LineSegment* createLineSegment() override;
+    LineSegment *createLineSegment() override;
 
     PropertyValue propertyDefault(Pid propertyId) const override;
     Sid getPropertyStyle(Pid) const override;

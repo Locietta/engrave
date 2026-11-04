@@ -21,11 +21,9 @@
 #ifndef _FLUIDSYNTH_SHELL_H
 #define _FLUIDSYNTH_SHELL_H
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
 /**
  * @defgroup command_interface Command Interface
@@ -49,7 +47,6 @@ FLUIDSYNTH_API char *fluid_get_userconf(char *buf, int len);
 FLUIDSYNTH_API char *fluid_get_sysconf(char *buf, int len);
 /** @} */
 
-
 /**
  * @defgroup command_handler Command Handler
  * @ingroup command_interface
@@ -63,8 +60,8 @@ FLUIDSYNTH_API
 fluid_cmd_handler_t *new_fluid_cmd_handler(fluid_synth_t *synth, fluid_midi_router_t *router);
 
 FLUIDSYNTH_API
-fluid_cmd_handler_t *new_fluid_cmd_handler2(fluid_settings_t *settings, fluid_synth_t *synth,
-                                            fluid_midi_router_t *router, fluid_player_t *player);
+fluid_cmd_handler_t *new_fluid_cmd_handler2(fluid_settings_t *settings, fluid_synth_t *synth, fluid_midi_router_t *router,
+                                            fluid_player_t *player);
 
 FLUIDSYNTH_API
 void delete_fluid_cmd_handler(fluid_cmd_handler_t *handler);
@@ -79,7 +76,6 @@ int fluid_command(fluid_cmd_handler_t *handler, const char *cmd, fluid_ostream_t
 FLUIDSYNTH_API
 int fluid_source(fluid_cmd_handler_t *handler, const char *filename);
 /** @} */
-
 
 /**
  * @defgroup command_shell Command Shell
@@ -97,8 +93,8 @@ int fluid_source(fluid_cmd_handler_t *handler, const char *filename);
 
 /** @startlifecycle{Command Shell} */
 FLUIDSYNTH_API
-fluid_shell_t *new_fluid_shell(fluid_settings_t *settings, fluid_cmd_handler_t *handler,
-                               fluid_istream_t in, fluid_ostream_t out, int thread);
+fluid_shell_t *new_fluid_shell(fluid_settings_t *settings, fluid_cmd_handler_t *handler, fluid_istream_t in, fluid_ostream_t out,
+                               int thread);
 
 FLUIDSYNTH_API
 void fluid_usershell(fluid_settings_t *settings, fluid_cmd_handler_t *handler);
@@ -107,7 +103,6 @@ FLUIDSYNTH_API void delete_fluid_shell(fluid_shell_t *shell);
 /** @endlifecycle */
 
 /** @} */
-
 
 /**
  * @defgroup command_server Command Server
@@ -128,13 +123,10 @@ FLUIDSYNTH_API void delete_fluid_shell(fluid_shell_t *shell);
 
 /** @startlifecycle{Command Server} */
 FLUIDSYNTH_API
-fluid_server_t *new_fluid_server(fluid_settings_t *settings,
-                                 fluid_synth_t *synth, fluid_midi_router_t *router);
+fluid_server_t *new_fluid_server(fluid_settings_t *settings, fluid_synth_t *synth, fluid_midi_router_t *router);
 
 FLUIDSYNTH_API
-fluid_server_t *new_fluid_server2(fluid_settings_t *settings,
-                                 fluid_synth_t *synth, fluid_midi_router_t *router,
-                                 fluid_player_t *player);
+fluid_server_t *new_fluid_server2(fluid_settings_t *settings, fluid_synth_t *synth, fluid_midi_router_t *router, fluid_player_t *player);
 
 FLUIDSYNTH_API void delete_fluid_server(fluid_server_t *server);
 

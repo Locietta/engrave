@@ -27,19 +27,15 @@
 
 using namespace muse::audio::engine;
 
-SampleRateConvertor::SampleRateConvertor(const std::vector<float>& data,
-                                         unsigned int channelsCount,
-                                         unsigned int sampleRateIn,
+SampleRateConvertor::SampleRateConvertor(const std::vector<float> &data, unsigned int channelsCount, unsigned int sampleRateIn,
                                          unsigned int sampleRateOut)
-    : m_data(data), m_fir(), m_channelsCount(channelsCount), m_sampleRateIn(sampleRateIn), m_sampleRateOut(sampleRateOut)
-{
+    : m_data(data), m_fir(), m_channelsCount(channelsCount), m_sampleRateIn(sampleRateIn), m_sampleRateOut(sampleRateOut) {
     m_fir.resize(FIR_LENGTH, 0);
     m_y.resize(FIR_LENGTH, 0);
     initWindow();
 }
 
-std::vector<float> SampleRateConvertor::convert()
-{
+std::vector<float> SampleRateConvertor::convert() {
     std::vector<float> out;
     auto resultSamples = m_data.size() * m_sampleRateOut / (m_channelsCount * m_sampleRateIn);
 
@@ -53,8 +49,7 @@ std::vector<float> SampleRateConvertor::convert()
     return out;
 }
 
-unsigned int SampleRateConvertor::convert(float* buffer, unsigned int from, unsigned int count)
-{
+unsigned int SampleRateConvertor::convert(float *buffer, unsigned int from, unsigned int count) {
     unsigned int sample = from;
     unsigned int converted = 0;
 
@@ -69,40 +64,31 @@ unsigned int SampleRateConvertor::convert(float* buffer, unsigned int from, unsi
     return converted;
 }
 
-float SampleRateConvertor::y(unsigned int sample, unsigned int channel) const
-{
+float SampleRateConvertor::y(unsigned int sample, unsigned int channel) const {
     switch (m_method) {
-    case SINC:
-        return ySinc(sample, channel);
-    case FIR:
-        return yFIR(sample, channel);
+        case SINC: return ySinc(sample, channel);
+        case FIR: return yFIR(sample, channel);
     }
     return 0.f;
 }
 
-void SampleRateConvertor::setChannelCount(unsigned int count)
-{
-    m_channelsCount = count;
-}
+void SampleRateConvertor::setChannelCount(unsigned int count) { m_channelsCount = count; }
 
-void SampleRateConvertor::setSampleRateIn(unsigned int sampleRate)
-{
+void SampleRateConvertor::setSampleRateIn(unsigned int sampleRate) {
     if (m_sampleRateIn != sampleRate) {
         m_sampleRateIn = sampleRate;
         initWindow();
     }
 }
 
-void SampleRateConvertor::setSampleRateOut(unsigned int sampleRate)
-{
+void SampleRateConvertor::setSampleRateOut(unsigned int sampleRate) {
     if (m_sampleRateOut != sampleRate) {
         m_sampleRateOut = sampleRate;
         initWindow();
     }
 }
 
-float SampleRateConvertor::ySinc(unsigned int sample, unsigned int channel) const
-{
+float SampleRateConvertor::ySinc(unsigned int sample, unsigned int channel) const {
     double currentOutputSampleTime = sample / static_cast<double>(m_sampleRateOut);
     auto zeroInputSample = std::floor(currentOutputSampleTime * m_sampleRateIn);
 
@@ -119,8 +105,7 @@ float SampleRateConvertor::ySinc(unsigned int sample, unsigned int channel) cons
     return out;
 }
 
-float SampleRateConvertor::yFIR(unsigned int sample, unsigned int channel) const
-{
+float SampleRateConvertor::yFIR(unsigned int sample, unsigned int channel) const {
     auto x = [this, &channel](int m) -> float {
         int pos = m * m_M / m_L * m_channelsCount + channel;
         if (pos >= 0 && pos < static_cast<int>(m_data.size())) {
@@ -137,8 +122,7 @@ float SampleRateConvertor::yFIR(unsigned int sample, unsigned int channel) const
     return y;
 }
 
-bool SampleRateConvertor::availableSamples(unsigned int sample) const
-{
+bool SampleRateConvertor::availableSamples(unsigned int sample) const {
     float currentOutputSampleTime = sample / static_cast<float>(m_sampleRateOut);
     auto firstInputSample = std::floor(currentOutputSampleTime * m_sampleRateIn) - USE_SAMPLES / 2;
 
@@ -149,8 +133,7 @@ bool SampleRateConvertor::availableSamples(unsigned int sample) const
     return true;
 }
 
-inline double zeroBessel(double x)
-{
+inline double zeroBessel(double x) {
     //return std::cyl_bessel_i(0, x);
 
     double s = 1, y = 1;
@@ -165,8 +148,7 @@ inline double zeroBessel(double x)
     return s;
 }
 
-void SampleRateConvertor::initWindow()
-{
+void SampleRateConvertor::initWindow() {
     int max = std::max(m_sampleRateIn, m_sampleRateOut), min = std::min(m_sampleRateIn, m_sampleRateOut);
     int maxCommonDivider = 1;
     while (max % min != 0) {
@@ -176,9 +158,7 @@ void SampleRateConvertor::initWindow()
     }
     m_M = m_sampleRateIn / maxCommonDivider;
     m_L = m_sampleRateOut / maxCommonDivider;
-    double fStop = std::min(m_sampleRateIn, m_sampleRateOut) / 2,
-           fIntermediateSampleRate = m_sampleRateIn * m_M,
-           attenuation = 96 /*dB*/;
+    double fStop = std::min(m_sampleRateIn, m_sampleRateOut) / 2, fIntermediateSampleRate = m_sampleRateIn * m_M, attenuation = 96 /*dB*/;
     int M = FIR_LENGTH;
     int Np = (M - 1) / 2;
 
@@ -187,11 +167,11 @@ void SampleRateConvertor::initWindow()
 
     A[0] = 2 * fStop / fIntermediateSampleRate;
     for (int j = 1; j <= Np; j++) {
-        A[j]  = std::sin(2 * j * M_PI * fStop / fIntermediateSampleRate) / j * M_PI;
+        A[j] = std::sin(2 * j * M_PI * fStop / fIntermediateSampleRate) / j * M_PI;
     }
 
     for (int j = 0; j <= Np; j++) {
-        m_fir[Np + j]  = A[j];
+        m_fir[Np + j] = A[j];
         m_fir[Np + j] *= zeroBessel(alpha * std::sqrt(1 - (j * j / (Np * Np))));
         m_fir[Np + j] /= zeroBessel(alpha);
     }
@@ -201,8 +181,7 @@ void SampleRateConvertor::initWindow()
     }
 }
 
-double SampleRateConvertor::sinc(double value) const
-{
+double SampleRateConvertor::sinc(double value) const {
     if (value == 0) {
         return 1.f;
     }

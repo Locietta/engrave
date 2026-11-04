@@ -14,7 +14,7 @@ struct WriteBudget {
     enum class Failure { None, Limit, Cancelled };
     std::optional<std::uint64_t> output;
     std::optional<std::uint64_t> working;
-    const std::function<bool()>* cancelled = nullptr;
+    const std::function<bool()> *cancelled = nullptr;
     std::uint64_t charged = 0;
     Failure failure = Failure::None;
     std::exception_ptr callback_error;
@@ -31,6 +31,7 @@ struct WriteBudget {
         }
         return failure == Failure::None;
     }
+
     bool charge(std::uint64_t bytes) {
         if (!poll()) return false;
         if (working && (charged > *working || bytes > *working - charged)) {
@@ -40,6 +41,7 @@ struct WriteBudget {
         if (working) charged += bytes;
         return true;
     }
+
     bool outputSize(std::uint64_t bytes) {
         if (!poll()) return false;
         if (output && bytes > *output) {
@@ -50,14 +52,16 @@ struct WriteBudget {
     }
 };
 
-inline thread_local WriteBudget* activeWriteBudget = nullptr;
+inline thread_local WriteBudget *activeWriteBudget = nullptr;
 
 struct WriteBudgetScope {
-    explicit WriteBudgetScope(WriteBudget& budget) : previous(activeWriteBudget) { activeWriteBudget = &budget; }
+    explicit WriteBudgetScope(WriteBudget &budget) : previous(activeWriteBudget) { activeWriteBudget = &budget; }
+
     ~WriteBudgetScope() { activeWriteBudget = previous; }
-    WriteBudgetScope(const WriteBudgetScope&) = delete;
-    WriteBudgetScope& operator=(const WriteBudgetScope&) = delete;
-    WriteBudget* previous;
+
+    WriteBudgetScope(const WriteBudgetScope &) = delete;
+    WriteBudgetScope &operator=(const WriteBudgetScope &) = delete;
+    WriteBudget *previous;
 };
 
 // Thrown only from the normal writer body, never from a cleanup flush.

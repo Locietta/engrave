@@ -29,86 +29,55 @@
 #include "staff.h"
 
 namespace mu::engraving {
-static const ElementStyle laissezVibStyle {
-    { Sid::minLaissezVibLength, Pid::MIN_LENGTH }
-};
+static const ElementStyle laissezVibStyle{{Sid::minLaissezVibLength, Pid::MIN_LENGTH}};
 
-LaissezVib::LaissezVib(DummyParentOr<Note> parent)
-    : Tie(ElementType::LAISSEZ_VIB, parent)
-{
-    initElementStyle(&laissezVibStyle);
-}
+LaissezVib::LaissezVib(DummyParentOr<Note> parent) : Tie(ElementType::LAISSEZ_VIB, parent) { initElementStyle(&laissezVibStyle); }
 
-PropertyValue LaissezVib::getProperty(Pid propertyId) const
-{
+PropertyValue LaissezVib::getProperty(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::MIN_LENGTH:
-        return minLength();
-    default:
-        return Tie::getProperty(propertyId);
+        case Pid::MIN_LENGTH: return minLength();
+        default: return Tie::getProperty(propertyId);
     }
 }
 
-PropertyValue LaissezVib::propertyDefault(Pid propertyId) const
-{
+PropertyValue LaissezVib::propertyDefault(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::MIN_LENGTH:
-        return 2.0_sp;
-    default:
-        return Tie::propertyDefault(propertyId);
+        case Pid::MIN_LENGTH: return 2.0_sp;
+        default: return Tie::propertyDefault(propertyId);
     }
 }
 
-bool LaissezVib::setProperty(Pid propertyId, const PropertyValue& v)
-{
+bool LaissezVib::setProperty(Pid propertyId, const PropertyValue &v) {
     switch (propertyId) {
-    case Pid::MIN_LENGTH:
-        setMinLength(v.value<Spatium>());
-        break;
-    default:
-        return Tie::setProperty(propertyId, v);
+        case Pid::MIN_LENGTH: setMinLength(v.value<Spatium>()); break;
+        default: return Tie::setProperty(propertyId, v);
     }
     triggerLayout();
     return true;
 }
 
-SymId LaissezVib::symId() const
-{
-    return up() ? SymId::articLaissezVibrerAbove : SymId::articLaissezVibrerBelow;
-}
+SymId LaissezVib::symId() const { return up() ? SymId::articLaissezVibrerAbove : SymId::articLaissezVibrerBelow; }
 
-SlurTieSegment* LaissezVib::newSlurTieSegment()
-{
-    LaissezVibSegment* seg =  new LaissezVibSegment(this);
+SlurTieSegment *LaissezVib::newSlurTieSegment() {
+    LaissezVibSegment *seg = new LaissezVibSegment(this);
     seg->setTrack(track());
     return seg;
 }
 
-void LaissezVib::setEndNote(Note* note)
-{
-    setEndElement(note);
-}
+void LaissezVib::setEndNote(Note *note) { setEndElement(note); }
 
-void LaissezVib::setEndElement(EngravingItem* e)
-{
+void LaissezVib::setEndElement(EngravingItem *e) {
     UNUSED(e);
     ASSERT_X("Laissez vibrer ties do not have an end note");
 }
 
-LaissezVibSegment::LaissezVibSegment(LaissezVib* sp)
-    : TieSegment(ElementType::LAISSEZ_VIB_SEGMENT, sp)
-{
-}
+LaissezVibSegment::LaissezVibSegment(LaissezVib *sp) : TieSegment(ElementType::LAISSEZ_VIB_SEGMENT, sp) {}
 
-LaissezVibSegment::LaissezVibSegment(const LaissezVibSegment& s)
-    : TieSegment(s)
-{
-}
+LaissezVibSegment::LaissezVibSegment(const LaissezVibSegment &s) : TieSegment(s) {}
 
-String LaissezVibSegment::formatBarsAndBeats() const
-{
-    const Spanner* spanner = this->spanner();
-    const Segment* startSeg = spanner ? spanner->startSegment() : nullptr;
+String LaissezVibSegment::formatBarsAndBeats() const {
+    const Spanner *spanner = this->spanner();
+    const Segment *startSeg = spanner ? spanner->startSegment() : nullptr;
 
     if (!startSeg) {
         return EngravingItem::formatBarsAndBeats();
@@ -116,4 +85,4 @@ String LaissezVibSegment::formatBarsAndBeats() const
 
     return startSeg->formatBarsAndBeats();
 }
-}
+} // namespace mu::engraving

@@ -34,36 +34,23 @@ using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 using namespace muse::draw;
 
-void BoxLayout::layoutBox(const Box* item, Box::LayoutData* ldata, const LayoutContext& ctx)
-{
+void BoxLayout::layoutBox(const Box *item, Box::LayoutData *ldata, const LayoutContext &ctx) {
     switch (item->type()) {
-    case ElementType::HBOX:
-        BoxLayout::layoutHBox(static_cast<const HBox*>(item), static_cast<HBox::LayoutData*>(ldata), ctx);
-        break;
-    case ElementType::VBOX:
-        BoxLayout::layoutVBox(static_cast<const VBox*>(item), static_cast<VBox::LayoutData*>(ldata), ctx);
-        break;
-    case ElementType::FBOX:
-        BoxLayout::layoutFBox(static_cast<const FBox*>(item), static_cast<FBox::LayoutData*>(ldata), ctx);
-        break;
-    case ElementType::TBOX:
-        BoxLayout::layoutTBox(static_cast<const TBox*>(item), static_cast<TBox::LayoutData*>(ldata), ctx);
-        break;
-    default:
-        UNREACHABLE;
-        break;
+        case ElementType::HBOX: BoxLayout::layoutHBox(static_cast<const HBox *>(item), static_cast<HBox::LayoutData *>(ldata), ctx); break;
+        case ElementType::VBOX: BoxLayout::layoutVBox(static_cast<const VBox *>(item), static_cast<VBox::LayoutData *>(ldata), ctx); break;
+        case ElementType::FBOX: BoxLayout::layoutFBox(static_cast<const FBox *>(item), static_cast<FBox::LayoutData *>(ldata), ctx); break;
+        case ElementType::TBOX: BoxLayout::layoutTBox(static_cast<const TBox *>(item), static_cast<TBox::LayoutData *>(ldata), ctx); break;
+        default: UNREACHABLE; break;
     }
 }
 
-void BoxLayout::layoutBaseBox(const Box* item, Box::LayoutData* ldata, const LayoutContext& ctx)
-{
+void BoxLayout::layoutBaseBox(const Box *item, Box::LayoutData *ldata, const LayoutContext &ctx) {
     TLayout::layoutBaseMeasureBase(item, ldata, ctx);
 }
 
-void BoxLayout::layoutHBox(const HBox* item, HBox::LayoutData* ldata, const LayoutContext& ctx)
-{
+void BoxLayout::layoutHBox(const HBox *item, HBox::LayoutData *ldata, const LayoutContext &ctx) {
     if (item->ownershipParent() && item->ownershipParent()->isVBox()) {
-        const VBox* parentVBox = toVBox(item->ownershipParent());
+        const VBox *parentVBox = toVBox(item->ownershipParent());
 
         LD_CONDITION(parentVBox->ldata()->isSetBbox());
 
@@ -74,7 +61,7 @@ void BoxLayout::layoutHBox(const HBox* item, HBox::LayoutData* ldata, const Layo
         ldata->setPos(x, y);
         ldata->setBbox(0.0, 0.0, w, h);
     } else if (item->system()) {
-        const System* parentSystem = item->system();
+        const System *parentSystem = item->system();
 
         LD_CONDITION(parentSystem->ldata()->isSetBbox());
 
@@ -90,17 +77,13 @@ void BoxLayout::layoutHBox(const HBox* item, HBox::LayoutData* ldata, const Layo
     layoutBaseBox(item, ldata, ctx);
 }
 
-void BoxLayout::layoutHBox2(HBox* item, const LayoutContext& ctx)
-{
-    layoutBaseBox(item, item->mutldata(), ctx);
-}
+void BoxLayout::layoutHBox2(HBox *item, const LayoutContext &ctx) { layoutBaseBox(item, item->mutldata(), ctx); }
 
-void BoxLayout::layoutVBox(const VBox* item, VBox::LayoutData* ldata, const LayoutContext& ctx)
-{
+void BoxLayout::layoutVBox(const VBox *item, VBox::LayoutData *ldata, const LayoutContext &ctx) {
     ldata->setPos(PointF());
 
     if (item->system()) {
-        const System* parentSystem = item->system();
+        const System *parentSystem = item->system();
 
         LD_CONDITION(parentSystem->ldata()->isSetBbox());
 
@@ -109,8 +92,8 @@ void BoxLayout::layoutVBox(const VBox* item, VBox::LayoutData* ldata, const Layo
         ldata->setBbox(0.0, 0.0, 50, 50);
     }
 
-    for (EngravingItem* e : item->el()) {
-        TLayout::layoutItem(e, const_cast<LayoutContext&>(ctx));
+    for (EngravingItem *e : item->el()) {
+        TLayout::layoutItem(e, const_cast<LayoutContext &>(ctx));
     }
     bool boxAutoSize = item->getProperty(Pid::BOX_AUTOSIZE).toBool();
     bool heightChanged = false;
@@ -130,10 +113,10 @@ void BoxLayout::layoutVBox(const VBox* item, VBox::LayoutData* ldata, const Layo
         double calculatedVBoxHeight = 0;
         const int padding = item->sizeIsSpatiumDependent() ? ctx.conf().spatium() : ctx.conf().style().defaultSpatium();
         ElementList elist = item->el();
-        for (EngravingItem* e : elist) {
+        for (EngravingItem *e : elist) {
             if (e->isText()) {
-                Text* txt = toText(e);
-                Text::LayoutData* txtLD = txt->mutldata();
+                Text *txt = toText(e);
+                Text::LayoutData *txtLD = txt->mutldata();
 
                 LD_CONDITION(txtLD->isSetBbox());
 
@@ -148,27 +131,26 @@ void BoxLayout::layoutVBox(const VBox* item, VBox::LayoutData* ldata, const Layo
         heightChanged = true;
     }
     if (heightChanged) {
-        for (EngravingItem* e : item->el()) {
-            TLayout::layoutItem(e, const_cast<LayoutContext&>(ctx));
+        for (EngravingItem *e : item->el()) {
+            TLayout::layoutItem(e, const_cast<LayoutContext &>(ctx));
         }
     }
 
     layoutBaseBox(item, ldata, ctx);
 }
 
-void BoxLayout::layoutFBox(const FBox* item, FBox::LayoutData* ldata, const LayoutContext& ctx)
-{
-    Score* score = item->score();
+void BoxLayout::layoutFBox(const FBox *item, FBox::LayoutData *ldata, const LayoutContext &ctx) {
+    Score *score = item->score();
 
     if (item->needsRebuild()) {
-        for (EngravingItem* element : item->el()) {
+        for (EngravingItem *element : item->el()) {
             if (!element || !element->isFretDiagram()) {
                 continue;
             }
 
-            FretDiagram* diagram = toFretDiagram(element);
+            FretDiagram *diagram = toFretDiagram(element);
             //! NOTE: We need to layout the diagrams to get the harmony names to show in the UI
-            TLayout::layoutItem(diagram, const_cast<LayoutContext&>(ctx));
+            TLayout::layoutItem(diagram, const_cast<LayoutContext &>(ctx));
             if (!diagram->visible()) {
                 //! but we don't need to draw them, so let's add a skip
                 diagram->mutldata()->setIsSkipDraw(true);
@@ -179,9 +161,9 @@ void BoxLayout::layoutFBox(const FBox* item, FBox::LayoutData* ldata, const Layo
 
         /// FBox::init requires all chord symbols in the score have valid ldata
         /// Perform layout
-        for (mu::engraving::Segment* segment = score->firstSegment(mu::engraving::SegmentType::ChordRest); segment;
+        for (mu::engraving::Segment *segment = score->firstSegment(mu::engraving::SegmentType::ChordRest); segment;
              segment = segment->next1(mu::engraving::SegmentType::ChordRest)) {
-            for (EngravingItem* segItem : segment->annotations()) {
+            for (EngravingItem *segItem : segment->annotations()) {
                 if (!segItem || !segItem->part()) {
                     continue;
                 }
@@ -189,7 +171,7 @@ void BoxLayout::layoutFBox(const FBox* item, FBox::LayoutData* ldata, const Layo
                     continue;
                 }
 
-                Harmony* harmony = segItem->isHarmony() ? toHarmony(segItem) : toFretDiagram(segItem)->harmony();
+                Harmony *harmony = segItem->isHarmony() ? toHarmony(segItem) : toFretDiagram(segItem)->harmony();
                 if (!harmony || harmony->harmonyType() != HarmonyType::STANDARD || harmony->ldata()->isValid()) {
                     continue;
                 }
@@ -198,17 +180,17 @@ void BoxLayout::layoutFBox(const FBox* item, FBox::LayoutData* ldata, const Layo
             }
         }
 
-        const_cast<FBox*>(item)->init();
-        const_cast<FBox*>(item)->setNeedsRebuild(false);
+        const_cast<FBox *>(item)->init();
+        const_cast<FBox *>(item)->setNeedsRebuild(false);
     }
 
-    const System* parentSystem = item->system();
+    const System *parentSystem = item->system();
     LD_CONDITION(parentSystem->ldata()->isSetBbox());
 
     ldata->setPos(PointF());
 
-    std::vector<FretDiagram*> fretDiagrams;
-    for (EngravingItem* element : item->el()) {
+    std::vector<FretDiagram *> fretDiagrams;
+    for (EngravingItem *element : item->el()) {
         if (!element || !element->isFretDiagram() || !element->visible()) {
             continue;
         }
@@ -222,13 +204,13 @@ void BoxLayout::layoutFBox(const FBox* item, FBox::LayoutData* ldata, const Layo
     double maxFretDiagramWidth = 0.0;
 
     for (size_t i = 0; i < totalDiagrams; ++i) {
-        FretDiagram* fretDiagram = fretDiagrams[i];
+        FretDiagram *fretDiagram = fretDiagrams[i];
         fretDiagram->setUserMag(item->diagramScale());
 
-        Harmony* harmony = fretDiagram->harmony();
+        Harmony *harmony = fretDiagram->harmony();
         harmony->mutldata()->setMag(item->textScale());
 
-        TLayout::layoutItem(fretDiagram, const_cast<LayoutContext&>(ctx));
+        TLayout::layoutItem(fretDiagram, const_cast<LayoutContext &>(ctx));
 
         //! reset the skip which was added above
         fretDiagram->mutldata()->setIsSkipDraw(false);
@@ -260,11 +242,11 @@ void BoxLayout::layoutFBox(const FBox* item, FBox::LayoutData* ldata, const Layo
         double harmonyBaseline = 0.0;
 
         for (size_t j = 0; j < itemsInRow; ++j) {
-            FretDiagram* fretDiagram = fretDiagrams[i + j];
+            FretDiagram *fretDiagram = fretDiagrams[i + j];
 
             RectF fretRect = fretDiagram->ldata()->bbox();
 
-            const Harmony::LayoutData* harmonyLdata = fretDiagram->harmony()->ldata();
+            const Harmony::LayoutData *harmonyLdata = fretDiagram->harmony()->ldata();
             RectF harmonyRect = harmonyLdata->bbox().translated(harmonyLdata->pos());
 
             double height = fretRect.united(harmonyRect).height();
@@ -291,26 +273,25 @@ void BoxLayout::layoutFBox(const FBox* item, FBox::LayoutData* ldata, const Layo
 
     const double width = item->system()->width();
 
-    const double startX = alignH == AlignH::HCENTER
-                          ? (width - totalTableWidth) / 2
-                          : alignH == AlignH::RIGHT ? width - totalTableWidth : 0.0;
+    const double startX = alignH == AlignH::HCENTER ? (width - totalTableWidth) / 2 :
+                          alignH == AlignH::RIGHT   ? width - totalTableWidth :
+                                                      0.0;
     const double startY = topMargin;
 
     double bottomY = 0.0;
 
     for (size_t i = 0; i < totalDiagrams; ++i) {
-        FretDiagram* fretDiagram = fretDiagrams[i];
-        Harmony* harmony = fretDiagram->harmony();
+        FretDiagram *fretDiagram = fretDiagrams[i];
+        Harmony *harmony = fretDiagram->harmony();
 
         size_t row = i / chordsPerRow;
         size_t col = i % chordsPerRow;
 
         size_t itemsInRow = std::min(chordsPerRow, totalDiagrams - row * chordsPerRow);
-        double rowOffsetX = alignH == AlignH::HCENTER
-                            ? (totalTableWidth - (itemsInRow * cellWidth + (itemsInRow - 1) * columnGap)) / 2
-                            : alignH == AlignH::RIGHT
-                            ? totalTableWidth - (itemsInRow * cellWidth + (itemsInRow - 1) * columnGap) - rightMargin + spatium
-                            : leftMargin + spatium;
+        double rowOffsetX =
+            alignH == AlignH::HCENTER ? (totalTableWidth - (itemsInRow * cellWidth + (itemsInRow - 1) * columnGap)) / 2 :
+            alignH == AlignH::RIGHT   ? totalTableWidth - (itemsInRow * cellWidth + (itemsInRow - 1) * columnGap) - rightMargin + spatium :
+                                        leftMargin + spatium;
 
         double x = startX + rowOffsetX + col * (cellWidth + columnGap);
 
@@ -340,9 +321,8 @@ void BoxLayout::layoutFBox(const FBox* item, FBox::LayoutData* ldata, const Layo
     ldata->setBbox(0.0, 0.0, width, height);
 }
 
-void BoxLayout::layoutTBox(const TBox* item, TBox::LayoutData* ldata, const LayoutContext& ctx)
-{
-    const System* parentSystem = item->system();
+void BoxLayout::layoutTBox(const TBox *item, TBox::LayoutData *ldata, const LayoutContext &ctx) {
+    const System *parentSystem = item->system();
 
     LD_CONDITION(parentSystem->ldata()->isSetBbox());
 
@@ -351,7 +331,7 @@ void BoxLayout::layoutTBox(const TBox* item, TBox::LayoutData* ldata, const Layo
 
     TLayout::layoutText(item->text(), item->text()->mutldata());
 
-    Text::LayoutData* textLD = item->text()->mutldata();
+    Text::LayoutData *textLD = item->text()->mutldata();
 
     double h = 0.0;
     if (item->text()->empty()) {
@@ -364,5 +344,5 @@ void BoxLayout::layoutTBox(const TBox* item, TBox::LayoutData* ldata, const Layo
     h += item->topMargin() * DPMM + item->bottomMargin() * DPMM;
     ldata->setBbox(0.0, 0.0, item->system()->width(), h);
 
-    TLayout::layoutBaseMeasureBase(item, ldata, ctx);   // layout LayoutBreak's
+    TLayout::layoutBaseMeasureBase(item, ldata, ctx); // layout LayoutBreak's
 }

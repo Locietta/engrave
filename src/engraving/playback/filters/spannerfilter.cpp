@@ -29,42 +29,36 @@
 using namespace mu;
 using namespace mu::engraving;
 
-bool SpannerFilter::isPlayable(const EngravingItem* item, const RenderingContext& ctx)
-{
-    IF_ASSERT_FAILED(item->isSpanner()) {
-        return false;
-    }
+bool SpannerFilter::isPlayable(const EngravingItem *item, const RenderingContext &ctx) {
+    IF_ASSERT_FAILED(item->isSpanner()) { return false; }
 
-    const Spanner* spanner = toSpanner(item);
+    const Spanner *spanner = toSpanner(item);
 
     int spannerFrom = spanner->tick().ticks();
     int spannerDurationTicks = spannerActualDurationTicks(spanner, spanner->ticks().ticks());
     int spannerTo = spannerFrom + spannerDurationTicks;
 
-    if (spannerDurationTicks == 0
-        || spannerTo <= ctx.nominalPositionStartTick
-        || spannerFrom >= ctx.nominalPositionEndTick) {
+    if (spannerDurationTicks == 0 || spannerTo <= ctx.nominalPositionStartTick || spannerFrom >= ctx.nominalPositionEndTick) {
         return false;
     }
 
     return true;
 }
 
-int SpannerFilter::spannerActualDurationTicks(const Spanner* spanner, const int nominalDurationTicks)
-{
+int SpannerFilter::spannerActualDurationTicks(const Spanner *spanner, const int nominalDurationTicks) {
     const ElementType type = spanner->type();
 
     if (type == ElementType::SLUR || type == ElementType::HAMMER_ON_PULL_OFF || type == ElementType::TRILL) {
-        const EngravingItem* startItem = spanner->startElement();
-        const EngravingItem* endItem = spanner->endElement();
+        const EngravingItem *startItem = spanner->startElement();
+        const EngravingItem *endItem = spanner->endElement();
 
         if (!startItem || !endItem) {
             return nominalDurationTicks;
         }
 
         if (startItem->isChordRest() && endItem->isChordRest()) {
-            const ChordRest* startChord = toChordRest(startItem);
-            const ChordRest* endChord = toChordRest(endItem);
+            const ChordRest *startChord = toChordRest(startItem);
+            const ChordRest *endChord = toChordRest(endItem);
             return endChord->tick().ticks() + endChord->ticks().ticks() - startChord->tick().ticks();
         }
     }
@@ -72,12 +66,8 @@ int SpannerFilter::spannerActualDurationTicks(const Spanner* spanner, const int 
     return nominalDurationTicks;
 }
 
-bool SpannerFilter::isMultiStaffSpanner(const Spanner* spanner)
-{
-    static const ElementTypeSet MULTI_STAFF_SPANNERS = {
-        ElementType::PEDAL,
-        ElementType::PEDAL_SEGMENT
-    };
+bool SpannerFilter::isMultiStaffSpanner(const Spanner *spanner) {
+    static const ElementTypeSet MULTI_STAFF_SPANNERS = {ElementType::PEDAL, ElementType::PEDAL_SEGMENT};
 
     return MULTI_STAFF_SPANNERS.find(spanner->type()) != MULTI_STAFF_SPANNERS.cend();
 }

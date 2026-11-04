@@ -37,8 +37,7 @@ using uchar = unsigned char;
 namespace mu::iex::midi {
 using MidiIODevice = muse::io::IODevice;
 
-class MidiTrack
-{
+class MidiTrack {
     std::multimap<int, MidiEvent> _events;
     int _outChannel;
     int _outPort;
@@ -49,17 +48,22 @@ public:
     ~MidiTrack();
 
     bool empty() const;
-    const std::multimap<int, MidiEvent>& events() const { return _events; }
-    std::multimap<int, MidiEvent>& events() { return _events; }
+
+    const std::multimap<int, MidiEvent> &events() const { return _events; }
+
+    std::multimap<int, MidiEvent> &events() { return _events; }
 
     int outChannel() const { return _outChannel; }
+
     void setOutChannel(int n);
+
     int outPort() const { return _outPort; }
+
     void setOutPort(int n) { _outPort = n; }
 
     bool drumTrack() const { return _drumTrack; }
 
-    void insert(int tick, const MidiEvent&);
+    void insert(int tick, const MidiEvent &);
     void mergeNoteOnOff();
 };
 
@@ -67,61 +71,67 @@ public:
 //   MidiFile
 //---------------------------------------------------------
 
-class MidiFile
-{
-    MidiIODevice* fp;
+class MidiFile {
+    MidiIODevice *fp;
     std::vector<MidiTrack> _tracks;
     int _division;
-    bool _isDivisionInTps;         ///< ticks per second, alternative - ticks per beat
-    int _format;                 ///< midi file format (0-2)
-    bool _noRunningStatus;       ///< do not use running status on output
+    bool _isDivisionInTps; ///< ticks per second, alternative - ticks per beat
+    int _format;           ///< midi file format (0-2)
+    bool _noRunningStatus; ///< do not use running status on output
 
     // values used during read()
-    int status;                  ///< running status
-    int sstatus;                 ///< running status (not reset after meta or sysex events)
-    int click;                   ///< current tick position in file
-    int64_t curPos;               ///< current file byte position
+    int status;     ///< running status
+    int sstatus;    ///< running status (not reset after meta or sysex events)
+    int click;      ///< current tick position in file
+    int64_t curPos; ///< current file byte position
 
     //! Set when a low-level write() fails. The per-event helpers cannot return
     //! a status, so the top-level write() surfaces the error instead.
     bool _writeError = false;
 
-    void writeEvent(const MidiEvent& event);
+    void writeEvent(const MidiEvent &event);
 
 protected:
     // write
-    bool write(const void*, int64_t);
+    bool write(const void *, int64_t);
     void writeShort(int);
     void writeLong(int);
-    bool writeTrack(const MidiTrack&);
+    bool writeTrack(const MidiTrack &);
     void putvl(unsigned);
+
     void put(unsigned char c) { write(&c, 1); }
+
     void writeStatus(int type, int channel);
 
     // read
-    void read(void*, int64_t);
+    void read(void *, int64_t);
     int getvl();
     int readShort();
     int readLong();
-    bool readEvent(MidiEvent*);
+    bool readEvent(MidiEvent *);
     bool readTrack();
 
     void resetRunningStatus() { status = -1; }
 
 public:
     MidiFile();
-    bool read(MidiIODevice*);
-    bool write(MidiIODevice*);
+    bool read(MidiIODevice *);
+    bool write(MidiIODevice *);
 
-    std::vector<MidiTrack>& tracks() { return _tracks; }
-    const std::vector<MidiTrack>& tracks() const { return _tracks; }
+    std::vector<MidiTrack> &tracks() { return _tracks; }
+
+    const std::vector<MidiTrack> &tracks() const { return _tracks; }
 
     int format() const { return _format; }
+
     void setFormat(int fmt) { _format = fmt; }
 
     int division() const { return _division; }
+
     bool isDivisionInTps() const { return _isDivisionInTps; }
+
     void setDivision(int val) { _division = val; }
+
     void separateChannel();
 };
-}
+} // namespace mu::iex::midi

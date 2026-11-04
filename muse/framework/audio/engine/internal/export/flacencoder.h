@@ -28,23 +28,22 @@
 
 namespace muse::io {
 class IODevice;
-}
+} // namespace muse::io
 
 namespace muse::audio::encode {
 class FlacHandler;
 
-class FlacEncoder : public AbstractAudioEncoder
-{
+class FlacEncoder : public AbstractAudioEncoder {
 public:
-    FlacEncoder(const SoundTrackFormat&, io::IODevice&);
+    FlacEncoder(const SoundTrackFormat &, io::IODevice &);
 
     ~FlacEncoder() noexcept override;
 
     bool begin(samples_t totalSamplesNumber) override;
-    size_t encode(samples_t samplesPerChannel, const float* input) override;
+    size_t encode(samples_t samplesPerChannel, const float *input) override;
     Ret end() override;
 
 private:
     std::unique_ptr<FlacHandler> m_flac;
 };
-}
+} // namespace muse::audio::encode

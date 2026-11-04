@@ -34,29 +34,29 @@ namespace mu::engraving {
 class XmlWriter;
 class Spanner;
 class MeasureBase;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::write {
 class WriteContext;
-class ConnectorInfoWriter : public ConnectorInfo
-{
+
+class ConnectorInfoWriter : public ConnectorInfo {
     OBJECT_ALLOCATOR(engraving, ConnectorInfoWriter)
 
 public:
-    ConnectorInfoWriter(XmlWriter& xml, WriteContext* ctx, const EngravingItem* current, const EngravingItem* connector, int track = -1,
-                        Fraction = { -1, 1 });
+    ConnectorInfoWriter(XmlWriter &xml, WriteContext *ctx, const EngravingItem *current, const EngravingItem *connector, int track = -1,
+                        Fraction = {-1, 1});
     virtual ~ConnectorInfoWriter() = default;
 
     void write();
 
 protected:
-    const EngravingItem* _connector;
+    const EngravingItem *_connector;
 
-    virtual const char* tagName() const = 0;
+    virtual const char *tagName() const = 0;
 
 private:
-    XmlWriter* m_xml = nullptr;
-    WriteContext* m_ctx = nullptr;
+    XmlWriter *m_xml = nullptr;
+    WriteContext *m_ctx = nullptr;
 };
 
 //-----------------------------------------------------------------------------
@@ -64,15 +64,14 @@ private:
 ///   Helper class for writing Spanners
 //-----------------------------------------------------------------------------
 
-class SpannerWriter : public ConnectorInfoWriter
-{
+class SpannerWriter : public ConnectorInfoWriter {
     OBJECT_ALLOCATOR(engraving, SpannerWriter)
 protected:
-    const char* tagName() const override { return "Spanner"; }
+    const char *tagName() const override { return "Spanner"; }
 public:
-    SpannerWriter(XmlWriter& xml, WriteContext* ctx, const EngravingItem* current, const Spanner* spanner, int track, Fraction frac,
+    SpannerWriter(XmlWriter &xml, WriteContext *ctx, const EngravingItem *current, const Spanner *spanner, int track, Fraction frac,
                   bool start);
 
-    static void fillSpannerPosition(Location& l, const MeasureBase* endpoint, const Fraction& tick, bool clipboardmode);
+    static void fillSpannerPosition(Location &l, const MeasureBase *endpoint, const Fraction &tick, bool clipboardmode);
 };
-}
+} // namespace mu::engraving::write

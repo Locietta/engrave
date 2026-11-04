@@ -32,40 +32,36 @@ namespace mu::engraving {
 //   InsertItemBspTreeVisitor
 //---------------------------------------------------------
 
-class InsertItemBspTreeVisitor : public BspTreeVisitor
-{
+class InsertItemBspTreeVisitor : public BspTreeVisitor {
     OBJECT_ALLOCATOR(engraving, InsertItemBspTreeVisitor)
 public:
-    EngravingItem* item;
+    EngravingItem *item;
 
-    inline void visit(std::vector<EngravingItem*>& items) override { items.push_back(item); }
+    inline void visit(std::vector<EngravingItem *> &items) override { items.push_back(item); }
 };
 
 //---------------------------------------------------------
 //   RemoveItemBspTreeVisitor
 //---------------------------------------------------------
 
-class RemoveItemBspTreeVisitor : public BspTreeVisitor
-{
+class RemoveItemBspTreeVisitor : public BspTreeVisitor {
     OBJECT_ALLOCATOR(engraving, RemoveItemBspTreeVisitor)
 public:
-    EngravingItem* item;
+    EngravingItem *item;
 
-    inline void visit(std::vector<EngravingItem*>& items) override { muse::remove(items, item); }
+    inline void visit(std::vector<EngravingItem *> &items) override { muse::remove(items, item); }
 };
 
 //---------------------------------------------------------
 //   FindItemBspTreeVisitor
 //---------------------------------------------------------
 
-class FindItemBspTreeVisitor : public BspTreeVisitor
-{
+class FindItemBspTreeVisitor : public BspTreeVisitor {
     OBJECT_ALLOCATOR(engraving, FindItemBspTreeVisitor)
 public:
-    std::vector<EngravingItem*> foundItems;
+    std::vector<EngravingItem *> foundItems;
 
-    void visit(std::vector<EngravingItem*>& items) override
-    {
+    void visit(std::vector<EngravingItem *> &items) override {
         for (auto item : items) {
             if (!item->itemDiscovered) {
                 item->itemDiscovered = true;
@@ -79,33 +75,25 @@ public:
 //   BspTree
 //---------------------------------------------------------
 
-BspTree::BspTree()
-    : m_leafCnt(0)
-{
-    m_depth = 0;
-}
+BspTree::BspTree() : m_leafCnt(0) { m_depth = 0; }
 
 //---------------------------------------------------------
 //   intmaxlog
 //---------------------------------------------------------
 
-static inline int intmaxlog(int n)
-{
-    return n > 0 ? std::max(int(::ceil(::log(double(n)) / ::log(double(2)))), 5) : 0;
-}
+static inline int intmaxlog(int n) { return n > 0 ? std::max(int(::ceil(::log(double(n)) / ::log(double(2)))), 5) : 0; }
 
 //---------------------------------------------------------
 //   initialize
 //---------------------------------------------------------
 
-void BspTree::initialize(const RectF& rec, int n)
-{
-    m_depth      = intmaxlog(n);
+void BspTree::initialize(const RectF &rec, int n) {
+    m_depth = intmaxlog(n);
     this->m_rect = rec;
-    m_leafCnt    = 0;
+    m_leafCnt = 0;
 
     m_nodes.resize((1 << (m_depth + 1)) - 1);
-    m_leaves.assign(1LL << m_depth, std::vector<EngravingItem*>());
+    m_leaves.assign(1LL << m_depth, std::vector<EngravingItem *>());
     initialize(rec, m_depth, 0);
 }
 
@@ -113,8 +101,7 @@ void BspTree::initialize(const RectF& rec, int n)
 //   clear
 //---------------------------------------------------------
 
-void BspTree::clear()
-{
+void BspTree::clear() {
     m_leafCnt = 0;
     m_nodes.clear();
     m_leaves.clear();
@@ -124,8 +111,7 @@ void BspTree::clear()
 //   insert
 //---------------------------------------------------------
 
-void BspTree::insert(EngravingItem* element)
-{
+void BspTree::insert(EngravingItem *element) {
     InsertItemBspTreeVisitor insertVisitor;
     insertVisitor.item = element;
     climbTree(&insertVisitor, element->pageBoundingRect());
@@ -135,8 +121,7 @@ void BspTree::insert(EngravingItem* element)
 //   remove
 //---------------------------------------------------------
 
-void BspTree::remove(EngravingItem* element)
-{
+void BspTree::remove(EngravingItem *element) {
     RemoveItemBspTreeVisitor removeVisitor;
     removeVisitor.item = element;
     climbTree(&removeVisitor, element->pageBoundingRect());
@@ -146,12 +131,11 @@ void BspTree::remove(EngravingItem* element)
 //   items
 //---------------------------------------------------------
 
-std::vector<EngravingItem*> BspTree::items(const RectF& rec)
-{
+std::vector<EngravingItem *> BspTree::items(const RectF &rec) {
     FindItemBspTreeVisitor findVisitor;
     climbTree(&findVisitor, rec);
-    std::vector<EngravingItem*> l;
-    for (EngravingItem* e : findVisitor.foundItems) {
+    std::vector<EngravingItem *> l;
+    for (EngravingItem *e : findVisitor.foundItems) {
         e->itemDiscovered = false;
         if (e->pageBoundingRect().intersects(rec)) {
             l.push_back(e);
@@ -164,13 +148,12 @@ std::vector<EngravingItem*> BspTree::items(const RectF& rec)
 //   items
 //---------------------------------------------------------
 
-std::vector<EngravingItem*> BspTree::items(const PointF& pos)
-{
+std::vector<EngravingItem *> BspTree::items(const PointF &pos) {
     FindItemBspTreeVisitor findVisitor;
     climbTree(&findVisitor, pos);
 
-    std::vector<EngravingItem*> l;
-    for (EngravingItem* e : findVisitor.foundItems) {
+    std::vector<EngravingItem *> l;
+    for (EngravingItem *e : findVisitor.foundItems) {
         e->itemDiscovered = false;
         if (e->contains(pos)) {
             l.push_back(e);
@@ -183,9 +166,8 @@ std::vector<EngravingItem*> BspTree::items(const PointF& pos)
 //   nearestNeighbor (public)
 //---------------------------------------------------------
 
-EngravingItem* BspTree::nearestNeighbor(const PointF& pos)
-{
-    EngravingItem* nn = nullptr;
+EngravingItem *BspTree::nearestNeighbor(const PointF &pos) {
+    EngravingItem *nn = nullptr;
     double bestDistance = std::numeric_limits<double>::max();
     nearestNeighbor(pos, &nn, bestDistance);
     return nn;
@@ -195,13 +177,12 @@ EngravingItem* BspTree::nearestNeighbor(const PointF& pos)
 //   nearestNeighbor (private)
 //---------------------------------------------------------
 
-void BspTree::nearestNeighbor(const PointF& pos, EngravingItem** bestItem, double& bestDistance, int nodeIndex)
-{
+void BspTree::nearestNeighbor(const PointF &pos, EngravingItem **bestItem, double &bestDistance, int nodeIndex) {
     if (m_nodes.empty()) {
         return;
     }
 
-    Node* node = &m_nodes[nodeIndex];
+    Node *node = &m_nodes[nodeIndex];
 
     // Base case: go through the items in the leaf node (if any), and update bestItem/bestDistance accordingly
     if (node->type == Node::Type::LEAF) {
@@ -218,7 +199,7 @@ void BspTree::nearestNeighbor(const PointF& pos, EngravingItem** bestItem, doubl
 
     // Find which child contains pos and which is the "sibling"
     int containerIdx = firstChildIndex(nodeIndex);
-    int siblingIdx =  containerIdx + 1;
+    int siblingIdx = containerIdx + 1;
     if (node->type == Node::Type::VERTICAL) {
         if (pos.x() >= node->offset) {
             ++containerIdx;
@@ -252,18 +233,19 @@ void BspTree::nearestNeighbor(const PointF& pos, EngravingItem** bestItem, doubl
 //   debug
 //---------------------------------------------------------
 
-String BspTree::debug(int index) const
-{
-    const Node* node = &m_nodes.at(index);
+String BspTree::debug(int index) const {
+    const Node *node = &m_nodes.at(index);
 
     String tmp;
     if (node->type == Node::Type::LEAF) {
         RectF rec = rectForIndex(index);
         if (!m_leaves[node->leafIndex].empty()) {
             tmp += String(u"[%1, %2, %3, %4] contains %5 items\n")
-                   .arg(rec.left()).arg(rec.top())
-                   .arg(rec.width()).arg(rec.height())
-                   .arg(m_leaves[node->leafIndex].size());
+                       .arg(rec.left())
+                       .arg(rec.top())
+                       .arg(rec.width())
+                       .arg(rec.height())
+                       .arg(m_leaves[node->leafIndex].size());
         }
     } else {
         if (node->type == Node::Type::HORIZONTAL) {
@@ -283,9 +265,8 @@ String BspTree::debug(int index) const
 //   initialize
 //---------------------------------------------------------
 
-void BspTree::initialize(const RectF& rec, int dep, int index)
-{
-    Node* node = &m_nodes[index];
+void BspTree::initialize(const RectF &rec, int dep, int index) {
+    Node *node = &m_nodes[index];
     if (index == 0) {
         node->type = Node::Type::HORIZONTAL;
         node->offset = rec.center().y();
@@ -312,18 +293,18 @@ void BspTree::initialize(const RectF& rec, int dep, int index)
 
         int childIndex = firstChildIndex(index);
 
-        Node* child   = &m_nodes[childIndex];
+        Node *child = &m_nodes[childIndex];
         child->offset = offset1;
-        child->type   = type;
+        child->type = type;
 
         child = &m_nodes[childIndex + 1];
         child->offset = offset2;
-        child->type   = type;
+        child->type = type;
 
         initialize(rect1, dep - 1, childIndex);
         initialize(rect2, dep - 1, childIndex + 1);
     } else {
-        node->type      = Node::Type::LEAF;
+        node->type = Node::Type::LEAF;
         node->leafIndex = m_leafCnt++;
     }
 }
@@ -332,33 +313,30 @@ void BspTree::initialize(const RectF& rec, int dep, int index)
 //   climbTree
 //---------------------------------------------------------
 
-void BspTree::climbTree(BspTreeVisitor* visitor, const PointF& pos, int index)
-{
+void BspTree::climbTree(BspTreeVisitor *visitor, const PointF &pos, int index) {
     if (m_nodes.empty()) {
         return;
     }
 
-    Node* node = &m_nodes[index];
+    Node *node = &m_nodes[index];
     int childIndex = firstChildIndex(index);
 
     switch (node->type) {
-    case Node::Type::LEAF:
-        visitor->visit(m_leaves[node->leafIndex]);
-        break;
-    case Node::Type::VERTICAL:
-        if (pos.x() < node->offset) {
-            climbTree(visitor, pos, childIndex);
-        } else {
-            climbTree(visitor, pos, childIndex + 1);
-        }
-        break;
-    case Node::Type::HORIZONTAL:
-        if (pos.y() < node->offset) {
-            climbTree(visitor, pos, childIndex);
-        } else {
-            climbTree(visitor, pos, childIndex + 1);
-        }
-        break;
+        case Node::Type::LEAF: visitor->visit(m_leaves[node->leafIndex]); break;
+        case Node::Type::VERTICAL:
+            if (pos.x() < node->offset) {
+                climbTree(visitor, pos, childIndex);
+            } else {
+                climbTree(visitor, pos, childIndex + 1);
+            }
+            break;
+        case Node::Type::HORIZONTAL:
+            if (pos.y() < node->offset) {
+                climbTree(visitor, pos, childIndex);
+            } else {
+                climbTree(visitor, pos, childIndex + 1);
+            }
+            break;
     }
 }
 
@@ -366,38 +344,35 @@ void BspTree::climbTree(BspTreeVisitor* visitor, const PointF& pos, int index)
 //   climbTree
 //---------------------------------------------------------
 
-void BspTree::climbTree(BspTreeVisitor* visitor, const RectF& rec, int index)
-{
+void BspTree::climbTree(BspTreeVisitor *visitor, const RectF &rec, int index) {
     if (m_nodes.empty()) {
         return;
     }
 
-    Node* node = &m_nodes[index];
+    Node *node = &m_nodes[index];
     int childIndex = firstChildIndex(index);
 
     switch (node->type) {
-    case Node::Type::LEAF:
-        visitor->visit(m_leaves[node->leafIndex]);
-        break;
-    case Node::Type::VERTICAL:
-        if (rec.left() < node->offset) {
-            climbTree(visitor, rec, childIndex);
-            if (rec.right() >= node->offset) {
+        case Node::Type::LEAF: visitor->visit(m_leaves[node->leafIndex]); break;
+        case Node::Type::VERTICAL:
+            if (rec.left() < node->offset) {
+                climbTree(visitor, rec, childIndex);
+                if (rec.right() >= node->offset) {
+                    climbTree(visitor, rec, childIndex + 1);
+                }
+            } else {
                 climbTree(visitor, rec, childIndex + 1);
             }
-        } else {
-            climbTree(visitor, rec, childIndex + 1);
-        }
-        break;
-    case Node::Type::HORIZONTAL:
-        if (rec.top() < node->offset) {
-            climbTree(visitor, rec, childIndex);
-            if (rec.bottom() >= node->offset) {
+            break;
+        case Node::Type::HORIZONTAL:
+            if (rec.top() < node->offset) {
+                climbTree(visitor, rec, childIndex);
+                if (rec.bottom() >= node->offset) {
+                    climbTree(visitor, rec, childIndex + 1);
+                }
+            } else {
                 climbTree(visitor, rec, childIndex + 1);
             }
-        } else {
-            climbTree(visitor, rec, childIndex + 1);
-        }
     }
 }
 
@@ -405,15 +380,14 @@ void BspTree::climbTree(BspTreeVisitor* visitor, const RectF& rec, int index)
 //   rectForIndex
 //---------------------------------------------------------
 
-RectF BspTree::rectForIndex(int index) const
-{
+RectF BspTree::rectForIndex(int index) const {
     if (index <= 0) {
         return m_rect;
     }
 
     int parentIdx = parentIndex(index);
-    RectF rec   = rectForIndex(parentIdx);
-    const Node* parent = &m_nodes.at(parentIdx);
+    RectF rec = rectForIndex(parentIdx);
+    const Node *parent = &m_nodes.at(parentIdx);
 
     if (parent->type == Node::Type::HORIZONTAL) {
         if (index & 1) {
@@ -430,4 +404,4 @@ RectF BspTree::rectForIndex(int index) const
     }
     return rec;
 }
-}
+} // namespace mu::engraving

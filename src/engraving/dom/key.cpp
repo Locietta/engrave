@@ -37,107 +37,50 @@ namespace mu::engraving {
 const SymId accTable[] = {
     SymId::noSym,
     // standard accidentals
-    SymId::accidentalTripleFlat,
-    SymId::accidentalDoubleFlat,
-    SymId::accidentalFlat,
-    SymId::accidentalNatural,
-    SymId::accidentalSharp,
-    SymId::accidentalDoubleSharp,
-    SymId::accidentalTripleSharp,
-    SymId::noSym,
+    SymId::accidentalTripleFlat, SymId::accidentalDoubleFlat, SymId::accidentalFlat, SymId::accidentalNatural, SymId::accidentalSharp,
+    SymId::accidentalDoubleSharp, SymId::accidentalTripleSharp, SymId::noSym,
     //  natural sharp
-    SymId::accidentalNatural,
-    SymId::accidentalNaturalSharp,
-    SymId::accidentalSharp,
-    SymId::noSym,
+    SymId::accidentalNatural, SymId::accidentalNaturalSharp, SymId::accidentalSharp, SymId::noSym,
     //  natural flat
-    SymId::accidentalDoubleFlat,
-    SymId::accidentalNaturalFlat,
-    SymId::accidentalNatural,
-    SymId::noSym,
+    SymId::accidentalDoubleFlat, SymId::accidentalNaturalFlat, SymId::accidentalNatural, SymId::noSym,
     //  natural sharp sharp
-    SymId::accidentalSharp,
-    SymId::accidentalSharpSharp,
-    SymId::accidentalTripleSharp,
-    SymId::noSym,
+    SymId::accidentalSharp, SymId::accidentalSharpSharp, SymId::accidentalTripleSharp, SymId::noSym,
     // Gould quarter tone
     //  arrow down
-    SymId::accidentalFiveQuarterTonesFlatArrowDown,
-    SymId::accidentalThreeQuarterTonesFlatArrowDown,
-    SymId::accidentalQuarterToneFlatNaturalArrowDown,
-    SymId::accidentalQuarterToneSharpArrowDown,
-    SymId::accidentalThreeQuarterTonesSharpArrowDown,
-    SymId::accidentalFiveQuarterTonesFlatArrowDown,
-    SymId::noSym,
+    SymId::accidentalFiveQuarterTonesFlatArrowDown, SymId::accidentalThreeQuarterTonesFlatArrowDown,
+    SymId::accidentalQuarterToneFlatNaturalArrowDown, SymId::accidentalQuarterToneSharpArrowDown,
+    SymId::accidentalThreeQuarterTonesSharpArrowDown, SymId::accidentalFiveQuarterTonesFlatArrowDown, SymId::noSym,
     //  arrow up
-    SymId::accidentalThreeQuarterTonesFlatArrowUp,
-    SymId::accidentalQuarterToneFlatArrowUp,
-    SymId::accidentalQuarterToneSharpNaturalArrowUp,
-    SymId::accidentalThreeQuarterTonesSharpArrowUp,
-    SymId::accidentalFiveQuarterTonesSharpArrowUp,
-    SymId::noSym,
+    SymId::accidentalThreeQuarterTonesFlatArrowUp, SymId::accidentalQuarterToneFlatArrowUp, SymId::accidentalQuarterToneSharpNaturalArrowUp,
+    SymId::accidentalThreeQuarterTonesSharpArrowUp, SymId::accidentalFiveQuarterTonesSharpArrowUp, SymId::noSym,
     // Stein-Zimmermann
     //  basic
-    SymId::accidentalThreeQuarterTonesFlatZimmermann,
-    SymId::accidentalQuarterToneFlatStein,
-    SymId::accidentalQuarterToneSharpStein,
-    SymId::accidentalThreeQuarterTonesSharpStein,
-    SymId::noSym,
+    SymId::accidentalThreeQuarterTonesFlatZimmermann, SymId::accidentalQuarterToneFlatStein, SymId::accidentalQuarterToneSharpStein,
+    SymId::accidentalThreeQuarterTonesSharpStein, SymId::noSym,
     //  narrow (as variant of above)
-    SymId::accidentalNarrowReversedFlatAndFlat,
-    SymId::accidentalNarrowReversedFlat,
-    SymId::accidentalQuarterToneSharpStein,
+    SymId::accidentalNarrowReversedFlatAndFlat, SymId::accidentalNarrowReversedFlat, SymId::accidentalQuarterToneSharpStein,
     // Extended Helmholtz-Ellis (just intonation)
     //  one syntonic comma down arrow
-    SymId::accidentalDoubleFlatOneArrowDown,
-    SymId::accidentalFlatOneArrowDown,
-    SymId::accidentalNaturalOneArrowDown,
-    SymId::accidentalSharpOneArrowDown,
-    SymId::accidentalDoubleSharpOneArrowDown,
-    SymId::noSym,
+    SymId::accidentalDoubleFlatOneArrowDown, SymId::accidentalFlatOneArrowDown, SymId::accidentalNaturalOneArrowDown,
+    SymId::accidentalSharpOneArrowDown, SymId::accidentalDoubleSharpOneArrowDown, SymId::noSym,
     //   one syntonic comma up arrow
-    SymId::accidentalDoubleFlatOneArrowUp,
-    SymId::accidentalFlatOneArrowUp,
-    SymId::accidentalNaturalOneArrowUp,
-    SymId::accidentalSharpOneArrowUp,
-    SymId::accidentalDoubleSharpOneArrowUp,
-    SymId::noSym,
+    SymId::accidentalDoubleFlatOneArrowUp, SymId::accidentalFlatOneArrowUp, SymId::accidentalNaturalOneArrowUp,
+    SymId::accidentalSharpOneArrowUp, SymId::accidentalDoubleSharpOneArrowUp, SymId::noSym,
     //   two syntonic commas down
-    SymId::accidentalDoubleFlatTwoArrowsDown,
-    SymId::accidentalFlatTwoArrowsDown,
-    SymId::accidentalNaturalTwoArrowsDown,
-    SymId::accidentalSharpTwoArrowsDown,
-    SymId::accidentalDoubleSharpTwoArrowsDown,
-    SymId::noSym,
+    SymId::accidentalDoubleFlatTwoArrowsDown, SymId::accidentalFlatTwoArrowsDown, SymId::accidentalNaturalTwoArrowsDown,
+    SymId::accidentalSharpTwoArrowsDown, SymId::accidentalDoubleSharpTwoArrowsDown, SymId::noSym,
     //   two syntonic commas up
-    SymId::accidentalDoubleFlatTwoArrowsUp,
-    SymId::accidentalFlatTwoArrowsUp,
-    SymId::accidentalNaturalTwoArrowsUp,
-    SymId::accidentalSharpTwoArrowsUp,
-    SymId::accidentalDoubleSharpTwoArrowsUp,
-    SymId::noSym,
+    SymId::accidentalDoubleFlatTwoArrowsUp, SymId::accidentalFlatTwoArrowsUp, SymId::accidentalNaturalTwoArrowsUp,
+    SymId::accidentalSharpTwoArrowsUp, SymId::accidentalDoubleSharpTwoArrowsUp, SymId::noSym,
     //   three syntonic commas down
-    SymId::accidentalDoubleFlatThreeArrowsDown,
-    SymId::accidentalFlatThreeArrowsDown,
-    SymId::accidentalNaturalThreeArrowsDown,
-    SymId::accidentalSharpThreeArrowsDown,
-    SymId::accidentalDoubleSharpThreeArrowsDown,
-    SymId::noSym,
+    SymId::accidentalDoubleFlatThreeArrowsDown, SymId::accidentalFlatThreeArrowsDown, SymId::accidentalNaturalThreeArrowsDown,
+    SymId::accidentalSharpThreeArrowsDown, SymId::accidentalDoubleSharpThreeArrowsDown, SymId::noSym,
     //   three syntonic commas up
-    SymId::accidentalDoubleFlatThreeArrowsUp,
-    SymId::accidentalFlatThreeArrowsUp,
-    SymId::accidentalNaturalThreeArrowsUp,
-    SymId::accidentalSharpThreeArrowsUp,
-    SymId::accidentalDoubleSharpThreeArrowsUp,
-    SymId::noSym,
+    SymId::accidentalDoubleFlatThreeArrowsUp, SymId::accidentalFlatThreeArrowsUp, SymId::accidentalNaturalThreeArrowsUp,
+    SymId::accidentalSharpThreeArrowsUp, SymId::accidentalDoubleSharpThreeArrowsUp, SymId::noSym,
     //   equal tempered semitone
-    SymId::accidentalDoubleFlatEqualTempered,
-    SymId::accidentalFlatEqualTempered,
-    SymId::accidentalNaturalEqualTempered,
-    SymId::accidentalSharpEqualTempered,
-    SymId::accidentalDoubleSharpEqualTempered,
-    SymId::noSym
-};
+    SymId::accidentalDoubleFlatEqualTempered, SymId::accidentalFlatEqualTempered, SymId::accidentalNaturalEqualTempered,
+    SymId::accidentalSharpEqualTempered, SymId::accidentalDoubleSharpEqualTempered, SymId::noSym};
 
 //---------------------------------------------------------
 //   enforceLimits - ensure _key
@@ -145,8 +88,7 @@ const SymId accTable[] = {
 //   see KeySig::layout()
 //---------------------------------------------------------
 
-void KeySigEvent::enforceLimits(bool transposing)
-{
+void KeySigEvent::enforceLimits(bool transposing) {
     if (m_key < Key::MIN) {
         m_key = Key::MIN;
         LOGD("key < -7");
@@ -172,8 +114,7 @@ void KeySigEvent::enforceLimits(bool transposing)
 //   print
 //---------------------------------------------------------
 
-void KeySigEvent::print() const
-{
+void KeySigEvent::print() const {
     LOGD("<KeySigEvent: ");
     if (!isValid()) {
         LOGD("invalid>");
@@ -192,8 +133,7 @@ void KeySigEvent::print() const
 //   setKey
 //---------------------------------------------------------
 
-void KeySigEvent::setKey(Key v)
-{
+void KeySigEvent::setKey(Key v) {
     m_key = v;
     enforceLimits(true);
 }
@@ -202,8 +142,7 @@ void KeySigEvent::setKey(Key v)
 //   setConcertKey
 //---------------------------------------------------------
 
-void KeySigEvent::setConcertKey(Key v)
-{
+void KeySigEvent::setConcertKey(Key v) {
     m_key = v;
     m_concertKey = v;
     enforceLimits();
@@ -213,8 +152,7 @@ void KeySigEvent::setConcertKey(Key v)
 //   setCustom
 //---------------------------------------------------------
 
-void KeySigEvent::setCustom(bool val)
-{
+void KeySigEvent::setCustom(bool val) {
     m_custom = val;
     if (m_key == Key::INVALID) {
         m_concertKey = Key::C;
@@ -226,8 +164,7 @@ void KeySigEvent::setCustom(bool val)
 //   KeySigEvent::operator==
 //---------------------------------------------------------
 
-bool KeySigEvent::operator==(const KeySigEvent& e) const
-{
+bool KeySigEvent::operator==(const KeySigEvent &e) const {
     if (e.m_custom != m_custom || e.m_mode != m_mode || e.m_forInstrumentChange != m_forInstrumentChange) {
         return false;
     }
@@ -252,9 +189,8 @@ bool KeySigEvent::operator==(const KeySigEvent& e) const
 //    Calculates the interval to move from one key to another
 //---------------------------------------------------------
 
-Interval calculateInterval(Key key1, Key key2)
-{
-    int chromatic = 7 * ((int)key2 - (int)key1);
+Interval calculateInterval(Key key1, Key key2) {
+    int chromatic = 7 * ((int) key2 - (int) key1);
     chromatic = chromatic % 12;
     if (chromatic < 0) {
         chromatic += 12;
@@ -267,8 +203,7 @@ Interval calculateInterval(Key key1, Key key2)
 //    for backward compatibility
 //---------------------------------------------------------
 
-void KeySigEvent::initFromSubtype(int st)
-{
+void KeySigEvent::initFromSubtype(int st) {
     //anatoly-os: legacy code. I don't understand why it is so overcomplicated.
     //Did refactoring to avoid exception on MSVC, but left the same logic.
     struct {
@@ -279,17 +214,17 @@ void KeySigEvent::initFromSubtype(int st)
         bool _invalid : 1;
     } a;
 
-    a._key         = (st & 0xf);
+    a._key = (st & 0xf);
     a._naturalType = (st >> 4) & 0xf;
-    a._customType  = (st >> 8) & 0xffff;
-    a._custom      = (st >> 24) & 0x1;
-    a._invalid     = (st >> 25) & 0x1;
+    a._customType = (st >> 8) & 0xffff;
+    a._custom = (st >> 24) & 0x1;
+    a._invalid = (st >> 25) & 0x1;
     //end of legacy code
 
-    m_key            = Key(a._key);
-    m_concertKey     = m_key;
-//      _customType     = a._customType;
-    m_custom         = a._custom;
+    m_key = Key(a._key);
+    m_concertKey = m_key;
+    //      _customType     = a._customType;
+    m_custom = a._custom;
     if (a._invalid) {
         m_key = Key::INVALID;
     }
@@ -300,8 +235,7 @@ void KeySigEvent::initFromSubtype(int st)
 //   accidentalVal
 //---------------------------------------------------------
 
-AccidentalVal AccidentalState::accidentalVal(int line, bool& error) const
-{
+AccidentalVal AccidentalState::accidentalVal(int line, bool &error) const {
     if (line < MIN_ACC_STATE || line >= MAX_ACC_STATE) {
         error = true;
         return AccidentalVal::NATURAL;
@@ -318,8 +252,7 @@ static const int ACC_STATE_NATURAL = int(AccidentalVal::NATURAL) - int(Accidenta
 static const int ACC_STATE_FLAT = int(AccidentalVal::FLAT) - int(AccidentalVal::MIN);
 static const int ACC_STATE_SHARP = int(AccidentalVal::SHARP) - int(AccidentalVal::MIN);
 
-void AccidentalState::init(Key key)
-{
+void AccidentalState::init(Key key) {
     memset(m_state, ACC_STATE_NATURAL, MAX_ACC_STATE);
     // The numerical value of key tells us the number of sharps (or flats, if negative) in the key signature
     if (key > 0 && key <= Key::MAX) {
@@ -353,11 +286,10 @@ void AccidentalState::init(Key key)
 //   init
 //---------------------------------------------------------
 
-void AccidentalState::init(const KeySigEvent& keySig)
-{
+void AccidentalState::init(const KeySigEvent &keySig) {
     init(keySig.key());
     if (keySig.custom()) {
-        for (const CustDef& d : keySig.customKeyDefs()) {
+        for (const CustDef &d : keySig.customKeyDefs()) {
             SymId sym = keySig.symInKey(d.sym, d.degree);
             int degree = keySig.degInKey(d.degree);
             AccidentalVal a = sym2accidentalVal(sym);
@@ -377,14 +309,12 @@ void AccidentalState::init(const KeySigEvent& keySig)
 //   accidentalVal
 //---------------------------------------------------------
 
-AccidentalVal AccidentalState::accidentalVal(int line) const
-{
+AccidentalVal AccidentalState::accidentalVal(int line) const {
     assert(line >= MIN_ACC_STATE && line < MAX_ACC_STATE);
     return AccidentalVal((m_state[line] & 0x0f) + int(AccidentalVal::MIN));
 }
 
-bool AccidentalState::forceRestateAccidental(int line) const
-{
+bool AccidentalState::forceRestateAccidental(int line) const {
     assert(line >= MIN_ACC_STATE && line < MAX_ACC_STATE);
     return m_forceRestateAccidental[line];
 }
@@ -393,8 +323,7 @@ bool AccidentalState::forceRestateAccidental(int line) const
 //   tieContext
 //---------------------------------------------------------
 
-bool AccidentalState::tieContext(int line) const
-{
+bool AccidentalState::tieContext(int line) const {
     assert(line >= MIN_ACC_STATE && line < MAX_ACC_STATE);
     return m_state[line] & TIE_CONTEXT;
 }
@@ -403,16 +332,14 @@ bool AccidentalState::tieContext(int line) const
 //   setAccidentalVal
 //---------------------------------------------------------
 
-void AccidentalState::setAccidentalVal(int line, AccidentalVal val, bool tieContext)
-{
+void AccidentalState::setAccidentalVal(int line, AccidentalVal val, bool tieContext) {
     assert(line >= MIN_ACC_STATE && line < MAX_ACC_STATE);
     // casts needed to work around a bug in Xcode 4.2 on Mac, see #25910
     assert(int(val) >= int(AccidentalVal::MIN) && int(val) <= int(AccidentalVal::MAX));
     m_state[line] = (int(val) - int(AccidentalVal::MIN)) | (tieContext ? TIE_CONTEXT : 0);
 }
 
-void AccidentalState::setForceRestateAccidental(int line, bool forceRestate)
-{
+void AccidentalState::setForceRestateAccidental(int line, bool forceRestate) {
     assert(line >= MIN_ACC_STATE && line < MAX_ACC_STATE);
     m_forceRestateAccidental[line] = forceRestate;
 }
@@ -423,17 +350,13 @@ void AccidentalState::setForceRestateAccidental(int line, bool forceRestate)
 //    first degree in F major is F: 0 -> 3, ...
 //---------------------------------------------------------
 
-int KeySigEvent::degInKey(int degree) const
-{
-    return (degree + ((static_cast<int>(key()) + 7) * 4)) % 7;
-}
+int KeySigEvent::degInKey(int degree) const { return (degree + ((static_cast<int>(key()) + 7) * 4)) % 7; }
 
 //---------------------------------------------------------
 //   symInKey
 //---------------------------------------------------------
 
-SymId KeySigEvent::symInKey(SymId sym, int degree) const
-{
+SymId KeySigEvent::symInKey(SymId sym, int degree) const {
     degree = degInKey(degree);
     int keyval = static_cast<int>(key());
     int accIndex = std::distance(std::begin(accTable), std::find(std::begin(accTable), std::end(accTable), sym));
@@ -455,4 +378,4 @@ SymId KeySigEvent::symInKey(SymId sym, int degree) const
     }
     return accTable[accIndex];
 }
-}
+} // namespace mu::engraving

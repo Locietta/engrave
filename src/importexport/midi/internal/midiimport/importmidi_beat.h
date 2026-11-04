@@ -27,7 +27,7 @@
 
 namespace mu::engraving {
 class TimeSigMap;
-}
+} // namespace mu::engraving
 
 namespace mu::iex::midi {
 class ReducedFraction;
@@ -35,12 +35,11 @@ class MidiChord;
 class MTrack;
 
 namespace MidiBeat {
-void removeEvery2ndBeat(std::set<ReducedFraction>& beatSet);
-void findBeatLocations(
-    const std::multimap<ReducedFraction, MidiChord>& allChords, engraving::TimeSigMap* sigmap, double ticksPerSec);
+void removeEvery2ndBeat(std::set<ReducedFraction> &beatSet);
+void findBeatLocations(const std::multimap<ReducedFraction, MidiChord> &allChords, engraving::TimeSigMap *sigmap, double ticksPerSec);
 
-void adjustChordsToBeats(std::multimap<int, MTrack>& tracks);
-void setTimeSignature(engraving::TimeSigMap* sigmap);
+void adjustChordsToBeats(std::multimap<int, MTrack> &tracks);
+void setTimeSignature(engraving::TimeSigMap *sigmap);
 } // namespace MidiBeat
 } // namespace mu::iex::midi
 

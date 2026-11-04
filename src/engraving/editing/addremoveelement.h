@@ -27,146 +27,142 @@
 #include "../dom/segment.h"
 
 namespace mu::engraving {
-class AddElement : public UndoableCommand
-{
+class AddElement : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, AddElement)
 
-    EngravingItem* element = nullptr;
+    EngravingItem *element = nullptr;
 
     void endUndoRedo(bool) const;
     void undo() override;
     void redo() override;
 
 public:
-    AddElement(EngravingItem*);
-    EngravingItem* getElement() const { return element; }
+    AddElement(EngravingItem *);
+
+    EngravingItem *getElement() const { return element; }
+
     void cleanup(bool) override;
-    const char* name() const override;
+    const char *name() const override;
 
-    bool matchesFilter(UndoableCommandFilter f, const EngravingItem* target) const override;
+    bool matchesFilter(UndoableCommandFilter f, const EngravingItem *target) const override;
 
-    std::vector<EngravingObject*> objectItems() const override;
+    std::vector<EngravingObject *> objectItems() const override;
 
     UNDO_TYPE(CommandType::AddElement)
 };
 
-class RemoveElement : public UndoableCommand
-{
+class RemoveElement : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, RemoveElement)
 
-    EngravingItem* element = nullptr;
+    EngravingItem *element = nullptr;
 
 public:
-    RemoveElement(EngravingItem*);
+    RemoveElement(EngravingItem *);
     void undo() override;
     void redo() override;
     void cleanup(bool) override;
-    const char* name() const override;
+    const char *name() const override;
 
-    bool matchesFilter(UndoableCommandFilter f, const EngravingItem* target) const override;
+    bool matchesFilter(UndoableCommandFilter f, const EngravingItem *target) const override;
 
-    std::vector<EngravingObject*> objectItems() const override;
+    std::vector<EngravingObject *> objectItems() const override;
 
     UNDO_TYPE(CommandType::RemoveElement)
 };
 
-class ChangeElement : public UndoableCommand
-{
+class ChangeElement : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeElement)
 
-    EngravingItem* oldElement = nullptr;
-    EngravingItem* newElement = nullptr;
+    EngravingItem *oldElement = nullptr;
+    EngravingItem *newElement = nullptr;
 
     void flip() override;
 
 public:
-    ChangeElement(EngravingItem* oldElement, EngravingItem* newElement);
+    ChangeElement(EngravingItem *oldElement, EngravingItem *newElement);
 
     UNDO_TYPE(CommandType::ChangeElement)
     UNDO_NAME("ChangeElement")
-    UNDO_CHANGED_OBJECTS({ oldElement, newElement })
+    UNDO_CHANGED_OBJECTS({oldElement, newElement})
 };
 
-class ChangeParent : public UndoableCommand
-{
+class ChangeParent : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeParent)
 
-    EngravingItem* element = nullptr;
-    EngravingItem* parent = nullptr;
+    EngravingItem *element = nullptr;
+    EngravingItem *parent = nullptr;
     staff_idx_t staffIdx = muse::nidx;
 
     void flip() override;
 
 public:
-    ChangeParent(EngravingItem* e, EngravingItem* p, staff_idx_t si)
-        : element(e), parent(p), staffIdx(si) {}
+    ChangeParent(EngravingItem *e, EngravingItem *p, staff_idx_t si) : element(e), parent(p), staffIdx(si) {}
 
     UNDO_TYPE(CommandType::ChangeParent)
     UNDO_NAME("ChangeParent")
-    UNDO_CHANGED_OBJECTS({ element, parent })
+    UNDO_CHANGED_OBJECTS({element, parent})
 };
 
-class ChangeSegmentParent : public UndoableCommand
-{
+class ChangeSegmentParent : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeSegmentParent)
 
-    Segment* segment = nullptr;
-    Measure* parent = nullptr;
+    Segment *segment = nullptr;
+    Measure *parent = nullptr;
     Fraction tick;
 
     void flip() override;
 
 public:
-    ChangeSegmentParent(Segment* s, Measure* p, Fraction t)
-        : segment(s), parent(p), tick(t) {}
+    ChangeSegmentParent(Segment *s, Measure *p, Fraction t) : segment(s), parent(p), tick(t) {}
 
     UNDO_TYPE(CommandType::ChangeParent)
     UNDO_NAME("ChangeSegmentParent")
-    UNDO_CHANGED_OBJECTS({ segment })
+    UNDO_CHANGED_OBJECTS({segment})
 };
 
-class LinkUnlink : public UndoableCommand
-{
+class LinkUnlink : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, LinkUnlink)
 
-    bool mustDelete  { false };
+    bool mustDelete{false};
 
 protected:
-    LinkedObjects* le = nullptr;
-    EngravingObject* e = nullptr;
+    LinkedObjects *le = nullptr;
+    EngravingObject *e = nullptr;
 
     void link();
     void unlink();
 
 public:
     LinkUnlink() {}
+
     ~LinkUnlink();
 };
 
-class Unlink : public LinkUnlink
-{
+class Unlink : public LinkUnlink {
     OBJECT_ALLOCATOR(engraving, Unlink)
 public:
-    Unlink(EngravingObject*);
+    Unlink(EngravingObject *);
+
     void undo() override { link(); }
+
     void redo() override { unlink(); }
 
     UNDO_TYPE(CommandType::Unlink)
     UNDO_NAME("Unlink")
 };
 
-class Link : public LinkUnlink
-{
+class Link : public LinkUnlink {
     OBJECT_ALLOCATOR(engraving, Link)
 public:
-    Link(EngravingObject*, EngravingObject*);
+    Link(EngravingObject *, EngravingObject *);
 
     void undo() override { unlink(); }
+
     void redo() override { link(); }
 
     UNDO_TYPE(CommandType::Link)
     UNDO_NAME("Link")
 
-    bool matchesFilter(UndoableCommandFilter f, const EngravingItem* target) const override;
+    bool matchesFilter(UndoableCommandFilter f, const EngravingItem *target) const override;
 };
-}
+} // namespace mu::engraving

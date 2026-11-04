@@ -28,17 +28,14 @@ using namespace mu::engraving;
 using namespace muse;
 using namespace muse::mpe;
 
-void ChordLineMetaParser::doParse(const EngravingItem* item, const RenderingContext& ctx, mpe::ArticulationMap& result)
-{
-    IF_ASSERT_FAILED(item) {
-        return;
-    }
+void ChordLineMetaParser::doParse(const EngravingItem *item, const RenderingContext &ctx, mpe::ArticulationMap &result) {
+    IF_ASSERT_FAILED(item) { return; }
 
     if (!item->isChordLine()) {
         return;
     }
 
-    const ChordLine* chordLine = toChordLine(item);
+    const ChordLine *chordLine = toChordLine(item);
 
     ArticulationType type = chordLineArticulationType(chordLine->chordLineType());
 
@@ -46,7 +43,7 @@ void ChordLineMetaParser::doParse(const EngravingItem* item, const RenderingCont
         return;
     }
 
-    const mpe::ArticulationPattern& pattern = ctx.profile->pattern(type);
+    const mpe::ArticulationPattern &pattern = ctx.profile->pattern(type);
     if (pattern.empty()) {
         return;
     }
@@ -54,14 +51,11 @@ void ChordLineMetaParser::doParse(const EngravingItem* item, const RenderingCont
     appendArticulationData(mpe::ArticulationMeta(type, pattern, ctx.nominalTimestamp, ctx.nominalDuration), result);
 }
 
-ArticulationType ChordLineMetaParser::chordLineArticulationType(const ChordLineType chordLineType)
-{
-    static const std::unordered_map<ChordLineType, ArticulationType> ARTICULATION_TYPES = {
-        { ChordLineType::DOIT, ArticulationType::Doit },
-        { ChordLineType::FALL, ArticulationType::Fall },
-        { ChordLineType::PLOP, ArticulationType::Plop },
-        { ChordLineType::SCOOP, ArticulationType::Scoop }
-    };
+ArticulationType ChordLineMetaParser::chordLineArticulationType(const ChordLineType chordLineType) {
+    static const std::unordered_map<ChordLineType, ArticulationType> ARTICULATION_TYPES = {{ChordLineType::DOIT, ArticulationType::Doit},
+                                                                                           {ChordLineType::FALL, ArticulationType::Fall},
+                                                                                           {ChordLineType::PLOP, ArticulationType::Plop},
+                                                                                           {ChordLineType::SCOOP, ArticulationType::Scoop}};
 
     auto search = ARTICULATION_TYPES.find(chordLineType);
 

@@ -39,32 +39,26 @@ using namespace muse;
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-void Autoplace::autoplaceSegmentElement(const EngravingItem* item, EngravingItem::LayoutData* ldata, bool above, bool add)
-{
-    const Segment* segment = toSegment(item->findAncestor(ElementType::SEGMENT));
-    const Measure* measure = segment ? segment->measure() : nullptr;
-    const System* system = measure ? measure->system() : nullptr;
-    IF_ASSERT_FAILED(system) {
-        return;
-    }
+void Autoplace::autoplaceSegmentElement(const EngravingItem *item, EngravingItem::LayoutData *ldata, bool above, bool add) {
+    const Segment *segment = toSegment(item->findAncestor(ElementType::SEGMENT));
+    const Measure *measure = segment ? segment->measure() : nullptr;
+    const System *system = measure ? measure->system() : nullptr;
+    IF_ASSERT_FAILED(system) { return; }
     LD_CONDITION(segment->ldata()->isSetPos());
     LD_CONDITION(measure->ldata()->isSetPos());
 
     const double spatium = item->style().spatium() * item->staff()->staffMag(item);
     // TODO: proper item-to-item table for horizontal clearance in skyline
-    const double minSkylineHorizontalClearance = item->isArticulationOrFermata() ? 0.0 : item->style().styleAbsolute(
-        Sid::skylineMinHorizontalClearance) * item->mag();
+    const double minSkylineHorizontalClearance =
+        item->isArticulationOrFermata() ? 0.0 : item->style().styleAbsolute(Sid::skylineMinHorizontalClearance) * item->mag();
 
     doAutoplaceElement(item, ldata, system, above, add, minSkylineHorizontalClearance, spatium);
 }
 
-void Autoplace::autoplaceMeasureElement(const EngravingItem* item, EngravingItem::LayoutData* ldata, bool above, bool add)
-{
-    const Measure* measure = toMeasure(item->ownershipParent());
-    const System* system = measure ? measure->system() : nullptr;
-    IF_ASSERT_FAILED(system) {
-        return;
-    }
+void Autoplace::autoplaceMeasureElement(const EngravingItem *item, EngravingItem::LayoutData *ldata, bool above, bool add) {
+    const Measure *measure = toMeasure(item->ownershipParent());
+    const System *system = measure ? measure->system() : nullptr;
+    IF_ASSERT_FAILED(system) { return; }
     LD_CONDITION(measure->ldata()->isSetPos());
 
     const double spatium = item->style().spatium() * item->staff()->staffMag(item);
@@ -75,15 +69,12 @@ void Autoplace::autoplaceMeasureElement(const EngravingItem* item, EngravingItem
     doAutoplaceElement(item, ldata, system, above, add, minSkylineHorizontalClearance, spatium);
 }
 
-void Autoplace::autoplaceSpannerSegment(const SpannerSegment* item, EngravingItem::LayoutData* ldata)
-{
+void Autoplace::autoplaceSpannerSegment(const SpannerSegment *item, EngravingItem::LayoutData *ldata) {
     if (item->spanner()->anchor() == Spanner::Anchor::NOTE) {
         return;
     }
-    const System* system = item->system();
-    IF_ASSERT_FAILED(system) {
-        return;
-    }
+    const System *system = item->system();
+    IF_ASSERT_FAILED(system) { return; }
     const double mag = !item->systemFlag() && !item->spanner()->systemFlag() ? item->staff()->staffMag(item->spanner()->tick()) : 1.0;
     const double spatium = item->style().spatium() * mag;
 
@@ -91,11 +82,10 @@ void Autoplace::autoplaceSpannerSegment(const SpannerSegment* item, EngravingIte
     doAutoplaceElement(item, ldata, system, above, /* add = */ false, /* minSkylineHorizontalClearance = */ 0.0, spatium);
 }
 
-double Autoplace::distanceToMoveItem(const EngravingItem* item, const SkylineLine& staffSkyline, const Shape& shape, bool above,
-                                     double minSkylineHorizontalClearance, double minDistance)
-{
-    const SkylineLine filteredSkyline = staffSkyline.getFilteredCopy([item](const ShapeElement& shapeEl) {
-        const EngravingItem* skylineItem = shapeEl.item();
+double Autoplace::distanceToMoveItem(const EngravingItem *item, const SkylineLine &staffSkyline, const Shape &shape, bool above,
+                                     double minSkylineHorizontalClearance, double minDistance) {
+    const SkylineLine filteredSkyline = staffSkyline.getFilteredCopy([item](const ShapeElement &shapeEl) {
+        const EngravingItem *skylineItem = shapeEl.item();
         if (!skylineItem) {
             return false;
         }
@@ -106,8 +96,8 @@ double Autoplace::distanceToMoveItem(const EngravingItem* item, const SkylineLin
         return 0.0;
     }
 
-    const double d = above ? filteredSkyline.minDistanceToShapeAbove(shape, minSkylineHorizontalClearance)
-                     : filteredSkyline.minDistanceToShapeBelow(shape, minSkylineHorizontalClearance);
+    const double d = above ? filteredSkyline.minDistanceToShapeAbove(shape, minSkylineHorizontalClearance) :
+                             filteredSkyline.minDistanceToShapeBelow(shape, minSkylineHorizontalClearance);
 
     if (!(d > -minDistance)) {
         return 0.0;
@@ -118,13 +108,10 @@ double Autoplace::distanceToMoveItem(const EngravingItem* item, const SkylineLin
     return yd;
 }
 
-void Autoplace::doAutoplaceElement(const EngravingItem* item, EngravingItem::LayoutData* ldata, const System* system, bool above, bool add,
-                                   double minSkylineHorizontalClearance, double spatium)
-{
+void Autoplace::doAutoplaceElement(const EngravingItem *item, EngravingItem::LayoutData *ldata, const System *system, bool above, bool add,
+                                   double minSkylineHorizontalClearance, double spatium) {
     DO_ASSERT(autoplaceAppliesToType(item->type()));
-    IF_ASSERT_FAILED(system) {
-        return;
-    }
+    IF_ASSERT_FAILED(system) { return; }
 
     if (!item->autoplace() || !item->ownershipParent()) {
         return;
@@ -140,8 +127,8 @@ void Autoplace::doAutoplaceElement(const EngravingItem* item, EngravingItem::Lay
 
     const double minDistance = item->minDistance().toAbsolute(spatium);
 
-    SysStaff* sysStaff = system->staff(staffIdx);
-    SkylineLine& staffSkyline = above ? sysStaff->skyline().north() : sysStaff->skyline().south();
+    SysStaff *sysStaff = system->staff(staffIdx);
+    SkylineLine &staffSkyline = above ? sysStaff->skyline().north() : sysStaff->skyline().south();
     // TODO [J.M] staffOffset will be applied twice for spanner segments.
     // We really need to sort out staffOffset and have it applied as early and infrequently as possible. Can't keep up with ~30 callsites
     // Shape shape = item->ldata()->shape().translate(item->systemPos() - item->offset() + item->staffOffset());
@@ -162,13 +149,12 @@ void Autoplace::doAutoplaceElement(const EngravingItem* item, EngravingItem::Lay
     }
 }
 
-bool Autoplace::itemsShouldIgnoreEachOther(const EngravingItem* itemToAutoplace, const EngravingItem* itemInSkyline)
-{
+bool Autoplace::itemsShouldIgnoreEachOther(const EngravingItem *itemToAutoplace, const EngravingItem *itemInSkyline) {
     if (itemToAutoplace == itemInSkyline) {
         return true;
     }
 
-    const EngravingItem* skylineItemOwner = itemInSkyline->ownershipParentItem();
+    const EngravingItem *skylineItemOwner = itemInSkyline->ownershipParentItem();
     if (itemInSkyline->isText() && skylineItemOwner && skylineItemOwner->isSLineSegment()) {
         return itemsShouldIgnoreEachOther(itemToAutoplace, skylineItemOwner);
     }
@@ -182,47 +168,44 @@ bool Autoplace::itemsShouldIgnoreEachOther(const EngravingItem* itemToAutoplace,
 
     if (type1 == ElementType::FRET_DIAGRAM && (type2 == ElementType::FRET_DIAGRAM || type2 == ElementType::HARMONY)) {
         bool isFretDiagAgainstItsOwnHarmony = skylineItemOwner == itemToAutoplace;
-        bool areOnDifferentSegments = itemToAutoplace->findAncestor(ElementType::SEGMENT)
-                                      != itemInSkyline->findAncestor(ElementType::SEGMENT);
+        bool areOnDifferentSegments =
+            itemToAutoplace->findAncestor(ElementType::SEGMENT) != itemInSkyline->findAncestor(ElementType::SEGMENT);
         return isFretDiagAgainstItsOwnHarmony || areOnDifferentSegments;
     }
 
-    if ((type1 == ElementType::DYNAMIC || type1 == ElementType::HAIRPIN_SEGMENT)
-        && (type2 == ElementType::DYNAMIC || type2 == ElementType::HAIRPIN_SEGMENT)) {
+    if ((type1 == ElementType::DYNAMIC || type1 == ElementType::HAIRPIN_SEGMENT) &&
+        (type2 == ElementType::DYNAMIC || type2 == ElementType::HAIRPIN_SEGMENT)) {
         return true;
     }
 
     if (itemToAutoplace->isLyricsLineSegment() && itemInSkyline->isLyricsLineSegment()) {
-        const LyricsLineSegment* a = toLyricsLineSegment(itemToAutoplace);
-        const LyricsLineSegment* b = toLyricsLineSegment(itemInSkyline);
+        const LyricsLineSegment *a = toLyricsLineSegment(itemToAutoplace);
+        const LyricsLineSegment *b = toLyricsLineSegment(itemInSkyline);
         return a->verse() == b->verse() && a->lyricsPlaceAbove() == b->lyricsPlaceAbove();
     }
 
     if (type1 == type2) {
         // Items of same type should ignore each other in most cases
-        static const std::set<ElementType> TEXT_BASED_TYPES_WHICH_IGNORE_EACH_OTHER {
-            ElementType::DYNAMIC,
-            ElementType::EXPRESSION,
-            ElementType::STICKING
-        };
+        static const std::set<ElementType> TEXT_BASED_TYPES_WHICH_IGNORE_EACH_OTHER{ElementType::DYNAMIC, ElementType::EXPRESSION,
+                                                                                    ElementType::STICKING};
         return !itemToAutoplace->isTextBase() || muse::contains(TEXT_BASED_TYPES_WHICH_IGNORE_EACH_OTHER, type1);
     }
 
-    if ((type1 == ElementType::DYNAMIC || type1 == ElementType::EXPRESSION)
-        && (type2 == ElementType::DYNAMIC || type2 == ElementType::EXPRESSION)) {
+    if ((type1 == ElementType::DYNAMIC || type1 == ElementType::EXPRESSION) &&
+        (type2 == ElementType::DYNAMIC || type2 == ElementType::EXPRESSION)) {
         // Dynamics and expressions should ignore each other if on the same segment
         return itemToAutoplace->parent() == itemInSkyline->parent();
     }
 
-    if ((type1 == ElementType::TUPLET || type1 == ElementType::STAFF_LINES)
-        && (type2 == ElementType::STAFF_LINES || type2 == ElementType::TUPLET)) {
-        const Score* score = itemToAutoplace->score();
+    if ((type1 == ElementType::TUPLET || type1 == ElementType::STAFF_LINES) &&
+        (type2 == ElementType::STAFF_LINES || type2 == ElementType::TUPLET)) {
+        const Score *score = itemToAutoplace->score();
         const bool outOfStaff = score ? !score->style().styleB(Sid::tupletOutOfStaff) : false;
         return outOfStaff;
     }
 
-    if ((type1 == ElementType::FIGURED_BASS || type1 == ElementType::FIGURED_BASS_ITEM)
-        && (type2 == ElementType::FIGURED_BASS || type2 == ElementType::FIGURED_BASS_ITEM)) {
+    if ((type1 == ElementType::FIGURED_BASS || type1 == ElementType::FIGURED_BASS_ITEM) &&
+        (type2 == ElementType::FIGURED_BASS || type2 == ElementType::FIGURED_BASS_ITEM)) {
         return true;
     }
 

@@ -31,23 +31,14 @@ using namespace muse::audio::dsp;
 static constexpr float RATIO = 4.f;
 
 Compressor::Compressor(const unsigned int sampleRate)
-    : m_filterConfig(sampleRate, RATIO),
-    m_feedbackFactor(1.f)   // 0 = feed forward, 1 = feed back
-{
-}
+    : m_filterConfig(sampleRate, RATIO), m_feedbackFactor(1.f) // 0 = feed forward, 1 = feed back
+{}
 
-bool Compressor::isActive() const
-{
-    return m_isActive;
-}
+bool Compressor::isActive() const { return m_isActive; }
 
-void Compressor::setIsActive(const bool active)
-{
-    m_isActive = active;
-}
+void Compressor::setIsActive(const bool active) { m_isActive = active; }
 
-volume_db_t Compressor::gainSmoothing(const float& newGainReduction) const
-{
+volume_db_t Compressor::gainSmoothing(const float &newGainReduction) const {
     float coefficient = 0.f;
 
     if (newGainReduction <= m_previousGainReduction) {
@@ -59,24 +50,20 @@ volume_db_t Compressor::gainSmoothing(const float& newGainReduction) const
     return (coefficient * m_previousGainReduction) + ((1 - coefficient) * newGainReduction);
 }
 
-volume_db_t Compressor::computeGain(const volume_db_t& logarithmSample) const
-{
+volume_db_t Compressor::computeGain(const volume_db_t &logarithmSample) const {
     if (logarithmSample < m_softThresholdLower) {
         return logarithmSample;
     }
 
     if (logarithmSample >= m_softThresholdLower && logarithmSample <= m_softThresholdUpper) {
-        return logarithmSample
-               + ((((1 / m_filterConfig.ratio()) - 1) * std::pow(logarithmSample - m_softThresholdUpper, 2))
-                  / (2 * m_filterConfig.kneeWidth()));
+        return logarithmSample + ((((1 / m_filterConfig.ratio()) - 1) * std::pow(logarithmSample - m_softThresholdUpper, 2)) /
+                                  (2 * m_filterConfig.kneeWidth()));
     }
 
-    return m_filterConfig.logarithmicThreshold()
-           + ((logarithmSample - m_filterConfig.logarithmicThreshold()) / m_filterConfig.ratio());
+    return m_filterConfig.logarithmicThreshold() + ((logarithmSample - m_filterConfig.logarithmicThreshold()) / m_filterConfig.ratio());
 }
 
-void Compressor::process(const float linearRms, float* buffer, const audioch_t& audioChannelsCount, const samples_t samplesPerChannel)
-{
+void Compressor::process(const float linearRms, float *buffer, const audioch_t &audioChannelsCount, const samples_t samplesPerChannel) {
     float dbGain = muse::linear_to_db(linearRms);
 
     if (dbGain <= m_filterConfig.minimumOperableLevel()) {

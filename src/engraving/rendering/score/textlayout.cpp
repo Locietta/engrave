@@ -32,11 +32,8 @@ using namespace mu::engraving::rendering::score;
 using namespace mu::engraving;
 using namespace muse::draw;
 
-void TextLayout::layoutBaseTextBase(const TextBase* item, TextBase::LayoutData* ldata)
-{
-    IF_ASSERT_FAILED(item->ownershipParent()) {
-        return;
-    }
+void TextLayout::layoutBaseTextBase(const TextBase *item, TextBase::LayoutData *ldata) {
+    IF_ASSERT_FAILED(item->ownershipParent()) { return; }
 
     ldata->setPos(PointF());
 
@@ -47,13 +44,9 @@ void TextLayout::layoutBaseTextBase(const TextBase* item, TextBase::LayoutData* 
     layoutBaseTextBase1(item, ldata);
 }
 
-void TextLayout::layoutBaseTextBase(TextBase* item, LayoutContext&)
-{
-    layoutBaseTextBase(item, item->mutldata());
-}
+void TextLayout::layoutBaseTextBase(TextBase *item, LayoutContext &) { layoutBaseTextBase(item, item->mutldata()); }
 
-void TextLayout::layoutBaseTextBase1(const TextBase* item, TextBase::LayoutData* ldata)
-{
+void TextLayout::layoutBaseTextBase1(const TextBase *item, TextBase::LayoutData *ldata) {
     TRACEFUNC;
 
     if (item->layoutParent() && item->layoutToParentWidth()) {
@@ -69,7 +62,7 @@ void TextLayout::layoutBaseTextBase1(const TextBase* item, TextBase::LayoutData*
     double maxBlockWidth = -DBL_MAX;
     // adjust the bounding box for the text item
     for (size_t i = 0; i < ldata->blocks.size(); ++i) {
-        TextBlock& t = ldata->blocks[i];
+        TextBlock &t = ldata->blocks[i];
         layoutTextBlock(&t, item);
         y += t.lineSpacing();
         t.setY(y);
@@ -82,30 +75,30 @@ void TextLayout::layoutBaseTextBase1(const TextBase* item, TextBase::LayoutData*
     RectF bb = shape.bbox();
 
     double yoff = 0;
-    double h    = 0;
-    const EngravingItem* parent = item->layoutParent();
+    double h = 0;
+    const EngravingItem *parent = item->layoutParent();
     if (parent) {
         if (item->layoutToParentWidth()) {
             if (parent->isTBox()) {
                 // hack: vertical alignment is always TOP
-                const_cast<TextBase*>(item)->setAlign({ item->align().horizontal, AlignV::TOP });
+                const_cast<TextBase *>(item)->setAlign({item->align().horizontal, AlignV::TOP});
             } else if (parent->isBox()) {
                 // consider inner margins of frame
-                const Box* b = toBox(parent);
+                const Box *b = toBox(parent);
                 yoff = b->topMargin() * DPMM;
 
                 if (b->height() < bb.bottom()) {
                     h = b->height() / 2 + bb.height();
                 } else {
-                    h  = b->height() - yoff - b->bottomMargin() * DPMM;
+                    h = b->height() - yoff - b->bottomMargin() * DPMM;
                 }
             } else if (parent->isPage()) {
-                const Page* p = toPage(parent);
+                const Page *p = toPage(parent);
                 h = p->height() - p->tm() - p->bm();
                 yoff = p->tm();
             } else if (parent->isMeasure()) {
             } else {
-                h  = parent->height();
+                h = parent->height();
             }
         }
     } else {
@@ -115,14 +108,14 @@ void TextLayout::layoutBaseTextBase1(const TextBase* item, TextBase::LayoutData*
     if (item->align() == AlignV::BOTTOM) {
         yoff += h - bb.bottom();
     } else if (item->align() == AlignV::VCENTER) {
-        yoff +=  (h - (bb.top() + bb.bottom())) * .5;
+        yoff += (h - (bb.top() + bb.bottom())) * .5;
     } else if (item->align() == AlignV::BASELINE) {
         yoff += h * .5 - ldata->blocks.front().lineSpacing();
     } else {
         yoff += -bb.top();
     }
 
-    for (TextBlock& t : ldata->blocks) {
+    for (TextBlock &t : ldata->blocks) {
         t.setY(t.y() + yoff);
     }
 
@@ -148,26 +141,22 @@ void TextLayout::layoutBaseTextBase1(const TextBase* item, TextBase::LayoutData*
     ldata->move(defaultPos);
 }
 
-void TextLayout::layoutBaseTextBase1(TextBase* item, const LayoutContext&)
-{
-    layoutBaseTextBase1(item, item->mutldata());
-}
+void TextLayout::layoutBaseTextBase1(TextBase *item, const LayoutContext &) { layoutBaseTextBase1(item, item->mutldata()); }
 
-void TextLayout::computeTextHighResShape(const TextBase* item, TextBase::LayoutData* ldata)
-{
-    Shape& shape = ldata->highResShape.mut_value();
+void TextLayout::computeTextHighResShape(const TextBase *item, TextBase::LayoutData *ldata) {
+    Shape &shape = ldata->highResShape.mut_value();
     shape.clear();
     shape.elements().reserve(item->xmlText().size());
 
-    for (const TextBlock& block : ldata->blocks) {
+    for (const TextBlock &block : ldata->blocks) {
         double y = block.y();
-        for (const TextFragment& fragment : block.fragments()) {
+        for (const TextFragment &fragment : block.fragments()) {
             FontMetrics fontMetrics = FontMetrics(fragment.font(item));
             double x = fragment.pos.x();
             size_t textSize = fragment.text.size();
             for (size_t i = 0; i < textSize; ++i) {
                 Char character = fragment.text.at(i);
-                String text{ character };
+                String text{character};
                 if (character.isHighSurrogate() && i + 1 < textSize) {
                     text += fragment.text.at(i + 1);
                     i++;
@@ -185,31 +174,27 @@ void TextLayout::computeTextHighResShape(const TextBase* item, TextBase::LayoutD
     ldata->highResShape = shape;
 }
 
-void TextLayout::textHorizontalLayout(const TextBase* item, Shape& shape, double maxBlockWidth, TextBase::LayoutData* ldata)
-{
+void TextLayout::textHorizontalLayout(const TextBase *item, Shape &shape, double maxBlockWidth, TextBase::LayoutData *ldata) {
     double leftMargin = 0.0;
     double layoutWidth = 0;
-    EngravingItem* parent = item->layoutParent();
+    EngravingItem *parent = item->layoutParent();
     if (parent && item->layoutToParentWidth()) {
         layoutWidth = parent->width();
         switch (parent->type()) {
-        case ElementType::HBOX:
-        case ElementType::VBOX:
-        case ElementType::TBOX: {
-            Box* b = toBox(parent);
-            layoutWidth -= ((b->leftMargin() + b->rightMargin()) * DPMM);
-            leftMargin = b->leftMargin() * DPMM;
-        }
-        break;
-        case ElementType::PAGE: {
-            Page* p = toPage(parent);
-            layoutWidth -= (p->lm() + p->rm());
-            leftMargin = p->lm();
-        }
-        break;
-            break;
-        default:
-            ASSERT_X("Lay out to parent width only valid for items with page or frame as parent");
+            case ElementType::HBOX:
+            case ElementType::VBOX:
+            case ElementType::TBOX: {
+                Box *b = toBox(parent);
+                layoutWidth -= ((b->leftMargin() + b->rightMargin()) * DPMM);
+                leftMargin = b->leftMargin() * DPMM;
+            } break;
+            case ElementType::PAGE: {
+                Page *p = toPage(parent);
+                layoutWidth -= (p->lm() + p->rm());
+                leftMargin = p->lm();
+            } break;
+                break;
+            default: ASSERT_X("Lay out to parent width only valid for items with page or frame as parent");
         }
     } else if (item->positionRelativeToNoteheadRest()) {
         // For items aligned to notehead/rests
@@ -219,7 +204,7 @@ void TextLayout::textHorizontalLayout(const TextBase* item, Shape& shape, double
 
     // Position and alignment
     for (size_t i = 0; i < ldata->blocks.size(); ++i) {
-        TextBlock& textBlock = ldata->blocks[i];
+        TextBlock &textBlock = ldata->blocks[i];
         double xAdj = leftMargin - textBlock.boundingRect().left();
 
         // Set position relative to reference point
@@ -233,7 +218,7 @@ void TextLayout::textHorizontalLayout(const TextBase* item, Shape& shape, double
         double diff = maxBlockWidth - textBlock.boundingRect().width();
         if (muse::RealIsNull(diff)) {
             // This is the longest line, don't align
-            for (TextFragment& f : textBlock.fragments()) {
+            for (TextFragment &f : textBlock.fragments()) {
                 f.pos.rx() += xAdj;
             }
             textBlock.shape().translate(PointF(xAdj, 0.0));
@@ -254,7 +239,7 @@ void TextLayout::textHorizontalLayout(const TextBase* item, Shape& shape, double
             }
         }
 
-        for (TextFragment& fragment : textBlock.fragments()) {
+        for (TextFragment &fragment : textBlock.fragments()) {
             fragment.pos.rx() += xAdj;
         }
         textBlock.shape().translate(PointF(xAdj, 0.0));
@@ -262,15 +247,15 @@ void TextLayout::textHorizontalLayout(const TextBase* item, Shape& shape, double
     }
 }
 
-void TextLayout::justifyLine(const TextBase* item, TextBlock* textBlock, double maxBlockWidth)
-{
+void TextLayout::justifyLine(const TextBase *item, TextBlock *textBlock, double maxBlockWidth) {
     struct SubFragment {
         String text;
         CharFormat format;
         double width;
     };
+
     std::vector<SubFragment> subfrags;
-    for (const TextFragment& f : textBlock->fragments()) {
+    for (const TextFragment &f : textBlock->fragments()) {
         String current;
         FontMetrics fm(f.font(item));
         for (size_t i = 0; i < f.text.size(); ++i) {
@@ -278,19 +263,19 @@ void TextLayout::justifyLine(const TextBase* item, TextBlock* textBlock, double 
             current += c;
             if (c.isSpace()) {
                 double w = fm.width(current);
-                subfrags.push_back({ current, f.format, w });
+                subfrags.push_back({current, f.format, w});
                 current.clear();
             }
         }
         if (!current.isEmpty()) {
             double w = fm.width(current);
-            subfrags.push_back({ current, f.format, w });
+            subfrags.push_back({current, f.format, w});
         }
     }
 
     int numSpaces = 0;
     double textWidth = 0;
-    for (const SubFragment& sf : subfrags) {
+    for (const SubFragment &sf : subfrags) {
         numSpaces++;
         textWidth += sf.width; // accumulate text width
     }
@@ -300,7 +285,7 @@ void TextLayout::justifyLine(const TextBase* item, TextBlock* textBlock, double 
         textBlock->fragments().clear();
         double extraSpacing = spaceToFill / numSpaces;
         double x = 0.0;
-        for (const SubFragment& sf : subfrags) {
+        for (const SubFragment &sf : subfrags) {
             TextFragment frag;
             frag.text = sf.text;
             frag.format = sf.format;
@@ -311,12 +296,11 @@ void TextLayout::justifyLine(const TextBase* item, TextBlock* textBlock, double 
     }
 }
 
-void TextLayout::layoutTextBlock(TextBlock* item, const TextBase* t)
-{
-    std::list<TextFragment>& fragments = item->fragments();
-    Shape& shape = item->shape();
+void TextLayout::layoutTextBlock(TextBlock *item, const TextBase *t) {
+    std::list<TextFragment> &fragments = item->fragments();
+    Shape &shape = item->shape();
     shape.clear();
-    double x      = 0.0;
+    double x = 0.0;
     double lineSpacing = 0.0;
 
     if (fragments.empty()) {
@@ -325,13 +309,13 @@ void TextLayout::layoutTextBlock(TextBlock* item, const TextBase* t)
         lineSpacing = fm.lineSpacing();
     } else if (fragments.size() == 1 && fragments.front().text.isEmpty()) {
         auto fi = fragments.begin();
-        TextFragment& f = *fi;
+        TextFragment &f = *fi;
         f.pos.setX(x);
         Font font = f.font(t);
         substituteMusicFont(font, f.calculatedFontSize(t));
         FontMetrics fm(font);
         if (f.format.valign() != VerticalAlignment::AlignNormal) {
-            double voffset = fm.xHeight() / SUBSCRIPT_SIZE;   // use original height
+            double voffset = fm.xHeight() / SUBSCRIPT_SIZE; // use original height
             if (f.format.valign() == VerticalAlignment::AlignSubScript) {
                 voffset *= SUBSCRIPT_OFFSET;
             } else {
@@ -349,12 +333,12 @@ void TextLayout::layoutTextBlock(TextBlock* item, const TextBase* t)
     } else {
         const auto fiLast = --fragments.end();
         for (auto fi = fragments.begin(); fi != fragments.end(); ++fi) {
-            TextFragment& f = *fi;
+            TextFragment &f = *fi;
             f.pos.setX(x);
             Font fragmentFont = f.font(t);
             FontMetrics fm(fragmentFont);
             if (f.format.valign() != VerticalAlignment::AlignNormal) {
-                double voffset = fm.xHeight() / SUBSCRIPT_SIZE;           // use original height
+                double voffset = fm.xHeight() / SUBSCRIPT_SIZE; // use original height
                 if (f.format.valign() == VerticalAlignment::AlignSubScript) {
                     voffset *= SUBSCRIPT_OFFSET;
                 } else {
@@ -368,7 +352,7 @@ void TextLayout::layoutTextBlock(TextBlock* item, const TextBase* t)
             // Optimization: don't calculate character position
             // for the next fragment if there is no next fragment
             if (fi != fiLast) {
-                const double w  = fm.width(f.text);
+                const double w = fm.width(f.text);
                 x += w;
             }
 
@@ -378,7 +362,7 @@ void TextLayout::layoutTextBlock(TextBlock* item, const TextBase* t)
             RectF textBRect = fm.tightBoundingRect(f.text).translated(f.pos);
             bool useDynamicSymShape = fragmentFont.type() == Font::Type::MusicSymbol && t->isDynamic();
             if (useDynamicSymShape) {
-                const Dynamic* dyn = toDynamic(t);
+                const Dynamic *dyn = toDynamic(t);
                 SymId symId = TConv::symId(dyn->dynamicType());
                 if (symId != SymId::noSym) {
                     shape.add(dyn->symShapeWithCutouts(symId).translated(f.pos));
@@ -404,8 +388,7 @@ void TextLayout::layoutTextBlock(TextBlock* item, const TextBase* t)
     item->setLineSpacing(lineSpacing);
 }
 
-void TextLayout::substituteMusicFont(Font& font, double size)
-{
+void TextLayout::substituteMusicFont(Font &font, double size) {
     if (font.type() == Font::Type::MusicSymbol) {
         String textFontId(font.family().id() + String(u" Text"));
         font.setFamily(textFontId, Font::Type::MusicSymbolText);
@@ -415,9 +398,8 @@ void TextLayout::substituteMusicFont(Font& font, double size)
     }
 }
 
-double TextLayout::musicSymbolBaseLineAdjust(const TextBlock* block, const TextBase* t, const TextFragment& f,
-                                             const std::list<TextFragment>::iterator fi)
-{
+double TextLayout::musicSymbolBaseLineAdjust(const TextBlock *block, const TextBase *t, const TextFragment &f,
+                                             const std::list<TextFragment>::iterator fi) {
     Font fragmentFont = f.font(t);
     FontMetrics fm(fragmentFont);
     const bool adjustSymbol = fragmentFont.type() == Font::Type::MusicSymbolText && t->isMarker();
@@ -430,7 +412,7 @@ double TextLayout::musicSymbolBaseLineAdjust(const TextBlock* block, const TextB
     if (block->fragments().size() == 1) {
         refFont = t->font();
     } else {
-        TextFragment& refFragment = fi != block->fragments().begin() ? *(std::prev(fi)) : *(std::next(fi));
+        TextFragment &refFragment = fi != block->fragments().begin() ? *(std::prev(fi)) : *(std::next(fi));
         refFont = refFragment.font(t);
     }
     FontMetrics refFm(refFont);

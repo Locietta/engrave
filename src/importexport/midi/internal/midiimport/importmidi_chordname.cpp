@@ -41,26 +41,14 @@
 
 using namespace mu::engraving;
 
-namespace mu::iex::midi {
-namespace MidiChordName {
-int readFirstHalf(uchar byte)
-{
-    return (byte >> 4) & 0xf;
-}
+namespace mu::iex::midi { namespace MidiChordName {
+int readFirstHalf(uchar byte) { return (byte >> 4) & 0xf; }
 
-int readSecondHalf(uchar byte)
-{
-    return byte & 0xf;
-}
+int readSecondHalf(uchar byte) { return byte & 0xf; }
 
-muse::String readChordRoot(uchar byte)
-{
-    static const std::vector<std::string> inversions = {
-        "bbb", "bb", "b", "", "#", "##", "###"
-    };
-    static const std::vector<std::string> notes = {
-        "", "C", "D", "E", "F", "G", "A", "B"
-    };
+muse::String readChordRoot(uchar byte) {
+    static const std::vector<std::string> inversions = {"bbb", "bb", "b", "", "#", "##", "###"};
+    static const std::vector<std::string> notes = {"", "C", "D", "E", "F", "G", "A", "B"};
 
     muse::String chordRoot;
 
@@ -77,44 +65,41 @@ muse::String readChordRoot(uchar byte)
     return chordRoot;
 }
 
-muse::String readChordType(uchar chordTypeIndex)
-{
+muse::String readChordType(uchar chordTypeIndex) {
     static const std::vector<std::string> chordTypes = {
-        "",           // Maj
-        "6",          // Maj6
+        "",  // Maj
+        "6", // Maj6
         "Maj7",
-        "Maj7#11",    // Maj7(#11)
-        "Maj9",       // Maj(9)
-        "Maj9",       // Maj7(9)
-        "6(9)",       // Maj6(9)
+        "Maj7#11", // Maj7(#11)
+        "Maj9",    // Maj(9)
+        "Maj9",    // Maj7(9)
+        "6(9)",    // Maj6(9)
         "aug",
-        "m",          // min
-        "m6",         // min6
-        "m7",         // min7
-        "m7b5",       // min7b5
-        "m9",         // min(9)
-        "m9",         // min7(9)
-        "m7(11)",     // min7(11)
-        "mMaj7",      // minMaj7
-        "mMaj9",      // minMaj7(9)
-        "dim",
-        "dim7",
-        "7",          // 7th
-        "7sus4",
-        "7b5",
-        "9",          // 7(9)
-        "7#11",       // 7(#11)
+        "m",      // min
+        "m6",     // min6
+        "m7",     // min7
+        "m7b5",   // min7b5
+        "m9",     // min(9)
+        "m9",     // min7(9)
+        "m7(11)", // min7(11)
+        "mMaj7",  // minMaj7
+        "mMaj9",  // minMaj7(9)
+        "dim",     "dim7",
+        "7", // 7th
+        "7sus4",   "7b5",
+        "9",    // 7(9)
+        "7#11", // 7(#11)
         "7(13)",
-        "7b9",        // 7(b9)
-        "7b13",       // 7(b13)
-        "7#9",        // 7(#9)
-        "Maj7#5",     // Maj7aug
-        "7#5",        // 7aug
-        "",           // 1+8
-        "5",          // 1+5
+        "7b9",    // 7(b9)
+        "7b13",   // 7(b13)
+        "7#9",    // 7(#9)
+        "Maj7#5", // Maj7aug
+        "7#5",    // 7aug
+        "",       // 1+8
+        "5",      // 1+5
         "sus4",
-        "sus2",       // 1+2+5
-        "N.C."        // cc
+        "sus2", // 1+2+5
+        "N.C."  // cc
     };
 
     if (chordTypeIndex < chordTypes.size()) {
@@ -123,8 +108,7 @@ muse::String readChordType(uchar chordTypeIndex)
     return muse::String();
 }
 
-muse::String readChordName(const MidiEvent& e)
-{
+muse::String readChordName(const MidiEvent &e) {
     if (e.type() != ME_META || e.metaType() != META_SPECIFIC) {
         return muse::String();
     }
@@ -132,7 +116,7 @@ muse::String readChordName(const MidiEvent& e)
         return muse::String();
     }
 
-    const uchar* data = e.edata();
+    const uchar *data = e.edata();
     if (data[0] != 0x43 || data[1] != 0x7B || data[2] != 0x01) {
         return muse::String();
     }
@@ -164,11 +148,8 @@ muse::String readChordName(const MidiEvent& e)
     return chordName;
 }
 
-muse::String findChordName(
-    const std::vector<MidiNote>& notes,
-    const std::multimap<ReducedFraction, muse::String>& chordNames)
-{
-    for (const MidiNote& note: notes) {
+muse::String findChordName(const std::vector<MidiNote> &notes, const std::multimap<ReducedFraction, muse::String> &chordNames) {
+    for (const MidiNote &note : notes) {
         const auto range = chordNames.equal_range(note.origOnTime);
         if (range.second == range.first) {
             continue;
@@ -187,17 +168,16 @@ muse::String findChordName(
     return muse::String();
 }
 
-void findChordNames(const std::multimap<int, MTrack>& tracks)
-{
-    auto& data = *midiImportOperations.data();
+void findChordNames(const std::multimap<int, MTrack> &tracks) {
+    auto &data = *midiImportOperations.data();
 
-    for (const auto& track: tracks) {
-        for (const auto& event: track.second.mtrack->events()) {
-            const MidiEvent& e = event.second;
+    for (const auto &track : tracks) {
+        for (const auto &event : track.second.mtrack->events()) {
+            const MidiEvent &e = event.second;
             const muse::String chordName = readChordName(e);
             if (!chordName.isEmpty()) {
                 const auto time = ReducedFraction::fromTicks(event.first);
-                data.chordNames.insert({ time, chordName });
+                data.chordNames.insert({time, chordName});
             }
         }
     }
@@ -205,9 +185,8 @@ void findChordNames(const std::multimap<int, MTrack>& tracks)
 
 // all notes should be already placed to the score
 
-void setChordNames(std::vector<MTrack>& tracks)
-{
-    const auto& data = *midiImportOperations.data();
+void setChordNames(std::vector<MTrack> &tracks) {
+    const auto &data = *midiImportOperations.data();
     if (data.chordNames.empty() || !data.trackOpers.showChordNames.value()) {
         return;
     }
@@ -215,36 +194,35 @@ void setChordNames(std::vector<MTrack>& tracks)
     // chords here can have on time very different from the original one
     // before quantization, so we look for original on times
     // that are stored in notes
-    std::set<ReducedFraction> usedTimes;        // don't use one tick for chord name twice
+    std::set<ReducedFraction> usedTimes; // don't use one tick for chord name twice
 
-    for (MTrack& track: tracks) {
-        for (const auto& chord: track.chords) {
+    for (MTrack &track : tracks) {
+        for (const auto &chord : track.chords) {
             if (usedTimes.find(chord.first) != usedTimes.end()) {
                 continue;
             }
 
-            const MidiChord& c = chord.second;
+            const MidiChord &c = chord.second;
             const muse::String chordName = findChordName(c.notes, data.chordNames);
 
             if (chordName.isEmpty()) {
                 continue;
             }
 
-            Staff* staff = track.staff;
-            Score* score = staff->score();
-            const ReducedFraction& onTime = chord.first;
+            Staff *staff = track.staff;
+            Score *score = staff->score();
+            const ReducedFraction &onTime = chord.first;
             usedTimes.insert(onTime);
 
-            Measure* measure = score->tick2measure(onTime.fraction());
-            Segment* seg = measure->getSegment(SegmentType::ChordRest, onTime.fraction());
+            Measure *measure = score->tick2measure(onTime.fraction());
+            Segment *seg = measure->getSegment(SegmentType::ChordRest, onTime.fraction());
             const track_idx_t t = staff->idx() * VOICES;
 
-            Harmony* h = mu::engraving::Factory::createHarmony(seg);
+            Harmony *h = mu::engraving::Factory::createHarmony(seg);
             h->setHarmony(chordName);
             h->setTrack(t);
             seg->add(h);
         }
     }
 }
-} // namespace MidiChordName
-} // namespace mu::iex::midi
+}} // namespace mu::iex::midi::MidiChordName

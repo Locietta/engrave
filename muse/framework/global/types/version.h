@@ -27,21 +27,20 @@
 #include "types/string.h"
 
 namespace muse {
-class Version
-{
+class Version {
 public:
     Version() = default;
-    Version(int major, int minor = 0, int patch = 0, const String& suffix = String(), int suffixVersion = 0);
-    Version(const String& versionStr);
-    Version(const std::string& versionStr);
+    Version(int major, int minor = 0, int patch = 0, const String &suffix = String(), int suffixVersion = 0);
+    Version(const String &versionStr);
+    Version(const std::string &versionStr);
 
     int major() const;
     int minor() const;
     int patch() const;
 
-    const String& suffix() const;
+    const String &suffix() const;
     int suffixVersion() const;
-    void setSuffix(const String& suffix);
+    void setSuffix(const String &suffix);
 
     bool isNull() const;
 
@@ -50,9 +49,9 @@ public:
     String toString() const;
     std::string toStdString() const;
 
-    bool operator <(const Version& other) const;
-    bool operator ==(const Version& other) const;
-    bool operator <=(const Version& other) const;
+    bool operator<(const Version &other) const;
+    bool operator==(const Version &other) const;
+    bool operator<=(const Version &other) const;
 
 private:
     int m_major = 0;
@@ -61,4 +60,4 @@ private:
     String m_suffix;
     int m_suffixVersion = 0;
 };
-}
+} // namespace muse

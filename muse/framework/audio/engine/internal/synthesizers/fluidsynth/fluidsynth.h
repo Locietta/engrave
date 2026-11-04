@@ -38,35 +38,34 @@ namespace muse::audio::synth {
 // Release cached fonts after the engine's synthesizers have been destroyed.
 void releaseSoundFontCache();
 struct Fluid;
-class FluidSynth : public AbstractSynthesizer
-{
+
+class FluidSynth : public AbstractSynthesizer {
 public:
     // midiOutPort, when given, receives every event the synthesizer handles; it
     // and config must outlive the synthesizer.
-    FluidSynth(const audio::AudioSourceParams& params, const engine::IAudioEngineConfiguration& config,
-               midi::IMidiOutPort* midiOutPort);
+    FluidSynth(const audio::AudioSourceParams &params, const engine::IAudioEngineConfiguration &config, midi::IMidiOutPort *midiOutPort);
 
-    Ret init(const OutputSpec& spec);
+    Ret init(const OutputSpec &spec);
 
-    Ret addSoundFonts(const std::vector<io::path_t>& sfonts);
-    void setPreset(const std::optional<midi::Program>& preset);
+    Ret addSoundFonts(const std::vector<io::path_t> &sfonts);
+    void setPreset(const std::optional<midi::Program> &preset);
 
     std::string name() const override;
     AudioSourceType type() const override;
 
-    void setupSound(const mpe::PlaybackSetupData& setupData) override;
-    void setupEvents(const mpe::PlaybackData& playbackData) override;
-    const mpe::PlaybackData& playbackData() const override;
+    void setupSound(const mpe::PlaybackSetupData &setupData) override;
+    void setupEvents(const mpe::PlaybackData &playbackData) override;
+    const mpe::PlaybackData &playbackData() const override;
 
     void flushSound() override; // all channels
 
     TimePosition playbackPosition() const override;
-    void setPlaybackPosition(const TimePosition& position) override;
+    void setPlaybackPosition(const TimePosition &position) override;
 
-    samples_t process(float* buffer, samples_t samplesPerChannel) override;
+    samples_t process(float *buffer, samples_t samplesPerChannel) override;
 
     void setMode(const ProcessMode mode) override;
-    void setOutputSpec(const OutputSpec& spec) override;
+    void setOutputSpec(const OutputSpec &spec) override;
 
     bool isValid() const override;
 
@@ -75,35 +74,27 @@ private:
         std::vector<int> keys;
         std::vector<double> pitches;
 
-        void add(int key, double tuning)
-        {
+        void add(int key, double tuning) {
             keys.push_back(key);
             pitches.push_back((key * 100.0) + tuning);
         }
 
-        int size() const
-        {
-            return static_cast<int>(keys.size());
-        }
+        int size() const { return static_cast<int>(keys.size()); }
 
-        void reset()
-        {
+        void reset() {
             keys.clear();
             pitches.clear();
         }
 
-        bool isEmpty() const
-        {
-            return keys.empty() && pitches.empty();
-        }
+        bool isEmpty() const { return keys.empty() && pitches.empty(); }
     };
 
     void createFluidInstance();
 
     void doFlushSound();
 
-    bool processSequence(const FluidSequencer::EventSequence& sequence, const samples_t samples, float* buffer);
-    bool handleEvent(const midi::Event& event);
+    bool processSequence(const FluidSequencer::EventSequence &sequence, const samples_t samples, float *buffer);
+    bool handleEvent(const midi::Event &event);
 
     void updateExpressionLevels();
 
@@ -113,7 +104,7 @@ private:
     OutputSpec m_outputSpec;
 
     std::shared_ptr<Fluid> m_fluid;
-    midi::IMidiOutPort* m_midiOutPort = nullptr;
+    midi::IMidiOutPort *m_midiOutPort = nullptr;
 
     FluidSequencer m_sequencer;
     std::set<io::path_t> m_sfontPaths;
@@ -125,6 +116,6 @@ private:
 };
 
 using FluidSynthPtr = std::shared_ptr<FluidSynth>;
-}
+} // namespace muse::audio::synth
 
 #endif //MUSE_AUDIO_FLUIDSYNTH_H

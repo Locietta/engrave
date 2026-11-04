@@ -25,28 +25,26 @@
 #include "audionode.h"
 
 namespace muse::audio {
-struct SignalTag
-{
-    static constexpr const char* name = "Signal";
+struct SignalTag {
+    static constexpr const char *name = "Signal";
 };
-}
+} // namespace muse::audio
 
 namespace muse::audio::engine {
-class SignalNode : public AudioNode<SignalTag>
-{
+class SignalNode : public AudioNode<SignalTag> {
 public:
 
     bool isSilent() const;
 
 protected:
 
-    void onOutputSpecChanged(const OutputSpec& spec) override;
+    void onOutputSpecChanged(const OutputSpec &spec) override;
 
-    void doSelfProcess(float* buffer, samples_t samplesPerChannel) override;
+    void doSelfProcess(float *buffer, samples_t samplesPerChannel) override;
 
     std::vector<float> m_channelPeaks;
     bool m_isSilent = true;
 };
 
 using SignalNodePtr = std::shared_ptr<SignalNode>;
-}
+} // namespace muse::audio::engine

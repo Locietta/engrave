@@ -32,17 +32,16 @@ class PalmMute;
 //   @@ PalmMuteSegment
 //---------------------------------------------------------
 
-class PalmMuteSegment final : public TextLineBaseSegment
-{
+class PalmMuteSegment final : public TextLineBaseSegment {
     OBJECT_ALLOCATOR(engraving, PalmMuteSegment)
     DECLARE_CLASSOF(ElementType::PALM_MUTE_SEGMENT)
 
 public:
-    PalmMuteSegment(PalmMute* sp);
+    PalmMuteSegment(PalmMute *sp);
 
-    PalmMuteSegment* clone() const override { return new PalmMuteSegment(*this); }
+    PalmMuteSegment *clone() const override { return new PalmMuteSegment(*this); }
 
-    PalmMute* palmMute() const { return (PalmMute*)spanner(); }
+    PalmMute *palmMute() const { return (PalmMute *) spanner(); }
 
     friend class PalmMute;
 };
@@ -51,19 +50,18 @@ public:
 //   @@ PalmMute
 //---------------------------------------------------------
 
-class PalmMute final : public ChordTextLineBase
-{
+class PalmMute final : public ChordTextLineBase {
     OBJECT_ALLOCATOR(engraving, PalmMute)
     DECLARE_CLASSOF(ElementType::PALM_MUTE)
 
 public:
     PalmMute(DummyParentOr<EngravingItem> parent);
 
-    PalmMute* clone() const override { return new PalmMute(*this); }
+    PalmMute *clone() const override { return new PalmMute(*this); }
 
-//      virtual void write(XmlWriter& xml) const override;
+    //      virtual void write(XmlWriter& xml) const override;
 
-    LineSegment* createLineSegment() override;
+    LineSegment *createLineSegment() override;
     PropertyValue propertyDefault(Pid propertyId) const override;
 
     void setChannel();

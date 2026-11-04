@@ -46,22 +46,23 @@ using namespace mu;
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-constexpr std::array _maxSlopes = { 0, 1, 2, 3, 4, 5, 6, 7 };
+constexpr std::array _maxSlopes = {0, 1, 2, 3, 4, 5, 6, 7};
 
-void BeamTremoloLayout::setupLData(const BeamBase* item, BeamBase::LayoutData* ldata, const LayoutContext& ctx)
-{
+void BeamTremoloLayout::setupLData(const BeamBase *item, BeamBase::LayoutData *ldata, const LayoutContext &ctx) {
     bool isGrace = false;
     IF_ASSERT_FAILED(item && (item->isBeam() || item->isType(ElementType::TREMOLO_TWOCHORD))) {
         // right now only beams and trems are supported
         return;
-    } else if (item->isBeam()) {
+    }
+    else if (item->isBeam()) {
         ldata->beamType = BeamType::BEAM;
-        ldata->beam = item_cast<const Beam*>(item);
+        ldata->beam = item_cast<const Beam *>(item);
         ldata->up = ldata->beam->up();
         ldata->trem = nullptr; // there can be many different trems in a beam, they will all be checked
         isGrace = ldata->beam->elements().front()->isGrace();
-    } else {
-        ldata->trem = item_cast<const TremoloTwoChord*>(item);
+    }
+    else {
+        ldata->trem = item_cast<const TremoloTwoChord *>(item);
         ldata->beamType = BeamType::TREMOLO;
         // check to see if there is a beam happening during this trem
         // if so, it needs to be taken into account in trem placement
@@ -72,7 +73,7 @@ void BeamTremoloLayout::setupLData(const BeamBase* item, BeamBase::LayoutData* l
         }
         ldata->up = computeTremoloUp(ldata);
         //! HACK Temporary
-        const_cast<TremoloTwoChord*>(ldata->trem)->setUp(ldata->up);
+        const_cast<TremoloTwoChord *>(ldata->trem)->setUp(ldata->up);
         isGrace = ldata->trem->chord1()->isGrace();
     }
 
@@ -81,16 +82,15 @@ void BeamTremoloLayout::setupLData(const BeamBase* item, BeamBase::LayoutData* l
     ldata->beamSpacing = ctx.conf().styleB(Sid::useWideBeams) ? 4 : 3;
     ldata->beamDist = (ldata->beamSpacing / 4.0) * ldata->spatium * ldata->mag() * (isGrace ? ctx.conf().styleD(Sid::graceNoteMag) : 1.);
     ldata->beamWidth = (ctx.conf().styleS(Sid::beamWidth).val() * ldata->spatium) * ldata->mag();
-    const StaffType* staffType = item->staffType();
+    const StaffType *staffType = item->staffType();
     ldata->tab = (staffType && staffType->isTabStaff()) ? staffType : nullptr;
     ldata->isBesideTabStaff = ldata->tab && !ldata->tab->stemless() && !ldata->tab->stemThrough();
 }
 
-int BeamTremoloLayout::minStemLength(const ChordRest* cr, const BeamBase::LayoutData* ldata)
-{
+int BeamTremoloLayout::minStemLength(const ChordRest *cr, const BeamBase::LayoutData *ldata) {
     // min stem lengths in quarter spaces according to how many beams there are (starting with 1)
     static constexpr int BEAMS_COUNT = 9;
-    static constexpr int minStemLengths[BEAMS_COUNT] = { 11, 13, 15, 18, 21, 24, 27, 30, 33 };
+    static constexpr int minStemLengths[BEAMS_COUNT] = {11, 13, 15, 18, 21, 24, 27, 30, 33};
     int beams = strokeCount(ldata, cr);
     if (beams > BEAMS_COUNT) {
         LOGE() << "Beam count " << beams << " out of range (" << BEAMS_COUNT - 1 << ")";
@@ -100,13 +100,9 @@ int BeamTremoloLayout::minStemLength(const ChordRest* cr, const BeamBase::Layout
     return minStemLengths[std::max(beams - 1, 0)];
 }
 
-void BeamTremoloLayout::offsetBeamToRemoveCollisions(const BeamBase* item, const BeamBase::LayoutData* ldata,
-                                                     const std::vector<ChordRest*>& chordRests,
-                                                     int& dictator,
-                                                     int& pointer,
-                                                     const double startX, const double endX,
-                                                     bool isFlat, bool isStartDictator)
-{
+void BeamTremoloLayout::offsetBeamToRemoveCollisions(const BeamBase *item, const BeamBase::LayoutData *ldata,
+                                                     const std::vector<ChordRest *> &chordRests, int &dictator, int &pointer,
+                                                     const double startX, const double endX, bool isFlat, bool isStartDictator) {
     if (endX == startX) {
         return;
     }
@@ -124,11 +120,11 @@ void BeamTremoloLayout::offsetBeamToRemoveCollisions(const BeamBase* item, const
     double startY = (isStartDictator ? dictator : pointer) * ldata->spatium / 4 + tolerance;
     double endY = (isStartDictator ? pointer : dictator) * ldata->spatium / 4 + tolerance;
 
-    const ChordRest* firstChordRest = chordRests.front();
-    const ChordRest* lastChordRest = chordRests.back();
+    const ChordRest *firstChordRest = chordRests.front();
+    const ChordRest *lastChordRest = chordRests.back();
 
     size_t curChordRest = 0;
-    for (ChordRest* chordRest : chordRests) {
+    for (ChordRest *chordRest : chordRests) {
         if (!chordRest->isChord() || chordRest == ldata->elements.back() || chordRest == ldata->elements.front()) {
             curChordRest++;
             continue;
@@ -136,18 +132,18 @@ void BeamTremoloLayout::offsetBeamToRemoveCollisions(const BeamBase* item, const
 
         int sameLineException = 0;
 
-        if (chordRest->isChord()
-            && ((curChordRest == 1 && firstChordRest->isChord()) || (curChordRest == chordRests.size() - 2 && lastChordRest->isChord()))) {
-            const Chord* innerChord = toChord(chordRest);
-            const Chord* outerChord = curChordRest == 1 && firstChordRest->isChord() ? toChord(firstChordRest) : toChord(lastChordRest);
+        if (chordRest->isChord() &&
+            ((curChordRest == 1 && firstChordRest->isChord()) || (curChordRest == chordRests.size() - 2 && lastChordRest->isChord()))) {
+            const Chord *innerChord = toChord(chordRest);
+            const Chord *outerChord = curChordRest == 1 && firstChordRest->isChord() ? toChord(firstChordRest) : toChord(lastChordRest);
             const int innerLine = ldata->up ? innerChord->upNote()->line() : innerChord->downNote()->line();
             const int outerLine = ldata->up ? outerChord->upNote()->line() : outerChord->downNote()->line();
 
             if (innerLine == outerLine) {
                 sameLineException = 1;
             } else if (chordRests.size() == 3) {
-                const ChordRest* otherOuterCR = outerChord == firstChordRest ? lastChordRest : firstChordRest;
-                const Chord* otherOuterChord = otherOuterCR->isChord() ? toChord(otherOuterCR) : nullptr;
+                const ChordRest *otherOuterCR = outerChord == firstChordRest ? lastChordRest : firstChordRest;
+                const Chord *otherOuterChord = otherOuterCR->isChord() ? toChord(otherOuterCR) : nullptr;
                 if (!otherOuterChord) {
                     continue;
                 }
@@ -180,13 +176,13 @@ void BeamTremoloLayout::offsetBeamToRemoveCollisions(const BeamBase* item, const
                     }
                 }
                 // Ensure the beam clears the anchor's height and inner note's stem minimum stem length is enforced
-                const double desiredY = proportionAlongX * (endY - startY) + startY;    // start note stem len + extra for slope
-                const bool beamClearsAnchor = (ldata->up && muse::RealIsEqualOrLess(desiredY, anchor.y() + reduction))
-                                              || (!ldata->up && muse::RealIsEqualOrMore(desiredY, anchor.y() - reduction));
+                const double desiredY = proportionAlongX * (endY - startY) + startY; // start note stem len + extra for slope
+                const bool beamClearsAnchor = (ldata->up && muse::RealIsEqualOrLess(desiredY, anchor.y() + reduction)) ||
+                                              (!ldata->up && muse::RealIsEqualOrMore(desiredY, anchor.y() - reduction));
 
-                const Note* note = ldata->up ? toChord(chordRest)->downNote() : toChord(chordRest)->upNote();
-                const double noteAnchor = (ldata->up ? note->stemUpSE().y() : note->stemDownNW().y()) + note->pagePos().y()
-                                          - item->pagePos().y();
+                const Note *note = ldata->up ? toChord(chordRest)->downNote() : toChord(chordRest)->upNote();
+                const double noteAnchor =
+                    (ldata->up ? note->stemUpSE().y() : note->stemDownNW().y()) + note->pagePos().y() - item->pagePos().y();
                 // Resultant length in quarter spaces
                 const int desiredLen = std::abs(round((desiredY - noteAnchor) / ldata->spatium * 4)) + 1;
 
@@ -211,13 +207,12 @@ void BeamTremoloLayout::offsetBeamToRemoveCollisions(const BeamBase* item, const
     }
 }
 
-void BeamTremoloLayout::offsetBeamWithAnchorShortening(const BeamBase::LayoutData* ldata, const std::vector<ChordRest*>& chordRests,
-                                                       int& dictator, int& pointer, int staffLines, bool isStartDictator,
-                                                       int stemLengthDictator, const int targetLine)
-{
-    const Chord* startChord = nullptr;
-    const Chord* endChord = nullptr;
-    for (const ChordRest* cr : chordRests) {
+void BeamTremoloLayout::offsetBeamWithAnchorShortening(const BeamBase::LayoutData *ldata, const std::vector<ChordRest *> &chordRests,
+                                                       int &dictator, int &pointer, int staffLines, bool isStartDictator,
+                                                       int stemLengthDictator, const int targetLine) {
+    const Chord *startChord = nullptr;
+    const Chord *endChord = nullptr;
+    for (const ChordRest *cr : chordRests) {
         if (cr->isChord()) {
             endChord = toChord(cr);
             if (!startChord) {
@@ -231,16 +226,16 @@ void BeamTremoloLayout::offsetBeamWithAnchorShortening(const BeamBase::LayoutDat
     }
     // min stem lengths according to how many beams there are (starting with 1)
     static constexpr int BEAMS_COUNT = 9;
-    static constexpr int minStemLengths[BEAMS_COUNT] = { 11, 13, 15, 18, 21, 24, 27, 30, 33 };
+    static constexpr int minStemLengths[BEAMS_COUNT] = {11, 13, 15, 18, 21, 24, 27, 30, 33};
     int dictatorBeams = strokeCount(ldata, isStartDictator ? startChord : endChord);
     int pointerBeams = strokeCount(ldata, isStartDictator ? endChord : startChord);
     if (dictatorBeams > BEAMS_COUNT) {
         LOGE() << "Beam count " << dictatorBeams << " out of range (" << BEAMS_COUNT - 1 << ")";
-        dictatorBeams =  BEAMS_COUNT - 1;
+        dictatorBeams = BEAMS_COUNT - 1;
     }
     if (pointerBeams > BEAMS_COUNT) {
         LOGE() << "Beam count " << pointerBeams << " out of range (" << BEAMS_COUNT - 1 << ")";
-        pointerBeams =  BEAMS_COUNT - 1;
+        pointerBeams = BEAMS_COUNT - 1;
     }
 
     int maxDictatorReduce = stemLengthDictator - minStemLengths[std::max(dictatorBeams - 1, 0)];
@@ -259,8 +254,8 @@ void BeamTremoloLayout::offsetBeamWithAnchorShortening(const BeamBase::LayoutDat
                      // a large multiple of 4 so that we can guarantee that yPos%4 will be correct
         return beams >= 4 && (yPos % 4 == 2);
     };
-    while (!fourBeamException(dictatorBeams, newDictator)
-           && !isValidBeamPosition(ldata->up, newDictator, isStartDictator, isAscending, isFlat, staffLines, true)) {
+    while (!fourBeamException(dictatorBeams, newDictator) &&
+           !isValidBeamPosition(ldata->up, newDictator, isStartDictator, isAscending, isFlat, staffLines, true)) {
         if (++reduce > maxDictatorReduce) {
             // we can't shorten this stem at all. bring it back to default and start extending
             newDictator = dictator;
@@ -279,9 +274,9 @@ void BeamTremoloLayout::offsetBeamWithAnchorShortening(const BeamBase::LayoutDat
     // first, constrain pointer to valid position
     newPointer = ldata->up ? std::min(newPointer, targetLine) : std::max(newPointer, targetLine);
     // walk it back beamwards until we get a position that satisfies both pointer and dictator
-    while (!fourBeamException(dictatorBeams, newDictator) && !fourBeamException(pointerBeams, newPointer)
-           && (!isValidBeamPosition(ldata->up, newDictator, isStartDictator, isAscending, isFlat, staffLines, true)
-               || !isValidBeamPosition(ldata->up, newPointer, !isStartDictator, isAscending, isFlat, staffLines, true))) {
+    while (!fourBeamException(dictatorBeams, newDictator) && !fourBeamException(pointerBeams, newPointer) &&
+           (!isValidBeamPosition(ldata->up, newDictator, isStartDictator, isAscending, isFlat, staffLines, true) ||
+            !isValidBeamPosition(ldata->up, newPointer, !isStartDictator, isAscending, isFlat, staffLines, true))) {
         if (isFlat) {
             newDictator += towardBeam;
             newPointer += towardBeam;
@@ -299,8 +294,7 @@ void BeamTremoloLayout::offsetBeamWithAnchorShortening(const BeamBase::LayoutDat
     }
 }
 
-void BeamTremoloLayout::extendStem(const BeamBase::LayoutData* ldata, Chord* chord, double addition)
-{
+void BeamTremoloLayout::extendStem(const BeamBase::LayoutData *ldata, Chord *chord, double addition) {
     LayoutContext ctx(chord->score());
 
     PointF anchor = chordBeamAnchor(ldata, chord, ChordBeamAnchorType::Middle);
@@ -324,35 +318,33 @@ void BeamTremoloLayout::extendStem(const BeamBase::LayoutData* ldata, Chord* cho
     }
 
     // Update stem shape
-    Stem* stem = chord->stem();
-    for (ShapeElement& shapeEl : chord->segment()->staffShape(chord->vStaffIdx()).elements()) {
+    Stem *stem = chord->stem();
+    for (ShapeElement &shapeEl : chord->segment()->staffShape(chord->vStaffIdx()).elements()) {
         if (shapeEl.item() == stem) {
             shapeEl = ShapeElement(stem->ldata()->bbox().translated(stem->pos() + chord->pos()), stem);
         }
     }
 }
 
-bool BeamTremoloLayout::isBeamInsideStaff(int yPos, int staffLines, bool allowFloater)
-{
+bool BeamTremoloLayout::isBeamInsideStaff(int yPos, int staffLines, bool allowFloater) {
     int aboveStaff = allowFloater ? -2 : -3;
     int belowStaff = (staffLines - 1) * 4 + (allowFloater ? 2 : 3);
     return yPos > aboveStaff && yPos < belowStaff;
 }
 
-void BeamTremoloLayout::setSmallInnerBeamPos(const BeamBase::LayoutData* ldata, int& dictator, int& pointer, const int staffLines,
-                                             const bool isFlat, const bool isSmall, const LayoutContext& ctx)
-{
+void BeamTremoloLayout::setSmallInnerBeamPos(const BeamBase::LayoutData *ldata, int &dictator, int &pointer, const int staffLines,
+                                             const bool isFlat, const bool isSmall, const LayoutContext &ctx) {
     // We only want this adjustment if the beam is small and flat
     if (!isSmall || !isFlat) {
         return;
     }
     bool noteOutsideStaff = false;
     int beamCount = 0;
-    for (const ChordRest* cr : ldata->elements) {
+    for (const ChordRest *cr : ldata->elements) {
         if (!cr->isChord()) {
             continue;
         }
-        const Chord* c = toChord(cr);
+        const Chord *c = toChord(cr);
         beamCount = std::max(beamCount, strokeCount(ldata, cr));
         noteOutsideStaff |= (c->downLine() < -2 && !ldata->up) || (c->upLine() >= 11 && ldata->up);
     }
@@ -381,8 +373,7 @@ void BeamTremoloLayout::setSmallInnerBeamPos(const BeamBase::LayoutData* ldata, 
     pointer = dictator;
 }
 
-int BeamTremoloLayout::getOuterBeamPosOffset(const BeamBase::LayoutData* ldata, int innerBeam, int beamCount, int staffLines)
-{
+int BeamTremoloLayout::getOuterBeamPosOffset(const BeamBase::LayoutData *ldata, int innerBeam, int beamCount, int staffLines) {
     int spacing = (ldata->up ? -ldata->beamSpacing : ldata->beamSpacing);
     int offset = (beamCount - 1) * spacing;
     bool isInner = false;
@@ -394,8 +385,7 @@ int BeamTremoloLayout::getOuterBeamPosOffset(const BeamBase::LayoutData* ldata, 
 }
 
 bool BeamTremoloLayout::isValidBeamPosition(const bool isUp, int yPos, bool isStart, bool isAscending, bool isFlat, int staffLines,
-                                            bool isOuter)
-{
+                                            bool isOuter) {
     // outside the staff
     bool slantsAway = (isUp && isAscending == isStart) || (!isUp && isAscending != isStart);
     if (!isBeamInsideStaff(yPos, staffLines, isOuter && (slantsAway || isFlat))) {
@@ -425,17 +415,15 @@ bool BeamTremoloLayout::isValidBeamPosition(const bool isUp, int yPos, bool isSt
     return isAscending == isStart;
 }
 
-bool BeamTremoloLayout::is64thBeamPositionException(const int beamSpacing, int& yPos, int staffLines)
-{
+bool BeamTremoloLayout::is64thBeamPositionException(const int beamSpacing, int &yPos, int staffLines) {
     if (beamSpacing == 4) {
         return false;
     }
     return yPos == 2 || yPos == staffLines * 4 - 2 || yPos == staffLines * 4 - 6 || yPos == -2;
 }
 
-int BeamTremoloLayout::findValidBeamOffset(const BeamBase::LayoutData* ldata, int outer, int beamCount, int staffLines, bool isStart,
-                                           bool isAscending, bool isFlat)
-{
+int BeamTremoloLayout::findValidBeamOffset(const BeamBase::LayoutData *ldata, int outer, int beamCount, int staffLines, bool isStart,
+                                           bool isAscending, bool isFlat) {
     bool isBeamValid = false;
     int offset = 0;
     int innerBeam = outer + (beamCount - 1) * (ldata->up ? ldata->beamSpacing : -ldata->beamSpacing);
@@ -444,8 +432,8 @@ int BeamTremoloLayout::findValidBeamOffset(const BeamBase::LayoutData* ldata, in
             offset += ldata->up ? -1 : 1;
         }
         int outerMostBeam = innerBeam + offset + getOuterBeamPosOffset(ldata, innerBeam + offset, beamCount, staffLines);
-        if (isValidBeamPosition(ldata->up, outerMostBeam, isStart, isAscending, isFlat, staffLines, true)
-            || (beamCount == 4 && is64thBeamPositionException(ldata->beamSpacing, outerMostBeam, staffLines))) {
+        if (isValidBeamPosition(ldata->up, outerMostBeam, isStart, isAscending, isFlat, staffLines, true) ||
+            (beamCount == 4 && is64thBeamPositionException(ldata->beamSpacing, outerMostBeam, staffLines))) {
             isBeamValid = true;
         } else {
             offset += ldata->up ? -1 : 1;
@@ -454,12 +442,8 @@ int BeamTremoloLayout::findValidBeamOffset(const BeamBase::LayoutData* ldata, in
     return offset;
 }
 
-void BeamTremoloLayout::setValidBeamPositions(const BeamBase::LayoutData* ldata, int& dictator, int& pointer, int beamCountD,
-                                              int beamCountP,
-                                              int staffLines,
-                                              bool isStartDictator,
-                                              bool isFlat, bool isAscending)
-{
+void BeamTremoloLayout::setValidBeamPositions(const BeamBase::LayoutData *ldata, int &dictator, int &pointer, int beamCountD,
+                                              int beamCountP, int staffLines, bool isStartDictator, bool isFlat, bool isAscending) {
     bool areBeamsValid = false;
     bool has3BeamsInsideStaff = beamCountD >= 3 || beamCountP >= 3;
     while (!areBeamsValid && has3BeamsInsideStaff && ldata->beamSpacing != 4) {
@@ -492,7 +476,7 @@ void BeamTremoloLayout::setValidBeamPositions(const BeamBase::LayoutData* ldata,
         if (isFlat) {
             pointer = dictator;
             int currOffset = 0;
-            for (ChordRest* cr : ldata->elements) {
+            for (ChordRest *cr : ldata->elements) {
                 if (!cr->isChord() && (cr != ldata->elements.front() && cr != ldata->elements.back())) {
                     continue;
                 }
@@ -521,9 +505,8 @@ void BeamTremoloLayout::setValidBeamPositions(const BeamBase::LayoutData* ldata,
     }
 }
 
-void BeamTremoloLayout::addMiddleLineSlant(const BeamBase::LayoutData* ldata, int& dictator, int& pointer, int beamCount, int targetLine,
-                                           int interval, int desiredSlant)
-{
+void BeamTremoloLayout::addMiddleLineSlant(const BeamBase::LayoutData *ldata, int &dictator, int &pointer, int beamCount, int targetLine,
+                                           int interval, int desiredSlant) {
     bool isSmall = ldata->mag() < 1. || ldata->isGrace;
     if (interval == 0 || (!isSmall && beamCount > 2 && ldata->beamSpacing != 4) || noSlope(ldata->beam)) {
         return;
@@ -538,9 +521,8 @@ void BeamTremoloLayout::addMiddleLineSlant(const BeamBase::LayoutData* ldata, in
     }
 }
 
-void BeamTremoloLayout::add8thSpaceSlant(BeamBase::LayoutData* ldata, PointF& dictatorAnchor, int dictator, int pointer, int beamCount,
-                                         int interval, int targetLine, bool isFlat)
-{
+void BeamTremoloLayout::add8thSpaceSlant(BeamBase::LayoutData *ldata, PointF &dictatorAnchor, int dictator, int pointer, int beamCount,
+                                         int interval, int targetLine, bool isFlat) {
     if (beamCount != 3 || noSlope(ldata->beam) || ldata->beamSpacing != 3) {
         return;
     }
@@ -554,15 +536,14 @@ void BeamTremoloLayout::add8thSpaceSlant(BeamBase::LayoutData* ldata, PointF& di
     ldata->beamDist += 0.0625 * ldata->spatium;
 }
 
-bool BeamTremoloLayout::computeTremoloUp(const BeamBase::LayoutData* ldata)
-{
+bool BeamTremoloLayout::computeTremoloUp(const BeamBase::LayoutData *ldata) {
     if (!ldata->beam || !ldata->beam->cross()) {
         return ldata->trem->up();
     }
-    Chord* c1 = ldata->trem->chord1();
-    Chord* c2 = ldata->trem->chord2();
+    Chord *c1 = ldata->trem->chord1();
+    Chord *c2 = ldata->trem->chord2();
     int staffMove = 0;
-    for (ChordRest* cr : ldata->beam->elements()) {
+    for (ChordRest *cr : ldata->beam->elements()) {
         if (cr->staffMove() != 0) {
             staffMove = cr->staffMove();
             break;
@@ -583,13 +564,12 @@ bool BeamTremoloLayout::computeTremoloUp(const BeamBase::LayoutData* ldata)
     }
 }
 
-int BeamTremoloLayout::strokeCount(const BeamBase::LayoutData* ldata, const ChordRest* cr)
-{
+int BeamTremoloLayout::strokeCount(const BeamBase::LayoutData *ldata, const ChordRest *cr) {
     if (cr->isRest()) {
         return cr->beams();
     }
     int strokes = 0;
-    const Chord* c = toChord(cr);
+    const Chord *c = toChord(cr);
     if (ldata->beamType == BeamType::TREMOLO) {
         strokes = ldata->trem->lines();
     } else if (ldata->beamType == BeamType::BEAM && c->tremoloTwoChord()) {
@@ -599,20 +579,19 @@ int BeamTremoloLayout::strokeCount(const BeamBase::LayoutData* ldata, const Chor
     return strokes;
 }
 
-bool BeamTremoloLayout::calculateAnchors(const BeamBase* item, BeamBase::LayoutData* ldata, const LayoutContext& ctx,
-                                         const std::vector<ChordRest*>& chordRests,
-                                         const std::vector<BeamBase::NotePosition>& notePositions)
-{
+bool BeamTremoloLayout::calculateAnchors(const BeamBase *item, BeamBase::LayoutData *ldata, const LayoutContext &ctx,
+                                         const std::vector<ChordRest *> &chordRests,
+                                         const std::vector<BeamBase::NotePosition> &notePositions) {
     ldata->startAnchor = PointF();
     ldata->endAnchor = PointF();
     if (ldata->beamType == BeamType::TREMOLO && ldata->beam) {
         // this is a trem inside a beam, and we are currently calculating the anchors of the tremolo.
         // we can do this as long as the beam has been layed out first: it saves trem anchor positions
-        ChordRest* cr1 = ldata->trem->chord1();
-        ChordRest* cr2 = ldata->trem->chord2();
+        ChordRest *cr1 = ldata->trem->chord1();
+        ChordRest *cr2 = ldata->trem->chord2();
         double anchorX1 = chordBeamAnchorX(ldata, cr1, ChordBeamAnchorType::Middle);
         double anchorX2 = chordBeamAnchorX(ldata, cr2, ChordBeamAnchorType::Middle);
-        for (const TremAnchor& t : ldata->beam->tremAnchors()) {
+        for (const TremAnchor &t : ldata->beam->tremAnchors()) {
             if (t.chord1 == cr1) {
                 ldata->startAnchor = PointF(anchorX1, t.y1);
                 ldata->endAnchor = PointF(anchorX2, t.y2);
@@ -624,10 +603,10 @@ bool BeamTremoloLayout::calculateAnchors(const BeamBase* item, BeamBase::LayoutD
         // beam hasn't been laid out yet
         return false;
     }
-    Chord* startChord = nullptr;
-    Chord* endChord = nullptr;
-    ChordRest* startCr = nullptr;
-    ChordRest* endCr = nullptr;
+    Chord *startChord = nullptr;
+    Chord *endChord = nullptr;
+    ChordRest *startCr = nullptr;
+    ChordRest *endCr = nullptr;
     ldata->elements = chordRests;
     if (chordRests.empty()) {
         return false;
@@ -681,14 +660,14 @@ bool BeamTremoloLayout::calculateAnchors(const BeamBase* item, BeamBase::LayoutD
     }
 
     const int closestMove = ldata->crossStaffBeamPos == BeamBase::CrossStaffBeamPosition::ABOVE ? item->minCRMove() : item->maxCRMove();
-    const staff_idx_t closestStaffToBeam = ldata->crossStaffBeamPos == BeamBase::CrossStaffBeamPosition::ABOVE
-                                           || ldata->crossStaffBeamPos
-                                           == BeamBase::CrossStaffBeamPosition::BELOW ? item->staffIdx()
-                                           + closestMove : startChord->vStaffIdx();
+    const staff_idx_t closestStaffToBeam = ldata->crossStaffBeamPos == BeamBase::CrossStaffBeamPosition::ABOVE ||
+                                                   ldata->crossStaffBeamPos == BeamBase::CrossStaffBeamPosition::BELOW ?
+                                               item->staffIdx() + closestMove :
+                                               startChord->vStaffIdx();
 
-    std::vector<Chord*> chordsClosestToBeam;
+    std::vector<Chord *> chordsClosestToBeam;
 
-    for (ChordRest* cr : ldata->elements) {
+    for (ChordRest *cr : ldata->elements) {
         if (cr->isChord() && cr->vStaffIdx() == closestStaffToBeam) {
             chordsClosestToBeam.push_back(toChord(cr));
         }
@@ -724,11 +703,9 @@ bool BeamTremoloLayout::calculateAnchors(const BeamBase* item, BeamBase::LayoutD
     // This is the middle of the stave if the notes are normal size or the second line from the bottom if notes are small
     const int targetLine = getTargetStaffLine(ldata, ctx, startChord, endChord, staffLines, closestStaffToBeam, item->staffIdx());
 
-    int slant
-        = computeDesiredSlant(item, ldata, startPos, endPos, chordsClosestToBeam, targetLine, dictator, pointer);
+    int slant = computeDesiredSlant(item, ldata, startPos, endPos, chordsClosestToBeam, targetLine, dictator, pointer);
     bool isFlat = slant == 0;
-    SlopeConstraint specialSlant
-        = isFlat ? getSlopeConstraint(ldata, startPos, endPos) : SlopeConstraint::NO_CONSTRAINT;
+    SlopeConstraint specialSlant = isFlat ? getSlopeConstraint(ldata, startPos, endPos) : SlopeConstraint::NO_CONSTRAINT;
     bool forceFlat = specialSlant == SlopeConstraint::FLAT;
     bool smallSlant = specialSlant == SlopeConstraint::SMALL_SLOPE;
     if (isFlat) {
@@ -780,43 +757,41 @@ bool BeamTremoloLayout::calculateAnchors(const BeamBase* item, BeamBase::LayoutD
     ldata->endAnchor.setY(quarterSpace * (isStartDictator ? pointer : dictator) + item->pagePos().y());
 
     bool add8th = true;
-    if (item->isType(ElementType::BEAM) && item_cast<const Beam*>(item)->userModified()) {
+    if (item->isType(ElementType::BEAM) && item_cast<const Beam *>(item)->userModified()) {
         add8th = false;
     }
     if (!ldata->tab && add8th) {
-        add8thSpaceSlant(ldata, isStartDictator ? ldata->startAnchor : ldata->endAnchor, dictator, pointer, beamCount, interval,
-                         targetLine, isFlat);
+        add8thSpaceSlant(ldata, isStartDictator ? ldata->startAnchor : ldata->endAnchor, dictator, pointer, beamCount, interval, targetLine,
+                         isFlat);
     }
     ldata->startAnchor.setX(chordBeamAnchorX(ldata, startCr, ChordBeamAnchorType::Start));
     ldata->endAnchor.setX(chordBeamAnchorX(ldata, endCr, ChordBeamAnchorType::End));
     return true;
 }
 
-bool BeamTremoloLayout::calculateAnchorsCross(const BeamBase* item, BeamBase::LayoutData* ldata,
-                                              const LayoutConfiguration& conf)
-{
+bool BeamTremoloLayout::calculateAnchorsCross(const BeamBase *item, BeamBase::LayoutData *ldata, const LayoutConfiguration &conf) {
     if (ldata->crossStaffBeamPos != BeamBase::CrossStaffBeamPosition::BETWEEN) {
         // The beam is either not cross or above/below and must be layed out like a non-cross beam
         return false;
     }
 
     double spatium = conf.spatium();
-    ChordRest* startCr = ldata->elements.front();
-    ChordRest* endCr = ldata->elements.back();
+    ChordRest *startCr = ldata->elements.front();
+    ChordRest *endCr = ldata->elements.back();
 
     const double quarterSpace = spatium / 4;
     // imagine a line of beamed notes all in a row on the same staff. the first and last of those
     // are the 'outside' notes, and the slant of the beam is going to be affected by the 'middle' notes
     // between them.
     // we have to keep track of this for both staves.
-    Chord* topFirst = nullptr;
-    Chord* topLast = nullptr;
-    Chord* bottomFirst = nullptr;
-    Chord* bottomLast = nullptr;
-    int maxMiddleTopLine = std::numeric_limits<int>::min(); // lowest note in the top staff
+    Chord *topFirst = nullptr;
+    Chord *topLast = nullptr;
+    Chord *bottomFirst = nullptr;
+    Chord *bottomLast = nullptr;
+    int maxMiddleTopLine = std::numeric_limits<int>::min();    // lowest note in the top staff
     int minMiddleBottomLine = std::numeric_limits<int>::max(); // highest note in the bottom staff
-    int prevTopLine = maxMiddleTopLine; // previous note's line position (top)
-    int prevBottomLine = minMiddleBottomLine; // previous note's line position (bottom)
+    int prevTopLine = maxMiddleTopLine;                        // previous note's line position (top)
+    int prevBottomLine = minMiddleBottomLine;                  // previous note's line position (bottom)
     // if the immediate neighbor of one of the two 'outside' notes on either the top or bottom
     // are the same as that outside note, we need to record it so that we can add a 1/4 space slant.
     bool secondTopIsSame = false;
@@ -841,11 +816,11 @@ bool BeamTremoloLayout::calculateAnchorsCross(const BeamBase* item, BeamBase::La
     //
     bool checkNextTop = false;
     bool checkNextBottom = false;
-    for (ChordRest* cr : ldata->elements) {
+    for (ChordRest *cr : ldata->elements) {
         if (!cr->isChord()) {
             continue;
         }
-        Chord* c = toChord(cr);
+        Chord *c = toChord(cr);
 
         if (c->isBelowCrossBeam(item) == prevBelowBeam) {
             c->vStaffIdx();
@@ -928,18 +903,18 @@ bool BeamTremoloLayout::calculateAnchorsCross(const BeamBase* item, BeamBase::La
     if (item->isBeam()) {
         // Cross-staff beams may have segments both above and below the midline.
         // Compute the y-difference between the top and bottom segment and aim for centering in between.
-        const Beam* beam = toBeam(item);
-        const std::vector<BeamSegment*>& beamSegments = beam->beamSegments();
-        const Chord* limitingChordAbove = beam->ldata()->limitingChordAbove;
-        const Chord* limitingChordBelow = beam->ldata()->limitingChordBelow;
+        const Beam *beam = toBeam(item);
+        const std::vector<BeamSegment *> &beamSegments = beam->beamSegments();
+        const Chord *limitingChordAbove = beam->ldata()->limitingChordAbove;
+        const Chord *limitingChordBelow = beam->ldata()->limitingChordBelow;
         if (!beamSegments.empty() && limitingChordAbove && limitingChordBelow) {
             double yCenterSegment = 0.5 * (beamSegments.front()->line.y1() + beamSegments.front()->line.y2());
 
-            const BeamSegment* topBeamSegmentForChordAbove = beam->topLevelSegmentForElement(limitingChordAbove);
+            const BeamSegment *topBeamSegmentForChordAbove = beam->topLevelSegmentForElement(limitingChordAbove);
             double yTopSegAbove = 0.5 * (topBeamSegmentForChordAbove->line.y1() + topBeamSegmentForChordAbove->line.y2());
             double distAbove = yTopSegAbove - yCenterSegment;
 
-            const BeamSegment* topBeamSegmentForChordBelow = beam->topLevelSegmentForElement(limitingChordBelow);
+            const BeamSegment *topBeamSegmentForChordBelow = beam->topLevelSegmentForElement(limitingChordBelow);
             double yTopSegBelow = 0.5 * (topBeamSegmentForChordBelow->line.y1() + topBeamSegmentForChordBelow->line.y2());
             double distBelow = yTopSegBelow - yCenterSegment;
 
@@ -963,12 +938,10 @@ bool BeamTremoloLayout::calculateAnchorsCross(const BeamBase* item, BeamBase::La
         int bottomLastLine = bottomLast ? bottomLast->upNote()->line() : 0;
         bool constrainTopToQuarter = false;
         bool constrainBottomToQuarter = false;
-        if ((topFirstLine > topLastLine && secondTopIsSame)
-            || (topFirstLine < topLastLine && penultimateTopIsSame)) {
+        if ((topFirstLine > topLastLine && secondTopIsSame) || (topFirstLine < topLastLine && penultimateTopIsSame)) {
             constrainTopToQuarter = true;
         }
-        if ((bottomFirstLine < bottomLastLine && secondBottomIsSame)
-            || (bottomFirstLine > bottomLastLine && penultimateBottomIsSame)) {
+        if ((bottomFirstLine < bottomLastLine && secondBottomIsSame) || (bottomFirstLine > bottomLastLine && penultimateBottomIsSame)) {
             constrainBottomToQuarter = true;
         }
         if (!topLast && !bottomLast && topFirst && bottomFirst) {
@@ -1014,8 +987,8 @@ bool BeamTremoloLayout::calculateAnchorsCross(const BeamBase* item, BeamBase::La
                 bottomSlant = 0;
                 singleNoteBottom = true;
             }
-            if ((maxMiddleTopLine >= std::max(topFirstLine, topLastLine)
-                 || (minMiddleBottomLine <= std::min(bottomFirstLine, bottomLastLine)))) {
+            if ((maxMiddleTopLine >= std::max(topFirstLine, topLastLine) ||
+                 (minMiddleBottomLine <= std::min(bottomFirstLine, bottomLastLine)))) {
                 forceHoriz = true;
             }
 
@@ -1025,7 +998,7 @@ bool BeamTremoloLayout::calculateAnchorsCross(const BeamBase* item, BeamBase::La
             // If there is any contradiction between top staff direction, bottom direction, beam side switch direction and staff switch direction, force horizontal
             // If all are neutral, force horizontal
             int overallDirection = 0;
-            for (int direction : { topSlantDir, bottomSlantDir, beamSideSwitchDirection, staffSwitchDirection }) {
+            for (int direction : {topSlantDir, bottomSlantDir, beamSideSwitchDirection, staffSwitchDirection}) {
                 if (direction != 0) {
                     overallDirection = direction;
                     break;
@@ -1037,11 +1010,11 @@ bool BeamTremoloLayout::calculateAnchorsCross(const BeamBase* item, BeamBase::La
             const bool bottomSlantOverallDiff = (bottomSlantDir != 0 && bottomSlantDir != overallDirection);
             const bool beamSideSwitchOverallDiff = (beamSideSwitchDirection != 0 && beamSideSwitchDirection != overallDirection);
             const bool staffSwitchOverallDiff = (staffSwitchDirection != 0 && staffSwitchDirection != overallDirection);
-            const bool flattenNeutralBeamSideSwitch = beamSideSwitchDirection == 0 && (topSlantDir != bottomSlantDir)
-                                                      && !(singleNoteTop || singleNoteBottom);
+            const bool flattenNeutralBeamSideSwitch =
+                beamSideSwitchDirection == 0 && (topSlantDir != bottomSlantDir) && !(singleNoteTop || singleNoteBottom);
 
-            forceHoriz = forceHoriz || overallSlantFlat || flattenNeutralBeamSideSwitch
-                         || (topSlantOverallDiff || bottomSlantOverallDiff || beamSideSwitchOverallDiff || staffSwitchOverallDiff);
+            forceHoriz = forceHoriz || overallSlantFlat || flattenNeutralBeamSideSwitch ||
+                         (topSlantOverallDiff || bottomSlantOverallDiff || beamSideSwitchOverallDiff || staffSwitchOverallDiff);
 
             if (!forceHoriz) {
                 int slant = 0;
@@ -1064,34 +1037,30 @@ bool BeamTremoloLayout::calculateAnchorsCross(const BeamBase* item, BeamBase::La
     return true;
 }
 
-bool BeamTremoloLayout::noSlope(const Beam* beam)
-{
-    return beam && beam->noSlope();
-}
+bool BeamTremoloLayout::noSlope(const Beam *beam) { return beam && beam->noSlope(); }
 
-int BeamTremoloLayout::getTargetStaffLine(const BeamBase::LayoutData* ldata, const LayoutContext& ctx,
-                                          const ChordRest* startChord, const ChordRest* endChord,
-                                          const int staffLines, const staff_idx_t beamClosestStaffIdx, const staff_idx_t actualBeamStaffIdx)
-{
+int BeamTremoloLayout::getTargetStaffLine(const BeamBase::LayoutData *ldata, const LayoutContext &ctx, const ChordRest *startChord,
+                                          const ChordRest *endChord, const int staffLines, const staff_idx_t beamClosestStaffIdx,
+                                          const staff_idx_t actualBeamStaffIdx) {
     bool isFullSize = muse::RealIsEqual(ldata->mag(), 1.0) && !ldata->isGrace;
     bool useWideBeams = ctx.conf().styleB(Sid::useWideBeams);
     int startBeams = strokeCount(ldata, startChord);
     int endBeams = strokeCount(ldata, endChord);
-    int startTargetLine = StemLayout::minStaffOverlap(ldata->up, staffLines, startBeams, false,
-                                                      ldata->beamSpacing / 4.0, useWideBeams, isFullSize);
-    int endTargetLine = StemLayout::minStaffOverlap(ldata->up, staffLines, endBeams, false,
-                                                    ldata->beamSpacing / 4.0, useWideBeams, !ldata->isGrace);
+    int startTargetLine =
+        StemLayout::minStaffOverlap(ldata->up, staffLines, startBeams, false, ldata->beamSpacing / 4.0, useWideBeams, isFullSize);
+    int endTargetLine =
+        StemLayout::minStaffOverlap(ldata->up, staffLines, endBeams, false, ldata->beamSpacing / 4.0, useWideBeams, !ldata->isGrace);
 
     int diff = 0;
     // Get diff between beam closest staff and actual staff, unless its full cross?
-    if (ldata->crossStaffBeamPos == BeamBase::CrossStaffBeamPosition::ABOVE
-        || ldata->crossStaffBeamPos == BeamBase::CrossStaffBeamPosition::BELOW) {
+    if (ldata->crossStaffBeamPos == BeamBase::CrossStaffBeamPosition::ABOVE ||
+        ldata->crossStaffBeamPos == BeamBase::CrossStaffBeamPosition::BELOW) {
         // Make sure we calculate the distance to the target line on the stave closest to the beam
-        const System* curSys = startChord->measure()->system();
+        const System *curSys = startChord->measure()->system();
         const int dir = ldata->up ? -1 : 1;
         if (curSys && beamClosestStaffIdx != actualBeamStaffIdx) {
-            diff = std::round(std::abs(curSys->staffYpage(beamClosestStaffIdx) - curSys->staffYpage(
-                                           actualBeamStaffIdx)) / ldata->spatium * 4 * dir);
+            diff = std::round(std::abs(curSys->staffYpage(beamClosestStaffIdx) - curSys->staffYpage(actualBeamStaffIdx)) / ldata->spatium *
+                              4 * dir);
         }
     }
     // offset target line by 1 or -1 since the anchor is at the middle of the beam,
@@ -1102,15 +1071,14 @@ int BeamTremoloLayout::getTargetStaffLine(const BeamBase::LayoutData* ldata, con
     return std::max(startTargetLine + diff, endTargetLine + diff) - 1;
 }
 
-int BeamTremoloLayout::computeDesiredSlant(const BeamBase* item, const BeamBase::LayoutData* ldata, const BeamBase::NotePosition& startPos,
-                                           const BeamBase::NotePosition& endPos, std::vector<Chord*> closestChordsToBeam,
-                                           int targetLine, int dictator, int pointer)
-{
-    if (item->isType(ElementType::BEAM) && item_cast<const Beam*>(item)->noSlope()) {
+int BeamTremoloLayout::computeDesiredSlant(const BeamBase *item, const BeamBase::LayoutData *ldata, const BeamBase::NotePosition &startPos,
+                                           const BeamBase::NotePosition &endPos, std::vector<Chord *> closestChordsToBeam, int targetLine,
+                                           int dictator, int pointer) {
+    if (item->isType(ElementType::BEAM) && item_cast<const Beam *>(item)->noSlope()) {
         return 0;
     }
     int dictatorExtension = targetLine - dictator; // we need to make sure that beams extended to the middle line
-    int pointerExtension = targetLine - pointer;  // are properly treated as flat.
+    int pointerExtension = targetLine - pointer;   // are properly treated as flat.
     if (ldata->up) {
         dictatorExtension = std::min(dictatorExtension, 0);
         pointerExtension = std::min(pointerExtension, 0);
@@ -1134,8 +1102,8 @@ int BeamTremoloLayout::computeDesiredSlant(const BeamBase* item, const BeamBase:
     // calculate max slope based on distance between first and last chords
     int maxSlope = getMaxSlope(ldata);
 
-    if (ldata->crossStaffBeamPos == BeamBase::CrossStaffBeamPosition::ABOVE
-        || ldata->crossStaffBeamPos == BeamBase::CrossStaffBeamPosition::BELOW) {
+    if (ldata->crossStaffBeamPos == BeamBase::CrossStaffBeamPosition::ABOVE ||
+        ldata->crossStaffBeamPos == BeamBase::CrossStaffBeamPosition::BELOW) {
         // Calculate slant between first and last notes
         int beamDir = startPos == endPos ? 0 : (startPos > endPos ? 1 : -1);
 
@@ -1161,13 +1129,12 @@ int BeamTremoloLayout::computeDesiredSlant(const BeamBase* item, const BeamBase:
     }
 
     // calculate max slope based on note interval
-    int interval = std::min(std::abs(endPos.line - startPos.line), (int)_maxSlopes.size() - 1);
+    int interval = std::min(std::abs(endPos.line - startPos.line), (int) _maxSlopes.size() - 1);
     return std::min(maxSlope, _maxSlopes[interval]) * (ldata->up ? 1 : -1);
 }
 
-SlopeConstraint BeamTremoloLayout::getSlopeConstraint(const BeamBase::LayoutData* ldata, const BeamBase::NotePosition& startPos,
-                                                      const BeamBase::NotePosition& endPos)
-{
+SlopeConstraint BeamTremoloLayout::getSlopeConstraint(const BeamBase::LayoutData *ldata, const BeamBase::NotePosition &startPos,
+                                                      const BeamBase::NotePosition &endPos) {
     if (ldata->notePositions.empty()) {
         return SlopeConstraint::NO_CONSTRAINT;
     }
@@ -1182,8 +1149,8 @@ SlopeConstraint BeamTremoloLayout::getSlopeConstraint(const BeamBase::LayoutData
 
     // if a note is more extreme than the endpoints, slope is 0
     // p.s. _notes is a sorted vector
-    const std::vector<ChordRest*>& elements = ldata->elements;
-    const std::vector<BeamBase::NotePosition>& notePositions = ldata->notePositions;
+    const std::vector<ChordRest *> &elements = ldata->elements;
+    const std::vector<BeamBase::NotePosition> &notePositions = ldata->notePositions;
 
     if (elements.size() > 2) {
         if (ldata->up) {
@@ -1199,15 +1166,17 @@ SlopeConstraint BeamTremoloLayout::getSlopeConstraint(const BeamBase::LayoutData
                 if (chordCount >= 3 && notePositions.size() >= 3) {
                     bool middleNoteHigherThanHigherEnd = higherEnd >= notePositions[2];
                     if (middleNoteHigherThanHigherEnd) {
-                        return SlopeConstraint::FLAT; // two notes are the same as the highest end (notes [0] [1] and [2] higher than or same as higherEnd)
+                        return SlopeConstraint::
+                            FLAT; // two notes are the same as the highest end (notes [0] [1] and [2] higher than or same as higherEnd)
                     }
-                    Chord* secondNote = elements[1]->isChord() ? toChord(elements[1]) : nullptr;
-                    Chord* secondToLastNote
-                        = elements[chordCount - 2]->isChord() ? toChord(elements[chordCount - 2]) : nullptr;
-                    bool secondNoteSameHeightAsHigherEnd = startPos < endPos && secondNote && BeamBase::NotePosition(
-                        secondNote->upLine(), secondNote->vStaffIdx()) == higherEnd;
-                    bool secondToLastNoteSameHeightAsHigherEnd = endPos.line < startPos.line && secondToLastNote && BeamBase::NotePosition(
-                        secondToLastNote->upLine(), secondToLastNote->vStaffIdx()) == higherEnd;
+                    Chord *secondNote = elements[1]->isChord() ? toChord(elements[1]) : nullptr;
+                    Chord *secondToLastNote = elements[chordCount - 2]->isChord() ? toChord(elements[chordCount - 2]) : nullptr;
+                    bool secondNoteSameHeightAsHigherEnd =
+                        startPos < endPos && secondNote &&
+                        BeamBase::NotePosition(secondNote->upLine(), secondNote->vStaffIdx()) == higherEnd;
+                    bool secondToLastNoteSameHeightAsHigherEnd =
+                        endPos.line < startPos.line && secondToLastNote &&
+                        BeamBase::NotePosition(secondToLastNote->upLine(), secondToLastNote->vStaffIdx()) == higherEnd;
                     if (!(secondNoteSameHeightAsHigherEnd || secondToLastNoteSameHeightAsHigherEnd)) {
                         return SlopeConstraint::FLAT; // only one note same as higher end, but it is not a neighbor
                     } else {
@@ -1225,8 +1194,7 @@ SlopeConstraint BeamTremoloLayout::getSlopeConstraint(const BeamBase::LayoutData
             if (lowerEnd < notePositions[notePositions.size() - 1]) {
                 return SlopeConstraint::FLAT;
             }
-            if (lowerEnd == notePositions[notePositions.size() - 1]
-                && lowerEnd <= notePositions[notePositions.size() - 2]) {
+            if (lowerEnd == notePositions[notePositions.size() - 1] && lowerEnd <= notePositions[notePositions.size() - 2]) {
                 if (lowerEnd < notePositions[notePositions.size() - 2]) {
                     return SlopeConstraint::FLAT;
                 }
@@ -1236,13 +1204,14 @@ SlopeConstraint BeamTremoloLayout::getSlopeConstraint(const BeamBase::LayoutData
                     if (middleNoteLowerThanLowerEnd) {
                         return SlopeConstraint::FLAT;
                     }
-                    const Chord* secondNote = elements[1]->isChord() ? toChord(elements[1]) : nullptr;
-                    const Chord* secondToLastNote
-                        = elements[chordCount - 2]->isChord() ? toChord(elements[chordCount - 2]) : nullptr;
-                    const BeamBase::NotePosition secondNotePos = secondNote ? BeamBase::NotePosition(
-                        secondNote->downLine(), secondNote->vStaffIdx()) : BeamBase::NotePosition(0, muse::nidx);
-                    const BeamBase::NotePosition secondToLastNotePos = secondToLastNote ? BeamBase::NotePosition(
-                        secondToLastNote->downLine(), secondToLastNote->vStaffIdx()) : BeamBase::NotePosition(0, muse::nidx);
+                    const Chord *secondNote = elements[1]->isChord() ? toChord(elements[1]) : nullptr;
+                    const Chord *secondToLastNote = elements[chordCount - 2]->isChord() ? toChord(elements[chordCount - 2]) : nullptr;
+                    const BeamBase::NotePosition secondNotePos =
+                        secondNote ? BeamBase::NotePosition(secondNote->downLine(), secondNote->vStaffIdx()) :
+                                     BeamBase::NotePosition(0, muse::nidx);
+                    const BeamBase::NotePosition secondToLastNotePos =
+                        secondToLastNote ? BeamBase::NotePosition(secondToLastNote->downLine(), secondToLastNote->vStaffIdx()) :
+                                           BeamBase::NotePosition(0, muse::nidx);
 
                     bool secondNoteSameHeightAsLowerEnd = startPos.line > endPos.line && secondNotePos == lowerEnd;
                     bool secondToLastNoteSameHeightAsLowerEnd = endPos.line > startPos.line && secondToLastNotePos == lowerEnd;
@@ -1260,8 +1229,7 @@ SlopeConstraint BeamTremoloLayout::getSlopeConstraint(const BeamBase::LayoutData
     return SlopeConstraint::NO_CONSTRAINT;
 }
 
-int BeamTremoloLayout::getMaxSlope(const BeamBase::LayoutData* ldata)
-{
+int BeamTremoloLayout::getMaxSlope(const BeamBase::LayoutData *ldata) {
     // for 2-indexed interval i (seconds, thirds, etc.)
     // maxSlopes[i] = max slope of beam for notes with interval i
 
@@ -1290,10 +1258,9 @@ int BeamTremoloLayout::getMaxSlope(const BeamBase::LayoutData* ldata)
     return maxSlope;
 }
 
-int BeamTremoloLayout::getBeamCount(const BeamBase::LayoutData* ldata, const std::vector<const ChordRest*>& chordRests)
-{
+int BeamTremoloLayout::getBeamCount(const BeamBase::LayoutData *ldata, const std::vector<const ChordRest *> &chordRests) {
     int maxBeams = 0;
-    for (const ChordRest* chordRest : chordRests) {
+    for (const ChordRest *chordRest : chordRests) {
         if (chordRest->isChord() && strokeCount(ldata, chordRest) > maxBeams) {
             maxBeams = strokeCount(ldata, chordRest);
         }
@@ -1301,8 +1268,7 @@ int BeamTremoloLayout::getBeamCount(const BeamBase::LayoutData* ldata, const std
     return maxBeams;
 }
 
-double BeamTremoloLayout::chordBeamAnchorX(const BeamBase::LayoutData* ldata, const ChordRest* cr, ChordBeamAnchorType anchorType)
-{
+double BeamTremoloLayout::chordBeamAnchorX(const BeamBase::LayoutData *ldata, const ChordRest *cr, ChordBeamAnchorType anchorType) {
     double pagePosX = ldata->trem ? ldata->trem->pagePos().x() : ldata->beam ? ldata->beam->pagePos().x() : 0.0;
     double stemPosX = StemLayout::stemPosX(cr) + cr->pagePos().x() - pagePosX;
 
@@ -1314,52 +1280,51 @@ double BeamTremoloLayout::chordBeamAnchorX(const BeamBase::LayoutData* ldata, co
         }
         return stemPosX;
     }
-    const Chord* chord = toChord(cr);
-    const Stem* stem = chord->stem();
+    const Chord *chord = toChord(cr);
+    const Stem *stem = chord->stem();
 
     double stemWidth = stem->lineWidthMag();
 
     switch (anchorType) {
-    case ChordBeamAnchorType::Start:
-        if (ldata->tab) {
-            return stemPosX - 0.5 * stemWidth;
-        }
+        case ChordBeamAnchorType::Start:
+            if (ldata->tab) {
+                return stemPosX - 0.5 * stemWidth;
+            }
 
-        if (chord->up()) {
-            return stemPosX - stemWidth;
-        }
+            if (chord->up()) {
+                return stemPosX - stemWidth;
+            }
 
-        break;
-    case ChordBeamAnchorType::Middle:
-        if (ldata->tab) {
-            return stemPosX;
-        }
+            break;
+        case ChordBeamAnchorType::Middle:
+            if (ldata->tab) {
+                return stemPosX;
+            }
 
-        return chord->up() ? stemPosX - 0.5 * stemWidth : stemPosX + 0.5 * stemWidth;
+            return chord->up() ? stemPosX - 0.5 * stemWidth : stemPosX + 0.5 * stemWidth;
 
-    case ChordBeamAnchorType::End:
-        if (ldata->tab) {
-            return stemPosX + 0.5 * stemWidth;
-        }
+        case ChordBeamAnchorType::End:
+            if (ldata->tab) {
+                return stemPosX + 0.5 * stemWidth;
+            }
 
-        if (!chord->up()) {
-            return stemPosX + stemWidth;
-        }
+            if (!chord->up()) {
+                return stemPosX + stemWidth;
+            }
 
-        break;
+            break;
     }
 
     return stemPosX;
 }
 
-double BeamTremoloLayout::chordBeamAnchorY(const BeamBase::LayoutData* ldata, const ChordRest* cr)
-{
+double BeamTremoloLayout::chordBeamAnchorY(const BeamBase::LayoutData *ldata, const ChordRest *cr) {
     if (!cr->isChord()) {
         return cr->pagePos().y();
     }
 
-    const Chord* chord = toChord(cr);
-    Note* note = cr->up() ? chord->downNote() : chord->upNote();
+    const Chord *chord = toChord(cr);
+    Note *note = cr->up() ? chord->downNote() : chord->upNote();
     PointF position = note->pagePos();
 
     int upValue = chord->up() ? -1 : 1;
@@ -1376,7 +1341,6 @@ double BeamTremoloLayout::chordBeamAnchorY(const BeamBase::LayoutData* ldata, co
     return position.y() - note->offset().y() + (chord->defaultStemLength() * upValue) - beamOffset;
 }
 
-PointF BeamTremoloLayout::chordBeamAnchor(const BeamBase::LayoutData* ldata, const ChordRest* cr, ChordBeamAnchorType anchorType)
-{
+PointF BeamTremoloLayout::chordBeamAnchor(const BeamBase::LayoutData *ldata, const ChordRest *cr, ChordBeamAnchorType anchorType) {
     return PointF(chordBeamAnchorX(ldata, cr, anchorType), chordBeamAnchorY(ldata, cr));
 }

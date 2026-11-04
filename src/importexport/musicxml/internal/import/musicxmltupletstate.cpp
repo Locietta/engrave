@@ -39,8 +39,7 @@ using namespace mu::iex::musicxml;
  and fraction * fullDuration equals duration.
  */
 
-void MusicXmlTupletState::determineTupletFractionAndFullDuration(const Fraction duration, Fraction& fraction, Fraction& fullDuration)
-{
+void MusicXmlTupletState::determineTupletFractionAndFullDuration(const Fraction duration, Fraction &fraction, Fraction &fullDuration) {
     fraction = duration;
     fullDuration = Fraction(1, 1);
     // move denominator's powers of 2 from fraction to fullDuration
@@ -93,8 +92,7 @@ void MusicXmlTupletState::determineTupletFractionAndFullDuration(const Fraction 
 //   missingTupletDuration
 //---------------------------------------------------------
 
-Fraction MusicXmlTupletState::missingTupletDuration(const Fraction duration)
-{
+Fraction MusicXmlTupletState::missingTupletDuration(const Fraction duration) {
     Fraction tupletFraction;
     Fraction tupletFullDuration;
 
@@ -121,8 +119,7 @@ Fraction MusicXmlTupletState::missingTupletDuration(const Fraction duration)
  Example (2): a 3:2 tuplet with a 1/4 and a 1/8 note is filled.
  */
 
-bool MusicXmlTupletState::isTupletFilled(const TDuration normalType, const Fraction timeMod)
-{
+bool MusicXmlTupletState::isTupletFilled(const TDuration normalType, const Fraction timeMod) {
     UNUSED(timeMod);
     bool res = false;
     /*
@@ -137,7 +134,7 @@ bool MusicXmlTupletState::isTupletFilled(const TDuration normalType, const Fract
     */
 
     if (normalType.isValid()) {
-        int matchedNormalType  = int(normalType.type());
+        int matchedNormalType = int(normalType.type());
         int matchedNormalCount = actualNotes;
         // match the types
         matchTypeAndCount(matchedNormalType, matchedNormalCount);
@@ -182,24 +179,22 @@ bool MusicXmlTupletState::isTupletFilled(const TDuration normalType, const Fract
  the note length is divided by two, checked by tupletAssert().
  */
 
-void MusicXmlTupletState::smallestTypeAndCount(const TDuration durType, int& type, int& count)
-{
+void MusicXmlTupletState::smallestTypeAndCount(const TDuration durType, int &type, int &count) {
     type = int(durType.type());
     count = 1;
     switch (durType.dots()) {
-    case 0:
-        // nothing to do
-        break;
-    case 1:
-        type += 1;                 // next-smaller type
-        count = 3;
-        break;
-    case 2:
-        type += 2;                 // next-next-smaller type
-        count = 7;
-        break;
-    default:
-        LOGD("smallestTypeAndCount() does not support more than 2 dots");
+        case 0:
+            // nothing to do
+            break;
+        case 1:
+            type += 1; // next-smaller type
+            count = 3;
+            break;
+        case 2:
+            type += 2; // next-next-smaller type
+            count = 7;
+            break;
+        default: LOGD("smallestTypeAndCount() does not support more than 2 dots");
     }
 }
 
@@ -213,8 +208,7 @@ void MusicXmlTupletState::smallestTypeAndCount(const TDuration durType, int& typ
  largest type.
  */
 
-void MusicXmlTupletState::matchTypeAndCount(int& noteType, int& noteCount)
-{
+void MusicXmlTupletState::matchTypeAndCount(int &noteType, int &noteCount) {
     while (smallestNoteType < noteType) {
         smallestNoteType++;
         smallestNoteCount *= 2;
@@ -234,8 +228,7 @@ void MusicXmlTupletState::matchTypeAndCount(int& noteType, int& noteCount)
  Determine type and number of smallest notes in the tuplet
  */
 
-void MusicXmlTupletState::addDurationToTuplet(const Fraction dur, const Fraction timeMod)
-{
+void MusicXmlTupletState::addDurationToTuplet(const Fraction dur, const Fraction timeMod) {
     /*
     LOGD("1 duration %s timeMod %s -> state.tupletType %d state.tupletCount %d state.actualNotes %d state.normalNotes %d",
            muPrintable(duration.print()),
@@ -282,13 +275,9 @@ void MusicXmlTupletState::addDurationToTuplet(const Fraction dur, const Fraction
  TODO Nested tuplets are not (yet) supported.
  */
 
-MusicXmlTupletFlags MusicXmlTupletState::determineTupletAction(const Fraction noteDuration,
-                                                               const Fraction timeMod,
-                                                               const MusicXmlStartStop tupletStartStop,
-                                                               const TDuration normalType,
-                                                               Fraction& missingPreviousDuration,
-                                                               Fraction& missingCurrentDuration)
-{
+MusicXmlTupletFlags MusicXmlTupletState::determineTupletAction(const Fraction noteDuration, const Fraction timeMod,
+                                                               const MusicXmlStartStop tupletStartStop, const TDuration normalType,
+                                                               Fraction &missingPreviousDuration, Fraction &missingCurrentDuration) {
     const int actNotes = timeMod.denominator();
     const int norNotes = timeMod.numerator();
     MusicXmlTupletFlags res = MusicXmlTupletFlag::NONE;
@@ -316,15 +305,14 @@ MusicXmlTupletFlags MusicXmlTupletState::determineTupletAction(const Fraction no
         res |= MusicXmlTupletFlag::STOP_PREVIOUS;
     }
     if (tupletStartStop == MusicXmlStartStop::STOP && !inTuplet) {
-        LOGD("tuplet stop but no tuplet started");           // TODO
+        LOGD("tuplet stop but no tuplet started"); // TODO
         // recovery handled later (automatically, no special case needed)
     }
 
     // Tuplet are either started by the tuplet start
     // or when the time modification is first found.
     if (!inTuplet) {
-        if (tupletStartStop == MusicXmlStartStop::START
-            || (!inTuplet && (actNotes != 1 || norNotes != 1))) {
+        if (tupletStartStop == MusicXmlStartStop::START || (!inTuplet && (actNotes != 1 || norNotes != 1))) {
             if (tupletStartStop != MusicXmlStartStop::START) {
                 implicit = true;
             } else {
@@ -352,9 +340,8 @@ MusicXmlTupletFlags MusicXmlTupletState::determineTupletAction(const Fraction no
     // or when the time-modification is not found.
 
     if (inTuplet) {
-        if (tupletStartStop == MusicXmlStartStop::STOP
-            || (implicit && isTupletFilled(normalType, timeMod))
-            || (actNotes == 1 && norNotes == 1)) {           // incorrect ??? check scenario incomplete tuplet w/o start
+        if (tupletStartStop == MusicXmlStartStop::STOP || (implicit && isTupletFilled(normalType, timeMod)) ||
+            (actNotes == 1 && norNotes == 1)) { // incorrect ??? check scenario incomplete tuplet w/o start
             if (actNotes > norNotes && !isTupletFilled(normalType, timeMod)) {
                 missingCurrentDuration = missingTupletDuration(duration);
                 LOGD("current tuplet incomplete, missing %s", muPrintable(missingCurrentDuration.toString()));

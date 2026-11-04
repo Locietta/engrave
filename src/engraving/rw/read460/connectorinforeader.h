@@ -33,44 +33,45 @@ namespace mu::engraving {
 class ChordRest;
 class Measure;
 class Note;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::read460 {
 class ReadContext;
-class ConnectorInfoReader final : public ConnectorInfo
-{
+
+class ConnectorInfoReader final : public ConnectorInfo {
     OBJECT_ALLOCATOR(engraving, ConnectorInfoReader)
 
 public:
-    ConnectorInfoReader(XmlReader& e, ReadContext* ctx, EngravingItem* current, int track = -1);
-    ConnectorInfoReader(XmlReader& e, ReadContext* ctx, Score* current, int track = -1);
+    ConnectorInfoReader(XmlReader &e, ReadContext *ctx, EngravingItem *current, int track = -1);
+    ConnectorInfoReader(XmlReader &e, ReadContext *ctx, Score *current, int track = -1);
 
-    ConnectorInfoReader* prev() const { return static_cast<ConnectorInfoReader*>(m_prev); }
-    ConnectorInfoReader* next() const { return static_cast<ConnectorInfoReader*>(m_next); }
+    ConnectorInfoReader *prev() const { return static_cast<ConnectorInfoReader *>(m_prev); }
 
-    EngravingItem* connector();
-    const EngravingItem* connector() const;
-    EngravingItem* releaseConnector();   // returns connector and "forgets" it by
+    ConnectorInfoReader *next() const { return static_cast<ConnectorInfoReader *>(m_next); }
+
+    EngravingItem *connector();
+    const EngravingItem *connector() const;
+    EngravingItem *releaseConnector(); // returns connector and "forgets" it by
     // setting an internal pointer to it to zero
 
     bool read();
     void update();
     void addToScore(bool pasteMode);
 
-    static void readConnector(std::shared_ptr<ConnectorInfoReader> info, XmlReader& e, ReadContext& ctx);
+    static void readConnector(std::shared_ptr<ConnectorInfoReader> info, XmlReader &e, ReadContext &ctx);
 
-    static void readAddConnector(ChordRest* item, ConnectorInfoReader* info, bool pasteMode);
-    static void readAddConnector(Measure* item, ConnectorInfoReader* info, bool pasteMode);
-    static void readAddConnector(Note* item, ConnectorInfoReader* info, bool pasteMode);
-    static void readAddConnector(Score* item, ConnectorInfoReader* info, bool pasteMode);
+    static void readAddConnector(ChordRest *item, ConnectorInfoReader *info, bool pasteMode);
+    static void readAddConnector(Measure *item, ConnectorInfoReader *info, bool pasteMode);
+    static void readAddConnector(Note *item, ConnectorInfoReader *info, bool pasteMode);
+    static void readAddConnector(Score *item, ConnectorInfoReader *info, bool pasteMode);
 
 private:
-    void readEndpointLocation(Location& l);
+    void readEndpointLocation(Location &l);
     Fraction curTick() const;
 
-    XmlReader* m_reader = nullptr;
-    ReadContext* m_ctx = nullptr;
-    EngravingItem* m_connector = nullptr;
-    EngravingObject* m_connectorReceiver = nullptr;
+    XmlReader *m_reader = nullptr;
+    ReadContext *m_ctx = nullptr;
+    EngravingItem *m_connector = nullptr;
+    EngravingObject *m_connectorReceiver = nullptr;
 };
-}
+} // namespace mu::engraving::read460

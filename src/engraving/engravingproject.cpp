@@ -36,28 +36,21 @@ using namespace muse;
 using namespace mu;
 using namespace mu::engraving;
 
-std::shared_ptr<EngravingProject> EngravingProject::create(const EngravingServices& services)
-{
+std::shared_ptr<EngravingProject> EngravingProject::create(const EngravingServices &services) {
     std::shared_ptr<EngravingProject> p = std::shared_ptr<EngravingProject>(new EngravingProject(services));
     p->init(DefaultStyle::defaultStyle());
     return p;
 }
 
-std::shared_ptr<EngravingProject> EngravingProject::create(const MStyle& style, const EngravingServices& services)
-{
+std::shared_ptr<EngravingProject> EngravingProject::create(const MStyle &style, const EngravingServices &services) {
     std::shared_ptr<EngravingProject> p = std::shared_ptr<EngravingProject>(new EngravingProject(services));
     p->init(style);
     return p;
 }
 
-EngravingProject::EngravingProject(const EngravingServices& services)
-    : m_services(services)
-{
-    muse::ObjectAllocator::used();
-}
+EngravingProject::EngravingProject(const EngravingServices &services) : m_services(services) { muse::ObjectAllocator::used(); }
 
-EngravingProject::~EngravingProject()
-{
+EngravingProject::~EngravingProject() {
     delete m_masterScore;
 
     muse::ObjectAllocator::unused();
@@ -67,47 +60,25 @@ EngravingProject::~EngravingProject()
     // AllocatorsRegister::instance()->cleanupAll("engraving");
 }
 
-void EngravingProject::init(const MStyle& style)
-{
-    m_masterScore = new MasterScore(m_services, style, weak_from_this());
-}
+void EngravingProject::init(const MStyle &style) { m_masterScore = new MasterScore(m_services, style, weak_from_this()); }
 
-IFileInfoProviderPtr EngravingProject::fileInfoProvider() const
-{
-    return m_masterScore->fileInfo();
-}
+IFileInfoProviderPtr EngravingProject::fileInfoProvider() const { return m_masterScore->fileInfo(); }
 
-void EngravingProject::setFileInfoProvider(IFileInfoProviderPtr fileInfoProvider)
-{
-    m_masterScore->setFileInfoProvider(fileInfoProvider);
-}
+void EngravingProject::setFileInfoProvider(IFileInfoProviderPtr fileInfoProvider) { m_masterScore->setFileInfoProvider(fileInfoProvider); }
 
-String EngravingProject::appVersion() const
-{
-    return m_masterScore->mscoreVersion();
-}
+String EngravingProject::appVersion() const { return m_masterScore->mscoreVersion(); }
 
-int EngravingProject::mscVersion() const
-{
-    return m_masterScore->mscVersion();
-}
+int EngravingProject::mscVersion() const { return m_masterScore->mscVersion(); }
 
-bool EngravingProject::readOnly() const
-{
-    return m_masterScore->readOnly();
-}
+bool EngravingProject::readOnly() const { return m_masterScore->readOnly(); }
 
-void EngravingProject::setMasterScore(MasterScore* score)
-{
-    m_masterScore = score;
-}
+void EngravingProject::setMasterScore(MasterScore *score) { m_masterScore = score; }
 
-Ret EngravingProject::setupMasterScore(bool forceMode)
-{
+Ret EngravingProject::setupMasterScore(bool forceMode) {
     TRACEFUNC;
 
     m_masterScore->updatePaddingTables();
-    for (Score* s : m_masterScore->scoreList()) {
+    for (Score *s : m_masterScore->scoreList()) {
         s->updatePaddingTables();
     }
 
@@ -121,13 +92,9 @@ Ret EngravingProject::setupMasterScore(bool forceMode)
     return forceMode ? muse::make_ok() : ret;
 }
 
-MasterScore* EngravingProject::masterScore() const
-{
-    return m_masterScore;
-}
+MasterScore *EngravingProject::masterScore() const { return m_masterScore; }
 
-Ret EngravingProject::loadMscz(const MscReader& msc, rw::ReadInOutData* data, bool ignoreVersionError)
-{
+Ret EngravingProject::loadMscz(const MscReader &msc, rw::ReadInOutData *data, bool ignoreVersionError) {
     TRACEFUNC;
 
     MScore::setError(MsError::MS_NO_ERROR);
@@ -136,21 +103,16 @@ Ret EngravingProject::loadMscz(const MscReader& msc, rw::ReadInOutData* data, bo
     return loader.loadMscz(m_masterScore, msc, data, ignoreVersionError);
 }
 
-bool EngravingProject::writeMscz(MscWriter& writer, const write::WriteContext* ctx)
-{
+bool EngravingProject::writeMscz(MscWriter &writer, const write::WriteContext *ctx) {
     TRACEFUNC;
 
     MscSaver saver;
     return saver.writeMscz(m_masterScore, writer, ctx);
 }
 
-bool EngravingProject::isCorruptedUponLoading() const
-{
-    return m_isCorruptedUponLoading;
-}
+bool EngravingProject::isCorruptedUponLoading() const { return m_isCorruptedUponLoading; }
 
-Ret EngravingProject::checkCorrupted() const
-{
+Ret EngravingProject::checkCorrupted() const {
     TRACEFUNC;
 
     return m_masterScore->sanityCheck();

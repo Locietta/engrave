@@ -44,11 +44,10 @@ extern "C" {
 /**
  * Enum used with fluid_voice_add_mod() to specify how to handle duplicate modulators.
  */
-enum fluid_voice_add_mod
-{
-    FLUID_VOICE_OVERWRITE,        /**< Overwrite any existing matching modulator */
-    FLUID_VOICE_ADD,              /**< Add (sum) modulator amounts */
-    FLUID_VOICE_DEFAULT           /**< For default modulators only, no need to check for duplicates */
+enum fluid_voice_add_mod {
+    FLUID_VOICE_OVERWRITE, /**< Overwrite any existing matching modulator */
+    FLUID_VOICE_ADD,       /**< Add (sum) modulator amounts */
+    FLUID_VOICE_DEFAULT    /**< For default modulators only, no need to check for duplicates */
 };
 
 FLUIDSYNTH_API void fluid_voice_add_mod(fluid_voice_t *voice, fluid_mod_t *mod, int mode);
@@ -74,4 +73,3 @@ FLUIDSYNTH_API void fluid_voice_update_param(fluid_voice_t *voice, int gen);
 }
 #endif
 #endif /* _FLUIDSYNTH_VOICE_H */
-

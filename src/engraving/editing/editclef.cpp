@@ -39,13 +39,12 @@
 using namespace mu::engraving;
 
 // compute line position of noteheads after clef change
-static void updateNoteLines(Segment* segment, track_idx_t track)
-{
-    Staff* staff = segment->score()->staff(track / VOICES);
+static void updateNoteLines(Segment *segment, track_idx_t track) {
+    Staff *staff = segment->score()->staff(track / VOICES);
     if (staff->isDrumStaff(segment->tick()) || staff->isTabStaff(segment->tick())) {
         return;
     }
-    for (Segment* s = segment->next1(); s; s = s->next1()) {
+    for (Segment *s = segment->next1(); s; s = s->next1()) {
         if ((s->segmentType() & (SegmentType::Clef | SegmentType::HeaderClef)) && s->element(track) && !s->element(track)->generated()) {
             break;
         }
@@ -53,15 +52,15 @@ static void updateNoteLines(Segment* segment, track_idx_t track)
             continue;
         }
         for (track_idx_t t = track; t < track + VOICES; ++t) {
-            EngravingItem* e = s->element(t);
+            EngravingItem *e = s->element(t);
             if (e && e->isChord()) {
-                Chord* chord = toChord(e);
-                for (Note* n : chord->notes()) {
+                Chord *chord = toChord(e);
+                for (Note *n : chord->notes()) {
                     n->updateLine();
                 }
                 chord->sortNotes();
-                for (Chord* gc : chord->graceNotes()) {
-                    for (Note* gn : gc->notes()) {
+                for (Chord *gc : chord->graceNotes()) {
+                    for (Note *gn : gc->notes()) {
                         gn->updateLine();
                     }
                     gc->sortNotes();
@@ -75,15 +74,13 @@ static void updateNoteLines(Segment* segment, track_idx_t track)
 //   ChangeClefType
 //---------------------------------------------------------
 
-ChangeClefType::ChangeClefType(Clef* c, ClefType cl, ClefType tc)
-{
-    clef            = c;
-    concertClef     = cl;
+ChangeClefType::ChangeClefType(Clef *c, ClefType cl, ClefType tc) {
+    clef = c;
+    concertClef = cl;
     transposingClef = tc;
 }
 
-void ChangeClefType::flip()
-{
+void ChangeClefType::flip() {
     ClefType ocl = clef->concertClef();
     ClefType otc = clef->transposingClef();
 
@@ -91,11 +88,11 @@ void ChangeClefType::flip()
     clef->setTransposingClef(transposingClef);
 
     clef->staff()->setClef(clef);
-    Segment* segment = clef->segment();
+    Segment *segment = clef->segment();
     updateNoteLines(segment, clef->track());
     clef->triggerLayoutAll(); // TODO: reduce layout to clef range
 
-    concertClef     = ocl;
+    concertClef = ocl;
     transposingClef = otc;
 }
 
@@ -103,20 +100,18 @@ void ChangeClefType::flip()
 //   EditClef
 //---------------------------------------------------------
 
-bool EditClef::canInsertClef(const Score* score, ClefType type)
-{
+bool EditClef::canInsertClef(const Score *score, ClefType type) {
     if (type == ClefType::INVALID) {
         return false;
     }
 
-    const Staff* staff = score->staff(score->inputState().track() / VOICES);
-    const ChordRest* cr = score->inputState().cr();
+    const Staff *staff = score->staff(score->inputState().track() / VOICES);
+    const ChordRest *cr = score->inputState().cr();
 
     return staff && cr;
 }
 
-void EditClef::insertClef(Transaction& tx, Score* score, ClefType type)
-{
+void EditClef::insertClef(Transaction &tx, Score *score, ClefType type) {
     undoChangeClef(tx, score, score->staff(score->inputState().track() / VOICES), score->inputState().cr(), type);
 }
 
@@ -125,8 +120,7 @@ void EditClef::insertClef(Transaction& tx, Score* score, ClefType type)
 //    insert clef before cr
 //---------------------------------------------------------
 
-void EditClef::insertClef(Transaction& tx, Score* score, Clef* clef, ChordRest* cr)
-{
+void EditClef::insertClef(Transaction &tx, Score *score, Clef *clef, ChordRest *cr) {
     undoChangeClef(tx, score, cr->staff(), cr, clef->clefType());
     delete clef;
 }
@@ -138,12 +132,9 @@ void EditClef::insertClef(Transaction& tx, Score* score, Clef* clef, ChordRest* 
 //    create a clef before element e
 //---------------------------------------------------------
 
-void EditClef::undoChangeClef(Transaction&, Score* score, Staff* ostaff, EngravingItem* e, ClefType ct, bool forInstrumentChange,
-                              Clef* clefToRelink)
-{
-    IF_ASSERT_FAILED(ostaff && e) {
-        return;
-    }
+void EditClef::undoChangeClef(Transaction &, Score *score, Staff *ostaff, EngravingItem *e, ClefType ct, bool forInstrumentChange,
+                              Clef *clefToRelink) {
+    IF_ASSERT_FAILED(ostaff && e) { return; }
 
     bool moveClef = false;
     SegmentType st = SegmentType::Clef;
@@ -154,7 +145,7 @@ void EditClef::undoChangeClef(Transaction&, Score* score, Staff* ostaff, Engravi
             st = SegmentType::HeaderClef;
         }
     } else if (e->isClef()) {
-        Clef* clef = toClef(e);
+        Clef *clef = toClef(e);
         if (clef->segment()->isHeaderClefType()) {
             if (clef->measure()->prevMeasure()) {
                 moveClef = true;
@@ -165,46 +156,46 @@ void EditClef::undoChangeClef(Transaction&, Score* score, Staff* ostaff, Engravi
             moveClef = true;
         }
     } else if (e->rtick() == Fraction(0, 1)) {
-        Measure* curMeasure = e->findMeasure();
-        Measure* prevMeasure = curMeasure ? curMeasure->prevMeasure() : nullptr;
+        Measure *curMeasure = e->findMeasure();
+        Measure *prevMeasure = curMeasure ? curMeasure->prevMeasure() : nullptr;
         if (prevMeasure && !prevMeasure->sectionBreak()) {
             moveClef = true;
         }
     }
 
     bool concertPitch = score->style().styleB(Sid::concertPitch);
-    Clef* gclef = 0;
+    Clef *gclef = 0;
     Fraction tick = e->tick();
     Fraction rtick = e->rtick();
     bool isSmall = (st == SegmentType::Clef);
-    for (Staff* staff : ostaff->staffList()) {
+    for (Staff *staff : ostaff->staffList()) {
         if (clefToRelink && ostaff == staff) {
             continue;
         }
 
-        Score* staffScore = staff->score();
-        Measure* measure = staffScore->tick2measure(tick);
+        Score *staffScore = staff->score();
+        Measure *measure = staffScore->tick2measure(tick);
 
         if (!measure) {
             LOGW("measure for tick %d not found!", tick.ticks());
             continue;
         }
 
-        Segment* destSeg;
+        Segment *destSeg;
         Fraction rt;
-        if (moveClef) {                // if at start of measure and there is a previous measure
+        if (moveClef) { // if at start of measure and there is a previous measure
             measure = measure->prevMeasure();
-            rt      = measure->ticks();
+            rt = measure->ticks();
         } else {
             rt = rtick;
         }
         destSeg = measure->undoGetSegmentR(st, rt);
 
         staff_idx_t staffIdx = staff->idx();
-        track_idx_t track    = staffIdx * VOICES;
-        Clef* clef   = toClef(destSeg->element(track));
+        track_idx_t track = staffIdx * VOICES;
+        Clef *clef = toClef(destSeg->element(track));
 
-        StaffType* staffType = staff->staffType(e->tick());
+        StaffType *staffType = staff->staffType(e->tick());
         StaffGroup staffGroup = staffType->group();
         if (ClefInfo::staffGroup(ct) != staffGroup && !forInstrumentChange) {
             continue;
@@ -215,7 +206,7 @@ void EditClef::undoChangeClef(Transaction&, Score* score, Staff* ostaff, Engravi
             // for transposing instruments, differentiate
             // clef type for concertPitch
             //
-            Instrument* i = staff->part()->instrument(tick);
+            Instrument *i = staff->part()->instrument(tick);
             ClefType cp, tp;
             if (i->transpose().isZero()) {
                 cp = ct;
@@ -231,16 +222,16 @@ void EditClef::undoChangeClef(Transaction&, Score* score, Staff* ostaff, Engravi
             }
             clef->setGenerated(false);
             staffScore->undo(new ChangeClefType(clef, cp, tp));
-            Clef* oClef = clef->otherClef();
+            Clef *oClef = clef->otherClef();
             if (oClef && !(oClef->generated())) {
                 staffScore->undo(new ChangeClefType(oClef, cp, tp));
             }
             // change the clef in the mmRest if any
             if (measure->hasMMRest()) {
-                Measure* mmMeasure = measure->mmRest();
-                Segment* mmDestSeg = mmMeasure->findSegment(SegmentType::Clef, tick);
+                Measure *mmMeasure = measure->mmRest();
+                Segment *mmDestSeg = mmMeasure->findSegment(SegmentType::Clef, tick);
                 if (mmDestSeg) {
-                    Clef* mmClef = toClef(mmDestSeg->element(clef->track()));
+                    Clef *mmClef = toClef(mmDestSeg->element(clef->track()));
                     if (mmClef) {
                         staffScore->undo(new ChangeClefType(mmClef, cp, tp));
                     }
@@ -265,7 +256,7 @@ void EditClef::undoChangeClef(Transaction&, Score* score, Staff* ostaff, Engravi
         clef->setSmall(isSmall);
 
         if (clefToRelink) {
-            LinkedObjects* links = clef->links();
+            LinkedObjects *links = clef->links();
             if (!links) {
                 clef->linkTo(clefToRelink);
             } else if (!clef->isLinked(clefToRelink)) {

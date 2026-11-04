@@ -28,9 +28,7 @@
 
 namespace muse::audio::fx {
 /// helper logic to apply gain ramps to blocks of audio
-inline void apply_smooth_gain(dsp::SmoothLinearValue<float>& smooth_value, float** s_in, float** s_out,
-                              int num_channels, int num_s)
-{
+inline void apply_smooth_gain(dsp::SmoothLinearValue<float> &smooth_value, float **s_in, float **s_out, int num_channels, int num_s) {
     if (smooth_value.isAtTargetValue()) {
         for (int ch = 0; ch < num_channels; ++ch) {
             vo::constantMultiply(s_in[ch], smooth_value.getTargetValue(), s_out[ch], num_s);

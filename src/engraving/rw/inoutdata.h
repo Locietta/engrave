@@ -33,12 +33,11 @@
 
 namespace mu::engraving {
 class LinkedObjects;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::rw {
-struct ReadLinks
-{
-    std::map<int /*staffIndex*/, std::vector<std::pair<LinkedObjects*, Location> > > staffLinkedElements; // one list per staff
+struct ReadLinks {
+    std::map<int /*staffIndex*/, std::vector<std::pair<LinkedObjects *, Location>>> staffLinkedElements; // one list per staff
     LinksIndexer linksIndexer;
 };
 
@@ -57,9 +56,9 @@ struct ReadInOutData {
 
 struct WriteInOutData {
     write::WriteContext ctx;
-    WriteInOutData(const Score* s)
-        : ctx(s) {}
+
+    WriteInOutData(const Score *s) : ctx(s) {}
 };
-}
+} // namespace mu::engraving::rw
 
 #endif // MU_ENGRAVING_INOUTDATA_H

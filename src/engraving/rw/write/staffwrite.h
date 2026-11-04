@@ -27,14 +27,13 @@
 namespace mu::engraving {
 class Staff;
 class MeasureBase;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::write {
-class StaffWrite
-{
+class StaffWrite {
 public:
 
-    static void writeStaff(const Staff* staff, XmlWriter& xml, WriteContext& ctx, MeasureBase* measureStart, MeasureBase* measureEnd,
+    static void writeStaff(const Staff *staff, XmlWriter &xml, WriteContext &ctx, MeasureBase *measureStart, MeasureBase *measureEnd,
                            staff_idx_t staffStart, staff_idx_t staffIdx);
 };
-}
+} // namespace mu::engraving::write

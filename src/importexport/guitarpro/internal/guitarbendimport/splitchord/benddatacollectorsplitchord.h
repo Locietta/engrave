@@ -30,22 +30,21 @@
 namespace mu::engraving {
 class Note;
 class Chord;
-}
+} // namespace mu::engraving
 
 namespace mu::iex::guitarpro {
-class BendDataCollectorSplitChord
-{
+class BendDataCollectorSplitChord {
 public:
 
-    void storeBendData(const mu::engraving::Note* note, const mu::engraving::PitchValues& pitchValues);
+    void storeBendData(const mu::engraving::Note *note, const mu::engraving::PitchValues &pitchValues);
     BendDataContextSplitChord collectBendDataContext();
 
 private:
     std::unordered_map<mu::engraving::track_idx_t,
-                       std::map<mu::engraving::Fraction,
-                                std::unordered_map<const mu::engraving::Note*, ImportedBendInfo> > > m_bendInfoForNote;
+                       std::map<mu::engraving::Fraction, std::unordered_map<const mu::engraving::Note *, ImportedBendInfo>>>
+        m_bendInfoForNote;
 
-    void fillBendsDurations(BendDataContextSplitChord& bendDataCtx);
-    void fillBendData(BendDataContextSplitChord& bendDataCtx);
+    void fillBendsDurations(BendDataContextSplitChord &bendDataCtx);
+    void fillBendData(BendDataContextSplitChord &bendDataCtx);
 };
-} // mu::iex::guitarpro
+} // namespace mu::iex::guitarpro

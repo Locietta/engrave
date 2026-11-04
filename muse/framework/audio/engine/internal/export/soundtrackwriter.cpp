@@ -43,37 +43,33 @@ using namespace muse;
 using namespace muse::audio;
 using namespace muse::audio::soundtrack;
 
-static encode::AbstractAudioEncoderPtr createEncoder(const SoundTrackFormat& format, io::IODevice& dstDevice)
-{
+static encode::AbstractAudioEncoderPtr createEncoder(const SoundTrackFormat &format, io::IODevice &dstDevice) {
     switch (format.type) {
-    case SoundTrackType::MP3: return std::make_unique<encode::Mp3Encoder>(format, dstDevice);
-    case SoundTrackType::OGG: return std::make_unique<encode::OggEncoder>(format, dstDevice);
-    case SoundTrackType::FLAC: return std::make_unique<encode::FlacEncoder>(format, dstDevice);
-    case SoundTrackType::WAV: return std::make_unique<encode::WavEncoder>(format, dstDevice);
-    case SoundTrackType::AAC: return std::make_unique<encode::AacEncoder>(format, dstDevice);
-    case SoundTrackType::Undefined: break;
+        case SoundTrackType::MP3: return std::make_unique<encode::Mp3Encoder>(format, dstDevice);
+        case SoundTrackType::OGG: return std::make_unique<encode::OggEncoder>(format, dstDevice);
+        case SoundTrackType::FLAC: return std::make_unique<encode::FlacEncoder>(format, dstDevice);
+        case SoundTrackType::WAV: return std::make_unique<encode::WavEncoder>(format, dstDevice);
+        case SoundTrackType::AAC: return std::make_unique<encode::AacEncoder>(format, dstDevice);
+        case SoundTrackType::Undefined: break;
     }
 
     UNREACHABLE;
     return nullptr;
 }
 
-SoundTrackWriter::SoundTrackWriter(io::IODevice& dstDevice, const SoundTrackFormat& format,
-                                   const secs_t totalDuration, IAudioNodePtr source, std::function<void(uint64_t)> blockCompleted,
-                                   std::function<encode::AbstractAudioEncoderPtr(const SoundTrackFormat&, io::IODevice&)> encoderFactory,
+SoundTrackWriter::SoundTrackWriter(io::IODevice &dstDevice, const SoundTrackFormat &format, const secs_t totalDuration,
+                                   IAudioNodePtr source, std::function<void(uint64_t)> blockCompleted,
+                                   std::function<encode::AbstractAudioEncoderPtr(const SoundTrackFormat &, io::IODevice &)> encoderFactory,
                                    std::function<bool()> cancelled)
-    : m_cancelled(std::move(cancelled)), m_source(std::move(source)), m_blockCompleted(std::move(blockCompleted))
-{
+    : m_cancelled(std::move(cancelled)), m_source(std::move(source)), m_blockCompleted(std::move(blockCompleted)) {
     if (!m_source) {
         return;
     }
-    IF_ASSERT_FAILED(format.isValid()) {
-        return;
-    }
+    IF_ASSERT_FAILED(format.isValid()) { return; }
 
-    const OutputSpec& outputSpec = format.outputSpec;
+    const OutputSpec &outputSpec = format.outputSpec;
 
-    auto durationToSamples = [&](const secs_t& duration) {
+    auto durationToSamples = [&](const secs_t &duration) {
         const double sec = std::max(0.0, duration.raw());
         return static_cast<samples_t>(std::llround(sec * static_cast<double>(outputSpec.sampleRate)));
     };
@@ -98,8 +94,7 @@ SoundTrackWriter::SoundTrackWriter(io::IODevice& dstDevice, const SoundTrackForm
     }
 }
 
-Ret SoundTrackWriter::write()
-{
+Ret SoundTrackWriter::write() {
     TRACEFUNC;
 
     if (pollCancellation()) return make_ret(Ret::Code::Cancel);
@@ -135,20 +130,14 @@ Ret SoundTrackWriter::write()
     return ret;
 }
 
-bool SoundTrackWriter::pollCancellation()
-{
+bool SoundTrackWriter::pollCancellation() {
     if (m_cancelled && m_cancelled()) m_isAborted = true;
     return m_isAborted;
 }
 
-void SoundTrackWriter::abort()
-{
-    m_isAborted = true;
-}
+void SoundTrackWriter::abort() { m_isAborted = true; }
 
-
-Ret SoundTrackWriter::writeStreaming()
-{
+Ret SoundTrackWriter::writeStreaming() {
     TRACEFUNC;
     if (m_totalSamples == 0) {
         LOGI() << "No audio to export";
@@ -157,12 +146,10 @@ Ret SoundTrackWriter::writeStreaming()
 
     samples_t framesWritten = 0;
 
-
     // Phase 1: leading silence
     const samples_t leadingEnd = m_leadingSilenceSamples;
     while (framesWritten < leadingEnd && !pollCancellation()) {
-        const samples_t chunk = static_cast<samples_t>(
-            std::min<uint64_t>(m_renderStep, leadingEnd - framesWritten));
+        const samples_t chunk = static_cast<samples_t>(std::min<uint64_t>(m_renderStep, leadingEnd - framesWritten));
 
         std::fill(m_intermBuffer.begin(), m_intermBuffer.end(), 0.f);
 
@@ -183,8 +170,7 @@ Ret SoundTrackWriter::writeStreaming()
     // Phase 2: actual audio data
     const samples_t audioEnd = m_leadingSilenceSamples + m_dataSamples;
     while (framesWritten < audioEnd && !pollCancellation()) {
-        const samples_t chunk = static_cast<samples_t>(
-            std::min<uint64_t>(m_renderStep, audioEnd - framesWritten));
+        const samples_t chunk = static_cast<samples_t>(std::min<uint64_t>(m_renderStep, audioEnd - framesWritten));
 
         //! NOTE The mixer mixes additively and relies on the caller to zero the output buffer
         //! (real time does this via AudioEngine::fillSilent), so clear it before each block.
@@ -211,8 +197,7 @@ Ret SoundTrackWriter::writeStreaming()
 
     // Phase 3: trailing silence
     while (framesWritten < m_totalSamples && !pollCancellation()) {
-        const samples_t chunk = static_cast<samples_t>(
-            std::min<uint64_t>(m_renderStep, m_totalSamples - framesWritten));
+        const samples_t chunk = static_cast<samples_t>(std::min<uint64_t>(m_renderStep, m_totalSamples - framesWritten));
 
         std::fill(m_intermBuffer.begin(), m_intermBuffer.end(), 0.f);
 

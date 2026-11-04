@@ -25,24 +25,22 @@
 #include "stafftextbase.h"
 
 namespace mu::engraving {
-class Capo final : public StaffTextBase
-{
+class Capo final : public StaffTextBase {
     OBJECT_ALLOCATOR(engraving, Capo)
     DECLARE_CLASSOF(ElementType::CAPO)
 
 public:
     Capo(DummyParentOr<Segment> parent, TextStyleType textStyleType = TextStyleType::STAFF);
 
-    Capo* clone() const override;
+    Capo *clone() const override;
 
     PropertyValue getProperty(Pid id) const override;
     PropertyValue propertyDefault(Pid id) const override;
-    bool setProperty(Pid id, const PropertyValue& val) override;
-    void setXmlText(const String& text) override;
+    bool setProperty(Pid id, const PropertyValue &val) override;
+    void setXmlText(const String &text) override;
 
-
-    const CapoParams& params() const;
-    void setParams(const CapoParams& params);
+    const CapoParams &params() const;
+    void setParams(const CapoParams &params);
 
     bool shouldAutomaticallyGenerateText() const;
     String generateText(size_t stringCount) const;
@@ -55,4 +53,4 @@ private:
     bool m_shouldAutomaticallyGenerateText = true;
     String m_customText;
 };
-}
+} // namespace mu::engraving

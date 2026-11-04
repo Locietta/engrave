@@ -3,7 +3,10 @@
 #include <stdexcept>
 #include <string>
 
-namespace mu::engraving { class Score; }
+namespace mu::engraving {
+class Score;
+} // namespace mu::engraving
+
 namespace music {
 class EngineContext;
 
@@ -19,7 +22,6 @@ struct RenderLimitExceeded : std::runtime_error {
 // Throws std::invalid_argument for a format, page or dpi the renderer does not
 // take, RenderLimitExceeded for a page beyond the size limit, and
 // std::runtime_error for an engine failure.
-std::string render_score(const EngineContext& engine, mu::engraving::Score* score, const std::string& format, int page);
-std::string render_score(const EngineContext& engine, mu::engraving::Score* score, const std::string& format,
-                         const ExportOptions& options);
-}
+std::string render_score(const EngineContext &engine, mu::engraving::Score *score, const std::string &format, int page);
+std::string render_score(const EngineContext &engine, mu::engraving::Score *score, const std::string &format, const ExportOptions &options);
+} // namespace music

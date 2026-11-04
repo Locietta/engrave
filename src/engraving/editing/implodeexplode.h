@@ -25,14 +25,13 @@
 namespace mu::engraving {
 class Score;
 
-class ImplodeExplode
-{
+class ImplodeExplode {
 public:
     /// Explodes contents of top selected staff into subsequent staves.
-    static bool explode(Score* score);
+    static bool explode(Score *score);
 
     /// Implodes contents of selected staves into top staff.
     /// For single staff, merges voices.
-    static bool implode(Score* score);
+    static bool implode(Score *score);
 };
-}
+} // namespace mu::engraving

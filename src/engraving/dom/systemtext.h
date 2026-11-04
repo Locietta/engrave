@@ -30,16 +30,16 @@ namespace mu::engraving {
 //   SystemText
 //---------------------------------------------------------
 
-class SystemText : public StaffTextBase
-{
+class SystemText : public StaffTextBase {
     OBJECT_ALLOCATOR(engraving, SystemText)
     DECLARE_CLASSOF(ElementType::SYSTEM_TEXT)
 
 public:
     SystemText(DummyParentOr<Segment> parent, TextStyleType = TextStyleType::SYSTEM, ElementType type = ElementType::SYSTEM_TEXT);
 
-    SystemText* clone() const override { return new SystemText(*this); }
-    Segment* segment() const { return (Segment*)ownershipParent(); }
+    SystemText *clone() const override { return new SystemText(*this); }
+
+    Segment *segment() const { return (Segment *) ownershipParent(); }
 
     bool canBeExcludedFromOtherParts() const override { return true; }
 

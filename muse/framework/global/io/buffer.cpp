@@ -30,63 +30,47 @@
 using namespace muse;
 using namespace muse::io;
 
-Buffer Buffer::opened(const OpenMode mode, ByteArray* ba)
-{
+Buffer Buffer::opened(const OpenMode mode, ByteArray *ba) {
     Buffer buf(ba);
     DO_ASSERT(buf.open(mode));
 
     return buf;
 }
 
-Buffer Buffer::opened(const OpenMode mode, ByteArray&& ba)
-{
+Buffer Buffer::opened(const OpenMode mode, ByteArray &&ba) {
     Buffer buf(std::move(ba));
     DO_ASSERT(buf.open(mode));
 
     return buf;
 }
 
-Buffer::Buffer()
-{
-    m_ref = &m_ba;
-}
+Buffer::Buffer() { m_ref = &m_ba; }
 
-Buffer::Buffer(size_t size)
-{
+Buffer::Buffer(size_t size) {
     m_ba.resize(size);
     m_ref = &m_ba;
 }
 
-Buffer::Buffer(const uint8_t* data, size_t size)
-{
+Buffer::Buffer(const uint8_t *data, size_t size) {
     m_ba = ByteArray(data, size);
     m_ref = &m_ba;
 }
 
-Buffer::Buffer(ByteArray* ba)
-    : m_ref(ba)
-{
+Buffer::Buffer(ByteArray *ba) : m_ref(ba) {
     if (!m_ref) {
         m_ref = &m_ba;
     }
 }
 
-Buffer::Buffer(ByteArray&& ba)
-{
+Buffer::Buffer(ByteArray &&ba) {
     m_ba = std::move(ba);
     m_ref = &m_ba;
 }
 
-const ByteArray& Buffer::data() const
-{
-    return *m_ref;
-}
+const ByteArray &Buffer::data() const { return *m_ref; }
 
-ByteArray Buffer::doReadAll()
-{
-    IF_ASSERT_FAILED(isOpenModeReadable()) {
-        return ByteArray();
-    }
+ByteArray Buffer::doReadAll() {
+    IF_ASSERT_FAILED(isOpenModeReadable()) { return ByteArray(); }
 
     if (pos() != 0) {
         return IODevice::doReadAll();
@@ -96,31 +80,19 @@ ByteArray Buffer::doReadAll()
     return data();
 }
 
-bool Buffer::doOpen(OpenMode)
-{
-    return true;
-}
+bool Buffer::doOpen(OpenMode) { return true; }
 
-size_t Buffer::dataSize() const
-{
-    return m_ref->size();
-}
+size_t Buffer::dataSize() const { return m_ref->size(); }
 
-const uint8_t* Buffer::rawData() const
-{
-    return m_ref->constData();
-}
+const uint8_t *Buffer::rawData() const { return m_ref->constData(); }
 
-bool Buffer::resizeData(size_t size)
-{
-    if (activeWriteBudget && size > m_ref->size()
-        && !activeWriteBudget->charge(size - m_ref->size())) return false;
+bool Buffer::resizeData(size_t size) {
+    if (activeWriteBudget && size > m_ref->size() && !activeWriteBudget->charge(size - m_ref->size())) return false;
     m_ref->resize(size);
     return true;
 }
 
-size_t Buffer::writeData(const uint8_t* data, size_t len)
-{
+size_t Buffer::writeData(const uint8_t *data, size_t len) {
     if (activeWriteBudget && !activeWriteBudget->poll()) return 0;
     std::memcpy(m_ref->data() + pos(), data, len);
     return len;

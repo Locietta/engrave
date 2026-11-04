@@ -22,14 +22,12 @@
 
 #include "fxresolver.h"
 
-
 #include "log.h"
 
 using namespace muse::audio;
 using namespace muse::audio::fx;
 
-std::vector<IFxProcessorPtr> FxResolver::resolveMasterFxList(const AudioFxChain& fxChain, const OutputSpec& outputSpec)
-{
+std::vector<IFxProcessorPtr> FxResolver::resolveMasterFxList(const AudioFxChain &fxChain, const OutputSpec &outputSpec) {
 
     TRACEFUNC;
 
@@ -37,10 +35,10 @@ std::vector<IFxProcessorPtr> FxResolver::resolveMasterFxList(const AudioFxChain&
 
     std::vector<IFxProcessorPtr> result;
 
-    for (const auto& resolver : m_resolvers) {
+    for (const auto &resolver : m_resolvers) {
         AudioFxChain fxChainByType;
 
-        for (const auto& fx : fxChain) {
+        for (const auto &fx : fxChain) {
             if (resolver.first == fx.second.type() || fx.second.type() == AudioFxType::Undefined) {
                 fxChainByType.insert(fx);
             }
@@ -57,8 +55,7 @@ std::vector<IFxProcessorPtr> FxResolver::resolveMasterFxList(const AudioFxChain&
     return result;
 }
 
-std::vector<IFxProcessorPtr> FxResolver::resolveFxList(const TrackId trackId, const AudioFxChain& fxChain, const OutputSpec& outputSpec)
-{
+std::vector<IFxProcessorPtr> FxResolver::resolveFxList(const TrackId trackId, const AudioFxChain &fxChain, const OutputSpec &outputSpec) {
 
     TRACEFUNC;
 
@@ -66,10 +63,10 @@ std::vector<IFxProcessorPtr> FxResolver::resolveFxList(const TrackId trackId, co
 
     std::vector<IFxProcessorPtr> result;
 
-    for (const auto& resolver : m_resolvers) {
+    for (const auto &resolver : m_resolvers) {
         AudioFxChain fxChainByType;
 
-        for (const auto& fx : fxChain) {
+        for (const auto &fx : fxChain) {
             if (resolver.first == fx.second.type() || fx.second.type() == AudioFxType::Undefined) {
                 fxChainByType.insert(fx);
             }
@@ -86,8 +83,7 @@ std::vector<IFxProcessorPtr> FxResolver::resolveFxList(const TrackId trackId, co
     return result;
 }
 
-AudioResourceMetaList FxResolver::resolveAvailableResources() const
-{
+AudioResourceMetaList FxResolver::resolveAvailableResources() const {
 
     TRACEFUNC;
 
@@ -95,24 +91,22 @@ AudioResourceMetaList FxResolver::resolveAvailableResources() const
 
     AudioResourceMetaList result;
 
-    for (const auto& pair : m_resolvers) {
-        const AudioResourceMetaList& resolvedResources = pair.second->resolveResources();
+    for (const auto &pair : m_resolvers) {
+        const AudioResourceMetaList &resolvedResources = pair.second->resolveResources();
         result.insert(result.end(), resolvedResources.begin(), resolvedResources.end());
     }
 
     return result;
 }
 
-void FxResolver::registerResolver(const AudioFxType type, IResolverPtr resolver)
-{
+void FxResolver::registerResolver(const AudioFxType type, IResolverPtr resolver) {
 
     std::lock_guard lock(m_mutex);
 
     m_resolvers.insert_or_assign(type, std::move(resolver));
 }
 
-void FxResolver::clearAllFx()
-{
+void FxResolver::clearAllFx() {
 
     std::lock_guard lock(m_mutex);
 

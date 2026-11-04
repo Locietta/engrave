@@ -26,7 +26,7 @@
 using namespace muse;
 
 [[maybe_unused]]
-static constexpr const char* noteNamesWithOctaves[] = {
+static constexpr const char *noteNamesWithOctaves[] = {
     // octave -1
     QT_TRANSLATE_NOOP("global/pitchName", "C-1"),
     QT_TRANSLATE_NOOP("global/pitchName", "C♯-1"),
@@ -263,38 +263,19 @@ static constexpr const char* noteNamesWithOctaves[] = {
     QT_TRANSLATE_NOOP("global/pitchName", "G9"),
 };
 
-static constexpr const char* sharpNotes[] = {
-    QT_TRANSLATE_NOOP("global/noteName", "C"),
-    QT_TRANSLATE_NOOP("global/noteName", "C♯"),
-    QT_TRANSLATE_NOOP("global/noteName", "D"),
-    QT_TRANSLATE_NOOP("global/noteName", "D♯"),
-    QT_TRANSLATE_NOOP("global/noteName", "E"),
-    QT_TRANSLATE_NOOP("global/noteName", "F"),
-    QT_TRANSLATE_NOOP("global/noteName", "F♯"),
-    QT_TRANSLATE_NOOP("global/noteName", "G"),
-    QT_TRANSLATE_NOOP("global/noteName", "G♯"),
-    QT_TRANSLATE_NOOP("global/noteName", "A"),
-    QT_TRANSLATE_NOOP("global/noteName", "A♯"),
-    QT_TRANSLATE_NOOP("global/noteName", "B")
-};
+static constexpr const char *sharpNotes[] = {
+    QT_TRANSLATE_NOOP("global/noteName", "C"),  QT_TRANSLATE_NOOP("global/noteName", "C♯"), QT_TRANSLATE_NOOP("global/noteName", "D"),
+    QT_TRANSLATE_NOOP("global/noteName", "D♯"), QT_TRANSLATE_NOOP("global/noteName", "E"),  QT_TRANSLATE_NOOP("global/noteName", "F"),
+    QT_TRANSLATE_NOOP("global/noteName", "F♯"), QT_TRANSLATE_NOOP("global/noteName", "G"),  QT_TRANSLATE_NOOP("global/noteName", "G♯"),
+    QT_TRANSLATE_NOOP("global/noteName", "A"),  QT_TRANSLATE_NOOP("global/noteName", "A♯"), QT_TRANSLATE_NOOP("global/noteName", "B")};
 
-static constexpr const char* flatNotes[] = {
-    QT_TRANSLATE_NOOP("global/noteName", "C"),
-    QT_TRANSLATE_NOOP("global/noteName", "D♭"),
-    QT_TRANSLATE_NOOP("global/noteName", "D"),
-    QT_TRANSLATE_NOOP("global/noteName", "E♭"),
-    QT_TRANSLATE_NOOP("global/noteName", "E"),
-    QT_TRANSLATE_NOOP("global/noteName", "F"),
-    QT_TRANSLATE_NOOP("global/noteName", "G♭"),
-    QT_TRANSLATE_NOOP("global/noteName", "G"),
-    QT_TRANSLATE_NOOP("global/noteName", "A♭"),
-    QT_TRANSLATE_NOOP("global/noteName", "A"),
-    QT_TRANSLATE_NOOP("global/noteName", "B♭"),
-    QT_TRANSLATE_NOOP("global/noteName", "B")
-};
+static constexpr const char *flatNotes[] = {
+    QT_TRANSLATE_NOOP("global/noteName", "C"),  QT_TRANSLATE_NOOP("global/noteName", "D♭"), QT_TRANSLATE_NOOP("global/noteName", "D"),
+    QT_TRANSLATE_NOOP("global/noteName", "E♭"), QT_TRANSLATE_NOOP("global/noteName", "E"),  QT_TRANSLATE_NOOP("global/noteName", "F"),
+    QT_TRANSLATE_NOOP("global/noteName", "G♭"), QT_TRANSLATE_NOOP("global/noteName", "G"),  QT_TRANSLATE_NOOP("global/noteName", "A♭"),
+    QT_TRANSLATE_NOOP("global/noteName", "A"),  QT_TRANSLATE_NOOP("global/noteName", "B♭"), QT_TRANSLATE_NOOP("global/noteName", "B")};
 
-std::string muse::pitchToString(int pitch, bool addoctave, bool useFlats /* = false */)
-{
+std::string muse::pitchToString(int pitch, bool addoctave, bool useFlats /* = false */) {
     if (pitch < 0 || pitch > 127) {
         return std::string();
     }

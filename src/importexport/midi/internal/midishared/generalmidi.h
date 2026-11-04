@@ -174,19 +174,15 @@ enum class GM1Program : std::uint8_t {
     Gunshot,
 };
 
-constexpr std::optional<GM1Program> toGm1Program(const std::uint8_t v)
-{
+constexpr std::optional<GM1Program> toGm1Program(const std::uint8_t v) {
     if (v > 127) {
         return std::nullopt;
     }
 
-    return GM1Program { v };
+    return GM1Program{v};
 }
 
-constexpr std::uint8_t toMidiData(const GM1Program p)
-{
-    return static_cast<std::uint8_t>(p);
-}
+constexpr std::uint8_t toMidiData(const GM1Program p) { return static_cast<std::uint8_t>(p); }
 
 std::string_view getMidiName(GM1Program);
 } // namespace mu::iex::midi

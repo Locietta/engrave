@@ -65,48 +65,44 @@ using namespace mu::engraving;
 //   MasterScore
 //---------------------------------------------------------
 
-MasterScore::MasterScore(const EngravingServices& services, std::weak_ptr<engraving::EngravingProject> project)
-    : Score(services)
-{
+MasterScore::MasterScore(const EngravingServices &services, std::weak_ptr<engraving::EngravingProject> project) : Score(services) {
     m_project = project;
     m_transactionManager = std::make_unique<TransactionManager>(this);
-    m_undoStack   = new UndoStack();
-    m_sigmap      = new TimeSigMap();
+    m_undoStack = new UndoStack();
+    m_sigmap = new TimeSigMap();
     m_automationController = new ScoreAutomationController();
-    m_expandedRepeatList  = new RepeatList(this);
+    m_expandedRepeatList = new RepeatList(this);
     m_nonExpandedRepeatList = new RepeatList(this);
     setMasterScore(this);
 
 #if defined(_WIN32)
-    metaTags().insert({ u"platform", u"Microsoft Windows" });
+    metaTags().insert({u"platform", u"Microsoft Windows"});
 #elif defined(__APPLE__)
-    metaTags().insert({ u"platform", u"Apple Macintosh" });
+    metaTags().insert({u"platform", u"Apple Macintosh"});
 #elif defined(__linux__)
-    metaTags().insert({ u"platform", u"Linux" });
+    metaTags().insert({u"platform", u"Linux"});
 #else
-    metaTags().insert({ u"platform", u"Unknown" });
+    metaTags().insert({u"platform", u"Unknown"});
 #endif
-    metaTags().insert({ u"movementNumber", u"" });
-    metaTags().insert({ u"movementTitle", u"" });
-    metaTags().insert({ u"workNumber", u"" });
-    metaTags().insert({ u"workTitle", u"" });
-    metaTags().insert({ u"arranger", u"" });
-    metaTags().insert({ u"composer", u"" });
-    metaTags().insert({ u"lyricist", u"" });
-    metaTags().insert({ u"translator", u"" });
-    metaTags().insert({ u"source", u"" });
-    metaTags().insert({ u"copyright", u"" });
-    metaTags().insert({ u"creationDate", muse::Date::currentDate().toString(muse::DateFormat::ISODate) });
+    metaTags().insert({u"movementNumber", u""});
+    metaTags().insert({u"movementTitle", u""});
+    metaTags().insert({u"workNumber", u""});
+    metaTags().insert({u"workTitle", u""});
+    metaTags().insert({u"arranger", u""});
+    metaTags().insert({u"composer", u""});
+    metaTags().insert({u"lyricist", u""});
+    metaTags().insert({u"translator", u""});
+    metaTags().insert({u"source", u""});
+    metaTags().insert({u"copyright", u""});
+    metaTags().insert({u"creationDate", muse::Date::currentDate().toString(muse::DateFormat::ISODate)});
 }
 
-MasterScore::MasterScore(const EngravingServices& services, const MStyle& s, std::weak_ptr<engraving::EngravingProject> project)
-    : MasterScore{services, project}
-{
+MasterScore::MasterScore(const EngravingServices &services, const MStyle &s, std::weak_ptr<engraving::EngravingProject> project)
+    : MasterScore{services, project} {
     setStyle(s);
 }
 
-MasterScore::~MasterScore()
-{
+MasterScore::~MasterScore() {
     if (m_project.lock()) {
         m_project.lock()->m_masterScore = nullptr;
     }
@@ -123,36 +119,18 @@ MasterScore::~MasterScore()
 //   fileInfo
 //---------------------------------------------------------
 
-IFileInfoProviderPtr MasterScore::fileInfo() const
-{
-    return m_fileInfoProvider;
-}
+IFileInfoProviderPtr MasterScore::fileInfo() const { return m_fileInfoProvider; }
 
-void MasterScore::setFileInfoProvider(IFileInfoProviderPtr fileInfoProvider)
-{
-    m_fileInfoProvider = fileInfoProvider;
-}
+void MasterScore::setFileInfoProvider(IFileInfoProviderPtr fileInfoProvider) { m_fileInfoProvider = fileInfoProvider; }
 
-String MasterScore::name() const
-{
-    return fileInfo()->displayName();
-}
+String MasterScore::name() const { return fileInfo()->displayName(); }
 
-AutomationDataConstPtr MasterScore::automationData() const
-{
-    return m_automationController->automationData();
-}
+AutomationDataConstPtr MasterScore::automationData() const { return m_automationController->automationData(); }
 
-void MasterScore::setAutomationData(AutomationDataPtr data)
-{
-    m_automationController->setAutomationData(std::move(data));
-}
+void MasterScore::setAutomationData(AutomationDataPtr data) { m_automationController->setAutomationData(std::move(data)); }
 
-void MasterScore::editAutomationPoints(const AutomationCurveKey& key, AutomationPointEdits& edits, bool undoable)
-{
-    IF_ASSERT_FAILED(key.isValid() && !edits.empty()) {
-        return;
-    }
+void MasterScore::editAutomationPoints(const AutomationCurveKey &key, AutomationPointEdits &edits, bool undoable) {
+    IF_ASSERT_FAILED(key.isValid() && !edits.empty()) { return; }
 
     if (undoable) {
         undo(new EditAutomationPoints(this, m_automationController, key, edits));
@@ -161,8 +139,7 @@ void MasterScore::editAutomationPoints(const AutomationCurveKey& key, Automation
     }
 }
 
-void MasterScore::onTimeInserted(const Fraction& tick, const Fraction& len, const std::vector<RepeatSegmentInfo>& oldSegments)
-{
+void MasterScore::onTimeInserted(const Fraction &tick, const Fraction &len, const std::vector<RepeatSegmentInfo> &oldSegments) {
     m_automationController->insertTime(tick, len, oldSegments);
 }
 
@@ -170,8 +147,7 @@ void MasterScore::onTimeInserted(const Fraction& tick, const Fraction& len, cons
 //   invalidateRepeatLists
 //---------------------------------------------------------
 
-void MasterScore::invalidateRepeatList()
-{
+void MasterScore::invalidateRepeatList() {
     m_expandedRepeatList->setScoreChanged();
     m_nonExpandedRepeatList->setScoreChanged();
 }
@@ -180,8 +156,7 @@ void MasterScore::invalidateRepeatList()
 //   setExpandRepeats
 //---------------------------------------------------------
 
-void MasterScore::setExpandRepeats(bool expand)
-{
+void MasterScore::setExpandRepeats(bool expand) {
     if (m_expandRepeats == expand) {
         return;
     }
@@ -194,14 +169,12 @@ void MasterScore::setExpandRepeats(bool expand)
 ///   needed for usage in Seq::processMessages
 //---------------------------------------------------------
 
-void MasterScore::updateRepeatListTempo()
-{
+void MasterScore::updateRepeatListTempo() {
     m_expandedRepeatList->updateUticks();
     m_nonExpandedRepeatList->updateUticks();
 }
 
-void MasterScore::updateRepeatList()
-{
+void MasterScore::updateRepeatList() {
     m_expandedRepeatList->update(true);
     m_nonExpandedRepeatList->update(false);
 }
@@ -210,8 +183,7 @@ void MasterScore::updateRepeatList()
 //   repeatList
 //---------------------------------------------------------
 
-const RepeatList& MasterScore::repeatList() const
-{
+const RepeatList &MasterScore::repeatList() const {
     if (m_expandRepeats) {
         m_expandedRepeatList->update(true);
         return *m_expandedRepeatList;
@@ -221,8 +193,7 @@ const RepeatList& MasterScore::repeatList() const
     return *m_nonExpandedRepeatList;
 }
 
-const RepeatList& MasterScore::repeatList(bool expandRepeats, bool updateTies) const
-{
+const RepeatList &MasterScore::repeatList(bool expandRepeats, bool updateTies) const {
     if (expandRepeats) {
         m_expandedRepeatList->update(true, updateTies);
         return *m_expandedRepeatList;
@@ -232,22 +203,15 @@ const RepeatList& MasterScore::repeatList(bool expandRepeats, bool updateTies) c
     return *m_nonExpandedRepeatList;
 }
 
-const TempoTimeline& MasterScore::tempoTimeline() const
-{
-    return tempoTimeline(masterScore()->expandRepeats());
-}
+const TempoTimeline &MasterScore::tempoTimeline() const { return tempoTimeline(masterScore()->expandRepeats()); }
 
-const TempoTimeline& MasterScore::tempoTimeline(bool expandRepeats) const
-{
-    m_automationController->ensureInitialized(const_cast<MasterScore*>(this));
+const TempoTimeline &MasterScore::tempoTimeline(bool expandRepeats) const {
+    m_automationController->ensureInitialized(const_cast<MasterScore *>(this));
     return m_automationController->tempoTimeline(expandRepeats);
 }
 
-bool MasterScore::setTempoMultiplier(BeatsPerSecond val)
-{
-    IF_ASSERT_FAILED(val > BeatsPerSecond(0.0)) {
-        return false;
-    }
+bool MasterScore::setTempoMultiplier(BeatsPerSecond val) {
+    IF_ASSERT_FAILED(val > BeatsPerSecond(0.0)) { return false; }
 
     if (m_automationController->tempoTimeline().tempoMultiplier() == val) {
         return false;
@@ -257,8 +221,7 @@ bool MasterScore::setTempoMultiplier(BeatsPerSecond val)
     return true;
 }
 
-void MasterScore::setTempoTimelineOverride(std::optional<TempoTimeline> timeline)
-{
+void MasterScore::setTempoTimelineOverride(std::optional<TempoTimeline> timeline) {
     m_automationController->setTempoTimelineOverride(std::move(timeline));
 }
 
@@ -266,8 +229,7 @@ void MasterScore::setTempoTimelineOverride(std::optional<TempoTimeline> timeline
 //   addExcerpt
 //---------------------------------------------------------
 
-void MasterScore::addExcerpt(Excerpt* ex, size_t index)
-{
+void MasterScore::addExcerpt(Excerpt *ex, size_t index) {
     if (!ex->inited()) {
         initParts(ex);
     }
@@ -280,8 +242,7 @@ void MasterScore::addExcerpt(Excerpt* ex, size_t index)
 //   removeExcerpt
 //---------------------------------------------------------
 
-void MasterScore::removeExcerpt(Excerpt* ex)
-{
+void MasterScore::removeExcerpt(Excerpt *ex) {
     if (muse::remove(excerpts(), ex)) {
         setExcerptsChanged(true);
         // delete ex;
@@ -294,8 +255,7 @@ void MasterScore::removeExcerpt(Excerpt* ex)
 //   clone
 //---------------------------------------------------------
 
-MasterScore* MasterScore::clone()
-{
+MasterScore *MasterScore::clone() {
     auto buffer = Buffer::opened(IODevice::WriteOnly);
 
     rw::RWRegister::writer()->writeScore(this, &buffer);
@@ -303,7 +263,7 @@ MasterScore* MasterScore::clone()
     buffer.close();
 
     muse::ByteArray scoreData = buffer.data();
-    MasterScore* score = new MasterScore(services(), style(), m_project);
+    MasterScore *score = new MasterScore(services(), style(), m_project);
 
     XmlReader r(scoreData);
     MscLoader().readMasterScore(score, r, true);
@@ -312,33 +272,21 @@ MasterScore* MasterScore::clone()
     return score;
 }
 
-Score* MasterScore::createScore()
-{
-    return new Score(this, DefaultStyle::baseStyle());
-}
+Score *MasterScore::createScore() { return new Score(this, DefaultStyle::baseStyle()); }
 
-Score* MasterScore::createScore(const MStyle& s)
-{
-    return new Score(this, s);
-}
+Score *MasterScore::createScore(const MStyle &s) { return new Score(this, s); }
 
 //---------------------------------------------------------
 //   setPos
 //---------------------------------------------------------
 
-Fraction MasterScore::loopBoundaryTick(LoopBoundaryType type) const
-{
-    IF_ASSERT_FAILED(type != LoopBoundaryType::Unknown) {
-        return Fraction();
-    }
+Fraction MasterScore::loopBoundaryTick(LoopBoundaryType type) const {
+    IF_ASSERT_FAILED(type != LoopBoundaryType::Unknown) { return Fraction(); }
     return m_loopBoundaries[size_t(type)];
 }
 
-void MasterScore::setLoopBoundaryTick(LoopBoundaryType type, Fraction tick)
-{
-    IF_ASSERT_FAILED(type != LoopBoundaryType::Unknown) {
-        return;
-    }
+void MasterScore::setLoopBoundaryTick(LoopBoundaryType type, Fraction tick) {
+    IF_ASSERT_FAILED(type != LoopBoundaryType::Unknown) { return; }
     if (tick < Fraction(0, 1)) {
         tick = Fraction(0, 1);
     }
@@ -350,24 +298,20 @@ void MasterScore::setLoopBoundaryTick(LoopBoundaryType type, Fraction tick)
     m_loopBoundaries[size_t(type)] = tick;
 }
 
-void MasterScore::addChangesListener(IScoreChangesListener* listener)
-{
+void MasterScore::addChangesListener(IScoreChangesListener *listener) {
     if (std::find(m_changesListeners.begin(), m_changesListeners.end(), listener) == m_changesListeners.end()) {
         m_changesListeners.push_back(listener);
     }
 }
 
-void MasterScore::removeChangesListener(IScoreChangesListener* listener)
-{
-    m_changesListeners.erase(std::remove(m_changesListeners.begin(), m_changesListeners.end(), listener),
-                             m_changesListeners.end());
+void MasterScore::removeChangesListener(IScoreChangesListener *listener) {
+    m_changesListeners.erase(std::remove(m_changesListeners.begin(), m_changesListeners.end(), listener), m_changesListeners.end());
 }
 
-void MasterScore::notifyChanges(const ScoreChanges& changes)
-{
+void MasterScore::notifyChanges(const ScoreChanges &changes) {
     // A listener may detach while it handles the changes.
-    const std::vector<IScoreChangesListener*> listeners = m_changesListeners;
-    for (IScoreChangesListener* listener : listeners) {
+    const std::vector<IScoreChangesListener *> listeners = m_changesListeners;
+    for (IScoreChangesListener *listener : listeners) {
         if (std::find(m_changesListeners.begin(), m_changesListeners.end(), listener) != m_changesListeners.end()) {
             listener->onScoreChanges(changes);
         }
@@ -378,17 +322,13 @@ void MasterScore::notifyChanges(const ScoreChanges& changes)
 //   setUpdateAll
 //---------------------------------------------------------
 
-void MasterScore::setUpdateAll()
-{
-    m_cmdState.setUpdateMode(UpdateMode::UpdateAll);
-}
+void MasterScore::setUpdateAll() { m_cmdState.setUpdateMode(UpdateMode::UpdateAll); }
 
 //---------------------------------------------------------
 //   setLayoutAll
 //---------------------------------------------------------
 
-void MasterScore::setLayoutAll(staff_idx_t staff, const EngravingItem* e)
-{
+void MasterScore::setLayoutAll(staff_idx_t staff, const EngravingItem *e) {
     m_cmdState.setTick(Fraction(0, 1));
     m_cmdState.setTick(Fraction::max());
 
@@ -407,8 +347,7 @@ void MasterScore::setLayoutAll(staff_idx_t staff, const EngravingItem* e)
 //   setLayout
 //---------------------------------------------------------
 
-void MasterScore::setLayout(const Fraction& t, staff_idx_t staff, const EngravingItem* e)
-{
+void MasterScore::setLayout(const Fraction &t, staff_idx_t staff, const EngravingItem *e) {
     if (t >= Fraction(0, 1)) {
         m_cmdState.setTick(t);
     }
@@ -420,8 +359,7 @@ void MasterScore::setLayout(const Fraction& t, staff_idx_t staff, const Engravin
     }
 }
 
-void MasterScore::setLayout(const Fraction& tick1, const Fraction& tick2, staff_idx_t staff1, staff_idx_t staff2, const EngravingItem* e)
-{
+void MasterScore::setLayout(const Fraction &tick1, const Fraction &tick2, staff_idx_t staff1, staff_idx_t staff2, const EngravingItem *e) {
     if (tick1 >= Fraction(0, 1)) {
         m_cmdState.setTick(tick1);
     }
@@ -438,25 +376,18 @@ void MasterScore::setLayout(const Fraction& tick1, const Fraction& tick2, staff_
     }
 }
 
-void MasterScore::initAutomation()
-{
-    IF_ASSERT_FAILED(m_automationController) {
-        return;
-    }
+void MasterScore::initAutomation() {
+    IF_ASSERT_FAILED(m_automationController) { return; }
     m_automationController->init(this);
 }
 
-void MasterScore::updateAutomation(const ScoreChanges& changes)
-{
-    m_automationController->update(changes);
-}
+void MasterScore::updateAutomation(const ScoreChanges &changes) { m_automationController->update(changes); }
 
 //---------------------------------------------------------
 //   setPlaybackScore
 //---------------------------------------------------------
 
-void MasterScore::setPlaybackScore(Score* score)
-{
+void MasterScore::setPlaybackScore(Score *score) {
     if (m_playbackScore == score) {
         return;
     }
@@ -468,14 +399,12 @@ void MasterScore::setPlaybackScore(Score* score)
         return;
     }
 
-    for (Part* part : score->parts()) {
-        for (const auto& pair : part->instruments()) {
-            Instrument* instr = pair.second;
-            for (InstrChannel* ch : instr->channel()) {
-                InstrChannel* pChannel = playbackChannel(ch);
-                IF_ASSERT_FAILED(pChannel) {
-                    continue;
-                }
+    for (Part *part : score->parts()) {
+        for (const auto &pair : part->instruments()) {
+            Instrument *instr = pair.second;
+            for (InstrChannel *ch : instr->channel()) {
+                InstrChannel *pChannel = playbackChannel(ch);
+                IF_ASSERT_FAILED(pChannel) { continue; }
                 m_playbackSettingsLinks.emplace_back(pChannel, ch, /* excerpt */ true);
             }
         }
@@ -492,13 +421,12 @@ void MasterScore::setPlaybackScore(Score* score)
 //    the value of the expressive parameter.
 //---------------------------------------------------------
 
-void MasterScore::updateExpressive(Synthesizer* synth)
-{
+void MasterScore::updateExpressive(Synthesizer *synth) {
     SynthesizerState s = synthesizerState();
     SynthesizerGroup g = s.group(u"master");
 
     int method = 1;
-    for (const IdValue& idVal : g) {
+    for (const IdValue &idVal : g) {
         if (idVal.id == 4) {
             method = idVal.data.toInt();
             break;
@@ -508,8 +436,7 @@ void MasterScore::updateExpressive(Synthesizer* synth)
     updateExpressive(synth, (method != 0));
 }
 
-void MasterScore::updateExpressive(Synthesizer* synth, bool expressive, bool force /* = false */)
-{
+void MasterScore::updateExpressive(Synthesizer *synth, bool expressive, bool force /* = false */) {
     if (!synth) {
         return;
     }
@@ -518,7 +445,7 @@ void MasterScore::updateExpressive(Synthesizer* synth, bool expressive, bool for
         SynthesizerState s = synthesizerState();
         SynthesizerGroup g = s.group(u"master");
 
-        for (const IdValue& idVal : g) {
+        for (const IdValue &idVal : g) {
             if (idVal.id == 4) {
                 int method = idVal.data.toInt();
                 if (expressive == (method == 0)) {
@@ -528,8 +455,8 @@ void MasterScore::updateExpressive(Synthesizer* synth, bool expressive, bool for
         }
     }
 
-    for (Part* p : parts()) {
-        for (const auto& pair : p->instruments()) {
+    for (Part *p : parts()) {
+        for (const auto &pair : p->instruments()) {
             pair.second->switchExpressive(this, synth, expressive, force);
         }
     }
@@ -541,8 +468,7 @@ void MasterScore::updateExpressive(Synthesizer* synth, bool expressive, bool for
 //    just updateExpressive, in most cases.
 //---------------------------------------------------------
 
-void MasterScore::rebuildAndUpdateExpressive(Synthesizer* synth)
-{
+void MasterScore::rebuildAndUpdateExpressive(Synthesizer *synth) {
     // Rebuild midi mappings to make sure we have playback channels
     rebuildMidiMapping();
 
@@ -559,8 +485,7 @@ void MasterScore::rebuildAndUpdateExpressive(Synthesizer* synth)
 //    If measure is zero, append new MeasureBase.
 //---------------------------------------------------------
 
-MeasureBase* MasterScore::insertMeasure(MeasureBase* beforeMeasure, const InsertMeasureOptions& options)
-{
+MeasureBase *MasterScore::insertMeasure(MeasureBase *beforeMeasure, const InsertMeasureOptions &options) {
     Fraction tick;
     if (beforeMeasure) {
         if (beforeMeasure->isMeasure()) {
@@ -585,23 +510,24 @@ MeasureBase* MasterScore::insertMeasure(MeasureBase* beforeMeasure, const Insert
 
     // Use nominal time signature of current or previous measure, depending on whether
     // the time sig from `beforeMeasure` will be moved to the newly created measure
-    const Fraction currentTimeSig
-        = sigmap()->timesig(!options.moveSignaturesClef && !isBeginning && beforeMeasure && beforeMeasure->prevMeasure()
-                            ? beforeMeasure->prevMeasure()->tick()
-                            : tick)
-          .nominal();
+    const Fraction currentTimeSig =
+        sigmap()
+            ->timesig(!options.moveSignaturesClef && !isBeginning && beforeMeasure && beforeMeasure->prevMeasure() ?
+                          beforeMeasure->prevMeasure()->tick() :
+                          tick)
+            .nominal();
 
-    Measure* masterMeasure = nullptr;
-    Fraction ticks = { 0, 1 };
+    Measure *masterMeasure = nullptr;
+    Fraction ticks = {0, 1};
 
-    for (Score* score : scoreList()) {
-        MeasureBase* actualBeforeMeasure = nullptr;
+    for (Score *score : scoreList()) {
+        MeasureBase *actualBeforeMeasure = nullptr;
 
         if (beforeMeasure) {
             if (beforeMeasure->score() == score) {
                 actualBeforeMeasure = beforeMeasure;
             } else if (!beforeMeasure->isMeasure() && beforeMeasure->links()) {
-                for (EngravingObject* m : *beforeMeasure->links()) {
+                for (EngravingObject *m : *beforeMeasure->links()) {
                     if (m && m->isMeasureBase() && m->score() == score) {
                         actualBeforeMeasure = toMeasureBase(m);
                         break;
@@ -618,7 +544,7 @@ MeasureBase* MasterScore::insertMeasure(MeasureBase* beforeMeasure, const Insert
             }
         }
 
-        Measure* newMeasure = Factory::createMeasure(score);
+        Measure *newMeasure = Factory::createMeasure(score);
         newMeasure->setTick(tick);
 
         if (actualBeforeMeasure) {
@@ -633,7 +559,7 @@ MeasureBase* MasterScore::insertMeasure(MeasureBase* beforeMeasure, const Insert
         undo(new InsertMeasures(newMeasure, newMeasure, options.moveStaffTypeChanges));
 
         ticks = newMeasure->ticks();
-        Measure* measureInsert = nullptr; // insert before
+        Measure *measureInsert = nullptr; // insert before
         if (actualBeforeMeasure) {
             if (actualBeforeMeasure->isMeasure()) {
                 measureInsert = toMeasure(actualBeforeMeasure);
@@ -646,15 +572,15 @@ MeasureBase* MasterScore::insertMeasure(MeasureBase* beforeMeasure, const Insert
             masterMeasure = newMeasure;
         }
 
-        std::vector<TimeSig*> timeSigList;
-        std::vector<KeySig*> keySigList;
-        std::vector<Clef*> initClefList;
-        std::vector<Clef*> previousClefList;
-        std::vector<Clef*> specialCaseClefs;
-        std::vector<Clef*> afterBarlineClefs;
-        std::vector<BarLine*> previousBarLinesList;
+        std::vector<TimeSig *> timeSigList;
+        std::vector<KeySig *> keySigList;
+        std::vector<Clef *> initClefList;
+        std::vector<Clef *> previousClefList;
+        std::vector<Clef *> specialCaseClefs;
+        std::vector<Clef *> afterBarlineClefs;
+        std::vector<BarLine *> previousBarLinesList;
 
-        Measure* pm = newMeasure->prevMeasure();
+        Measure *pm = newMeasure->prevMeasure();
 
         //
         // remove clefs, barlines, time and key signatures
@@ -669,10 +595,10 @@ MeasureBase* MasterScore::insertMeasure(MeasureBase* beforeMeasure, const Insert
             }
 
             if (pm && !options.moveSignaturesClef && !isBeginning) {
-                Segment* ps = pm->findSegment(SegmentType::Clef, tick);
+                Segment *ps = pm->findSegment(SegmentType::Clef, tick);
                 if (ps && ps->enabled()) {
                     for (size_t staffIdx = 0; staffIdx < score->nstaves(); ++staffIdx) {
-                        EngravingItem* pc = ps->element(staffIdx * VOICES);
+                        EngravingItem *pc = ps->element(staffIdx * VOICES);
                         if (pc) {
                             previousClefList.push_back(toClef(pc));
                             doUndoRemoveElement(pc);
@@ -687,11 +613,11 @@ MeasureBase* MasterScore::insertMeasure(MeasureBase* beforeMeasure, const Insert
 
             if (options.moveSignaturesClef || isBeginning) {
                 for (size_t staffIdx = 0; staffIdx < score->nstaves(); ++staffIdx) {
-                    for (Segment* s = measureInsert->first(); s && s->rtick().isZero(); s = s->next()) {
+                    for (Segment *s = measureInsert->first(); s && s->rtick().isZero(); s = s->next()) {
                         if (!s->enabled()) {
                             continue;
                         }
-                        EngravingItem* e = s->element(staffIdx * VOICES);
+                        EngravingItem *e = s->element(staffIdx * VOICES);
                         bool specialCase = false;
                         bool initClef = false;
                         bool moveClef = false;
@@ -723,18 +649,17 @@ MeasureBase* MasterScore::insertMeasure(MeasureBase* beforeMeasure, const Insert
                             continue; // this item will remain with the old measure
                         }
                         // otherwise, this item is moved back to the new measure
-                        EngravingItem* ee = 0;
+                        EngravingItem *ee = 0;
                         if (e->isKeySig()) {
-                            KeySig* ks = toKeySig(e);
+                            KeySig *ks = toKeySig(e);
                             if (ks->forInstrumentChange()) {
                                 continue;
                             }
                             keySigList.push_back(ks);
                             // if instrument change on that place, set correct key signature for instrument change
                             const TrackRange trackRange = e->part()->trackRange();
-                            bool ic = s->next(SegmentType::ChordRest)->findAnnotation(ElementType::INSTRUMENT_CHANGE,
-                                                                                      trackRange.startTrack,
-                                                                                      trackRange.endTrack - 1);
+                            bool ic = s->next(SegmentType::ChordRest)
+                                          ->findAnnotation(ElementType::INSTRUMENT_CHANGE, trackRange.startTrack, trackRange.endTrack - 1);
                             if (ic) {
                                 KeySigEvent ke = ks->keySigEvent();
                                 ke.setForInstrumentChange(true);
@@ -747,11 +672,11 @@ MeasureBase* MasterScore::insertMeasure(MeasureBase* beforeMeasure, const Insert
                                 headerKeySig = true;
                             }
                         } else if (e->isTimeSig()) {
-                            TimeSig* ts = toTimeSig(e);
+                            TimeSig *ts = toTimeSig(e);
                             timeSigList.push_back(ts);
                             ee = e;
                         } else if (e->isClef()) {
-                            Clef* clef = toClef(e);
+                            Clef *clef = toClef(e);
                             if (specialCase) {
                                 specialCaseClefs.push_back(clef);
                             } else if (initClef) {
@@ -783,10 +708,10 @@ MeasureBase* MasterScore::insertMeasure(MeasureBase* beforeMeasure, const Insert
         }
 
         if (pm && !options.moveSignaturesClef && !options.ignoreBarLines) {
-            Segment* pbs = pm->findSegment(SegmentType::EndBarLine, tick);
+            Segment *pbs = pm->findSegment(SegmentType::EndBarLine, tick);
             if (pbs && pbs->enabled()) {
                 for (size_t staffIdx = 0; staffIdx < score->nstaves(); ++staffIdx) {
-                    EngravingItem* pb = pbs->element(staffIdx * VOICES);
+                    EngravingItem *pb = pbs->element(staffIdx * VOICES);
                     if (pb && !pb->generated()) {
                         previousBarLinesList.push_back(toBarLine(pb));
                         doUndoRemoveElement(pb);
@@ -805,53 +730,53 @@ MeasureBase* MasterScore::insertMeasure(MeasureBase* beforeMeasure, const Insert
         //
         // move clef, barline, time, key signatures
         //
-        for (TimeSig* ts : timeSigList) {
-            TimeSig* nts = Factory::copyTimeSig(*ts);
-            Segment* s   = newMeasure->undoGetSegmentR(SegmentType::TimeSig, Fraction(0, 1));
+        for (TimeSig *ts : timeSigList) {
+            TimeSig *nts = Factory::copyTimeSig(*ts);
+            Segment *s = newMeasure->undoGetSegmentR(SegmentType::TimeSig, Fraction(0, 1));
             nts->setOwnershipParent(s);
             doUndoAddElement(nts);
         }
-        for (KeySig* ks : keySigList) {
-            KeySig* nks = Factory::copyKeySig(*ks);
-            Segment* s  = newMeasure->undoGetSegmentR(SegmentType::KeySig, Fraction(0, 1));
+        for (KeySig *ks : keySigList) {
+            KeySig *nks = Factory::copyKeySig(*ks);
+            Segment *s = newMeasure->undoGetSegmentR(SegmentType::KeySig, Fraction(0, 1));
             if (headerKeySig || newMeasure->tick().isZero()) {
                 s->setHeader(true);
             }
             nks->setOwnershipParent(s);
             if (!nks->isAtonal()) {
-                nks->setKey(nks->concertKey());  // to set correct (transposing) key
+                nks->setKey(nks->concertKey()); // to set correct (transposing) key
             }
             doUndoAddElement(nks);
         }
-        for (Clef* clef : initClefList) {
-            Clef* nClef = Factory::copyClef(*clef);
-            Segment* s  = newMeasure->undoGetSegmentR(SegmentType::HeaderClef, Fraction(0, 1));
+        for (Clef *clef : initClefList) {
+            Clef *nClef = Factory::copyClef(*clef);
+            Segment *s = newMeasure->undoGetSegmentR(SegmentType::HeaderClef, Fraction(0, 1));
             s->setHeader(true);
             nClef->setOwnershipParent(s);
             doUndoAddElement(nClef);
         }
-        for (Clef* clef : afterBarlineClefs) {
-            Clef* nClef = Factory::copyClef(*clef);
-            Segment* s  = newMeasure->undoGetSegmentR(SegmentType::Clef, Fraction(0, 1));
+        for (Clef *clef : afterBarlineClefs) {
+            Clef *nClef = Factory::copyClef(*clef);
+            Segment *s = newMeasure->undoGetSegmentR(SegmentType::Clef, Fraction(0, 1));
             s->setHeader(true);
             nClef->setOwnershipParent(s);
             doUndoAddElement(nClef);
         }
-        for (Clef* clef : previousClefList) {
-            Clef* nClef = Factory::copyClef(*clef);
-            Segment* s  = newMeasure->undoGetSegmentR(SegmentType::Clef, newMeasure->ticks());
+        for (Clef *clef : previousClefList) {
+            Clef *nClef = Factory::copyClef(*clef);
+            Segment *s = newMeasure->undoGetSegmentR(SegmentType::Clef, newMeasure->ticks());
             nClef->setOwnershipParent(s);
             doUndoAddElement(nClef);
         }
-        for (Clef* clef : specialCaseClefs) {
-            Clef* nClef = Factory::copyClef(*clef);
-            Segment* s  = newMeasure->undoGetSegmentR(SegmentType::Clef, newMeasure->ticks());
+        for (Clef *clef : specialCaseClefs) {
+            Clef *nClef = Factory::copyClef(*clef);
+            Segment *s = newMeasure->undoGetSegmentR(SegmentType::Clef, newMeasure->ticks());
             nClef->setOwnershipParent(s);
             doUndoAddElement(nClef);
         }
-        for (BarLine* barLine : previousBarLinesList) {
-            BarLine* nBarLine = Factory::copyBarLine(*barLine);
-            Segment* s = newMeasure->undoGetSegmentR(SegmentType::EndBarLine, newMeasure->ticks());
+        for (BarLine *barLine : previousBarLinesList) {
+            BarLine *nBarLine = Factory::copyBarLine(*barLine);
+            Segment *s = newMeasure->undoGetSegmentR(SegmentType::EndBarLine, newMeasure->ticks());
             nBarLine->setOwnershipParent(s);
             doUndoAddElement(nBarLine);
         }
@@ -865,7 +790,7 @@ MeasureBase* MasterScore::insertMeasure(MeasureBase* beforeMeasure, const Insert
         // undoAddCR adds rest to linked staves as well
         for (size_t staffIdx = 0; staffIdx < nstaves(); ++staffIdx) {
             size_t track = staffIdx * VOICES;
-            Rest* rest = Factory::createRest(dummy(), TDuration(DurationType::V_MEASURE));
+            Rest *rest = Factory::createRest(dummy(), TDuration(DurationType::V_MEASURE));
             Fraction timeStretch(staff(staffIdx)->timeStretch(masterMeasure->tick()));
             rest->setTicks(masterMeasure->ticks() * timeStretch);
             rest->setTrack(track);

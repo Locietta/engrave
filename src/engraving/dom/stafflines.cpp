@@ -48,19 +48,14 @@ namespace mu::engraving {
 //   StaffLines
 //---------------------------------------------------------
 
-StaffLines::StaffLines(DummyParentOr<Measure> parent)
-    : EngravingItem(ElementType::STAFF_LINES, parent)
-{
-    setSelectable(false);
-}
+StaffLines::StaffLines(DummyParentOr<Measure> parent) : EngravingItem(ElementType::STAFF_LINES, parent) { setSelectable(false); }
 
 //---------------------------------------------------------
 //   pagePos
 //---------------------------------------------------------
 
-PointF StaffLines::pagePos() const
-{
-    System* system = measure()->system();
+PointF StaffLines::pagePos() const {
+    System *system = measure()->system();
     return PointF(measure()->x() + system->x(), system->staff(staffIdx())->y() + system->y());
 }
 
@@ -68,10 +63,9 @@ PointF StaffLines::pagePos() const
 //   canvasPos
 //---------------------------------------------------------
 
-PointF StaffLines::canvasPos() const
-{
+PointF StaffLines::canvasPos() const {
     PointF p(pagePos());
-    EngravingItem* e = layoutParent();
+    EngravingItem *e = layoutParent();
     while (e) {
         if (e->type() == ElementType::PAGE) {
             p += e->pos();
@@ -82,25 +76,20 @@ PointF StaffLines::canvasPos() const
     return p;
 }
 
-
-
-bool StaffLines::collectForDrawing() const
-{
+bool StaffLines::collectForDrawing() const {
     staff_idx_t idx = staffIdx();
-    return EngravingItem::collectForDrawing() && (measure()->visible(idx) || measure()->isCutawayClef(idx))
-           && score()->staff(idx)->show();
+    return EngravingItem::collectForDrawing() && (measure()->visible(idx) || measure()->isCutawayClef(idx)) && score()->staff(idx)->show();
 }
 
 //---------------------------------------------------------
 //   y1
 //---------------------------------------------------------
 
-double StaffLines::y1() const
-{
-    System* system = measure()->system();
-/*      if (system == 0 || staffIdx() >= system->staves()->size())
+double StaffLines::y1() const {
+    System *system = measure()->system();
+    /*      if (system == 0 || staffIdx() >= system->staves()->size())
             return 0.0;
       */
     return system->staff(staffIdx())->y() + ldata()->pos().y();
 }
-}
+} // namespace mu::engraving

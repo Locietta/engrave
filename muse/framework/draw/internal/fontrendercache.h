@@ -30,18 +30,17 @@
 #include "types/fontstypes.h"
 
 namespace muse::draw {
-class FontRenderCache
-{
+class FontRenderCache {
 public:
     void init();
-    void setCacheDirPath(const io::path_t& path, const std::string& revision = std::string());
+    void setCacheDirPath(const io::path_t &path, const std::string &revision = std::string());
 
-    void store(const FaceKey& face, glyph_idx_t glyphIdx, const GlyphImage& image);
-    GlyphImage load(const FaceKey& face, glyph_idx_t glyphIdx) const;
+    void store(const FaceKey &face, glyph_idx_t glyphIdx, const GlyphImage &image);
+    GlyphImage load(const FaceKey &face, glyph_idx_t glyphIdx) const;
 
 private:
     io::path_t revisionFilePath() const;
-    io::path_t makeFilePath(const FaceKey& face, glyph_idx_t glyphIdx, const GlyphImage& image) const;
+    io::path_t makeFilePath(const FaceKey &face, glyph_idx_t glyphIdx, const GlyphImage &image) const;
     void updateCacheRevision();
 
     using GlyphImages = std::unordered_map<glyph_idx_t, GlyphImage>;
@@ -60,9 +59,9 @@ private:
 
     using CacheInfoMap = std::map<std::string, CacheInfo>;
 
-    void loadCachedInfo(CacheInfoMap& map, const io::path_t& dir) const;
+    void loadCachedInfo(CacheInfoMap &map, const io::path_t &dir) const;
 
     mutable bool m_cacheInfoLoaded = false;
     mutable CacheInfoMap m_cacheInfoMap;
 };
-}
+} // namespace muse::draw

@@ -26,6 +26,6 @@ std::filesystem::path corpus_file(std::string_view name);
 // The probe binary beside this test binary.
 std::filesystem::path probe_binary();
 // Runs the probe beside this binary with these arguments and returns its exit code.
-int run_probe(const std::vector<std::string>& arguments);
+int run_probe(const std::vector<std::string> &arguments);
 
 } // namespace music::test

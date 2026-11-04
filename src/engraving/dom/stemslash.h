@@ -33,8 +33,7 @@ class Chord;
 ///    used for grace notes of type acciaccatura
 //---------------------------------------------------------
 
-class StemSlash final : public EngravingItem
-{
+class StemSlash final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, StemSlash)
     DECLARE_CLASSOF(ElementType::STEM_SLASH)
 
@@ -42,9 +41,9 @@ public:
 
     double mag() const override { return layoutParent()->mag(); }
 
-    StemSlash* clone() const override { return new StemSlash(*this); }
+    StemSlash *clone() const override { return new StemSlash(*this); }
 
-    Chord* chord() const { return (Chord*)ownershipParent(); }
+    Chord *chord() const { return (Chord *) ownershipParent(); }
 
     struct LayoutData : public EngravingItem::LayoutData {
         LineF line;

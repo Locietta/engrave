@@ -36,7 +36,8 @@
 // (actually, the only basic support of this version is implemented but it is enough for now)
 #define ZIP_VERSION 20
 
-#define ZDEBUG if (0) LOGD
+#define ZDEBUG \
+    if (0) LOGD
 
 using namespace muse::io;
 
@@ -45,59 +46,48 @@ typedef unsigned short int ushort;
 typedef unsigned int uint;
 
 namespace muse {
-static inline uint32_t readUInt(const uint8_t* data)
-{
+static inline uint32_t readUInt(const uint8_t *data) {
     return uint32_t(data[0]) | (uint32_t(data[1]) << 8) | (uint32_t(data[2]) << 16) | (uint32_t(data[3]) << 24);
 }
 
-static inline ushort readUShort(const uint8_t* data)
-{
-    return ushort(data[0]) | ushort(ushort(data[1]) << 8);
-}
+static inline ushort readUShort(const uint8_t *data) { return ushort(data[0]) | ushort(ushort(data[1]) << 8); }
 
-static inline void writeUInt(uint8_t* data, uint i)
-{
+static inline void writeUInt(uint8_t *data, uint i) {
     data[0] = i & 0xff;
     data[1] = (i >> 8) & 0xff;
     data[2] = (i >> 16) & 0xff;
     data[3] = (i >> 24) & 0xff;
 }
 
-static inline void writeUShort(uint8_t* data, ushort i)
-{
+static inline void writeUShort(uint8_t *data, ushort i) {
     data[0] = i & 0xff;
     data[1] = (i >> 8) & 0xff;
 }
 
-static inline void copyUInt(uint8_t* dest, const uint8_t* src)
-{
+static inline void copyUInt(uint8_t *dest, const uint8_t *src) {
     dest[0] = src[0];
     dest[1] = src[1];
     dest[2] = src[2];
     dest[3] = src[3];
 }
 
-static inline void copyUShort(uint8_t* dest, const uint8_t* src)
-{
+static inline void copyUShort(uint8_t *dest, const uint8_t *src) {
     dest[0] = src[0];
     dest[1] = src[1];
 }
 
-static void writeMSDosDate(uint8_t* dest, const std::tm& dt)
-{
+static void writeMSDosDate(uint8_t *dest, const std::tm &dt) {
     if (dt.tm_year > 0) {
-        uint16_t time
-            =(dt.tm_hour << 11)     // 5 bit hour
-              | (dt.tm_min << 5)    // 6 bit minute
-              | (dt.tm_sec >> 1);   // 5 bit double seconds
+        uint16_t time = (dt.tm_hour << 11)  // 5 bit hour
+                        | (dt.tm_min << 5)  // 6 bit minute
+                        | (dt.tm_sec >> 1); // 5 bit double seconds
 
         dest[0] = time & 0xff;
         dest[1] = time >> 8;
 
-        uint16_t date
-            =((dt.tm_year + 1900 - 1980) << 9) // 7 bit year 1980-based
-              | ((dt.tm_mon + 1) << 5)         // 4 bit month
-              | (dt.tm_mday);                  // 5 bit day
+        uint16_t date = ((dt.tm_year + 1900 - 1980) << 9) // 7 bit year 1980-based
+                        | ((dt.tm_mon + 1) << 5)          // 4 bit month
+                        | (dt.tm_mday);                   // 5 bit day
 
         dest[2] = char(date);
         dest[3] = char(date >> 8);
@@ -109,25 +99,24 @@ static void writeMSDosDate(uint8_t* dest, const std::tm& dt)
     }
 }
 
-static int inflate(Bytef* dest, ulong* destLen, const Bytef* source, ulong sourceLen)
-{
-    z_stream stream {};
+static int inflate(Bytef *dest, ulong *destLen, const Bytef *source, ulong sourceLen) {
+    z_stream stream{};
     int err;
 
-    stream.next_in = const_cast<Bytef*>(source);
-    stream.avail_in = (uInt)sourceLen;
-    if ((uLong)stream.avail_in != sourceLen) {
+    stream.next_in = const_cast<Bytef *>(source);
+    stream.avail_in = (uInt) sourceLen;
+    if ((uLong) stream.avail_in != sourceLen) {
         return Z_BUF_ERROR;
     }
 
     stream.next_out = dest;
-    stream.avail_out = (uInt) * destLen;
-    if ((uLong)stream.avail_out != *destLen) {
+    stream.avail_out = (uInt) *destLen;
+    if ((uLong) stream.avail_out != *destLen) {
         return Z_BUF_ERROR;
     }
 
-    stream.zalloc = (alloc_func)0;
-    stream.zfree = (free_func)0;
+    stream.zalloc = (alloc_func) 0;
+    stream.zfree = (free_func) 0;
 
     err = inflateInit2(&stream, -MAX_WBITS);
     if (err != Z_OK) {
@@ -155,22 +144,21 @@ static int inflate(Bytef* dest, ulong* destLen, const Bytef* source, ulong sourc
     return err;
 }
 
-static int deflate(Bytef* dest, ulong* destLen, const Bytef* source, ulong sourceLen)
-{
+static int deflate(Bytef *dest, ulong *destLen, const Bytef *source, ulong sourceLen) {
     z_stream stream;
     int err;
 
-    stream.next_in = const_cast<Bytef*>(source);
-    stream.avail_in = (uInt)sourceLen;
+    stream.next_in = const_cast<Bytef *>(source);
+    stream.avail_in = (uInt) sourceLen;
     stream.next_out = dest;
-    stream.avail_out = (uInt) * destLen;
-    if ((uLong)stream.avail_out != *destLen) {
+    stream.avail_out = (uInt) *destLen;
+    if ((uLong) stream.avail_out != *destLen) {
         return Z_BUF_ERROR;
     }
 
-    stream.zalloc = (alloc_func)0;
-    stream.zfree = (free_func)0;
-    stream.opaque = (voidpf)0;
+    stream.zalloc = (alloc_func) 0;
+    stream.zfree = (free_func) 0;
+    stream.opaque = (voidpf) 0;
 
     err = deflateInit2(&stream, Z_DEFAULT_COMPRESSION, Z_DEFLATED, -MAX_WBITS, 8, Z_DEFAULT_STRATEGY);
     if (err != Z_OK) {
@@ -190,47 +178,46 @@ static int deflate(Bytef* dest, ulong* destLen, const Bytef* source, ulong sourc
 
 namespace WindowsFileAttributes {
 enum {
-    Dir        = 0x10, // FILE_ATTRIBUTE_DIRECTORY
-    File       = 0x80, // FILE_ATTRIBUTE_NORMAL
-    TypeMask   = 0x90,
+    Dir = 0x10,  // FILE_ATTRIBUTE_DIRECTORY
+    File = 0x80, // FILE_ATTRIBUTE_NORMAL
+    TypeMask = 0x90,
 
-    ReadOnly   = 0x01, // FILE_ATTRIBUTE_READONLY
-    PermMask   = 0x01
+    ReadOnly = 0x01, // FILE_ATTRIBUTE_READONLY
+    PermMask = 0x01
 };
-}
+} // namespace WindowsFileAttributes
 
 namespace UnixFileAttributes {
 enum {
-    Dir        = 0040000, // __S_IFDIR
-    File       = 0100000, // __S_IFREG
-    SymLink    = 0120000, // __S_IFLNK
-    TypeMask   = 0170000, // __S_IFMT
+    Dir = 0040000,      // __S_IFDIR
+    File = 0100000,     // __S_IFREG
+    SymLink = 0120000,  // __S_IFLNK
+    TypeMask = 0170000, // __S_IFMT
 
-    ReadUser   = 0400, // __S_IRUSR
-    WriteUser  = 0200, // __S_IWUSR
-    ExeUser    = 0100, // __S_IXUSR
-    ReadGroup  = 0040, // __S_IRGRP
+    ReadUser = 0400,   // __S_IRUSR
+    WriteUser = 0200,  // __S_IWUSR
+    ExeUser = 0100,    // __S_IXUSR
+    ReadGroup = 0040,  // __S_IRGRP
     WriteGroup = 0020, // __S_IWGRP
-    ExeGroup   = 0010, // __S_IXGRP
-    ReadOther  = 0004, // __S_IROTH
+    ExeGroup = 0010,   // __S_IXGRP
+    ReadOther = 0004,  // __S_IROTH
     WriteOther = 0002, // __S_IWOTH
-    ExeOther   = 0001, // __S_IXOTH
-    PermMask   = 0777
+    ExeOther = 0001,   // __S_IXOTH
+    PermMask = 0777
 };
-}
+} // namespace UnixFileAttributes
 
-static std::tm readMSDosDate(const uint8_t* src)
-{
+static std::tm readMSDosDate(const uint8_t *src) {
     std::tm tm;
     uint dosDate = readUInt(src);
     uint64_t uDate;
-    uDate = (uint64_t)(dosDate >> 16);
+    uDate = (uint64_t) (dosDate >> 16);
     tm.tm_mday = (uDate & 0x1f);
     tm.tm_mon = ((uDate & 0x1E0) >> 5) - 1;
     tm.tm_year = (((uDate & 0x0FE00) >> 9) + 1980 - 1900);
     tm.tm_hour = ((dosDate & 0xF800) >> 11);
-    tm.tm_min =  ((dosDate & 0x7E0) >> 5);
-    tm.tm_sec =  ((dosDate & 0x1f) << 1);
+    tm.tm_min = ((dosDate & 0x7E0) >> 5);
+    tm.tm_sec = ((dosDate & 0x1f) << 1);
 
     return tm;
 }
@@ -238,26 +225,26 @@ static std::tm readMSDosDate(const uint8_t* src)
 // for details, see http://www.pkware.com/documents/casestudies/APPNOTE.TXT
 
 enum HostOS {
-    HostFAT      = 0,
-    HostAMIGA    = 1,
-    HostVMS      = 2,  // VAX/VMS
-    HostUnix     = 3,
-    HostVM_CMS   = 4,
-    HostAtari    = 5,  // what if it's a minix filesystem? [cjh]
-    HostHPFS     = 6,  // filesystem used by OS/2 (and NT 3.x)
-    HostMac      = 7,
+    HostFAT = 0,
+    HostAMIGA = 1,
+    HostVMS = 2, // VAX/VMS
+    HostUnix = 3,
+    HostVM_CMS = 4,
+    HostAtari = 5, // what if it's a minix filesystem? [cjh]
+    HostHPFS = 6,  // filesystem used by OS/2 (and NT 3.x)
+    HostMac = 7,
     HostZ_System = 8,
-    HostCPM      = 9,
-    HostTOPS20   = 10, // pkzip 2.50 NTFS
-    HostNTFS     = 11, // filesystem used by Windows NT
-    HostQDOS     = 12, // SMS/QDOS
-    HostAcorn    = 13, // Archimedes Acorn RISC OS
-    HostVFAT     = 14, // filesystem used by Windows 95, NT
-    HostMVS      = 15,
-    HostBeOS     = 16, // hybrid POSIX/database filesystem
-    HostTandem   = 17,
-    HostOS400    = 18,
-    HostOSX      = 19
+    HostCPM = 9,
+    HostTOPS20 = 10, // pkzip 2.50 NTFS
+    HostNTFS = 11,   // filesystem used by Windows NT
+    HostQDOS = 12,   // SMS/QDOS
+    HostAcorn = 13,  // Archimedes Acorn RISC OS
+    HostVFAT = 14,   // filesystem used by Windows 95, NT
+    HostMVS = 15,
+    HostBeOS = 16, // hybrid POSIX/database filesystem
+    HostTandem = 17,
+    HostOS400 = 18,
+    HostOSX = 19
 };
 
 enum GeneralPurposeFlag {
@@ -301,17 +288,14 @@ enum CompressionMethod {
 // 64 MiB for the uncompressed data; the compressed data gets the same baseline plus
 // the bounded worst-case raw-deflate overhead (the same bound used by addEntry).
 static constexpr uint32_t MAX_ENTRY_UNCOMPRESSED_SIZE = 64u * 1024u * 1024u;
-static constexpr uint32_t MAX_ENTRY_COMPRESSED_SIZE = MAX_ENTRY_UNCOMPRESSED_SIZE
-                                                      + (MAX_ENTRY_UNCOMPRESSED_SIZE >> 12)
-                                                      + (MAX_ENTRY_UNCOMPRESSED_SIZE >> 14) + 11u;
+static constexpr uint32_t MAX_ENTRY_COMPRESSED_SIZE =
+    MAX_ENTRY_UNCOMPRESSED_SIZE + (MAX_ENTRY_UNCOMPRESSED_SIZE >> 12) + (MAX_ENTRY_UNCOMPRESSED_SIZE >> 14) + 11u;
 
-static constexpr uint32_t ENCRYPTION_FLAGS = uint32_t(Encrypted) | uint32_t(StrongEncrypted)
-                                             | uint32_t(CentralDirectoryEncrypted);
+static constexpr uint32_t ENCRYPTION_FLAGS = uint32_t(Encrypted) | uint32_t(StrongEncrypted) | uint32_t(CentralDirectoryEncrypted);
 
 static constexpr uint64_t MAX_TOTAL_UNCOMPRESSED_SIZE = 256ULL * 1024ULL * 1024ULL;
 
-struct LocalFileHeader
-{
+struct LocalFileHeader {
     uint8_t signature[4]; //  0x04034b50
     uint8_t version_needed[2];
     uint8_t general_purpose_bits[2];
@@ -324,26 +308,23 @@ struct LocalFileHeader
     uint8_t extra_field_length[2];
 };
 
-bool ZipContainer::startsWithEntry(const uint8_t* data, size_t size, std::span<const uint8_t> name)
-{
+bool ZipContainer::startsWithEntry(const uint8_t *data, size_t size, std::span<const uint8_t> name) {
     if (size < sizeof(LocalFileHeader) + name.size()) {
         return false;
     }
 
-    return readUInt(data + offsetof(LocalFileHeader, signature)) == 0x04034b50
-           && readUShort(data + offsetof(LocalFileHeader, file_name_length)) == name.size()
-           && std::equal(name.begin(), name.end(), data + sizeof(LocalFileHeader));
+    return readUInt(data + offsetof(LocalFileHeader, signature)) == 0x04034b50 &&
+           readUShort(data + offsetof(LocalFileHeader, file_name_length)) == name.size() &&
+           std::equal(name.begin(), name.end(), data + sizeof(LocalFileHeader));
 }
 
-struct DataDescriptor
-{
+struct DataDescriptor {
     uint8_t crc_32[4];
     uint8_t compressed_size[4];
     uint8_t uncompressed_size[4];
 };
 
-struct CentralFileHeader
-{
+struct CentralFileHeader {
     uint8_t signature[4]; // 0x02014b50
     uint8_t version_made[2];
     uint8_t version_needed[2];
@@ -363,8 +344,7 @@ struct CentralFileHeader
     LocalFileHeader toLocalHeader() const;
 };
 
-struct EndOfDirectory
-{
+struct EndOfDirectory {
     uint8_t signature[4]; // 0x06054b50
     uint8_t this_disk[2];
     uint8_t start_of_directory_disk[2];
@@ -375,16 +355,14 @@ struct EndOfDirectory
     uint8_t comment_length[2];
 };
 
-struct FileHeader
-{
+struct FileHeader {
     CentralFileHeader h;
     ByteArray file_name;
     ByteArray extra_field;
     ByteArray file_comment;
 };
 
-LocalFileHeader CentralFileHeader::toLocalHeader() const
-{
+LocalFileHeader CentralFileHeader::toLocalHeader() const {
     LocalFileHeader h;
     writeUInt(h.signature, 0x04034b50);
     copyUShort(h.version_needed, version_needed);
@@ -400,7 +378,7 @@ LocalFileHeader CentralFileHeader::toLocalHeader() const
 }
 
 struct ZipContainer::Impl {
-    IODevice* device = nullptr;
+    IODevice *device = nullptr;
 
     bool dirtyFileTree = true;
     std::vector<FileHeader> fileHeaders;
@@ -411,25 +389,21 @@ struct ZipContainer::Impl {
 
     ZipContainer::CompressionPolicy compressionPolicy = ZipContainer::AlwaysCompress;
 
-    enum EntryType {
-        Directory, File, Symlink
-    };
+    enum EntryType { Directory, File, Symlink };
 
-    void addEntry(EntryType type, const std::string& fileName, const ByteArray& contents);
-    bool writeToDevice(const uint8_t* data, size_t len);
-    bool writeToDevice(const ByteArray& data);
+    void addEntry(EntryType type, const std::string &fileName, const ByteArray &contents);
+    bool writeToDevice(const uint8_t *data, size_t len);
+    bool writeToDevice(const ByteArray &data);
 
-    Impl(IODevice* d)
-        : device(d) {}
+    Impl(IODevice *d) : device(d) {}
 
     void scanFiles();
     ZipContainer::FileInfo fillFileInfo(size_t index) const;
 
-    std::string fixFilePath(const ByteArray& path) const;
+    std::string fixFilePath(const ByteArray &path) const;
 };
 
-void ZipContainer::Impl::scanFiles()
-{
+void ZipContainer::Impl::scanFiles() {
     if (!dirtyFileTree) {
         return;
     }
@@ -452,7 +426,7 @@ void ZipContainer::Impl::scanFiles()
 
     dirtyFileTree = false;
 
-    const auto fail = [this](const char* message) {
+    const auto fail = [this](const char *message) {
         LOGW() << "Zip: " << message;
         fileHeaders.clear();
         comment.clear();
@@ -493,7 +467,7 @@ void ZipContainer::Impl::scanFiles()
             fail("Failed to seek while searching for EndOfDirectory.");
             return;
         }
-        if (device->read(reinterpret_cast<uint8_t*>(&eod), sizeof(EndOfDirectory)) != sizeof(EndOfDirectory)) {
+        if (device->read(reinterpret_cast<uint8_t *>(&eod), sizeof(EndOfDirectory)) != sizeof(EndOfDirectory)) {
             fail("Failed to read while searching for EndOfDirectory.");
             return;
         }
@@ -557,7 +531,7 @@ void ZipContainer::Impl::scanFiles()
 
     for (uint16_t i = 0; i < numDirEntries; ++i) {
         FileHeader header;
-        if (device->read(reinterpret_cast<uint8_t*>(&header.h), sizeof(CentralFileHeader)) != sizeof(CentralFileHeader)) {
+        if (device->read(reinterpret_cast<uint8_t *>(&header.h), sizeof(CentralFileHeader)) != sizeof(CentralFileHeader)) {
             fail("Failed to read complete central directory header.");
             return;
         }
@@ -614,46 +588,35 @@ void ZipContainer::Impl::scanFiles()
     }
 }
 
-ZipContainer::FileInfo ZipContainer::Impl::fillFileInfo(size_t index) const
-{
+ZipContainer::FileInfo ZipContainer::Impl::fillFileInfo(size_t index) const {
     ZipContainer::FileInfo fileInfo;
     FileHeader header = fileHeaders.at(index);
     uint32_t mode = readUInt(header.h.external_file_attributes);
     const HostOS hostOS = HostOS(readUShort(header.h.version_made) >> 8);
     switch (hostOS) {
-    case HostUnix:
-        mode = (mode >> 16) & 0xffff;
-        switch (mode & UnixFileAttributes::TypeMask) {
-        case UnixFileAttributes::SymLink:
-            fileInfo.isSymLink = true;
+        case HostUnix:
+            mode = (mode >> 16) & 0xffff;
+            switch (mode & UnixFileAttributes::TypeMask) {
+                case UnixFileAttributes::SymLink: fileInfo.isSymLink = true; break;
+                case UnixFileAttributes::Dir: fileInfo.isDir = true; break;
+                case UnixFileAttributes::File:
+                default: // ### just for the case; should we warn?
+                    fileInfo.isFile = true;
+                    break;
+            }
             break;
-        case UnixFileAttributes::Dir:
-            fileInfo.isDir = true;
-            break;
-        case UnixFileAttributes::File:
-        default: // ### just for the case; should we warn?
-            fileInfo.isFile = true;
-            break;
-        }
-        break;
-    case HostFAT:
-    case HostNTFS:
-    case HostHPFS:
-    case HostVFAT:
-        switch (mode & WindowsFileAttributes::TypeMask) {
-        case WindowsFileAttributes::Dir:
-            fileInfo.isDir = true;
-            break;
-        case WindowsFileAttributes::File:
-        default:
-            fileInfo.isFile = true;
-            break;
-        }
+        case HostFAT:
+        case HostNTFS:
+        case HostHPFS:
+        case HostVFAT:
+            switch (mode & WindowsFileAttributes::TypeMask) {
+                case WindowsFileAttributes::Dir: fileInfo.isDir = true; break;
+                case WindowsFileAttributes::File:
+                default: fileInfo.isFile = true; break;
+            }
 
-        break;
-    default:
-        LOGW("Zip: Zip entry format at %zu is not supported.", index);
-        return fileInfo; // we don't support anything else
+            break;
+        default: LOGW("Zip: Zip entry format at %zu is not supported.", index); return fileInfo; // we don't support anything else
     }
 
     // ushort general_purpose_bits = readUShort(header.h.general_purpose_bits);
@@ -667,8 +630,7 @@ ZipContainer::FileInfo ZipContainer::Impl::fillFileInfo(size_t index) const
     return fileInfo;
 }
 
-void ZipContainer::Impl::addEntry(EntryType type, const std::string& fileName, const ByteArray& contents)
-{
+void ZipContainer::Impl::addEntry(EntryType type, const std::string &fileName, const ByteArray &contents) {
     if (!(device->isOpen() || device->open(IODevice::WriteOnly))) {
         status = ZipContainer::FileOpenError;
         return;
@@ -690,9 +652,9 @@ void ZipContainer::Impl::addEntry(EntryType type, const std::string& fileName, c
     writeUInt(header.h.signature, 0x02014b50);
 
     writeUShort(header.h.version_needed, ZIP_VERSION);
-    writeUInt(header.h.uncompressed_size, (uint)contents.size());
+    writeUInt(header.h.uncompressed_size, (uint) contents.size());
 
-    std::time_t t = std::time(0);   // get time now
+    std::time_t t = std::time(0); // get time now
     std::tm now;
 #ifdef WIN32
     localtime_s(&now, &t);
@@ -704,43 +666,38 @@ void ZipContainer::Impl::addEntry(EntryType type, const std::string& fileName, c
     if (compression == ZipContainer::AlwaysCompress) {
         writeUShort(header.h.compression_method, CompressionMethodDeflated);
 
-        ulong len = (ulong)contents.size();
+        ulong len = (ulong) contents.size();
         // shamelessly copied form zlib
         len += (len >> 12) + (len >> 14) + 11;
         int res;
         do {
             // ByteArray::resize detaches the shared input before allocating the
             // deflate bound. Charge every attempt before either allocation.
-            if (io::activeWriteBudget
-                && !io::activeWriteBudget->charge(static_cast<uint64_t>(contents.size()) + len)) {
+            if (io::activeWriteBudget && !io::activeWriteBudget->charge(static_cast<uint64_t>(contents.size()) + len)) {
                 status = ZipContainer::FileWriteError;
                 return;
             }
             data.resize(len);
-            res = deflate((uint8_t*)data.data(), &len, (const uint8_t*)contents.constData(), (ulong)contents.size());
+            res = deflate((uint8_t *) data.data(), &len, (const uint8_t *) contents.constData(), (ulong) contents.size());
             if (io::activeWriteBudget && !io::activeWriteBudget->poll()) {
                 status = ZipContainer::FileWriteError;
                 return;
             }
 
             switch (res) {
-            case Z_OK:
-                data.resize(len);
-                break;
-            case Z_MEM_ERROR:
-                LOGW("Zip: Z_MEM_ERROR: Not enough memory to compress file, skipping");
-                data.resize(0);
-                break;
-            case Z_BUF_ERROR:
-                len *= 2;
-                break;
+                case Z_OK: data.resize(len); break;
+                case Z_MEM_ERROR:
+                    LOGW("Zip: Z_MEM_ERROR: Not enough memory to compress file, skipping");
+                    data.resize(0);
+                    break;
+                case Z_BUF_ERROR: len *= 2; break;
             }
         } while (res == Z_BUF_ERROR);
     }
-// TODO add a check if data.size() > contents.size().  Then try to store the original and revert the compression method to be uncompressed
-    writeUInt(header.h.compressed_size, (uint)data.size());
+    // TODO add a check if data.size() > contents.size().  Then try to store the original and revert the compression method to be uncompressed
+    writeUInt(header.h.compressed_size, (uint) data.size());
     uint crc_32 = ::crc32(0, 0, 0);
-    crc_32 = ::crc32(crc_32, (const uint8_t*)contents.constData(), (uint)contents.size());
+    crc_32 = ::crc32(crc_32, (const uint8_t *) contents.constData(), (uint) contents.size());
     writeUInt(header.h.crc_32, crc_32);
 
     // if bit 11 is set, the filename and comment fields must be encoded using UTF-8
@@ -757,30 +714,19 @@ void ZipContainer::Impl::addEntry(EntryType type, const std::string& fileName, c
         LOGW("Zip: File comment is too long, chopping it to 65535 bytes");
         header.file_comment.truncate(0xffff - header.file_name.size()); // ### don't break the utf-8 sequence, if any
     }
-    writeUShort(header.h.file_name_length, (ushort)header.file_name.size());
+    writeUShort(header.h.file_name_length, (ushort) header.file_name.size());
     //h.extra_field_length[2];
 
     writeUShort(header.h.version_made, HostUnix << 8);
     //uint8_t internal_file_attributes[2];
     //uint8_t external_file_attributes[4];
-    uint32_t mode = UnixFileAttributes::ReadUser
-                    | UnixFileAttributes::WriteUser
-                    | UnixFileAttributes::ExeUser
-                    | UnixFileAttributes::ReadGroup
-                    | UnixFileAttributes::ReadOther;
+    uint32_t mode = UnixFileAttributes::ReadUser | UnixFileAttributes::WriteUser | UnixFileAttributes::ExeUser |
+                    UnixFileAttributes::ReadGroup | UnixFileAttributes::ReadOther;
     switch (type) {
-    case Symlink:
-        mode |= UnixFileAttributes::SymLink;
-        break;
-    case Directory:
-        mode |= UnixFileAttributes::Dir;
-        break;
-    case File:
-        mode |= UnixFileAttributes::File;
-        break;
-    default:
-        UNREACHABLE;
-        break;
+        case Symlink: mode |= UnixFileAttributes::SymLink; break;
+        case Directory: mode |= UnixFileAttributes::Dir; break;
+        case File: mode |= UnixFileAttributes::File; break;
+        default: UNREACHABLE; break;
     }
     writeUInt(header.h.external_file_attributes, mode << 16);
     writeUInt(header.h.offset_local_header, start_of_directory);
@@ -790,11 +736,11 @@ void ZipContainer::Impl::addEntry(EntryType type, const std::string& fileName, c
     bool ok = true;
 
     LocalFileHeader h = header.h.toLocalHeader();
-    ok &= writeToDevice((const uint8_t*)&h, sizeof(LocalFileHeader));
+    ok &= writeToDevice((const uint8_t *) &h, sizeof(LocalFileHeader));
     ok &= writeToDevice(header.file_name);
     ok &= writeToDevice(data);
 
-    start_of_directory = (uint)device->pos();
+    start_of_directory = (uint) device->pos();
     dirtyFileTree = true;
 
     if (!ok) {
@@ -802,18 +748,11 @@ void ZipContainer::Impl::addEntry(EntryType type, const std::string& fileName, c
     }
 }
 
-bool ZipContainer::Impl::writeToDevice(const uint8_t* data, size_t len)
-{
-    return device->write(data, len) == len;
-}
+bool ZipContainer::Impl::writeToDevice(const uint8_t *data, size_t len) { return device->write(data, len) == len; }
 
-bool ZipContainer::Impl::writeToDevice(const ByteArray& data)
-{
-    return device->write(data) == data.size();
-}
+bool ZipContainer::Impl::writeToDevice(const ByteArray &data) { return device->write(data) == data.size(); }
 
-std::string ZipContainer::Impl::fixFilePath(const ByteArray& path) const
-{
+std::string ZipContainer::Impl::fixFilePath(const ByteArray &path) const {
     // fix the file path, if broken (convert separators, eat leading and trailing ones)
     std::string fixed = Dir::fromNativeSeparators(path.constChar()).toStdString();
     {
@@ -838,20 +777,14 @@ std::string ZipContainer::Impl::fixFilePath(const ByteArray& path) const
     return fixed;
 }
 
-ZipContainer::ZipContainer(IODevice* device)
-    : p(new Impl(device))
-{
-    assert(device);
-}
+ZipContainer::ZipContainer(IODevice *device) : p(new Impl(device)) { assert(device); }
 
-ZipContainer::~ZipContainer()
-{
+ZipContainer::~ZipContainer() {
     close();
     delete p;
 }
 
-std::vector<ZipContainer::FileInfo> ZipContainer::fileInfoList() const
-{
+std::vector<ZipContainer::FileInfo> ZipContainer::fileInfoList() const {
     p->scanFiles();
     std::vector<FileInfo> files;
     const size_t numFileHeaders = p->fileHeaders.size();
@@ -862,14 +795,12 @@ std::vector<ZipContainer::FileInfo> ZipContainer::fileInfoList() const
     return files;
 }
 
-int ZipContainer::count() const
-{
+int ZipContainer::count() const {
     p->scanFiles();
-    return (int)p->fileHeaders.size();
+    return (int) p->fileHeaders.size();
 }
 
-bool ZipContainer::fileExists(const std::string& fileName) const
-{
+bool ZipContainer::fileExists(const std::string &fileName) const {
     p->scanFiles();
 
     for (size_t i = 0; i < p->fileHeaders.size(); ++i) {
@@ -882,8 +813,7 @@ bool ZipContainer::fileExists(const std::string& fileName) const
     return false;
 }
 
-ByteArray ZipContainer::fileData(const std::string& fileName) const
-{
+ByteArray ZipContainer::fileData(const std::string &fileName) const {
     if (p->status != ZipContainer::NoError) {
         return ByteArray();
     }
@@ -906,18 +836,17 @@ ByteArray ZipContainer::fileData(const std::string& fileName) const
         return ByteArray();
     }
 
-    const auto fail = [this](const char* message) -> ByteArray {
+    const auto fail = [this](const char *message) -> ByteArray {
         LOGW() << "Zip: " << message;
         p->status = ZipContainer::FileReadError;
         return ByteArray();
     };
 
-    const FileHeader& header = p->fileHeaders.at(i);
+    const FileHeader &header = p->fileHeaders.at(i);
 
     const uint32_t central_version = readUShort(header.h.version_needed);
     if (central_version > ZIP_VERSION) {
-        LOGW() << "Zip: .ZIP specification version " << central_version
-               << " implementation is needed to extract the data.";
+        LOGW() << "Zip: .ZIP specification version " << central_version << " implementation is needed to extract the data.";
         p->status = ZipContainer::FileReadError;
         return ByteArray();
     }
@@ -929,8 +858,7 @@ ByteArray ZipContainer::fileData(const std::string& fileName) const
 
     const uint32_t central_method = readUShort(header.h.compression_method);
     if (central_method != CompressionMethodStored && central_method != CompressionMethodDeflated) {
-        LOGW() << "Zip: Unsupported compression method " << central_method
-               << " is needed to extract the data.";
+        LOGW() << "Zip: Unsupported compression method " << central_method << " is needed to extract the data.";
         p->status = ZipContainer::FileReadError;
         return ByteArray();
     }
@@ -956,10 +884,9 @@ ByteArray ZipContainer::fileData(const std::string& fileName) const
         return fail("Stored entry has different compressed and uncompressed sizes.");
     }
 
-    IODevice* device = p->device;
+    IODevice *device = p->device;
     const uint64_t file_size = device->size();
-    if (uint64_t(local_offset) > file_size
-        || file_size - uint64_t(local_offset) < sizeof(LocalFileHeader)) {
+    if (uint64_t(local_offset) > file_size || file_size - uint64_t(local_offset) < sizeof(LocalFileHeader)) {
         return fail("Local file header offset is outside the file.");
     }
 
@@ -969,7 +896,7 @@ ByteArray ZipContainer::fileData(const std::string& fileName) const
 
     LocalFileHeader lh;
     std::memset(&lh, 0, sizeof(lh));
-    if (device->read(reinterpret_cast<uint8_t*>(&lh), sizeof(lh)) != sizeof(lh)) {
+    if (device->read(reinterpret_cast<uint8_t *>(&lh), sizeof(lh)) != sizeof(lh)) {
         return fail("Failed to read the complete local file header.");
     }
 
@@ -979,8 +906,7 @@ ByteArray ZipContainer::fileData(const std::string& fileName) const
 
     const uint32_t local_version = readUShort(lh.version_needed);
     if (local_version > ZIP_VERSION) {
-        LOGW() << "Zip: .ZIP specification version " << local_version
-               << " implementation is needed to extract the data.";
+        LOGW() << "Zip: .ZIP specification version " << local_version << " implementation is needed to extract the data.";
         p->status = ZipContainer::FileReadError;
         return ByteArray();
     }
@@ -1001,8 +927,7 @@ ByteArray ZipContainer::fileData(const std::string& fileName) const
     }
 
     if (local_method != CompressionMethodStored && local_method != CompressionMethodDeflated) {
-        LOGW() << "Zip: Unsupported compression method " << local_method
-               << " is needed to extract the data.";
+        LOGW() << "Zip: Unsupported compression method " << local_method << " is needed to extract the data.";
         p->status = ZipContainer::FileReadError;
         return ByteArray();
     }
@@ -1010,17 +935,15 @@ ByteArray ZipContainer::fileData(const std::string& fileName) const
     // With a data descriptor, the central directory is authoritative and the local
     // CRC/sizes may be zero. Without one, the local header must match the central one.
     if ((central_flags & HasDataDescriptor) == 0) {
-        if (readUInt(lh.crc_32) != central_crc
-            || readUInt(lh.compressed_size) != compressed_size
-            || readUInt(lh.uncompressed_size) != uncompressed_size) {
+        if (readUInt(lh.crc_32) != central_crc || readUInt(lh.compressed_size) != compressed_size ||
+            readUInt(lh.uncompressed_size) != uncompressed_size) {
             return fail("Local file header CRC or sizes do not match the central directory.");
         }
     }
 
     const uint32_t local_name_length = readUShort(lh.file_name_length);
     const uint32_t local_extra_length = readUShort(lh.extra_field_length);
-    const uint64_t data_offset = uint64_t(local_offset) + sizeof(LocalFileHeader)
-                                 + local_name_length + local_extra_length;
+    const uint64_t data_offset = uint64_t(local_offset) + sizeof(LocalFileHeader) + local_name_length + local_extra_length;
     if (data_offset > file_size || compressed_size > file_size - data_offset) {
         return fail("Compressed data extends past the end of the file.");
     }
@@ -1043,8 +966,7 @@ ByteArray ZipContainer::fileData(const std::string& fileName) const
         const size_t output_capacity = uncompressed_size > 0 ? uncompressed_size : 1;
         result.resize(output_capacity);
         ulong output_len = static_cast<ulong>(output_capacity);
-        const int res = inflate(result.data(), &output_len, compressed.constData(),
-                                static_cast<ulong>(compressed_size));
+        const int res = inflate(result.data(), &output_len, compressed.constData(), static_cast<ulong>(compressed_size));
         if (res != Z_OK) {
             LOGW() << "Zip: inflate failed with error " << res << ".";
             p->status = ZipContainer::FileReadError;
@@ -1060,8 +982,7 @@ ByteArray ZipContainer::fileData(const std::string& fileName) const
 
     uint32_t actual_crc = static_cast<uint32_t>(::crc32(0, Z_NULL, 0));
     if (!result.empty()) {
-        actual_crc = static_cast<uint32_t>(::crc32(actual_crc, result.constData(),
-                                                   static_cast<uInt>(result.size())));
+        actual_crc = static_cast<uint32_t>(::crc32(actual_crc, result.constData(), static_cast<uInt>(result.size())));
     }
 
     if (actual_crc != central_crc) {
@@ -1073,28 +994,17 @@ ByteArray ZipContainer::fileData(const std::string& fileName) const
     return result;
 }
 
-ZipContainer::Status ZipContainer::status() const
-{
-    return p->status;
-}
+ZipContainer::Status ZipContainer::status() const { return p->status; }
 
-void ZipContainer::setCompressionPolicy(CompressionPolicy policy)
-{
-    p->compressionPolicy = policy;
-}
+void ZipContainer::setCompressionPolicy(CompressionPolicy policy) { p->compressionPolicy = policy; }
 
-ZipContainer::CompressionPolicy ZipContainer::compressionPolicy() const
-{
-    return p->compressionPolicy;
-}
+ZipContainer::CompressionPolicy ZipContainer::compressionPolicy() const { return p->compressionPolicy; }
 
-void ZipContainer::addFile(const std::string& fileName, const ByteArray& data)
-{
+void ZipContainer::addFile(const std::string &fileName, const ByteArray &data) {
     p->addEntry(Impl::File, Dir::fromNativeSeparators(fileName).toStdString(), data);
 }
 
-void ZipContainer::addDirectory(const std::string& dirName)
-{
+void ZipContainer::addDirectory(const std::string &dirName) {
     std::string name(Dir::fromNativeSeparators(dirName).toStdString());
     // separator is mandatory
     if (name.back() != '/') {
@@ -1103,8 +1013,7 @@ void ZipContainer::addDirectory(const std::string& dirName)
     p->addEntry(Impl::Directory, name, ByteArray());
 }
 
-void ZipContainer::close()
-{
+void ZipContainer::close() {
     if (!(p->device->openMode() & IODevice::WriteOnly)) {
         p->device->close();
         return;
@@ -1116,26 +1025,26 @@ void ZipContainer::close()
     p->device->seek(p->start_of_directory);
     // write new directory
     for (size_t i = 0; i < p->fileHeaders.size(); ++i) {
-        const FileHeader& header = p->fileHeaders.at(i);
-        ok &= p->writeToDevice((const uint8_t*)&header.h, sizeof(CentralFileHeader));
+        const FileHeader &header = p->fileHeaders.at(i);
+        ok &= p->writeToDevice((const uint8_t *) &header.h, sizeof(CentralFileHeader));
         ok &= p->writeToDevice(header.file_name);
         ok &= p->writeToDevice(header.extra_field);
         ok &= p->writeToDevice(header.file_comment);
     }
-    int dir_size = (int)p->device->pos() - (int)p->start_of_directory;
+    int dir_size = (int) p->device->pos() - (int) p->start_of_directory;
     // write end of directory
     EndOfDirectory eod;
     memset(&eod, 0, sizeof(EndOfDirectory));
     writeUInt(eod.signature, 0x06054b50);
     //uint8_t this_disk[2];
     //uint8_t start_of_directory_disk[2];
-    writeUShort(eod.num_dir_entries_this_disk, (ushort)p->fileHeaders.size());
-    writeUShort(eod.num_dir_entries, (ushort)p->fileHeaders.size());
+    writeUShort(eod.num_dir_entries_this_disk, (ushort) p->fileHeaders.size());
+    writeUShort(eod.num_dir_entries, (ushort) p->fileHeaders.size());
     writeUInt(eod.directory_size, dir_size);
     writeUInt(eod.dir_start_offset, p->start_of_directory);
-    writeUShort(eod.comment_length, (ushort)p->comment.size());
+    writeUShort(eod.comment_length, (ushort) p->comment.size());
 
-    ok &= p->writeToDevice((const uint8_t*)&eod, sizeof(EndOfDirectory));
+    ok &= p->writeToDevice((const uint8_t *) &eod, sizeof(EndOfDirectory));
     ok &= p->writeToDevice(p->comment);
     p->device->close();
 
@@ -1143,4 +1052,4 @@ void ZipContainer::close()
         p->status = ZipContainer::FileWriteError;
     }
 }
-}
+} // namespace muse

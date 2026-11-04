@@ -26,13 +26,12 @@
 #include "playback/metaparsers/metaparserbase.h"
 
 namespace mu::engraving {
-class GraceNotesMetaParser : public MetaParserBase<GraceNotesMetaParser>
-{
+class GraceNotesMetaParser : public MetaParserBase<GraceNotesMetaParser> {
 protected:
     friend MetaParserBase;
 
-    static void doParse(const EngravingItem* item, const RenderingContext& ctx, muse::mpe::ArticulationMap& result);
+    static void doParse(const EngravingItem *item, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
 };
-}
+} // namespace mu::engraving
 
 #endif // GRACENOTESMETAPARSER_H

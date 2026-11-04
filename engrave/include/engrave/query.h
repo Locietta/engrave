@@ -41,35 +41,35 @@ struct LayoutBox {
 // system) is not part of the score's content at all.
 struct ElementInfo {
     ElementId id;
-    std::string type;                  // the MSCX type name, e.g. "Note"
-    ScoreSel score;                    // the master, or the excerpt it belongs to
-    std::optional<ElementId> measure;  // the measure it sits in
-    std::int32_t measure_index = -1;   // ... and that measure's index in the score
-    std::int32_t staff = -1;           // 0-based staff index; -1 when it is on none
-    std::int32_t voice = -1;           // 0-based voice; -1 when it has none
-    Fraction tick;                     // position in the score, in whole notes
-    Fraction duration;                 // its length; zero for a point event
-    std::optional<ElementId> parent;   // the element it hangs off, when that has an id
-    std::vector<ElementId> links;      // its link group (linked parts), master first
-    std::optional<LayoutBox> box;      // where it is, when the query asked for layout_boxes
-    std::vector<PropertyRead> props;   // the properties the query asked for
+    std::string type;                 // the MSCX type name, e.g. "Note"
+    ScoreSel score;                   // the master, or the excerpt it belongs to
+    std::optional<ElementId> measure; // the measure it sits in
+    std::int32_t measure_index = -1;  // ... and that measure's index in the score
+    std::int32_t staff = -1;          // 0-based staff index; -1 when it is on none
+    std::int32_t voice = -1;          // 0-based voice; -1 when it has none
+    Fraction tick;                    // position in the score, in whole notes
+    Fraction duration;                // its length; zero for a point event
+    std::optional<ElementId> parent;  // the element it hangs off, when that has an id
+    std::vector<ElementId> links;     // its link group (linked parts), master first
+    std::optional<LayoutBox> box;     // where it is, when the query asked for layout_boxes
+    std::vector<PropertyRead> props;  // the properties the query asked for
 };
 
 // The score's structure, without its notes: what a caller needs to plan an edit
 // or a query.
 struct StaffInfo {
     ElementId id;
-    std::int32_t index = 0;  // the score's staff index
-    std::int32_t part = 0;   // index of the part in Outline::parts
-    std::string group;       // "pitched", "percussion" or "tablature"
+    std::int32_t index = 0; // the score's staff index
+    std::int32_t part = 0;  // index of the part in Outline::parts
+    std::string group;      // "pitched", "percussion" or "tablature"
     std::int32_t lines = 5;
     bool invisible = false;
 };
 
 struct PartInfo {
     ElementId id;
-    std::string name;           // the long name, plain text
-    std::string instrument_id;  // e.g. "keyboard.piano"
+    std::string name;          // the long name, plain text
+    std::string instrument_id; // e.g. "keyboard.piano"
     std::vector<StaffInfo> staves;
 };
 
@@ -85,11 +85,11 @@ struct MeasureInfo {
 struct SignatureInfo {
     std::string type; // "TimeSig", "KeySig" or "Tempo"
     Fraction tick;
-    std::int32_t staff = -1;           // -1 for a tempo, which is the score's
-    std::optional<Fraction> timesig;   // a TimeSig's signature
-    std::int32_t key = 0;              // a KeySig's concert key, in fifths
-    double bpm = 0;                    // a Tempo's beats per minute
-    std::string text;                  // a Tempo's own text
+    std::int32_t staff = -1;         // -1 for a tempo, which is the score's
+    std::optional<Fraction> timesig; // a TimeSig's signature
+    std::int32_t key = 0;            // a KeySig's concert key, in fifths
+    double bpm = 0;                  // a Tempo's beats per minute
+    std::string text;                // a Tempo's own text
 };
 
 struct ExcerptInfo {
@@ -104,18 +104,18 @@ struct Outline {
     std::string subtitle;
     std::string composer;
     std::string poet;
-    std::string timesig;        // "4/4"; empty when the score has no time signature
+    std::string timesig; // "4/4"; empty when the score has no time signature
     std::string mscore_version;
     std::int32_t file_version = 0;
     std::int32_t pages = 0;
     std::int32_t measure_count = 0;
-    std::int32_t key = 0;       // the key signature number of the first measure
-    double duration = 0;        // seconds
+    std::int32_t key = 0; // the key signature number of the first measure
+    double duration = 0;  // seconds
 
-    std::vector<PartInfo> parts;         // in score order
-    std::vector<MeasureInfo> measures;   // every measure, in score order
+    std::vector<PartInfo> parts;           // in score order
+    std::vector<MeasureInfo> measures;     // every measure, in score order
     std::vector<SignatureInfo> signatures; // in score order, then staff, then type
-    std::vector<ExcerptInfo> excerpts;   // the master's linked parts
+    std::vector<ExcerptInfo> excerpts;     // the master's linked parts
 };
 
 // Which elements a query reports, and how many.

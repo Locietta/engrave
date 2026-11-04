@@ -56,7 +56,7 @@ using namespace muse::draw;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-static const char* FALLBACK_SYMBOLTEXT_FONT = "Bravura Text";
+static const char *FALLBACK_SYMBOLTEXT_FONT = "Bravura Text";
 
 //---------------------------------------------------------
 //   descr
@@ -64,8 +64,7 @@ static const char* FALLBACK_SYMBOLTEXT_FONT = "Bravura Text";
 //    return chord description if found, or null
 //---------------------------------------------------------
 
-const ChordDescription* HarmonyInfo::descr() const
-{
+const ChordDescription *HarmonyInfo::descr() const {
     if (!chordList()) {
         return nullptr;
     }
@@ -79,22 +78,21 @@ const ChordDescription* HarmonyInfo::descr() const
 //    return chord description if found, or null
 //---------------------------------------------------------
 
-const ChordDescription* HarmonyInfo::descr(const String& name, const ParsedChord* pc) const
-{
-    const ChordDescription* match = nullptr;
+const ChordDescription *HarmonyInfo::descr(const String &name, const ParsedChord *pc) const {
+    const ChordDescription *match = nullptr;
     if (!chordList()) {
         return nullptr;
     }
-    for (const auto& p : *chordList()) {
-        const ChordDescription& cd = p.second;
-        for (const String& s : cd.names) {
+    for (const auto &p : *chordList()) {
+        const ChordDescription &cd = p.second;
+        for (const String &s : cd.names) {
             if (s == name) {
                 return &cd;
             }
             if (!pc) {
                 continue;
             }
-            for (const ParsedChord& sParsed : cd.parsedChords) {
+            for (const ParsedChord &sParsed : cd.parsedChords) {
                 if (sParsed == *pc) {
                     match = &cd;
                 }
@@ -114,9 +112,8 @@ const ChordDescription* HarmonyInfo::descr(const String& name, const ParsedChord
 //    and add to chord list
 //---------------------------------------------------------
 
-const ChordDescription* HarmonyInfo::getDescription()
-{
-    const ChordDescription* cd = descr();
+const ChordDescription *HarmonyInfo::getDescription() {
+    const ChordDescription *cd = descr();
     if (cd && !cd->names.empty()) {
         m_textName = cd->names.front();
     } else if (!m_textName.empty()) {
@@ -131,9 +128,8 @@ const ChordDescription* HarmonyInfo::getDescription()
 //    same but lookup by name and optionally parsed chord
 //---------------------------------------------------------
 
-const ChordDescription* HarmonyInfo::getDescription(const String& name, const ParsedChord* pc)
-{
-    const ChordDescription* cd = descr(name, pc);
+const ChordDescription *HarmonyInfo::getDescription(const String &name, const ParsedChord *pc) {
+    const ChordDescription *cd = descr(name, pc);
     if (cd) {
         m_id = cd->id;
     } else {
@@ -149,19 +145,17 @@ const ChordDescription* HarmonyInfo::getDescription(const String& name, const Pa
 //    add to chord list using private id
 //---------------------------------------------------------
 
-const ChordDescription* HarmonyInfo::generateDescription()
-{
+const ChordDescription *HarmonyInfo::generateDescription() {
     ChordDescription cd(m_textName);
     cd.complete(getParsedChord(), chordList());
     // remove parsed chord from description
     // so we will only match it literally in the future
     cd.parsedChords.clear();
-    chordList()->insert({ cd.id, cd });
+    chordList()->insert({cd.id, cd});
     return &chordList()->at(cd.id);
 }
 
-ParsedChord* HarmonyInfo::getParsedChord()
-{
+ParsedChord *HarmonyInfo::getParsedChord() {
     if (!m_parsedChord) {
         m_parsedChord = new ParsedChord();
         m_parsedChord->parse(m_textName, chordList(), false);
@@ -169,22 +163,18 @@ ParsedChord* HarmonyInfo::getParsedChord()
     return m_parsedChord;
 }
 
-bool HarmonyInfo::hasModifiers() const
-{
-    return m_parsedChord ? m_parsedChord->modifiers().size() > 0 : false;
-}
+bool HarmonyInfo::hasModifiers() const { return m_parsedChord ? m_parsedChord->modifiers().size() > 0 : false; }
 
-String Harmony::displayText() const
-{
+String Harmony::displayText() const {
     // String representation of what the user sees on the score
     // Used in fretbox
     String name;
-    for (const HarmonyRenderItem* segment : ldata()->renderItemList()) {
-        if (const TextSegment* textSeg = dynamic_cast<const TextSegment*>(segment)) {
+    for (const HarmonyRenderItem *segment : ldata()->renderItemList()) {
+        if (const TextSegment *textSeg = dynamic_cast<const TextSegment *>(segment)) {
             String t = textSeg->text();
             t.replace(u"\uE87C", u"/");
             name += t;
-        } else if (const ChordSymbolParen* parenSeg = dynamic_cast<const ChordSymbolParen*>(segment)) {
+        } else if (const ChordSymbolParen *parenSeg = dynamic_cast<const ChordSymbolParen *>(segment)) {
             name += parenSeg->parenItem->direction() == DirectionH::LEFT ? u"(" : u")";
         }
     }
@@ -196,8 +186,7 @@ String Harmony::displayText() const
 //   harmonyName
 //---------------------------------------------------------
 
-String Harmony::harmonyName() const
-{
+String Harmony::harmonyName() const {
     String name;
 
     if (leftParen()) {
@@ -205,7 +194,7 @@ String Harmony::harmonyName() const
     }
 
     for (size_t i = 0; i < m_chords.size(); i++) {
-        const HarmonyInfo* info = m_chords.at(i);
+        const HarmonyInfo *info = m_chords.at(i);
         HChord hc = info->descr() ? info->descr()->chord : HChord();
         String s, r, e, b;
 
@@ -217,7 +206,7 @@ String Harmony::harmonyName() const
             NoteSpellingType spelling = style().styleV(Sid::chordSymbolSpelling).value<NoteSpellingType>();
             r = tpc2name(info->rootTpc(), spelling, m_rootCase);
         } else if (m_harmonyType == HarmonyType::NASHVILLE && tpcIsValid(info->rootTpc())) {
-            const Staff* st = staff();
+            const Staff *st = staff();
             Key key = st ? st->key(tick()) : Key::INVALID;
             r = tpc2Function(info->rootTpc(), key);
         }
@@ -230,10 +219,10 @@ String Harmony::harmonyName() const
         } else if (!m_degreeList.empty()) {
             hc.add(m_degreeList);
             // try to find the chord in chordList
-            const ChordDescription* newExtension = nullptr;
-            const ChordList* cl = score()->chordList();
-            for (const auto& p : *cl) {
-                const ChordDescription& cd = p.second;
+            const ChordDescription *newExtension = nullptr;
+            const ChordList *cl = score()->chordList();
+            for (const auto &p : *cl) {
+                const ChordDescription &cd = p.second;
                 if (cd.chord == hc && !cd.names.empty()) {
                     newExtension = &cd;
                     break;
@@ -266,12 +255,11 @@ String Harmony::harmonyName() const
     return name;
 }
 
-bool Harmony::isRealizable() const
-{
+bool Harmony::isRealizable() const {
     if (m_chords.empty()) {
         return false;
     }
-    for (const HarmonyInfo* info : m_chords) {
+    for (const HarmonyInfo *info : m_chords) {
         if (!tpcIsValid(info->rootTpc())) {
             return false;
         }
@@ -279,25 +267,22 @@ bool Harmony::isRealizable() const
     return true;
 }
 
-int Harmony::bassTpc() const
-{
+int Harmony::bassTpc() const {
     if (m_chords.empty()) {
         return Tpc::TPC_INVALID;
     }
     return m_chords.front()->bassTpc();
 }
 
-int Harmony::rootTpc() const
-{
+int Harmony::rootTpc() const {
     if (m_chords.empty()) {
         return Tpc::TPC_INVALID;
     }
     return m_chords.front()->rootTpc();
 }
 
-bool Harmony::isInFretBox() const
-{
-    EngravingObject* parent = ownershipParent();
+bool Harmony::isInFretBox() const {
+    EngravingObject *parent = ownershipParent();
     if (!parent) {
         return false;
     }
@@ -313,69 +298,64 @@ bool Harmony::isInFretBox() const
 //   chordSymbolStyle
 //---------------------------------------------------------
 
-const ElementStyle chordSymbolStyle {
-    { Sid::harmonyPlacement, Pid::PLACEMENT },
-    { Sid::minHarmonyDistance, Pid::MIN_DISTANCE },
-    { Sid::chordBassNoteScale, Pid::HARMONY_BASS_SCALE },
-    { Sid::harmonyVoiceLiteral, Pid::HARMONY_VOICE_LITERAL },
-    { Sid::harmonyVoicing, Pid::HARMONY_VOICING },
-    { Sid::harmonyDuration, Pid::HARMONY_DURATION },
+const ElementStyle chordSymbolStyle{
+    {Sid::harmonyPlacement, Pid::PLACEMENT},
+    {Sid::minHarmonyDistance, Pid::MIN_DISTANCE},
+    {Sid::chordBassNoteScale, Pid::HARMONY_BASS_SCALE},
+    {Sid::harmonyVoiceLiteral, Pid::HARMONY_VOICE_LITERAL},
+    {Sid::harmonyVoicing, Pid::HARMONY_VOICING},
+    {Sid::harmonyDuration, Pid::HARMONY_DURATION},
 };
 
 //---------------------------------------------------------
 //   Harmony
 //---------------------------------------------------------
 
-Harmony::Harmony(EngravingObject* parent)
-    : TextBase(ElementType::HARMONY, parent, TextStyleType::HARMONY_A, ElementFlag::MOVABLE | ElementFlag::ON_STAFF)
-{
+Harmony::Harmony(EngravingObject *parent)
+    : TextBase(ElementType::HARMONY, parent, TextStyleType::HARMONY_A, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
     assert(!parent || parent->isSegment() || parent->isFretDiagram() || parent->isType(ElementType::DUMMY));
 
-    m_rootCase   = NoteCaseType::CAPITAL;
-    m_bassCase   = NoteCaseType::CAPITAL;
+    m_rootCase = NoteCaseType::CAPITAL;
+    m_bassCase = NoteCaseType::CAPITAL;
     m_harmonyType = HarmonyType::STANDARD;
     m_play = true;
     m_realizedHarmony = RealizedHarmony(this);
     initElementStyle(&chordSymbolStyle);
 }
 
-Harmony::Harmony(const Harmony& h)
-    : TextBase(h)
-{
-    m_rootCase   = h.m_rootCase;
-    m_bassCase   = h.m_bassCase;
+Harmony::Harmony(const Harmony &h) : TextBase(h) {
+    m_rootCase = h.m_rootCase;
+    m_bassCase = h.m_bassCase;
     m_bassScale = h.m_bassScale;
     m_degreeList = h.m_degreeList;
     m_harmonyType = h.m_harmonyType;
-    m_play       = h.m_play;
+    m_play = h.m_play;
     m_realizedHarmony = h.m_realizedHarmony;
     m_realizedHarmony.setHarmony(this);
-    for (const HarmonyInfo* hi : h.m_chords) {
-        HarmonyInfo* newInfo = new HarmonyInfo(*hi);
+    for (const HarmonyInfo *hi : h.m_chords) {
+        HarmonyInfo *newInfo = new HarmonyInfo(*hi);
         m_chords.push_back(newInfo);
     }
 
     m_fontFamily = h.m_fontFamily;
-    m_fontStyle  = h.m_fontStyle;
-    m_fontSize   = h.m_fontSize;
+    m_fontStyle = h.m_fontStyle;
+    m_fontSize = h.m_fontSize;
 }
 
 //---------------------------------------------------------
 //   ~Harmony
 //---------------------------------------------------------
 
-Harmony::~Harmony()
-{
-    for (const HarmonyRenderItem* renderItem : mutldata()->renderItemList()) {
+Harmony::~Harmony() {
+    for (const HarmonyRenderItem *renderItem : mutldata()->renderItemList()) {
         delete renderItem;
     }
-    for (const HarmonyInfo* info : m_chords) {
+    for (const HarmonyInfo *info : m_chords) {
         delete info;
     }
 }
 
-int Harmony::id() const
-{
+int Harmony::id() const {
     if (m_chords.empty()) {
         return -1;
     }
@@ -387,9 +367,8 @@ int Harmony::id() const
 ///   gets the parent segment of this harmony
 //---------------------------------------------------------
 
-Segment* Harmony::getParentSeg() const
-{
-    Segment* seg = nullptr;
+Segment *Harmony::getParentSeg() const {
+    Segment *seg = nullptr;
     if (!ownershipParent()) {
         return nullptr;
     }
@@ -404,8 +383,7 @@ Segment* Harmony::getParentSeg() const
     return seg;
 }
 
-FretDiagram* Harmony::getParentFretDiagram() const
-{
+FretDiagram *Harmony::getParentFretDiagram() const {
     if (ownershipParent() && ownershipParent()->isFretDiagram()) {
         return toFretDiagram(ownershipParent());
     }
@@ -413,14 +391,13 @@ FretDiagram* Harmony::getParentFretDiagram() const
     return nullptr;
 }
 
-void Harmony::afterRead()
-{
+void Harmony::afterRead() {
     // TODO: now that we can render arbitrary chords,
     // we could try to construct a full representation from a degree list.
     // These will typically only exist for chords imported from MusicXML prior to MuseScore 2.0
     // or constructed in the Chord Symbol Properties dialog.
 
-    for (HarmonyInfo* info : m_chords) {
+    for (HarmonyInfo *info : m_chords) {
         if (tpcIsValid(info->rootTpc())) {
             if (info->id() > 0) {
                 // positive id will happen only for scores that were created with explicit chord lists
@@ -453,9 +430,8 @@ void Harmony::afterRead()
     setPlainText(harmonyName());
 }
 
-bool Harmony::hasModifiers() const
-{
-    for (const HarmonyInfo* info : m_chords) {
+bool Harmony::hasModifiers() const {
+    for (const HarmonyInfo *info : m_chords) {
         if (info->hasModifiers()) {
             return true;
         }
@@ -471,8 +447,7 @@ bool Harmony::hasModifiers() const
 //    return true if chord is recognized
 //---------------------------------------------------------
 
-const std::vector<const ChordDescription*> Harmony::parseHarmony(const String& ss, bool syntaxOnly)
-{
+const std::vector<const ChordDescription *> Harmony::parseHarmony(const String &ss, bool syntaxOnly) {
     // pre-process for parentheses
     String s = ss.simplified();
     if (s.startsWith('(')) {
@@ -490,25 +465,25 @@ const std::vector<const ChordDescription*> Harmony::parseHarmony(const String& s
     }
 
     if (parenthesesMode() == ParenthesesMode::BOTH) {
-        s = s.simplified();         // in case of spaces inside parentheses
+        s = s.simplified(); // in case of spaces inside parentheses
     }
 
     muse::DeleteAll(m_chords);
     m_chords.clear();
 
-    std::vector<const ChordDescription*> descriptions;
+    std::vector<const ChordDescription *> descriptions;
     if (s.isEmpty()) {
         return descriptions;
     }
 
     StringList chords = s.split('|');
 
-    for (const String& subChord : chords) {
+    for (const String &subChord : chords) {
         if (subChord.empty()) {
             continue;
         }
-        HarmonyInfo* info = new HarmonyInfo(score());
-        const ChordDescription* cd = parseSingleHarmony(subChord, info, syntaxOnly);
+        HarmonyInfo *info = new HarmonyInfo(score());
+        const ChordDescription *cd = parseSingleHarmony(subChord, info, syntaxOnly);
         descriptions.push_back(cd);
         m_chords.push_back(info);
     }
@@ -516,8 +491,7 @@ const std::vector<const ChordDescription*> Harmony::parseHarmony(const String& s
     return descriptions;
 }
 
-const ChordDescription* Harmony::parseSingleHarmony(const String& ss, HarmonyInfo* info, bool syntaxOnly)
-{
+const ChordDescription *Harmony::parseSingleHarmony(const String &ss, HarmonyInfo *info, bool syntaxOnly) {
     String s = ss.simplified();
 
     if (m_harmonyType == HarmonyType::ROMAN) {
@@ -541,7 +515,7 @@ const ChordDescription* Harmony::parseSingleHarmony(const String& ss, HarmonyInf
     }
 
     size_t idx = 0;
-    const Staff* st = staff();
+    const Staff *st = staff();
     Key key = st ? st->key(tick()) : Key::INVALID;
     NoteSpellingType spelling = style().styleV(Sid::chordSymbolSpelling).value<NoteSpellingType>();
 
@@ -582,15 +556,15 @@ const ChordDescription* Harmony::parseSingleHarmony(const String& ss, HarmonyInf
             s = s + u"/" + bs;
         }
     } else {
-        s = s.mid(idx);             // don't simplify; keep leading space before extension if present
+        s = s.mid(idx); // don't simplify; keep leading space before extension if present
     }
 
-    const ChordList* cl = score()->chordList();
-    const ChordDescription* cd = 0;
+    const ChordList *cl = score()->chordList();
+    const ChordDescription *cd = 0;
     if (useLiteral) {
         cd = info->descr(s);
     } else {
-        ParsedChord* pc = new ParsedChord();
+        ParsedChord *pc = new ParsedChord();
         pc->parse(s, cl, syntaxOnly, preferMinor);
         // parser prepends "=" to name of implied minor chords
         // use this here as well
@@ -615,8 +589,7 @@ const ChordDescription* Harmony::parseSingleHarmony(const String& ss, HarmonyInf
     return cd;
 }
 
-NoteCaseType Harmony::rootRenderCase(HarmonyInfo* info) const
-{
+NoteCaseType Harmony::rootRenderCase(HarmonyInfo *info) const {
     // case
     // always use case as typed if automatic capitalization is off
     NoteCaseType noteCase = m_rootCase;
@@ -633,7 +606,7 @@ NoteCaseType Harmony::rootRenderCase(HarmonyInfo* info) const
 
     // override for minor chords
     if (style().styleB(Sid::lowerCaseMinorChords)) {
-        const ChordDescription* cd = info->descr();
+        const ChordDescription *cd = info->descr();
         String quality;
         if (cd) {
             // use chord description if possible
@@ -662,8 +635,7 @@ NoteCaseType Harmony::rootRenderCase(HarmonyInfo* info) const
     return noteCase;
 }
 
-NoteCaseType Harmony::bassRenderCase() const
-{
+NoteCaseType Harmony::bassRenderCase() const {
     // case
     // always use case as typed if automatic capitalization is off
     NoteCaseType noteCase = m_bassCase;
@@ -690,23 +662,19 @@ NoteCaseType Harmony::bassRenderCase() const
 //   endEdit
 //---------------------------------------------------------
 
-bool Harmony::isPlayable() const
-{
-    return !isInFretBox();
-}
+bool Harmony::isPlayable() const { return !isInFretBox(); }
 
 //---------------------------------------------------------
 //   setHarmony
 //---------------------------------------------------------
 
-void Harmony::setHarmony(const String& s)
-{
+void Harmony::setHarmony(const String &s) {
     m_realizedHarmony.setDirty(true);
 
-    std::vector<const ChordDescription*> descriptions = parseHarmony(s);
+    std::vector<const ChordDescription *> descriptions = parseHarmony(s);
     for (size_t i = 0; i < m_chords.size(); i++) {
-        HarmonyInfo* info = m_chords.at(i);
-        const ChordDescription* cd = i < descriptions.size() ? descriptions.at(i) : nullptr;
+        HarmonyInfo *info = m_chords.at(i);
+        const ChordDescription *cd = i < descriptions.size() ? descriptions.at(i) : nullptr;
 
         if (!cd && info->getParsedChord()->parseable()) {
             // our first time encountering this chord
@@ -727,8 +695,7 @@ void Harmony::setHarmony(const String& s)
 //   baseLine
 //---------------------------------------------------------
 
-double Harmony::baseLine() const
-{
+double Harmony::baseLine() const {
     if (ldata()->renderItemList().empty() || !ldata()->baseline.has_value()) {
         return TextBase::baseLine();
     }
@@ -740,28 +707,22 @@ double Harmony::baseLine() const
 //   text
 //---------------------------------------------------------
 
-String HDegree::text() const
-{
+String HDegree::text() const {
     if (m_type == HDegreeType::UNDEF) {
         return String();
     }
     String degree;
     switch (m_type) {
-    case HDegreeType::UNDEF: break;
-    case HDegreeType::ADD:         degree = u"add";
-        break;
-    case HDegreeType::ALTER:       degree = u"alt";
-        break;
-    case HDegreeType::SUBTRACT:    degree = u"sub";
-        break;
+        case HDegreeType::UNDEF: break;
+        case HDegreeType::ADD: degree = u"add"; break;
+        case HDegreeType::ALTER: degree = u"alt"; break;
+        case HDegreeType::SUBTRACT: degree = u"sub"; break;
     }
 
     switch (m_alter) {
-    case -1:          degree += u"b";
-        break;
-    case 1:           degree += u"#";
-        break;
-    default:          break;
+        case -1: degree += u"b"; break;
+        case 1: degree += u"#"; break;
+        default: break;
     }
     String s = String::number(m_value);
     String ss = degree + s;
@@ -775,19 +736,18 @@ String HDegree::text() const
 ///   returns 0 if there is none
 //---------------------------------------------------------
 
-Harmony* Harmony::findInSeg(Segment* seg) const
-{
+Harmony *Harmony::findInSeg(Segment *seg) const {
     // Find harmony as parent of fret diagram on same track
-    EngravingItem* fde = seg->findAnnotation(ElementType::FRET_DIAGRAM, track(), track());
+    EngravingItem *fde = seg->findAnnotation(ElementType::FRET_DIAGRAM, track(), track());
     if (fde) {
-        FretDiagram* fd = toFretDiagram(fde);
+        FretDiagram *fd = toFretDiagram(fde);
         if (fd->harmony()) {
             return toHarmony(fd->harmony());
         }
     }
 
     // Find harmony on same track
-    EngravingItem* e = seg->findAnnotation(ElementType::HARMONY, track(), track());
+    EngravingItem *e = seg->findAnnotation(ElementType::HARMONY, track(), track());
     if (e) {
         return toHarmony(e);
     }
@@ -801,12 +761,11 @@ Harmony* Harmony::findInSeg(Segment* seg) const
 ///   returns 0 if there is none
 //---------------------------------------------------------
 
-Harmony* Harmony::findNext() const
-{
-    const Segment* segment = getParentSeg();
-    Segment* cur = segment ? segment->next1() : nullptr;
+Harmony *Harmony::findNext() const {
+    const Segment *segment = getParentSeg();
+    Segment *cur = segment ? segment->next1() : nullptr;
     while (cur) {
-        Harmony* h = findInSeg(cur);
+        Harmony *h = findInSeg(cur);
         if (h) {
             return h;
         }
@@ -822,12 +781,11 @@ Harmony* Harmony::findNext() const
 ///   returns 0 if there is none
 //---------------------------------------------------------
 
-Harmony* Harmony::findPrev() const
-{
-    const Segment* segment = getParentSeg();
-    Segment* cur = segment ? segment->prev1() : nullptr;
+Harmony *Harmony::findPrev() const {
+    const Segment *segment = getParentSeg();
+    Segment *cur = segment ? segment->prev1() : nullptr;
     while (cur) {
-        Harmony* h = findInSeg(cur);
+        Harmony *h = findInSeg(cur);
         if (h) {
             return h;
         }
@@ -845,31 +803,30 @@ Harmony* Harmony::findPrev() const
 ///   stopAtMeasureEnd being set to true will have the loop
 ///   stop at measure end.
 //---------------------------------------------------------
-Fraction Harmony::ticksTillNext(int utick, bool stopAtMeasureEnd) const
-{
-    const Segment* seg = getParentSeg();
+Fraction Harmony::ticksTillNext(int utick, bool stopAtMeasureEnd) const {
+    const Segment *seg = getParentSeg();
     if (!seg) {
         return Fraction(-1, 1);
     }
 
     Fraction duration = seg->ticks();
 
-    const RepeatList& repeats = score()->repeatList();
+    const RepeatList &repeats = score()->repeatList();
     auto rsIt = repeats.findRepeatSegmentFromUTick(utick);
     if (rsIt == repeats.cend()) {
         return duration;
     }
 
-    Segment* cur = seg->next();
-    Measure const* currentMeasure = seg->measure();
-    Measure const* endMeasure = (stopAtMeasureEnd) ? currentMeasure : (*rsIt)->lastMeasure();
-    Harmony const* nextHarmony = nullptr;
+    Segment *cur = seg->next();
+    Measure const *currentMeasure = seg->measure();
+    Measure const *endMeasure = (stopAtMeasureEnd) ? currentMeasure : (*rsIt)->lastMeasure();
+    Harmony const *nextHarmony = nullptr;
 
     do {
         // Loop over segments of this measure
         while (cur) {
             //find harmony on same track
-            EngravingItem* e = cur->findAnnotation(ElementType::HARMONY, track(), track());
+            EngravingItem *e = cur->findAnnotation(ElementType::HARMONY, track(), track());
             if (e) {
                 nextHarmony = toHarmony(e);
             } else {
@@ -905,7 +862,7 @@ Fraction Harmony::ticksTillNext(int utick, bool stopAtMeasureEnd) const
                 // move to next RepeatSegment
                 if (++rsIt != repeats.end()) {
                     currentMeasure = (*rsIt)->firstMeasure();
-                    endMeasure     = (*rsIt)->lastMeasure();
+                    endMeasure = (*rsIt)->lastMeasure();
                     cur = currentMeasure->first();
                 }
             }
@@ -930,15 +887,12 @@ Fraction Harmony::ticksTillNext(int utick, bool stopAtMeasureEnd) const
 //    just root, bass, chord symbol, and voicing.
 //---------------------------------------------------------
 
-const RealizedHarmony& Harmony::getRealizedHarmony() const
-{
-    const Staff* st = staff();
-    IF_ASSERT_FAILED(st) {
-        return m_realizedHarmony;
-    }
+const RealizedHarmony &Harmony::getRealizedHarmony() const {
+    const Staff *st = staff();
+    IF_ASSERT_FAILED(st) { return m_realizedHarmony; }
 
     const Fraction tick = this->tick();
-    const CapoParams& capo = st->capo(tick);
+    const CapoParams &capo = st->capo(tick);
 
     int offset = 0;
     if (capo.active && CapoParams::TransposeMode::TAB_ONLY != capo.transposeMode) {
@@ -950,7 +904,7 @@ const RealizedHarmony& Harmony::getRealizedHarmony() const
         offset += interval.chromatic;
     }
 
-    HarmonyInfo* info = m_chords.empty() ? nullptr : m_chords.front();
+    HarmonyInfo *info = m_chords.empty() ? nullptr : m_chords.front();
     int root = info ? info->rootTpc() : Tpc::TPC_INVALID;
     int bass = info ? info->bassTpc() : Tpc::TPC_INVALID;
 
@@ -965,21 +919,16 @@ const RealizedHarmony& Harmony::getRealizedHarmony() const
 //    without updating the realized harmony
 //---------------------------------------------------------
 
-RealizedHarmony& Harmony::realizedHarmony()
-{
-    return m_realizedHarmony;
-}
+RealizedHarmony &Harmony::realizedHarmony() { return m_realizedHarmony; }
 
-const ParsedChord* Harmony::parsedForm()const
-{
+const ParsedChord *Harmony::parsedForm() const {
     if (m_chords.empty()) {
         return nullptr;
     }
     return m_chords.front()->getParsedChord();
 }
 
-Color Harmony::curColor(const rendering::PaintOptions& opt) const
-{
+Color Harmony::curColor(const rendering::PaintOptions &opt) const {
     if (!opt.isPrinting && m_isMisspelled) {
         return configuration()->criticalColor();
     }
@@ -987,12 +936,11 @@ Color Harmony::curColor(const rendering::PaintOptions& opt) const
     return EngravingItem::curColor(opt);
 }
 
-void Harmony::setColor(const Color& color)
-{
+void Harmony::setColor(const Color &color) {
     EngravingItem::setColor(color);
 
-    for (HarmonyRenderItem* item : ldata()->renderItemList()) {
-        if (ChordSymbolParen* paren = dynamic_cast<ChordSymbolParen*>(item)) {
+    for (HarmonyRenderItem *item : ldata()->renderItemList()) {
+        if (ChordSymbolParen *paren = dynamic_cast<ChordSymbolParen *>(item)) {
             paren->parenItem->setColor(color);
         }
     }
@@ -1002,28 +950,15 @@ void Harmony::setColor(const Color& color)
 //   width
 //---------------------------------------------------------
 
-double TextSegment::width() const
-{
-    return FontMetrics::width(m_font, m_text);
-}
+double TextSegment::width() const { return FontMetrics::width(m_font, m_text); }
 
-double TextSegment::capHeight() const
-{
-    return FontMetrics::capHeight(m_font);
-}
+double TextSegment::capHeight() const { return FontMetrics::capHeight(m_font); }
 
-RectF TextSegment::tightBoundingRect() const
-{
-    return FontMetrics::tightBoundingRect(m_font, m_text);
-}
+RectF TextSegment::tightBoundingRect() const { return FontMetrics::tightBoundingRect(m_font, m_text); }
 
-RectF TextSegment::boundingRect() const
-{
-    return FontMetrics::boundingRect(m_font, m_text);
-}
+RectF TextSegment::boundingRect() const { return FontMetrics::boundingRect(m_font, m_text); }
 
-void TextSegment::setFont(const muse::draw::Font& f)
-{
+void TextSegment::setFont(const muse::draw::Font &f) {
     m_font = f;
     if (f.type() != Font::Type::MusicSymbolText) {
         return;
@@ -1033,12 +968,12 @@ void TextSegment::setFont(const muse::draw::Font& f)
     FontMetrics fm(f);
     bool fail = false;
     for (size_t i = 0; i < m_text.size(); ++i) {
-        const Char& c = m_text.at(i);
+        const Char &c = m_text.at(i);
         if (c.isHighSurrogate()) {
             if (i + 1 == m_text.size()) {
                 ASSERT_X("bad string");
             }
-            const Char& c2 = m_text.at(i + 1);
+            const Char &c2 = m_text.at(i + 1);
             ++i;
             char32_t v = Char::surrogateToUcs4(c, c2);
             if (!fm.inFont(v)) {
@@ -1062,56 +997,37 @@ void TextSegment::setFont(const muse::draw::Font& f)
 //   spatiumChanged
 //---------------------------------------------------------
 
-void Harmony::spatiumChanged(double oldValue, double newValue)
-{
-    TextBase::spatiumChanged(oldValue, newValue);
-}
+void Harmony::spatiumChanged(double oldValue, double newValue) { TextBase::spatiumChanged(oldValue, newValue); }
 
 //---------------------------------------------------------
 //   localSpatiumChanged
 //---------------------------------------------------------
 
-void Harmony::localSpatiumChanged(double oldValue, double newValue)
-{
-    TextBase::localSpatiumChanged(oldValue, newValue);
-}
+void Harmony::localSpatiumChanged(double oldValue, double newValue) { TextBase::localSpatiumChanged(oldValue, newValue); }
 
 //---------------------------------------------------------
 //   addDegree
 //---------------------------------------------------------
 
-void Harmony::addDegree(const HDegree& d)
-{
-    m_degreeList.push_back(d);
-}
+void Harmony::addDegree(const HDegree &d) { m_degreeList.push_back(d); }
 
 //---------------------------------------------------------
 //   degreeList
 //---------------------------------------------------------
 
-const std::vector<HDegree>& Harmony::degreeList() const
-{
-    return m_degreeList;
-}
+const std::vector<HDegree> &Harmony::degreeList() const { return m_degreeList; }
 
 //---------------------------------------------------------
 //   setHarmonyType
 //---------------------------------------------------------
 
-void Harmony::setHarmonyType(HarmonyType val)
-{
+void Harmony::setHarmonyType(HarmonyType val) {
     m_harmonyType = val;
     setPlacement(propertyDefault(Pid::PLACEMENT).value<PlacementV>());
     switch (m_harmonyType) {
-    case HarmonyType::STANDARD:
-        initTextStyleType(TextStyleType::HARMONY_A);
-        break;
-    case HarmonyType::ROMAN:
-        initTextStyleType(TextStyleType::HARMONY_ROMAN);
-        break;
-    case HarmonyType::NASHVILLE:
-        initTextStyleType(TextStyleType::HARMONY_NASHVILLE);
-        break;
+        case HarmonyType::STANDARD: initTextStyleType(TextStyleType::HARMONY_A); break;
+        case HarmonyType::ROMAN: initTextStyleType(TextStyleType::HARMONY_ROMAN); break;
+        case HarmonyType::NASHVILLE: initTextStyleType(TextStyleType::HARMONY_NASHVILLE); break;
     }
     // TODO: convert text
 }
@@ -1120,15 +1036,11 @@ void Harmony::setHarmonyType(HarmonyType val)
 //   typeUserName
 //---------------------------------------------------------
 
-TranslatableString Harmony::typeUserName() const
-{
+TranslatableString Harmony::typeUserName() const {
     switch (m_harmonyType) {
-    case HarmonyType::ROMAN:
-        return TranslatableString("engraving", "Roman numeral");
-    case HarmonyType::NASHVILLE:
-        return TranslatableString("engraving", "Nashville number");
-    case HarmonyType::STANDARD:
-        break;
+        case HarmonyType::ROMAN: return TranslatableString("engraving", "Roman numeral");
+        case HarmonyType::NASHVILLE: return TranslatableString("engraving", "Nashville number");
+        case HarmonyType::STANDARD: break;
     }
     return EngravingItem::typeUserName();
 }
@@ -1137,11 +1049,10 @@ TranslatableString Harmony::typeUserName() const
 //   generateScreenReaderInfo
 //---------------------------------------------------------
 
-String Harmony::generateScreenReaderInfo() const
-{
+String Harmony::generateScreenReaderInfo() const {
     String rez;
     for (size_t i = 0; i < m_chords.size(); i++) {
-        HarmonyInfo* info = m_chords.at(i);
+        HarmonyInfo *info = m_chords.at(i);
         if (!tpcIsValid(info->rootTpc())) {
             continue;
         }
@@ -1150,62 +1061,51 @@ String Harmony::generateScreenReaderInfo() const
         }
 
         switch (m_harmonyType) {
-        case HarmonyType::ROMAN: {
-            if (m_chords.empty()) {
-                return u"";
+            case HarmonyType::ROMAN: {
+                if (m_chords.empty()) {
+                    return u"";
+                }
+                String aux = info->textName();
+                bool hasUpper = aux.contains(u'I') || aux.contains(u'V');
+                bool hasLower = aux.contains(u'i') || aux.contains(u'v');
+                if (hasLower && !hasUpper) {
+                    rez = String(u"%1 %2").arg(rez, muse::mtrc("engraving", "lower case"));
+                }
+                aux = aux.toLower();
+                static const std::vector<std::pair<String, String>> rnaReplacements{
+                    {u"vii", u"7"}, {u"vi", u"6"}, {u"iv", u"4"}, {u"v", u"5"}, {u"iii", u"3"}, {u"ii", u"2"}, {u"i", u"1"},
+                };
+                static const std::vector<std::pair<String, String>> symbolReplacements{
+                    {u"bb", u"𝄫"}, {u"##", u"𝄪"},
+                    {u"h", u"♮"},  {u"\\♮", u"h"}, // \h should be h, so need to correct replacing in the previous step
+                    {u"#", u"♯"},  {u"\\♯", u"#"}, // \# should be #, so need to correct replacing in the previous step
+                    {u"b", u"♭"},  {u"\\♭", u"b"}, // \b should be b, so need to correct replacing in the previous step
+                    // TODO: use SMuFL glyphs and translate
+                    //{ "o", ""},
+                    //{ "0", ""},
+                    //{ "\+", ""},
+                    //{ "\^", ""},
+                };
+                for (auto const &r : rnaReplacements) {
+                    aux.replace(r.first, r.second);
+                }
+                for (auto const &r : symbolReplacements) {
+                    aux.replace(r.first, r.second);
+                }
+                // construct string one  character at a time
+                for (size_t j = 0; j < aux.size(); ++j) {
+                    rez = String(u"%1 %2").arg(rez).arg(aux.at(j));
+                }
             }
-            String aux = info->textName();
-            bool hasUpper = aux.contains(u'I') || aux.contains(u'V');
-            bool hasLower = aux.contains(u'i') || aux.contains(u'v');
-            if (hasLower && !hasUpper) {
-                rez = String(u"%1 %2").arg(rez, muse::mtrc("engraving", "lower case"));
+                return rez;
+            case HarmonyType::NASHVILLE: {
+                const Staff *st = staff();
+                Key key = st ? st->key(tick()) : Key::INVALID;
+                rez = String(u"%1 %2").arg(rez, tpc2Function(info->rootTpc(), key));
+                break;
             }
-            aux = aux.toLower();
-            static const std::vector<std::pair<String, String> > rnaReplacements {
-                { u"vii", u"7" },
-                { u"vi", u"6" },
-                { u"iv", u"4" },
-                { u"v", u"5" },
-                { u"iii", u"3" },
-                { u"ii", u"2" },
-                { u"i", u"1" },
-            };
-            static const std::vector<std::pair<String, String> > symbolReplacements {
-                { u"bb", u"𝄫" },
-                { u"##", u"𝄪" },
-                { u"h", u"♮" },
-                { u"\\♮", u"h" }, // \h should be h, so need to correct replacing in the previous step
-                { u"#", u"♯" },
-                { u"\\♯", u"#" }, // \# should be #, so need to correct replacing in the previous step
-                { u"b", u"♭" },
-                { u"\\♭", u"b" }, // \b should be b, so need to correct replacing in the previous step
-                // TODO: use SMuFL glyphs and translate
-                //{ "o", ""},
-                //{ "0", ""},
-                //{ "\+", ""},
-                //{ "\^", ""},
-            };
-            for (auto const& r : rnaReplacements) {
-                aux.replace(r.first, r.second);
-            }
-            for (auto const& r : symbolReplacements) {
-                aux.replace(r.first, r.second);
-            }
-            // construct string one  character at a time
-            for (size_t j = 0; j < aux.size(); ++j) {
-                rez = String(u"%1 %2").arg(rez).arg(aux.at(j));
-            }
-        }
-            return rez;
-        case HarmonyType::NASHVILLE: {
-            const Staff* st = staff();
-            Key key = st ? st->key(tick()) : Key::INVALID;
-            rez = String(u"%1 %2").arg(rez, tpc2Function(info->rootTpc(), key));
-            break;
-        }
-        case HarmonyType::STANDARD:
-        default:
-            rez = String(u"%1 %2").arg(rez, tpc2name(info->rootTpc(), NoteSpellingType::STANDARD, NoteCaseType::AUTO, true));
+            case HarmonyType::STANDARD:
+            default: rez = String(u"%1 %2").arg(rez, tpc2name(info->rootTpc(), NoteSpellingType::STANDARD, NoteCaseType::AUTO, true));
         }
 
         if (!info->textName().isEmpty()) {
@@ -1236,9 +1136,8 @@ String Harmony::generateScreenReaderInfo() const
 //   acceptDrop
 //---------------------------------------------------------
 
-bool Harmony::acceptDrop(EditData& data) const
-{
-    EngravingItem* e = data.dropElement;
+bool Harmony::acceptDrop(EditData &data) const {
+    EngravingItem *e = data.dropElement;
     if (e->isFretDiagram()) {
         return true;
     } else if (e->isSymbol() || e->isFSymbol()) {
@@ -1256,18 +1155,17 @@ bool Harmony::acceptDrop(EditData& data) const
 //   drop
 //---------------------------------------------------------
 
-EngravingItem* Harmony::drop(Transaction& tx, EditData& data)
-{
-    EngravingItem* e = data.dropElement;
+EngravingItem *Harmony::drop(Transaction &tx, EditData &data) {
+    EngravingItem *e = data.dropElement;
     if (e->isFretDiagram()) {
-        FretDiagram* fd = toFretDiagram(e);
+        FretDiagram *fd = toFretDiagram(e);
         fd->setOwnershipParent(ownershipParent());
         fd->setTrack(track());
         score()->undoAddElement(fd);
     } else if (e->isSymbol() || e->isFSymbol()) {
         TextBase::drop(tx, data);
         renderer()->layoutText1(this);
-        e = 0;          // cannot select
+        e = 0; // cannot select
     } else {
         LOGW("Harmony: cannot drop <%s>\n", e->typeName());
         delete e;
@@ -1276,23 +1174,22 @@ EngravingItem* Harmony::drop(Transaction& tx, EditData& data)
     return e;
 }
 
-void Harmony::undoChangeProperty(Pid id, const PropertyValue& v, PropertyFlags ps)
-{
+void Harmony::undoChangeProperty(Pid id, const PropertyValue &v, PropertyFlags ps) {
     if (id == Pid::FONT_STYLE || id == Pid::FONT_FACE || id == Pid::FONT_SIZE) {
         EngravingItem::undoChangeProperty(id, v, ps);
     } else if (id == Pid::EXCLUDE_VERTICAL_ALIGN) {
         TextBase::undoChangeProperty(id, v, ps);
 
         bool val = v.toBool();
-        FretDiagram* fd = getParentFretDiagram();
+        FretDiagram *fd = getParentFretDiagram();
         if (fd && fd->excludeVerticalAlign() != val) {
             fd->undoChangeProperty(Pid::EXCLUDE_VERTICAL_ALIGN, val, ps);
         }
-        Segment* parentSeg = getParentSeg();
+        Segment *parentSeg = getParentSeg();
         if (!parentSeg) {
             return;
         }
-        for (EngravingItem* item : parentSeg->annotations()) {
+        for (EngravingItem *item : parentSeg->annotations()) {
             if ((!item->isFretDiagram() && !item->isHarmony()) || item == this || track2staff(item->track()) != staffIdx()) {
                 continue;
             }
@@ -1311,31 +1208,19 @@ void Harmony::undoChangeProperty(Pid id, const PropertyValue& v, PropertyFlags p
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Harmony::getProperty(Pid pid) const
-{
+PropertyValue Harmony::getProperty(Pid pid) const {
     switch (pid) {
-    case Pid::PLAY:
-        return PropertyValue(m_play);
-    case Pid::HARMONY_TYPE:
-        return PropertyValue(int(m_harmonyType));
-    case Pid::HARMONY_BASS_SCALE:
-        return m_bassScale;
-    case Pid::HARMONY_VOICE_LITERAL:
-        return m_realizedHarmony.literal();
-    case Pid::HARMONY_VOICING:
-        return int(m_realizedHarmony.voicing());
-    case Pid::HARMONY_DURATION:
-        return int(m_realizedHarmony.duration());
-    case Pid::HARMONY_DO_NOT_STACK_MODIFIERS:
-        return m_doNotStackModifiers;
-    case Pid::FONT_SIZE:
-        return m_fontSize;
-    case Pid::FONT_STYLE:
-        return static_cast<int>(m_fontStyle);
-    case Pid::FONT_FACE:
-        return m_fontFamily;
-    default:
-        return TextBase::getProperty(pid);
+        case Pid::PLAY: return PropertyValue(m_play);
+        case Pid::HARMONY_TYPE: return PropertyValue(int(m_harmonyType));
+        case Pid::HARMONY_BASS_SCALE: return m_bassScale;
+        case Pid::HARMONY_VOICE_LITERAL: return m_realizedHarmony.literal();
+        case Pid::HARMONY_VOICING: return int(m_realizedHarmony.voicing());
+        case Pid::HARMONY_DURATION: return int(m_realizedHarmony.duration());
+        case Pid::HARMONY_DO_NOT_STACK_MODIFIERS: return m_doNotStackModifiers;
+        case Pid::FONT_SIZE: return m_fontSize;
+        case Pid::FONT_STYLE: return static_cast<int>(m_fontStyle);
+        case Pid::FONT_FACE: return m_fontFamily;
+        default: return TextBase::getProperty(pid);
     }
 }
 
@@ -1343,51 +1228,34 @@ PropertyValue Harmony::getProperty(Pid pid) const
 //   setProperty
 //---------------------------------------------------------
 
-bool Harmony::setProperty(Pid pid, const PropertyValue& v)
-{
+bool Harmony::setProperty(Pid pid, const PropertyValue &v) {
     switch (pid) {
-    case Pid::PLAY:
-        m_play = v.toBool();
-        break;
-    case Pid::HARMONY_TYPE:
-        setHarmonyType(HarmonyType(v.toInt()));
-        break;
-    case Pid::HARMONY_BASS_SCALE:
-        setBassScale(v.toDouble());
-        break;
-    case Pid::HARMONY_VOICE_LITERAL:
-        m_realizedHarmony.setLiteral(v.toBool());
-        break;
-    case Pid::HARMONY_VOICING:
-        m_realizedHarmony.setVoicing(Voicing(v.toInt()));
-        break;
-    case Pid::HARMONY_DURATION:
-        m_realizedHarmony.setDuration(HDuration(v.toInt()));
-        break;
-    case Pid::EXCLUDE_VERTICAL_ALIGN: {
-        setExcludeVerticalAlign(v.toBool());
-        break;
-    }
-    case Pid::HARMONY_DO_NOT_STACK_MODIFIERS:
-        m_doNotStackModifiers = v.toBool();
-        break;
-    case Pid::TEXT:
-    {
-        String curText = xmlText();
-        TextBase::setProperty(pid, v);
-        setHarmony(v.value<String>());
-        String newText = xmlText();
-        if (newText != curText) {
-            FretDiagram* fretDiagram = ownershipParent()->isFretDiagram() ? toFretDiagram(ownershipParent()) : nullptr;
-            if (fretDiagram && !fretDiagram->isCustom(curText) && configuration()->autoUpdateFretboardDiagrams()) {
-                fretDiagram->updateDiagram(plainText());
-            }
-            score()->rebuildFretBox();
+        case Pid::PLAY: m_play = v.toBool(); break;
+        case Pid::HARMONY_TYPE: setHarmonyType(HarmonyType(v.toInt())); break;
+        case Pid::HARMONY_BASS_SCALE: setBassScale(v.toDouble()); break;
+        case Pid::HARMONY_VOICE_LITERAL: m_realizedHarmony.setLiteral(v.toBool()); break;
+        case Pid::HARMONY_VOICING: m_realizedHarmony.setVoicing(Voicing(v.toInt())); break;
+        case Pid::HARMONY_DURATION: m_realizedHarmony.setDuration(HDuration(v.toInt())); break;
+        case Pid::EXCLUDE_VERTICAL_ALIGN: {
+            setExcludeVerticalAlign(v.toBool());
+            break;
         }
-        break;
-    }
-    default:
-        return TextBase::setProperty(pid, v);
+        case Pid::HARMONY_DO_NOT_STACK_MODIFIERS: m_doNotStackModifiers = v.toBool(); break;
+        case Pid::TEXT: {
+            String curText = xmlText();
+            TextBase::setProperty(pid, v);
+            setHarmony(v.value<String>());
+            String newText = xmlText();
+            if (newText != curText) {
+                FretDiagram *fretDiagram = ownershipParent()->isFretDiagram() ? toFretDiagram(ownershipParent()) : nullptr;
+                if (fretDiagram && !fretDiagram->isCustom(curText) && configuration()->autoUpdateFretboardDiagrams()) {
+                    fretDiagram->updateDiagram(plainText());
+                }
+                score()->rebuildFretBox();
+            }
+            break;
+        }
+        default: return TextBase::setProperty(pid, v);
     }
     triggerLayout();
     return true;
@@ -1397,74 +1265,46 @@ bool Harmony::setProperty(Pid pid, const PropertyValue& v)
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Harmony::propertyDefault(Pid id) const
-{
+PropertyValue Harmony::propertyDefault(Pid id) const {
     PropertyValue v;
     switch (id) {
-    case Pid::HARMONY_TYPE:
-        v = int(HarmonyType::STANDARD);
-        break;
-    case Pid::TEXT_STYLE: {
-        switch (m_harmonyType) {
-        case HarmonyType::STANDARD:
-            v = TextStyleType::HARMONY_A;
-            break;
-        case HarmonyType::ROMAN:
-            v = TextStyleType::HARMONY_ROMAN;
-            break;
-        case HarmonyType::NASHVILLE:
-            v = TextStyleType::HARMONY_NASHVILLE;
-            break;
-        }
-    }
-    break;
-    case Pid::HARMONY_BASS_SCALE:
-        v = style().styleV(Sid::chordBassNoteScale).toDouble();
-        break;
-    case Pid::HARMONY_DO_NOT_STACK_MODIFIERS:
-        return false;
-    case Pid::PLAY:
-        v = true;
-        break;
-    // fall-through
-    default:
-        v = TextBase::propertyDefault(id);
-        break;
+        case Pid::HARMONY_TYPE: v = int(HarmonyType::STANDARD); break;
+        case Pid::TEXT_STYLE: {
+            switch (m_harmonyType) {
+                case HarmonyType::STANDARD: v = TextStyleType::HARMONY_A; break;
+                case HarmonyType::ROMAN: v = TextStyleType::HARMONY_ROMAN; break;
+                case HarmonyType::NASHVILLE: v = TextStyleType::HARMONY_NASHVILLE; break;
+            }
+        } break;
+        case Pid::HARMONY_BASS_SCALE: v = style().styleV(Sid::chordBassNoteScale).toDouble(); break;
+        case Pid::HARMONY_DO_NOT_STACK_MODIFIERS: return false;
+        case Pid::PLAY: v = true; break;
+        // fall-through
+        default: v = TextBase::propertyDefault(id); break;
     }
     return v;
 }
 
-bool Harmony::positionRelativeToNoteheadRest() const
-{
-    return !parent()->isFretDiagram();
-}
+bool Harmony::positionRelativeToNoteheadRest() const { return !parent()->isFretDiagram(); }
 
 //---------------------------------------------------------
 //   getPropertyStyle
 //---------------------------------------------------------
 
-Sid Harmony::getPropertyStyle(Pid pid) const
-{
+Sid Harmony::getPropertyStyle(Pid pid) const {
     if (pid == Pid::PLACEMENT) {
         switch (m_harmonyType) {
-        case HarmonyType::STANDARD:
-            return Sid::harmonyPlacement;
-        case HarmonyType::ROMAN:
-            return Sid::romanNumeralPlacement;
-        case HarmonyType::NASHVILLE:
-            return Sid::nashvilleNumberPlacement;
+            case HarmonyType::STANDARD: return Sid::harmonyPlacement;
+            case HarmonyType::ROMAN: return Sid::romanNumeralPlacement;
+            case HarmonyType::NASHVILLE: return Sid::nashvilleNumberPlacement;
         }
     }
     return TextBase::getPropertyStyle(pid);
 }
 
-double Harmony::mag() const
-{
-    return EngravingItem::mag();
-}
+double Harmony::mag() const { return EngravingItem::mag(); }
 
-HarmonyInfo::HarmonyInfo(const HarmonyInfo& h)
-{
+HarmonyInfo::HarmonyInfo(const HarmonyInfo &h) {
     m_id = h.m_id;
     m_bassTpc = h.m_bassTpc;
     m_rootTpc = h.m_rootTpc;
@@ -1473,10 +1313,9 @@ HarmonyInfo::HarmonyInfo(const HarmonyInfo& h)
     m_parsedChord = h.m_parsedChord ? new ParsedChord(*h.m_parsedChord) : 0;
 }
 
-HarmonyInfo::~HarmonyInfo()
-{
+HarmonyInfo::~HarmonyInfo() {
     if (m_parsedChord) {
         delete m_parsedChord;
     }
 }
-}
+} // namespace mu::engraving

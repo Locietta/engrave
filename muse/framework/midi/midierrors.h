@@ -26,9 +26,9 @@
 
 namespace muse::midi {
 enum class Err {
-    Undefined       = int(Ret::Code::Undefined),
-    NoError         = int(Ret::Code::Ok),
-    UnknownError    = int(Ret::Code::MidiFirst),
+    Undefined = int(Ret::Code::Undefined),
+    NoError = int(Ret::Code::Ok),
+    UnknownError = int(Ret::Code::MidiFirst),
 
     // midiport
     MidiInvalidDeviceID = 620,
@@ -38,15 +38,9 @@ enum class Err {
     MidiSendError = 624
 };
 
-inline Ret make_ret(Err e)
-{
-    return Ret(static_cast<int>(e));
-}
+inline Ret make_ret(Err e) { return Ret(static_cast<int>(e)); }
 
-inline Ret make_ret(Err e, const std::string& text)
-{
-    return Ret(static_cast<int>(e), text);
-}
-}
+inline Ret make_ret(Err e, const std::string &text) { return Ret(static_cast<int>(e), text); }
+} // namespace muse::midi
 
 #endif // MUSE_MIDI_MIDIERRORS_H

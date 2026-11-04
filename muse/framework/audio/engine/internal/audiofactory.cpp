@@ -30,24 +30,16 @@ using namespace muse;
 using namespace muse::audio;
 using namespace muse::audio::engine;
 
-AudioResourceMetaList AudioFactory::availableInputResources() const
-{
-    return synthResolver()->resolveAvailableResources();
-}
+AudioResourceMetaList AudioFactory::availableInputResources() const { return synthResolver()->resolveAvailableResources(); }
 
-SoundPresetList AudioFactory::availableSoundPresets(const AudioResourceMeta& resourceMeta) const
-{
+SoundPresetList AudioFactory::availableSoundPresets(const AudioResourceMeta &resourceMeta) const {
     return synthResolver()->resolveAvailableSoundPresets(resourceMeta);
 }
 
-AudioResourceMetaList AudioFactory::availableOutputResources() const
-{
-    return fxResolver()->resolveAvailableResources();
-}
+AudioResourceMetaList AudioFactory::availableOutputResources() const { return fxResolver()->resolveAvailableResources(); }
 
-RetVal<synth::ISynthesizerPtr> AudioFactory::makeSynth(const TrackId trackId, const AudioInputParams& params,
-                                                       const PlaybackSetupData& setupData) const
-{
+RetVal<synth::ISynthesizerPtr> AudioFactory::makeSynth(const TrackId trackId, const AudioInputParams &params,
+                                                       const PlaybackSetupData &setupData) const {
     auto synth = synthResolver()->resolveSynth(trackId, params, m_spec, setupData);
     if (!synth) {
         return RetVal<synth::ISynthesizerPtr>::make_ret(Err::InvalidSynth);
@@ -55,8 +47,7 @@ RetVal<synth::ISynthesizerPtr> AudioFactory::makeSynth(const TrackId trackId, co
     return RetVal<synth::ISynthesizerPtr>::make_ok(synth);
 }
 
-RetVal<synth::ISynthesizerPtr> AudioFactory::makeDefaultSynth(const TrackId trackId) const
-{
+RetVal<synth::ISynthesizerPtr> AudioFactory::makeDefaultSynth(const TrackId trackId) const {
     auto synth = synthResolver()->resolveDefaultSynth(trackId);
     if (!synth) {
         return RetVal<synth::ISynthesizerPtr>::make_ret(Err::InvalidSynth);
@@ -64,22 +55,17 @@ RetVal<synth::ISynthesizerPtr> AudioFactory::makeDefaultSynth(const TrackId trac
     return RetVal<synth::ISynthesizerPtr>::make_ok(synth);
 }
 
-void AudioFactory::clearSynthSources()
-{
-    synthResolver()->clearSources();
-}
+void AudioFactory::clearSynthSources() { synthResolver()->clearSources(); }
 
-RetVal<AudioSourceNodePtr> AudioFactory::makeEventSource(const TrackId trackId, const mpe::PlaybackData& playbackData,
-                                                         const AudioInputParams& params) const
-{
+RetVal<AudioSourceNodePtr> AudioFactory::makeEventSource(const TrackId trackId, const mpe::PlaybackData &playbackData,
+                                                         const AudioInputParams &params) const {
     EventAudioNodePtr source = std::make_shared<EventAudioNode>(*this, trackId, playbackData);
     source->setOutputSpec(m_spec);
     source->applyInputParams(params);
     return RetVal<AudioSourceNodePtr>::make_ok(source);
 }
 
-FxChainPtr AudioFactory::makeMasterFxChain(const AudioFxChain& fxChain) const
-{
+FxChainPtr AudioFactory::makeMasterFxChain(const AudioFxChain &fxChain) const {
     std::vector<IFxProcessorPtr> fxlist = fxResolver()->resolveMasterFxList(fxChain, m_spec);
 
     FxChainPtr chain = std::make_shared<FxChain>();
@@ -90,8 +76,7 @@ FxChainPtr AudioFactory::makeMasterFxChain(const AudioFxChain& fxChain) const
     return chain;
 }
 
-FxChainPtr AudioFactory::makeTrackFxChain(const TrackId trackId, const AudioFxChain& fxChain) const
-{
+FxChainPtr AudioFactory::makeTrackFxChain(const TrackId trackId, const AudioFxChain &fxChain) const {
     std::vector<IFxProcessorPtr> fxlist = fxResolver()->resolveFxList(trackId, fxChain, m_spec);
 
     FxChainPtr chain = std::make_shared<FxChain>();
@@ -106,7 +91,4 @@ FxChainPtr AudioFactory::makeTrackFxChain(const TrackId trackId, const AudioFxCh
     return chain;
 }
 
-void AudioFactory::clearAllFx()
-{
-    fxResolver()->clearAllFx();
-}
+void AudioFactory::clearAllFx() { fxResolver()->clearAllFx(); }

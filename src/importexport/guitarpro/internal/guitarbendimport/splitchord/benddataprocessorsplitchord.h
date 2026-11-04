@@ -26,16 +26,15 @@
 
 namespace mu::engraving {
 class Score;
-}
+} // namespace mu::engraving
 
 namespace mu::iex::guitarpro {
-class BendDataProcessorSplitChord
-{
+class BendDataProcessorSplitChord {
 public:
-    BendDataProcessorSplitChord(mu::engraving::Score* score);
-    void processBends(const BendDataContextSplitChord& bendDataCtx);
+    BendDataProcessorSplitChord(mu::engraving::Score *score);
+    void processBends(const BendDataContextSplitChord &bendDataCtx);
 
 private:
-    mu::engraving::Score* m_score = nullptr;
+    mu::engraving::Score *m_score = nullptr;
 };
-} // mu::iex::guitarpro
+} // namespace mu::iex::guitarpro

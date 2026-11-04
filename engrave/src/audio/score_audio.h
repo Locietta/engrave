@@ -11,7 +11,7 @@
 
 namespace mu::engraving {
 class Score;
-}
+} // namespace mu::engraving
 
 namespace music {
 
@@ -38,12 +38,12 @@ struct ScoreAudioTrackInfo {
 // Describes every instrument track of the selected score, including one entry
 // per instrument of a multi-instrument part and instrument change, and the
 // chord-symbol pseudo track. Throws std::invalid_argument for a null score.
-std::vector<ScoreAudioTrackInfo> score_audio_track_info(mu::engraving::Score* score);
+std::vector<ScoreAudioTrackInfo> score_audio_track_info(mu::engraving::Score *score);
 
 struct TrackSoloMute {
     bool solo = false;
     bool muted = false;
-    bool operator==(const TrackSoloMute&) const = default;
+    bool operator==(const TrackSoloMute &) const = default;
 };
 
 // Per-document default mix read from an MSCZ archive's audiosettings.json.
@@ -60,9 +60,8 @@ struct ScoreAudioMixDefaults {
     std::map<std::string, std::map<std::pair<std::string, std::string>, TrackSoloMute>> excerpt_tracks_by_name;
     std::vector<std::map<std::pair<std::string, std::string>, TrackSoloMute>> excerpt_tracks_by_index;
 
-    const std::map<std::pair<std::string, std::string>, TrackSoloMute>* get_excerpt_map(
-        int excerpt_id, const std::string& excerpt_name = "") const noexcept
-    {
+    const std::map<std::pair<std::string, std::string>, TrackSoloMute> *
+    get_excerpt_map(int excerpt_id, const std::string &excerpt_name = "") const noexcept {
         if (!excerpt_name.empty()) {
             auto it = excerpt_tracks_by_name.find(excerpt_name);
             if (it != excerpt_tracks_by_name.end()) return &it->second;
@@ -73,18 +72,17 @@ struct ScoreAudioMixDefaults {
         return nullptr;
     }
 
-    bool is_neutral(int excerpt_id = -1, const std::string& excerpt_name = "") const noexcept
-    {
+    bool is_neutral(int excerpt_id = -1, const std::string &excerpt_name = "") const noexcept {
         if (!(master == AudioOutputParams{})) return false;
         if (excerpt_id < 0) {
-            for (const auto& [identity, output] : tracks) {
-                (void)identity;
+            for (const auto &[identity, output] : tracks) {
+                (void) identity;
                 if (!(output == AudioOutputParams{})) return false;
             }
             return true;
         }
-        const auto* excerpt_map = get_excerpt_map(excerpt_id, excerpt_name);
-        for (const auto& [identity, output] : tracks) {
+        const auto *excerpt_map = get_excerpt_map(excerpt_id, excerpt_name);
+        for (const auto &[identity, output] : tracks) {
             if (output.volume_db != 0.0 || output.balance != 0.0) return false;
             if (excerpt_map) {
                 auto it = excerpt_map->find(identity);
@@ -100,7 +98,7 @@ struct ScoreAudioMixDefaults {
 // Reads audiosettings.json from MSCZ bytes. Never throws: invalid archives,
 // absent files and malformed JSON all produce neutral defaults. Values outside
 // the supported range are ignored field by field.
-ScoreAudioMixDefaults score_audio_mix_defaults(const std::string& mscz_bytes);
+ScoreAudioMixDefaults score_audio_mix_defaults(const std::string &mscz_bytes);
 
 // The document's default mix for the listed tracks: master volume/balance from
 // the archive's root audiosettings.json, each track's volume/balance by
@@ -110,8 +108,7 @@ ScoreAudioMixDefaults score_audio_mix_defaults(const std::string& mscz_bytes);
 // render uses when the caller overrides nothing. `tracks` must be the list
 // score_audio_track_info() gave for the same excerpt, and `defaults` the values
 // score_audio_mix_defaults() read from the document's source.
-AudioMix score_audio_default_mix(const ScoreAudioMixDefaults& defaults,
-                                 const std::vector<ScoreAudioTrackInfo>& tracks,
-                                 int excerpt_id = -1, const std::string& excerpt_name = {});
+AudioMix score_audio_default_mix(const ScoreAudioMixDefaults &defaults, const std::vector<ScoreAudioTrackInfo> &tracks, int excerpt_id = -1,
+                                 const std::string &excerpt_name = {});
 
 } // namespace music

@@ -32,8 +32,7 @@
 #include "event.h"
 
 namespace mu::engraving {
-class PitchWheelRenderer
-{
+class PitchWheelRenderer {
 public:
     struct PitchWheelFunction {
         int32_t mStartTick = 0;
@@ -43,26 +42,25 @@ public:
 
     PitchWheelRenderer(PitchWheelSpecs wheelSpec);
 
-    void addPitchWheelFunction(const PitchWheelFunction& function, uint32_t channel, staff_idx_t staffIdx, MidiInstrumentEffect effect);
+    void addPitchWheelFunction(const PitchWheelFunction &function, uint32_t channel, staff_idx_t staffIdx, MidiInstrumentEffect effect);
 
     EventsHolder renderPitchWheel() const noexcept;
 
-    static void generateRanges(const std::vector<PitchWheelFunction>& functions, std::map<int, int, std::greater<> >& ranges);
+    static void generateRanges(const std::vector<PitchWheelFunction> &functions, std::map<int, int, std::greater<>> &ranges);
 
 private:
 
-    struct PitchWheelFunctions
-    {
+    struct PitchWheelFunctions {
         int32_t startTick = std::numeric_limits<int32_t>::max();
         int32_t endTick = 0;
         std::vector<PitchWheelFunction> functions;
     };
 
-    void renderChannelPitchWheel(EventsHolder& pitchWheelEvents, const PitchWheelFunctions& functions, uint32_t channel) const noexcept;
+    void renderChannelPitchWheel(EventsHolder &pitchWheelEvents, const PitchWheelFunctions &functions, uint32_t channel) const noexcept;
 
-    int32_t findNextStartTick(const std::vector<PitchWheelFunction>& functions) const noexcept;
+    int32_t findNextStartTick(const std::vector<PitchWheelFunction> &functions) const noexcept;
 
-    int32_t calculatePitchBend(const std::vector<PitchWheelFunction>& functions, int32_t tick) const noexcept;
+    int32_t calculatePitchBend(const std::vector<PitchWheelFunction> &functions, int32_t tick) const noexcept;
 
     std::map<uint32_t /*channel*/, PitchWheelFunctions> _functions;
 
@@ -71,4 +69,4 @@ private:
     std::unordered_map<int, MidiInstrumentEffect> _effectByChannel;
     std::unordered_map<int, staff_idx_t> _staffIdxByChannel;
 };
-}
+} // namespace mu::engraving

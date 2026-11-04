@@ -39,67 +39,55 @@
 #define DTL_SES_H
 
 namespace dtl {
-    
-    /**
+
+/**
      * Shortest Edit Script template class
      */
-    template <typename elem>
-    class Ses : public Sequence< elem >
-    {
-    private :
-        typedef pair< elem, elemInfo > sesElem;
-        typedef vector< sesElem >      sesElemVec;
-    public :
-        
-        Ses () : onlyAdd(true), onlyDelete(true), onlyCopy(true), deletesFirst(false) {
-            nextDeleteIdx = 0;
+template <typename elem>
+class Ses : public Sequence<elem> {
+private:
+    typedef pair<elem, elemInfo> sesElem;
+    typedef vector<sesElem> sesElemVec;
+public:
+
+    Ses() : onlyAdd(true), onlyDelete(true), onlyCopy(true), deletesFirst(false) { nextDeleteIdx = 0; }
+
+    Ses(bool moveDel) : onlyAdd(true), onlyDelete(true), onlyCopy(true), deletesFirst(moveDel) { nextDeleteIdx = 0; }
+
+    ~Ses() {}
+
+    bool isOnlyAdd() const { return onlyAdd; }
+
+    bool isOnlyDelete() const { return onlyDelete; }
+
+    bool isOnlyCopy() const { return onlyCopy; }
+
+    bool isOnlyOneOperation() const { return isOnlyAdd() || isOnlyDelete() || isOnlyCopy(); }
+
+    bool isChange() const { return !onlyCopy; }
+
+    using Sequence<elem>::addSequence;
+
+    void addSequence(elem e, long long beforeIdx, long long afterIdx, const edit_t type) {
+        elemInfo info;
+        info.beforeIdx = beforeIdx;
+        info.afterIdx = afterIdx;
+        info.type = type;
+        sesElem pe(e, info);
+        if (!deletesFirst) {
+            sequence.push_back(pe);
         }
-        Ses (bool moveDel) : onlyAdd(true), onlyDelete(true), onlyCopy(true), deletesFirst(moveDel) {
-            nextDeleteIdx = 0;
-        }
-        ~Ses () {}
-        
-        bool isOnlyAdd () const {
-            return onlyAdd;
-        }
-        
-        bool isOnlyDelete () const {
-            return onlyDelete;
-        }
-        
-        bool isOnlyCopy () const {
-            return onlyCopy;
-        }
-        
-        bool isOnlyOneOperation () const {
-            return isOnlyAdd() || isOnlyDelete() || isOnlyCopy();
-        }
-        
-        bool isChange () const {
-            return !onlyCopy;
-        }
-        
-        using Sequence< elem >::addSequence;
-        void addSequence (elem e, long long beforeIdx, long long afterIdx, const edit_t type) {
-            elemInfo info;
-            info.beforeIdx = beforeIdx;
-            info.afterIdx  = afterIdx;
-            info.type      = type;
-            sesElem pe(e, info);
-            if (!deletesFirst) {
-                sequence.push_back(pe);
-            }
-            switch (type) {
+        switch (type) {
             case SES_DELETE:
-                onlyCopy   = false;
-                onlyAdd    = false;
+                onlyCopy = false;
+                onlyAdd = false;
                 if (deletesFirst) {
                     sequence.insert(sequence.begin() + nextDeleteIdx, pe);
                     nextDeleteIdx++;
                 }
                 break;
             case SES_COMMON:
-                onlyAdd    = false;
+                onlyAdd = false;
                 onlyDelete = false;
                 if (deletesFirst) {
                     sequence.push_back(pe);
@@ -108,25 +96,23 @@ namespace dtl {
                 break;
             case SES_ADD:
                 onlyDelete = false;
-                onlyCopy   = false;
+                onlyCopy = false;
                 if (deletesFirst) {
                     sequence.push_back(pe);
                 }
                 break;
-            }
         }
-        
-        sesElemVec getSequence () const {
-            return sequence;
-        }
-    private :
-        sesElemVec sequence;
-        bool       onlyAdd;
-        bool       onlyDelete;
-        bool       onlyCopy;
-        bool       deletesFirst;
-        size_t     nextDeleteIdx;
-    };
-}
+    }
+
+    sesElemVec getSequence() const { return sequence; }
+private:
+    sesElemVec sequence;
+    bool onlyAdd;
+    bool onlyDelete;
+    bool onlyCopy;
+    bool deletesFirst;
+    size_t nextDeleteIdx;
+};
+} // namespace dtl
 
 #endif // DTL_SES_H

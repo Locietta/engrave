@@ -27,33 +27,29 @@
 #include "stringdata.h"
 
 namespace mu::engraving {
-class StringTunings final : public StaffTextBase
-{
+class StringTunings final : public StaffTextBase {
     OBJECT_ALLOCATOR(engraving, StringTunings)
     DECLARE_CLASSOF(ElementType::STRING_TUNINGS)
 
 public:
     explicit StringTunings(DummyParentOr<Segment> parent, TextStyleType textStyleType = TextStyleType::STRING_TUNINGS);
-    StringTunings(const StringTunings& s);
+    StringTunings(const StringTunings &s);
 
-    StringTunings* clone() const override;
+    StringTunings *clone() const override;
 
     PropertyValue getProperty(Pid id) const override;
     PropertyValue propertyDefault(Pid id) const override;
-    bool setProperty(Pid id, const PropertyValue& val) override;
+    bool setProperty(Pid id, const PropertyValue &val) override;
 
+    const StringData *stringData() const;
+    void setStringData(const StringData &stringData);
+    void undoStringData(const StringData &stringData);
 
+    const String &preset() const;
+    void setPreset(const String &preset);
 
-
-    const StringData* stringData() const;
-    void setStringData(const StringData& stringData);
-    void undoStringData(const StringData& stringData);
-
-    const String& preset() const;
-    void setPreset(const String& preset);
-
-    const std::vector<string_idx_t>& visibleStrings() const;
-    void setVisibleStrings(const std::vector<string_idx_t>& visibleStrings);
+    const std::vector<string_idx_t> &visibleStrings() const;
+    void setVisibleStrings(const std::vector<string_idx_t> &visibleStrings);
 
     void updateText();
 
@@ -71,6 +67,6 @@ private:
     bool m_noStringVisible = false;
     std::optional<int> m_stringsNumber;
 };
-}
+} // namespace mu::engraving
 
 #endif // MU_ENGRAVING_STRING_TUNINGS_H

@@ -26,20 +26,19 @@
 #include "renderbase.h"
 
 namespace mu::engraving {
-class ChordArticulationsRenderer : public RenderBase<ChordArticulationsRenderer>
-{
+class ChordArticulationsRenderer : public RenderBase<ChordArticulationsRenderer> {
 public:
-    static const muse::mpe::ArticulationTypeSet& supportedTypes();
+    static const muse::mpe::ArticulationTypeSet &supportedTypes();
 
-    static void doRender(const EngravingItem* item, const muse::mpe::ArticulationType type, const RenderingContext& ctx,
-                         muse::mpe::PlaybackEventList& result);
+    static void doRender(const EngravingItem *item, const muse::mpe::ArticulationType type, const RenderingContext &ctx,
+                         muse::mpe::PlaybackEventList &result);
 
 private:
-    static void renderChord(const Chord* chord, const RenderingContext& ctx, muse::mpe::PlaybackEventList& result);
-    static void renderChordWithGraceChords(const Chord* chord, const muse::mpe::ArticulationType type, const RenderingContext& ctx,
-                                           muse::mpe::PlaybackEventList& result);
-    static bool renderChordArticulations(const Chord* chord, const RenderingContext& ctx, muse::mpe::PlaybackEventList& result);
+    static void renderChord(const Chord *chord, const RenderingContext &ctx, muse::mpe::PlaybackEventList &result);
+    static void renderChordWithGraceChords(const Chord *chord, const muse::mpe::ArticulationType type, const RenderingContext &ctx,
+                                           muse::mpe::PlaybackEventList &result);
+    static bool renderChordArticulations(const Chord *chord, const RenderingContext &ctx, muse::mpe::PlaybackEventList &result);
 };
-}
+} // namespace mu::engraving
 
 #endif // MU_ENGRAVING_CHORDARTICULATIONSRENDERER_H

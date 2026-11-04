@@ -56,60 +56,39 @@ this noteoff will immediately kill the voice that we've just started 1 tick ago)
 typedef std::set<fluid_note_id_t> note_container_t;
 
 // Compute a unique ID for a given channel-key combination. Think of it as a two-dimensional array index.
-fluid_note_id_t fluid_note_compute_id(int chan, short key)
-{
-    return 128 * chan + key;
-}
+fluid_note_id_t fluid_note_compute_id(int chan, short key) { return 128 * chan + key; }
 
-void* new_fluid_note_container()
-{
-    try
-    {
-        note_container_t* cont = new note_container_t;
+void *new_fluid_note_container() {
+    try {
+        note_container_t *cont = new note_container_t;
         return cont;
-    }
-    catch(...)
-    {
+    } catch (...) {
         return 0;
     }
 }
 
-void delete_fluid_note_container(void *cont)
-{
-    delete static_cast<note_container_t*>(cont);
-}
+void delete_fluid_note_container(void *cont) { delete static_cast<note_container_t *>(cont); }
 
 // Returns true, if the ID was already included in the container before, false if it was just inserted and
 // FLUID_FAILED in case of error.
-int fluid_note_container_insert(void* cont, fluid_note_id_t id)
-{
-    try
-    {
-        std::pair<note_container_t::iterator, bool> res = static_cast<note_container_t*>(cont)->insert(id);
+int fluid_note_container_insert(void *cont, fluid_note_id_t id) {
+    try {
+        std::pair<note_container_t::iterator, bool> res = static_cast<note_container_t *>(cont)->insert(id);
         // res.second tells us whether the element was inserted
         // by inverting it, we know whether it contained the element previously
         return !res.second;
-    }
-    catch(...)
-    {
+    } catch (...) {
         return FLUID_FAILED;
     }
 }
 
-void fluid_note_container_remove(void* cont, fluid_note_id_t id)
-{
-    try
-    {
-        static_cast<note_container_t*>(cont)->erase(id);
-    }
-    catch(...)
-    {
+void fluid_note_container_remove(void *cont, fluid_note_id_t id) {
+    try {
+        static_cast<note_container_t *>(cont)->erase(id);
+    } catch (...) {
         // should never happen
     }
 }
 
 // Empties the entire collection, e.g. in case of a AllNotesOff event
-void fluid_note_container_clear(void* cont)
-{
-    static_cast<note_container_t*>(cont)->clear();
-}
+void fluid_note_container_clear(void *cont) { static_cast<note_container_t *>(cont)->clear(); }

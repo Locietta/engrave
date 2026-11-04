@@ -16,13 +16,13 @@
 
 namespace {
 
-bool report(const engrave::Error& error, const std::string& what) {
-    std::fprintf(stderr, "FAIL %s: %.*s: %s\n", what.c_str(), static_cast<int>(to_string(error.code).size()),
-                 to_string(error.code).data(), error.message.c_str());
+bool report(const engrave::Error &error, const std::string &what) {
+    std::fprintf(stderr, "FAIL %s: %.*s: %s\n", what.c_str(), static_cast<int>(to_string(error.code).size()), to_string(error.code).data(),
+                 error.message.c_str());
     return false;
 }
 
-bool exercise(engrave::Engine& engine, engrave::Document& document, const std::string& name) {
+bool exercise(engrave::Engine &engine, engrave::Document &document, const std::string &name) {
     for (const auto format : {engrave::Format::Mscz, engrave::Format::MusicXml, engrave::Format::Mxl, engrave::Format::Midi}) {
         const std::string what = name + " -> " + std::string(to_string(format));
         const auto bytes = document.export_score({.format = format});
@@ -32,8 +32,7 @@ bool exercise(engrave::Engine& engine, engrave::Document& document, const std::s
         std::printf("ok %s (%zu bytes, reopened)\n", what.c_str(), bytes->size());
     }
     if (document.revision() != 1) {
-        std::fprintf(stderr, "FAIL %s: revision %llu after export\n", name.c_str(),
-                     static_cast<unsigned long long>(document.revision()));
+        std::fprintf(stderr, "FAIL %s: revision %llu after export\n", name.c_str(), static_cast<unsigned long long>(document.revision()));
         return false;
     }
     return true;
@@ -41,7 +40,7 @@ bool exercise(engrave::Engine& engine, engrave::Document& document, const std::s
 
 } // namespace
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     if (argc < 2) {
         std::fprintf(stderr, "usage: example_embedder <resources> <score file>...\n");
         return 2;
@@ -53,9 +52,8 @@ int main(int argc, char** argv) {
     }
 
     const auto capabilities = (*engine)->capabilities();
-    std::printf("engrave %.*s, engine %s, %zu import and %zu export formats\n",
-                static_cast<int>(engrave::version_string.size()), engrave::version_string.data(),
-                capabilities.engine_version.c_str(), capabilities.import_formats.size(),
+    std::printf("engrave %.*s, engine %s, %zu import and %zu export formats\n", static_cast<int>(engrave::version_string.size()),
+                engrave::version_string.data(), capabilities.engine_version.c_str(), capabilities.import_formats.size(),
                 capabilities.export_formats.size());
     std::printf("%zu runtime text fonts\n", (*engine)->runtime_fonts().size());
 
@@ -67,7 +65,7 @@ int main(int argc, char** argv) {
             failures += !report(document.error(), file.string());
             continue;
         }
-        for (const auto& diagnostic : (*document)->diagnostics())
+        for (const auto &diagnostic : (*document)->diagnostics())
             std::printf("note %s: %s\n", file.string().c_str(), diagnostic.message.c_str());
         failures += !exercise(**engine, **document, file.filename().string());
     }
@@ -77,7 +75,7 @@ int main(int argc, char** argv) {
         std::fprintf(stderr, "FAIL no templates in %s\n", argv[1]);
         ++failures;
     }
-    for (const auto& info : templates) {
+    for (const auto &info : templates) {
         const auto document = (*engine)->create_document({.template_id = info.id, .title = info.title, .composer = "engrave"});
         if (!document) {
             failures += !report(document.error(), "template " + info.id);

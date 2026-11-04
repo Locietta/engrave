@@ -31,8 +31,7 @@ namespace mu::engraving {
 ///     This class implements a dead slapped element.
 //---------------------------------------------------------
 
-class DeadSlapped : public EngravingItem
-{
+class DeadSlapped : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, DeadSlapped)
     DECLARE_CLASSOF(ElementType::DEAD_SLAPPED)
 
@@ -40,7 +39,7 @@ public:
 
     ~DeadSlapped() {}
 
-    DeadSlapped* clone() const override { return new DeadSlapped(*this); }
+    DeadSlapped *clone() const override { return new DeadSlapped(*this); }
 
     struct LayoutData : public EngravingItem::LayoutData {
         muse::draw::PainterPath path1;
@@ -52,7 +51,7 @@ private:
 
     friend class Factory;
 
-    DeadSlapped(Rest* parent);
+    DeadSlapped(Rest *parent);
 };
 } // namespace mu::engraving
 #endif

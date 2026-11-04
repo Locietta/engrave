@@ -30,13 +30,13 @@
 
 namespace mu::engraving {
 enum KeyboardModifier {
-    NoModifier           = 0x00000000,
-    ShiftModifier        = 0x02000000,
-    ControlModifier      = 0x04000000,
-    AltModifier          = 0x08000000,
-    MetaModifier         = 0x10000000,
-    KeypadModifier       = 0x20000000,
-    GroupSwitchModifier  = 0x40000000,
+    NoModifier = 0x00000000,
+    ShiftModifier = 0x02000000,
+    ControlModifier = 0x04000000,
+    AltModifier = 0x08000000,
+    MetaModifier = 0x10000000,
+    KeypadModifier = 0x20000000,
+    GroupSwitchModifier = 0x40000000,
     // Do not extend the mask to include 0x01000000
     KeyboardModifierMask = 0xfe000000
 };
@@ -55,12 +55,18 @@ constexpr KeyboardModifier TextEditingControlModifier = ControlModifier;
 
 enum class Grip : signed char {
     NO_GRIP = -1,
-    START = 0, END = 1,                           // arpeggio etc.
-    LEFT = START, RIGHT = END,                    // aliases for dynamic
-    MIDDLE = 2, APERTURE = 3,                     // Line
+    START = 0,
+    END = 1, // arpeggio etc.
+    LEFT = START,
+    RIGHT = END, // aliases for dynamic
+    MIDDLE = 2,
+    APERTURE = 3, // Line
     /*START, END , */
-    BEZIER1 = 2, SHOULDER = 3, BEZIER2 = 4, DRAG = 5,       // Slur
-    GRIPS = 6                       // number of grips for slur
+    BEZIER1 = 2,
+    SHOULDER = 3,
+    BEZIER2 = 4,
+    DRAG = 5, // Slur
+    GRIPS = 6 // number of grips for slur
 };
 
 //---------------------------------------------------------
@@ -71,8 +77,8 @@ class ElementEditData;
 using ElementEditDataPtr = std::shared_ptr<ElementEditData>;
 
 class EngravingItem;
-class EditData
-{
+
+class EditData {
 public:
 
     PointF pos;
@@ -80,20 +86,21 @@ public:
 
     // drop data:
     PointF dragOffset;
-    EngravingItem* element = nullptr;
-    EngravingItem* dropElement = nullptr;
+    EngravingItem *element = nullptr;
+    EngravingItem *dropElement = nullptr;
     track_idx_t track = muse::nidx;
 
     EditData() = default;
 
     void clear();
 
-    std::shared_ptr<ElementEditData> getData(const EngravingItem*) const;
+    std::shared_ptr<ElementEditData> getData(const EngravingItem *) const;
     void addData(std::shared_ptr<ElementEditData>);
     bool control(bool textEditing = false) const;
+
     bool shift() const { return modifiers & ShiftModifier; }
 
 private:
-    std::vector<std::shared_ptr<ElementEditData> > m_data;
+    std::vector<std::shared_ptr<ElementEditData>> m_data;
 };
-}
+} // namespace mu::engraving

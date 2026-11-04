@@ -37,8 +37,7 @@ using namespace mu::engraving;
 ///   or, if nothing is selected, the entire score
 //---------------------------------------------------------
 
-void EditRehearsalMark::resequenceRehearsalMarks(Transaction&, Score* score)
-{
+void EditRehearsalMark::resequenceRehearsalMarks(Transaction &, Score *score) {
     bool noSelection = !score->selection().isRange();
 
     if (noSelection) {
@@ -47,19 +46,19 @@ void EditRehearsalMark::resequenceRehearsalMarks(Transaction&, Score* score)
         return;
     }
 
-    RehearsalMark* last = nullptr;
-    for (Segment* s = score->selection().startSegment(); s && s != score->selection().endSegment(); s = s->next1()) {
-        for (EngravingItem* e : s->annotations()) {
+    RehearsalMark *last = nullptr;
+    for (Segment *s = score->selection().startSegment(); s && s != score->selection().endSegment(); s = s->next1()) {
+        for (EngravingItem *e : s->annotations()) {
             if (!e->isRehearsalMark()) {
                 continue;
             }
-            RehearsalMark* rm = toRehearsalMark(e);
+            RehearsalMark *rm = toRehearsalMark(e);
             if (!rm->isTopSystemObject()) {
                 continue;
             }
             if (last) {
                 String rmText = nextRehearsalMarkText(last, rm);
-                for (EngravingObject* le : rm->linkList()) {
+                for (EngravingObject *le : rm->linkList()) {
                     le->undoChangeProperty(Pid::TEXT, rmText);
                 }
             }
@@ -76,13 +75,12 @@ void EditRehearsalMark::resequenceRehearsalMarks(Transaction&, Score* score)
 //   createRehearsalMarkText
 //---------------------------------------------------------
 
-String EditRehearsalMark::createRehearsalMarkText(const Score* score, RehearsalMark* current)
-{
+String EditRehearsalMark::createRehearsalMarkText(const Score *score, RehearsalMark *current) {
     Fraction tick = current->segment()->tick();
-    RehearsalMark* before = 0;
-    RehearsalMark* after = 0;
-    for (Segment* s = score->firstSegment(SegmentType::All); s; s = s->next1()) {
-        for (EngravingItem* e : s->annotations()) {
+    RehearsalMark *before = 0;
+    RehearsalMark *after = 0;
+    for (Segment *s = score->firstSegment(SegmentType::All); s; s = s->next1()) {
+        for (EngravingItem *e : s->annotations()) {
             if (e && e->isRehearsalMark()) {
                 if (s->tick() < tick) {
                     before = toRehearsalMark(e);
@@ -102,7 +100,7 @@ String EditRehearsalMark::createRehearsalMarkText(const Score* score, RehearsalM
     if (s1.isEmpty()) {
         return s;
     }
-    s = nextRehearsalMarkText(before, current);       // try to sequence
+    s = nextRehearsalMarkText(before, current); // try to sequence
     if (s == current->xmlText()) {
         // no sequence detected (or current happens to be correct)
         return s;
@@ -110,12 +108,12 @@ String EditRehearsalMark::createRehearsalMarkText(const Score* score, RehearsalM
         // next in sequence already present
         if (s1.at(0).isLetter()) {
             if (s1.size() == 2) {
-                s = String(s1.at(0)) + Char::fromAscii(s1.at(1).toAscii() + 1);          // BB, BC, CC
+                s = String(s1.at(0)) + Char::fromAscii(s1.at(1).toAscii() + 1); // BB, BC, CC
             } else {
-                s = s1 + u'1';                              // B, B1, C
+                s = s1 + u'1'; // B, B1, C
             }
         } else {
-            s = s1 + u'A';                                  // 2, 2A, 3
+            s = s1 + u'A'; // 2, 2A, 3
         }
     }
     return s;
@@ -132,8 +130,7 @@ String EditRehearsalMark::createRehearsalMarkText(const Score* score, RehearsalM
 //      If number of previous rehearsal mark matches measure number, assume use of measure numbers throughout
 //---------------------------------------------------------
 
-String EditRehearsalMark::nextRehearsalMarkText(const RehearsalMark* previous, const RehearsalMark* current)
-{
+String EditRehearsalMark::nextRehearsalMarkText(const RehearsalMark *previous, const RehearsalMark *current) {
     String previousText = previous->xmlText();
     String fallback = current ? current->xmlText() : previousText + u"'";
 

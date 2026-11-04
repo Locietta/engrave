@@ -21,7 +21,6 @@
  */
 #include "translation.h"
 
-
 #include "types/bytearray.h"
 #include "types/string.h"
 
@@ -29,33 +28,27 @@
 
 using namespace muse;
 
-static String translate(const char* context, const char* key, const char* disambiguation, int n)
-{
+static String translate(const char *context, const char *key, const char *disambiguation, int n) {
     UNUSED(context);
     UNUSED(disambiguation);
     UNUSED(n);
     return String::fromUtf8(key);
 }
 
-std::string muse::trc(const char* context, const char* key, const char* disambiguation, int n)
-{
+std::string muse::trc(const char *context, const char *key, const char *disambiguation, int n) {
     return translate(context, key, disambiguation, n).toStdString();
 }
 
-
-String muse::mtrc(const char* context, const char* key, const char* disambiguation, int n)
-{
+String muse::mtrc(const char *context, const char *key, const char *disambiguation, int n) {
     return translate(context, key, disambiguation, n);
 }
 
-String muse::mtrc(const char* context, const String& key, const char* disambiguation, int n)
-{
+String muse::mtrc(const char *context, const String &key, const char *disambiguation, int n) {
     ByteArray keyutf8 = key.toUtf8();
     return translate(context, keyutf8.constChar(), disambiguation, n);
 }
 
-String muse::mtrc(const char* context, const String& key, const String& disambiguation, int n)
-{
+String muse::mtrc(const char *context, const String &key, const String &disambiguation, int n) {
     ByteArray keyutf8 = key.toUtf8();
     ByteArray disutf8 = disambiguation.toUtf8();
     return translate(context, keyutf8.constChar(), disutf8.empty() ? nullptr : disutf8.constChar(), n);

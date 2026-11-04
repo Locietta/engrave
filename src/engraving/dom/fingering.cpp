@@ -41,9 +41,9 @@ namespace mu::engraving {
 //   fingeringStyle
 //---------------------------------------------------------
 
-static const ElementStyle fingeringStyle {
-    { Sid::fingeringPlacement, Pid::PLACEMENT },
-    { Sid::fingeringMinDistance, Pid::MIN_DISTANCE },
+static const ElementStyle fingeringStyle{
+    {Sid::fingeringPlacement, Pid::PLACEMENT},
+    {Sid::fingeringMinDistance, Pid::MIN_DISTANCE},
 };
 
 //---------------------------------------------------------
@@ -51,31 +51,23 @@ static const ElementStyle fingeringStyle {
 //      EngravingItem(Score* = 0, ElementFlags = ElementFlag::NOTHING);
 //---------------------------------------------------------
 
-Fingering::Fingering(DummyParentOr<Note> parent, TextStyleType tid, ElementFlags ef)
-    : TextBase(ElementType::FINGERING, parent, tid, ef)
-{
+Fingering::Fingering(DummyParentOr<Note> parent, TextStyleType tid, ElementFlags ef) : TextBase(ElementType::FINGERING, parent, tid, ef) {
     setPlacement(PlacementV::ABOVE);
     initElementStyle(&fingeringStyle);
 }
 
-Fingering::Fingering(DummyParentOr<Note> parent, ElementFlags ef)
-    : Fingering(parent, TextStyleType::FINGERING, ef)
-{
-}
+Fingering::Fingering(DummyParentOr<Note> parent, ElementFlags ef) : Fingering(parent, TextStyleType::FINGERING, ef) {}
 
 //---------------------------------------------------------
 //   layoutType
 //---------------------------------------------------------
 
-ElementType Fingering::layoutType() const
-{
+ElementType Fingering::layoutType() const {
     switch (textStyleType()) {
-    case TextStyleType::FINGERING:
-    case TextStyleType::RH_GUITAR_FINGERING:
-    case TextStyleType::STRING_NUMBER:
-        return ElementType::CHORD;
-    default:
-        return ElementType::NOTE;
+        case TextStyleType::FINGERING:
+        case TextStyleType::RH_GUITAR_FINGERING:
+        case TextStyleType::STRING_NUMBER: return ElementType::CHORD;
+        default: return ElementType::NOTE;
     }
 }
 
@@ -83,18 +75,17 @@ ElementType Fingering::layoutType() const
 //   calculatePlacement
 //---------------------------------------------------------
 
-PlacementV Fingering::calculatePlacement() const
-{
-    Note* n = note();
+PlacementV Fingering::calculatePlacement() const {
+    Note *n = note();
     if (!n) {
         return PlacementV::ABOVE;
     }
-    Chord* chord = n->chord();
-    Staff* staff = chord->staff();
-    Part* part   = staff->part();
-    size_t nstaves  = part->nstaves();
-    bool voices  = chord->measure()->hasVoices(staff->idx(), chord->tick(), chord->actualTicks());
-    bool below   = voices ? !chord->up() : (nstaves > 1) && (staff->rstaff() == nstaves - 1);
+    Chord *chord = n->chord();
+    Staff *staff = chord->staff();
+    Part *part = staff->part();
+    size_t nstaves = part->nstaves();
+    bool voices = chord->measure()->hasVoices(staff->idx(), chord->tick(), chord->actualTicks());
+    bool below = voices ? !chord->up() : (nstaves > 1) && (staff->rstaff() == nstaves - 1);
     return below ? PlacementV::BELOW : PlacementV::ABOVE;
 }
 
@@ -102,30 +93,24 @@ PlacementV Fingering::calculatePlacement() const
 //   accessibleInfo
 //---------------------------------------------------------
 
-bool Fingering::isOnCrossBeamSide() const
-{
-    Chord* chord = note() ? note()->chord() : nullptr;
+bool Fingering::isOnCrossBeamSide() const {
+    Chord *chord = note() ? note()->chord() : nullptr;
     if (!chord) {
         return false;
     }
-    return layoutType() == ElementType::CHORD
-           && chord->beam() && (chord->beam()->cross() || chord->staffMove() != 0)
-           && placeAbove() == chord->up();
+    return layoutType() == ElementType::CHORD && chord->beam() && (chord->beam()->cross() || chord->staffMove() != 0) &&
+           placeAbove() == chord->up();
 }
 
 //---------------------------------------------------------
 //   propertyDefault
 //---------------------------------------------------------
 
-engraving::PropertyValue Fingering::propertyDefault(Pid id) const
-{
+engraving::PropertyValue Fingering::propertyDefault(Pid id) const {
     switch (id) {
-    case Pid::PLACEMENT:
-        return calculatePlacement();
-    case Pid::TEXT_STYLE:
-        return TextStyleType::FINGERING;
-    default:
-        return TextBase::propertyDefault(id);
+        case Pid::PLACEMENT: return calculatePlacement();
+        case Pid::TEXT_STYLE: return TextStyleType::FINGERING;
+        default: return TextBase::propertyDefault(id);
     }
 }
-}
+} // namespace mu::engraving

@@ -24,52 +24,48 @@
 
 #include <memory>
 
-
 #include "iaudiofactory.h"
 
 #include "nodes/trackchain.h"
 
 namespace muse::audio {
-struct ContextMixerTag
-{
-    static constexpr const char* name = "ContextMixer";
+struct ContextMixerTag {
+    static constexpr const char *name = "ContextMixer";
 };
-}
+} // namespace muse::audio
 
 namespace muse::audio::engine {
-class Mixer : public AudioNode<ContextMixerTag>
-{
+class Mixer : public AudioNode<ContextMixerTag> {
 public:
     ~Mixer() override;
 
     void init();
 
-    Ret addTrack(TrackChainPtr trackChain, const AuxSendsParams& auxSends);
+    Ret addTrack(TrackChainPtr trackChain, const AuxSendsParams &auxSends);
     Ret addAuxTrack(TrackChainPtr trackChain);
     Ret removeTrack(const TrackId trackId);
 
-    void setAuxSends(const TrackId trackId, const AuxSendsParams& auxSends);
+    void setAuxSends(const TrackId trackId, const AuxSendsParams &auxSends);
 
-    void setTracksToProcessWhenIdle(const std::unordered_set<TrackId>& trackIds);
+    void setTracksToProcessWhenIdle(const std::unordered_set<TrackId> &trackIds);
     void setNonMutedTrackCount(size_t count);
 
-    void process(float* buffer, samples_t samplesPerChannel) override;
+    void process(float *buffer, samples_t samplesPerChannel) override;
 
     std::string dump() const override;
 
 private:
 
-    void onOutputSpecChanged(const OutputSpec& spec) override;
+    void onOutputSpecChanged(const OutputSpec &spec) override;
     void onModeChanged(const ProcessMode mode) override;
 
-    void doSelfProcess(float*, samples_t) override {}
+    void doSelfProcess(float *, samples_t) override {}
 
     void processTrackChannels(size_t outBufferSize, size_t samplesPerChannel);
-    void mixOutputFromChannel(float* outBuffer, const float* inBuffer, size_t bufferSize) const;
+    void mixOutputFromChannel(float *outBuffer, const float *inBuffer, size_t bufferSize) const;
     void prepareAuxBuffers(size_t outBufferSize);
-    void writeTrackToAuxBuffers(const float* trackBuffer, size_t outBufferSize, const AuxSendsParams& auxSends);
-    void processAuxChannels(float* buffer, samples_t samplesPerChannel);
-
+    void writeTrackToAuxBuffers(const float *trackBuffer, size_t outBufferSize, const AuxSendsParams &auxSends);
+    void processAuxChannels(float *buffer, samples_t samplesPerChannel);
 
     struct TrackData {
         TrackId trackId;
@@ -82,10 +78,9 @@ private:
     std::vector<TrackData> m_auxTracks;
     std::map<TrackId, AuxSendsParams> m_auxSends;
 
-
     size_t m_nonMutedTrackCount = 0;
     std::unordered_set<TrackId> m_tracksToProcessWhenIdle;
 };
 
 using MixerPtr = std::shared_ptr<Mixer>;
-}
+} // namespace muse::audio::engine

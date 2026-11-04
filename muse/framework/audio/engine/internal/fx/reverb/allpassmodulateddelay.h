@@ -26,20 +26,13 @@
 #include "circularsamplebuffer.h"
 
 namespace muse::audio::fx {
-class AllPassModulatedDelay
-{
+class AllPassModulatedDelay {
 public:
-    AllPassModulatedDelay()
-    {
-    }
+    AllPassModulatedDelay() {}
 
-    void allocateForMaxDelaySamples(int maxDelaySamples)
-    {
-        m_buffer.setSize(maxDelaySamples);
-    }
+    void allocateForMaxDelaySamples(int maxDelaySamples) { m_buffer.setSize(maxDelaySamples); }
 
-    void setBaseDelay(float samples, float maxModulationOffset)
-    {
+    void setBaseDelay(float samples, float maxModulationOffset) {
         int allocSize = int(samples + maxModulationOffset + 16.f); // some extra space for interpolation
         if (samples != m_baseDelay || allocSize > m_buffer.getAllocatedSize()) {
             allocateForMaxDelaySamples(allocSize);
@@ -49,27 +42,21 @@ public:
         }
     }
 
-    float getBaseDelay() const
-    {
-        return m_baseDelay;
-    }
+    float getBaseDelay() const { return m_baseDelay; }
 
-    void setModOffset(float smpOffset)
-    {
+    void setModOffset(float smpOffset) {
         float total = -m_baseDelay + smpOffset; // negative!
         float flr = std::floor(total);
         m_modFraction = total - flr;
         m_readOffset = int(flr);
     }
 
-    void writeSampleAndAdvance(float sample)
-    {
+    void writeSampleAndAdvance(float sample) {
         m_buffer.writeOffset0(sample);
         m_buffer.advance(1);
     }
 
-    float readSample()
-    {
+    float readSample() {
         auto res = m_buffer.read(m_readOffset);
         auto x1 = m_buffer.read(m_readOffset + 1);
 
@@ -78,14 +65,12 @@ public:
         return res;
     }
 
-    float processSample(float sample)
-    {
+    float processSample(float sample) {
         writeSampleAndAdvance(sample);
         return readSample();
     }
 
-    void reset()
-    {
+    void reset() {
         m_buffer.reset();
         m_y1 = 0.f;
     }

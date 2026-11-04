@@ -22,7 +22,6 @@
 
 #include "page.h"
 
-
 #include "factory.h"
 #include "measurebase.h"
 #include "mscore.h"
@@ -36,55 +35,43 @@ using namespace mu::engraving;
 //   Page
 //---------------------------------------------------------
 
-Page::Page(Score* parent)
-    : EngravingItem(ElementType::PAGE, parent, ElementFlag::NOT_SELECTABLE)
-{
-    m_bspTreeValid = false;
-}
+Page::Page(Score *parent) : EngravingItem(ElementType::PAGE, parent, ElementFlag::NOT_SELECTABLE) { m_bspTreeValid = false; }
 
-void Page::setOwnershipParent(Score* score)
-{
-    EngravingItem::setOwnershipParent(score);
-}
+void Page::setOwnershipParent(Score *score) { EngravingItem::setOwnershipParent(score); }
 
-EngravingItem* Page::layoutParent() const
-{
+EngravingItem *Page::layoutParent() const {
     // A page is the top of the visual hierarchy: it is not laid out inside anything.
     return nullptr;
 }
 
-EngravingItem* Page::accessibleParentItem() const
-{
+EngravingItem *Page::accessibleParentItem() const {
     // Above the visual hierarchy sits the root item, which exists only to head the
     // accessibility tree. A page that is not in the score belongs to the dummy's tree,
     // which the base implementation finds.
     return ownershipParent() ? score()->rootItem() : EngravingItem::accessibleParentItem();
 }
 
-Page::~Page()
-{
-    for (System* s : m_systems) {
+Page::~Page() {
+    for (System *s : m_systems) {
         if (s->page() == this) {
             s->setPage(nullptr);
         }
     }
 }
 
-MeasureBase* Page::firstMeasureBase() const
-{
+MeasureBase *Page::firstMeasureBase() const {
     if (m_systems.empty()) {
         return nullptr;
     }
-    System* firstSys = m_systems.front();
+    System *firstSys = m_systems.front();
     return firstSys ? firstSys->first() : nullptr;
 }
 
-MeasureBase* Page::lastMeasureBase() const
-{
+MeasureBase *Page::lastMeasureBase() const {
     if (m_systems.empty()) {
         return nullptr;
     }
-    System* lastSys = m_systems.back();
+    System *lastSys = m_systems.back();
     return lastSys ? lastSys->last() : nullptr;
 }
 
@@ -92,16 +79,14 @@ MeasureBase* Page::lastMeasureBase() const
 //   items
 //---------------------------------------------------------
 
-std::vector<EngravingItem*> Page::items(const RectF& rect)
-{
+std::vector<EngravingItem *> Page::items(const RectF &rect) {
     if (!m_bspTreeValid) {
         doRebuildBspTree();
     }
     return bspTree.items(rect);
 }
 
-std::vector<EngravingItem*> Page::items(const PointF& point)
-{
+std::vector<EngravingItem *> Page::items(const PointF &point) {
     if (!m_bspTreeValid) {
         doRebuildBspTree();
     }
@@ -112,14 +97,12 @@ std::vector<EngravingItem*> Page::items(const PointF& point)
 //   appendSystem
 //---------------------------------------------------------
 
-void Page::appendSystem(System* s)
-{
+void Page::appendSystem(System *s) {
     s->setPage(this);
     m_systems.push_back(s);
 }
 
-EngravingItemList Page::accessibleChildren() const
-{
+EngravingItemList Page::accessibleChildren() const {
     // The systems are owned by the score, but it is the page that places them, so the
     // page is where the accessibility tree finds them.
     EngravingItemList children = EngravingItem::accessibleChildren();
@@ -128,15 +111,13 @@ EngravingItemList Page::accessibleChildren() const
     return children;
 }
 
-
 //---------------------------------------------------------
 //   scanElements
 //---------------------------------------------------------
 
-void Page::scanElements(std::function<void(EngravingItem*)> func)
-{
-    for (System* s :m_systems) {
-        for (MeasureBase* m : s->measures()) {
+void Page::scanElements(std::function<void(EngravingItem *)> func) {
+    for (System *s : m_systems) {
+        for (MeasureBase *m : s->measures()) {
             m->scanElements(func);
         }
         s->scanElements(func);
@@ -145,12 +126,12 @@ void Page::scanElements(std::function<void(EngravingItem*)> func)
     func(this);
 
     for (int i = 0; i < MAX_HEADERS; i++) {
-        if (Text* t = headerText(i)) {
+        if (Text *t = headerText(i)) {
             func(t);
         }
     }
     for (int i = 0; i < MAX_FOOTERS; i++) {
-        if (Text* t = footerText(i)) {
+        if (Text *t = footerText(i)) {
             func(t);
         }
     }
@@ -160,10 +141,9 @@ void Page::scanElements(std::function<void(EngravingItem*)> func)
 //   doRebuildBspTree
 //---------------------------------------------------------
 
-void Page::doRebuildBspTree()
-{
+void Page::doRebuildBspTree() {
     int n = 0;
-    auto countElements = [&](EngravingItem* item) {
+    auto countElements = [&](EngravingItem *item) {
         if (item->collectForDrawing()) {
             ++n;
         }
@@ -178,7 +158,7 @@ void Page::doRebuildBspTree()
         if (!m_systems.empty()) {
             h = m_systems.front()->height();
             if (!m_systems.front()->measures().empty()) {
-                MeasureBase* mb = m_systems.front()->measures().back();
+                MeasureBase *mb = m_systems.front()->measures().back();
                 w = mb->x() + mb->width();
             }
         }
@@ -189,7 +169,7 @@ void Page::doRebuildBspTree()
 
     bspTree.initialize(r, n);
 
-    auto bspInsert = [&] (EngravingItem* item) {
+    auto bspInsert = [&](EngravingItem *item) {
         if (item->collectForDrawing()) {
             bspTree.insert(item);
         }
@@ -203,81 +183,68 @@ void Page::doRebuildBspTree()
 //   getDisplayPageNumber
 //---------------------------------------------------------
 
-int Page::getDisplayPageNumber() const
-{
-    return static_cast<int>(m_pageNumber) + 1 + score()->pageNumberOffset();
-}
+int Page::getDisplayPageNumber() const { return static_cast<int>(m_pageNumber) + 1 + score()->pageNumberOffset(); }
 
 //---------------------------------------------------------
 //   isOdd
 //---------------------------------------------------------
 
-bool Page::isOdd() const
-{
-    return getDisplayPageNumber() & 1;
-}
+bool Page::isOdd() const { return getDisplayPageNumber() & 1; }
 
 //---------------------------------------------------------
 //   elements
 //---------------------------------------------------------
 
-std::vector<EngravingItem*> Page::elements() const
-{
-    return getChildren(false);
-}
+std::vector<EngravingItem *> Page::elements() const { return getChildren(false); }
 
 //---------------------------------------------------------
 //   tm
 //---------------------------------------------------------
 
-double Page::tm() const
-{
-    return ((!style().styleB(Sid::pageTwosided) || isOdd())
-            ? style().styleD(Sid::pageOddTopMargin) : style().styleD(Sid::pageEvenTopMargin)) * DPI;
+double Page::tm() const {
+    return ((!style().styleB(Sid::pageTwosided) || isOdd()) ? style().styleD(Sid::pageOddTopMargin) :
+                                                              style().styleD(Sid::pageEvenTopMargin)) *
+           DPI;
 }
 
 //---------------------------------------------------------
 //   bm
 //---------------------------------------------------------
 
-double Page::bm() const
-{
-    return ((!style().styleB(Sid::pageTwosided) || isOdd())
-            ? style().styleD(Sid::pageOddBottomMargin) : style().styleD(Sid::pageEvenBottomMargin)) * DPI;
+double Page::bm() const {
+    return ((!style().styleB(Sid::pageTwosided) || isOdd()) ? style().styleD(Sid::pageOddBottomMargin) :
+                                                              style().styleD(Sid::pageEvenBottomMargin)) *
+           DPI;
 }
 
 //---------------------------------------------------------
 //   lm
 //---------------------------------------------------------
 
-double Page::lm() const
-{
-    return ((!style().styleB(Sid::pageTwosided) || isOdd())
-            ? style().styleD(Sid::pageOddLeftMargin) : style().styleD(Sid::pageEvenLeftMargin)) * DPI;
+double Page::lm() const {
+    return ((!style().styleB(Sid::pageTwosided) || isOdd()) ? style().styleD(Sid::pageOddLeftMargin) :
+                                                              style().styleD(Sid::pageEvenLeftMargin)) *
+           DPI;
 }
 
 //---------------------------------------------------------
 //   rm
 //---------------------------------------------------------
 
-double Page::rm() const
-{
-    return (style().styleD(Sid::pageWidth) - style().styleD(Sid::pagePrintableWidth)) * DPI - lm();
-}
+double Page::rm() const { return (style().styleD(Sid::pageWidth) - style().styleD(Sid::pagePrintableWidth)) * DPI - lm(); }
 
 //---------------------------------------------------------
 //   tbbox
 //    calculates and returns smallest rectangle containing all (visible) page elements
 //---------------------------------------------------------
 
-RectF Page::tbbox() const
-{
+RectF Page::tbbox() const {
     double x1 = width();
     double x2 = 0.0;
     double y1 = height();
     double y2 = 0.0;
-    const std::vector<EngravingItem*> el = elements();
-    for (EngravingItem* e : el) {
+    const std::vector<EngravingItem *> el = elements();
+    for (EngravingItem *e : el) {
         if (e == this || !e->isPrintable()) {
             continue;
         }
@@ -306,15 +273,11 @@ RectF Page::tbbox() const
 //   endTick
 //---------------------------------------------------------
 
-Fraction Page::endTick() const
-{
-    return m_systems.empty() ? Fraction(-1, 1) : m_systems.back()->measures().back()->endTick();
-}
+Fraction Page::endTick() const { return m_systems.empty() ? Fraction(-1, 1) : m_systems.back()->measures().back()->endTick(); }
 
-Measure* Page::firstMeasure() const
-{
-    for (System* s : m_systems) {
-        if (Measure* m = s->firstMeasure()) {
+Measure *Page::firstMeasure() const {
+    for (System *s : m_systems) {
+        if (Measure *m = s->firstMeasure()) {
             return m;
         }
     }
@@ -322,14 +285,12 @@ Measure* Page::firstMeasure() const
     return nullptr;
 }
 
-bool Page::isLocked() const
-{
-    MeasureBase* firstMeasure = firstMeasureBase();
+bool Page::isLocked() const {
+    MeasureBase *firstMeasure = firstMeasureBase();
     return firstMeasure ? firstMeasure->isStartOfPageLock() : false;
 }
 
-const RangeLock* Page::pageLock() const
-{
-    MeasureBase* firstMeasure = firstMeasureBase();
+const RangeLock *Page::pageLock() const {
+    MeasureBase *firstMeasure = firstMeasureBase();
     return firstMeasure ? firstMeasure->pageLock() : nullptr;
 }

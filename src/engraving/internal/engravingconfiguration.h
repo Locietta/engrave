@@ -22,12 +22,10 @@
 
 #pragma once
 
-
 #include "../iengravingconfiguration.h"
 
 namespace mu::engraving {
-class EngravingConfiguration : public IEngravingConfiguration
-{
+class EngravingConfiguration : public IEngravingConfiguration {
 public:
     EngravingConfiguration();
 
@@ -36,10 +34,10 @@ public:
     muse::io::path_t appDataPath() const override;
 
     muse::io::path_t defaultStyleFilePath() const override;
-    void setDefaultStyleFilePath(const muse::io::path_t& path) override;
+    void setDefaultStyleFilePath(const muse::io::path_t &path) override;
 
     muse::io::path_t partStyleFilePath() const override;
-    void setPartStyleFilePath(const muse::io::path_t& path) override;
+    void setPartStyleFilePath(const muse::io::path_t &path) override;
 
     SizeF defaultPageSize() const override;
 
@@ -85,8 +83,8 @@ public:
 
     Color unlinkedColor() const override;
 
-    const DebuggingOptions& debuggingOptions() const override;
-    void setDebuggingOptions(const DebuggingOptions& options) override;
+    const DebuggingOptions &debuggingOptions() const override;
+    void setDebuggingOptions(const DebuggingOptions &options) override;
 
     bool allowReadingImagesFromOutsideMscz() const override;
 
@@ -109,4 +107,4 @@ private:
 
     bool m_multiVoice = false;
 };
-}
+} // namespace mu::engraving

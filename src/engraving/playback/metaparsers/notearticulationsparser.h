@@ -28,27 +28,26 @@
 namespace mu::engraving {
 class Note;
 
-class NoteArticulationsParser : public MetaParserBase<NoteArticulationsParser>
-{
+class NoteArticulationsParser : public MetaParserBase<NoteArticulationsParser> {
 public:
-    static void buildNoteArticulationMap(const Note* note, const RenderingContext& ctx, muse::mpe::ArticulationMap& result);
+    static void buildNoteArticulationMap(const Note *note, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
 
-    static void parsePlayingTechnique(const RenderingContext& ctx, const track_idx_t trackIdx, muse::mpe::ArticulationMap& result,
+    static void parsePlayingTechnique(const RenderingContext &ctx, const track_idx_t trackIdx, muse::mpe::ArticulationMap &result,
                                       bool sustainAllowed = true);
-    static void parseGhostNote(const Note* note, const RenderingContext& ctx, muse::mpe::ArticulationMap& result);
-    static void parseNoteHead(const Note* note, const RenderingContext& ctx, muse::mpe::ArticulationMap& result);
-    static void parseSymbols(const Note* note, const RenderingContext& ctx, muse::mpe::ArticulationMap& result);
-    static void parseLaissezVibrer(const Note* note, const RenderingContext& ctx, muse::mpe::ArticulationMap& result);
-    static void parseSpanners(const Note* note, const RenderingContext& ctx, muse::mpe::ArticulationMap& result);
+    static void parseGhostNote(const Note *note, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
+    static void parseNoteHead(const Note *note, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
+    static void parseSymbols(const Note *note, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
+    static void parseLaissezVibrer(const Note *note, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
+    static void parseSpanners(const Note *note, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
 
 protected:
     friend MetaParserBase;
 
-    static void doParse(const EngravingItem* item, const RenderingContext& ctx, muse::mpe::ArticulationMap& result);
+    static void doParse(const EngravingItem *item, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
 
 private:
     static muse::mpe::ArticulationType articulationTypeByNoteheadGroup(const NoteHeadGroup noteheadGroup);
-    static void appendArticulations(const muse::mpe::ArticulationTypeSet& types, const RenderingContext& ctx,
-                                    muse::mpe::ArticulationMap& result);
+    static void appendArticulations(const muse::mpe::ArticulationTypeSet &types, const RenderingContext &ctx,
+                                    muse::mpe::ArticulationMap &result);
 };
-}
+} // namespace mu::engraving

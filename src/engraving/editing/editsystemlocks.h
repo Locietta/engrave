@@ -34,28 +34,27 @@ class RangeLock;
 
 enum class LayoutBreakType : unsigned char;
 
-class EditSystemLocks
-{
+class EditSystemLocks {
 public:
-    static void undoAddSystemLock(Transaction& tx, const RangeLock* lock);
-    static void undoRemoveSystemLock(Transaction& tx, const RangeLock* lock);
-    static void undoRemoveAllLocks(Transaction& tx, Score* score);
+    static void undoAddSystemLock(Transaction &tx, const RangeLock *lock);
+    static void undoRemoveSystemLock(Transaction &tx, const RangeLock *lock);
+    static void undoRemoveAllLocks(Transaction &tx, Score *score);
 
-    static void toggleSystemLock(Transaction& tx, Score* score, const std::vector<System*>& systems);
-    static void toggleScoreLock(Transaction& tx, Score* score);
+    static void toggleSystemLock(Transaction &tx, Score *score, const std::vector<System *> &systems);
+    static void toggleScoreLock(Transaction &tx, Score *score);
 
-    static void addRemoveSystemLocks(Transaction& tx, Score* score, int interval, bool lock);
+    static void addRemoveSystemLocks(Transaction &tx, Score *score, int interval, bool lock);
 
-    static void makeIntoSystem(Transaction& tx, Score* score, MeasureBase* first, MeasureBase* last);
-    static void moveMeasureToPrevSystem(Transaction& tx, Score* score, MeasureBase* m);
-    static void moveMeasureToNextSystem(Transaction& tx, Score* score, MeasureBase* m);
+    static void makeIntoSystem(Transaction &tx, Score *score, MeasureBase *first, MeasureBase *last);
+    static void moveMeasureToPrevSystem(Transaction &tx, Score *score, MeasureBase *m);
+    static void moveMeasureToNextSystem(Transaction &tx, Score *score, MeasureBase *m);
 
-    static void applyLockToSelection(Transaction& tx, Score* score);
+    static void applyLockToSelection(Transaction &tx, Score *score);
 
-    static void removeSystemLocksOnAddLayoutBreak(Transaction& tx, Score* score, LayoutBreakType breakType, const MeasureBase* measure);
-    static void updateLayoutBreaksOnAddSystemLock(Transaction& tx, const RangeLock* lock);
-    static void removeSystemLocksOnRemoveMeasures(Transaction& tx, Score* score, const MeasureBase* m1, const MeasureBase* m2);
-    static void removeSystemLocksContainingMMRests(Transaction& tx, Score* score);
-    static void updateSystemLocksOnCreateMMRests(Transaction& tx, Score* score, Measure* first, Measure* last);
+    static void removeSystemLocksOnAddLayoutBreak(Transaction &tx, Score *score, LayoutBreakType breakType, const MeasureBase *measure);
+    static void updateLayoutBreaksOnAddSystemLock(Transaction &tx, const RangeLock *lock);
+    static void removeSystemLocksOnRemoveMeasures(Transaction &tx, Score *score, const MeasureBase *m1, const MeasureBase *m2);
+    static void removeSystemLocksContainingMMRests(Transaction &tx, Score *score);
+    static void updateSystemLocksOnCreateMMRests(Transaction &tx, Score *score, Measure *first, Measure *last);
 };
-}
+} // namespace mu::engraving

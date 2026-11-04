@@ -30,22 +30,18 @@
 #include "importmidi_chord.h"
 #include "importmidi_operations.h"
 
-namespace mu::iex::midi {
-namespace LRHand {
-bool needToSplit(const std::multimap<ReducedFraction, MidiChord>& chords,
-                 GM1Program midiProgram,
-                 bool isDrumTrack)
-{
+namespace mu::iex::midi { namespace LRHand {
+bool needToSplit(const std::multimap<ReducedFraction, MidiChord> &chords, GM1Program midiProgram, bool isDrumTrack) {
     if (isDrumTrack || !MChord::isGrandStaffProgram(midiProgram)) {
         return false;
     }
 
     const int octave = 12;
-    for (const auto& chord: chords) {
-        const MidiChord& c = chord.second;
+    for (const auto &chord : chords) {
+        const MidiChord &c = chord.second;
         int minPitch = std::numeric_limits<int>::max();
         int maxPitch = 0;
-        for (const auto& note: c.notes) {
+        for (const auto &note : c.notes) {
             if (note.pitch < minPitch) {
                 minPitch = note.pitch;
             }
@@ -63,8 +59,7 @@ bool needToSplit(const std::multimap<ReducedFraction, MidiChord>& chords,
 
 #ifndef NDEBUG
 
-bool areNotesSortedByPitchInAscOrder(const std::vector<MidiNote>& notes)
-{
+bool areNotesSortedByPitchInAscOrder(const std::vector<MidiNote> &notes) {
     for (int i = 0; i != notes.size() - 1; ++i) {
         if (notes[i].pitch > notes[i + 1].pitch) {
             return false;
@@ -85,14 +80,13 @@ struct SplitTry {
 
 struct ChordSplitData {
     std::multimap<ReducedFraction, MidiChord>::iterator chord;
-    std::vector<SplitTry> possibleSplits;      // each index corresponds to the same note index
+    std::vector<SplitTry> possibleSplits; // each index corresponds to the same note index
 };
 
-int findLastSplitPoint(const std::vector<ChordSplitData>& splits)
-{
+int findLastSplitPoint(const std::vector<ChordSplitData> &splits) {
     int splitPoint = -1;
     int minPenalty = std::numeric_limits<int>::max();
-    const auto& possibleSplits = splits[splits.size() - 1].possibleSplits;
+    const auto &possibleSplits = splits[splits.size() - 1].possibleSplits;
 
     for (size_t i = 0; i != possibleSplits.size(); ++i) {
         if (possibleSplits[i].penalty < minPenalty) {
@@ -101,26 +95,21 @@ int findLastSplitPoint(const std::vector<ChordSplitData>& splits)
         }
     }
 
-    Q_ASSERT_X(splitPoint != -1,
-               "LRHand::findLastSplitPoint", "Last split point was not found");
+    Q_ASSERT_X(splitPoint != -1, "LRHand::findLastSplitPoint", "Last split point was not found");
 
     return splitPoint;
 }
 
 // backward dynamic programming step - collect optimal voice separations
 
-void splitChords(
-    const std::vector<ChordSplitData>& splits,
-    std::multimap<ReducedFraction, MidiChord>& leftHandChords,
-    std::multimap<ReducedFraction, MidiChord>& chords)
-{
-    Q_ASSERT_X(splits.size() == chords.size(),
-               "LRHand::collectSolution", "Sizes of split data and chords don't match");
+void splitChords(const std::vector<ChordSplitData> &splits, std::multimap<ReducedFraction, MidiChord> &leftHandChords,
+                 std::multimap<ReducedFraction, MidiChord> &chords) {
+    Q_ASSERT_X(splits.size() == chords.size(), "LRHand::collectSolution", "Sizes of split data and chords don't match");
 
     int splitPoint = findLastSplitPoint(splits);
 
     for (size_t pos = splits.size() - 1;; --pos) {
-        MidiChord& oldChord = splits[pos].chord->second;
+        MidiChord &oldChord = splits[pos].chord->second;
         MidiChord newChord(oldChord);
 
         if (splitPoint > 0 && splitPoint < oldChord.notes.size()) {
@@ -136,9 +125,9 @@ void splitChords(
                 newChord.notes.push_back(oldNotes[i]);
             }
 
-            leftHandChords.insert({ splits[pos].chord->first, newChord });
+            leftHandChords.insert({splits[pos].chord->first, newChord});
         } else if (splitPoint == oldChord.notes.size()) {
-            leftHandChords.insert({ splits[pos].chord->first, newChord });
+            leftHandChords.insert({splits[pos].chord->first, newChord});
             chords.erase(splits[pos].chord);
         }
 
@@ -149,15 +138,13 @@ void splitChords(
     }
 }
 
-int findPitchWidthPenalty(const std::vector<MidiNote>& notes, int splitPoint)
-{
+int findPitchWidthPenalty(const std::vector<MidiNote> &notes, int splitPoint) {
     const int octave = 12;
     const int maxPitchWidth = octave + 2;
     int penalty = 0;
 
     if (splitPoint > 0) {
-        const int lowPitchWidth = std::abs(notes[0].pitch
-                                           - notes[splitPoint - 1].pitch);
+        const int lowPitchWidth = std::abs(notes[0].pitch - notes[splitPoint - 1].pitch);
         if (lowPitchWidth <= octave) {
             penalty += 0;
         } else if (lowPitchWidth <= maxPitchWidth) {
@@ -168,8 +155,7 @@ int findPitchWidthPenalty(const std::vector<MidiNote>& notes, int splitPoint)
     }
 
     if (splitPoint < notes.size()) {
-        const int highPitchWidth = std::abs(notes[splitPoint].pitch
-                                        - notes[notes.size() - 1].pitch);
+        const int highPitchWidth = std::abs(notes[splitPoint].pitch - notes[notes.size() - 1].pitch);
         if (highPitchWidth <= octave) {
             penalty += 0;
         } else if (highPitchWidth <= maxPitchWidth) {
@@ -182,29 +168,23 @@ int findPitchWidthPenalty(const std::vector<MidiNote>& notes, int splitPoint)
     return penalty;
 }
 
-bool isOctave(const std::vector<MidiNote>& notes, int beg, int end)
-{
+bool isOctave(const std::vector<MidiNote> &notes, int beg, int end) {
     Q_ASSERT_X(end > 0 && beg >= 0 && end > beg, "LRHand::isOctave", "Invalid note indexes");
 
     const int octave = 12;
     return end - beg == 2 && notes[end - 1].pitch - notes[beg].pitch == octave;
 }
 
-int findSimilarityPenalty(
-    const std::vector<MidiNote>& notes,
-    const std::vector<MidiNote>& prevNotes,
-    int splitPoint,
-    int prevSplitPoint)
-{
+int findSimilarityPenalty(const std::vector<MidiNote> &notes, const std::vector<MidiNote> &prevNotes, int splitPoint, int prevSplitPoint) {
     int penalty = 0;
     // check for octaves and accompaniment
     if (splitPoint > 0 && prevSplitPoint > 0) {
         const bool isLowOctave = isOctave(notes, 0, splitPoint);
         const bool isPrevLowOctave = isOctave(prevNotes, 0, prevSplitPoint);
 
-        if (isLowOctave && isPrevLowOctave) {               // octaves
+        if (isLowOctave && isPrevLowOctave) { // octaves
             penalty -= 12;
-        } else if (splitPoint > 1 && prevSplitPoint > 1) {  // accompaniment
+        } else if (splitPoint > 1 && prevSplitPoint > 1) { // accompaniment
             penalty -= 5;
         }
     }
@@ -229,10 +209,8 @@ int findSimilarityPenalty(
     return penalty;
 }
 
-bool areOffTimesEqual(const std::vector<MidiNote>& notes, int beg, int end)
-{
-    Q_ASSERT_X(end > 0 && beg >= 0 && end > beg,
-               "LRHand::areOffTimesEqual", "Invalid note indexes");
+bool areOffTimesEqual(const std::vector<MidiNote> &notes, int beg, int end) {
+    Q_ASSERT_X(end > 0 && beg >= 0 && end > beg, "LRHand::areOffTimesEqual", "Invalid note indexes");
 
     bool areEqual = true;
     const ReducedFraction firstOffTime = notes[beg].offTime;
@@ -245,8 +223,7 @@ bool areOffTimesEqual(const std::vector<MidiNote>& notes, int beg, int end)
     return areEqual;
 }
 
-int findDurationPenalty(const std::vector<MidiNote>& notes, int splitPoint)
-{
+int findDurationPenalty(const std::vector<MidiNote> &notes, int splitPoint) {
     int penalty = 0;
     if (splitPoint > 0 && areOffTimesEqual(notes, 0, splitPoint)) {
         penalty -= 10;
@@ -257,8 +234,7 @@ int findDurationPenalty(const std::vector<MidiNote>& notes, int splitPoint)
     return penalty;
 }
 
-int findNoteCountPenalty(const std::vector<MidiNote>& notes, int splitPoint)
-{
+int findNoteCountPenalty(const std::vector<MidiNote> &notes, int splitPoint) {
     const int leftHandCount = splitPoint;
     const int rightHandCount = notes.size() - splitPoint;
     if (rightHandCount > 0 && leftHandCount > 0 && leftHandCount < rightHandCount) {
@@ -270,21 +246,14 @@ int findNoteCountPenalty(const std::vector<MidiNote>& notes, int splitPoint)
     return 0;
 }
 
-int findIntersectionPenalty(
-    const ReducedFraction& currentOnTime,
-    int prevPos,
-    int prevSplitPoint,
-    const ReducedFraction& maxChordLen,
-    const std::vector<ChordSplitData>& splits,
-    bool hasLowNotes,
-    bool hasHighNotes)
-{
+int findIntersectionPenalty(const ReducedFraction &currentOnTime, int prevPos, int prevSplitPoint, const ReducedFraction &maxChordLen,
+                            const std::vector<ChordSplitData> &splits, bool hasLowNotes, bool hasHighNotes) {
     int penalty = 0;
     int pos = prevPos;
     int splitPoint = prevSplitPoint;
 
     while (splits[pos].chord->first + maxChordLen > currentOnTime) {
-        const MidiChord& chord = splits[pos].chord->second;
+        const MidiChord &chord = splits[pos].chord->second;
 
         if (hasLowNotes) {
             ReducedFraction maxNoteOffTime;
@@ -312,7 +281,7 @@ int findIntersectionPenalty(
         if (pos == 0) {
             break;
         }
-        const SplitTry& splitTry = splits[pos].possibleSplits[splitPoint];
+        const SplitTry &splitTry = splits[pos].possibleSplits[splitPoint];
         splitPoint = splitTry.prevSplitPoint;
         --pos;
     }
@@ -320,20 +289,16 @@ int findIntersectionPenalty(
     return penalty;
 }
 
-std::vector<ChordSplitData> findSplits(std::multimap<ReducedFraction, MidiChord>& chords)
-{
+std::vector<ChordSplitData> findSplits(std::multimap<ReducedFraction, MidiChord> &chords) {
     std::vector<ChordSplitData> splits;
     int pos = 0;
     ReducedFraction maxChordLen;
 
     for (auto it = chords.begin(); it != chords.end(); ++it) {
-        const auto& notes = it->second.notes;
+        const auto &notes = it->second.notes;
 #ifndef NDEBUG
-        Q_ASSERT_X(!notes.empty(),
-                   "LRHand::findSplits", "Notes are empty");
-        Q_ASSERT_X(areNotesSortedByPitchInAscOrder(notes),
-                   "LRHand::findSplits",
-                   "Notes are not sorted by pitch in ascending order");
+        Q_ASSERT_X(!notes.empty(), "LRHand::findSplits", "Notes are empty");
+        Q_ASSERT_X(areNotesSortedByPitchInAscOrder(notes), "LRHand::findSplits", "Notes are not sorted by pitch in ascending order");
 #endif
         const auto len = MChord::maxNoteOffTime(notes) - it->first;
         if (len > maxChordLen) {
@@ -345,25 +310,19 @@ std::vector<ChordSplitData> findSplits(std::multimap<ReducedFraction, MidiChord>
 
         for (int splitPoint = 0; splitPoint <= notes.size(); ++splitPoint) {
             SplitTry splitTry;
-            splitTry.penalty = findPitchWidthPenalty(notes, splitPoint)
-                               + findDurationPenalty(notes, splitPoint)
-                               + findNoteCountPenalty(notes, splitPoint);
+            splitTry.penalty =
+                findPitchWidthPenalty(notes, splitPoint) + findDurationPenalty(notes, splitPoint) + findNoteCountPenalty(notes, splitPoint);
 
             if (pos > 0) {
                 int bestPrevSplitPoint = -1;
                 int minPenalty = std::numeric_limits<int>::max();
-                const auto& prevNotes = std::prev(it)->second.notes;
+                const auto &prevNotes = std::prev(it)->second.notes;
 
-                for (int prevSplitPoint = 0;
-                     prevSplitPoint <= prevNotes.size(); ++prevSplitPoint) {
-                    const int prevPenalty
-                        = splits[pos - 1].possibleSplits[prevSplitPoint].penalty
-                          + findSimilarityPenalty(
-                              notes, prevNotes, splitPoint, prevSplitPoint)
-                          + findIntersectionPenalty(
-                              it->first, pos - 1, prevSplitPoint,
-                              maxChordLen, splits,
-                              splitPoint > 0, splitPoint < notes.size());
+                for (int prevSplitPoint = 0; prevSplitPoint <= prevNotes.size(); ++prevSplitPoint) {
+                    const int prevPenalty = splits[pos - 1].possibleSplits[prevSplitPoint].penalty +
+                                            findSimilarityPenalty(notes, prevNotes, splitPoint, prevSplitPoint) +
+                                            findIntersectionPenalty(it->first, pos - 1, prevSplitPoint, maxChordLen, splits, splitPoint > 0,
+                                                                    splitPoint < notes.size());
 
                     if (prevPenalty < minPenalty) {
                         minPenalty = prevPenalty;
@@ -371,9 +330,7 @@ std::vector<ChordSplitData> findSplits(std::multimap<ReducedFraction, MidiChord>
                     }
                 }
 
-                Q_ASSERT_X(bestPrevSplitPoint != -1,
-                           "LRHand::findSplits",
-                           "Best previous split point was not found");
+                Q_ASSERT_X(bestPrevSplitPoint != -1, "LRHand::findSplits", "Best previous split point was not found");
 
                 splitTry.penalty += minPenalty;
                 splitTry.prevSplitPoint = bestPrevSplitPoint;
@@ -389,21 +346,18 @@ std::vector<ChordSplitData> findSplits(std::multimap<ReducedFraction, MidiChord>
     return splits;
 }
 
-void insertNewLeftHandTrack(std::multimap<int, MTrack>& tracks,
-                            std::multimap<int, MTrack>::iterator& it,
-                            const std::multimap<ReducedFraction, MidiChord>& leftHandChords)
-{
+void insertNewLeftHandTrack(std::multimap<int, MTrack> &tracks, std::multimap<int, MTrack>::iterator &it,
+                            const std::multimap<ReducedFraction, MidiChord> &leftHandChords) {
     auto leftHandTrack = it->second;
     leftHandTrack.chords = leftHandChords;
-    it = tracks.insert({ it->first, leftHandTrack });
+    it = tracks.insert({it->first, leftHandTrack});
 }
 
 // maybe todo later: if range of right-hand chords > OCTAVE
 // => assign all bottom right-hand chords to another, third track
 
-void splitStaff(std::multimap<int, MTrack>& tracks, std::multimap<int, MTrack>::iterator& it)
-{
-    auto& chords = it->second.chords;
+void splitStaff(std::multimap<int, MTrack> &tracks, std::multimap<int, MTrack>::iterator &it) {
+    auto &chords = it->second.chords;
     if (chords.empty()) {
         return;
     }
@@ -420,22 +374,19 @@ void splitStaff(std::multimap<int, MTrack>& tracks, std::multimap<int, MTrack>::
     }
 }
 
-void addNewLeftHandChord(std::multimap<ReducedFraction, MidiChord>& leftHandChords,
-                         const std::vector<MidiNote>& leftHandNotes,
-                         const std::multimap<ReducedFraction, MidiChord>::iterator& it)
-{
+void addNewLeftHandChord(std::multimap<ReducedFraction, MidiChord> &leftHandChords, const std::vector<MidiNote> &leftHandNotes,
+                         const std::multimap<ReducedFraction, MidiChord>::iterator &it) {
     MidiChord leftHandChord = it->second;
     leftHandChord.notes = leftHandNotes;
-    leftHandChords.insert({ it->first, leftHandChord });
+    leftHandChords.insert({it->first, leftHandChord});
 }
 
-void splitIntoLeftRightHands(std::multimap<int, MTrack>& tracks)
-{
+void splitIntoLeftRightHands(std::multimap<int, MTrack> &tracks) {
     for (auto it = tracks.begin(); it != tracks.end(); ++it) {
         if (it->second.mtrack->drumTrack() || it->second.chords.empty()) {
             continue;
         }
-        const auto& opers = midiImportOperations.data()->trackOpers;
+        const auto &opers = midiImportOperations.data()->trackOpers;
         // iterator 'it' will change after track split to ++it
         // C++11 guarantees that newly inserted item with equal key will go after:
         //    "The relative ordering of elements with equivalent keys is preserved,
@@ -446,5 +397,4 @@ void splitIntoLeftRightHands(std::multimap<int, MTrack>& tracks)
         }
     }
 }
-} // namespace LRHand
-} // namespace mu::iex::midi
+}} // namespace mu::iex::midi::LRHand

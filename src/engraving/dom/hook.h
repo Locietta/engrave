@@ -30,22 +30,25 @@
 namespace mu::engraving {
 class Chord;
 
-class Hook final : public Symbol
-{
+class Hook final : public Symbol {
     OBJECT_ALLOCATOR(engraving, Hook)
     DECLARE_CLASSOF(ElementType::HOOK)
 
 public:
     Hook(DummyParentOr<Chord> parent);
 
-    Hook* clone() const override { return new Hook(*this); }
+    Hook *clone() const override { return new Hook(*this); }
+
     double mag() const override { return layoutParent()->mag(); }
-    EngravingItem* elementBase() const override;
+
+    EngravingItem *elementBase() const override;
 
     void setHookType(int v);
+
     int hookType() const { return m_hookType; }
 
-    Chord* chord() const { return toChord(ownershipParent()); }
+    Chord *chord() const { return toChord(ownershipParent()); }
+
     PointF smuflAnchor() const;
 
     //! @p index: the number of flags (positive: upwards, negative: downwards)

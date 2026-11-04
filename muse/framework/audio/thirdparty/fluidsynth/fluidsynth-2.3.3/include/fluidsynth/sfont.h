@@ -77,13 +77,12 @@ extern "C" {
 /**
  * Some notification enums for presets and samples.
  */
-enum
-{
-    FLUID_PRESET_SELECTED,                /**< Preset selected notify */
-    FLUID_PRESET_UNSELECTED,              /**< Preset unselected notify */
-    FLUID_SAMPLE_DONE,                    /**< Sample no longer needed notify */
-    FLUID_PRESET_PIN,                     /**< Request to pin preset samples to cache */
-    FLUID_PRESET_UNPIN                    /**< Request to unpin preset samples from cache */
+enum {
+    FLUID_PRESET_SELECTED,   /**< Preset selected notify */
+    FLUID_PRESET_UNSELECTED, /**< Preset unselected notify */
+    FLUID_SAMPLE_DONE,       /**< Sample no longer needed notify */
+    FLUID_PRESET_PIN,        /**< Request to pin preset samples to cache */
+    FLUID_PRESET_UNPIN       /**< Request to unpin preset samples from cache */
 };
 
 /**
@@ -92,16 +91,15 @@ enum
  * This enum corresponds to the \c SFSampleLink enum in the SoundFont spec.
  * One \c flag may be bit-wise OR-ed with one \c value.
  */
-enum fluid_sample_type
-{
-    FLUID_SAMPLETYPE_MONO = 0x1, /**< Value used for mono samples */
-    FLUID_SAMPLETYPE_RIGHT = 0x2, /**< Value used for right samples of a stereo pair */
-    FLUID_SAMPLETYPE_LEFT = 0x4, /**< Value used for left samples of a stereo pair */
+enum fluid_sample_type {
+    FLUID_SAMPLETYPE_MONO = 0x1,   /**< Value used for mono samples */
+    FLUID_SAMPLETYPE_RIGHT = 0x2,  /**< Value used for right samples of a stereo pair */
+    FLUID_SAMPLETYPE_LEFT = 0x4,   /**< Value used for left samples of a stereo pair */
     FLUID_SAMPLETYPE_LINKED = 0x8, /**< Value used for linked sample, which is currently not supported */
-    FLUID_SAMPLETYPE_OGG_VORBIS = 0x10, /**< Flag used for Ogg Vorbis compressed samples (non-standard compliant extension) as found in the program "sftools" developed by Werner Schweer from MuseScore @since 1.1.7 */
+    FLUID_SAMPLETYPE_OGG_VORBIS =
+        0x10, /**< Flag used for Ogg Vorbis compressed samples (non-standard compliant extension) as found in the program "sftools" developed by Werner Schweer from MuseScore @since 1.1.7 */
     FLUID_SAMPLETYPE_ROM = 0x8000 /**< Flag that indicates ROM samples, causing the sample to be ignored */
 };
-
 
 /**
  * Method to load an instrument file (does not actually need to be a real file name,
@@ -126,7 +124,6 @@ typedef fluid_sfont_t *(*fluid_sfloader_load_t)(fluid_sfloader_t *loader, const 
  */
 typedef void (*fluid_sfloader_free_t)(fluid_sfloader_t *loader);
 
-
 /** @startlifecycle{SoundFont Loader} */
 FLUIDSYNTH_API fluid_sfloader_t *new_fluid_sfloader(fluid_sfloader_load_t load, fluid_sfloader_free_t free);
 FLUIDSYNTH_API void delete_fluid_sfloader(fluid_sfloader_t *loader);
@@ -141,14 +138,14 @@ FLUIDSYNTH_API fluid_sfloader_t *new_fluid_defsfloader(fluid_settings_t *setting
  *
  * \c filename matches the string provided during the fluid_synth_sfload() call.
  */
-typedef void *(* fluid_sfloader_callback_open_t)(const char *filename);
+typedef void *(*fluid_sfloader_callback_open_t)(const char *filename);
 
 /**
  * Reads \c count bytes to the specified buffer \c buf.
  *
  * @return returns #FLUID_OK if exactly \c count bytes were successfully read, else returns #FLUID_FAILED and leaves \a buf unmodified.
  */
-typedef int (* fluid_sfloader_callback_read_t)(void *buf, fluid_long_long_t count, void *handle);
+typedef int (*fluid_sfloader_callback_read_t)(void *buf, fluid_long_long_t count, void *handle);
 
 /**
  * Same purpose and behaviour as fseek.
@@ -156,30 +153,24 @@ typedef int (* fluid_sfloader_callback_read_t)(void *buf, fluid_long_long_t coun
  * @param origin either \c SEEK_SET, \c SEEK_CUR or \c SEEK_END
  * @return returns #FLUID_OK if the seek was successfully performed while not seeking beyond a buffer or file, #FLUID_FAILED otherwise
  */
-typedef int (* fluid_sfloader_callback_seek_t)(void *handle, fluid_long_long_t offset, int origin);
+typedef int (*fluid_sfloader_callback_seek_t)(void *handle, fluid_long_long_t offset, int origin);
 
 /**
  * Closes the handle returned by #fluid_sfloader_callback_open_t and frees used resources.
  *
  * @return returns #FLUID_OK on success, #FLUID_FAILED on error
  */
-typedef int (* fluid_sfloader_callback_close_t)(void *handle);
+typedef int (*fluid_sfloader_callback_close_t)(void *handle);
 
 /** @return returns current file offset or #FLUID_FAILED on error */
-typedef fluid_long_long_t (* fluid_sfloader_callback_tell_t)(void *handle);
+typedef fluid_long_long_t (*fluid_sfloader_callback_tell_t)(void *handle);
 
-
-FLUIDSYNTH_API int fluid_sfloader_set_callbacks(fluid_sfloader_t *loader,
-        fluid_sfloader_callback_open_t open,
-        fluid_sfloader_callback_read_t read,
-        fluid_sfloader_callback_seek_t seek,
-        fluid_sfloader_callback_tell_t tell,
-        fluid_sfloader_callback_close_t close);
+FLUIDSYNTH_API int fluid_sfloader_set_callbacks(fluid_sfloader_t *loader, fluid_sfloader_callback_open_t open,
+                                                fluid_sfloader_callback_read_t read, fluid_sfloader_callback_seek_t seek,
+                                                fluid_sfloader_callback_tell_t tell, fluid_sfloader_callback_close_t close);
 
 FLUIDSYNTH_API int fluid_sfloader_set_data(fluid_sfloader_t *loader, void *data);
 FLUIDSYNTH_API void *fluid_sfloader_get_data(fluid_sfloader_t *loader);
-
-
 
 /**
  * Method to return the name of a virtual SoundFont.
@@ -234,13 +225,10 @@ typedef fluid_preset_t *(*fluid_sfont_iteration_next_t)(fluid_sfont_t *sfont);
  */
 typedef int (*fluid_sfont_free_t)(fluid_sfont_t *sfont);
 
-
 /** @startlifecycle{SoundFont} */
-FLUIDSYNTH_API fluid_sfont_t *new_fluid_sfont(fluid_sfont_get_name_t get_name,
-        fluid_sfont_get_preset_t get_preset,
-        fluid_sfont_iteration_start_t iter_start,
-        fluid_sfont_iteration_next_t iter_next,
-        fluid_sfont_free_t free);
+FLUIDSYNTH_API fluid_sfont_t *new_fluid_sfont(fluid_sfont_get_name_t get_name, fluid_sfont_get_preset_t get_preset,
+                                              fluid_sfont_iteration_start_t iter_start, fluid_sfont_iteration_next_t iter_next,
+                                              fluid_sfont_free_t free);
 
 FLUIDSYNTH_API int delete_fluid_sfont(fluid_sfont_t *sfont);
 /** @endlifecycle */
@@ -318,12 +306,9 @@ typedef int (*fluid_preset_noteon_t)(fluid_preset_t *preset, fluid_synth_t *synt
 typedef void (*fluid_preset_free_t)(fluid_preset_t *preset);
 
 /** @startlifecycle{Preset} */
-FLUIDSYNTH_API fluid_preset_t *new_fluid_preset(fluid_sfont_t *parent_sfont,
-        fluid_preset_get_name_t get_name,
-        fluid_preset_get_banknum_t get_bank,
-        fluid_preset_get_num_t get_num,
-        fluid_preset_noteon_t noteon,
-        fluid_preset_free_t free);
+FLUIDSYNTH_API fluid_preset_t *new_fluid_preset(fluid_sfont_t *parent_sfont, fluid_preset_get_name_t get_name,
+                                                fluid_preset_get_banknum_t get_bank, fluid_preset_get_num_t get_num,
+                                                fluid_preset_noteon_t noteon, fluid_preset_free_t free);
 FLUIDSYNTH_API void delete_fluid_preset(fluid_preset_t *preset);
 /** @endlifecycle */
 
@@ -343,12 +328,8 @@ FLUIDSYNTH_API void delete_fluid_sample(fluid_sample_t *sample);
 FLUIDSYNTH_API size_t fluid_sample_sizeof(void);
 
 FLUIDSYNTH_API int fluid_sample_set_name(fluid_sample_t *sample, const char *name);
-FLUIDSYNTH_API int fluid_sample_set_sound_data(fluid_sample_t *sample,
-        short *data,
-        char *data24,
-        unsigned int nbframes,
-        unsigned int sample_rate,
-        short copy_data);
+FLUIDSYNTH_API int fluid_sample_set_sound_data(fluid_sample_t *sample, short *data, char *data24, unsigned int nbframes,
+                                               unsigned int sample_rate, short copy_data);
 
 FLUIDSYNTH_API int fluid_sample_set_loop(fluid_sample_t *sample, unsigned int loop_start, unsigned int loop_end);
 FLUIDSYNTH_API int fluid_sample_set_pitch(fluid_sample_t *sample, int root_key, int fine_tune);

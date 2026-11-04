@@ -21,9 +21,7 @@
  */
 #include "soundfontrepository.h"
 
-
 #include "fluidsynth/fluidsoundfontparser.h"
-
 
 #include "log.h"
 
@@ -31,9 +29,8 @@ using namespace muse;
 using namespace muse::audio;
 using namespace muse::audio::synth;
 
-bool SoundFontRepository::isSoundFontLoaded(const std::string& name) const
-{
-    for (const auto& p : m_soundFonts) {
+bool SoundFontRepository::isSoundFontLoaded(const std::string &name) const {
+    for (const auto &p : m_soundFonts) {
         if (p.second.name == name) {
             return true;
         }
@@ -41,30 +38,21 @@ bool SoundFontRepository::isSoundFontLoaded(const std::string& name) const
     return false;
 }
 
-bool SoundFontRepository::isLoadingSoundFonts() const
-{
-    return m_loadingSoundFontCount > 0;
-}
+bool SoundFontRepository::isLoadingSoundFonts() const { return m_loadingSoundFontCount > 0; }
 
-const SoundFontsMap& SoundFontRepository::soundFonts() const
-{
-    return m_soundFonts;
-}
+const SoundFontsMap &SoundFontRepository::soundFonts() const { return m_soundFonts; }
 
-void SoundFontRepository::setOnSoundFontsChanged(std::function<void()> onSoundFontsChanged)
-{
+void SoundFontRepository::setOnSoundFontsChanged(std::function<void()> onSoundFontsChanged) {
     m_onSoundFontsChanged = std::move(onSoundFontsChanged);
 }
 
-void SoundFontRepository::notifySoundFontsChanged()
-{
+void SoundFontRepository::notifySoundFontsChanged() {
     if (m_onSoundFontsChanged) {
         m_onSoundFontsChanged();
     }
 }
 
-void SoundFontRepository::addSoundFont(const SoundFontUri& uri)
-{
+void SoundFontRepository::addSoundFont(const SoundFontUri &uri) {
 
     m_loadingSoundFontCount++;
     doAddSoundFont(uri, nullptr, [this]() {
@@ -73,28 +61,22 @@ void SoundFontRepository::addSoundFont(const SoundFontUri& uri)
     });
 }
 
-static io::path_t fileNameFromUri(const SoundFontUri& uri)
-{
+static io::path_t fileNameFromUri(const SoundFontUri &uri) {
     io::path_t path = uri.toLocalFile();
     return io::filename(path);
 }
 
-void SoundFontRepository::addSoundFontData(const SoundFontUri& uri, const ByteArray& data)
-{
+void SoundFontRepository::addSoundFontData(const SoundFontUri &uri, const ByteArray &data) {
 
     LOGI() << "try add sound font uri: " << uri << ", size: " << data.size();
 
     const io::path_t fileName = fileNameFromUri(uri);
 
     {
-        FILE* file = fopen(fileName.c_str(), "wb");
-        IF_ASSERT_FAILED(file) {
-            return;
-        }
+        FILE *file = fopen(fileName.c_str(), "wb");
+        IF_ASSERT_FAILED(file) { return; }
         size_t wsize = fwrite(data.constChar(), sizeof(char), data.size(), file);
-        IF_ASSERT_FAILED(wsize == data.size()) {
-            return;
-        }
+        IF_ASSERT_FAILED(wsize == data.size()) { return; }
         fclose(file);
     }
 
@@ -110,8 +92,7 @@ void SoundFontRepository::addSoundFontData(const SoundFontUri& uri, const ByteAr
     notifySoundFontsChanged();
 }
 
-void SoundFontRepository::doAddSoundFont(const SoundFontUri& uri, const SoundFontsMap* cache, std::function<void()> onFinished)
-{
+void SoundFontRepository::doAddSoundFont(const SoundFontUri &uri, const SoundFontsMap *cache, std::function<void()> onFinished) {
     if (cache) {
         auto it = cache->find(uri);
         if (it != cache->cend()) {
@@ -123,7 +104,7 @@ void SoundFontRepository::doAddSoundFont(const SoundFontUri& uri, const SoundFon
         }
     }
 
-    auto parseAndAdd = [this, onFinished](const SoundFontUri& uri, const SoundFontPath& path) {
+    auto parseAndAdd = [this, onFinished](const SoundFontUri &uri, const SoundFontPath &path) {
         RetVal<SoundFontMeta> meta = FluidSoundFontParser::parseSoundFont(path);
 
         if (meta.ret) {
@@ -149,16 +130,15 @@ void SoundFontRepository::doAddSoundFont(const SoundFontUri& uri, const SoundFon
     }
 }
 
-void SoundFontRepository::loadSoundFonts(const std::vector<SoundFontUri>& uris)
-{
+void SoundFontRepository::loadSoundFonts(const std::vector<SoundFontUri> &uris) {
 
-    SoundFontsMap* cache = new SoundFontsMap();
+    SoundFontsMap *cache = new SoundFontsMap();
     m_soundFonts.swap(*cache);
 
     m_loadingSoundFontCount = m_loadingSoundFontCount + uris.size();
     const size_t total = m_loadingSoundFontCount;
 
-    for (const SoundFontUri& uri : uris) {
+    for (const SoundFontUri &uri : uris) {
         LOGI() << "try add sound font: " << uri.toString();
         doAddSoundFont(uri, cache, [this, total, cache]() {
             --m_loadingSoundFontCount;

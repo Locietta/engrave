@@ -27,25 +27,24 @@
 #include "path.h"
 
 namespace muse::io {
-class FileStream : public IODevice
-{
+class FileStream : public IODevice {
 public:
     FileStream() = default;
-    explicit FileStream(const path_t& filePath);
+    explicit FileStream(const path_t &filePath);
     ~FileStream() override;
 
-    FileStream(const FileStream&) = delete;
-    FileStream& operator=(const FileStream&) = delete;
+    FileStream(const FileStream &) = delete;
+    FileStream &operator=(const FileStream &) = delete;
 
-    const path_t& filePath() const;
+    const path_t &filePath() const;
 
 protected:
     bool doOpen(OpenMode m) override;
     void doClose() override;
     size_t dataSize() const override;
-    const uint8_t* rawData() const override;
+    const uint8_t *rawData() const override;
     bool resizeData(size_t size) override;
-    size_t writeData(const uint8_t* data, size_t len) override;
+    size_t writeData(const uint8_t *data, size_t len) override;
 
 private:
     path_t m_filePath;
@@ -54,4 +53,4 @@ private:
     StreamId m_streamId = INVALID_STREAM_ID;
     size_t m_expectedPos = 0;
 };
-}
+} // namespace muse::io

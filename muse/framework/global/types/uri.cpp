@@ -34,18 +34,16 @@ static const std::string URI_VAL_FALSE("false");
 
 // muse://module/target/name
 
-static std::string extractPath(const std::string& str)
-{
+static std::string extractPath(const std::string &str) {
     auto schemePos = str.find(':');
     auto paramsPos = str.find('?');
-    auto pathPos= (schemePos != std::string::npos) ? (schemePos + 3) : 0;
+    auto pathPos = (schemePos != std::string::npos) ? (schemePos + 3) : 0;
     size_t pathN = (paramsPos != std::string::npos) ? (paramsPos - pathPos) : std::string::npos;
 
     return str.substr(pathPos, pathN);
 }
 
-Uri::Uri(const std::string& str)
-{
+Uri::Uri(const std::string &str) {
     auto schemePos = str.find(':');
     if (schemePos != std::string::npos) {
         m_scheme = str.substr(0, schemePos);
@@ -54,19 +52,11 @@ Uri::Uri(const std::string& str)
     m_path = extractPath(str);
 }
 
-Uri::Uri(const String& str)
-    : Uri(str.toStdString())
-{
-}
+Uri::Uri(const String &str) : Uri(str.toStdString()) {}
 
-Uri::Uri(const std::string& scheme, const std::string& path)
-    : m_scheme(scheme)
-{
-    m_path = extractPath(path);
-}
+Uri::Uri(const std::string &scheme, const std::string &path) : m_scheme(scheme) { m_path = extractPath(path); }
 
-bool Uri::isValid() const
-{
+bool Uri::isValid() const {
     if (m_scheme.empty()) {
         return false;
     }
@@ -78,28 +68,15 @@ bool Uri::isValid() const
     return true;
 }
 
-const Uri::Scheme& Uri::scheme() const
-{
-    return m_scheme;
-}
+const Uri::Scheme &Uri::scheme() const { return m_scheme; }
 
-void Uri::setScheme(const Scheme& scheme)
-{
-    m_scheme = scheme;
-}
+void Uri::setScheme(const Scheme &scheme) { m_scheme = scheme; }
 
-const std::string& Uri::path() const
-{
-    return m_path;
-}
+const std::string &Uri::path() const { return m_path; }
 
-void Uri::setPath(const std::string& path)
-{
-    m_path = path;
-}
+void Uri::setPath(const std::string &path) { m_path = path; }
 
-void Uri::addPath(const std::string& path)
-{
+void Uri::addPath(const std::string &path) {
     if (path.empty()) {
         return;
     }
@@ -120,31 +97,24 @@ void Uri::addPath(const std::string& path)
     }
 }
 
-std::vector<std::string> Uri::pathSegments() const
-{
+std::vector<std::string> Uri::pathSegments() const {
     std::vector<std::string> segments;
     strings::split(m_path, segments, "/");
     return segments;
 }
 
-std::string Uri::toString() const
-{
-    return m_scheme + "://" + m_path;
-}
+std::string Uri::toString() const { return m_scheme + "://" + m_path; }
 
-static bool shouldEncode(char c)
-{
-    static const std::string safe_chars
-        ="abcdefghijklmnopqrstuvwxyz"
-         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-         "0123456789"
-         "-_.~/";
+static bool shouldEncode(char c) {
+    static const std::string safe_chars = "abcdefghijklmnopqrstuvwxyz"
+                                          "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                          "0123456789"
+                                          "-_.~/";
 
     return safe_chars.find(c) == std::string::npos;
 }
 
-Uri Uri::fromLocalFile(const io::path_t& path)
-{
+Uri Uri::fromLocalFile(const io::path_t &path) {
     std::string absolutePath = io::absoluteFilePath(path).toStdString();
 
     std::replace(absolutePath.begin(), absolutePath.end(), '\\', '/');
@@ -155,8 +125,7 @@ Uri Uri::fromLocalFile(const io::path_t& path)
 
     for (char c : absolutePath) {
         if (shouldEncode(c)) {
-            encoded << '%' << std::setw(2)
-                    << static_cast<int>(static_cast<unsigned char>(c));
+            encoded << '%' << std::setw(2) << static_cast<int>(static_cast<unsigned char>(c));
         } else {
             encoded << c;
         }
@@ -165,8 +134,7 @@ Uri Uri::fromLocalFile(const io::path_t& path)
     return Uri("file", encoded.str());
 }
 
-io::path_t Uri::toLocalFile() const
-{
+io::path_t Uri::toLocalFile() const {
     std::string decoded;
     for (size_t i = 0; i < m_path.size(); ++i) {
         if (m_path[i] == '%' && i + 2 < m_path.size()) {
@@ -184,24 +152,13 @@ io::path_t Uri::toLocalFile() const
 
 // muse://module/target/name?param1=value1&paramn=valuen
 
-UriQuery::UriQuery(const std::string& str)
-    : m_uri(str)
-{
-    parseParams(str, m_params);
-}
+UriQuery::UriQuery(const std::string &str) : m_uri(str) { parseParams(str, m_params); }
 
-UriQuery::UriQuery(const String& str)
-    : UriQuery(str.toStdString())
-{
-}
+UriQuery::UriQuery(const String &str) : UriQuery(str.toStdString()) {}
 
-UriQuery::UriQuery(const Uri& uri)
-    : m_uri(uri)
-{
-}
+UriQuery::UriQuery(const Uri &uri) : m_uri(uri) {}
 
-void UriQuery::parseParams(const std::string& uri, Params& out) const
-{
+void UriQuery::parseParams(const std::string &uri, Params &out) const {
     auto paramsPos = uri.find('?');
     if (paramsPos == std::string::npos) {
         return;
@@ -216,7 +173,7 @@ void UriQuery::parseParams(const std::string& uri, Params& out) const
     extractQuotedStrings(paramsStr, quotesStrings);
     for (size_t i = 0; i < quotesStrings.size(); ++i) {
         std::string key = "s" + std::to_string(i);
-        const std::string& val = quotesStrings.at(i);
+        const std::string &val = quotesStrings.at(i);
 
         strings::replace(paramsStr, val, key);
         placeholders[key] = val;
@@ -225,7 +182,7 @@ void UriQuery::parseParams(const std::string& uri, Params& out) const
     std::vector<std::string> paramsPairs;
     strings::split(paramsStr, paramsPairs, "&");
 
-    for (const std::string& pair : paramsPairs) {
+    for (const std::string &pair : paramsPairs) {
         size_t eqPos = pair.find('=');
         if (eqPos == std::string::npos) {
             LOGE() << "Invalid param: " << pair << ", in uri: " << uri;
@@ -257,8 +214,7 @@ void UriQuery::parseParams(const std::string& uri, Params& out) const
     }
 }
 
-void UriQuery::extractQuotedStrings(const std::string& str, std::vector<std::string>& out) const
-{
+void UriQuery::extractQuotedStrings(const std::string &str, std::vector<std::string> &out) const {
     //! NOTE It is necessary to get substrings limited to single quotes from a string
     //! Example - "path='path/to/file.jpg'"
 
@@ -267,7 +223,7 @@ void UriQuery::extractQuotedStrings(const std::string& str, std::vector<std::str
         if (str.at(i) == u'\'') {
             if (bi == -1) { // begin quotes string
                 bi = int(i);
-            } else {  // end quotes string
+            } else { // end quotes string
                 out.push_back(str.substr(bi, i - bi + 1));
                 bi = -1;
             }
@@ -275,8 +231,7 @@ void UriQuery::extractQuotedStrings(const std::string& str, std::vector<std::str
     }
 }
 
-std::string UriQuery::toString() const
-{
+std::string UriQuery::toString() const {
     std::string str = m_uri.toString();
     if (!m_params.empty()) {
         str += "?";
@@ -289,33 +244,17 @@ std::string UriQuery::toString() const
     return str;
 }
 
-bool UriQuery::isValid() const
-{
-    return m_uri.isValid();
-}
+bool UriQuery::isValid() const { return m_uri.isValid(); }
 
-const Uri& UriQuery::uri() const
-{
-    return m_uri;
-}
+const Uri &UriQuery::uri() const { return m_uri; }
 
-void UriQuery::setScheme(const Uri::Scheme& scheme)
-{
-    m_uri.setScheme(scheme);
-}
+void UriQuery::setScheme(const Uri::Scheme &scheme) { m_uri.setScheme(scheme); }
 
-const UriQuery::Params& UriQuery::params() const
-{
-    return m_params;
-}
+const UriQuery::Params &UriQuery::params() const { return m_params; }
 
-void UriQuery::setParams(const Params& params)
-{
-    m_params = params;
-}
+void UriQuery::setParams(const Params &params) { m_params = params; }
 
-Val UriQuery::param(const std::string& key, const Val& def) const
-{
+Val UriQuery::param(const std::string &key, const Val &def) const {
     auto it = m_params.find(key);
     if (it == m_params.end()) {
         return def;
@@ -323,55 +262,38 @@ Val UriQuery::param(const std::string& key, const Val& def) const
     return it->second;
 }
 
-void UriQuery::addParam(const std::string& key, const Val& val)
-{
-    m_params[key] = val;
-}
+void UriQuery::addParam(const std::string &key, const Val &val) { m_params[key] = val; }
 
-UriQuery& UriQuery::set(const ValMap& vals)
-{
+UriQuery &UriQuery::set(const ValMap &vals) {
     m_params = vals;
     return *this;
 }
 
-UriQuery& UriQuery::set(const std::string& key, const Val& val)
-{
+UriQuery &UriQuery::set(const std::string &key, const Val &val) {
     m_params[key] = val;
     return *this;
 }
 
-UriQuery UriQuery::set(const ValMap& vals) const
-{
+UriQuery UriQuery::set(const ValMap &vals) const {
     UriQuery copy(*this);
     copy.set(vals);
     return copy;
 }
 
-UriQuery UriQuery::set(const std::string& key, const Val& val) const
-{
+UriQuery UriQuery::set(const std::string &key, const Val &val) const {
     UriQuery copy(*this);
     copy.set(key, val);
     return copy;
 }
 
-UriQuery UriQuery::addingParam(const std::string& key, const Val& val) const
-{
+UriQuery UriQuery::addingParam(const std::string &key, const Val &val) const {
     UriQuery copy(*this);
     copy.addParam(key, val);
     return copy;
 }
 
-bool UriQuery::contains(const std::string& key) const
-{
-    return m_params.count(key) > 0;
-}
+bool UriQuery::contains(const std::string &key) const { return m_params.count(key) > 0; }
 
-bool UriQuery::operator==(const UriQuery& query) const
-{
-    return m_uri == query.m_uri && m_params == query.m_params;
-}
+bool UriQuery::operator==(const UriQuery &query) const { return m_uri == query.m_uri && m_params == query.m_params; }
 
-bool UriQuery::operator!=(const UriQuery& query) const
-{
-    return !(*this == query);
-}
+bool UriQuery::operator!=(const UriQuery &query) const { return !(*this == query); }

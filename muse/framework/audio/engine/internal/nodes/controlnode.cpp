@@ -28,45 +28,27 @@ using namespace muse;
 using namespace muse::audio;
 using namespace muse::audio::engine;
 
-void ControlNode::setVolume(float value)
-{
+void ControlNode::setVolume(float value) {
     m_volume = value;
     updateChannelGains();
 }
 
-float ControlNode::volume() const
-{
-    return m_volume;
-}
+float ControlNode::volume() const { return m_volume; }
 
-void ControlNode::setPan(float pan)
-{
+void ControlNode::setPan(float pan) {
     m_pan = pan;
     updateChannelGains();
 }
 
-float ControlNode::pan() const
-{
-    return m_pan;
-}
+float ControlNode::pan() const { return m_pan; }
 
-void ControlNode::setMuted(bool muted)
-{
-    setEnabled(!muted);
-}
+void ControlNode::setMuted(bool muted) { setEnabled(!muted); }
 
-bool ControlNode::muted() const
-{
-    return !enabled();
-}
+bool ControlNode::muted() const { return !enabled(); }
 
-void ControlNode::onOutputSpecChanged(const OutputSpec&)
-{
-    updateChannelGains();
-}
+void ControlNode::onOutputSpecChanged(const OutputSpec &) { updateChannelGains(); }
 
-void ControlNode::updateChannelGains()
-{
+void ControlNode::updateChannelGains() {
     const audioch_t channelsCount = m_outputSpec.audioChannelCount;
     m_channelGains.resize(channelsCount);
     for (audioch_t audioChNum = 0; audioChNum < channelsCount; ++audioChNum) {
@@ -74,8 +56,7 @@ void ControlNode::updateChannelGains()
     }
 }
 
-void ControlNode::doSelfProcess(float* buffer, samples_t samplesPerChannel)
-{
+void ControlNode::doSelfProcess(float *buffer, samples_t samplesPerChannel) {
     const audioch_t channelsCount = m_outputSpec.audioChannelCount;
 
     for (size_t s = 0; s < samplesPerChannel; ++s) {

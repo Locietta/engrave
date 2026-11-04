@@ -25,14 +25,10 @@
 
 extern "C" {
 // Owner-thread cooperative hook. Never throws through the C sample loader.
-int engrave_fluid_cancelled()
-{
-    return muse::audio::OfflineCancellation::requested() ? 1 : 0;
-}
+int engrave_fluid_cancelled() { return muse::audio::OfflineCancellation::requested() ? 1 : 0; }
 
 //! NOTE Used in fluid
-int vorbis_decode_memory(const unsigned char* mem, unsigned int len, short** output, unsigned int* channels, unsigned int* sample_rate)
-{
+int vorbis_decode_memory(const unsigned char *mem, unsigned int len, short **output, unsigned int *channels, unsigned int *sample_rate) {
     if (!muse::audio::fluid::FluidVorbisDecoder::decoder) {
         return -1;
     }
@@ -41,5 +37,5 @@ int vorbis_decode_memory(const unsigned char* mem, unsigned int len, short** out
 }
 
 namespace muse::audio::fluid {
-IVorbisDecoder* FluidVorbisDecoder::decoder = nullptr;
-}
+IVorbisDecoder *FluidVorbisDecoder::decoder = nullptr;
+} // namespace muse::audio::fluid

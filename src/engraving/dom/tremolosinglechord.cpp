@@ -44,19 +44,14 @@ using namespace mu::engraving;
 
 namespace mu::engraving {
 TremoloSingleChord::TremoloSingleChord(DummyParentOr<Chord> parent)
-    : EngravingItem(ElementType::TREMOLO_SINGLECHORD, parent, ElementFlag::MOVABLE | ElementFlag::ON_STAFF)
-{
-}
+    : EngravingItem(ElementType::TREMOLO_SINGLECHORD, parent, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {}
 
-TremoloSingleChord::TremoloSingleChord(const TremoloSingleChord& t)
-    : EngravingItem(t)
-{
+TremoloSingleChord::TremoloSingleChord(const TremoloSingleChord &t) : EngravingItem(t) {
     setTremoloType(t.tremoloType());
     m_durationType = t.m_durationType;
 }
 
-TremoloSingleChord::~TremoloSingleChord()
-{
+TremoloSingleChord::~TremoloSingleChord() {
     //
     // delete all references from chords
     //
@@ -65,13 +60,9 @@ TremoloSingleChord::~TremoloSingleChord()
     }
 }
 
-double TremoloSingleChord::chordMag() const
-{
-    return chord() ? chord()->intrinsicMag() : 1.0;
-}
+double TremoloSingleChord::chordMag() const { return chord() ? chord()->intrinsicMag() : 1.0; }
 
-double TremoloSingleChord::minHeight() const
-{
+double TremoloSingleChord::minHeight() const {
     const double sw = style().styleS(Sid::tremoloLineWidth).val() * chordMag();
     const double td = style().styleS(Sid::tremoloDistance).val() * chordMag();
     return (lines() - 1) * td + sw;
@@ -81,33 +72,20 @@ double TremoloSingleChord::minHeight() const
 //   setTremoloType
 //---------------------------------------------------------
 
-void TremoloSingleChord::setTremoloType(TremoloType t)
-{
+void TremoloSingleChord::setTremoloType(TremoloType t) {
     m_tremoloType = t;
     switch (tremoloType()) {
-    case TremoloType::R16:
-    case TremoloType::C16:
-        m_lines = 2;
-        break;
-    case TremoloType::R32:
-    case TremoloType::C32:
-        m_lines = 3;
-        break;
-    case TremoloType::R64:
-    case TremoloType::C64:
-        m_lines = 4;
-        break;
-    case TremoloType::R128:
-    case TremoloType::C128:
-        m_lines = 5;
-        break;
-    case TremoloType::R256:
-    case TremoloType::C256:
-        m_lines = 6;
-        break;
-    default:
-        m_lines = 1;
-        break;
+        case TremoloType::R16:
+        case TremoloType::C16: m_lines = 2; break;
+        case TremoloType::R32:
+        case TremoloType::C32: m_lines = 3; break;
+        case TremoloType::R64:
+        case TremoloType::C64: m_lines = 4; break;
+        case TremoloType::R128:
+        case TremoloType::C128: m_lines = 5; break;
+        case TremoloType::R256:
+        case TremoloType::C256: m_lines = 6; break;
+        default: m_lines = 1; break;
     }
 
     styleChanged();
@@ -117,8 +95,7 @@ void TremoloSingleChord::setTremoloType(TremoloType t)
 //   spatiumChanged
 //---------------------------------------------------------
 
-void TremoloSingleChord::spatiumChanged(double oldValue, double newValue)
-{
+void TremoloSingleChord::spatiumChanged(double oldValue, double newValue) {
     EngravingItem::spatiumChanged(oldValue, newValue);
     computeShape();
 }
@@ -128,8 +105,7 @@ void TremoloSingleChord::spatiumChanged(double oldValue, double newValue)
 //    the scale of a staff changed
 //---------------------------------------------------------
 
-void TremoloSingleChord::localSpatiumChanged(double oldValue, double newValue)
-{
+void TremoloSingleChord::localSpatiumChanged(double oldValue, double newValue) {
     EngravingItem::localSpatiumChanged(oldValue, newValue);
     computeShape();
 }
@@ -139,32 +115,27 @@ void TremoloSingleChord::localSpatiumChanged(double oldValue, double newValue)
 //    the scale of a staff changed
 //---------------------------------------------------------
 
-void TremoloSingleChord::styleChanged()
-{
+void TremoloSingleChord::styleChanged() {
     EngravingItem::styleChanged();
     computeShape();
 }
 
-staff_idx_t TremoloSingleChord::vStaffIdx() const
-{
-    return chord() ? chord()->vStaffIdx() : EngravingItem::vStaffIdx();
-}
+staff_idx_t TremoloSingleChord::vStaffIdx() const { return chord() ? chord()->vStaffIdx() : EngravingItem::vStaffIdx(); }
 
 //---------------------------------------------------------
 //   basePath
 //---------------------------------------------------------
 
-PainterPath TremoloSingleChord::basePath(double /*stretch*/) const
-{
+PainterPath TremoloSingleChord::basePath(double /*stretch*/) const {
     if (isBuzzRoll()) {
         return PainterPath();
     }
 
     const double sp = spatium() * chordMag();
 
-    double w2  = sp * style().styleS(Sid::tremoloWidth).val() * .5;
-    double lw  = sp * style().styleS(Sid::tremoloLineWidth).val();
-    double td  = sp * style().styleS(Sid::tremoloDistance).val();
+    double w2 = sp * style().styleS(Sid::tremoloWidth).val() * .5;
+    double lw = sp * style().styleS(Sid::tremoloLineWidth).val();
+    double td = sp * style().styleS(Sid::tremoloDistance).val();
 
     PainterPath ppath;
 
@@ -185,8 +156,7 @@ PainterPath TremoloSingleChord::basePath(double /*stretch*/) const
     return ppath;
 }
 
-void TremoloSingleChord::computeShape()
-{
+void TremoloSingleChord::computeShape() {
     if (isBuzzRoll()) {
         setbbox(symBbox(SymId::buzzRoll));
     } else {
@@ -195,13 +165,9 @@ void TremoloSingleChord::computeShape()
     }
 }
 
-TDuration TremoloSingleChord::durationType() const
-{
-    return m_durationType;
-}
+TDuration TremoloSingleChord::durationType() const { return m_durationType; }
 
-void TremoloSingleChord::setDurationType(TDuration d)
-{
+void TremoloSingleChord::setDurationType(TDuration d) {
     if (m_durationType == d) {
         return;
     }
@@ -214,22 +180,15 @@ void TremoloSingleChord::setDurationType(TDuration d)
 //   tremoloLen
 //---------------------------------------------------------
 
-Fraction TremoloSingleChord::tremoloLen() const
-{
+Fraction TremoloSingleChord::tremoloLen() const {
     Fraction f;
     switch (lines()) {
-    case 1: f.set(1, 8);
-        break;
-    case 2: f.set(1, 16);
-        break;
-    case 3: f.set(1, 32);
-        break;
-    case 4: f.set(1, 64);
-        break;
-    case 5: f.set(1, 128);
-        break;
-    case 6: f.set(1, 256);
-        break;
+        case 1: f.set(1, 8); break;
+        case 2: f.set(1, 16); break;
+        case 3: f.set(1, 32); break;
+        case 4: f.set(1, 64); break;
+        case 5: f.set(1, 128); break;
+        case 6: f.set(1, 256); break;
     }
     return f;
 }
@@ -238,24 +197,17 @@ Fraction TremoloSingleChord::tremoloLen() const
 //   subtypeName
 //---------------------------------------------------------
 
-TranslatableString TremoloSingleChord::subtypeUserName() const
-{
-    return TConv::userName(tremoloType());
-}
+TranslatableString TremoloSingleChord::subtypeUserName() const { return TConv::userName(tremoloType()); }
 
 //---------------------------------------------------------
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue TremoloSingleChord::getProperty(Pid propertyId) const
-{
+PropertyValue TremoloSingleChord::getProperty(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::TREMOLO_TYPE:
-        return int(m_tremoloType);
-    case Pid::PLAY:
-        return m_playTremolo;
-    default:
-        break;
+        case Pid::TREMOLO_TYPE: return int(m_tremoloType);
+        case Pid::PLAY: return m_playTremolo;
+        default: break;
     }
     return EngravingItem::getProperty(propertyId);
 }
@@ -264,17 +216,11 @@ PropertyValue TremoloSingleChord::getProperty(Pid propertyId) const
 //   setProperty
 //---------------------------------------------------------
 
-bool TremoloSingleChord::setProperty(Pid propertyId, const PropertyValue& val)
-{
+bool TremoloSingleChord::setProperty(Pid propertyId, const PropertyValue &val) {
     switch (propertyId) {
-    case Pid::TREMOLO_TYPE:
-        setTremoloType(TremoloType(val.toInt()));
-        break;
-    case Pid::PLAY:
-        setPlayTremolo(val.toBool());
-        break;
-    default:
-        return EngravingItem::setProperty(propertyId, val);
+        case Pid::TREMOLO_TYPE: setTremoloType(TremoloType(val.toInt())); break;
+        case Pid::PLAY: setPlayTremolo(val.toBool()); break;
+        default: return EngravingItem::setProperty(propertyId, val);
     }
     triggerLayout();
     return true;
@@ -284,13 +230,10 @@ bool TremoloSingleChord::setProperty(Pid propertyId, const PropertyValue& val)
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue TremoloSingleChord::propertyDefault(Pid propertyId) const
-{
+PropertyValue TremoloSingleChord::propertyDefault(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::PLAY:
-        return true;
-    default:
-        return EngravingItem::propertyDefault(propertyId);
+        case Pid::PLAY: return true;
+        default: return EngravingItem::propertyDefault(propertyId);
     }
 }
 
@@ -298,11 +241,10 @@ PropertyValue TremoloSingleChord::propertyDefault(Pid propertyId) const
 //   scanElements
 //---------------------------------------------------------
 
-void TremoloSingleChord::scanElements(std::function<void(EngravingItem*)> func)
-{
+void TremoloSingleChord::scanElements(std::function<void(EngravingItem *)> func) {
     if (chord() && chord()->tremoloChordType() == TremoloChordType::TremoloSecondChord) {
         return;
     }
     EngravingItem::scanElements(func);
 }
-}
+} // namespace mu::engraving

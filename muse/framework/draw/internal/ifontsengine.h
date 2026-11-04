@@ -29,35 +29,34 @@
 #include "types/fontstypes.h"
 
 namespace muse::draw {
-class IFontsEngine
-{
+class IFontsEngine {
 public:
     virtual ~IFontsEngine() = default;
 
-    virtual void setRenderCacheDirPath(const io::path_t& path, const std::string& revision = std::string()) = 0;
+    virtual void setRenderCacheDirPath(const io::path_t &path, const std::string &revision = std::string()) = 0;
     virtual void clearLoadedFaces() = 0;
 
-    virtual double lineSpacing(const Font& f) const = 0;
-    virtual double xHeight(const Font& f) const = 0;
-    virtual double height(const Font& f) const = 0;
-    virtual double capHeight(const Font& ff) const = 0;
-    virtual double ascent(const Font& f) const = 0;
-    virtual double descent(const Font& f) const = 0;
+    virtual double lineSpacing(const Font &f) const = 0;
+    virtual double xHeight(const Font &f) const = 0;
+    virtual double height(const Font &f) const = 0;
+    virtual double capHeight(const Font &ff) const = 0;
+    virtual double ascent(const Font &f) const = 0;
+    virtual double descent(const Font &f) const = 0;
 
-    virtual double underlinePos(const Font& f) const = 0;
-    virtual double lineWidth(const Font& f) const = 0;
-    virtual double strikeOutPos(const Font& f) const = 0;
+    virtual double underlinePos(const Font &f) const = 0;
+    virtual double lineWidth(const Font &f) const = 0;
+    virtual double strikeOutPos(const Font &f) const = 0;
 
-    virtual bool inFont(const Font& f, char32_t ucs4) const = 0;
+    virtual bool inFont(const Font &f, char32_t ucs4) const = 0;
 
-    virtual double horizontalAdvance(const Font& f, const char32_t& ch) const = 0;
-    virtual double horizontalAdvance(const Font& f, const std::u32string& text) const = 0;
+    virtual double horizontalAdvance(const Font &f, const char32_t &ch) const = 0;
+    virtual double horizontalAdvance(const Font &f, const std::u32string &text) const = 0;
 
-    virtual RectF boundingRect(const Font& f, const char32_t& ch) const = 0;
-    virtual RectF boundingRect(const Font& f, const std::u32string& text) const = 0;
-    virtual RectF tightBoundingRect(const Font& f, const std::u32string& text) const = 0;
+    virtual RectF boundingRect(const Font &f, const char32_t &ch) const = 0;
+    virtual RectF boundingRect(const Font &f, const std::u32string &text) const = 0;
+    virtual RectF tightBoundingRect(const Font &f, const std::u32string &text) const = 0;
 
     // Draw
-    virtual std::vector<GlyphImage> render(const Font& f, const std::u32string& text) const = 0;
+    virtual std::vector<GlyphImage> render(const Font &f, const std::u32string &text) const = 0;
 };
-}
+} // namespace muse::draw

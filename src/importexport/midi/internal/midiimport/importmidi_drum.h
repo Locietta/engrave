@@ -27,15 +27,15 @@
 
 namespace mu::engraving {
 class TimeSigMap;
-}
+} // namespace mu::engraving
 
 namespace mu::iex::midi {
 class MTrack;
 
 namespace MidiDrum {
-void splitDrumVoices(std::multimap<int, MTrack>& tracks);
-void splitDrumTracks(std::multimap<int, MTrack>& tracks);
-void setStaffBracketForDrums(std::vector<MTrack>& tracks);
+void splitDrumVoices(std::multimap<int, MTrack> &tracks);
+void splitDrumTracks(std::multimap<int, MTrack> &tracks);
+void setStaffBracketForDrums(std::vector<MTrack> &tracks);
 } // namespace MidiDrum
 } // namespace mu::iex::midi
 

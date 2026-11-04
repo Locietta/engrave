@@ -39,47 +39,46 @@ using namespace mu;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-static const ElementStyle voltaStyle {
-    { Sid::voltaFontFace,                      Pid::BEGIN_FONT_FACE },
-    { Sid::voltaFontFace,                      Pid::CONTINUE_FONT_FACE },
-    { Sid::voltaFontFace,                      Pid::END_FONT_FACE },
-    { Sid::voltaFontSize,                      Pid::BEGIN_FONT_SIZE },
-    { Sid::voltaFontSize,                      Pid::CONTINUE_FONT_SIZE },
-    { Sid::voltaFontSize,                      Pid::END_FONT_SIZE },
-    { Sid::voltaFontStyle,                     Pid::BEGIN_FONT_STYLE },
-    { Sid::voltaFontStyle,                     Pid::CONTINUE_FONT_STYLE },
-    { Sid::voltaFontStyle,                     Pid::END_FONT_STYLE },
-    { Sid::voltaAlign,                         Pid::BEGIN_TEXT_ALIGN },
-    { Sid::voltaAlign,                         Pid::CONTINUE_TEXT_ALIGN },
-    { Sid::voltaAlign,                         Pid::END_TEXT_ALIGN },
-    { Sid::voltaPosition,                      Pid::BEGIN_TEXT_POSITION },
-    { Sid::voltaPosition,                      Pid::CONTINUE_TEXT_POSITION },
-    { Sid::voltaPosition,                      Pid::END_TEXT_POSITION },
-    { Sid::voltaOffset,                        Pid::BEGIN_TEXT_OFFSET },
-    { Sid::voltaOffset,                        Pid::CONTINUE_TEXT_OFFSET },
-    { Sid::voltaOffset,                        Pid::END_TEXT_OFFSET },
-    { Sid::voltaMusicalSymbolSize,             Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE },
-    { Sid::voltaMusicalSymbolSize,             Pid::CONTINUE_TEXT_MUSIC_SYMBOLS_SIZE },
-    { Sid::voltaMusicalSymbolSize,             Pid::END_TEXT_MUSIC_SYMBOLS_SIZE },
-    { Sid::dummyMusicalSymbolsScale,           Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE },
-    { Sid::dummyMusicalSymbolsScale,           Pid::CONTINUE_TEXT_MUSICAL_SYMBOLS_SCALE },
-    { Sid::dummyMusicalSymbolsScale,           Pid::END_TEXT_MUSICAL_SYMBOLS_SCALE },
-    { Sid::voltaLineWidth,                     Pid::LINE_WIDTH },
-    { Sid::voltaLineStyle,                     Pid::LINE_STYLE },
-    { Sid::voltaDashLineLen,                   Pid::DASH_LINE_LEN },
-    { Sid::voltaDashGapLen,                    Pid::DASH_GAP_LEN },
-    { Sid::voltaHook,                          Pid::BEGIN_HOOK_HEIGHT },
-    { Sid::voltaHook,                          Pid::END_HOOK_HEIGHT },
-    { Sid::voltaFontSpatiumDependent,          Pid::TEXT_SIZE_SPATIUM_DEPENDENT },
+static const ElementStyle voltaStyle{
+    {Sid::voltaFontFace, Pid::BEGIN_FONT_FACE},
+    {Sid::voltaFontFace, Pid::CONTINUE_FONT_FACE},
+    {Sid::voltaFontFace, Pid::END_FONT_FACE},
+    {Sid::voltaFontSize, Pid::BEGIN_FONT_SIZE},
+    {Sid::voltaFontSize, Pid::CONTINUE_FONT_SIZE},
+    {Sid::voltaFontSize, Pid::END_FONT_SIZE},
+    {Sid::voltaFontStyle, Pid::BEGIN_FONT_STYLE},
+    {Sid::voltaFontStyle, Pid::CONTINUE_FONT_STYLE},
+    {Sid::voltaFontStyle, Pid::END_FONT_STYLE},
+    {Sid::voltaAlign, Pid::BEGIN_TEXT_ALIGN},
+    {Sid::voltaAlign, Pid::CONTINUE_TEXT_ALIGN},
+    {Sid::voltaAlign, Pid::END_TEXT_ALIGN},
+    {Sid::voltaPosition, Pid::BEGIN_TEXT_POSITION},
+    {Sid::voltaPosition, Pid::CONTINUE_TEXT_POSITION},
+    {Sid::voltaPosition, Pid::END_TEXT_POSITION},
+    {Sid::voltaOffset, Pid::BEGIN_TEXT_OFFSET},
+    {Sid::voltaOffset, Pid::CONTINUE_TEXT_OFFSET},
+    {Sid::voltaOffset, Pid::END_TEXT_OFFSET},
+    {Sid::voltaMusicalSymbolSize, Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE},
+    {Sid::voltaMusicalSymbolSize, Pid::CONTINUE_TEXT_MUSIC_SYMBOLS_SIZE},
+    {Sid::voltaMusicalSymbolSize, Pid::END_TEXT_MUSIC_SYMBOLS_SIZE},
+    {Sid::dummyMusicalSymbolsScale, Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE},
+    {Sid::dummyMusicalSymbolsScale, Pid::CONTINUE_TEXT_MUSICAL_SYMBOLS_SCALE},
+    {Sid::dummyMusicalSymbolsScale, Pid::END_TEXT_MUSICAL_SYMBOLS_SCALE},
+    {Sid::voltaLineWidth, Pid::LINE_WIDTH},
+    {Sid::voltaLineStyle, Pid::LINE_STYLE},
+    {Sid::voltaDashLineLen, Pid::DASH_LINE_LEN},
+    {Sid::voltaDashGapLen, Pid::DASH_GAP_LEN},
+    {Sid::voltaHook, Pid::BEGIN_HOOK_HEIGHT},
+    {Sid::voltaHook, Pid::END_HOOK_HEIGHT},
+    {Sid::voltaFontSpatiumDependent, Pid::TEXT_SIZE_SPATIUM_DEPENDENT},
 };
 
 //---------------------------------------------------------
 //   VoltaSegment
 //---------------------------------------------------------
 
-VoltaSegment::VoltaSegment(Volta* sp)
-    : TextLineBaseSegment(ElementType::VOLTA_SEGMENT, sp, ElementFlag::MOVABLE | ElementFlag::ON_STAFF | ElementFlag::SYSTEM)
-{
+VoltaSegment::VoltaSegment(Volta *sp)
+    : TextLineBaseSegment(ElementType::VOLTA_SEGMENT, sp, ElementFlag::MOVABLE | ElementFlag::ON_STAFF | ElementFlag::SYSTEM) {
     m_text->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
     m_endText->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
 }
@@ -88,8 +87,7 @@ VoltaSegment::VoltaSegment(Volta* sp)
 //   propertyDelegate
 //---------------------------------------------------------
 
-EngravingObject* VoltaSegment::propertyDelegate(Pid pid) const
-{
+EngravingObject *VoltaSegment::propertyDelegate(Pid pid) const {
     if (pid == Pid::BEGIN_HOOK_TYPE || pid == Pid::END_HOOK_TYPE || pid == Pid::VOLTA_ENDING) {
         return spanner();
     }
@@ -100,9 +98,7 @@ EngravingObject* VoltaSegment::propertyDelegate(Pid pid) const
 //   Volta
 //---------------------------------------------------------
 
-Volta::Volta(DummyParentOr<EngravingItem> parent)
-    : TextLineBase(ElementType::VOLTA, parent, ElementFlag::SYSTEM)
-{
+Volta::Volta(DummyParentOr<EngravingItem> parent) : TextLineBase(ElementType::VOLTA, parent, ElementFlag::SYSTEM) {
     setPlacement(PlacementV::ABOVE);
     initElementStyle(&voltaStyle);
 
@@ -122,8 +118,7 @@ Volta::Volta(DummyParentOr<EngravingItem> parent)
 ///
 /// \brief sorts the provided list in ascending order
 ///
-void Volta::setEndings(const std::vector<int>& l)
-{
+void Volta::setEndings(const std::vector<int> &l) {
     m_endings = l;
     std::sort(m_endings.begin(), m_endings.end());
 }
@@ -132,31 +127,24 @@ void Volta::setEndings(const std::vector<int>& l)
 //   setText
 //---------------------------------------------------------
 
-void Volta::setText(const String& s)
-{
-    setBeginText(s);
-}
+void Volta::setText(const String &s) { setBeginText(s); }
 
 //---------------------------------------------------------
 //   text
 //---------------------------------------------------------
 
-String Volta::text() const
-{
-    return beginText();
-}
+String Volta::text() const { return beginText(); }
 
 //---------------------------------------------------------
 //   createLineSegment
 //---------------------------------------------------------
 
-static const ElementStyle voltaSegmentStyle {
-    { Sid::voltaMinDistance,                   Pid::MIN_DISTANCE },
+static const ElementStyle voltaSegmentStyle{
+    {Sid::voltaMinDistance, Pid::MIN_DISTANCE},
 };
 
-LineSegment* Volta::createLineSegment()
-{
-    VoltaSegment* vs = new VoltaSegment(this);
+LineSegment *Volta::createLineSegment() {
+    VoltaSegment *vs = new VoltaSegment(this);
     vs->setTrack(track());
     vs->initElementStyle(&voltaSegmentStyle);
     return vs;
@@ -166,8 +154,7 @@ LineSegment* Volta::createLineSegment()
 //   hasEnding
 //---------------------------------------------------------
 
-bool Volta::hasEnding(int repeat) const
-{
+bool Volta::hasEnding(int repeat) const {
     for (int ending : endings()) {
         if (ending == repeat) {
             return true;
@@ -180,8 +167,7 @@ bool Volta::hasEnding(int repeat) const
 //   firstEnding
 //---------------------------------------------------------
 
-int Volta::firstEnding() const
-{
+int Volta::firstEnding() const {
     if (m_endings.empty()) {
         return 0;
     }
@@ -192,8 +178,7 @@ int Volta::firstEnding() const
 //   lastEnding
 //---------------------------------------------------------
 
-int Volta::lastEnding() const
-{
+int Volta::lastEnding() const {
     if (m_endings.empty()) {
         return 0;
     }
@@ -204,13 +189,10 @@ int Volta::lastEnding() const
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Volta::getProperty(Pid propertyId) const
-{
+PropertyValue Volta::getProperty(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::VOLTA_ENDING:
-        return PropertyValue::fromValue(endings());
-    default:
-        break;
+        case Pid::VOLTA_ENDING: return PropertyValue::fromValue(endings());
+        default: break;
     }
     return TextLineBase::getProperty(propertyId);
 }
@@ -219,17 +201,16 @@ PropertyValue Volta::getProperty(Pid propertyId) const
 //   setProperty
 //---------------------------------------------------------
 
-bool Volta::setProperty(Pid propertyId, const PropertyValue& val)
-{
+bool Volta::setProperty(Pid propertyId, const PropertyValue &val) {
     switch (propertyId) {
-    case Pid::VOLTA_ENDING: {
-        setEndings(val.value<std::vector<int> >());
-    } break;
-    default:
-        if (!TextLineBase::setProperty(propertyId, val)) {
-            return false;
-        }
-        break;
+        case Pid::VOLTA_ENDING: {
+            setEndings(val.value<std::vector<int>>());
+        } break;
+        default:
+            if (!TextLineBase::setProperty(propertyId, val)) {
+                return false;
+            }
+            break;
     }
     triggerLayout();
     return true;
@@ -239,44 +220,33 @@ bool Volta::setProperty(Pid propertyId, const PropertyValue& val)
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Volta::propertyDefault(Pid propertyId) const
-{
+PropertyValue Volta::propertyDefault(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::VOLTA_ENDING:
-        return PropertyValue::fromValue(std::vector<int>());
-    case Pid::BEGIN_HOOK_TYPE:
-        return HookType::HOOK_90;
-    case Pid::END_HOOK_TYPE:
-        return HookType::NONE;
-    case Pid::BEGIN_TEXT:
-    case Pid::CONTINUE_TEXT:
-    case Pid::END_TEXT:
-        return "";
-    case Pid::LINE_VISIBLE:
-        return true;
-    case Pid::BEGIN_TEXT_PLACE:
-    case Pid::CONTINUE_TEXT_PLACE:
-    case Pid::END_TEXT_PLACE:
-        return TextPlace::ABOVE;
+        case Pid::VOLTA_ENDING: return PropertyValue::fromValue(std::vector<int>());
+        case Pid::BEGIN_HOOK_TYPE: return HookType::HOOK_90;
+        case Pid::END_HOOK_TYPE: return HookType::NONE;
+        case Pid::BEGIN_TEXT:
+        case Pid::CONTINUE_TEXT:
+        case Pid::END_TEXT: return "";
+        case Pid::LINE_VISIBLE: return true;
+        case Pid::BEGIN_TEXT_PLACE:
+        case Pid::CONTINUE_TEXT_PLACE:
+        case Pid::END_TEXT_PLACE: return TextPlace::ABOVE;
 
-    case Pid::PLACEMENT:
-        return PlacementV::ABOVE;
+        case Pid::PLACEMENT: return PlacementV::ABOVE;
 
-    case Pid::TEXT_STYLE:
-        return TextStyleType::VOLTA;
+        case Pid::TEXT_STYLE: return TextStyleType::VOLTA;
 
-    case Pid::BEGIN_FILLED_ARROW_HEIGHT:   // No arrow endings for voltas
-    case Pid::BEGIN_FILLED_ARROW_WIDTH:
-    case Pid::END_FILLED_ARROW_HEIGHT:
-    case Pid::END_FILLED_ARROW_WIDTH:
-    case Pid::BEGIN_LINE_ARROW_HEIGHT:
-    case Pid::BEGIN_LINE_ARROW_WIDTH:
-    case Pid::END_LINE_ARROW_HEIGHT:
-    case Pid::END_LINE_ARROW_WIDTH:
-        return 0.0;
+        case Pid::BEGIN_FILLED_ARROW_HEIGHT: // No arrow endings for voltas
+        case Pid::BEGIN_FILLED_ARROW_WIDTH:
+        case Pid::END_FILLED_ARROW_HEIGHT:
+        case Pid::END_FILLED_ARROW_WIDTH:
+        case Pid::BEGIN_LINE_ARROW_HEIGHT:
+        case Pid::BEGIN_LINE_ARROW_WIDTH:
+        case Pid::END_LINE_ARROW_HEIGHT:
+        case Pid::END_LINE_ARROW_WIDTH: return 0.0;
 
-    default:
-        return TextLineBase::propertyDefault(propertyId);
+        default: return TextLineBase::propertyDefault(propertyId);
     }
 }
 
@@ -284,10 +254,9 @@ PropertyValue Volta::propertyDefault(Pid propertyId) const
 //   setChannel
 //---------------------------------------------------------
 
-void Volta::setChannel() const
-{
-    Measure* startMeasure = Spanner::startMeasure();
-    Measure* endMeasure = Spanner::endMeasure();
+void Volta::setChannel() const {
+    Measure *startMeasure = Spanner::startMeasure();
+    Measure *endMeasure = Spanner::endMeasure();
 
     if (startMeasure && endMeasure) {
         if (!endMeasure->repeatEnd()) {
@@ -295,8 +264,8 @@ void Volta::setChannel() const
         }
 
         Fraction startTick = startMeasure->tick() - Fraction::eps();
-        Fraction endTick  = endMeasure->endTick() - Fraction::eps();
-        Staff* st = staff();
+        Fraction endTick = endMeasure->endTick() - Fraction::eps();
+        Staff *st = staff();
         for (voice_idx_t voice = 0; voice < VOICES; ++voice) {
             int channel = st->channel(startTick, voice);
             st->insertIntoChannelList(voice, endTick, channel);
@@ -308,26 +277,23 @@ void Volta::setChannel() const
 //   accessibleInfo
 //---------------------------------------------------------
 
-
-
-PointF Volta::linePos(Grip grip, System** system) const
-{
+PointF Volta::linePos(Grip grip, System **system) const {
     bool start = grip == Grip::START;
 
-    Segment* segment = score()->tick2leftSegment(start ? tick() : tick2(), true,
+    Segment *segment = score()->tick2leftSegment(start ? tick() : tick2(), true,
                                                  SegmentType::ChordRest | SegmentType::StartRepeatBarLine | SegmentType::EndBarLine);
     if (!segment) {
         return PointF();
     }
 
-    const Measure* measure = segment->measure();
+    const Measure *measure = segment->measure();
     bool isAtSystemStart = segment->rtick().isZero() && measure && measure->system() && measure->isFirstInSystem();
     bool searchForPrevBarline = start ? segment->rtick().isZero() && (measure->repeatStart() || !isAtSystemStart) : true;
 
     SegmentType barlineType = start ? (SegmentType::StartRepeatBarLine | SegmentType::EndBarLine) : SegmentType::EndBarLine;
 
     if (searchForPrevBarline) {
-        Segment* prev = segment;
+        Segment *prev = segment;
         while (prev && !prev->isType(barlineType) && prev->tick() == segment->tick()) {
             prev = prev->prev1MMenabled();
         }
@@ -338,7 +304,7 @@ PointF Volta::linePos(Grip grip, System** system) const
     }
 
     if (start && !segment->isType(SegmentType::BarLineTypes) && style().styleB(Sid::voltaAlignStartBeforeKeySig)) {
-        Segment* prev = segment;
+        Segment *prev = segment;
         while (prev && !prev->isType(SegmentType::KeySig) && prev->tick() == segment->tick()) {
             prev = prev->prev1MMenabled();
         }
@@ -355,7 +321,7 @@ PointF Volta::linePos(Grip grip, System** system) const
         if (segment->isChordRestType()) {
             x -= style().styleAbsolute(Sid::barNoteDistance);
         } else if (segment->isKeySigType()) {
-            KeySig* sig = toKeySig(segment->element(track()));
+            KeySig *sig = toKeySig(segment->element(track()));
             if (sig && !sig->ldata()->keySymbols.empty()) {
                 KeySym keySym = sig->ldata()->keySymbols.front();
                 PointF cutoutNW = score()->engravingFont()->smuflAnchor(keySym.sym, SmuflAnchorId::cutOutNW, 1.0);
@@ -363,9 +329,9 @@ PointF Volta::linePos(Grip grip, System** system) const
             }
         } else if (segment->segmentType() & SegmentType::BarLineTypes && !isAtSystemStart) {
             x += segment->width();
-            const BarLine* barline = toBarLine(segment->element(track()));
-            alignLeftOfRepeatBarLine = barline && barline->barLineType() == BarLineType::END_REPEAT
-                                       && style().styleB(Sid::voltaAlignEndLeftOfBarline);
+            const BarLine *barline = toBarLine(segment->element(track()));
+            alignLeftOfRepeatBarLine =
+                barline && barline->barLineType() == BarLineType::END_REPEAT && style().styleB(Sid::voltaAlignEndLeftOfBarline);
             if (alignLeftOfRepeatBarLine) {
                 x -= style().styleAbsolute(Sid::endBarWidth);
             }
@@ -380,7 +346,7 @@ PointF Volta::linePos(Grip grip, System** system) const
             x += segment->staffShape(si).right();
             x -= 0.5 * absoluteFromSpatium(lineWidth());
         } else if (segment->segmentType() & SegmentType::BarLineTypes) {
-            BarLine* barLine = toBarLine(segment->element(track()));
+            BarLine *barLine = toBarLine(segment->element(track()));
             if (barLine->barLineType() == BarLineType::END_REPEAT || barLine->barLineType() == BarLineType::END_START_REPEAT) {
                 x += symWidth(SymId::repeatDot) + style().styleAbsolute(Sid::repeatBarlineDotSeparation);
             }
@@ -396,23 +362,14 @@ PointF Volta::linePos(Grip grip, System** system) const
 //    deprecated
 //---------------------------------------------------------
 
-void Volta::setVoltaType(Type val)
-{
-    setEndHookType(Type::CLOSED == val ? HookType::HOOK_90 : HookType::NONE);
-}
+void Volta::setVoltaType(Type val) { setEndHookType(Type::CLOSED == val ? HookType::HOOK_90 : HookType::NONE); }
 
 //---------------------------------------------------------
 //   voltaType
 //    deprecated
 //---------------------------------------------------------
 
-Volta::Type Volta::voltaType() const
-{
-    return endHookType() != HookType::NONE ? Type::CLOSED : Type::OPEN;
-}
+Volta::Type Volta::voltaType() const { return endHookType() != HookType::NONE ? Type::CLOSED : Type::OPEN; }
 
-Sid Volta::defaultPosSid() const
-{
-    return Sid::voltaPosAbove;
-}
-}
+Sid Volta::defaultPosSid() const { return Sid::voltaPosAbove; }
+} // namespace mu::engraving

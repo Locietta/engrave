@@ -40,18 +40,17 @@
 
 using namespace mu::engraving;
 
-bool ImplodeExplode::explode(Score* score)
-{
-    size_t srcStaff  = score->selection().staffStart();
+bool ImplodeExplode::explode(Score *score) {
+    size_t srcStaff = score->selection().staffStart();
     size_t lastStaff = score->selection().staffEnd();
-    size_t srcTrack  = srcStaff * VOICES;
+    size_t srcTrack = srcStaff * VOICES;
 
     // reset selection to top staff only
     // force complete measures
-    Segment* startSegment = score->selection().startSegment();
-    Segment* endSegment   = score->selection().endSegment();
-    Measure* startMeasure = startSegment->measure();
-    Measure* endMeasure   = nullptr;
+    Segment *startSegment = score->selection().startSegment();
+    Segment *endSegment = score->selection().endSegment();
+    Measure *startMeasure = startSegment->measure();
+    Measure *endMeasure = nullptr;
     if (!endSegment) {
         endMeasure = score->lastMeasure();
     } else if (endSegment->tick() == endSegment->measure()->tick()) {
@@ -63,7 +62,7 @@ bool ImplodeExplode::explode(Score* score)
     Fraction lTick = endMeasure->endTick();
     bool voice = false;
 
-    for (Measure* m = startMeasure; m && m->tick() != lTick; m = m->nextMeasure()) {
+    for (Measure *m = startMeasure; m && m->tick() != lTick; m = m->nextMeasure()) {
         if (m->hasVoices(srcStaff)) {
             voice = true;
             break;
@@ -80,12 +79,12 @@ bool ImplodeExplode::explode(Score* score)
             // only one staff was selected up front - determine number of staves
             // loop through all chords looking for maximum number of notes
             int n = 0;
-            for (Segment* s = startSegment; s && s != endSegment; s = s->next1()) {
-                EngravingItem* e = s->element(srcTrack);
+            for (Segment *s = startSegment; s && s != endSegment; s = s->next1()) {
+                EngravingItem *e = s->element(srcTrack);
                 if (e && e->isChord()) {
-                    Chord* c = toChord(e);
+                    Chord *c = toChord(e);
                     n = std::max(n, int(c->notes().size()));
-                    for (Chord* graceChord : c->graceNotes()) {
+                    for (Chord *graceChord : c->graceNotes()) {
                         n = std::max(n, int(graceChord->notes().size()));
                     }
                 }
@@ -96,7 +95,7 @@ bool ImplodeExplode::explode(Score* score)
         // Check that all source and dest measures have the same time stretch - allows explode within a local time signature,
         // but don't yet support it between differing local time signatures.
         Fraction timeStretch(1, 0);
-        for (Measure* m = startMeasure; m && m->tick() <= endMeasure->tick(); m = m->nextMeasure()) {
+        for (Measure *m = startMeasure; m && m->tick() <= endMeasure->tick(); m = m->nextMeasure()) {
             for (size_t staffIdx = srcStaff; staffIdx < lastStaff; ++staffIdx) {
                 Fraction mTimeStretch = score->staff(staffIdx)->timeStretch(m->tick());
                 if (!timeStretch.isValid()) {
@@ -110,26 +109,25 @@ bool ImplodeExplode::explode(Score* score)
 
         const muse::ByteArray mimeData(score->selection().mimeData());
         // copy to all destination staves
-        Segment* firstCRSegment = startMeasure->tick2segment(startMeasure->tick());
+        Segment *firstCRSegment = startMeasure->tick2segment(startMeasure->tick());
         for (size_t i = 1; srcStaff + i < lastStaff; ++i) {
             track_idx_t track = (srcStaff + i) * VOICES;
-            ChordRest* cr = toChordRest(firstCRSegment->element(track));
+            ChordRest *cr = toChordRest(firstCRSegment->element(track));
             if (cr) {
                 XmlReader e(mimeData);
                 Paste::pasteStaff(score->transactionManager()->currentOrDummyTransaction(), score, e, cr->segment(), cr->staffIdx());
             }
         }
 
-        auto doExplode = [score](Chord* c, size_t lastStaff, size_t srcStaff, size_t i) -> void
-        {
-            std::vector<Note*> notes = c->notes();
+        auto doExplode = [score](Chord *c, size_t lastStaff, size_t srcStaff, size_t i) -> void {
+            std::vector<Note *> notes = c->notes();
             size_t nnotes = notes.size();
             // keep note "i" from top, which is backwards from nnotes - 1
             // reuse notes if there are more instruments than notes
             size_t stavesPerNote = std::max((lastStaff - srcStaff) / nnotes, static_cast<size_t>(1));
             size_t keepIndex = static_cast<size_t>(std::max(static_cast<int>(nnotes) - 1 - static_cast<int>(i / stavesPerNote), 0));
-            Note* keepNote = c->notes()[keepIndex];
-            for (Note* n : notes) {
+            Note *keepNote = c->notes()[keepIndex];
+            for (Note *n : notes) {
                 if (n != keepNote) {
                     score->undoRemoveElement(n);
                 }
@@ -139,12 +137,12 @@ bool ImplodeExplode::explode(Score* score)
         // loop through each staff removing all but one note from each chord
         for (size_t i = 0; srcStaff + i < lastStaff; ++i) {
             track_idx_t track = (srcStaff + i) * VOICES;
-            for (Segment* s = startSegment; s && s != endSegment; s = s->next1()) {
-                EngravingItem* e = s->element(track);
+            for (Segment *s = startSegment; s && s != endSegment; s = s->next1()) {
+                EngravingItem *e = s->element(track);
                 if (e && e->isChord()) {
-                    Chord* c = toChord(e); //chord, laststaff, srcstaff
+                    Chord *c = toChord(e); //chord, laststaff, srcstaff
                     doExplode(c, lastStaff, srcStaff, i);
-                    for (Chord* graceChord : c->graceNotes()) {
+                    for (Chord *graceChord : c->graceNotes()) {
                         doExplode(graceChord, lastStaff, srcStaff, i);
                     }
                 }
@@ -163,7 +161,7 @@ bool ImplodeExplode::explode(Score* score)
         }
         size_t matchedTrackCount = 0;
 
-        for (Segment* seg = startSegment; seg && seg->tick() < lTick; seg = seg->next1()) {
+        for (Segment *seg = startSegment; seg && seg->tick() < lTick; seg = seg->next1()) {
             for (track_idx_t candidateSrcTrack = srcTrack; candidateSrcTrack < srcTrack + VOICES && matchedTrackCount != VOICES;
                  candidateSrcTrack++) {
                 bool isUnclaimedSrcTrack = true;
@@ -174,8 +172,8 @@ bool ImplodeExplode::explode(Score* score)
                     }
                 }
 
-                if (!seg->measure()->hasVoice(candidateSrcTrack) || seg->measure()->isOnlyGapRests(candidateSrcTrack)
-                    || !isUnclaimedSrcTrack) {
+                if (!seg->measure()->hasVoice(candidateSrcTrack) || seg->measure()->isOnlyGapRests(candidateSrcTrack) ||
+                    !isUnclaimedSrcTrack) {
                     continue;
                 }
                 sTracks[matchedTrackCount] = candidateSrcTrack;
@@ -186,7 +184,7 @@ bool ImplodeExplode::explode(Score* score)
                         dTracks[matchedTrackCount] = candidateDstTrack;
                         break;
                     }
-                    for (Measure* m = seg->measure(); m && m->tick() < lTick; m = m->nextMeasure()) {
+                    for (Measure *m = seg->measure(); m && m->tick() < lTick; m = m->nextMeasure()) {
                         if (!m->hasVoice(candidateDstTrack) || (m->hasVoice(candidateDstTrack) && m->isOnlyRests(candidateDstTrack))) {
                             dTracks[matchedTrackCount] = candidateDstTrack;
                         } else {
@@ -202,15 +200,13 @@ bool ImplodeExplode::explode(Score* score)
             }
         }
 
-        IF_ASSERT_FAILED(matchedTrackCount > 0) {
-            return false;
-        }
+        IF_ASSERT_FAILED(matchedTrackCount > 0) { return false; }
         lastStaff = track2staff(dTracks[matchedTrackCount - 1]) + 1;
 
         // Check that all source and dest measures have the same time stretch - allows explode within a local time signature,
         // but don't yet support it between differing local time signatures.
         Fraction timeStretch(1, 0);
-        for (Measure* m = startMeasure; m && m->tick() <= endMeasure->tick(); m = m->nextMeasure()) {
+        for (Measure *m = startMeasure; m && m->tick() <= endMeasure->tick(); m = m->nextMeasure()) {
             for (size_t staffIdx = srcStaff; staffIdx < lastStaff; ++staffIdx) {
                 Fraction mTimeStretch = score->staff(staffIdx)->timeStretch(m->tick());
                 if (!timeStretch.isValid()) {
@@ -239,25 +235,24 @@ bool ImplodeExplode::explode(Score* score)
     return true;
 }
 
-bool ImplodeExplode::implode(Score* score)
-{
-    staff_idx_t dstStaff   = score->selection().staffStart();
-    staff_idx_t endStaff   = score->selection().staffEnd();
-    track_idx_t dstTrack   = dstStaff * VOICES;
+bool ImplodeExplode::implode(Score *score) {
+    staff_idx_t dstStaff = score->selection().staffStart();
+    staff_idx_t endStaff = score->selection().staffEnd();
+    track_idx_t dstTrack = dstStaff * VOICES;
     track_idx_t startTrack = dstStaff * VOICES;
-    track_idx_t endTrack   = endStaff * VOICES;
-    Segment* startSegment = score->selection().startSegment();
-    Segment* endSegment = score->selection().endSegment();
-    Measure* startMeasure = startSegment->measure();
-    Measure* endMeasure = endSegment ? endSegment->measure() : score->lastMeasure();
-    Fraction startTick       = startSegment->tick();
-    Fraction endTick         = endSegment ? endSegment->tick() : score->lastMeasure()->endTick();
+    track_idx_t endTrack = endStaff * VOICES;
+    Segment *startSegment = score->selection().startSegment();
+    Segment *endSegment = score->selection().endSegment();
+    Measure *startMeasure = startSegment->measure();
+    Measure *endMeasure = endSegment ? endSegment->measure() : score->lastMeasure();
+    Fraction startTick = startSegment->tick();
+    Fraction endTick = endSegment ? endSegment->tick() : score->lastMeasure()->endTick();
     assert(startMeasure && endMeasure);
 
     // Check that all source and dest measures have the same time stretch - allows implode within a local time signature,
     // but don't yet support it between differing local time signatures.
     Fraction timeStretch(1, 0);
-    for (Measure* m = startMeasure; m && m->tick() <= endMeasure->tick(); m = m->nextMeasure()) {
+    for (Measure *m = startMeasure; m && m->tick() <= endMeasure->tick(); m = m->nextMeasure()) {
         for (size_t staffIdx = dstStaff; staffIdx < endStaff; ++staffIdx) {
             Fraction mTimeStretch = score->staff(staffIdx)->timeStretch(m->tick());
             if (!timeStretch.isValid()) {
@@ -273,16 +268,16 @@ bool ImplodeExplode::implode(Score* score)
     // otherwise combine staves
     if (dstStaff == endStaff - 1) {
         // loop through segments adding notes to chord on top staff
-        for (Segment* s = startSegment; s && s != endSegment; s = s->next1()) {
+        for (Segment *s = startSegment; s && s != endSegment; s = s->next1()) {
             if (!s->isChordRestType()) {
                 continue;
             }
-            EngravingItem* dst = s->element(dstTrack);
+            EngravingItem *dst = s->element(dstTrack);
             if (dst && dst->isChord()) {
-                Chord* dstChord = toChord(dst);
+                Chord *dstChord = toChord(dst);
                 // see if we are tying in to this chord
-                Chord* tied = 0;
-                for (Note* n : dstChord->notes()) {
+                Chord *tied = 0;
+                for (Note *n : dstChord->notes()) {
                     if (n->tieBackNonPartial()) {
                         tied = n->tieBack()->startNote()->chord();
                         break;
@@ -291,15 +286,15 @@ bool ImplodeExplode::implode(Score* score)
                 // loop through each subsequent staff (or track within staff)
                 // looking for notes to add
                 for (track_idx_t srcTrack = startTrack + 1; srcTrack < endTrack; srcTrack++) {
-                    EngravingItem* src = s->element(srcTrack);
+                    EngravingItem *src = s->element(srcTrack);
                     if (src && src->isChord()) {
-                        Chord* srcChord = toChord(src);
+                        Chord *srcChord = toChord(src);
                         // when combining voices, skip if not same duration
                         if (srcChord->ticks() != dstChord->ticks()) {
                             continue;
                         }
                         // add notes
-                        for (Note* n : srcChord->notes()) {
+                        for (Note *n : srcChord->notes()) {
                             NoteVal nv(n->pitch());
                             nv.tpc1 = n->tpc1();
                             // skip duplicates
@@ -307,10 +302,10 @@ bool ImplodeExplode::implode(Score* score)
                                 continue;
                             }
                             bool forceAccidental = n->accidental() && n->accidental()->role() == AccidentalRole::USER;
-                            Transaction& tx = score->transactionManager()->currentOrDummyTransaction();
-                            Note* nn = NoteInput::addNote(tx, score, dstChord, nv, forceAccidental);
+                            Transaction &tx = score->transactionManager()->currentOrDummyTransaction();
+                            Note *nn = NoteInput::addNote(tx, score, dstChord, nv, forceAccidental);
                             // move articulations
-                            for (Articulation* artic : srcChord->articulations()) {
+                            for (Articulation *artic : srcChord->articulations()) {
                                 if (dstChord->hasArticulation(artic)) {
                                     continue;
                                 }
@@ -319,10 +314,10 @@ bool ImplodeExplode::implode(Score* score)
                             // add tie to this note if original chord was tied
                             if (tied) {
                                 // find note to tie to
-                                for (Note* tn : tied->notes()) {
+                                for (Note *tn : tied->notes()) {
                                     if (nn->pitch() == tn->pitch() && nn->tpc() == tn->tpc() && !tn->tieFor()) {
                                         // found note to tie
-                                        Tie* tie = Factory::createTie(tn);
+                                        Tie *tie = Factory::createTie(tn);
                                         tie->setStartNote(tn);
                                         tie->setEndNote(nn);
                                         tie->setTick(tie->startNote()->tick());
@@ -346,7 +341,7 @@ bool ImplodeExplode::implode(Score* score)
                 // destination track has something, but it isn't a chord
                 // remove rests from other voices if in "voice mode"
                 for (voice_idx_t i = 1; i < VOICES; ++i) {
-                    EngravingItem* e = s->element(dstTrack + i);
+                    EngravingItem *e = s->element(dstTrack + i);
                     if (e && e->isRest()) {
                         score->undoRemoveElement(e);
                     }
@@ -365,7 +360,7 @@ bool ImplodeExplode::implode(Score* score)
         // identify tracks to combine, storing the source track numbers in tracks[]
         // first four non-empty tracks to win
         for (track_idx_t track = startTrack; track < endTrack && full < VOICES; ++track) {
-            Measure* m = startMeasure;
+            Measure *m = startMeasure;
             do {
                 if (m->hasVoice(track) && !m->isOnlyRests(track)) {
                     tracks[full++] = track;

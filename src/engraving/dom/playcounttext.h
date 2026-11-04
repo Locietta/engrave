@@ -25,27 +25,29 @@
 #include "textbase.h"
 
 namespace mu::engraving {
-class PlayCountText final : public TextBase
-{
+class PlayCountText final : public TextBase {
     OBJECT_ALLOCATOR(engraving, PlayCountText)
     DECLARE_CLASSOF(ElementType::PLAY_COUNT_TEXT)
 
 public:
-    PlayCountText* clone() const override { return new PlayCountText(*this); }
+    PlayCountText *clone() const override { return new PlayCountText(*this); }
 
-    Segment* segment() const { return toSegment(ownershipParent()); }
-    BarLine* barline() const;
+    Segment *segment() const { return toSegment(ownershipParent()); }
+
+    BarLine *barline() const;
 
     bool allowTimeAnchor() const override { return false; }
 
     String playCountCustomText() const { return m_playCountCustomText; }
-    void setPlayCountCustomText(const String& v) { m_playCountCustomText = v; }
 
-    void setPlayCountTextSetting(const AutoCustomHide& v) { m_playCountTextSetting = v; }
+    void setPlayCountCustomText(const String &v) { m_playCountCustomText = v; }
+
+    void setPlayCountTextSetting(const AutoCustomHide &v) { m_playCountTextSetting = v; }
+
     AutoCustomHide playCountTextSetting() const { return m_playCountTextSetting; }
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid propertyId) const override;
 
     bool positionRelativeToNoteheadRest() const override { return false; }

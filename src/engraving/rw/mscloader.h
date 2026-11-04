@@ -28,25 +28,25 @@
 
 namespace mu::engraving::compat {
 class ReadStyleHook;
-}
+} // namespace mu::engraving::compat
 
 namespace mu::engraving::rw {
 struct ReadInOutData;
-}
+} // namespace mu::engraving::rw
 
 namespace mu::engraving {
 class MasterScore;
 class XmlReader;
-class MscLoader
-{
+
+class MscLoader {
 public:
     MscLoader() = default;
 
-    muse::Ret loadMscz(MasterScore* score, const MscReader& mscReader, rw::ReadInOutData* out, bool ignoreVersionError);
+    muse::Ret loadMscz(MasterScore *score, const MscReader &mscReader, rw::ReadInOutData *out, bool ignoreVersionError);
 
 private:
     friend class MasterScore;
-    muse::Ret readMasterScore(MasterScore* score, XmlReader&, bool ignoreVersionError, rw::ReadInOutData* out = nullptr,
-                              compat::ReadStyleHook* styleHook = nullptr);
+    muse::Ret readMasterScore(MasterScore *score, XmlReader &, bool ignoreVersionError, rw::ReadInOutData *out = nullptr,
+                              compat::ReadStyleHook *styleHook = nullptr);
 };
-}
+} // namespace mu::engraving

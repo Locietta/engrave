@@ -26,7 +26,7 @@
 
 namespace muse::draw {
 class Painter;
-}
+} // namespace muse::draw
 
 namespace mu::engraving {
 class Transaction;
@@ -35,10 +35,10 @@ class Segment;
 
 struct Dyn {
     DynamicType type = DynamicType::OTHER;
-    int velocity = -1;              // associated midi velocity (0-127, -1 = none)
+    int velocity = -1; // associated midi velocity (0-127, -1 = none)
     int changeInVelocity = 0;
-    bool accent = 0;                // if true add velocity to current chord velocity
-    const char* text = nullptr;     // utf8 text of dynamic
+    bool accent = 0;            // if true add velocity to current chord velocity
+    const char *text = nullptr; // utf8 text of dynamic
 };
 
 //-----------------------------------------------------------------------------
@@ -48,33 +48,39 @@ struct Dyn {
 //   @P range  enum (Dynamic.STAFF, .PART, .SYSTEM)
 //-----------------------------------------------------------------------------
 
-class Dynamic final : public TextBase
-{
+class Dynamic final : public TextBase {
     OBJECT_ALLOCATOR(engraving, Dynamic)
     DECLARE_CLASSOF(ElementType::DYNAMIC)
 
 public:
     struct ChangeSpeedItem {
         DynamicSpeed speed = DynamicSpeed::NORMAL;
-        const char* name = nullptr;
+        const char *name = nullptr;
     };
 
     Dynamic(DummyParentOr<Segment> parent);
-    Dynamic(const Dynamic&);
-    Dynamic* clone() const override { return new Dynamic(*this); }
-    Segment* segment() const { return (Segment*)ownershipParent(); }
-    Measure* measure() const { return (Measure*)ownershipParent()->ownershipParent(); }
+    Dynamic(const Dynamic &);
+
+    Dynamic *clone() const override { return new Dynamic(*this); }
+
+    Segment *segment() const { return (Segment *) ownershipParent(); }
+
+    Measure *measure() const { return (Measure *) ownershipParent()->ownershipParent(); }
 
     void setDynamicType(DynamicType val) { m_dynamicType = val; }
-    void setDynamicType(const String&);
+
+    void setDynamicType(const String &);
 
     DynamicType dynamicType() const { return m_dynamicType; }
+
     int subtype() const override { return static_cast<int>(m_dynamicType); }
+
     TranslatableString subtypeUserName() const override;
 
     void reset() override;
 
     void setVelocity(int v) { m_velocity = v; }
+
     int velocity() const;
 
     int changeInVelocity() const;
@@ -83,43 +89,51 @@ public:
     bool isVelocityChangeAvailable() const;
 
     DynamicSpeed velChangeSpeed() const { return m_velChangeSpeed; }
+
     void setVelChangeSpeed(DynamicSpeed val) { m_velChangeSpeed = val; }
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid id) const override;
     Sid getPropertyStyle(Pid) const override;
 
     static String dynamicText(DynamicType t);
+
     bool hasCustomText() const { return dynamicText(m_dynamicType) != xmlText(); }
 
-    Expression* snappedExpression() const;
-    HairpinSegment* findSnapBeforeHairpinAcrossSystemBreak() const;
+    Expression *snappedExpression() const;
+    HairpinSegment *findSnapBeforeHairpinAcrossSystemBreak() const;
 
     bool playDynamic() const { return m_playDynamic; }
+
     void setPlayDynamic(bool v) { m_playDynamic = v; }
 
-    bool acceptDrop(EditData& ed) const override;
-    EngravingItem* drop(Transaction& tx, EditData& ed) override;
+    bool acceptDrop(EditData &ed) const override;
+    EngravingItem *drop(Transaction &tx, EditData &ed) override;
 
     static int dynamicVelocity(DynamicType t);
-    static const std::vector<Dyn>& dynamicList() { return DYN_LIST; }
+
+    static const std::vector<Dyn> &dynamicList() { return DYN_LIST; }
 
     bool hasVoiceAssignmentProperties() const override { return true; }
 
     bool positionRelativeToNoteheadRest() const override { return true; }
+
     bool sizeIsSpatiumDependent() const override { return true; }
 
-    Hairpin* leftHairpin() const { return m_leftHairpin; }
-    Hairpin* rightHairpin() const { return m_rightHairpin; }
+    Hairpin *leftHairpin() const { return m_leftHairpin; }
+
+    Hairpin *rightHairpin() const { return m_rightHairpin; }
 
     bool hasLeftGrip() const;
     bool hasRightGrip() const;
 
     void resetLeftDragOffset() { m_leftDragOffset = 0.0; }
+
     void resetRightDragOffset() { m_rightDragOffset = 0.0; }
 
     double leftDragOffset() const { return m_leftDragOffset; }
+
     double rightDragOffset() const { return m_rightDragOffset; }
 
     void findAdjacentHairpins();
@@ -133,12 +147,12 @@ private:
     M_PROPERTY(bool, avoidBarLines, setAvoidBarLines)
     M_PROPERTY(bool, centerOnNotehead, setCenterOnNotehead)
 
-    std::pair<DynamicType, String> parseDynamicText(const String&) const;
+    std::pair<DynamicType, String> parseDynamicText(const String &) const;
     DynamicType m_dynamicType = DynamicType::OTHER;
     bool m_playDynamic = true;
 
     mutable PointF m_dragOffset;
-    int m_velocity = -1;           // associated midi velocity 0-127
+    int m_velocity = -1; // associated midi velocity 0-127
 
     int m_changeInVelocity = 128;
     DynamicSpeed m_velChangeSpeed = DynamicSpeed::NORMAL;
@@ -148,7 +162,7 @@ private:
     double m_leftDragOffset = 0.0;
     double m_rightDragOffset = 0.0;
 
-    Hairpin* m_leftHairpin = nullptr;
-    Hairpin* m_rightHairpin = nullptr;
+    Hairpin *m_leftHairpin = nullptr;
+    Hairpin *m_rightHairpin = nullptr;
 };
-}
+} // namespace mu::engraving

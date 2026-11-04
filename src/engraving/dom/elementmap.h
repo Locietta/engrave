@@ -34,13 +34,13 @@ class EngravingItem;
 //   ElementMap
 //---------------------------------------------------------
 
-class ElementMap : public std::unordered_map<EngravingItem*, EngravingItem*>
-{
+class ElementMap : public std::unordered_map<EngravingItem *, EngravingItem *> {
     OBJECT_ALLOCATOR(engraving, ElementMap)
 public:
     ElementMap() {}
-    EngravingItem* findNew(EngravingItem* o) const;
-    void add(EngravingItem* o, EngravingItem* n);
+
+    EngravingItem *findNew(EngravingItem *o) const;
+    void add(EngravingItem *o, EngravingItem *n);
 };
 } // namespace mu::engraving
 #endif

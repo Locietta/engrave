@@ -36,52 +36,35 @@ static const Settings::Key MNX_EXPORT_BEAMS_KEY(module_name, "export/mnx/exportB
 static const Settings::Key MNX_EXPORT_REST_POSITIONS_KEY(module_name, "export/mnx/exportRestPositions");
 static const Settings::Key MNX_IMPORT_EXACT_SCHEMA_VALIDATION_KEY(module_name, "import/mnx/requireExactSchemaValidation");
 
-void MnxConfiguration::init()
-{
+void MnxConfiguration::init() {
     settings()->setDefaultValue(MNX_EXPORT_INDENT_KEY, Val(4));
     settings()->setDefaultValue(MNX_EXPORT_BEAMS_KEY, Val(true));
     settings()->setDefaultValue(MNX_EXPORT_REST_POSITIONS_KEY, Val(false));
     settings()->setDefaultValue(MNX_IMPORT_EXACT_SCHEMA_VALIDATION_KEY, Val(true));
 }
 
-int MnxConfiguration::mnxIndentSpaces() const
-{
+int MnxConfiguration::mnxIndentSpaces() const {
     const int value = settings()->value(MNX_EXPORT_INDENT_KEY).toInt();
     return std::clamp(value, -1, 8);
 }
 
-void MnxConfiguration::setMnxIndentSpaces(int value)
-{
+void MnxConfiguration::setMnxIndentSpaces(int value) {
     const int clamped = std::clamp(value, -1, 8);
     settings()->setSharedValue(MNX_EXPORT_INDENT_KEY, Val(clamped));
 }
 
-bool MnxConfiguration::mnxExportBeams() const
-{
-    return settings()->value(MNX_EXPORT_BEAMS_KEY).toBool();
-}
+bool MnxConfiguration::mnxExportBeams() const { return settings()->value(MNX_EXPORT_BEAMS_KEY).toBool(); }
 
-void MnxConfiguration::setMnxExportBeams(bool value)
-{
-    settings()->setSharedValue(MNX_EXPORT_BEAMS_KEY, Val(value));
-}
+void MnxConfiguration::setMnxExportBeams(bool value) { settings()->setSharedValue(MNX_EXPORT_BEAMS_KEY, Val(value)); }
 
-bool MnxConfiguration::mnxExportRestPositions() const
-{
-    return settings()->value(MNX_EXPORT_REST_POSITIONS_KEY).toBool();
-}
+bool MnxConfiguration::mnxExportRestPositions() const { return settings()->value(MNX_EXPORT_REST_POSITIONS_KEY).toBool(); }
 
-void MnxConfiguration::setMnxExportRestPositions(bool value)
-{
-    settings()->setSharedValue(MNX_EXPORT_REST_POSITIONS_KEY, Val(value));
-}
+void MnxConfiguration::setMnxExportRestPositions(bool value) { settings()->setSharedValue(MNX_EXPORT_REST_POSITIONS_KEY, Val(value)); }
 
-bool MnxConfiguration::mnxRequireExactSchemaValidation() const
-{
+bool MnxConfiguration::mnxRequireExactSchemaValidation() const {
     return settings()->value(MNX_IMPORT_EXACT_SCHEMA_VALIDATION_KEY).toBool();
 }
 
-void MnxConfiguration::setMnxRequireExactSchemaValidation(bool value)
-{
+void MnxConfiguration::setMnxRequireExactSchemaValidation(bool value) {
     settings()->setSharedValue(MNX_IMPORT_EXACT_SCHEMA_VALIDATION_KEY, Val(value));
 }

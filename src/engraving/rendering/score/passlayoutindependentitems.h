@@ -26,19 +26,18 @@
 
 namespace mu::engraving {
 class EngravingItem;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class PassLayoutIndependentItems : public PassBase
-{
+class PassLayoutIndependentItems : public PassBase {
 public:
 
 private:
 
-    void doRun(Score* score, LayoutContext& ctx) override;
+    void doRun(Score *score, LayoutContext &ctx) override;
 
-    void scan(EngravingItem* item, LayoutContext& ctx);
+    void scan(EngravingItem *item, LayoutContext &ctx);
 };
-}
+} // namespace mu::engraving::rendering::score
 
 #endif // MU_ENGRAVING_PASSLAYOUTINDEPENDEDITEMS_DEV_H

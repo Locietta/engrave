@@ -24,17 +24,18 @@
 #include <vector>
 
 #include <engraving/types/types.h>
+
 namespace mu::engraving {
 class Note;
 class Chord;
 class Score;
-}
+} // namespace mu::engraving
 
 namespace mu::iex::guitarpro::utils {
-int harmonicOvertone(mu::engraving::Note* note, float harmonicValue, int harmonicType);
+int harmonicOvertone(mu::engraving::Note *note, float harmonicValue, int harmonicType);
 std::vector<int> standardTuningFor(int midiProgram, int stringsCount);
-bool isStandardTuning(int midiProgram, const std::vector<int>& tuning);
-mu::engraving::Chord* getLocatedChord(mu::engraving::Score* score, mu::engraving::Fraction tickFr, mu::engraving::track_idx_t track);
-void createGhostNoteParenGroups(mu::engraving::Chord* ch);
-void addPlayCountTexts(mu::engraving::Score* score);
-} // mu::iex::guitarpro
+bool isStandardTuning(int midiProgram, const std::vector<int> &tuning);
+mu::engraving::Chord *getLocatedChord(mu::engraving::Score *score, mu::engraving::Fraction tickFr, mu::engraving::track_idx_t track);
+void createGhostNoteParenGroups(mu::engraving::Chord *ch);
+void addPlayCountTexts(mu::engraving::Score *score);
+} // namespace mu::iex::guitarpro::utils

@@ -33,9 +33,9 @@ namespace mu::engraving {
 //   stickingStyle
 //---------------------------------------------------------
 
-static const ElementStyle stickingStyle {
-    { Sid::stickingPlacement, Pid::PLACEMENT },
-    { Sid::stickingMinDistance, Pid::MIN_DISTANCE },
+static const ElementStyle stickingStyle{
+    {Sid::stickingPlacement, Pid::PLACEMENT},
+    {Sid::stickingMinDistance, Pid::MIN_DISTANCE},
 };
 
 //---------------------------------------------------------
@@ -43,8 +43,7 @@ static const ElementStyle stickingStyle {
 //---------------------------------------------------------
 
 Sticking::Sticking(DummyParentOr<Segment> parent)
-    : TextBase(ElementType::STICKING, parent, TextStyleType::STICKING, ElementFlag::MOVABLE | ElementFlag::ON_STAFF)
-{
+    : TextBase(ElementType::STICKING, parent, TextStyleType::STICKING, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
     initElementStyle(&stickingStyle);
 }
 
@@ -52,13 +51,10 @@ Sticking::Sticking(DummyParentOr<Segment> parent)
 //   propertyDefault
 //---------------------------------------------------------
 
-engraving::PropertyValue Sticking::propertyDefault(Pid id) const
-{
+engraving::PropertyValue Sticking::propertyDefault(Pid id) const {
     switch (id) {
-    case Pid::TEXT_STYLE:
-        return TextStyleType::STICKING;
-    default:
-        return TextBase::propertyDefault(id);
+        case Pid::TEXT_STYLE: return TextStyleType::STICKING;
+        default: return TextBase::propertyDefault(id);
     }
 }
-}
+} // namespace mu::engraving

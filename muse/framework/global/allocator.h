@@ -28,66 +28,61 @@
 #include <string>
 
 namespace muse {
-#define OBJECT_ALLOCATOR(Module, ClassName) \
-public: \
-    static muse::ObjectAllocator& allocator() { \
-        static muse::ObjectAllocator a(#Module, #ClassName, muse::ObjectAllocator::destroyer<ClassName>); \
-        return a; \
-    } \
-    static void* operator new(size_t sz) { \
-        return muse::ObjectAllocator::enabled() ? allocator().alloc(sz) : ::operator new(sz); \
-    } \
-    static void operator delete(void* ptr) { \
-        if (muse::ObjectAllocator::enabled()) { \
-            allocator().free(ptr); \
-        } else { \
-            ::operator delete(ptr); \
-        } \
-    } \
-    static void* operator new[](size_t sz) { \
-        return muse::ObjectAllocator::enabled() ? allocator().not_supported("new[]") : ::operator new[](sz); \
-    } \
-    static void* operator new(size_t sz, void* ptr) { \
-        return muse::ObjectAllocator::enabled() ? allocator().not_supported("new(size_t, void*)") : ::operator new(sz, ptr); \
-    } \
-    static void operator delete[](void* ptr) { \
-        if (muse::ObjectAllocator::enabled()) { \
-            allocator().not_supported("delete[]"); \
-        } else { \
-            ::operator delete[](ptr); \
-        } \
-    } \
+#define OBJECT_ALLOCATOR(Module, ClassName)                                                                                        \
+public:                                                                                                                            \
+    static muse::ObjectAllocator &allocator() {                                                                                    \
+        static muse::ObjectAllocator a(#Module, #ClassName, muse::ObjectAllocator::destroyer<ClassName>);                          \
+        return a;                                                                                                                  \
+    }                                                                                                                              \
+    static void *operator new(size_t sz) { return muse::ObjectAllocator::enabled() ? allocator().alloc(sz) : ::operator new(sz); } \
+    static void operator delete(void *ptr) {                                                                                       \
+        if (muse::ObjectAllocator::enabled()) {                                                                                    \
+            allocator().free(ptr);                                                                                                 \
+        } else {                                                                                                                   \
+            ::operator delete(ptr);                                                                                                \
+        }                                                                                                                          \
+    }                                                                                                                              \
+    static void *operator new[](size_t sz) {                                                                                       \
+        return muse::ObjectAllocator::enabled() ? allocator().not_supported("new[]") : ::operator new[](sz);                       \
+    }                                                                                                                              \
+    static void *operator new(size_t sz, void *ptr) {                                                                              \
+        return muse::ObjectAllocator::enabled() ? allocator().not_supported("new(size_t, void*)") : ::operator new(sz, ptr);       \
+    }                                                                                                                              \
+    static void operator delete[](void *ptr) {                                                                                     \
+        if (muse::ObjectAllocator::enabled()) {                                                                                    \
+            allocator().not_supported("delete[]");                                                                                 \
+        } else {                                                                                                                   \
+            ::operator delete[](ptr);                                                                                              \
+        }                                                                                                                          \
+    }                                                                                                                              \
 private:
 
-class ObjectAllocator
-{
+class ObjectAllocator {
 public:
 
-    using destroyer_t = void (*)(void*);
+    using destroyer_t = void (*)(void *);
 
-    ObjectAllocator(const char* module, const char* name, destroyer_t dtor);
+    ObjectAllocator(const char *module, const char *name, destroyer_t dtor);
     ~ObjectAllocator();
 
     static size_t DEFAULT_BLOCK_SIZE;
 
-    const char* module() const;
-    const char* name() const;
+    const char *module() const;
+    const char *name() const;
 
-    void* alloc(size_t size);
-    void free(void* ptr);
+    void *alloc(size_t size);
+    void free(void *ptr);
     void cleanup();
 
-    template<class T>
-    static void destroyer(void* ptr)
-    {
-        T* p = reinterpret_cast<T*>(ptr);
+    template <class T>
+    static void destroyer(void *ptr) {
+        T *p = reinterpret_cast<T *>(ptr);
         p->~T();
     }
 
-    void* not_supported(const char* info);
+    void *not_supported(const char *info);
 
-    struct Info
-    {
+    struct Info {
         std::string module;
         std::string name;
         size_t chunkSize = 0;
@@ -99,12 +94,14 @@ public:
         uint64_t totalFreeCount = 0;
 
         uint64_t usedChunks() const { return totalChunks - freeChunks; }
+
         uint64_t allocatedBytes() const { return totalChunks * chunkSize; }
     };
 
     Info stateInfo() const;
 
     static bool enabled() { return s_used; }
+
     static void used();
     static void unused();
 
@@ -119,26 +116,25 @@ private:
          * When it's allocated, this space is used by
          * the user.
          */
-        Chunk* next = nullptr;
+        Chunk *next = nullptr;
     };
 
     struct Block {
-        Chunk* begin = nullptr;
+        Chunk *begin = nullptr;
         size_t chunkCount = 0;
         size_t chunkSize = 0;
     };
 
     Block allocateBlock(size_t chunkSize) const;
 
-    const char* m_module = nullptr;
-    const char* m_name = nullptr;
+    const char *m_module = nullptr;
+    const char *m_name = nullptr;
     size_t m_chunkSize = 0;
     destroyer_t m_dtor = nullptr;
-    Chunk* m_free = nullptr;
+    Chunk *m_free = nullptr;
     std::vector<Block> m_blocks;
 
-    struct Statistic
-    {
+    struct Statistic {
         uint64_t totalAllocatedCount = 0;
         uint64_t totalFreeCount = 0;
     };
@@ -146,27 +142,25 @@ private:
     Statistic m_statistic;
 };
 
-class AllocatorsRegister
-{
+class AllocatorsRegister {
 public:
 
-    static AllocatorsRegister* instance()
-    {
+    static AllocatorsRegister *instance() {
         static AllocatorsRegister r;
         return &r;
     }
 
-    void reg(ObjectAllocator* a);
-    void unreg(ObjectAllocator* a);
+    void reg(ObjectAllocator *a);
+    void unreg(ObjectAllocator *a);
 
-    void cleanupAll(const std::string& module);
+    void cleanupAll(const std::string &module);
 
-    void printStatistic(const std::string& title);
-    void printState(const std::string& title);
+    void printStatistic(const std::string &title);
+    void printState(const std::string &title);
 
 private:
-    std::list<ObjectAllocator*> m_allocators;
+    std::list<ObjectAllocator *> m_allocators;
 };
-}
+} // namespace muse
 
 #endif // MUSE_GLOBAL_ALLOCATOR_H

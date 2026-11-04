@@ -27,11 +27,10 @@
 #include "dir.h"
 
 namespace muse::io {
-class FileInfo
-{
+class FileInfo {
 public:
     FileInfo() = default;
-    FileInfo(const path_t& filePath);
+    FileInfo(const path_t &filePath);
 
     String path() const;
     String filePath() const;
@@ -43,7 +42,7 @@ public:
     String baseName() const;
     String completeBaseName() const;
     String suffix() const;
-    static String suffix(const path_t& filePath);
+    static String suffix(const path_t &filePath);
 
     EntryType entryType() const;
 
@@ -54,7 +53,7 @@ public:
     path_t symLinkTarget() const;
 
     bool exists() const;
-    static bool exists(const path_t& filePath);
+    static bool exists(const path_t &filePath);
 
     DateTime birthTime() const;
     DateTime lastModified() const;
@@ -63,10 +62,10 @@ public:
     Dir dir() const;
 
 private:
-    static String doSuffix(const String& filePath);
+    static String doSuffix(const String &filePath);
 
     String m_filePath;
 };
-}
+} // namespace muse::io
 
 #endif // MUSE_IO_FILEINFO_H

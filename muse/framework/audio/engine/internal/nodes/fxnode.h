@@ -27,35 +27,33 @@
 #include "../../iplayhead.h"
 
 namespace muse::audio {
-struct FxTag
-{
-    static constexpr const char* name = "Fx";
+struct FxTag {
+    static constexpr const char *name = "Fx";
 };
-}
+} // namespace muse::audio
 
 namespace muse::audio::engine {
-class FxNode : public AudioNode<FxTag>
-{
+class FxNode : public AudioNode<FxTag> {
 public:
 
     explicit FxNode(IFxProcessorPtr fxProcessor, PlayheadPositionPtr playheadPosition = nullptr);
 
     void setPlayheadPosition(PlayheadPositionPtr playheadPosition);
 
-    const AudioFxParams& params() const;
+    const AudioFxParams &params() const;
 
     bool shouldProcessDuringSilence() const;
 
 protected:
 
     void onModeChanged(const ProcessMode mode) override;
-    void onOutputSpecChanged(const OutputSpec& spec) override;
+    void onOutputSpecChanged(const OutputSpec &spec) override;
 
-    void doSelfProcess(float* buffer, samples_t samplesPerChannel) override;
+    void doSelfProcess(float *buffer, samples_t samplesPerChannel) override;
 
     IFxProcessorPtr m_fxProcessor;
     PlayheadPositionPtr m_playheadPosition;
 };
 
 using FxNodePtr = std::shared_ptr<FxNode>;
-}
+} // namespace muse::audio::engine

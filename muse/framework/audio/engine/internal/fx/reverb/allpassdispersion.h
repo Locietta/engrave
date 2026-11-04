@@ -26,41 +26,35 @@
 #include "iirbiquadfilter.h"
 
 namespace muse::audio::fx {
-class AllPassDispersion
-{
+class AllPassDispersion {
 public:
-    AllPassDispersion()
-    {
+    AllPassDispersion() {
         // these values have been manually tuned to produce a 50-sample IR that has a (low) peak of 0.453731
         m_processor[0].setTargetCoefficients(IirBiquadFilter::createAllpass2P(0.2492, 2.168, 1.0));
         m_processor[1].setTargetCoefficients(IirBiquadFilter::createAllpass2P(0.1119, 2.033, 1.0));
         reset();
     }
 
-    void reset()
-    {
-        for (auto& p : m_processor) {
+    void reset() {
+        for (auto &p : m_processor) {
             p.reset();
         }
     }
 
-    void process(float** signalPtr, int numCh, int n)
-    {
-        for (auto& p : m_processor) {
+    void process(float **signalPtr, int numCh, int n) {
+        for (auto &p : m_processor) {
             p.process(signalPtr, numCh, n);
         }
     }
 
-    void processMonoSample(float& s)
-    {
-        for (auto& p : m_processor) {
+    void processMonoSample(float &s) {
+        for (auto &p : m_processor) {
             p.processMonoSample(s);
         }
     }
 
-    void processStereoSample(float& l, float& r)
-    {
-        for (auto& p : m_processor) {
+    void processStereoSample(float &l, float &r) {
+        for (auto &p : m_processor) {
             p.processStereoSample(l, r);
         }
     }

@@ -31,7 +31,7 @@
 namespace mu::engraving {
 class Note;
 class Chord;
-}
+} // namespace mu::engraving
 
 namespace mu::iex::guitarpro {
 constexpr int GP_PITCH_PER_QUARTERTONE = 25;
@@ -58,11 +58,9 @@ struct GraceNotesImportInfo {
 using segment_data_map_t = std::map<size_t, SegmentData>;
 using grace_segment_map_t = std::map<size_t /* idx in chord */, GraceNotesImportInfo>; // each note can have multiple grace notes connected
 
-using GraceAfterTrackMap = std::unordered_map<mu::engraving::track_idx_t,
-                                              std::map<mu::engraving::Fraction, grace_segment_map_t> >;
+using GraceAfterTrackMap = std::unordered_map<mu::engraving::track_idx_t, std::map<mu::engraving::Fraction, grace_segment_map_t>>;
 
-using TiedNotesTrackMap = std::unordered_map<mu::engraving::track_idx_t,
-                                             std::map<mu::engraving::Fraction, segment_data_map_t> >;
+using TiedNotesTrackMap = std::unordered_map<mu::engraving::track_idx_t, std::map<mu::engraving::Fraction, segment_data_map_t>>;
 
 // ---- bend types ----
 
@@ -81,21 +79,16 @@ struct BendSegment {
     int pitchDiff() const { return endPitch - startPitch; }
 };
 
-enum class BendType {
-    NORMAL_BEND,
-    PREBEND,
-    HOLD,
-    SLIGHT_BEND
-};
+enum class BendType { NORMAL_BEND, PREBEND, HOLD, SLIGHT_BEND };
 
 enum class ConnectionToNextNoteType {
-    NONE, // note doesn't connect to next tied note -> using "grace note after"
+    NONE,               // note doesn't connect to next tied note -> using "grace note after"
     MAIN_NOTE_CONNECTS, // new note isn't added, only adding bend between 2 originally tied notes
     LAST_GRACE_CONNECTS // grace notes are created and last of them connects to next tied note with bend
 };
 
 struct ImportedBendInfo {
-    const mu::engraving::Note* note = nullptr;
+    const mu::engraving::Note *note = nullptr;
     std::vector<BendSegment> segments;
     BendType type = BendType::NORMAL_BEND;
     int timeOffsetFromStart = 0;
@@ -105,8 +98,8 @@ struct ImportedBendInfo {
 };
 
 struct ChordImportedBendData {
-    const mu::engraving::Chord* chord = nullptr;
-    std::unordered_map<const mu::engraving::Note*, ImportedBendInfo> dataByNote;
+    const mu::engraving::Chord *chord = nullptr;
+    std::unordered_map<const mu::engraving::Note *, ImportedBendInfo> dataByNote;
 };
 
 using tied_chords_bend_data_chunk_t = std::map<mu::engraving::Fraction, ChordImportedBendData>;
@@ -120,7 +113,7 @@ enum class DiveType {
 };
 
 struct ImportedDiveInfo {
-    const mu::engraving::Note* note = nullptr;
+    const mu::engraving::Note *note = nullptr;
     DiveType type = DiveType::NONE;
     int quarterTones = 0;
     double startFactor = 0.0;
@@ -135,14 +128,14 @@ struct BendDataContextSplitChord;
 struct BendDataContext {
     GraceAfterTrackMap graceAfterBendData;
     TiedNotesTrackMap tiedNotesBendsData;
-    std::unordered_map<mu::engraving::track_idx_t, std::map<mu::engraving::Fraction, segment_data_map_t > > prebendData;
-    std::unordered_map<mu::engraving::track_idx_t, std::map<mu::engraving::Fraction, segment_data_map_t > > slightBendData;
+    std::unordered_map<mu::engraving::track_idx_t, std::map<mu::engraving::Fraction, segment_data_map_t>> prebendData;
+    std::unordered_map<mu::engraving::track_idx_t, std::map<mu::engraving::Fraction, segment_data_map_t>> slightBendData;
     std::unique_ptr<BendDataContextSplitChord> splitChordCtx;
 };
 
 struct DiveDataContext {
     GraceAfterTrackMap graceAfterDiveData;
     TiedNotesTrackMap tiedNotesDivesData;
-    std::unordered_map<mu::engraving::track_idx_t, std::map<mu::engraving::Fraction, segment_data_map_t> > preDiveData;
+    std::unordered_map<mu::engraving::track_idx_t, std::map<mu::engraving::Fraction, segment_data_map_t>> preDiveData;
 };
-} // mu::iex::guitarpro
+} // namespace mu::iex::guitarpro

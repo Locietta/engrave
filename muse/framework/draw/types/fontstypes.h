@@ -37,27 +37,24 @@ static constexpr double DPI = 72.0 * DPI_F;
 
 struct FontDataKey {
     FontDataKey() = default;
-    FontDataKey(const Font::FontFamily& fa)
-        : m_family(fa), m_bold(false), m_italic(false) {}
 
-    FontDataKey(const Font::FontFamily& fa, bool bo, bool it)
-        : m_family(fa), m_bold(bo), m_italic(it) {}
+    FontDataKey(const Font::FontFamily &fa) : m_family(fa), m_bold(false), m_italic(false) {}
+
+    FontDataKey(const Font::FontFamily &fa, bool bo, bool it) : m_family(fa), m_bold(bo), m_italic(it) {}
 
     inline bool valid() const { return m_family.valid(); }
 
-    const Font::FontFamily& family() const { return m_family; }
+    const Font::FontFamily &family() const { return m_family; }
+
     bool bold() const { return m_bold; }
+
     bool italic() const { return m_italic; }
 
-    inline bool operator==(const FontDataKey& o) const
-    {
-        return m_bold == o.m_bold && m_italic == o.m_italic && m_family == o.m_family;
-    }
+    inline bool operator==(const FontDataKey &o) const { return m_bold == o.m_bold && m_italic == o.m_italic && m_family == o.m_family; }
 
-    inline bool operator!=(const FontDataKey& o) const { return !this->operator==(o); }
+    inline bool operator!=(const FontDataKey &o) const { return !this->operator==(o); }
 
-    inline bool operator<(const FontDataKey& o) const
-    {
+    inline bool operator<(const FontDataKey &o) const {
         if (m_bold != o.m_bold) {
             return m_bold < o.m_bold;
         }
@@ -75,10 +72,7 @@ private:
     bool m_italic = false;
 };
 
-inline FontDataKey dataKeyForFont(const Font& f)
-{
-    return FontDataKey(f.family(), f.bold(), f.italic());
-}
+inline FontDataKey dataKeyForFont(const Font &f) { return FontDataKey(f.family(), f.bold(), f.italic()); }
 
 struct FontData {
     FontDataKey key;
@@ -93,17 +87,14 @@ struct FaceKey {
     int pixelSize = 0;
 
     FaceKey() = default;
-    FaceKey(const FontDataKey& dk, Font::Type t, int ps)
-        : dataKey(dk), type(t), pixelSize(ps) {}
 
-    inline bool operator==(const FaceKey& o) const
-    {
-        return type == o.type && dataKey == o.dataKey && pixelSize == o.pixelSize;
-    }
+    FaceKey(const FontDataKey &dk, Font::Type t, int ps) : dataKey(dk), type(t), pixelSize(ps) {}
 
-    inline bool operator!=(const FaceKey& o) const { return !this->operator==(o); }
-    inline bool operator<(const FaceKey& o) const
-    {
+    inline bool operator==(const FaceKey &o) const { return type == o.type && dataKey == o.dataKey && pixelSize == o.pixelSize; }
+
+    inline bool operator!=(const FaceKey &o) const { return !this->operator==(o); }
+
+    inline bool operator<(const FaceKey &o) const {
         if (type != o.type) {
             return type < o.type;
         } else if (dataKey != o.dataKey) {
@@ -114,8 +105,7 @@ struct FaceKey {
     }
 };
 
-inline int pixelSizeForFont(const Font& f)
-{
+inline int pixelSizeForFont(const Font &f) {
     if (f.pixelSize() > 0) {
         return f.pixelSize();
     } else {
@@ -123,10 +113,7 @@ inline int pixelSizeForFont(const Font& f)
     }
 }
 
-inline FaceKey faceKeyForFont(const Font& f)
-{
-    return FaceKey(dataKeyForFont(f), f.type(), pixelSizeForFont(f));
-}
+inline FaceKey faceKeyForFont(const Font &f) { return FaceKey(dataKeyForFont(f), f.type(), pixelSizeForFont(f)); }
 
 struct Sdf {
     muse::ByteArray bitmap;
@@ -153,6 +140,6 @@ struct FontParams {
     bool underline = false;
     bool strike = false;
 };
-}
+} // namespace muse::draw
 
 #endif // MUSE_DRAW_FONTSTYPES_H

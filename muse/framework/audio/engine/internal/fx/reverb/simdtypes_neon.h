@@ -38,38 +38,28 @@
  */
 
 namespace muse::audio::fx::simd {
-struct float_x4
-{
+struct float_x4 {
     float32x4_t s;
 
-    __finl float_x4()
-    {
-    }
+    __finl float_x4() {}
 
     /// enables math like: float_x4 a = 0.5f * float_x4{1.f, 2.f, 3.f, 4.f};
-    __finl float_x4(float val)
-    {
-        s = vdupq_n_f32(val);
-    }
+    __finl float_x4(float val) { s = vdupq_n_f32(val); }
 
-    __finl float_x4(const float32x4_t& val)
-        : s(val)
-    {
-    }
+    __finl float_x4(const float32x4_t &val) : s(val) {}
 
     /// enables assignments like: float_x4 a = {1.f, 2.f, 3.f, 4.f};
-    __finl float_x4(float v0, float v1, float v2, float v3)
-    {
+    __finl float_x4(float v0, float v1, float v2, float v3) {
 #if _MSC_VER // aggregate initializer won't work unless we have {.n128_f32 = ..} in c++20
         s.n128_f32[0] = v0;
         s.n128_f32[1] = v1;
         s.n128_f32[2] = v2;
         s.n128_f32[3] = v3;
 #elif defined(__GNUC__) // gcc (12.2.0) doesn't seem to allow initializer list.
-        const float init[4] = { v0, v1, v2, v3 };
+        const float init[4] = {v0, v1, v2, v3};
         s = vld1q_f32(init);
 #else
-        s = { v0, v1, v2, v3 };
+        s = {v0, v1, v2, v3};
 #endif
     }
 
@@ -82,63 +72,37 @@ private:
     // it allows to write
     // float_x4 a;
     // a[1] = 2.f;
-    struct RegisterAccessWrapper
-    {
-        float32x4_t& val;
+    struct RegisterAccessWrapper {
+        float32x4_t &val;
         int i;
 
-        void operator=(float x)
-        {
-            val[i] = x;
-        }
+        void operator=(float x) { val[i] = x; }
 
-        operator float() noexcept
-        {
-            return val[i];
-        }
+        operator float() noexcept { return val[i]; }
     };
 
 public:
-    __finl RegisterAccessWrapper operator[](int n)
-    {
-        RegisterAccessWrapper raw = { s, n };
+    __finl RegisterAccessWrapper operator[](int n) {
+        RegisterAccessWrapper raw = {s, n};
         return raw;
     }
 
-    __finl float operator[](int n) const
-    {
-        return s[n];
-    }
+    __finl float operator[](int n) const { return s[n]; }
 
 #elif _MSC_VER
     // on msvc returning a ref to a sub-register is possible
-    __finl float& operator[](int n)
-    {
-        return s.n128_f32[n];
-    }
+    __finl float &operator[](int n) { return s.n128_f32[n]; }
 
-    __finl const float operator[](int n) const
-    {
-        return s.n128_f32[n];
-    }
+    __finl const float operator[](int n) const { return s.n128_f32[n]; }
 
 #endif
 };
 
-__finl float_x4 __vecc operator+(float_x4 a, float_x4 b)
-{
-    return vaddq_f32(a.s, b.s);
-}
+__finl float_x4 __vecc operator+(float_x4 a, float_x4 b) { return vaddq_f32(a.s, b.s); }
 
-__finl float_x4 __vecc operator-(float_x4 a, float_x4 b)
-{
-    return vsubq_f32(a.s, b.s);
-}
+__finl float_x4 __vecc operator-(float_x4 a, float_x4 b) { return vsubq_f32(a.s, b.s); }
 
-__finl float_x4 __vecc operator*(float_x4 a, float_x4 b)
-{
-    return vmulq_f32(a.s, b.s);
-}
-} // namespace muse::audio::fx
+__finl float_x4 __vecc operator*(float_x4 a, float_x4 b) { return vmulq_f32(a.s, b.s); }
+} // namespace muse::audio::fx::simd
 
 #endif // MUSE_AUDIO_SIMDTYPES_NEON_H

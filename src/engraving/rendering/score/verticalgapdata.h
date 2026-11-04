@@ -30,7 +30,7 @@ class Spacer;
 class Staff;
 class SysStaff;
 class System;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
 //---------------------------------------------------------
@@ -38,15 +38,14 @@ namespace mu::engraving::rendering::score {
 //    helper class for spreading staves over a page
 //---------------------------------------------------------
 
-class VerticalGapData
-{
+class VerticalGapData {
 public:
-    const MStyle* style = nullptr;
-    System* system = nullptr;
-    SysStaff* sysStaff = nullptr;
-    const Staff* staff = nullptr;
+    const MStyle *style = nullptr;
+    System *system = nullptr;
+    SysStaff *sysStaff = nullptr;
+    const Staff *staff = nullptr;
 
-    VerticalGapData(const MStyle* style, bool first, System* sys, const Staff* st, SysStaff* sst, Spacer* nextSpacer, double y);
+    VerticalGapData(const MStyle *style, bool first, System *sys, const Staff *st, SysStaff *sst, Spacer *nextSpacer, double y);
 
     void addSpaceBetweenSections();
     void addSpaceAroundVBox(bool above);
@@ -66,7 +65,7 @@ public:
     void setNormalisedSpacing(double newNormalisedSpacing);
 
 private:
-    void  updateFactor(double factor);
+    void updateFactor(double factor);
 
     bool m_fixedHeight = false;
     bool m_fixedSpacer = false;
@@ -83,13 +82,12 @@ private:
 //    helper class for spreading staves over a page
 //---------------------------------------------------------
 
-class VerticalGapDataList : public std::vector<VerticalGapData*>
-{
+class VerticalGapDataList : public std::vector<VerticalGapData *> {
 public:
     void deleteAll();
     double sumStretchFactor() const;
-    double smallest(double limit=-1.0) const;
+    double smallest(double limit = -1.0) const;
 };
-}
+} // namespace mu::engraving::rendering::score
 
 #endif // MU_ENGRAVING_VERTICALGAPDATALIST_DEV_H

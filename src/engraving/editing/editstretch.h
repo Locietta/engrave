@@ -26,10 +26,9 @@ namespace mu::engraving {
 class Score;
 class Transaction;
 
-class EditStretch
-{
+class EditStretch {
 public:
-    static void addStretch(Transaction& tx, Score* score, double val);
-    static void resetUserStretch(Transaction& tx, Score* score);
+    static void addStretch(Transaction &tx, Score *score, double val);
+    static void resetUserStretch(Transaction &tx, Score *score);
 };
-}
+} // namespace mu::engraving

@@ -25,33 +25,26 @@
 #include "page.h"
 #include "score.h"
 
-
 using namespace mu::engraving;
 
-RootItem::RootItem(Score* score, Kind kind)
-    : EngravingItem(ElementType::ROOT_ITEM, score), m_kind(kind)
-{
-}
+RootItem::RootItem(Score *score, Kind kind) : EngravingItem(ElementType::ROOT_ITEM, score), m_kind(kind) {}
 
-EngravingItemList RootItem::accessibleChildren() const
-{
+EngravingItemList RootItem::accessibleChildren() const {
     switch (m_kind) {
-    case Kind::Score: {
-        EngravingItemList children = EngravingItem::accessibleChildren();
-        // The pages are owned by the score, but this is the top of the accessibility
-        // tree, so this is where they are listed.
-        children.insert(children.end(), score()->pages().begin(), score()->pages().end());
-        return children;
-    }
-    case Kind::Dummy:
-        // The objects parked on the dummy are not part of the score, so they form a
-        // tree of their own, headed by this.
-        return score()->dummy()->childrenItems();
+        case Kind::Score: {
+            EngravingItemList children = EngravingItem::accessibleChildren();
+            // The pages are owned by the score, but this is the top of the accessibility
+            // tree, so this is where they are listed.
+            children.insert(children.end(), score()->pages().begin(), score()->pages().end());
+            return children;
+        }
+        case Kind::Dummy:
+            // The objects parked on the dummy are not part of the score, so they form a
+            // tree of their own, headed by this.
+            return score()->dummy()->childrenItems();
     }
 
     return EngravingItemList();
 }
 
-void RootItem::init()
-{
-}
+void RootItem::init() {}

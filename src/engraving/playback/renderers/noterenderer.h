@@ -26,20 +26,20 @@
 
 namespace mu::engraving {
 class Note;
-class NoteRenderer
-{
+
+class NoteRenderer {
 public:
-    static bool shouldRender(const Note* note, const RenderingContext& ctx, const muse::mpe::ArticulationMap& articulations);
-    static void render(const Note* note, const RenderingContext& ctx, muse::mpe::PlaybackEventList& result);
+    static bool shouldRender(const Note *note, const RenderingContext &ctx, const muse::mpe::ArticulationMap &articulations);
+    static void render(const Note *note, const RenderingContext &ctx, muse::mpe::PlaybackEventList &result);
 
 private:
-    static void renderPartialTie(const Note* outgoingNote, NominalNoteCtx& outgoingNoteCtx);
-    static void renderNormalTie(const Note* firstNote, NominalNoteCtx& firstNoteCtx);
-    static void addTiedNote(const NominalNoteCtx& tiedNoteCtx, NominalNoteCtx& firstNoteCtx);
+    static void renderPartialTie(const Note *outgoingNote, NominalNoteCtx &outgoingNoteCtx);
+    static void renderNormalTie(const Note *firstNote, NominalNoteCtx &firstNoteCtx);
+    static void addTiedNote(const NominalNoteCtx &tiedNoteCtx, NominalNoteCtx &firstNoteCtx);
     static void updateArticulationBoundaries(const muse::mpe::timestamp_t noteTimestamp, const muse::mpe::duration_t noteDuration,
-                                             muse::mpe::ArticulationMap& articulations);
-    static void applySwingIfNeed(const Note* note, NominalNoteCtx& noteCtx);
+                                             muse::mpe::ArticulationMap &articulations);
+    static void applySwingIfNeed(const Note *note, NominalNoteCtx &noteCtx);
 
-    static NominalNoteCtx buildNominalNoteCtx(const Note* note, const RenderingContext& ctx);
+    static NominalNoteCtx buildNominalNoteCtx(const Note *note, const RenderingContext &ctx);
 };
-}
+} // namespace mu::engraving

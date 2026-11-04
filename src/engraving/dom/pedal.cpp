@@ -36,70 +36,63 @@
 using namespace mu;
 
 namespace mu::engraving {
-static const ElementStyle pedalStyle {
-    { Sid::pedalText,                          Pid::BEGIN_TEXT },
-    { Sid::pedalContinueText,                  Pid::CONTINUE_TEXT },
-    { Sid::pedalRosetteEndText,                Pid::END_TEXT },
-    { Sid::pedalFontFace,                      Pid::BEGIN_FONT_FACE },
-    { Sid::pedalFontFace,                      Pid::CONTINUE_FONT_FACE },
-    { Sid::pedalFontFace,                      Pid::END_FONT_FACE },
-    { Sid::pedalFontSize,                      Pid::BEGIN_FONT_SIZE },
-    { Sid::pedalFontSize,                      Pid::CONTINUE_FONT_SIZE },
-    { Sid::pedalFontSize,                      Pid::END_FONT_SIZE },
-    { Sid::pedalFontStyle,                     Pid::BEGIN_FONT_STYLE },
-    { Sid::pedalFontStyle,                     Pid::CONTINUE_FONT_STYLE },
-    { Sid::pedalFontStyle,                     Pid::END_FONT_STYLE },
-    { Sid::pedalMusicalSymbolsScale,           Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE },
-    { Sid::pedalMusicalSymbolsScale,           Pid::CONTINUE_TEXT_MUSICAL_SYMBOLS_SCALE },
-    { Sid::pedalMusicalSymbolsScale,           Pid::END_TEXT_MUSICAL_SYMBOLS_SCALE },
-    { Sid::dummyMusicalSymbolSize,             Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE },
-    { Sid::dummyMusicalSymbolSize,             Pid::CONTINUE_TEXT_MUSIC_SYMBOLS_SIZE },
-    { Sid::dummyMusicalSymbolSize,             Pid::END_TEXT_MUSIC_SYMBOLS_SIZE },
-    { Sid::pedalTextAlign,                     Pid::BEGIN_TEXT_ALIGN },
-    { Sid::pedalTextAlign,                     Pid::CONTINUE_TEXT_ALIGN },
-    { Sid::pedalTextAlign,                     Pid::END_TEXT_ALIGN },
-    { Sid::pedalPosition,                      Pid::BEGIN_TEXT_POSITION },
-    { Sid::pedalPosition,                      Pid::CONTINUE_TEXT_POSITION },
-    { Sid::pedalPosition,                      Pid::END_TEXT_POSITION },
-    { Sid::pedalHookHeight,                    Pid::BEGIN_HOOK_HEIGHT },
-    { Sid::pedalHookHeight,                    Pid::END_HOOK_HEIGHT },
-    { Sid::pedalLineWidth,                     Pid::LINE_WIDTH },
-    { Sid::pedalDashLineLen,                   Pid::DASH_LINE_LEN },
-    { Sid::pedalDashGapLen,                    Pid::DASH_GAP_LEN },
-    { Sid::pedalPlacement,                     Pid::PLACEMENT },
-    { Sid::pedalLineStyle,                     Pid::LINE_STYLE },
-    { Sid::pedalFontSpatiumDependent,          Pid::TEXT_SIZE_SPATIUM_DEPENDENT },
-    { Sid::pedalEndLineArrowHeight,            Pid::END_LINE_ARROW_HEIGHT },
-    { Sid::pedalEndLineArrowWidth,             Pid::END_LINE_ARROW_WIDTH },
-    { Sid::pedalBeginLineArrowHeight,          Pid::BEGIN_LINE_ARROW_HEIGHT },
-    { Sid::pedalBeginLineArrowWidth,           Pid::BEGIN_LINE_ARROW_WIDTH },
-    { Sid::pedalEndFilledArrowHeight,          Pid::END_FILLED_ARROW_HEIGHT },
-    { Sid::pedalEndFilledArrowWidth,           Pid::END_FILLED_ARROW_WIDTH },
-    { Sid::pedalBeginFilledArrowHeight,        Pid::BEGIN_FILLED_ARROW_HEIGHT },
-    { Sid::pedalBeginFilledArrowWidth,         Pid::BEGIN_FILLED_ARROW_WIDTH },
+static const ElementStyle pedalStyle{
+    {Sid::pedalText, Pid::BEGIN_TEXT},
+    {Sid::pedalContinueText, Pid::CONTINUE_TEXT},
+    {Sid::pedalRosetteEndText, Pid::END_TEXT},
+    {Sid::pedalFontFace, Pid::BEGIN_FONT_FACE},
+    {Sid::pedalFontFace, Pid::CONTINUE_FONT_FACE},
+    {Sid::pedalFontFace, Pid::END_FONT_FACE},
+    {Sid::pedalFontSize, Pid::BEGIN_FONT_SIZE},
+    {Sid::pedalFontSize, Pid::CONTINUE_FONT_SIZE},
+    {Sid::pedalFontSize, Pid::END_FONT_SIZE},
+    {Sid::pedalFontStyle, Pid::BEGIN_FONT_STYLE},
+    {Sid::pedalFontStyle, Pid::CONTINUE_FONT_STYLE},
+    {Sid::pedalFontStyle, Pid::END_FONT_STYLE},
+    {Sid::pedalMusicalSymbolsScale, Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE},
+    {Sid::pedalMusicalSymbolsScale, Pid::CONTINUE_TEXT_MUSICAL_SYMBOLS_SCALE},
+    {Sid::pedalMusicalSymbolsScale, Pid::END_TEXT_MUSICAL_SYMBOLS_SCALE},
+    {Sid::dummyMusicalSymbolSize, Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE},
+    {Sid::dummyMusicalSymbolSize, Pid::CONTINUE_TEXT_MUSIC_SYMBOLS_SIZE},
+    {Sid::dummyMusicalSymbolSize, Pid::END_TEXT_MUSIC_SYMBOLS_SIZE},
+    {Sid::pedalTextAlign, Pid::BEGIN_TEXT_ALIGN},
+    {Sid::pedalTextAlign, Pid::CONTINUE_TEXT_ALIGN},
+    {Sid::pedalTextAlign, Pid::END_TEXT_ALIGN},
+    {Sid::pedalPosition, Pid::BEGIN_TEXT_POSITION},
+    {Sid::pedalPosition, Pid::CONTINUE_TEXT_POSITION},
+    {Sid::pedalPosition, Pid::END_TEXT_POSITION},
+    {Sid::pedalHookHeight, Pid::BEGIN_HOOK_HEIGHT},
+    {Sid::pedalHookHeight, Pid::END_HOOK_HEIGHT},
+    {Sid::pedalLineWidth, Pid::LINE_WIDTH},
+    {Sid::pedalDashLineLen, Pid::DASH_LINE_LEN},
+    {Sid::pedalDashGapLen, Pid::DASH_GAP_LEN},
+    {Sid::pedalPlacement, Pid::PLACEMENT},
+    {Sid::pedalLineStyle, Pid::LINE_STYLE},
+    {Sid::pedalFontSpatiumDependent, Pid::TEXT_SIZE_SPATIUM_DEPENDENT},
+    {Sid::pedalEndLineArrowHeight, Pid::END_LINE_ARROW_HEIGHT},
+    {Sid::pedalEndLineArrowWidth, Pid::END_LINE_ARROW_WIDTH},
+    {Sid::pedalBeginLineArrowHeight, Pid::BEGIN_LINE_ARROW_HEIGHT},
+    {Sid::pedalBeginLineArrowWidth, Pid::BEGIN_LINE_ARROW_WIDTH},
+    {Sid::pedalEndFilledArrowHeight, Pid::END_FILLED_ARROW_HEIGHT},
+    {Sid::pedalEndFilledArrowWidth, Pid::END_FILLED_ARROW_WIDTH},
+    {Sid::pedalBeginFilledArrowHeight, Pid::BEGIN_FILLED_ARROW_HEIGHT},
+    {Sid::pedalBeginFilledArrowWidth, Pid::BEGIN_FILLED_ARROW_WIDTH},
 };
 
 const String Pedal::PEDAL_SYMBOL = u"<sym>keyboardPedalPed</sym>";
 const String Pedal::STAR_SYMBOL = u"<sym>keyboardPedalUp</sym>";
 
-PedalSegment::PedalSegment(Pedal* sp)
-    : TextLineBaseSegment(ElementType::PEDAL_SEGMENT, sp, ElementFlag::MOVABLE | ElementFlag::ON_STAFF)
-{
+PedalSegment::PedalSegment(Pedal *sp) : TextLineBaseSegment(ElementType::PEDAL_SEGMENT, sp, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
     m_text->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
     m_endText->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
 }
 
-Sid Pedal::getPropertyStyle(Pid pid) const
-{
+Sid Pedal::getPropertyStyle(Pid pid) const {
     switch (pid) {
-    case Pid::END_TEXT:
-        return lineVisible() ? Sid::pedalEndText : Sid::pedalRosetteEndText;
-    case Pid::BEGIN_TEXT:
-        return beginHookType() == HookType::NONE ? Sid::pedalText : Sid::pedalHookText;
-    case Pid::CONTINUE_TEXT:
-        return beginHookType() == HookType::NONE ? Sid::pedalContinueText : Sid:: pedalContinueHookText;
-    default:
-        return TextLineBase::getPropertyStyle(pid);
+        case Pid::END_TEXT: return lineVisible() ? Sid::pedalEndText : Sid::pedalRosetteEndText;
+        case Pid::BEGIN_TEXT: return beginHookType() == HookType::NONE ? Sid::pedalText : Sid::pedalHookText;
+        case Pid::CONTINUE_TEXT: return beginHookType() == HookType::NONE ? Sid::pedalContinueText : Sid::pedalContinueHookText;
+        default: return TextLineBase::getPropertyStyle(pid);
     }
 }
 
@@ -107,9 +100,7 @@ Sid Pedal::getPropertyStyle(Pid pid) const
 //   Pedal
 //---------------------------------------------------------
 
-Pedal::Pedal(DummyParentOr<EngravingItem> parent)
-    : TextLineBase(ElementType::PEDAL, parent)
-{
+Pedal::Pedal(DummyParentOr<EngravingItem> parent) : TextLineBase(ElementType::PEDAL, parent) {
     initElementStyle(&pedalStyle);
     setLineVisible(true);
 
@@ -128,13 +119,12 @@ Pedal::Pedal(DummyParentOr<EngravingItem> parent)
 //   createLineSegment
 //---------------------------------------------------------
 
-static const ElementStyle pedalSegmentStyle {
-    { Sid::pedalMinDistance, Pid::MIN_DISTANCE },
+static const ElementStyle pedalSegmentStyle{
+    {Sid::pedalMinDistance, Pid::MIN_DISTANCE},
 };
 
-LineSegment* Pedal::createLineSegment()
-{
-    PedalSegment* p = new PedalSegment(this);
+LineSegment *Pedal::createLineSegment() {
+    PedalSegment *p = new PedalSegment(this);
     p->setTrack(track());
     p->initElementStyle(&pedalSegmentStyle);
     return p;
@@ -144,64 +134,52 @@ LineSegment* Pedal::createLineSegment()
 //   propertyDefault
 //---------------------------------------------------------
 
-engraving::PropertyValue Pedal::propertyDefault(Pid propertyId) const
-{
+engraving::PropertyValue Pedal::propertyDefault(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::LINE_WIDTH:
-        return style().styleS(Sid::pedalLineWidth);              // return point, not spatium
+        case Pid::LINE_WIDTH: return style().styleS(Sid::pedalLineWidth); // return point, not spatium
 
-    case Pid::LINE_STYLE:
-        return style().styleV(Sid::pedalLineStyle);
+        case Pid::LINE_STYLE: return style().styleV(Sid::pedalLineStyle);
 
-    case Pid::BEGIN_TEXT:
-    case Pid::CONTINUE_TEXT:
-    case Pid::END_TEXT:
-        return style().styleV(getPropertyStyle(propertyId));
+        case Pid::BEGIN_TEXT:
+        case Pid::CONTINUE_TEXT:
+        case Pid::END_TEXT: return style().styleV(getPropertyStyle(propertyId));
 
-    case Pid::BEGIN_TEXT_PLACE:
-    case Pid::CONTINUE_TEXT_PLACE:
-    case Pid::END_TEXT_PLACE:
-        return TextPlace::LEFT;
+        case Pid::BEGIN_TEXT_PLACE:
+        case Pid::CONTINUE_TEXT_PLACE:
+        case Pid::END_TEXT_PLACE: return TextPlace::LEFT;
 
-    case Pid::BEGIN_TEXT_OFFSET:
-    case Pid::CONTINUE_TEXT_OFFSET:
-    case Pid::END_TEXT_OFFSET:
-        return PropertyValue::fromValue(PointF(0, 0));
+        case Pid::BEGIN_TEXT_OFFSET:
+        case Pid::CONTINUE_TEXT_OFFSET:
+        case Pid::END_TEXT_OFFSET: return PropertyValue::fromValue(PointF(0, 0));
 
-    case Pid::BEGIN_HOOK_TYPE:
-    case Pid::END_HOOK_TYPE:
-        return HookType::NONE;
+        case Pid::BEGIN_HOOK_TYPE:
+        case Pid::END_HOOK_TYPE: return HookType::NONE;
 
-    case Pid::LINE_VISIBLE:
-        return true;
+        case Pid::LINE_VISIBLE: return true;
 
-    case Pid::PLACEMENT:
-        return style().styleV(Sid::pedalPlacement);
+        case Pid::PLACEMENT: return style().styleV(Sid::pedalPlacement);
 
-    case Pid::TEXT_STYLE:
-        return TextStyleType::PEDAL;
+        case Pid::TEXT_STYLE: return TextStyleType::PEDAL;
 
-    default:
-        return TextLineBase::propertyDefault(propertyId);
+        default: return TextLineBase::propertyDefault(propertyId);
     }
 }
 
-bool Pedal::setProperty(Pid propertyId, const PropertyValue& v)
-{
+bool Pedal::setProperty(Pid propertyId, const PropertyValue &v) {
     // Update style flag for text
     if (propertyId == Pid::BEGIN_HOOK_TYPE) {
         setBeginHookType(v.value<HookType>());
 
-        PropertyFlags beginTextStyleFlag = beginText() == propertyDefault(Pid::BEGIN_TEXT).value<String>()
-                                           ? PropertyFlags::STYLED : PropertyFlags::UNSTYLED;
+        PropertyFlags beginTextStyleFlag =
+            beginText() == propertyDefault(Pid::BEGIN_TEXT).value<String>() ? PropertyFlags::STYLED : PropertyFlags::UNSTYLED;
         setPropertyFlags(Pid::BEGIN_TEXT, beginTextStyleFlag);
-        PropertyFlags continueTextStyleFlag = continueText() == propertyDefault(Pid::CONTINUE_TEXT).value<String>()
-                                              ? PropertyFlags::STYLED : PropertyFlags::UNSTYLED;
+        PropertyFlags continueTextStyleFlag =
+            continueText() == propertyDefault(Pid::CONTINUE_TEXT).value<String>() ? PropertyFlags::STYLED : PropertyFlags::UNSTYLED;
         setPropertyFlags(Pid::CONTINUE_TEXT, continueTextStyleFlag);
     } else if (propertyId == Pid::LINE_VISIBLE) {
         setLineVisible(v.toBool());
-        PropertyFlags endTextStyleFlag = endText() == propertyDefault(Pid::END_TEXT).value<String>()
-                                         ? PropertyFlags::STYLED : PropertyFlags::UNSTYLED;
+        PropertyFlags endTextStyleFlag =
+            endText() == propertyDefault(Pid::END_TEXT).value<String>() ? PropertyFlags::STYLED : PropertyFlags::UNSTYLED;
         setPropertyFlags(Pid::END_TEXT, endTextStyleFlag);
     } else {
         return TextLineBase::setProperty(propertyId, v);
@@ -211,12 +189,11 @@ bool Pedal::setProperty(Pid propertyId, const PropertyValue& v)
     return true;
 }
 
-Pedal* Pedal::findNextInStaff() const
-{
+Pedal *Pedal::findNextInStaff() const {
     Fraction endTick = tick2();
     auto spanners = score()->spannerMap().findOverlapping(endTick.ticks(), score()->endTick().ticks());
     for (auto element : spanners) {
-        Spanner* spanner = element.value;
+        Spanner *spanner = element.value;
         if (spanner->isPedal() && spanner != this && spanner->staffIdx() == staffIdx() && spanner->tick() == endTick) {
             return toPedal(spanner);
         }
@@ -225,13 +202,12 @@ Pedal* Pedal::findNextInStaff() const
     return nullptr;
 }
 
-bool Pedal::connect45HookToNext() const
-{
+bool Pedal::connect45HookToNext() const {
     if (endHookType() != HookType::HOOK_45) {
         return false;
     }
 
-    Pedal* nextPedal = findNextInStaff();
+    Pedal *nextPedal = findNextInStaff();
 
     return nextPedal && nextPedal->tick() == tick2() && nextPedal->beginHookType() == HookType::HOOK_45;
 }
@@ -241,12 +217,11 @@ bool Pedal::connect45HookToNext() const
 //    return System() coordinates
 //---------------------------------------------------------
 
-PointF Pedal::linePos(Grip grip, System** sys) const
-{
+PointF Pedal::linePos(Grip grip, System **sys) const {
     bool start = grip == Grip::START;
 
     if (start) {
-        Segment* startSeg = startSegment();
+        Segment *startSeg = startSegment();
         if (!startSeg) {
             return PointF();
         }
@@ -257,9 +232,9 @@ PointF Pedal::linePos(Grip grip, System** sys) const
         } else if (beginHookType() == HookType::HOOK_90 || beginHookType() == HookType::HOOK_90T) {
             x += 0.5 * absoluteFromSpatium(lineWidth());
         } else if (beginHookType() == HookType::HOOK_45) {
-            EngravingItem* item = startElement();
+            EngravingItem *item = startElement();
             if (item && item->isChord()) {
-                Note* downNote = toChord(item)->downNote();
+                Note *downNote = toChord(item)->downNote();
                 x += 0.5 * downNote->headWidth();
             } else if (item && item->isRest()) {
                 x += toRest(item)->centerX();
@@ -268,19 +243,19 @@ PointF Pedal::linePos(Grip grip, System** sys) const
         return PointF(x, 0.0);
     }
 
-    Segment* endSeg = endSegment();
+    Segment *endSeg = endSegment();
     if (!endSeg) {
         return PointF();
     }
 
-    Pedal* nextPedal = findNextInStaff();
+    Pedal *nextPedal = findNextInStaff();
 
     if (nextPedal && endHookType() == HookType::HOOK_45) {
         *sys = endSeg->measure()->system();
         double x = endSeg->x() + endSeg->measure()->x();
-        EngravingItem* item = endElement();
+        EngravingItem *item = endElement();
         if (item && item->isChord()) {
-            Note* downNote = toChord(item)->downNote();
+            Note *downNote = toChord(item)->downNote();
             x += 0.5 * downNote->headWidth();
         } else if (item && item->isRest()) {
             x += toRest(item)->centerX();
@@ -289,7 +264,7 @@ PointF Pedal::linePos(Grip grip, System** sys) const
     }
 
     if (endSeg->rtick() == Fraction(0, 1)) {
-        Segment* prevSeg = endSeg->prev1(SegmentType::EndBarLine);
+        Segment *prevSeg = endSeg->prev1(SegmentType::EndBarLine);
         if (prevSeg) {
             endSeg = prevSeg;
         }
@@ -303,8 +278,5 @@ PointF Pedal::linePos(Grip grip, System** sys) const
     return PointF(x, 0.0);
 }
 
-Sid Pedal::defaultPosSid() const
-{
-    return placeAbove() ? Sid::pedalPosAbove : Sid::pedalPosBelow;
-}
-}
+Sid Pedal::defaultPosSid() const { return placeAbove() ? Sid::pedalPosAbove : Sid::pedalPosBelow; }
+} // namespace mu::engraving

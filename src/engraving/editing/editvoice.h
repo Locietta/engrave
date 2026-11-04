@@ -28,10 +28,9 @@ namespace mu::engraving {
 class Score;
 class Transaction;
 
-class EditVoice
-{
+class EditVoice {
 public:
-    static void changeSelectedElementsVoice(Transaction& tx, Score* score, voice_idx_t voice);
-    static void changeSelectedElementsVoiceAssignment(Transaction& tx, Score* score, VoiceAssignment voiceAssignment);
+    static void changeSelectedElementsVoice(Transaction &tx, Score *score, voice_idx_t voice);
+    static void changeSelectedElementsVoiceAssignment(Transaction &tx, Score *score, VoiceAssignment voiceAssignment);
 };
-}
+} // namespace mu::engraving

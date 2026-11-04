@@ -36,19 +36,18 @@ using xml_handle_slot = std::uintptr_t;
 struct xml_handle {
     xml_handle_slot slot0 = 0;
     xml_handle_slot slot1 = 0;
-    explicit operator bool() const noexcept {
-        return !(slot0 == 0 && slot1 == 0);
-    }
+
+    explicit operator bool() const noexcept { return !(slot0 == 0 && slot1 == 0); }
 };
-static_assert(std::is_trivially_copyable_v<xml_handle>,
-              "Xml handle struct must be trivially copyable");
+
+static_assert(std::is_trivially_copyable_v<xml_handle>, "Xml handle struct must be trivially copyable");
 using xml_node_handle = xml_handle;
 using xml_attr_handle = xml_handle;
 
 class XmlDomElement;
 class XmlDomAttribute;
-class XmlDomNode
-{
+
+class XmlDomNode {
 public:
 
     XmlDomNode() = default;
@@ -58,44 +57,42 @@ public:
 
     bool hasChildNodes() const;
     XmlDomNode firstChild() const;
-    XmlDomElement firstChildElement(const char* name) const;
+    XmlDomElement firstChildElement(const char *name) const;
     XmlDomNode nextSibling() const;
     XmlDomNode previousSibling() const;
     XmlDomNode parent() const;
 
-    XmlDomElement nextSiblingElement(const char* name = nullptr) const;
-    XmlDomElement previousSiblingElement(const char* name = nullptr) const;
+    XmlDomElement nextSiblingElement(const char *name = nullptr) const;
+    XmlDomElement previousSiblingElement(const char *name = nullptr) const;
     XmlDomElement toElement() const;
 
 protected:
     friend class XmlDomDocument;
     friend class XmlDomElement;
 
-    XmlDomNode(const std::shared_ptr<XmlDomImplData>& xml, xml_node_handle node);
+    XmlDomNode(const std::shared_ptr<XmlDomImplData> &xml, xml_node_handle node);
 
     std::shared_ptr<XmlDomImplData> m_xml = nullptr;
     xml_node_handle m_node{};
 };
 
-class XmlDomElement : public XmlDomNode
-{
+class XmlDomElement : public XmlDomNode {
 public:
 
     String text() const;
 
     XmlDomAttribute firstAttribute() const;
-    XmlDomAttribute attribute(const char* name) const;
+    XmlDomAttribute attribute(const char *name) const;
 
 private:
 
     friend class XmlDomDocument;
     friend class XmlDomNode;
 
-    XmlDomElement(const std::shared_ptr<XmlDomImplData>& data, xml_node_handle node);
+    XmlDomElement(const std::shared_ptr<XmlDomImplData> &data, xml_node_handle node);
 };
 
-class XmlDomAttribute
-{
+class XmlDomAttribute {
 public:
 
     bool isNull() const;
@@ -108,18 +105,17 @@ public:
 private:
     friend class XmlDomElement;
 
-    explicit XmlDomAttribute(const std::shared_ptr<XmlDomImplData>& data, xml_attr_handle attribute);
+    explicit XmlDomAttribute(const std::shared_ptr<XmlDomImplData> &data, xml_attr_handle attribute);
 
     std::shared_ptr<XmlDomImplData> m_xml = nullptr;
     xml_attr_handle m_attribute{};
 };
 
-class XmlDomDocument
-{
+class XmlDomDocument {
 public:
     XmlDomDocument();
 
-    void setContent(const ByteArray& data);
+    void setContent(const ByteArray &data);
 
     XmlDomElement rootElement() const;
 
@@ -129,6 +125,6 @@ public:
 private:
     std::shared_ptr<XmlDomImplData> m_xml = nullptr;
 };
-}
+} // namespace muse
 
 #endif // MUSE_GLOBAL_XMLDOM_H

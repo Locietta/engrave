@@ -34,14 +34,12 @@
 using namespace muse;
 using namespace muse::mpe;
 
-static const std::map<ArticulationFamily, io::path_t> DEFAULT_ARTICULATION_PROFILES =
-{
-    { ArticulationFamily::Keyboards, io::path_t(":/mpe/resources/general_keyboard_articulations_profile.json") },
-    { ArticulationFamily::Strings, io::path_t(":/mpe/resources/general_strings_articulations_profile.json") },
-    { ArticulationFamily::Winds, io::path_t(":/mpe/resources/general_winds_articulations_profile.json") },
-    { ArticulationFamily::Percussions, io::path_t(":/mpe/resources/general_percussion_articulations_profile.json") },
-    { ArticulationFamily::Voices, io::path_t(":/mpe/resources/general_voice_articulations_profile.json") }
-};
+static const std::map<ArticulationFamily, io::path_t> DEFAULT_ARTICULATION_PROFILES = {
+    {ArticulationFamily::Keyboards, io::path_t(":/mpe/resources/general_keyboard_articulations_profile.json")},
+    {ArticulationFamily::Strings, io::path_t(":/mpe/resources/general_strings_articulations_profile.json")},
+    {ArticulationFamily::Winds, io::path_t(":/mpe/resources/general_winds_articulations_profile.json")},
+    {ArticulationFamily::Percussions, io::path_t(":/mpe/resources/general_percussion_articulations_profile.json")},
+    {ArticulationFamily::Voices, io::path_t(":/mpe/resources/general_voice_articulations_profile.json")}};
 
 static const std::string SUPPORTED_FAMILIES = "supportedFamilies";
 static const std::string PATTERNS_KEY = "patterns";
@@ -64,23 +62,13 @@ static const std::string MAX_AMPLITUDE_LEVEL_KEY = "maxAmplitudeLevel";
 static const std::string AMPLITUDE_TIME_SHIFT = "amplitudeTimeShift";
 static const std::string DYNAMIC_OFFSETS_KEY = "dynamicOffsets";
 
-static JsonArray jsonArray(const JsonValue& value)
-{
-    return value.isArray() ? value.toArray() : JsonArray();
-}
+static JsonArray jsonArray(const JsonValue &value) { return value.isArray() ? value.toArray() : JsonArray(); }
 
-static JsonObject jsonObject(const JsonValue& value)
-{
-    return value.isObject() ? value.toObject() : JsonObject();
-}
+static JsonObject jsonObject(const JsonValue &value) { return value.isObject() ? value.toObject() : JsonObject(); }
 
-ArticulationsProfilePtr ArticulationProfilesRepository::createNew() const
-{
-    return std::make_shared<ArticulationsProfile>();
-}
+ArticulationsProfilePtr ArticulationProfilesRepository::createNew() const { return std::make_shared<ArticulationsProfile>(); }
 
-ArticulationsProfilePtr ArticulationProfilesRepository::defaultProfile(const ArticulationFamily family) const
-{
+ArticulationsProfilePtr ArticulationProfilesRepository::defaultProfile(const ArticulationFamily family) const {
     auto search = m_defaultProfiles.find(family);
 
     if (search != m_defaultProfiles.cend()) {
@@ -100,8 +88,7 @@ ArticulationsProfilePtr ArticulationProfilesRepository::defaultProfile(const Art
     return result;
 }
 
-ArticulationsProfilePtr ArticulationProfilesRepository::loadProfile(const io::path_t& path) const
-{
+ArticulationsProfilePtr ArticulationProfilesRepository::loadProfile(const io::path_t &path) const {
     RetVal<ByteArray> fileReading = fileSystem()->readFile(path);
 
     if (!fileReading.ret) {
@@ -125,19 +112,15 @@ ArticulationsProfilePtr ArticulationProfilesRepository::loadProfile(const io::pa
 
     JsonObject articulationPatterns = jsonObject(rootObj.value(PATTERNS_KEY));
 
-    for (const std::string& key : articulationPatterns.keys()) {
-        result->setPattern(articulationTypeFromString(key),
-                           patternsScopeFromJson(jsonArray(articulationPatterns.value(key))));
+    for (const std::string &key : articulationPatterns.keys()) {
+        result->setPattern(articulationTypeFromString(key), patternsScopeFromJson(jsonArray(articulationPatterns.value(key))));
     }
 
     return result;
 }
 
-void ArticulationProfilesRepository::saveProfile(const io::path_t& path, const ArticulationsProfilePtr profilePtr)
-{
-    IF_ASSERT_FAILED(profilePtr) {
-        return;
-    }
+void ArticulationProfilesRepository::saveProfile(const io::path_t &path, const ArticulationsProfilePtr profilePtr) {
+    IF_ASSERT_FAILED(profilePtr) { return; }
 
     JsonObject rootObj;
 
@@ -145,9 +128,8 @@ void ArticulationProfilesRepository::saveProfile(const io::path_t& path, const A
 
     JsonObject articulationPatterns;
 
-    for (const auto& pair : profilePtr->data()) {
-        articulationPatterns.set(articulationTypeToString(pair.first).toStdString(),
-                                 patternsScopeToJson(pair.second));
+    for (const auto &pair : profilePtr->data()) {
+        articulationPatterns.set(articulationTypeToString(pair.first).toStdString(), patternsScopeToJson(pair.second));
     }
 
     rootObj.set(PATTERNS_KEY, articulationPatterns);
@@ -161,8 +143,7 @@ void ArticulationProfilesRepository::saveProfile(const io::path_t& path, const A
     }
 }
 
-std::vector<ArticulationFamily> ArticulationProfilesRepository::supportedFamiliesFromJson(const JsonArray& array) const
-{
+std::vector<ArticulationFamily> ArticulationProfilesRepository::supportedFamiliesFromJson(const JsonArray &array) const {
     std::vector<ArticulationFamily> result;
     result.reserve(array.size());
 
@@ -173,19 +154,17 @@ std::vector<ArticulationFamily> ArticulationProfilesRepository::supportedFamilie
     return result;
 }
 
-JsonArray ArticulationProfilesRepository::supportedFamiliesToJson(const std::vector<ArticulationFamily>& families) const
-{
+JsonArray ArticulationProfilesRepository::supportedFamiliesToJson(const std::vector<ArticulationFamily> &families) const {
     JsonArray result;
 
-    for (const auto& family : families) {
+    for (const auto &family : families) {
         result.append(articulationFamilyToString(family));
     }
 
     return result;
 }
 
-ArticulationPattern ArticulationProfilesRepository::patternsScopeFromJson(const JsonArray& array) const
-{
+ArticulationPattern ArticulationProfilesRepository::patternsScopeFromJson(const JsonArray &array) const {
     ArticulationPattern result;
 
     for (size_t i = 0; i < array.size(); ++i) {
@@ -208,11 +187,10 @@ ArticulationPattern ArticulationProfilesRepository::patternsScopeFromJson(const 
     return result;
 }
 
-JsonArray ArticulationProfilesRepository::patternsScopeToJson(const ArticulationPattern& scope) const
-{
+JsonArray ArticulationProfilesRepository::patternsScopeToJson(const ArticulationPattern &scope) const {
     JsonArray result;
 
-    for (const auto& pair : scope) {
+    for (const auto &pair : scope) {
         JsonObject pattern;
         pattern.set(PATTERN_POS_KEY, static_cast<int>(pair.first));
         pattern.set(ARRANGEMENT_PATTERN_KEY, arrangementPatternToJson(pair.second.arrangementPattern));
@@ -225,8 +203,7 @@ JsonArray ArticulationProfilesRepository::patternsScopeToJson(const Articulation
     return result;
 }
 
-ArrangementPattern ArticulationProfilesRepository::arrangementPatternFromJson(const JsonObject& obj) const
-{
+ArrangementPattern ArticulationProfilesRepository::arrangementPatternFromJson(const JsonObject &obj) const {
     ArrangementPattern result;
 
     result.durationFactor = obj.value(DURATION_FACTOR_KEY).toInt();
@@ -235,8 +212,7 @@ ArrangementPattern ArticulationProfilesRepository::arrangementPatternFromJson(co
     return result;
 }
 
-JsonObject ArticulationProfilesRepository::arrangementPatternToJson(const ArrangementPattern& pattern) const
-{
+JsonObject ArticulationProfilesRepository::arrangementPatternToJson(const ArrangementPattern &pattern) const {
     JsonObject result;
 
     result.set(DURATION_FACTOR_KEY, static_cast<int>(pattern.durationFactor));
@@ -245,8 +221,7 @@ JsonObject ArticulationProfilesRepository::arrangementPatternToJson(const Arrang
     return result;
 }
 
-PitchPattern ArticulationProfilesRepository::pitchPatternFromJson(const JsonObject& obj) const
-{
+PitchPattern ArticulationProfilesRepository::pitchPatternFromJson(const JsonObject &obj) const {
     PitchPattern result;
 
     JsonArray offsets = jsonArray(obj.value(PITCH_OFFSETS_KEY));
@@ -254,20 +229,18 @@ PitchPattern ArticulationProfilesRepository::pitchPatternFromJson(const JsonObje
     for (size_t i = 0; i < offsets.size(); ++i) {
         JsonObject offsetObj = jsonObject(offsets.at(i));
 
-        result.pitchOffsetMap.emplace(offsetObj.value(OFFSET_POS_KEY).toInt(),
-                                      offsetObj.value(OFFSET_VAL_KEY).toInt());
+        result.pitchOffsetMap.emplace(offsetObj.value(OFFSET_POS_KEY).toInt(), offsetObj.value(OFFSET_VAL_KEY).toInt());
     }
 
     return result;
 }
 
-JsonObject ArticulationProfilesRepository::pitchPatternToJson(const PitchPattern& pattern) const
-{
+JsonObject ArticulationProfilesRepository::pitchPatternToJson(const PitchPattern &pattern) const {
     JsonObject result;
 
     JsonArray pitchOffsets;
 
-    for (const auto& pair : pattern.pitchOffsetMap) {
+    for (const auto &pair : pattern.pitchOffsetMap) {
         JsonObject offsetObj;
         offsetObj.set(OFFSET_POS_KEY, static_cast<int>(pair.first));
         offsetObj.set(OFFSET_VAL_KEY, static_cast<int>(pair.second));
@@ -280,28 +253,25 @@ JsonObject ArticulationProfilesRepository::pitchPatternToJson(const PitchPattern
     return result;
 }
 
-ExpressionPattern ArticulationProfilesRepository::expressionPatternFromJson(const JsonObject& obj) const
-{
+ExpressionPattern ArticulationProfilesRepository::expressionPatternFromJson(const JsonObject &obj) const {
     ExpressionPattern result;
 
     JsonArray offsets = jsonArray(obj.value(DYNAMIC_OFFSETS_KEY));
 
     for (size_t i = 0; i < offsets.size(); ++i) {
         JsonObject offsetObj = jsonObject(offsets.at(i));
-        result.dynamicOffsetMap.emplace(offsetObj.value(OFFSET_POS_KEY).toInt(),
-                                        offsetObj.value(OFFSET_VAL_KEY).toInt());
+        result.dynamicOffsetMap.emplace(offsetObj.value(OFFSET_POS_KEY).toInt(), offsetObj.value(OFFSET_VAL_KEY).toInt());
     }
 
     return result;
 }
 
-JsonObject ArticulationProfilesRepository::expressionPatternToJson(const ExpressionPattern& pattern) const
-{
+JsonObject ArticulationProfilesRepository::expressionPatternToJson(const ExpressionPattern &pattern) const {
     JsonObject result;
 
     JsonArray dynamicOffsets;
 
-    for (const auto& pair : pattern.dynamicOffsetMap) {
+    for (const auto &pair : pattern.dynamicOffsetMap) {
         JsonObject offsetObj;
         offsetObj.set(OFFSET_POS_KEY, static_cast<int>(pair.first));
         offsetObj.set(OFFSET_VAL_KEY, static_cast<int>(pair.second));

@@ -25,41 +25,40 @@
 #include <string>
 
 namespace mu::engraving {
-#define DECLARE_CLASSOF(Type) \
-public: \
+#define DECLARE_CLASSOF(Type)                                                     \
+public:                                                                           \
     static bool classof(const ElementType type) noexcept { return type == Type; } \
-    static bool classof(const EngravingObject * item) noexcept { return item->type() == Type; } \
+    static bool classof(const EngravingObject *item) noexcept { return item->type() == Type; }
 
-template<typename To, typename From>
-bool is_classof(From* p) noexcept
-{
+template <typename To, typename From>
+bool is_classof(From *p) noexcept {
     using ResultType = std::remove_pointer_t<To>;
     return p ? ResultType::classof(p) : false;
 }
 
 enum class CastMode {
-    CHECK = 0,  // should be correct; assert if still not
-    BAD,        // known to be bad; don’t assert, we’ll fix it later
-    MAYBE_BAD   // in this case it’s okay if type mismatch
+    CHECK = 0, // should be correct; assert if still not
+    BAD,       // known to be bad; don’t assert, we’ll fix it later
+    MAYBE_BAD  // in this case it’s okay if type mismatch
 };
 
-template<typename To, typename From>
-To item_cast(From from, CastMode mode = CastMode::CHECK) noexcept
-{
+template <typename To, typename From>
+To item_cast(From from, CastMode mode = CastMode::CHECK) noexcept {
     if constexpr (std::is_same_v<From, void>) {
         return static_cast<To>(from);
     } else {
         To casted = dynamic_cast<To>(from);
         if (mode == CastMode::CHECK) {
             if (!(casted || !from)) {
-                muse::diagnostics::assertionFailure(std::string("[BAD CAST] from: ") + typeid(From).name() + ", to: " + typeid(To).name(), __FILE__, __LINE__);
+                muse::diagnostics::assertionFailure(std::string("[BAD CAST] from: ") + typeid(From).name() + ", to: " + typeid(To).name(),
+                                                    __FILE__, __LINE__);
             }
             assert(casted || !from);
         }
         return casted;
     }
 }
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::rtti {
 /* ===============================================
@@ -89,26 +88,21 @@ FooVisitor::visit(SomeTypeList {}, item, ...);
 
 */
 
-template<typename ... Types> struct TypeList {};
+template <typename... Types>
+struct TypeList {};
 
-template<typename Impl>
-class Visitor
-{
+template <typename Impl>
+class Visitor {
 public:
-    enum Policy {
-        MayBeNotFound = 0,
-        ShouldBeFound
-    };
+    enum Policy { MayBeNotFound = 0, ShouldBeFound };
 
-    template<typename ... Types, typename ... Args >
-    static bool visit(TypeList<Types...> types, Args&& ... args)
-    {
+    template <typename... Types, typename... Args>
+    static bool visit(TypeList<Types...> types, Args &&...args) {
         return visit(Policy::MayBeNotFound, types, std::forward<Args>(args)...);
     }
 
-    template<typename ... Types, typename ... Args >
-    static bool visit(Policy policy, TypeList<Types...> types, Args&& ... args)
-    {
+    template <typename... Types, typename... Args>
+    static bool visit(Policy policy, TypeList<Types...> types, Args &&...args) {
         bool found = visit_helper(types, std::forward<Args>(args)...);
         if (policy == Policy::ShouldBeFound) {
             DO_ASSERT(found);
@@ -117,17 +111,18 @@ public:
     }
 
 private:
-    template<typename ... Args>
-    static bool visit_helper(TypeList<>, Args&&...) { return false; }
+    template <typename... Args>
+    static bool visit_helper(TypeList<>, Args &&...) {
+        return false;
+    }
 
-    template<class Head, class ... Tail, typename ... Args>
-    static bool visit_helper(TypeList<Head, Tail...>, Args&& ... args)
-    {
-        bool found = Impl::template doVisit<Head>(args ...);
+    template <class Head, class... Tail, typename... Args>
+    static bool visit_helper(TypeList<Head, Tail...>, Args &&...args) {
+        bool found = Impl::template doVisit<Head>(args...);
         if (!found) {
-            found = visit_helper(TypeList<Tail...> {}, std::forward<Args>(args)...);
+            found = visit_helper(TypeList<Tail...>{}, std::forward<Args>(args)...);
         }
         return found;
     }
 };
-}
+} // namespace mu::engraving::rtti

@@ -30,15 +30,13 @@
 using namespace mu;
 using namespace mu::engraving;
 
-void EngravingFontsProvider::deinit()
-{
+void EngravingFontsProvider::deinit() {
     m_symbolFonts.clear();
     m_externalSymbolFonts.clear();
     m_fallback.font = nullptr;
 }
 
-void EngravingFontsProvider::addInternalFont(const std::string& name, const std::string& family, const muse::io::path_t& filePath)
-{
+void EngravingFontsProvider::addInternalFont(const std::string &name, const std::string &family, const muse::io::path_t &filePath) {
     muse::io::path_t basePath = muse::io::dirpath(filePath);
     muse::io::path_t metadataPath = basePath + "/metadata.json";
     std::shared_ptr<EngravingFont> f = std::make_shared<EngravingFont>(m_fontProvider, *this, name, family, filePath, metadataPath);
@@ -46,29 +44,27 @@ void EngravingFontsProvider::addInternalFont(const std::string& name, const std:
     m_fallback.font = nullptr;
 }
 
-void EngravingFontsProvider::addExternalFont(const std::string& name, const std::string& family, const muse::io::path_t& filePath,
-                                             const muse::io::path_t& metadataPath)
-{
+void EngravingFontsProvider::addExternalFont(const std::string &name, const std::string &family, const muse::io::path_t &filePath,
+                                             const muse::io::path_t &metadataPath) {
     addExternalFont(name, family, std::make_shared<muse::io::File>(filePath), std::make_shared<muse::io::File>(metadataPath));
 }
 
-void EngravingFontsProvider::addExternalFont(const std::string& name, const std::string& family, std::shared_ptr<muse::io::IODevice> font,
-                                             std::shared_ptr<muse::io::IODevice> metadata)
-{
+void EngravingFontsProvider::addExternalFont(const std::string &name, const std::string &family, std::shared_ptr<muse::io::IODevice> font,
+                                             std::shared_ptr<muse::io::IODevice> metadata) {
     UNUSED(family);
-    std::shared_ptr<EngravingFont> f = std::make_shared<EngravingFont>(m_fontProvider, *this, name, family, std::move(font), std::move(metadata));
+    std::shared_ptr<EngravingFont> f =
+        std::make_shared<EngravingFont>(m_fontProvider, *this, name, family, std::move(font), std::move(metadata));
     m_externalSymbolFonts.emplace(muse::strings::toLower(name), f);
 }
 
-std::shared_ptr<EngravingFont> EngravingFontsProvider::doFontByName(const std::string& name) const
-{
+std::shared_ptr<EngravingFont> EngravingFontsProvider::doFontByName(const std::string &name) const {
     // External fonts should have higher priority than internal fonts
     std::string name_lo = muse::strings::toLower(name);
     auto it = m_externalSymbolFonts.find(name_lo);
     if (it != m_externalSymbolFonts.end()) {
         return it->second;
     }
-    for (const std::shared_ptr<EngravingFont>& f : m_symbolFonts) {
+    for (const std::shared_ptr<EngravingFont> &f : m_symbolFonts) {
         if (muse::strings::toLower(f->name()) == name_lo) {
             return f;
         }
@@ -76,8 +72,7 @@ std::shared_ptr<EngravingFont> EngravingFontsProvider::doFontByName(const std::s
     return nullptr;
 }
 
-IEngravingFontPtr EngravingFontsProvider::fontByName(const std::string& name) const
-{
+IEngravingFontPtr EngravingFontsProvider::fontByName(const std::string &name) const {
     std::shared_ptr<EngravingFont> font = doFontByName(name);
     if (!font) {
         font = doFallbackFont();
@@ -87,62 +82,49 @@ IEngravingFontPtr EngravingFontsProvider::fontByName(const std::string& name) co
     return font;
 }
 
-std::vector<IEngravingFontPtr> EngravingFontsProvider::fonts() const
-{
+std::vector<IEngravingFontPtr> EngravingFontsProvider::fonts() const {
     std::vector<IEngravingFontPtr> fs;
-    for (const std::shared_ptr<EngravingFont>& f : m_symbolFonts) {
+    for (const std::shared_ptr<EngravingFont> &f : m_symbolFonts) {
         std::string name_lo = muse::strings::toLower(f->name());
         if (m_externalSymbolFonts.find(name_lo) == m_externalSymbolFonts.end()) {
             fs.push_back(f);
         }
     }
-    for (const auto& [_, f] : m_externalSymbolFonts) {
+    for (const auto &[_, f] : m_externalSymbolFonts) {
         fs.push_back(f);
     }
     return fs;
 }
 
-void EngravingFontsProvider::setFallbackFont(const std::string& name)
-{
+void EngravingFontsProvider::setFallbackFont(const std::string &name) {
     m_fallback.name = name;
     m_fallback.font = nullptr;
 }
 
-std::shared_ptr<EngravingFont> EngravingFontsProvider::doFallbackFont() const
-{
+std::shared_ptr<EngravingFont> EngravingFontsProvider::doFallbackFont() const {
     if (!m_fallback.font) {
         m_fallback.font = doFontByName(m_fallback.name);
-        IF_ASSERT_FAILED(m_fallback.font) {
-            return nullptr;
-        }
+        IF_ASSERT_FAILED(m_fallback.font) { return nullptr; }
     }
 
     return m_fallback.font;
 }
 
-IEngravingFontPtr EngravingFontsProvider::fallbackFont() const
-{
+IEngravingFontPtr EngravingFontsProvider::fallbackFont() const {
     std::shared_ptr<EngravingFont> font = doFallbackFont();
     font->ensureLoad();
     return font;
 }
 
-bool EngravingFontsProvider::isFallbackFont(const IEngravingFont* f) const
-{
-    return doFallbackFont().get() == f;
-}
+bool EngravingFontsProvider::isFallbackFont(const IEngravingFont *f) const { return doFallbackFont().get() == f; }
 
-void EngravingFontsProvider::clearExternalFonts()
-{
-    m_externalSymbolFonts.clear();
-}
+void EngravingFontsProvider::clearExternalFonts() { m_externalSymbolFonts.clear(); }
 
-void EngravingFontsProvider::loadAllFonts()
-{
-    for (std::shared_ptr<EngravingFont>& f : m_symbolFonts) {
+void EngravingFontsProvider::loadAllFonts() {
+    for (std::shared_ptr<EngravingFont> &f : m_symbolFonts) {
         f->ensureLoad();
     }
-    for (const auto& [_, f] : m_externalSymbolFonts) {
+    for (const auto &[_, f] : m_externalSymbolFonts) {
         f->ensureLoad();
     }
 }

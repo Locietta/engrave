@@ -29,30 +29,20 @@
 #include "audio/common/audiotypes.h"
 
 namespace muse::audio::dsp {
-inline float balanceGain(const balance_t balance, const int audioChannelNumber)
-{
-    return (audioChannelNumber * 2 - 1) * balance + 1.f;
-}
+inline float balanceGain(const balance_t balance, const int audioChannelNumber) { return (audioChannelNumber * 2 - 1) * balance + 1.f; }
 
-inline float samplesRootMeanSquare(const float squaredSum, const samples_t sampleCount)
-{
-    return std::sqrt(squaredSum / sampleCount);
-}
+inline float samplesRootMeanSquare(const float squaredSum, const samples_t sampleCount) { return std::sqrt(squaredSum / sampleCount); }
 
-inline float sampleAttackTimeCoefficient(const unsigned int sampleRate, const float attackTimeInSecs)
-{
+inline float sampleAttackTimeCoefficient(const unsigned int sampleRate, const float attackTimeInSecs) {
     return std::exp(-std::log(9) / (sampleRate * attackTimeInSecs));
 }
 
-inline float sampleReleaseTimeCoefficient(const unsigned int sampleRate, const float releaseTimeInSecs)
-{
+inline float sampleReleaseTimeCoefficient(const unsigned int sampleRate, const float releaseTimeInSecs) {
     return std::exp(-std::log(9) / (sampleRate * releaseTimeInSecs));
 }
 
-inline void multiplySamples(float* buffer, const audioch_t& audioChannelsCount,
-                            const audioch_t& audioChannelNumber, const samples_t& samplesPerChannel,
-                            const float& multiplier)
-{
+inline void multiplySamples(float *buffer, const audioch_t &audioChannelsCount, const audioch_t &audioChannelNumber,
+                            const samples_t &samplesPerChannel, const float &multiplier) {
     for (samples_t i = 0; i < samplesPerChannel; ++i) {
         int idx = i * audioChannelsCount + audioChannelNumber;
 
@@ -60,14 +50,13 @@ inline void multiplySamples(float* buffer, const audioch_t& audioChannelsCount,
     }
 }
 
-template<typename T>
-constexpr T convertFloatSamples(const float value, const int bits)
-{
+template <typename T>
+constexpr T convertFloatSamples(const float value, const int bits) {
     const int64_t max_val = (1LL << (bits - 1)) - 1LL;
     const float clampedValue = std::clamp(value, -1.0f, 1.0f);
     const float scaledValue = clampedValue * max_val;
     return static_cast<T>(std::round(scaledValue));
 }
-}
+} // namespace muse::audio::dsp
 
 #endif // MUSE_AUDIO_AUDIOMATHUTILS_H

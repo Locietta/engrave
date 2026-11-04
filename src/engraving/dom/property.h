@@ -42,27 +42,25 @@ namespace mu::engraving {
 //          void setColor(const Color& val) { _color = val; }
 //---------------------------------------------------------
 
-#define M_PROPERTY(a, b, c)                                      \
-    a _##b { };                                                \
-public:                                                     \
-    const a& b() const { return _##b; }                  \
-    void c(const a& val) { _##b = val; }                  \
+#define M_PROPERTY(a, b, c)              \
+    a _##b{};                            \
+public:                                  \
+    const a &b() const { return _##b; }  \
+    void c(const a &val) { _##b = val; } \
 private:
 
-#define M_PROPERTY2(a, b, c, d)                                   \
-    a _##b { d };                                          \
-public:                                                     \
-    const a& b() const { return _##b; }                  \
-    void c(const a& val) { _##b = val; }                  \
+#define M_PROPERTY2(a, b, c, d)          \
+    a _##b{d};                           \
+public:                                  \
+    const a &b() const { return _##b; }  \
+    void c(const a &val) { _##b = val; } \
 private:
 
 //---------------------------------------------------------
 //   PropertyFlags
 //---------------------------------------------------------
 
-enum class PropertyFlags : char {
-    NOSTYLE, UNSTYLED, STYLED
-};
+enum class PropertyFlags : char { NOSTYLE, UNSTYLED, STYLED };
 
 //------------------------------------------------------------------------
 //   EngravingItem Properties
@@ -169,10 +167,10 @@ enum class Pid : short {
     BEAM_MODE,
     BEAM_NO_SLOPE,
     BEAM_CROSS_STAFF_MOVE,
-    USER_LEN,         // used for stems
-    SHOW_STEM_SLASH,  // used for grace notes
+    USER_LEN,        // used for stems
+    SHOW_STEM_SLASH, // used for grace notes
 
-    SPACE,            // used for spacer
+    SPACE, // used for spacer
     TEMPO,
     TEMPO_FOLLOW_TEXT,
     TEMPO_ALIGN_RIGHT_OF_REHEARSAL_MARK,
@@ -181,16 +179,16 @@ enum class Pid : short {
     ACCIDENTAL_STACKING_ORDER_OFFSET,
     NUMERATOR_STRING,
     DENOMINATOR_STRING,
-    FBPREFIX,               // used for FiguredBassItem
-    FBDIGIT,                //    "           "
-    FBSUFFIX,               //    "           "
-    FBCONTINUATIONLINE,     //    "           "
+    FBPREFIX,           // used for FiguredBassItem
+    FBDIGIT,            //    "           "
+    FBSUFFIX,           //    "           "
+    FBCONTINUATIONLINE, //    "           "
 
-    FBPARENTHESIS1,         //    "           "
-    FBPARENTHESIS2,         //    "           "
-    FBPARENTHESIS3,         //    "           "
-    FBPARENTHESIS4,         //    "           "
-    FBPARENTHESIS5,         //    "           "
+    FBPARENTHESIS1, //    "           "
+    FBPARENTHESIS2, //    "           "
+    FBPARENTHESIS3, //    "           "
+    FBPARENTHESIS4, //    "           "
+    FBPARENTHESIS5, //    "           "
     OTTAVA_TYPE,
     NUMBERS_ONLY,
     TRILL_TYPE,
@@ -207,9 +205,9 @@ enum class Pid : short {
 
     SINGLE_NOTE_DYNAMICS,
     CHANGE_METHOD,
-    PLACEMENT,                // Goes with P_TYPE::PLACEMENT
-    HPLACEMENT,               // Goes with P_TYPE::HPLACEMENT
-    MMREST_RANGE_BRACKET_TYPE,   // The brackets used arond the measure numbers indicating the range covered by the mmrest
+    PLACEMENT,                 // Goes with P_TYPE::PLACEMENT
+    HPLACEMENT,                // Goes with P_TYPE::HPLACEMENT
+    MMREST_RANGE_BRACKET_TYPE, // The brackets used arond the measure numbers indicating the range covered by the mmrest
     VELOCITY,
     JUMP_TO,
     PLAY_UNTIL,
@@ -436,7 +434,7 @@ enum class Pid : short {
     CLEF_TO_BARLINE_POS,
     KEY_CONCERT,
     KEY,
-    ACTION,   // for ActionIcon
+    ACTION, // for ActionIcon
     MIN_DISTANCE,
 
     ARPEGGIO_TYPE,
@@ -472,7 +470,7 @@ enum class Pid : short {
     START_WITH_MEASURE_ONE,
     FIRST_SYSTEM_INDENTATION,
 
-    PATH,   // for ChordLine to make its shape changes undoable
+    PATH, // for ChordLine to make its shape changes undoable
 
     PREFER_SHARP_FLAT,
     PLAY_TECH_TYPE,
@@ -550,12 +548,12 @@ enum class PropertyGroup : unsigned char {
 using PropertyIdSet = std::unordered_set<Pid>;
 
 extern PropertyValue propertyFromString(P_TYPE type, String value);
-extern String propertyToString(Pid, const PropertyValue& value, bool mscx);
+extern String propertyToString(Pid, const PropertyValue &value, bool mscx);
 extern P_TYPE propertyType(Pid);
-extern const char* propertyName(Pid);
+extern const char *propertyName(Pid);
 extern bool propertyLink(Pid id);
 extern bool propertyLinkSameScore(Pid id);
 extern PropertyGroup propertyGroup(Pid id);
-extern Pid propertyId(const muse::AsciiStringView& name);
+extern Pid propertyId(const muse::AsciiStringView &name);
 extern String propertyUserName(Pid);
 } // namespace mu::engraving

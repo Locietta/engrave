@@ -35,7 +35,7 @@
 
 namespace mu::engraving {
 class Score;
-}
+} // namespace mu::engraving
 
 namespace music {
 // One audio/instrument track descriptor supplied by the caller. IDs must name
@@ -75,11 +75,11 @@ struct ScoreMetadataTrack {
 // has no audiosettings.json context, so it reports neutral output values and
 // marks chord-symbol pseudo tracks muted. Returns an empty object when score
 // is null.
-nlohmann::json score_metadata(mu::engraving::Score* score);
+nlohmann::json score_metadata(mu::engraving::Score *score);
 
 // Emits score metadata with "tracks" populated from explicit track descriptors and
 // mix parameters. Returns an empty object when score is null.
-nlohmann::json score_metadata(mu::engraving::Score* score, const std::vector<ScoreMetadataTrack>& tracks);
+nlohmann::json score_metadata(mu::engraving::Score *score, const std::vector<ScoreMetadataTrack> &tracks);
 
 // Same JSON as score_metadata(score), with "tracks" built from the supplied
 // descriptors. Every descriptor must reference an existing part in score and
@@ -95,7 +95,7 @@ nlohmann::json score_metadata(mu::engraving::Score* score, const std::vector<Sco
 // Throws std::invalid_argument for a malformed/unknown part ID, an unknown
 // instrument ID, a duplicate pair, or non-empty tracks with a null score.
 // Excerpts are handled as documented for the base overload.
-nlohmann::json score_metadata(mu::engraving::Score* score, const std::vector<MetadataTrack>& tracks);
+nlohmann::json score_metadata(mu::engraving::Score *score, const std::vector<MetadataTrack> &tracks);
 
 // Upstream webmscore titleFilenameSafe(), converted to UTF-8 std::string:
 //   title.replace(/[\s<>:{}"/\\|?*~.\0\cA-\cZ]+/g, '_')
@@ -103,9 +103,9 @@ nlohmann::json score_metadata(mu::engraving::Score* score, const std::vector<Met
 // whitespace plus U+00A0, U+1680, U+2000..U+200A, U+2028, U+2029, U+202F,
 // U+205F, U+3000 and U+FEFF. Matching is by Unicode code point, not UTF-8
 // byte. Returns an empty string when score is null.
-std::string score_title_filename_safe(const mu::engraving::Score* score);
+std::string score_title_filename_safe(const mu::engraving::Score *score);
 
 // Upstream NotationMeta::title(), converted to std::string. Returns an empty
 // string when score is null.
-std::string score_title(const mu::engraving::Score* score);
-}
+std::string score_title(const mu::engraving::Score *score);
+} // namespace music

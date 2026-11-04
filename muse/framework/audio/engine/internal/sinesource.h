@@ -25,20 +25,19 @@
 #include "abstractaudiosource.h"
 
 namespace muse::audio::engine {
-class SineSource : public AbstractAudioSource
-{
+class SineSource : public AbstractAudioSource {
 public:
     SineSource();
     ~SineSource() = default;
 
     unsigned int audioChannelsCount() const override;
 
-    samples_t process(float* buffer, samples_t samplesPerChannel) override;
+    samples_t process(float *buffer, samples_t samplesPerChannel) override;
 
 private:
     float m_frequency = 1000.f;
     float m_phase = 0;
 };
-}
+} // namespace muse::audio::engine
 
 #endif // MUSE_AUDIO_SINESOURCE_H

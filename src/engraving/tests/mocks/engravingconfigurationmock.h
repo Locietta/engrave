@@ -27,16 +27,15 @@
 #include "engraving/iengravingconfiguration.h"
 
 namespace mu::engraving {
-class EngravingConfigurationMock : public IEngravingConfiguration
-{
+class EngravingConfigurationMock : public IEngravingConfiguration {
 public:
     MOCK_METHOD(muse::io::path_t, appDataPath, (), (const, override));
 
     MOCK_METHOD(muse::io::path_t, defaultStyleFilePath, (), (const, override));
-    MOCK_METHOD(void, setDefaultStyleFilePath, (const muse::io::path_t&), (override));
+    MOCK_METHOD(void, setDefaultStyleFilePath, (const muse::io::path_t &), (override));
 
     MOCK_METHOD(muse::io::path_t, partStyleFilePath, (), (const, override));
-    MOCK_METHOD(void, setPartStyleFilePath, (const muse::io::path_t&), (override));
+    MOCK_METHOD(void, setPartStyleFilePath, (const muse::io::path_t &), (override));
 
     MOCK_METHOD(SizeF, defaultPageSize, (), (const, override));
 
@@ -81,8 +80,8 @@ public:
 
     MOCK_METHOD(Color, highlightSelectionColor, (engraving::voice_idx_t), (const, override));
 
-    MOCK_METHOD(const DebuggingOptions&, debuggingOptions, (), (const, override));
-    MOCK_METHOD(void, setDebuggingOptions, (const DebuggingOptions&), (override));
+    MOCK_METHOD(const DebuggingOptions &, debuggingOptions, (), (const, override));
+    MOCK_METHOD(void, setDebuggingOptions, (const DebuggingOptions &), (override));
 
     MOCK_METHOD(bool, allowReadingImagesFromOutsideMscz, (), (const, override));
 
@@ -96,4 +95,4 @@ public:
     MOCK_METHOD(void, setPreferSameStringForTranspose, (bool), (override));
     MOCK_METHOD(bool, keepDeadNotesUnchangedOnTranspose, (), (const, override));
 };
-}
+} // namespace mu::engraving

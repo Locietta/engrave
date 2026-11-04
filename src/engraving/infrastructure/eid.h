@@ -28,8 +28,7 @@
 #include "global/logstream.h"
 
 namespace mu::engraving {
-class EID
-{
+class EID {
 public:
     // max size of base64 string of 64-bit int is ceil(log(2^64) / log(64)) = 11
     static constexpr size_t MAX_UINT64_BASE64_SIZE = 11;
@@ -38,33 +37,38 @@ public:
 
     bool isValid() const { return m_first != INVALID || m_second != INVALID; }
 
-    inline bool operator ==(const EID& other) const { return m_first == other.m_first && m_second == other.m_second; }
-    inline bool operator !=(const EID& other) const { return m_first != other.m_first || m_second != other.m_second; }
+    inline bool operator==(const EID &other) const { return m_first == other.m_first && m_second == other.m_second; }
+
+    inline bool operator!=(const EID &other) const { return m_first != other.m_first || m_second != other.m_second; }
 
     // The two values the text form encodes; 0xFFFFFFFFFFFFFFFF is INVALID.
     uint64_t first() const { return m_first; }
+
     uint64_t second() const { return m_second; }
 
-    char* toChars(char* first, char* last) const;
+    char *toChars(char *first, char *last) const;
     std::string toStdString() const;
     // Strict: a value that is not two non-empty halves of at most
     // MAX_UINT64_BASE64_SIZE base64 characters gives EID::invalid(), where upstream
     // ignored a wrong part count, accepted any character (OR-ing 0xFFFFFFFFFFFFFFFF
     // into the half) and shifted the excess bits of a longer half out.
-    static EID fromStdString(const std::string& v);
-    static EID fromStdString(const std::string_view& v);
+    static EID fromStdString(const std::string &v);
+    static EID fromStdString(const std::string_view &v);
+
     static EID fromParts(uint64_t first, uint64_t second) { return EID(first, second); }
+
     static EID newUnique();
+
     static EID invalid() { return EID(INVALID, INVALID); }
 
     // FOR UNIT TESTING
-    static EID newUniqueTestMode(uint64_t& maxVal);
-    static void updateMaxValTestMode(const EID& curEID, uint64_t& maxVal);
+    static EID newUniqueTestMode(uint64_t &maxVal);
+    static void updateMaxValTestMode(const EID &curEID, uint64_t &maxVal);
 
 private:
     EID() = delete;
-    EID(uint64_t f, uint64_t s)
-        : m_first(f), m_second(s) {}
+
+    EID(uint64_t f, uint64_t s) : m_first(f), m_second(s) {}
 
     static constexpr uint64_t INVALID = uint64_t(-1);
 
@@ -73,19 +77,16 @@ private:
 
     friend struct std::hash<EID>;
 };
-}
+} // namespace mu::engraving
 
-template<>
-struct std::hash<mu::engraving::EID>
-{
-    size_t operator()(const mu::engraving::EID& eid) const
-    {
+template <>
+struct std::hash<mu::engraving::EID> {
+    size_t operator()(const mu::engraving::EID &eid) const {
         return std::hash<uint64_t>()(eid.m_first) ^ (std::hash<uint64_t>()(eid.m_second) << 1);
     }
 };
 
-inline muse::logger::Stream& operator<<(muse::logger::Stream& s, const mu::engraving::EID& v)
-{
+inline muse::logger::Stream &operator<<(muse::logger::Stream &s, const mu::engraving::EID &v) {
     s << v.toStdString();
     return s;
 }

@@ -96,174 +96,168 @@ constexpr int GPX_MAX_DECOMPRESSED_BYTES = 128 * 1024 * 1024;
 // last sector is padding the writer never compressed), so the decompressor ends the
 // stream there instead of rejecting the file.
 struct GpxEndOfData : std::runtime_error {
-    GpxEndOfData()
-        : std::runtime_error("Unexpected end of compressed Guitar Pro data") {}
+    GpxEndOfData() : std::runtime_error("Unexpected end of compressed Guitar Pro data") {}
 };
-}
+} // namespace
 
 const std::map<std::string, std::string> GuitarPro6::instrumentMapping = {
-    { "2Mrcs",           "maracas" },
-    { "a-bass4",         "acoustic-bass" },
-    { "a-bass5",         "acoustic-bass" },
-    { "a-bass6",         "acoustic-bass" },
-    { "alt-c",           "alto" },
-    { "alt-s",           "alto" },
-    { "a-piano-gs",      "piano" },
-    { "a-piano-ss",      "piano" },
-    { "bass-c",          "bass" },
-    { "bass-flt-c",      "bass-flute" },
-    { "bassn",           "bassoon" },
-    { "bass-s",          "bass" },
-    { "basstuba-eb",     "bass-eb-tuba" },
-    { "bnj4",            "banjo" },
-    { "bnj5",            "banjo" },
-    { "bnj6",            "banjo" },
-    { "bongo",           "bongos" },
-    { "brthns",          "baritone-horn" },
-    { "brtn-c",          "baritone" },
-    { "brtn-s",          "baritone" },
-    { "cbs",             "cabasa" },
-    { "cello",           "violoncello" },
-    { "china",           "chinese-tom-toms" },
-    { "clrnt-a",         "a-clarinet" },
-    { "clrnt-bb-bass",   "bass-clarinet" },
-    { "clrnt-bb",        "bb-clarinet" },
-    { "clrnt-c",         "c-clarinet" },
-    { "clrnt-d",         "d-clarinet" },
-    { "clrnt-eb",        "eb-clarinet" },
-    { "clrnt",           "clarinet" },
-    { "clst-gs",         "celesta" },
-    { "clst-ss",         "celesta" },
-    { "clvs",            "claves" },
-    { "cngKit",          "congas" },
-    { "conga",           "congas" },
-    { "cowbell",         "cowbell" },
-    { "crash",           "crash-cymbal" },
-    { "cstnt",           "castanets" },
-    { "ctbassn",         "contrabassoon" },
-    { "ctbass",          "contrabass" },
-    { "cuicaKit",        "cuica" },
-    { "cuica",           "cuica" },
-    { "drmkt",           "drumset" },
-    { "e-bass4",         "bass-guitar" },
-    { "e-bass5",         "bass-guitar" },
-    { "e-bass6",         "bass-guitar" },
-    { "e-gtr12",         "electric-guitar-treble-clef" },
-    { "e-gtr6",          "electric-guitar-treble-clef" },
-    { "e-gtr7",          "electric-guitar-treble-clef" },
-    { "e-gtr8",          "electric-guitar-treble-clef" },
-    { "em-organ-gs",     "organ" },
-    { "em-organ-ss",     "organ" },
-    { "en-horn",         "english-horn" },
-    { "e-piano-gs",      "electric-piano" },
-    { "e-piano-ss",      "electric-piano" },
-    { "flt-c",           "flute" },
-    { "flt-g",           "alto-flute" },
-    { "flt-whstl",       "tin-whistle" },
-    { "fr-horn",         "horn" },
-    { "grcss",           "bass-drum" },         //grancassa is an alternative name for bass drum
-    { "guiro",           "guiro" },
-    { "harp-gs",         "harp" },
-    { "harp-ss",         "harp" },
-    { "hclap",           "hand-clap" },
-    { "hihat",           "hi-hat" },
-    { "hrpch-gs",        "harpsichord" },
-    { "hrpch-ss",        "harpsichord" },
-    { "jngl-bell",       "sleigh-bells" },
-    { "klmb",            "kalimba" },
-    { "mrcs",            "maracas" },
-    { "n-gtr6",          "guitar-nylon-treble-clef" },
-    { "n-gtr7",          "guitar-nylon-treble-clef" },
-    { "n-gtr8",          "guitar-nylon-treble-clef" },
-    { "oboe",            "oboe" },
-    { "ocrn",            "ocarina" },
-    { "pccl",            "piccolo" },
-    { "pedalhihat",      "hi-hat" },
-    { "pnflt",           "pan-flute" },
-    { "ptt",             "cymbal" },        //piatti is cymbal in italian
-    { "rec",             "recorder" },
-    { "ride",            "ride-cymbal" },
-    { "rvs-cymb",        "cymbal" },
-    { "sax-alt-eb",      "alto-saxophone" },
-    { "sax-bar-eb",      "baritone-saxophone" },
-    { "sax-bass-eb",     "bass-saxophone" },
-    { "sax-ms-f",        "mezzo-soprano-saxophone" },
-    { "sax-sop-bb",      "soprano-saxophone" },
-    { "sax-ten-bb",      "tenor-saxophone" },
-    { "sax-ten-c",       "melody-saxophone" },
-    { "s-bass4",         "electric-bass" },
-    { "s-bass5",         "5-string-electric-bass" },
-    { "s-gtr12",         "guitar-steel-treble-clef" },
-    { "s-gtr6",          "guitar-steel-treble-clef" },
-    { "s-gtr7",          "guitar-steel-treble-clef" },
-    { "s-gtr8",          "guitar-steel-treble-clef" },
-    { "shkr",            "percussion" },
-    { "shmsn",           "shamisen" },
-    { "shn",             "sheng" },
-    { "snare",           "snare-drum" },
-    { "snr",             "snare-drum" },
-    { "snt-brass-gs",    "brass-synthesizer" },
-    { "snt-brass-ss",    "brass-synthesizer" },
+    {"2Mrcs", "maracas"},
+    {"a-bass4", "acoustic-bass"},
+    {"a-bass5", "acoustic-bass"},
+    {"a-bass6", "acoustic-bass"},
+    {"alt-c", "alto"},
+    {"alt-s", "alto"},
+    {"a-piano-gs", "piano"},
+    {"a-piano-ss", "piano"},
+    {"bass-c", "bass"},
+    {"bass-flt-c", "bass-flute"},
+    {"bassn", "bassoon"},
+    {"bass-s", "bass"},
+    {"basstuba-eb", "bass-eb-tuba"},
+    {"bnj4", "banjo"},
+    {"bnj5", "banjo"},
+    {"bnj6", "banjo"},
+    {"bongo", "bongos"},
+    {"brthns", "baritone-horn"},
+    {"brtn-c", "baritone"},
+    {"brtn-s", "baritone"},
+    {"cbs", "cabasa"},
+    {"cello", "violoncello"},
+    {"china", "chinese-tom-toms"},
+    {"clrnt-a", "a-clarinet"},
+    {"clrnt-bb-bass", "bass-clarinet"},
+    {"clrnt-bb", "bb-clarinet"},
+    {"clrnt-c", "c-clarinet"},
+    {"clrnt-d", "d-clarinet"},
+    {"clrnt-eb", "eb-clarinet"},
+    {"clrnt", "clarinet"},
+    {"clst-gs", "celesta"},
+    {"clst-ss", "celesta"},
+    {"clvs", "claves"},
+    {"cngKit", "congas"},
+    {"conga", "congas"},
+    {"cowbell", "cowbell"},
+    {"crash", "crash-cymbal"},
+    {"cstnt", "castanets"},
+    {"ctbassn", "contrabassoon"},
+    {"ctbass", "contrabass"},
+    {"cuicaKit", "cuica"},
+    {"cuica", "cuica"},
+    {"drmkt", "drumset"},
+    {"e-bass4", "bass-guitar"},
+    {"e-bass5", "bass-guitar"},
+    {"e-bass6", "bass-guitar"},
+    {"e-gtr12", "electric-guitar-treble-clef"},
+    {"e-gtr6", "electric-guitar-treble-clef"},
+    {"e-gtr7", "electric-guitar-treble-clef"},
+    {"e-gtr8", "electric-guitar-treble-clef"},
+    {"em-organ-gs", "organ"},
+    {"em-organ-ss", "organ"},
+    {"en-horn", "english-horn"},
+    {"e-piano-gs", "electric-piano"},
+    {"e-piano-ss", "electric-piano"},
+    {"flt-c", "flute"},
+    {"flt-g", "alto-flute"},
+    {"flt-whstl", "tin-whistle"},
+    {"fr-horn", "horn"},
+    {"grcss", "bass-drum"}, //grancassa is an alternative name for bass drum
+    {"guiro", "guiro"},
+    {"harp-gs", "harp"},
+    {"harp-ss", "harp"},
+    {"hclap", "hand-clap"},
+    {"hihat", "hi-hat"},
+    {"hrpch-gs", "harpsichord"},
+    {"hrpch-ss", "harpsichord"},
+    {"jngl-bell", "sleigh-bells"},
+    {"klmb", "kalimba"},
+    {"mrcs", "maracas"},
+    {"n-gtr6", "guitar-nylon-treble-clef"},
+    {"n-gtr7", "guitar-nylon-treble-clef"},
+    {"n-gtr8", "guitar-nylon-treble-clef"},
+    {"oboe", "oboe"},
+    {"ocrn", "ocarina"},
+    {"pccl", "piccolo"},
+    {"pedalhihat", "hi-hat"},
+    {"pnflt", "pan-flute"},
+    {"ptt", "cymbal"}, //piatti is cymbal in italian
+    {"rec", "recorder"},
+    {"ride", "ride-cymbal"},
+    {"rvs-cymb", "cymbal"},
+    {"sax-alt-eb", "alto-saxophone"},
+    {"sax-bar-eb", "baritone-saxophone"},
+    {"sax-bass-eb", "bass-saxophone"},
+    {"sax-ms-f", "mezzo-soprano-saxophone"},
+    {"sax-sop-bb", "soprano-saxophone"},
+    {"sax-ten-bb", "tenor-saxophone"},
+    {"sax-ten-c", "melody-saxophone"},
+    {"s-bass4", "electric-bass"},
+    {"s-bass5", "5-string-electric-bass"},
+    {"s-gtr12", "guitar-steel-treble-clef"},
+    {"s-gtr6", "guitar-steel-treble-clef"},
+    {"s-gtr7", "guitar-steel-treble-clef"},
+    {"s-gtr8", "guitar-steel-treble-clef"},
+    {"shkr", "percussion"},
+    {"shmsn", "shamisen"},
+    {"shn", "sheng"},
+    {"snare", "snare-drum"},
+    {"snr", "snare-drum"},
+    {"snt-brass-gs", "brass-synthesizer"},
+    {"snt-brass-ss", "brass-synthesizer"},
     //{"snt-key-gs",    ""},
     //{"snt-key-ss",    ""},
     //{"snt-seq-gs",    ""},
     //{"snt-seq-ss",    ""},
-    { "snt-lead-gs",     "poly-synth" },
-    { "snt-lead-ss",     "poly-synth" },
-    { "snt-pad",         "pad-synth" },
-    { "snt-pad-gs",      "pad-synth" },
-    { "snt-pad-ss",      "pad-synth" },
-    { "splash",          "splash-cymbal" },
-    { "sprn-c",          "soprano" },
-    { "sprn-s",          "soprano" },
-    { "tmbrn",           "tambourine" },       // to be mapped
-    { "Tambourine-Perc", "tambourine" },
-    { "Tambourine",      "tambourine" },
-    { "tmblKit",         "timbales" },
-    { "tmbl",            "timbales" },
-    { "tmpn",            "timpani" },
-    { "tnklbll",         "tubular-bells" },       //The short form does not match but this is very likely due to the description
-    { "tnr-c",           "tenor" },
-    { "tnr-s",           "tenor" },
-    { "Triangle-Percu",  "triangle" },
-    { "trmbn-bb-bass",   "bass-trombone" },
-    { "trmbn-bb",        "tenor-trombone" },
-    { "trmbn-bb-treble", "trombone-treble" },
-    { "trmbn-eb",        "alto-trombone" },
-    { "trmpt-a",         "a-trumpet" },
-    { "trmpt-bb",        "bb-trumpet" },
-    { "trmpt-c-bass",    "c-bass-trumpet" },
-    { "trmpt-c",         "c-trumpet" },
-    { "trmpt-d",         "d-trumpet" },
-    { "trmpt-eb-bass",   "eb-bass-trumpet" },
-    { "trmpt-eb",        "eb-trumpet" },
-    { "trmpt-e",         "e-trumpet" },
-    { "trmpt-f",         "f-trumpet" },
-    { "trmpt-flgh",      "flugelhorn" },
-    { "trngl",           "triangle" },
-    { "ukll4",           "ukulele" },
-    { "vbrphn",          "vibraphone" },
-    { "vbrslp",          "vibraslap" },       // to be mapped
-    { "vla",             "viola" },
-    { "vln",             "violin" },
-    { "wdblckKit",       "wood-blocks" },
-    { "wdblck",          "wood-blocks" },
-    { "whstlKit",        "slide-whistle" },
-    { "whstl",           "tin-whistle" },
-    { "xlphn",           "xylophone" }
-};
+    {"snt-lead-gs", "poly-synth"},
+    {"snt-lead-ss", "poly-synth"},
+    {"snt-pad", "pad-synth"},
+    {"snt-pad-gs", "pad-synth"},
+    {"snt-pad-ss", "pad-synth"},
+    {"splash", "splash-cymbal"},
+    {"sprn-c", "soprano"},
+    {"sprn-s", "soprano"},
+    {"tmbrn", "tambourine"}, // to be mapped
+    {"Tambourine-Perc", "tambourine"},
+    {"Tambourine", "tambourine"},
+    {"tmblKit", "timbales"},
+    {"tmbl", "timbales"},
+    {"tmpn", "timpani"},
+    {"tnklbll", "tubular-bells"}, //The short form does not match but this is very likely due to the description
+    {"tnr-c", "tenor"},
+    {"tnr-s", "tenor"},
+    {"Triangle-Percu", "triangle"},
+    {"trmbn-bb-bass", "bass-trombone"},
+    {"trmbn-bb", "tenor-trombone"},
+    {"trmbn-bb-treble", "trombone-treble"},
+    {"trmbn-eb", "alto-trombone"},
+    {"trmpt-a", "a-trumpet"},
+    {"trmpt-bb", "bb-trumpet"},
+    {"trmpt-c-bass", "c-bass-trumpet"},
+    {"trmpt-c", "c-trumpet"},
+    {"trmpt-d", "d-trumpet"},
+    {"trmpt-eb-bass", "eb-bass-trumpet"},
+    {"trmpt-eb", "eb-trumpet"},
+    {"trmpt-e", "e-trumpet"},
+    {"trmpt-f", "f-trumpet"},
+    {"trmpt-flgh", "flugelhorn"},
+    {"trngl", "triangle"},
+    {"ukll4", "ukulele"},
+    {"vbrphn", "vibraphone"},
+    {"vbrslp", "vibraslap"}, // to be mapped
+    {"vla", "viola"},
+    {"vln", "violin"},
+    {"wdblckKit", "wood-blocks"},
+    {"wdblck", "wood-blocks"},
+    {"whstlKit", "slide-whistle"},
+    {"whstl", "tin-whistle"},
+    {"xlphn", "xylophone"}};
 
-std::unique_ptr<IGPDomBuilder> GuitarPro6::createGPDomBuilder() const
-{
-    return std::make_unique<GP6DomBuilder>();
-}
+std::unique_ptr<IGPDomBuilder> GuitarPro6::createGPDomBuilder() const { return std::make_unique<GP6DomBuilder>(); }
 
 //---------------------------------------------------------
 //   readBit
 //---------------------------------------------------------
 
-int GuitarPro6::readBit(ByteArray* buffer)
-{
+int GuitarPro6::readBit(ByteArray *buffer) {
     // calculate the byte index by dividing the position in bits by the bits per byte
     size_t byteIndex = static_cast<size_t>(position) / BITS_IN_BYTE;
     if (byteIndex >= buffer->size()) {
@@ -279,15 +273,14 @@ int GuitarPro6::readBit(ByteArray* buffer)
 
     // increment our current position so we know this bit has been read
     position++;
-    return bit;         // return the bit we calculated
+    return bit; // return the bit we calculated
 }
 
 //---------------------------------------------------------
 //   readBits
 //---------------------------------------------------------
 
-int GuitarPro6::readBits(ByteArray* buffer, int bitsToRead)
-{
+int GuitarPro6::readBits(ByteArray *buffer, int bitsToRead) {
     if (bitsToRead < 0 || bitsToRead > 32) {
         throw std::runtime_error("Invalid bit count in Guitar Pro data");
     }
@@ -302,8 +295,7 @@ int GuitarPro6::readBits(ByteArray* buffer, int bitsToRead)
 //   readBitsReversed
 //---------------------------------------------------------
 
-int GuitarPro6::readBitsReversed(ByteArray* buffer, int bitsToRead)
-{
+int GuitarPro6::readBitsReversed(ByteArray *buffer, int bitsToRead) {
     if (bitsToRead < 0 || bitsToRead > 32) {
         throw std::runtime_error("Invalid bit count in Guitar Pro data");
     }
@@ -318,8 +310,7 @@ int GuitarPro6::readBitsReversed(ByteArray* buffer, int bitsToRead)
 //   getBytes
 //---------------------------------------------------------
 
-ByteArray GuitarPro6::getBytes(ByteArray* buffer, int offset, int length)
-{
+ByteArray GuitarPro6::getBytes(ByteArray *buffer, int offset, int length) {
     if (offset < 0 || length < 0) {
         throw std::runtime_error("Invalid Guitar Pro file range");
     }
@@ -343,10 +334,8 @@ ByteArray GuitarPro6::getBytes(ByteArray* buffer, int offset, int length)
 //   readInteger
 //---------------------------------------------------------
 
-int GuitarPro6::readInteger(ByteArray* buffer, int offset)
-{
-    if (offset < 0 || static_cast<size_t>(offset) > buffer->size()
-        || buffer->size() - static_cast<size_t>(offset) < 4) {
+int GuitarPro6::readInteger(ByteArray *buffer, int offset) {
+    if (offset < 0 || static_cast<size_t>(offset) > buffer->size() || buffer->size() - static_cast<size_t>(offset) < 4) {
         throw std::runtime_error("Unexpected end of compressed Guitar Pro data");
     }
     // assign four bytes and take them from the buffer
@@ -358,10 +347,8 @@ int GuitarPro6::readInteger(ByteArray* buffer, int offset)
     // increment positioning so we keep track of where we are
     position += sizeof(int) * BITS_IN_BYTE;
     // bit shift in order to compute our integer value and return
-    const uint32_t value = (static_cast<uint32_t>(bytes[3]) & 0xff) << 24
-                           | (static_cast<uint32_t>(bytes[2]) & 0xff) << 16
-                           | (static_cast<uint32_t>(bytes[1]) & 0xff) << 8
-                           | (static_cast<uint32_t>(bytes[0]) & 0xff);
+    const uint32_t value = (static_cast<uint32_t>(bytes[3]) & 0xff) << 24 | (static_cast<uint32_t>(bytes[2]) & 0xff) << 16 |
+                           (static_cast<uint32_t>(bytes[1]) & 0xff) << 8 | (static_cast<uint32_t>(bytes[0]) & 0xff);
     return static_cast<int>(value);
 }
 
@@ -369,8 +356,7 @@ int GuitarPro6::readInteger(ByteArray* buffer, int offset)
 //   readString
 //---------------------------------------------------------
 
-ByteArray GuitarPro6::readString(ByteArray* buffer, int offset, int length)
-{
+ByteArray GuitarPro6::readString(ByteArray *buffer, int offset, int length) {
     if (offset < 0 || length < 0 || static_cast<size_t>(offset) > buffer->size()) {
         throw std::runtime_error("Unexpected end of compressed Guitar Pro data");
     }
@@ -385,7 +371,7 @@ ByteArray GuitarPro6::readString(ByteArray* buffer, int offset, int length)
         if (charValue == 0) {
             break;
         }
-        filename.push_back((char)charValue);
+        filename.push_back((char) charValue);
     }
     return filename;
 }
@@ -394,17 +380,13 @@ ByteArray GuitarPro6::readString(ByteArray* buffer, int offset, int length)
 //   unhandledNode
 //---------------------------------------------------------
 
-void GuitarPro6::unhandledNode(String nodeName)
-{
-    LOGD() << "WARNING: Discovered unhandled node name" << nodeName;
-}
+void GuitarPro6::unhandledNode(String nodeName) { LOGD() << "WARNING: Discovered unhandled node name" << nodeName; }
 
 //---------------------------------------------------------
 //   getNode
 //---------------------------------------------------------
 
-XmlDomNode GuitarPro6::getNode(const String& id, XmlDomNode currentDomNode)
-{
+XmlDomNode GuitarPro6::getNode(const String &id, XmlDomNode currentDomNode) {
     while (!(currentDomNode).isNull()) {
         String currentId = currentDomNode.toElement().attribute("id").value();
         if (currentId == id) {
@@ -420,8 +402,7 @@ XmlDomNode GuitarPro6::getNode(const String& id, XmlDomNode currentDomNode)
 //   readGpif
 //---------------------------------------------------------
 
-void GuitarPro6::readGpif(ByteArray* data)
-{
+void GuitarPro6::readGpif(ByteArray *data) {
     if (!data || data->empty()) {
         throw std::runtime_error("Guitar Pro file has no score.gpif data");
     }
@@ -451,8 +432,7 @@ void GuitarPro6::readGpif(ByteArray* data)
 //   parseFile
 //---------------------------------------------------------
 
-void GuitarPro6::parseFile(const char* filename, ByteArray* data)
-{
+void GuitarPro6::parseFile(const char *filename, ByteArray *data) {
     // test to check if we are dealing with the score
     if (!strcmp(filename, "score.gpif")) {
         readGpif(data);
@@ -463,13 +443,9 @@ void GuitarPro6::parseFile(const char* filename, ByteArray* data)
 //   readGPX
 //---------------------------------------------------------
 
-void GuitarPro6::readGPX(ByteArray* buffer)
-{
-    readGPX(buffer, 0);
-}
+void GuitarPro6::readGPX(ByteArray *buffer) { readGPX(buffer, 0); }
 
-void GuitarPro6::readGPX(ByteArray* buffer, int depth)
-{
+void GuitarPro6::readGPX(ByteArray *buffer, int depth) {
     if (!buffer || buffer->size() < sizeof(int)) {
         throw std::runtime_error("Unexpected end of Guitar Pro data");
     }
@@ -527,7 +503,7 @@ void GuitarPro6::readGPX(ByteArray* buffer, int depth)
                         bcfsBuffer.push_back(static_cast<uint8_t>(readBits(buffer, 8)));
                     }
                 }
-            } catch (const GpxEndOfData&) {
+            } catch (const GpxEndOfData &) {
                 // The stream ended inside the last token: keep what was decoded. The
                 // container's own table sizes its files, so a truncated tail of the
                 // last sector is dropped by the reader below, not carried as music.
@@ -540,13 +516,13 @@ void GuitarPro6::readGPX(ByteArray* buffer, int depth)
         // this is an uncompressed file - strip the header off
         *buffer = buffer->right(buffer->size() - sizeof(int));
         const size_t sectorSize = 0x1000;
-        int offset              = 0;
+        int offset = 0;
         while ((offset = (offset + static_cast<int>(sectorSize))) + 3 < static_cast<int>(buffer->size())) {
             int newInt = readInteger(buffer, offset);
             if (newInt == 2) {
                 const int indexFileName = (offset + 4);
                 const int indexFileSize = (offset + 0x8C);
-                const int indexOfBlock  = (offset + 0x94);
+                const int indexOfBlock = (offset + 0x94);
 
                 // create a byte array and put information about files found in it
                 ByteArray fileBytes;
@@ -560,8 +536,7 @@ void GuitarPro6::readGPX(ByteArray* buffer, int depth)
                     if (block < 0 || static_cast<size_t>(block) > buffer->size() / sectorSize) {
                         throw std::runtime_error("Invalid Guitar Pro file block");
                     }
-                    fileBytes.push_back(getBytes(buffer, block * static_cast<int>(sectorSize),
-                                                 static_cast<int>(sectorSize)));
+                    fileBytes.push_back(getBytes(buffer, block * static_cast<int>(sectorSize), static_cast<int>(sectorSize)));
                     if (fileBytes.size() > static_cast<size_t>(GPX_MAX_FILE_BYTES)) {
                         throw std::runtime_error("Guitar Pro file is too large");
                     }
@@ -575,7 +550,7 @@ void GuitarPro6::readGPX(ByteArray* buffer, int depth)
                     ByteArray filenameBytes = readString(buffer, indexFileName, 127);
                     // readString() does not append a terminator; parseFile() uses strcmp().
                     filenameBytes.push_back(static_cast<uint8_t>(0));
-                    const char* filename = filenameBytes.constChar();
+                    const char *filename = filenameBytes.constChar();
                     ByteArray data = getBytes(&fileBytes, 0, fileSize);
                     parseFile(filename, &data);
                 }
@@ -588,8 +563,7 @@ void GuitarPro6::readGPX(ByteArray* buffer, int depth)
 //   read
 //---------------------------------------------------------
 
-bool GuitarPro6::read(IODevice* io)
-{
+bool GuitarPro6::read(IODevice *io) {
     f = io;
     previousTempo = -1;
     position = 0;

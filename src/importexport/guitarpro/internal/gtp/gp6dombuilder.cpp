@@ -7,19 +7,19 @@
 using namespace muse;
 
 namespace mu::iex::guitarpro {
-std::pair<int, std::unique_ptr<GPTrack> > GP6DomBuilder::createGPTrack(XmlDomNode* trackNode, XmlDomNode* versionNode)
-{
+std::pair<int, std::unique_ptr<GPTrack>> GP6DomBuilder::createGPTrack(XmlDomNode *trackNode, XmlDomNode *versionNode) {
     UNUSED(versionNode);
     static const std::set<String> sUnusedNodes = {
-        u"Color",                                        // we don't use icon color for the tracks
-        u"SystemsDefaultLayout", u"SystemsLayout",       // we have our own layout algorithms
-        u"SystemsDefautLayout",                          // GP has a typo here :)
-        u"PalmMute",                                     // currently our synthesizer is unable to simulate this feature
-        u"AutoAccentuation",                             // currently our synthesizer is unable to simulate this feature
-        u"PlayingStyle",                                 // currently we ignore playing style
-        u"UseOneChannelPerString",                       // we have our own channel management system in synth
-        u"PartSounding",                                 // don't know what this is
-        u"PlaybackState"                                 // ignored
+        u"Color", // we don't use icon color for the tracks
+        u"SystemsDefaultLayout",
+        u"SystemsLayout",          // we have our own layout algorithms
+        u"SystemsDefautLayout",    // GP has a typo here :)
+        u"PalmMute",               // currently our synthesizer is unable to simulate this feature
+        u"AutoAccentuation",       // currently our synthesizer is unable to simulate this feature
+        u"PlayingStyle",           // currently we ignore playing style
+        u"UseOneChannelPerString", // we have our own channel management system in synth
+        u"PartSounding",           // don't know what this is
+        u"PlaybackState"           // ignored
     };
 
     int trackIdx = trackNode->toElement().attribute("id").value().toInt();
@@ -38,7 +38,7 @@ std::pair<int, std::unique_ptr<GPTrack> > GP6DomBuilder::createGPTrack(XmlDomNod
             if (!bankChangesNode.isNull()) {
                 XmlDomNode bankChange = bankChangesNode.firstChild();
                 while (!bankChange.isNull()) {
-                    GPTrack::SoundAutomation automation =  readRsePickUp(bankChange);
+                    GPTrack::SoundAutomation automation = readRsePickUp(bankChange);
                     track->addSoundAutomation(automation);
                     bankChange = bankChange.nextSibling();
                 }
@@ -68,8 +68,7 @@ std::pair<int, std::unique_ptr<GPTrack> > GP6DomBuilder::createGPTrack(XmlDomNod
     return std::make_pair(trackIdx, std::move(track));
 }
 
-void GP6DomBuilder::setUpInstrument(XmlDomNode* trackChildNode, GPTrack* track)
-{
+void GP6DomBuilder::setUpInstrument(XmlDomNode *trackChildNode, GPTrack *track) {
     String ref = trackChildNode->toElement().attribute("ref").value();
     track->setInstrument(ref);
     if (ref.endsWith(u"-gs") || ref.startsWith(u'2')) { // grand staff
@@ -84,8 +83,7 @@ void GP6DomBuilder::setUpInstrument(XmlDomNode* trackChildNode, GPTrack* track)
     }
 }
 
-GPTrack::SoundAutomation GP6DomBuilder::readRsePickUp(XmlDomNode& bankChangesNode) const
-{
+GPTrack::SoundAutomation GP6DomBuilder::readRsePickUp(XmlDomNode &bankChangesNode) const {
     GPTrack::SoundAutomation result;
 
     result.bar = bankChangesNode.toElement().attribute("barIndex").value().toInt();

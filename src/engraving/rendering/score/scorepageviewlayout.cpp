@@ -42,15 +42,14 @@
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-void ScorePageViewLayout::initLayoutContext(const Score* score, LayoutContext& ctx, const Fraction& stick, const Fraction& etick)
-{
+void ScorePageViewLayout::initLayoutContext(const Score *score, LayoutContext &ctx, const Fraction &stick, const Fraction &etick) {
     LAYOUT_CALL();
 
-    LayoutState& state = ctx.mutState();
+    LayoutState &state = ctx.mutState();
 
     state.setEndTick(etick);
 
-    MeasureBase* m = nullptr;
+    MeasureBase *m = nullptr;
     {
         m = score->tick2measure(stick);
         if (m == nullptr) {
@@ -78,7 +77,7 @@ void ScorePageViewLayout::initLayoutContext(const Score* score, LayoutContext& c
     }
 
     if (!state.isLayoutAll() && m->system()) {
-        System* system = m->system();
+        System *system = m->system();
         system_idx_t systemIndex = muse::indexOf(score->systems(), system);
 
         // set current system
@@ -94,11 +93,11 @@ void ScorePageViewLayout::initLayoutContext(const Score* score, LayoutContext& c
         }
         state.setPageIdx(pageIdx);
 
-        MeasureBase* nextMeasure = nullptr;
+        MeasureBase *nextMeasure = nullptr;
         if (systemIndex == 0) {
             nextMeasure = ctx.conf().isShowVBox() ? score->first() : score->firstMeasure();
         } else {
-            System* prevSystem = score->systems().at(systemIndex - 1);
+            System *prevSystem = score->systems().at(systemIndex - 1);
             nextMeasure = prevSystem->measures().back()->next();
         }
         state.setNextMeasure(nextMeasure);
@@ -107,19 +106,20 @@ void ScorePageViewLayout::initLayoutContext(const Score* score, LayoutContext& c
             state.setMeasureNumber(0);
             state.setTick(Fraction(0, 1));
         } else {
-            const MeasureBase* mb = state.nextMeasure()->prev();
+            const MeasureBase *mb = state.nextMeasure()->prev();
             if (mb) {
                 mb = mb->mbWithPrecedingSectionBreak();
             }
 
-            const LayoutBreak* layoutBreak = mb->sectionBreakElement();
+            const LayoutBreak *layoutBreak = mb->sectionBreakElement();
             // TODO: also use mb in else clause here?
             // probably not, only actual measures have meaningful numbers
             if (layoutBreak && layoutBreak->startWithMeasureOne()) {
                 state.setMeasureNumber(0);
             } else {
-                state.setMeasureNumber(state.nextMeasure()->prevMeasure()->measureNumber()                      // will be adjusted later with respect
-                                       + (state.nextMeasure()->prevMeasure()->excludeFromNumbering() ? 0 : 1)); // to the user-defined offset.
+                state.setMeasureNumber(state.nextMeasure()->prevMeasure()->measureNumber() // will be adjusted later with respect
+                                       +
+                                       (state.nextMeasure()->prevMeasure()->excludeFromNumbering() ? 0 : 1)); // to the user-defined offset.
             }
             state.setTick(ctx.state().nextMeasure()->tick());
         }
@@ -130,20 +130,19 @@ void ScorePageViewLayout::initLayoutContext(const Score* score, LayoutContext& c
     state.setPrevMeasure(nullptr);
 }
 
-void ScorePageViewLayout::prepareScore(Score* score, const LayoutContext& ctx)
-{
+void ScorePageViewLayout::prepareScore(Score *score, const LayoutContext &ctx) {
     LAYOUT_CALL();
 
     if (!ctx.state().isLayoutAll() && ctx.state().curSystem()) {
         system_idx_t systemIndex = muse::indexOf(score->systems(), ctx.state().curSystem());
         score->systems().erase(score->systems().begin() + systemIndex, score->systems().end());
     } else {
-        for (System* s : score->systems()) {
-            for (Bracket* b : s->brackets()) {
+        for (System *s : score->systems()) {
+            for (Bracket *b : s->brackets()) {
                 if (b->selected()) {
                     bool selected = b->selected();
                     score->selection().remove(b);
-                    BracketItem* item = b->bracketItem();
+                    BracketItem *item = b->bracketItem();
                     item->setSelected(selected);
                     score->setSelectionChanged(true);
                 }
@@ -152,7 +151,7 @@ void ScorePageViewLayout::prepareScore(Score* score, const LayoutContext& ctx)
             // and ~System unlinks itself from its page
         }
 
-        for (MeasureBase* mb = score->first(); mb; mb = mb->next()) {
+        for (MeasureBase *mb = score->first(); mb; mb = mb->next()) {
             mb->setSystem(nullptr);
             if (mb->isMeasure() && toMeasure(mb)->mmRest()) {
                 toMeasure(mb)->mmRest()->setSystem(nullptr);
@@ -166,8 +165,7 @@ void ScorePageViewLayout::prepareScore(Score* score, const LayoutContext& ctx)
     }
 }
 
-void ScorePageViewLayout::layoutPageView(Score* score, LayoutContext& ctx, const Fraction& stick, const Fraction& etick)
-{
+void ScorePageViewLayout::layoutPageView(Score *score, LayoutContext &ctx, const Fraction &stick, const Fraction &etick) {
     TRACEFUNC;
 
     // initLayoutContext moves the tail of Score::systems() into the layout's list of
@@ -177,10 +175,10 @@ void ScorePageViewLayout::layoutPageView(Score* score, LayoutContext& ctx, const
     // being in Score::systems(), still pointing at their page, and outlive it. Give
     // them back, so that the next layout collects, reuses or deletes them again.
     struct ReturnsReusableSystems {
-        Score* score;
-        std::vector<System*>& reusable;
-        ~ReturnsReusableSystems()
-        {
+        Score *score;
+        std::vector<System *> &reusable;
+
+        ~ReturnsReusableSystems() {
             if (reusable.empty()) {
                 return;
             }
@@ -189,10 +187,9 @@ void ScorePageViewLayout::layoutPageView(Score* score, LayoutContext& ctx, const
             try {
                 score->systems().insert(score->systems().end(), reusable.begin(), reusable.end());
                 reusable.clear();
-            } catch (...) {
-            }
+            } catch (...) {}
         }
-    } returnsReusableSystems{ score, ctx.mutState().systemList() };
+    } returnsReusableSystems{score, ctx.mutState().systemList()};
 
     LAYOUT_CALL_CLEAR();
     LAYOUT_CALL();
@@ -202,10 +199,10 @@ void ScorePageViewLayout::layoutPageView(Score* score, LayoutContext& ctx, const
     prepareScore(score, ctx);
 
     //! NOTE Reset pass need anyway
-//#ifdef MUE_ENABLE_ENGRAVING_LD_PASSES
+    //#ifdef MUE_ENABLE_ENGRAVING_LD_PASSES
     PassResetLayoutData resetPass;
     resetPass.run(score, ctx);
-//#endif
+    //#endif
 
 #ifdef MUE_ENABLE_ENGRAVING_LD_PASSES
     if (ctx.state().isLayoutAll()) {
@@ -221,15 +218,14 @@ void ScorePageViewLayout::layoutPageView(Score* score, LayoutContext& ctx, const
     LAYOUT_CALL_PRINT();
 }
 
-void ScorePageViewLayout::doLayout(LayoutContext& ctx)
-{
+void ScorePageViewLayout::doLayout(LayoutContext &ctx) {
     LAYOUT_CALL();
 
-    LayoutState& state = ctx.mutState();
+    LayoutState &state = ctx.mutState();
     MeasureLayout::getNextMeasure(ctx);
     state.setCurSystem(SystemLayout::collectSystem(ctx));
 
-    const MeasureBase* lmb = nullptr;
+    const MeasureBase *lmb = nullptr;
     do {
         PageLayout::getNextPage(ctx);
         PageLayout::collectPage(ctx);
@@ -255,11 +251,10 @@ void ScorePageViewLayout::doLayout(LayoutContext& ctx)
     SystemLayout::centerPendingSystems(ctx);
 }
 
-void ScorePageViewLayout::layoutFinished(Score* score, LayoutContext& ctx)
-{
+void ScorePageViewLayout::layoutFinished(Score *score, LayoutContext &ctx) {
     LAYOUT_CALL();
 
-    LayoutState& state = ctx.mutState();
+    LayoutState &state = ctx.mutState();
 
     if (!state.curSystem()) {
         // The end of the score. The remaining systems are not needed...
@@ -268,12 +263,12 @@ void ScorePageViewLayout::layoutFinished(Score* score, LayoutContext& ctx)
 
         // ...and the remaining pages too
         while (score->npages() > state.pageIdx()) {
-            Page* p = score->pages().back();
+            Page *p = score->pages().back();
             score->pages().pop_back();
             delete p;
         }
     } else {
-        Page* p = state.curSystem()->page();
+        Page *p = state.curSystem()->page();
         if (p && (p != state.page())) {
             p->invalidateBspTree();
         }
@@ -292,8 +287,7 @@ void ScorePageViewLayout::layoutFinished(Score* score, LayoutContext& ctx)
     }
 }
 
-void ScorePageViewLayout::layoutHeadersFooters(LayoutContext& ctx)
-{
+void ScorePageViewLayout::layoutHeadersFooters(LayoutContext &ctx) {
     TRACEFUNC;
 
     LAYOUT_CALL_CLEAR();
@@ -304,9 +298,8 @@ void ScorePageViewLayout::layoutHeadersFooters(LayoutContext& ctx)
     LAYOUT_CALL_PRINT();
 }
 
-void ScorePageViewLayout::doLayoutHeadersFooters(LayoutContext& ctx)
-{
-    for (const auto& page : ctx.dom().pages()) {
+void ScorePageViewLayout::doLayoutHeadersFooters(LayoutContext &ctx) {
+    for (const auto &page : ctx.dom().pages()) {
         HeaderFooterLayout::layoutHeaderFooter(ctx, page);
     }
 }

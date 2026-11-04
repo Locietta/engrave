@@ -39,7 +39,7 @@
 namespace mu::engraving {
 class EngravingObject;
 class MasterScore;
-}
+} // namespace mu::engraving
 
 namespace engrave::harness {
 
@@ -52,33 +52,32 @@ struct Fingerprint {
     std::size_t undo_count = 0;
     bool undo_active = false;
     int engine_error = 0;
-    std::vector<std::string> layout;          // per laid-out score: its pages and segment positions,
-                                              // equal to within a unit of 1/1200 inch
-    std::string externals;                    // MIDI mapping, repeats, meta tags, selection, input state
-    std::size_t registered = 0;               // entries in the id register
+    std::vector<std::string> layout;            // per laid-out score: its pages and segment positions,
+                                                // equal to within a unit of 1/1200 inch
+    std::string externals;                      // MIDI mapping, repeats, meta tags, selection, input state
+    std::size_t registered = 0;                 // entries in the id register
     std::map<std::string, std::size_t> objects; // what the document owns (not layout's), per type
 };
 
-Fingerprint fingerprint(Document& document);
+Fingerprint fingerprint(Document &document);
 
 // The fields in which two fingerprints differ, by name; `ignore` lists fields to skip.
-std::vector<std::string> differences(const Fingerprint& before, const Fingerprint& after,
-                                     const std::vector<std::string_view>& ignore = {});
+std::vector<std::string> differences(const Fingerprint &before, const Fingerprint &after, const std::vector<std::string_view> &ignore = {});
 // The first difference in the text fields, with some context, for a failure message.
-std::string explain(const Fingerprint& before, const Fingerprint& after);
+std::string explain(const Fingerprint &before, const Fingerprint &after);
 
 struct OpCase {
     std::string name;    // unique across all groups
     std::string fixture; // a corpus file name
     // The batch, built against the freshly opened fixture.
-    std::function<Batch(Document&)> make;
+    std::function<Batch(Document &)> make;
     // After the commit: what is wrong with the result, or "" when it is right.
-    std::function<std::string(Document& after, const Fingerprint& before, const Fingerprint& committed)> expect;
+    std::function<std::string(Document &after, const Fingerprint &before, const Fingerprint &committed)> expect;
 };
 
 // Registers a group's cases; call it from a namespace-scope initializer.
 bool register_cases(std::vector<OpCase> cases);
-const std::vector<OpCase>& registered_cases();
+const std::vector<OpCase> &registered_cases();
 
 struct EvidenceRow {
     std::string op;
@@ -90,22 +89,21 @@ struct EvidenceRow {
     api::Policy verdict = api::Policy::Unexposed;
 };
 
-EvidenceRow run_case(Engine& engine, const OpCase& op_case, const std::filesystem::path& fixture);
+EvidenceRow run_case(Engine &engine, const OpCase &op_case, const std::filesystem::path &fixture);
 
-nlohmann::ordered_json to_json(const std::vector<EvidenceRow>& rows);
+nlohmann::ordered_json to_json(const std::vector<EvidenceRow> &rows);
 
 // --- helpers for cases ------------------------------------------------------
 
-mu::engraving::MasterScore& master_of(Document& document);
+mu::engraving::MasterScore &master_of(Document &document);
 // The id of the first element of an MSCX type (in document order) that has one
 // and matches; throws when there is none, so a case fails on a fixture that lacks it.
-ElementId find_id(Document& document, std::string_view type,
-                  const std::function<bool(const mu::engraving::EngravingObject&)>& match = {});
+ElementId find_id(Document &document, std::string_view type, const std::function<bool(const mu::engraving::EngravingObject &)> &match = {});
 // The element an id names; throws when it names nothing live.
-mu::engraving::EngravingObject& element(Document& document, const ElementId& id);
+mu::engraving::EngravingObject &element(Document &document, const ElementId &id);
 // A property of an element, by its catalogue name.
-Value property(Document& document, const ElementId& id, std::string_view name);
+Value property(Document &document, const ElementId &id, std::string_view name);
 // The index-th excerpt of the score.
-ScoreSel excerpt(Document& document, std::size_t index);
+ScoreSel excerpt(Document &document, std::size_t index);
 
 } // namespace engrave::harness

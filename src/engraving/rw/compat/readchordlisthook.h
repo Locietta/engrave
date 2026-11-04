@@ -27,22 +27,21 @@
 namespace mu::engraving {
 class XmlReader;
 class Score;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::compat {
-class ReadChordListHook
-{
+class ReadChordListHook {
 public:
-    ReadChordListHook(Score* score);
+    ReadChordListHook(Score *score);
 
-    void read(XmlReader& e);
+    void read(XmlReader &e);
     void validate();
 
 private:
-    Score* m_score = nullptr;
+    Score *m_score = nullptr;
     bool m_chordListTag = false;
     muse::String m_oldChordDescriptionFile;
 };
-}
+} // namespace mu::engraving::compat
 
 #endif // MU_ENGRAVING_READCHORDLISTHOOK_H

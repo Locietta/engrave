@@ -37,9 +37,7 @@ namespace mu::engraving {
 //   DurationElement
 //---------------------------------------------------------
 
-DurationElement::DurationElement(const ElementType& type, EngravingObject* parent, ElementFlags f)
-    : EngravingItem(type, parent, f)
-{
+DurationElement::DurationElement(const ElementType &type, EngravingObject *parent, ElementFlags f) : EngravingItem(type, parent, f) {
     m_tuplet = 0;
 }
 
@@ -47,10 +45,8 @@ DurationElement::DurationElement(const ElementType& type, EngravingObject* paren
 //   DurationElement
 //---------------------------------------------------------
 
-DurationElement::DurationElement(const DurationElement& e, bool link)
-    : EngravingItem(e, link)
-{
-    m_tuplet   = 0;      // e._tuplet;
+DurationElement::DurationElement(const DurationElement &e, bool link) : EngravingItem(e, link) {
+    m_tuplet = 0; // e._tuplet;
     m_duration = e.m_duration;
 }
 
@@ -58,8 +54,7 @@ DurationElement::DurationElement(const DurationElement& e, bool link)
 //   ~DurationElement
 //---------------------------------------------------------
 
-DurationElement::~DurationElement()
-{
+DurationElement::~DurationElement() {
     if (m_tuplet) {
         setTuplet(nullptr);
     }
@@ -69,9 +64,8 @@ DurationElement::~DurationElement()
 //   topTuplet
 //---------------------------------------------------------
 
-Tuplet* DurationElement::topTuplet() const
-{
-    Tuplet* t = tuplet();
+Tuplet *DurationElement::topTuplet() const {
+    Tuplet *t = tuplet();
     if (t) {
         while (t->tuplet()) {
             t = t->tuplet();
@@ -84,17 +78,15 @@ Tuplet* DurationElement::topTuplet() const
 //   globalTicks
 //---------------------------------------------------------
 
-Fraction DurationElement::globalTicks() const
-{
+Fraction DurationElement::globalTicks() const {
     Fraction f(m_duration);
-    for (Tuplet* t = tuplet(); t; t = t->tuplet()) {
+    for (Tuplet *t = tuplet(); t; t = t->tuplet()) {
         f /= t->ratio();
     }
     return f;
 }
 
-float DurationElement::timeStretchFactor() const
-{
+float DurationElement::timeStretchFactor() const {
     int nominalDuration = m_duration.ticks();
     int actualDuration = actualTicks().ticks();
 
@@ -105,31 +97,25 @@ float DurationElement::timeStretchFactor() const
 //   actualTicks
 //---------------------------------------------------------
 
-Fraction DurationElement::actualTicksAt(const Fraction& tick) const
-{
+Fraction DurationElement::actualTicksAt(const Fraction &tick) const {
     // Use when tick() is unreliable, for example when pasting
     return globalTicks() / staff()->timeStretch(tick);
 }
 
-Fraction DurationElement::actualTicks() const
-{
-    return actualTicksAt(tick());
-}
+Fraction DurationElement::actualTicks() const { return actualTicksAt(tick()); }
 
 //---------------------------------------------------------
 //   readAddTuplet
 //---------------------------------------------------------
 
-void DurationElement::readAddTuplet(Tuplet* t)
-{
+void DurationElement::readAddTuplet(Tuplet *t) {
     setTuplet(t);
     if (!score()->undoStack()->hasActiveTransaction()) { // HACK, also added in Undo::AddElement()
         t->add(this);
     }
 }
 
-void DurationElement::setTuplet(Tuplet* t)
-{
+void DurationElement::setTuplet(Tuplet *t) {
     if (m_tuplet) {
         m_tuplet->removeDurationElement(this);
     }
@@ -145,13 +131,10 @@ void DurationElement::setTuplet(Tuplet* t)
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue DurationElement::getProperty(Pid propertyId) const
-{
+PropertyValue DurationElement::getProperty(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::DURATION:
-        return PropertyValue::fromValue(m_duration);
-    default:
-        return EngravingItem::getProperty(propertyId);
+        case Pid::DURATION: return PropertyValue::fromValue(m_duration);
+        default: return EngravingItem::getProperty(propertyId);
     }
 }
 
@@ -159,18 +142,15 @@ PropertyValue DurationElement::getProperty(Pid propertyId) const
 //   setProperty
 //---------------------------------------------------------
 
-bool DurationElement::setProperty(Pid propertyId, const PropertyValue& v)
-{
+bool DurationElement::setProperty(Pid propertyId, const PropertyValue &v) {
     switch (propertyId) {
-    case Pid::DURATION: {
-        Fraction f(v.value<Fraction>());
-        setTicks(f);
-        triggerLayout();
-    }
-    break;
-    default:
-        return EngravingItem::setProperty(propertyId, v);
+        case Pid::DURATION: {
+            Fraction f(v.value<Fraction>());
+            setTicks(f);
+            triggerLayout();
+        } break;
+        default: return EngravingItem::setProperty(propertyId, v);
     }
     return true;
 }
-}
+} // namespace mu::engraving

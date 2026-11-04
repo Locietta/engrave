@@ -37,19 +37,18 @@ class HDegree;
 class Score;
 enum class SymId;
 enum class Key : signed char;
-}
+} // namespace mu::engraving
 
 namespace mu::iex::musicxml {
 //---------------------------------------------------------
 //   MusicXmlSupport -- MusicXML import support functions
 //---------------------------------------------------------
 
-class MusicXmlSupport
-{
+class MusicXmlSupport {
 public:
-    static int stringToInt(const muse::String& s, bool* ok);
-    static engraving::Fraction noteTypeToFraction(const muse::String& type);
-    static engraving::Fraction calculateFraction(const muse::String& type, int dots, int normalNotes, int actualNotes);
+    static int stringToInt(const muse::String &s, bool *ok);
+    static engraving::Fraction noteTypeToFraction(const muse::String &type);
+    static engraving::Fraction calculateFraction(const muse::String &type, int dots, int normalNotes, int actualNotes);
 };
 
 extern muse::String accSymId2MusicXmlString(const engraving::SymId id);
@@ -61,19 +60,19 @@ extern muse::String musicXmlAccidentalTextToChar(const muse::String mxmlName);
 extern engraving::SymId musicXmlString2accSymId(const muse::String mxmlName, const muse::String smufl = {});
 extern engraving::AccidentalType microtonalGuess(double val);
 extern bool isLaissezVibrer(const engraving::SymId id);
-extern muse::String errorStringWithLocation(int64_t byteOffset, const muse::String& error);
-extern muse::String checkAtEndElement(const muse::XmlStreamReader& e, const muse::String& expName);
+extern muse::String errorStringWithLocation(int64_t byteOffset, const muse::String &error);
+extern muse::String checkAtEndElement(const muse::XmlStreamReader &e, const muse::String &expName);
 
-extern muse::String harmonyXmlFunction(const engraving::HarmonyInfo* info, const engraving::Harmony* h);
-extern muse::String harmonyXmlFunction(const engraving::HarmonyInfo* info, const engraving::Harmony* h, engraving::Key k);
-extern muse::String harmonyXmlKind(const engraving::HarmonyInfo* h);
-extern muse::String harmonyXmlText(const engraving::HarmonyInfo* h);
-extern muse::String harmonyXmlSymbols(const engraving::HarmonyInfo* h);
-extern muse::String harmonyXmlParens(const engraving::HarmonyInfo* h);
-extern muse::StringList harmonyXmlDegrees(const engraving::HarmonyInfo* h);
-extern const engraving::ChordDescription* harmonyFromXml(engraving::HarmonyInfo* info, engraving::Score* score, const muse::String& kind,
-                                                         const muse::String& kindText, const muse::String& symbols,
-                                                         const muse::String& parens, const std::vector<engraving::HDegree>& dl);
-extern void setHarmonyRootTpcFromFunction(engraving::HarmonyInfo* info, const engraving::Harmony* h, const muse::String& s,
+extern muse::String harmonyXmlFunction(const engraving::HarmonyInfo *info, const engraving::Harmony *h);
+extern muse::String harmonyXmlFunction(const engraving::HarmonyInfo *info, const engraving::Harmony *h, engraving::Key k);
+extern muse::String harmonyXmlKind(const engraving::HarmonyInfo *h);
+extern muse::String harmonyXmlText(const engraving::HarmonyInfo *h);
+extern muse::String harmonyXmlSymbols(const engraving::HarmonyInfo *h);
+extern muse::String harmonyXmlParens(const engraving::HarmonyInfo *h);
+extern muse::StringList harmonyXmlDegrees(const engraving::HarmonyInfo *h);
+extern const engraving::ChordDescription *harmonyFromXml(engraving::HarmonyInfo *info, engraving::Score *score, const muse::String &kind,
+                                                         const muse::String &kindText, const muse::String &symbols,
+                                                         const muse::String &parens, const std::vector<engraving::HDegree> &dl);
+extern void setHarmonyRootTpcFromFunction(engraving::HarmonyInfo *info, const engraving::Harmony *h, const muse::String &s,
                                           engraving::Key key);
-} // namespace Ms
+} // namespace mu::iex::musicxml

@@ -21,10 +21,8 @@
  */
 #pragma once
 
-
 namespace mu::iex::mnxio {
-class IMnxConfiguration : MODULE_GLOBAL_EXPORT_INTERFACE
-{
+class IMnxConfiguration : MODULE_GLOBAL_EXPORT_INTERFACE {
 
 public:
     virtual ~IMnxConfiguration() = default;
@@ -41,4 +39,4 @@ public:
     virtual bool mnxRequireExactSchemaValidation() const = 0;
     virtual void setMnxRequireExactSchemaValidation(bool value) = 0;
 };
-}
+} // namespace mu::iex::mnxio

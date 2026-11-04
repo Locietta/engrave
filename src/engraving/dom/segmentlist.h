@@ -31,64 +31,86 @@ class Segment;
 //   SegmentList
 //---------------------------------------------------------
 
-class SegmentList
-{
+class SegmentList {
 public:
     SegmentList() { clear(); }
-    void clear() { m_first = m_last = 0; m_size = 0; }
+
+    void clear() {
+        m_first = m_last = 0;
+        m_size = 0;
+    }
 #ifndef NDEBUG
     void check();
 #else
     void check() {}
 #endif
     SegmentList clone() const;
+
     int size() const { return m_size; }
 
-    Segment* at(int index) const;
+    Segment *at(int index) const;
 
-    Segment* first() const { return m_first; }
-    Segment* firstActive() const;
-    Segment* first(SegmentType) const;
-    Segment* first(ElementFlag) const;
+    Segment *first() const { return m_first; }
 
-    Segment* last() const { return m_last; }
-    Segment* last(ElementFlag) const;
-    Segment* last(SegmentType) const;
-    Segment* firstCRSegment() const;
-    void remove(Segment*);
-    void push_back(Segment*);
-    void push_front(Segment*);
-    void insert(Segment* e, Segment* el);    // insert e before el
+    Segment *firstActive() const;
+    Segment *first(SegmentType) const;
+    Segment *first(ElementFlag) const;
 
-    class iterator
-    {
-        Segment* p;
+    Segment *last() const { return m_last; }
+
+    Segment *last(ElementFlag) const;
+    Segment *last(SegmentType) const;
+    Segment *firstCRSegment() const;
+    void remove(Segment *);
+    void push_back(Segment *);
+    void push_front(Segment *);
+    void insert(Segment *e, Segment *el); // insert e before el
+
+    class iterator {
+        Segment *p;
     public:
-        iterator(Segment* s) { p = s; }
-        iterator operator++() { iterator i(p); p = p->next(); return i; }
-        bool operator !=(const iterator& i) const { return p != i.p; }
-        Segment& operator*() { return *p; }
+        iterator(Segment *s) { p = s; }
+
+        iterator operator++() {
+            iterator i(p);
+            p = p->next();
+            return i;
+        }
+
+        bool operator!=(const iterator &i) const { return p != i.p; }
+
+        Segment &operator*() { return *p; }
     };
-    class const_iterator
-    {
-        const Segment* p;
+
+    class const_iterator {
+        const Segment *p;
     public:
-        const_iterator(const Segment* s) { p = s; }
-        const_iterator operator++() { const_iterator i(p); p = p->next(); return i; }
-        bool operator !=(const const_iterator& i) const { return p != i.p; }
-        const Segment& operator*() const { return *p; }
+        const_iterator(const Segment *s) { p = s; }
+
+        const_iterator operator++() {
+            const_iterator i(p);
+            p = p->next();
+            return i;
+        }
+
+        bool operator!=(const const_iterator &i) const { return p != i.p; }
+
+        const Segment &operator*() const { return *p; }
     };
 
     iterator begin() { return m_first; }
+
     iterator end() { return 0; }
+
     const_iterator begin() const { return m_first; }
+
     const_iterator end() const { return 0; }
 
 private:
 
-    Segment* m_first = nullptr;          // First item of segment list
-    Segment* m_last = nullptr;           // Last item of segment list
-    int m_size = 0;                      // Number of items in segment list
+    Segment *m_first = nullptr; // First item of segment list
+    Segment *m_last = nullptr;  // Last item of segment list
+    int m_size = 0;             // Number of items in segment list
 };
 
 // Segment* begin(SegmentList& l) { return l.first(); }

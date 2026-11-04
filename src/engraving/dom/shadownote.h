@@ -38,44 +38,47 @@ namespace mu::engraving {
  which shows the note insert position in note entry mode.
 */
 
-class ShadowNote final : public EngravingItem
-{
+class ShadowNote final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, ShadowNote)
     DECLARE_CLASSOF(ElementType::SHADOW_NOTE)
 
 public:
-    ShadowNote(Score*);
+    ShadowNote(Score *);
 
-    ShadowNote* clone() const override { return new ShadowNote(*this); }
+    ShadowNote *clone() const override { return new ShadowNote(*this); }
 
     bool isValid() const;
 
     Fraction tick() const override { return m_tick; }
+
     void setTick(Fraction t) { m_tick = t; }
 
     int lineIndex() const { return m_lineIndex; }
+
     void setLineIndex(int n) { m_lineIndex = n; }
 
     bool isRest() const { return m_isRest; }
 
-    const TDuration& duration() const { return m_duration; }
+    const TDuration &duration() const { return m_duration; }
 
     void setState(SymId noteSymbol, TDuration duration, bool isRest, bool beyondScore, AccidentalType accidentalType = AccidentalType::NONE,
-                  const std::set<SymId>& articulationIds = {});
+                  const std::set<SymId> &articulationIds = {});
 
-    void drawArticulations(muse::draw::Painter* painter) const;
-    void drawCloseArticulation(muse::draw::Painter* painter, const SymId& articulation, RectF& boundRect, bool up,
-                               const SymId& prevArticulation) const;
-    void drawFarArticulation(muse::draw::Painter* painter, const SymId& articulation, RectF& boundRect, bool up,
+    void drawArticulations(muse::draw::Painter *painter) const;
+    void drawCloseArticulation(muse::draw::Painter *painter, const SymId &articulation, RectF &boundRect, bool up,
+                               const SymId &prevArticulation) const;
+    void drawFarArticulation(muse::draw::Painter *painter, const SymId &articulation, RectF &boundRect, bool up,
                              bool accentStaccatoKern) const;
 
     bool computeUp() const;
+
     SymId noteheadSymbol() const { return m_noteheadSymbol; }
+
     bool hasStem() const;
     bool hasFlag() const;
     SymId flagSym() const;
     AccidentalType accidentalType() const;
-    const std::set<SymId>& articulationIds() const;
+    const std::set<SymId> &articulationIds() const;
 
     bool ledgerLinesVisible() const;
 

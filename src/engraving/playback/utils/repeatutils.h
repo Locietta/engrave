@@ -30,15 +30,14 @@
 
 namespace mu::engraving {
 struct PartiallyTiedNoteInfo {
-    const RepeatSegment* repeat = nullptr;
-    const Note* note = nullptr;
+    const RepeatSegment *repeat = nullptr;
+    const Note *note = nullptr;
 
     bool isValid() const { return repeat && note; }
 };
 
-inline PartiallyTiedNoteInfo findOutgoingNoteInPreviousRepeat(const Note* incomingNote, const RenderingContext& ctx)
-{
-    const RepeatList& repeats = ctx.score->repeatList();
+inline PartiallyTiedNoteInfo findOutgoingNoteInPreviousRepeat(const Note *incomingNote, const RenderingContext &ctx) {
+    const RepeatList &repeats = ctx.score->repeatList();
     auto currRepeatIt = repeats.findRepeatSegmentFromUTick(ctx.nominalPositionStartTick + ctx.positionTickOffset);
     if (currRepeatIt == repeats.cbegin() || currRepeatIt == repeats.cend()) {
         return PartiallyTiedNoteInfo();
@@ -49,35 +48,34 @@ inline PartiallyTiedNoteInfo findOutgoingNoteInPreviousRepeat(const Note* incomi
     }
 
     auto prevRepeatIt = std::prev(currRepeatIt);
-    const RepeatSegment* prevRepeat = (*prevRepeatIt);
-    const Measure* lastMeasure = prevRepeat->lastMeasure();
+    const RepeatSegment *prevRepeat = (*prevRepeatIt);
+    const Measure *lastMeasure = prevRepeat->lastMeasure();
     if (!lastMeasure) {
         return PartiallyTiedNoteInfo();
     }
 
-    const ChordRest* lastChordRest = lastMeasure->lastChordRest(incomingNote->track());
+    const ChordRest *lastChordRest = lastMeasure->lastChordRest(incomingNote->track());
     if (!lastChordRest || !lastChordRest->isChord()) {
         return PartiallyTiedNoteInfo();
     }
 
-    const Note* outgoingNote = toChord(lastChordRest)->findNote(incomingNote->pitch());
-    const Tie* tie = outgoingNote ? outgoingNote->tieFor() : nullptr;
+    const Note *outgoingNote = toChord(lastChordRest)->findNote(incomingNote->pitch());
+    const Tie *tie = outgoingNote ? outgoingNote->tieFor() : nullptr;
     if (tie && tie->playSpanner()) {
-        return { prevRepeat, outgoingNote };
+        return {prevRepeat, outgoingNote};
     }
 
     return PartiallyTiedNoteInfo();
 }
 
-inline PartiallyTiedNoteInfo findIncomingNoteInNextRepeat(const Note* outgoingNote, const RenderingContext& ctx)
-{
-    const RepeatList& repeats = ctx.score->repeatList();
+inline PartiallyTiedNoteInfo findIncomingNoteInNextRepeat(const Note *outgoingNote, const RenderingContext &ctx) {
+    const RepeatList &repeats = ctx.score->repeatList();
     auto currRepeatIt = repeats.findRepeatSegmentFromUTick(ctx.nominalPositionStartTick + ctx.positionTickOffset);
     if (currRepeatIt == repeats.cend()) {
         return PartiallyTiedNoteInfo();
     }
 
-    const RepeatSegment* currRepeat = (*currRepeatIt);
+    const RepeatSegment *currRepeat = (*currRepeatIt);
     const int currRepeatLastTick = currRepeat->utick + currRepeat->len();
     if (ctx.nominalPositionStartTick + ctx.positionTickOffset != currRepeatLastTick - ctx.nominalDurationTicks) {
         return PartiallyTiedNoteInfo(); // the outgoing note is not the last note in this repeat
@@ -88,29 +86,28 @@ inline PartiallyTiedNoteInfo findIncomingNoteInNextRepeat(const Note* outgoingNo
         return PartiallyTiedNoteInfo();
     }
 
-    const RepeatSegment* nextRepeat = (*nextRepeatIt);
-    const Measure* firstMeasure = nextRepeat->firstMeasure();
+    const RepeatSegment *nextRepeat = (*nextRepeatIt);
+    const Measure *firstMeasure = nextRepeat->firstMeasure();
     if (!firstMeasure) {
         return PartiallyTiedNoteInfo();
     }
 
-    const ChordRest* firstChordRest = firstMeasure->firstChordRest(outgoingNote->track());
+    const ChordRest *firstChordRest = firstMeasure->firstChordRest(outgoingNote->track());
     if (!firstChordRest || !firstChordRest->isChord()) {
         return PartiallyTiedNoteInfo();
     }
 
-    const Note* incomingNote = toChord(firstChordRest)->findNote(outgoingNote->pitch());
-    const Tie* tie = incomingNote ? incomingNote->tieBack() : nullptr;
+    const Note *incomingNote = toChord(firstChordRest)->findNote(outgoingNote->pitch());
+    const Tie *tie = incomingNote ? incomingNote->tieBack() : nullptr;
     if (tie && tie->playSpanner()) {
-        return { nextRepeat, incomingNote };
+        return {nextRepeat, incomingNote};
     }
 
     return PartiallyTiedNoteInfo();
 }
 
-inline bool notesInSameRepeat(const Score* score, const Note* note1, const Note* note2, const int tickPositionOffset)
-{
-    const RepeatList& repeats = score->repeatList();
+inline bool notesInSameRepeat(const Score *score, const Note *note1, const Note *note2, const int tickPositionOffset) {
+    const RepeatList &repeats = score->repeatList();
     if (repeats.size() == 1) {
         return true;
     }
@@ -121,7 +118,7 @@ inline bool notesInSameRepeat(const Score* score, const Note* note1, const Note*
         return true;
     }
 
-    const RepeatSegment* repeat = (*repeatIt);
+    const RepeatSegment *repeat = (*repeatIt);
     const int secondNoteTick = note2->tick().ticks();
 
     if (repeat->tick > secondNoteTick || repeat->endTick() <= secondNoteTick) {
@@ -130,4 +127,4 @@ inline bool notesInSameRepeat(const Score* score, const Note* note1, const Note*
 
     return true;
 }
-}
+} // namespace mu::engraving

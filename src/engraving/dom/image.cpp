@@ -49,37 +49,33 @@ namespace mu::engraving {
 //   propertyList
 //---------------------------------------------------------
 
-static bool defaultAutoScale        = false;
-static bool defaultLockAspectRatio  = true;
-static bool defaultSizeIsSpatium    = true;
+static bool defaultAutoScale = false;
+static bool defaultLockAspectRatio = true;
+static bool defaultSizeIsSpatium = true;
 
 //---------------------------------------------------------
 //   Image
 //---------------------------------------------------------
 
-Image::Image(DummyParentOr<EngravingItem> parent)
-    : BSymbol(ElementType::IMAGE, parent, ElementFlag::MOVABLE)
-{
-    m_imageType        = ImageType::NONE;
-    m_size            = SizeF(0.0, 0.0);
-    m_storeItem       = 0;
-    m_dirty           = false;
+Image::Image(DummyParentOr<EngravingItem> parent) : BSymbol(ElementType::IMAGE, parent, ElementFlag::MOVABLE) {
+    m_imageType = ImageType::NONE;
+    m_size = SizeF(0.0, 0.0);
+    m_storeItem = 0;
+    m_dirty = false;
     m_lockAspectRatio = defaultLockAspectRatio;
-    m_autoScale       = defaultAutoScale;
-    m_sizeIsSpatium   = defaultSizeIsSpatium;
+    m_autoScale = defaultAutoScale;
+    m_sizeIsSpatium = defaultSizeIsSpatium;
 }
 
-Image::Image(const Image& img)
-    : BSymbol(img)
-{
-    m_imageType        = img.m_imageType;
-    m_buffer           = img.m_buffer;
-    m_size            = img.m_size;
+Image::Image(const Image &img) : BSymbol(img) {
+    m_imageType = img.m_imageType;
+    m_buffer = img.m_buffer;
+    m_size = img.m_size;
     m_lockAspectRatio = img.m_lockAspectRatio;
-    m_autoScale       = img.m_autoScale;
-    m_dirty           = img.m_dirty;
-    m_storeItem       = img.m_storeItem;
-    m_sizeIsSpatium   = img.m_sizeIsSpatium;
+    m_autoScale = img.m_autoScale;
+    m_dirty = img.m_dirty;
+    m_storeItem = img.m_storeItem;
+    m_sizeIsSpatium = img.m_sizeIsSpatium;
     if (m_storeItem) {
         m_storeItem->reference(this);
     }
@@ -95,8 +91,7 @@ Image::Image(const Image& img)
 //   Image
 //---------------------------------------------------------
 
-Image::~Image()
-{
+Image::~Image() {
     if (m_storeItem) {
         m_storeItem->dereference(this);
     }
@@ -109,8 +104,7 @@ Image::~Image()
 //   setImageType
 //---------------------------------------------------------
 
-void Image::setImageType(ImageType t)
-{
+void Image::setImageType(ImageType t) {
     m_imageType = t;
     if (m_imageType == ImageType::SVG) {
         m_svgDoc = 0;
@@ -125,8 +119,7 @@ void Image::setImageType(ImageType t)
 //   imageSize
 //---------------------------------------------------------
 
-muse::SizeF Image::imageSize() const
-{
+muse::SizeF Image::imageSize() const {
     if (!isValid()) {
         return muse::SizeF();
     }
@@ -143,8 +136,7 @@ muse::SizeF Image::imageSize() const
 //   isImageFramed
 //---------------------------------------------------------
 
-bool Image::isImageFramed() const
-{
+bool Image::isImageFramed() const {
     if (!ownershipParent()) {
         return false;
     }
@@ -156,17 +148,13 @@ bool Image::isImageFramed() const
 //   imageAspectRatio
 //---------------------------------------------------------
 
-double Image::imageAspectRatio() const
-{
-    return m_size.width() / m_size.height();
-}
+double Image::imageAspectRatio() const { return m_size.width() / m_size.height(); }
 
 //---------------------------------------------------------
 //   setImageHeight
 //---------------------------------------------------------
 
-void Image::updateImageHeight(const double& height)
-{
+void Image::updateImageHeight(const double &height) {
     double aspectRatio = imageAspectRatio();
 
     m_size.setHeight(height);
@@ -180,8 +168,7 @@ void Image::updateImageHeight(const double& height)
 //   setImageWidth
 //---------------------------------------------------------
 
-void Image::updateImageWidth(const double& width)
-{
+void Image::updateImageWidth(const double &width) {
     double aspectRatio = imageAspectRatio();
 
     m_size.setWidth(width);
@@ -195,22 +182,15 @@ void Image::updateImageWidth(const double& width)
 //   imageHeight
 //---------------------------------------------------------
 
-double Image::imageHeight() const
-{
-    return m_size.height();
-}
+double Image::imageHeight() const { return m_size.height(); }
 
 //---------------------------------------------------------
 //   imageWidth
 //---------------------------------------------------------
 
-double Image::imageWidth() const
-{
-    return m_size.width();
-}
+double Image::imageWidth() const { return m_size.width(); }
 
-bool Image::loadFromStore(const std::string& storePath)
-{
+bool Image::loadFromStore(const std::string &storePath) {
     m_storePath = storePath;
     if (storePath.empty()) {
         return false;
@@ -238,8 +218,7 @@ bool Image::loadFromStore(const std::string& storePath)
 //    return true on success
 //---------------------------------------------------------
 
-bool Image::loadFromFile(muse::io::path_t path)
-{
+bool Image::loadFromFile(muse::io::path_t path) {
     if (path.empty()) {
         return false;
     }
@@ -273,8 +252,7 @@ bool Image::loadFromFile(muse::io::path_t path)
 //    return true on success
 //---------------------------------------------------------
 
-bool Image::loadFromData(const std::string& name, const muse::ByteArray& ba)
-{
+bool Image::loadFromData(const std::string &name, const muse::ByteArray &ba) {
     m_storeItem = imageStore.add(name, ba);
     m_storeItem->reference(this);
 
@@ -291,22 +269,15 @@ bool Image::loadFromData(const std::string& name, const muse::ByteArray& ba)
 //   pixel2Size
 //---------------------------------------------------------
 
-SizeF Image::pixel2size(const SizeF& s) const
-{
-    return s / (m_sizeIsSpatium ? spatium() : DPMM);
-}
+SizeF Image::pixel2size(const SizeF &s) const { return s / (m_sizeIsSpatium ? spatium() : DPMM); }
 
 //---------------------------------------------------------
 //   size2pixel
 //---------------------------------------------------------
 
-SizeF Image::size2pixel(const SizeF& s) const
-{
-    return s * (m_sizeIsSpatium ? spatium() : DPMM);
-}
+SizeF Image::size2pixel(const SizeF &s) const { return s * (m_sizeIsSpatium ? spatium() : DPMM); }
 
-void Image::init()
-{
+void Image::init() {
     if (m_imageType == ImageType::SVG && !m_svgDoc) {
         if (m_storeItem) {
             m_svgDoc = new SvgRenderer(m_storeItem->buffer());
@@ -328,25 +299,16 @@ void Image::init()
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Image::getProperty(Pid propertyId) const
-{
+PropertyValue Image::getProperty(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::AUTOSCALE:
-        return autoScale();
-    case Pid::SIZE:
-        return PropertyValue::fromValue(size());
-    case Pid::IMAGE_HEIGHT:
-        return imageHeight();
-    case Pid::IMAGE_WIDTH:
-        return imageWidth();
-    case Pid::IMAGE_FRAMED:
-        return isImageFramed();
-    case Pid::LOCK_ASPECT_RATIO:
-        return lockAspectRatio();
-    case Pid::SIZE_IS_SPATIUM:
-        return sizeIsSpatium();
-    default:
-        return EngravingItem::getProperty(propertyId);
+        case Pid::AUTOSCALE: return autoScale();
+        case Pid::SIZE: return PropertyValue::fromValue(size());
+        case Pid::IMAGE_HEIGHT: return imageHeight();
+        case Pid::IMAGE_WIDTH: return imageWidth();
+        case Pid::IMAGE_FRAMED: return isImageFramed();
+        case Pid::LOCK_ASPECT_RATIO: return lockAspectRatio();
+        case Pid::SIZE_IS_SPATIUM: return sizeIsSpatium();
+        default: return EngravingItem::getProperty(propertyId);
     }
 }
 
@@ -354,37 +316,22 @@ PropertyValue Image::getProperty(Pid propertyId) const
 //   setProperty
 //---------------------------------------------------------
 
-bool Image::setProperty(Pid propertyId, const PropertyValue& v)
-{
+bool Image::setProperty(Pid propertyId, const PropertyValue &v) {
     bool rv = true;
     score()->addRefresh(canvasBoundingRect());
     switch (propertyId) {
-    case Pid::AUTOSCALE:
-        setAutoScale(v.toBool());
-        break;
-    case Pid::SIZE:
-        setSize(v.value<SizeF>());
-        break;
-    case Pid::IMAGE_HEIGHT:
-        updateImageHeight(v.toDouble());
-        break;
-    case Pid::IMAGE_WIDTH:
-        updateImageWidth(v.toDouble());
-        break;
-    case Pid::IMAGE_FRAMED:
-        break;
-    case Pid::LOCK_ASPECT_RATIO:
-        setLockAspectRatio(v.toBool());
-        break;
-    case Pid::SIZE_IS_SPATIUM: {
-        SizeF s = size2pixel(m_size);
-        setSizeIsSpatium(v.toBool());
-        m_size = pixel2size(s);
-    }
-    break;
-    default:
-        rv = EngravingItem::setProperty(propertyId, v);
-        break;
+        case Pid::AUTOSCALE: setAutoScale(v.toBool()); break;
+        case Pid::SIZE: setSize(v.value<SizeF>()); break;
+        case Pid::IMAGE_HEIGHT: updateImageHeight(v.toDouble()); break;
+        case Pid::IMAGE_WIDTH: updateImageWidth(v.toDouble()); break;
+        case Pid::IMAGE_FRAMED: break;
+        case Pid::LOCK_ASPECT_RATIO: setLockAspectRatio(v.toBool()); break;
+        case Pid::SIZE_IS_SPATIUM: {
+            SizeF s = size2pixel(m_size);
+            setSizeIsSpatium(v.toBool());
+            m_size = pixel2size(s);
+        } break;
+        default: rv = EngravingItem::setProperty(propertyId, v); break;
     }
     setGenerated(false);
     m_dirty = true;
@@ -396,25 +343,16 @@ bool Image::setProperty(Pid propertyId, const PropertyValue& v)
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Image::propertyDefault(Pid id) const
-{
+PropertyValue Image::propertyDefault(Pid id) const {
     switch (id) {
-    case Pid::AUTOSCALE:
-        return defaultAutoScale;
-    case Pid::SIZE:
-        return PropertyValue::fromValue(pixel2size(imageSize()));
-    case Pid::IMAGE_HEIGHT:
-        return pixel2size(imageSize()).height();
-    case Pid::IMAGE_WIDTH:
-        return pixel2size(imageSize()).width();
-    case Pid::IMAGE_FRAMED:
-        return isImageFramed();
-    case Pid::LOCK_ASPECT_RATIO:
-        return defaultLockAspectRatio;
-    case Pid::SIZE_IS_SPATIUM:
-        return defaultSizeIsSpatium;
-    default:
-        return EngravingItem::propertyDefault(id);
+        case Pid::AUTOSCALE: return defaultAutoScale;
+        case Pid::SIZE: return PropertyValue::fromValue(pixel2size(imageSize()));
+        case Pid::IMAGE_HEIGHT: return pixel2size(imageSize()).height();
+        case Pid::IMAGE_WIDTH: return pixel2size(imageSize()).width();
+        case Pid::IMAGE_FRAMED: return isImageFramed();
+        case Pid::LOCK_ASPECT_RATIO: return defaultLockAspectRatio;
+        case Pid::SIZE_IS_SPATIUM: return defaultSizeIsSpatium;
+        default: return EngravingItem::propertyDefault(id);
     }
 }
-}
+} // namespace mu::engraving

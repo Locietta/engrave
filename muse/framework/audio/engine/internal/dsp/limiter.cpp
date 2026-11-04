@@ -28,23 +28,13 @@ using namespace muse::audio::dsp;
 
 static constexpr volume_db_t THRESHOLD = volume_dbfs_t::make(0.f);
 
-Limiter::Limiter(const unsigned int sampleRate)
-    : m_filterConfig(sampleRate, 1.f, THRESHOLD)
-{
-}
+Limiter::Limiter(const unsigned int sampleRate) : m_filterConfig(sampleRate, 1.f, THRESHOLD) {}
 
-bool Limiter::isActive() const
-{
-    return m_isActive;
-}
+bool Limiter::isActive() const { return m_isActive; }
 
-void Limiter::setIsActive(const bool active)
-{
-    m_isActive = active;
-}
+void Limiter::setIsActive(const bool active) { m_isActive = active; }
 
-volume_db_t Limiter::gainSmoothing(const float newGainReduction) const
-{
+volume_db_t Limiter::gainSmoothing(const float newGainReduction) const {
     float coefficient = 0.f;
 
     if (newGainReduction <= m_previousGainReduction) {
@@ -56,24 +46,19 @@ volume_db_t Limiter::gainSmoothing(const float newGainReduction) const
     return (coefficient * m_previousGainReduction) + ((1 - coefficient) * newGainReduction);
 }
 
-volume_db_t Limiter::computeGain(const volume_db_t& logarithmSample) const
-{
+volume_db_t Limiter::computeGain(const volume_db_t &logarithmSample) const {
     if (logarithmSample < m_filterConfig.softThresholdLower()) {
         return logarithmSample;
     }
 
     if (logarithmSample >= m_filterConfig.softThresholdLower() && logarithmSample <= m_filterConfig.softThresholdUpper()) {
-        return logarithmSample
-               - (std::pow((logarithmSample - m_filterConfig.softThresholdUpper()), 2)
-                  / (2 * m_filterConfig.kneeWidth()));
+        return logarithmSample - (std::pow((logarithmSample - m_filterConfig.softThresholdUpper()), 2) / (2 * m_filterConfig.kneeWidth()));
     }
 
     return m_filterConfig.logarithmicThreshold();
 }
 
-void Limiter::process(const float& linearRms, float* buffer, const audioch_t& audioChannelsCount,
-                      const samples_t samplesPerChannel)
-{
+void Limiter::process(const float &linearRms, float *buffer, const audioch_t &audioChannelsCount, const samples_t samplesPerChannel) {
     volume_db_t rmsDb = muse::linear_to_db(linearRms);
 
     if (rmsDb <= m_filterConfig.minimumOperableLevel()) {

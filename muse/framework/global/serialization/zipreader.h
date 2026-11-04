@@ -30,12 +30,10 @@
 #include "global/io/iodevice.h"
 
 namespace muse {
-class ZipReader
-{
+class ZipReader {
 public:
 
-    struct FileInfo
-    {
+    struct FileInfo {
         io::path_t filePath;
         bool isDir = false;
         bool isFile = false;
@@ -45,10 +43,10 @@ public:
         bool isValid() const { return isDir || isFile || isSymLink; }
     };
 
-    static bool startsWithEntry(const ByteArray& data, std::span<const uint8_t> name);
+    static bool startsWithEntry(const ByteArray &data, std::span<const uint8_t> name);
 
-    explicit ZipReader(const io::path_t& filePath);
-    explicit ZipReader(io::IODevice* device);
+    explicit ZipReader(const io::path_t &filePath);
+    explicit ZipReader(io::IODevice *device);
     ~ZipReader();
 
     bool exists() const;
@@ -56,21 +54,20 @@ public:
     bool hasError() const;
 
     std::vector<FileInfo> fileInfoList() const;
-    bool fileExists(const std::string& fileName) const;
-    ByteArray fileData(const std::string& fileName) const;
+    bool fileExists(const std::string &fileName) const;
+    ByteArray fileData(const std::string &fileName) const;
 
 private:
     struct Impl;
-    Impl* m_impl = nullptr;
+    Impl *m_impl = nullptr;
     io::path_t m_filePath;
 };
 
-class ZipUnpack
-{
+class ZipUnpack {
 public:
 
-    Ret unpack(const io::path_t& zipPath, const io::path_t& dirPath);
+    Ret unpack(const io::path_t &zipPath, const io::path_t &dirPath);
 };
-}
+} // namespace muse
 
 #endif // MUSE_GLOBAL_ZIPREADER_H

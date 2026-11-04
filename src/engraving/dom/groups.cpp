@@ -49,54 +49,66 @@ struct NoteGroup {
 //   noteGroups
 //---------------------------------------------------------
 
-static std::vector<NoteGroup> noteGroups {
-    { Fraction(2, 2),
-      Groups({ { 4, 0x200 }, { 8, 0x110 }, { 12, 0x200 }, { 16, 0x111 }, { 20, 0x200 }, { 24, 0x110 }, { 28, 0x200 } })
-    },
-    { Fraction(3, 2),
-      Groups({ { 4, 0x200 }, { 8, 0x110 }, { 12, 0x200 }, { 16, 0x111 }, { 20, 0x200 }, { 24, 0x110 }, { 28, 0x200 },
-                 { 32, 0x111 }, { 36, 0x200 }, { 40, 0x110 }, { 44, 0x200 } })
-    },
-    { Fraction(4, 2),
-      Groups({ { 4, 0x200 }, { 8, 0x110 }, { 12, 0x200 }, { 16, 0x111 }, { 20, 0x200 }, { 24, 0x110 }, { 28, 0x200 },
-                 { 32, 0x111 }, { 36, 0x200 }, { 40, 0x110 }, { 44, 0x200 }, { 48, 0x111 }, { 52, 0x200 }, { 56, 0x110 }, { 60, 0x200 } })
-    },
-    { Fraction(2, 4),
-      Groups({ { 4, 0x200 }, { 8, 0x111 }, { 12, 0x200 } })
-    },
-    { Fraction(3, 4),
-      Groups({ { 4, 0x200 }, { 8, 0x111 }, { 12, 0x200 }, { 16, 0x111 }, { 20, 0x200 } })
-    },
-    { Fraction(4, 4),
-      Groups({ { 4, 0x200 }, { 8, 0x110 }, { 12, 0x200 }, { 16, 0x111 }, { 20, 0x200 }, { 24, 0x110 }, { 28, 0x200 } })
-    },
-    { Fraction(5, 4),
-      Groups({ { 4, 0x200 }, { 8, 0x110 }, { 12, 0x200 }, { 16, 0x110 }, { 20, 0x200 }, { 24, 0x111 }, { 28, 0x200 },
-                 { 32, 0x110 }, { 36, 0x200 } })
-    },
-    { Fraction(6, 4),
-      Groups({ { 4, 0x200 }, { 8, 0x110 }, { 12, 0x200 }, { 16, 0x110 }, { 20, 0x200 }, { 24, 0x111 }, { 28, 0x200 },
-                 { 32, 0x110 }, { 36, 0x200 }, { 40, 0x110 }, { 44, 0x200 } })
-    },
-    { Fraction(3, 8),
-      Groups({ { 4, 0x200 }, { 8, 0x200 } })
-    },
-    { Fraction(5, 8),
-      Groups({ { 4, 0x200 }, { 8, 0x200 }, { 12, 0x111 }, { 16, 0x200 } })
-    },
-    { Fraction(6, 8),
-      Groups({ { 4, 0x200 }, { 8, 0x200 }, { 12, 0x111 }, { 16, 0x200 }, { 20, 0x200 } })
-    },
-    { Fraction(7, 8),
-      Groups({ { 4, 0x200 }, { 8, 0x200 }, { 12, 0x111 }, { 16, 0x200 }, { 20, 0x111 }, { 24, 0x200 } })
-    },
-    { Fraction(9, 8),
-      Groups({ { 4, 0x200 }, { 8, 0x200 }, { 12, 0x111 }, { 16, 0x200 }, { 20, 0x200 }, { 24, 0x111 }, { 28, 0x200 }, { 32, 0x200 } })
-    },
-    { Fraction(12, 8),
-      Groups({ { 4, 0x200 }, { 8, 0x200 }, { 12, 0x111 }, { 16, 0x200 }, { 20, 0x200 }, { 24, 0x111 }, { 28, 0x200 },
-                 { 32, 0x200 }, { 36, 0x111 }, { 40, 0x200 }, { 44, 0x200 } })
-    },
+static std::vector<NoteGroup> noteGroups{
+    {Fraction(2, 2), Groups({{4, 0x200}, {8, 0x110}, {12, 0x200}, {16, 0x111}, {20, 0x200}, {24, 0x110}, {28, 0x200}})},
+    {Fraction(3, 2), Groups({{4, 0x200},
+                             {8, 0x110},
+                             {12, 0x200},
+                             {16, 0x111},
+                             {20, 0x200},
+                             {24, 0x110},
+                             {28, 0x200},
+                             {32, 0x111},
+                             {36, 0x200},
+                             {40, 0x110},
+                             {44, 0x200}})},
+    {Fraction(4, 2), Groups({{4, 0x200},
+                             {8, 0x110},
+                             {12, 0x200},
+                             {16, 0x111},
+                             {20, 0x200},
+                             {24, 0x110},
+                             {28, 0x200},
+                             {32, 0x111},
+                             {36, 0x200},
+                             {40, 0x110},
+                             {44, 0x200},
+                             {48, 0x111},
+                             {52, 0x200},
+                             {56, 0x110},
+                             {60, 0x200}})},
+    {Fraction(2, 4), Groups({{4, 0x200}, {8, 0x111}, {12, 0x200}})},
+    {Fraction(3, 4), Groups({{4, 0x200}, {8, 0x111}, {12, 0x200}, {16, 0x111}, {20, 0x200}})},
+    {Fraction(4, 4), Groups({{4, 0x200}, {8, 0x110}, {12, 0x200}, {16, 0x111}, {20, 0x200}, {24, 0x110}, {28, 0x200}})},
+    {Fraction(5, 4),
+     Groups({{4, 0x200}, {8, 0x110}, {12, 0x200}, {16, 0x110}, {20, 0x200}, {24, 0x111}, {28, 0x200}, {32, 0x110}, {36, 0x200}})},
+    {Fraction(6, 4), Groups({{4, 0x200},
+                             {8, 0x110},
+                             {12, 0x200},
+                             {16, 0x110},
+                             {20, 0x200},
+                             {24, 0x111},
+                             {28, 0x200},
+                             {32, 0x110},
+                             {36, 0x200},
+                             {40, 0x110},
+                             {44, 0x200}})},
+    {Fraction(3, 8), Groups({{4, 0x200}, {8, 0x200}})},
+    {Fraction(5, 8), Groups({{4, 0x200}, {8, 0x200}, {12, 0x111}, {16, 0x200}})},
+    {Fraction(6, 8), Groups({{4, 0x200}, {8, 0x200}, {12, 0x111}, {16, 0x200}, {20, 0x200}})},
+    {Fraction(7, 8), Groups({{4, 0x200}, {8, 0x200}, {12, 0x111}, {16, 0x200}, {20, 0x111}, {24, 0x200}})},
+    {Fraction(9, 8), Groups({{4, 0x200}, {8, 0x200}, {12, 0x111}, {16, 0x200}, {20, 0x200}, {24, 0x111}, {28, 0x200}, {32, 0x200}})},
+    {Fraction(12, 8), Groups({{4, 0x200},
+                              {8, 0x200},
+                              {12, 0x111},
+                              {16, 0x200},
+                              {20, 0x200},
+                              {24, 0x111},
+                              {28, 0x200},
+                              {32, 0x200},
+                              {36, 0x111},
+                              {40, 0x200},
+                              {44, 0x200}})},
 };
 
 //---------------------------------------------------------
@@ -104,8 +116,7 @@ static std::vector<NoteGroup> noteGroups {
 //    based on time signature properties but respecting manual settings
 //---------------------------------------------------------
 
-BeamMode Groups::baseBeamMode(const ChordRest* cr, const ChordRest* prev)
-{
+BeamMode Groups::baseBeamMode(const ChordRest *cr, const ChordRest *prev) {
     if (cr->isGrace() || cr->beamMode() != BeamMode::AUTO) {
         return cr->beamMode();
     }
@@ -114,8 +125,8 @@ BeamMode Groups::baseBeamMode(const ChordRest* cr, const ChordRest* prev)
     // we need to figure out the longest note value beat upon which cr falls in the measure
     Fraction maxTickLen = std::max(cr->ticks(), prev ? prev->ticks() : Fraction());
     Fraction smallestTickLen = Fraction(1, 8); // start with 8th
-    Fraction tickLenLimit = Fraction(1, 32); // only check up to 32nds because that's all thats available
-                                             // in timesig properties
+    Fraction tickLenLimit = Fraction(1, 32);   // only check up to 32nds because that's all thats available
+                                               // in timesig properties
     while (smallestTickLen > maxTickLen || cr->rtick().ticks() % smallestTickLen.ticks() != 0) {
         smallestTickLen /= 2; // proceed to 16th, 32nd, etc
         if (smallestTickLen < tickLenLimit) {
@@ -126,7 +137,7 @@ BeamMode Groups::baseBeamMode(const ChordRest* cr, const ChordRest* prev)
     DurationType bigBeatDuration = TDuration(smallestTickLen).type();
 
     TDuration crDuration = cr->durationType();
-    const Groups& g = cr->staff()->group(cr->tick());
+    const Groups &g = cr->staff()->group(cr->tick());
     Fraction stretch = cr->staff()->timeStretch(cr->tick());
     Fraction tick = cr->rtick() * stretch + cr->measure()->anacrusisOffset();
 
@@ -165,11 +176,10 @@ BeamMode Groups::baseBeamMode(const ChordRest* cr, const ChordRest* prev)
 //    final beam mode after applying contextual corrections
 //---------------------------------------------------------
 
-BeamMode Groups::actualBeamMode(const ChordRest* cr, const ChordRest* prev)
-{
-    Measure* measure = cr->measure();
-    const Staff* stf = cr->staff();
-    TimeSig* ts = stf->timeSig(measure->tick());
+BeamMode Groups::actualBeamMode(const ChordRest *cr, const ChordRest *prev) {
+    Measure *measure = cr->measure();
+    const Staff *stf = cr->staff();
+    TimeSig *ts = stf->timeSig(measure->tick());
     bool checkBeats = ts && ts->denominator() == 4;
 
     std::unordered_map<int, TDuration> beatSubdivision;
@@ -178,8 +188,8 @@ BeamMode Groups::actualBeamMode(const ChordRest* cr, const ChordRest* prev)
         Fraction tick = cr->rtick() * stretch;
 
         if ((tick.ticks() % Constants::DIVISION) == 0) {
-            for (Segment* s = measure->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
-                ChordRest* mcr = toChordRest(s->element(cr->track()));
+            for (Segment *s = measure->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
+                ChordRest *mcr = toChordRest(s->element(cr->track()));
                 if (mcr == 0) {
                     continue;
                 }
@@ -196,9 +206,7 @@ BeamMode Groups::actualBeamMode(const ChordRest* cr, const ChordRest* prev)
     return actualBeamMode(cr, prev, &beatSubdivision);
 }
 
-BeamMode Groups::actualBeamMode(const ChordRest* cr, const ChordRest* prev,
-                                const std::unordered_map<int, TDuration>* beatSubdivision)
-{
+BeamMode Groups::actualBeamMode(const ChordRest *cr, const ChordRest *prev, const std::unordered_map<int, TDuration> *beatSubdivision) {
     // do not beam rests set to BeamMode::AUTO or with only other rests
     if (cr->isRest() && cr->beamMode() == BeamMode::AUTO) {
         return BeamMode::NONE;
@@ -224,9 +232,9 @@ BeamMode Groups::actualBeamMode(const ChordRest* cr, const ChordRest* prev,
         }
 
         // perform additional context-dependent checks
-        Measure* measure = cr->measure();
-        const Staff* stf = cr->staff();
-        TimeSig* ts = stf->timeSig(measure->tick());
+        Measure *measure = cr->measure();
+        const Staff *stf = cr->staff();
+        TimeSig *ts = stf->timeSig(measure->tick());
         bool checkBeats = ts && ts->denominator() == 4;
         Fraction stretch = ts ? ts->stretch() : Fraction(1, 1);
 
@@ -243,14 +251,14 @@ BeamMode Groups::actualBeamMode(const ChordRest* cr, const ChordRest* prev,
                 TDuration prev_min = (it_prev != beatSubdivision->end()) ? it_prev->second : TDuration(DurationType::V_INVALID);
                 TDuration minDuration = std::min(current_min, prev_min);
                 // re-calculate beam as if this were the duration of current chordrest
-                TDuration saveDuration        = cr->actualDurationType();
-                TDuration saveCMDuration      = cr->crossMeasureDurationType();
+                TDuration saveDuration = cr->actualDurationType();
+                TDuration saveCMDuration = cr->crossMeasureDurationType();
                 CrossMeasure saveCrossMeasVal = cr->crossMeasure();
-                const_cast<ChordRest*>(cr)->setDurationType(minDuration);
+                const_cast<ChordRest *>(cr)->setDurationType(minDuration);
                 bm = Groups::baseBeamMode(cr, prev);
-                const_cast<ChordRest*>(cr)->setDurationType(saveDuration);
-                const_cast<ChordRest*>(cr)->setCrossMeasure(saveCrossMeasVal);
-                const_cast<ChordRest*>(cr)->setCrossMeasureDurationType(saveCMDuration);
+                const_cast<ChordRest *>(cr)->setDurationType(saveDuration);
+                const_cast<ChordRest *>(cr)->setCrossMeasure(saveCrossMeasVal);
+                const_cast<ChordRest *>(cr)->setCrossMeasureDurationType(saveCMDuration);
             }
         }
     }
@@ -263,28 +271,22 @@ BeamMode Groups::actualBeamMode(const ChordRest* cr, const ChordRest* prev,
 //    tick is relative to begin of measure
 //---------------------------------------------------------
 
-BeamMode Groups::beamMode(int tick, DurationType d) const
-{
+BeamMode Groups::beamMode(int tick, DurationType d) const {
     int shift;
     switch (d) {
-    case DurationType::V_EIGHTH: shift = 0;
-        break;
-    case DurationType::V_16TH:   shift = 4;
-        break;
-    case DurationType::V_32ND:
-    // All beams shorter than 32nds break in the same place
-    case DurationType::V_64TH:
-    case DurationType::V_128TH:
-    case DurationType::V_256TH:
-    case DurationType::V_512TH:
-    case DurationType::V_1024TH:
-        shift = 8;
-        break;
-    default:
-        return BeamMode::AUTO;
+        case DurationType::V_EIGHTH: shift = 0; break;
+        case DurationType::V_16TH: shift = 4; break;
+        case DurationType::V_32ND:
+        // All beams shorter than 32nds break in the same place
+        case DurationType::V_64TH:
+        case DurationType::V_128TH:
+        case DurationType::V_256TH:
+        case DurationType::V_512TH:
+        case DurationType::V_1024TH: shift = 8; break;
+        default: return BeamMode::AUTO;
     }
     const int dm = Constants::DIVISION / 8;
-    for (const GroupNode& e : m_nodes) {
+    for (const GroupNode &e : m_nodes) {
         if (e.pos * dm < tick) {
             continue;
         }
@@ -294,13 +296,11 @@ BeamMode Groups::beamMode(int tick, DurationType d) const
 
         int action = (e.action >> shift) & 0xf;
         switch (action) {
-        case 0: return BeamMode::AUTO;
-        case 1: return BeamMode::BEGIN;
-        case 2: return BeamMode::BEGIN16;
-        case 3: return BeamMode::BEGIN32;
-        default:
-            LOGD("   Groups::beamMode: bad action %d", action);
-            return BeamMode::AUTO;
+            case 0: return BeamMode::AUTO;
+            case 1: return BeamMode::BEGIN;
+            case 2: return BeamMode::BEGIN16;
+            case 3: return BeamMode::BEGIN32;
+            default: LOGD("   Groups::beamMode: bad action %d", action); return BeamMode::AUTO;
         }
     }
     return BeamMode::AUTO;
@@ -310,9 +310,8 @@ BeamMode Groups::beamMode(int tick, DurationType d) const
 //   endings
 //---------------------------------------------------------
 
-const Groups& Groups::endings(const Fraction& f)
-{
-    for (const NoteGroup& g : noteGroups) {
+const Groups &Groups::endings(const Fraction &f) {
+    for (const NoteGroup &g : noteGroups) {
         if (g.timeSig.identical(f)) {
             return g.endings;
         }
@@ -323,21 +322,18 @@ const Groups& Groups::endings(const Fraction& f)
 
     int pos = 0;
     switch (f.denominator()) {
-    case 2:     pos = 16;
-        break;
-    case 4:     pos = 8;
-        break;
-    case 8:     pos = 4;
-        break;
-    case 16:    pos = 2;
-        break;
-    case 32:    pos = 1;
-        break;
-        break;
+        case 2: pos = 16; break;
+        case 4: pos = 8; break;
+        case 8: pos = 4; break;
+        case 16: pos = 2; break;
+        case 32:
+            pos = 1;
+            break;
+            break;
     }
     for (int i = 1; i < f.numerator(); ++i) {
         GroupNode n;
-        n.pos    = pos * i;
+        n.pos = pos * i;
         n.action = 0x111;
         g.endings.addNode(n);
     }
@@ -348,18 +344,13 @@ const Groups& Groups::endings(const Fraction& f)
 //   addStop
 //---------------------------------------------------------
 
-void Groups::addStop(int pos, DurationType d, BeamMode bm)
-{
+void Groups::addStop(int pos, DurationType d, BeamMode bm) {
     int shift;
     switch (d) {
-    case DurationType::V_EIGHTH: shift = 0;
-        break;
-    case DurationType::V_16TH:   shift = 4;
-        break;
-    case DurationType::V_32ND:   shift = 8;
-        break;
-    default:
-        return;
+        case DurationType::V_EIGHTH: shift = 0; break;
+        case DurationType::V_16TH: shift = 4; break;
+        case DurationType::V_32ND: shift = 8; break;
+        default: return;
     }
     int action;
     if (bm == BeamMode::BEGIN) {
@@ -372,7 +363,7 @@ void Groups::addStop(int pos, DurationType d, BeamMode bm)
         return;
     }
 
-    pos    /= 60;
+    pos /= 60;
     action <<= shift;
 
     auto i = m_nodes.begin();
@@ -385,18 +376,17 @@ void Groups::addStop(int pos, DurationType d, BeamMode bm)
             break;
         }
     }
-    m_nodes.insert(i, GroupNode({ pos, action }));
+    m_nodes.insert(i, GroupNode({pos, action}));
 }
 
 //---------------------------------------------------------
 //   dump
 //---------------------------------------------------------
 
-void Groups::dump(const char* m) const
-{
+void Groups::dump(const char *m) const {
     LOGD("%s", m);
-    for (const GroupNode& n : m_nodes) {
+    for (const GroupNode &n : m_nodes) {
         LOGD("  group tick %d action 0x%02x", n.pos * 60, n.action);
     }
 }
-}
+} // namespace mu::engraving

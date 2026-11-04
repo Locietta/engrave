@@ -30,8 +30,7 @@ struct Point {
     double y = 0.0;
 };
 
-inline std::vector<Point> lerp(const Point& start, const Point& end, std::size_t steps)
-{
+inline std::vector<Point> lerp(const Point &start, const Point &end, std::size_t steps) {
     if (steps == 0) {
         return {};
     }
@@ -45,12 +44,9 @@ inline std::vector<Point> lerp(const Point& start, const Point& end, std::size_t
     for (std::size_t i = 0; i <= steps; ++i) {
         const double t = static_cast<double>(i) / steps;
 
-        result.emplace_back(Point {
-                start.x + dx * t,
-                start.y + dy * t
-            });
+        result.emplace_back(Point{start.x + dx * t, start.y + dy * t});
     }
 
     return result;
 }
-}
+} // namespace muse::interpolation

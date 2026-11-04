@@ -25,19 +25,11 @@
 using namespace muse::audio;
 using namespace muse::audio::engine;
 
+bool SignalNode::isSilent() const { return m_isSilent; }
 
-bool SignalNode::isSilent() const
-{
-    return m_isSilent;
-}
+void SignalNode::onOutputSpecChanged(const OutputSpec &spec) { m_channelPeaks.resize(spec.audioChannelCount, 0.f); }
 
-void SignalNode::onOutputSpecChanged(const OutputSpec& spec)
-{
-    m_channelPeaks.resize(spec.audioChannelCount, 0.f);
-}
-
-void SignalNode::doSelfProcess(float* buffer, samples_t samplesPerChannel)
-{
+void SignalNode::doSelfProcess(float *buffer, samples_t samplesPerChannel) {
     const audioch_t channelsCount = m_outputSpec.audioChannelCount;
 
     for (audioch_t ch = 0; ch < channelsCount; ++ch) {

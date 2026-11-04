@@ -27,8 +27,7 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class PlayTechAnnotation final : public StaffTextBase
-{
+class PlayTechAnnotation final : public StaffTextBase {
     OBJECT_ALLOCATOR(engraving, PlayTechAnnotation)
     DECLARE_CLASSOF(ElementType::PLAYTECH_ANNOTATION)
 
@@ -38,22 +37,24 @@ public:
 
     PlayingTechniqueType techniqueType() const;
     void setTechniqueType(const PlayingTechniqueType techniqueType);
+
     bool playPlayTechAnnotation() const { return m_playPlayTechAnnotation; }
+
     void setPlayPlayTechAnnotation(bool play) { m_playPlayTechAnnotation = play; }
 
-    PlayTechAnnotation* clone() const override;
+    PlayTechAnnotation *clone() const override;
     TranslatableString subtypeUserName() const override;
 
     bool isHandbellsSymbol() const;
 
     PropertyValue getProperty(Pid id) const override;
-    bool setProperty(Pid propertyId, const PropertyValue& val) override;
+    bool setProperty(Pid propertyId, const PropertyValue &val) override;
     PropertyValue propertyDefault(Pid id) const override;
 
 private:
     PlayingTechniqueType m_techniqueType = PlayingTechniqueType::Undefined;
     bool m_playPlayTechAnnotation = true;
 };
-}
+} // namespace mu::engraving
 
 #endif // MU_ENGRAVING_PLAYINGTECHNIQUEANNOTATION_H

@@ -26,18 +26,17 @@
 #include "filterbase.h"
 
 namespace mu::engraving {
-class SpannerFilter : public FilterBase<SpannerFilter>
-{
+class SpannerFilter : public FilterBase<SpannerFilter> {
 public:
     //!HACK Unfortunately, the behavior of different types of "spanners" is not consistent in terms of
     //!     calculation of their durations. This hack would not be actual once we'll get rid of "anchors" system
-    static int spannerActualDurationTicks(const Spanner* spanner, const int nominalDurationTicks);
-    static bool isMultiStaffSpanner(const Spanner* spanner);
+    static int spannerActualDurationTicks(const Spanner *spanner, const int nominalDurationTicks);
+    static bool isMultiStaffSpanner(const Spanner *spanner);
 
 protected:
     friend class FilterBase<SpannerFilter>;
-    static bool isPlayable(const EngravingItem* item, const RenderingContext& ctx);
+    static bool isPlayable(const EngravingItem *item, const RenderingContext &ctx);
 };
-}
+} // namespace mu::engraving
 
 #endif // MU_ENGRAVING_SPANNERFILTER_H

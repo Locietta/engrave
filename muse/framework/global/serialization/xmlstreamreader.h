@@ -29,48 +29,28 @@
 #include "types/bytearray.h"
 #include "types/string.h"
 
-
 namespace muse {
-class XmlStreamReader
-{
+class XmlStreamReader {
 public:
 
-    enum TokenType {
-        NoToken = 0,
-        Invalid,
-        StartDocument,
-        EndDocument,
-        StartElement,
-        EndElement,
-        Characters,
-        Comment,
-        DTD,
-        Unknown
-    };
+    enum TokenType { NoToken = 0, Invalid, StartDocument, EndDocument, StartElement, EndElement, Characters, Comment, DTD, Unknown };
 
-    enum Error {
-        NoError,
-        UnexpectedElementError,
-        CustomError,
-        NotWellFormedError,
-        PrematureEndOfDocumentError
-    };
+    enum Error { NoError, UnexpectedElementError, CustomError, NotWellFormedError, PrematureEndOfDocumentError };
 
-    struct Attribute
-    {
+    struct Attribute {
         AsciiStringView name;
         String value;
     };
 
     XmlStreamReader();
-    explicit XmlStreamReader(io::IODevice* device);
-    explicit XmlStreamReader(const ByteArray& data);
+    explicit XmlStreamReader(io::IODevice *device);
+    explicit XmlStreamReader(const ByteArray &data);
     virtual ~XmlStreamReader();
 
-    XmlStreamReader(const XmlStreamReader&) = delete;
-    XmlStreamReader& operator=(const XmlStreamReader&) = delete;
+    XmlStreamReader(const XmlStreamReader &) = delete;
+    XmlStreamReader &operator=(const XmlStreamReader &) = delete;
 
-    void setData(const ByteArray& data);
+    void setData(const ByteArray &data);
 
     bool readNextStartElement();
     bool atEnd() const;
@@ -80,23 +60,28 @@ public:
     AsciiStringView tokenString() const;
 
     inline bool isStartDocument() const { return tokenType() == StartDocument; }
+
     inline bool isEndDocument() const { return tokenType() == EndDocument; }
+
     inline bool isStartElement() const { return tokenType() == StartElement; }
+
     inline bool isEndElement() const { return tokenType() == EndElement; }
+
     inline bool isCharacters() const { return tokenType() == Characters; }
+
     bool isWhitespace() const;
 
     AsciiStringView name() const;
 
-    bool hasAttribute(const char* name) const;
-    String attribute(const char* name) const;
-    String attribute(const char* name, const String& def) const;
-    AsciiStringView asciiAttribute(const char* name) const;
-    AsciiStringView asciiAttribute(const char* name, const AsciiStringView& def) const;
-    int intAttribute(const char* name) const;
-    int intAttribute(const char* name, int def) const;
-    double doubleAttribute(const char* name) const;
-    double doubleAttribute(const char* name, double def) const;
+    bool hasAttribute(const char *name) const;
+    String attribute(const char *name) const;
+    String attribute(const char *name, const String &def) const;
+    AsciiStringView asciiAttribute(const char *name) const;
+    AsciiStringView asciiAttribute(const char *name, const AsciiStringView &def) const;
+    int intAttribute(const char *name) const;
+    int intAttribute(const char *name, int def) const;
+    double doubleAttribute(const char *name) const;
+    double doubleAttribute(const char *name, double def) const;
     std::vector<Attribute> attributes() const;
 
     bool noChildren() const;
@@ -107,26 +92,26 @@ public:
     AsciiStringView asciiText() const;
     String readText();
     AsciiStringView readAsciiText();
-    int readInt(bool* ok = nullptr, int base = 10);
-    double readDouble(bool* ok = nullptr);
+    int readInt(bool *ok = nullptr, int base = 10);
+    double readDouble(bool *ok = nullptr);
 
     int64_t byteOffset() const;
     Error error() const;
     bool isError() const;
     String errorString() const;
-    void raiseError(const String& message);
+    void raiseError(const String &message);
 
 private:
     struct Xml;
 
-    void tryParseEntity(Xml* xml);
-    String nodeValue(Xml* xml) const;
+    void tryParseEntity(Xml *xml);
+    String nodeValue(Xml *xml) const;
 
-    Xml* m_xml = nullptr;
+    Xml *m_xml = nullptr;
     TokenType m_token = TokenType::NoToken;
 
     std::map<String, String> m_entities;
 };
-}
+} // namespace muse
 
 #endif // MUSE_GLOBAL_XMLSTREAMREADER_H

@@ -33,27 +33,25 @@ namespace muse::audio {
 using AutomationEnvelope = mpe::AutomationCurve<muse::secs_t>;
 
 //! NOTE: a parameter that is either a fixed value, or driven by an AutomationEnvelope over time
-template<typename T>
-class AutomatableValue
-{
+template <typename T>
+class AutomatableValue {
 public:
     AutomatableValue() = default;
-    AutomatableValue(const T& value)
-        : m_value(value) {}
-    AutomatableValue(const AutomationEnvelope& envelope)
-        : m_value(envelope) {}
+
+    AutomatableValue(const T &value) : m_value(value) {}
+
+    AutomatableValue(const AutomationEnvelope &envelope) : m_value(envelope) {}
 
     bool hasAutomation() const noexcept { return std::holds_alternative<AutomationEnvelope>(m_value); }
 
-    T evaluateAt(muse::secs_t pos, T min, T max) const noexcept
-    {
-        if (const T* v = std::get_if<T>(&m_value)) {
+    T evaluateAt(muse::secs_t pos, T min, T max) const noexcept {
+        if (const T *v = std::get_if<T>(&m_value)) {
             return std::clamp(*v, min, max);
         }
 
-        const AutomationEnvelope& envelope = std::get<AutomationEnvelope>(m_value);
+        const AutomationEnvelope &envelope = std::get<AutomationEnvelope>(m_value);
         if (envelope.empty()) {
-            return T {};
+            return T{};
         }
 
         const real_t normalized = mpe::evaluateCurveAt(envelope, pos);
@@ -61,11 +59,11 @@ public:
         return std::clamp(mapped, min, max);
     }
 
-    const std::variant<T, AutomationEnvelope>& value() const noexcept { return m_value; }
+    const std::variant<T, AutomationEnvelope> &value() const noexcept { return m_value; }
 
-    bool operator==(const AutomatableValue& other) const noexcept { return m_value == other.m_value; }
+    bool operator==(const AutomatableValue &other) const noexcept { return m_value == other.m_value; }
 
 private:
     std::variant<T, AutomationEnvelope> m_value;
 };
-}
+} // namespace muse::audio

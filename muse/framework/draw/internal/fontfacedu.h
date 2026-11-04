@@ -24,15 +24,14 @@
 #include "ifontface.h"
 
 namespace muse::draw {
-class FontFaceDU : public IFontFace
-{
+class FontFaceDU : public IFontFace {
 public:
-    FontFaceDU(IFontFace* origin);
+    FontFaceDU(IFontFace *origin);
     ~FontFaceDU();
 
-    bool load(const FaceKey& key, const FontData& fontData, bool isSymbolMode) override;
+    bool load(const FaceKey &key, const FontData &fontData, bool isSymbolMode) override;
 
-    const FaceKey& key() const override;
+    const FaceKey &key() const override;
     bool isSymbolMode() const override;
 
     f26dot6_t leading() const override;
@@ -44,17 +43,17 @@ public:
     f26dot6_t underlinePos() const override;
     f26dot6_t lineWidth() const override;
 
-    std::vector<ShapedGlyph> glyphs(const char32_t* text, int text_length) const override;
+    std::vector<ShapedGlyph> glyphs(const char32_t *text, int text_length) const override;
     glyph_idx_t glyphIndex(char32_t ucs4) const override;
-    glyph_idx_t glyphIndex(const std::string& glyphName) const override;
+    glyph_idx_t glyphIndex(const std::string &glyphName) const override;
     char32_t findCharCode(glyph_idx_t idx) const override;
 
     FBBox glyphBbox(glyph_idx_t idx) const override;
     f26dot6_t glyphAdvance(glyph_idx_t idx) const override;
 
-    const GlyphImage& glyphImage(glyph_idx_t idx) const override;
+    const GlyphImage &glyphImage(glyph_idx_t idx) const override;
 
 private:
-    IFontFace* m_origin = nullptr;
+    IFontFace *m_origin = nullptr;
 };
-}
+} // namespace muse::draw

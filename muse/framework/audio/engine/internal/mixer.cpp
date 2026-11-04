@@ -34,25 +34,18 @@ using namespace muse;
 using namespace muse::audio;
 using namespace muse::audio::engine;
 
-
-static bool isChainSilent(const TrackChainPtr& chain)
-{
+static bool isChainSilent(const TrackChainPtr &chain) {
     if (auto signal = chain->signal()) {
         return signal->isSilent();
     }
     return false;
 }
 
-Mixer::~Mixer()
-{
-}
+Mixer::~Mixer() {}
 
-void Mixer::init()
-{
-}
+void Mixer::init() {}
 
-Ret Mixer::addTrack(TrackChainPtr trackChain, const AuxSendsParams& auxSends)
-{
+Ret Mixer::addTrack(TrackChainPtr trackChain, const AuxSendsParams &auxSends) {
     const size_t outBufferSize = m_outputSpec.samplesPerChannel * m_outputSpec.audioChannelCount;
 
     TrackData trackData;
@@ -67,8 +60,7 @@ Ret Mixer::addTrack(TrackChainPtr trackChain, const AuxSendsParams& auxSends)
     return make_ok();
 }
 
-Ret Mixer::addAuxTrack(TrackChainPtr trackChain)
-{
+Ret Mixer::addAuxTrack(TrackChainPtr trackChain) {
     const size_t outBufferSize = m_outputSpec.samplesPerChannel * m_outputSpec.audioChannelCount;
 
     TrackData trackData;
@@ -81,56 +73,45 @@ Ret Mixer::addAuxTrack(TrackChainPtr trackChain)
     return make_ok();
 }
 
-Ret Mixer::removeTrack(const TrackId trackId)
-{
+Ret Mixer::removeTrack(const TrackId trackId) {
 
-    bool removed = muse::remove_if(m_tracks, [trackId](const TrackData& track) {
-        return track.trackId == trackId;
-    });
+    bool removed = muse::remove_if(m_tracks, [trackId](const TrackData &track) { return track.trackId == trackId; });
 
     if (removed) {
         m_auxSends.erase(trackId);
     }
 
     if (!removed) {
-        removed = muse::remove_if(m_auxTracks, [trackId](const TrackData& track) {
-            return track.trackId == trackId;
-        });
+        removed = muse::remove_if(m_auxTracks, [trackId](const TrackData &track) { return track.trackId == trackId; });
     }
 
     return removed ? make_ret(Ret::Code::Ok) : make_ret(Err::InvalidTrackId);
 }
 
-void Mixer::setAuxSends(const TrackId trackId, const AuxSendsParams& auxSends)
-{
-    m_auxSends[trackId] = auxSends;
-}
+void Mixer::setAuxSends(const TrackId trackId, const AuxSendsParams &auxSends) { m_auxSends[trackId] = auxSends; }
 
-void Mixer::onOutputSpecChanged(const OutputSpec& spec)
-{
-    for (auto& t : m_tracks) {
+void Mixer::onOutputSpecChanged(const OutputSpec &spec) {
+    for (auto &t : m_tracks) {
         t.chain->setOutputSpec(spec);
     }
 
-    for (auto& t : m_auxTracks) {
+    for (auto &t : m_auxTracks) {
         t.chain->setOutputSpec(spec);
     }
 }
 
-void Mixer::onModeChanged(const ProcessMode mode)
-{
+void Mixer::onModeChanged(const ProcessMode mode) {
 
-    for (auto& t : m_tracks) {
+    for (auto &t : m_tracks) {
         t.chain->setMode(mode);
     }
 
-    for (auto& t : m_auxTracks) {
+    for (auto &t : m_auxTracks) {
         t.chain->setMode(mode);
     }
 }
 
-void Mixer::process(float* outBuffer, samples_t samplesPerChannel)
-{
+void Mixer::process(float *outBuffer, samples_t samplesPerChannel) {
 
     if (!m_enabled) {
         return;
@@ -143,7 +124,7 @@ void Mixer::process(float* outBuffer, samples_t samplesPerChannel)
 
     prepareAuxBuffers(outBufferSize);
 
-    for (auto& t : m_tracks) {
+    for (auto &t : m_tracks) {
         if (OfflineCancellation::requested()) return;
         if (!t.processed) {
             continue;
@@ -162,13 +143,9 @@ void Mixer::process(float* outBuffer, samples_t samplesPerChannel)
     processAuxChannels(outBuffer, samplesPerChannel);
 }
 
-void Mixer::processTrackChannels(size_t outBufferSize,
-                                 size_t samplesPerChannel)
-{
-    auto processChannel = [outBufferSize, samplesPerChannel](TrackData& trackData) {
-        IF_ASSERT_FAILED(trackData.chain) {
-            return;
-        }
+void Mixer::processTrackChannels(size_t outBufferSize, size_t samplesPerChannel) {
+    auto processChannel = [outBufferSize, samplesPerChannel](TrackData &trackData) {
+        IF_ASSERT_FAILED(trackData.chain) { return; }
 
         if (trackData.buffer.size() < outBufferSize) {
             trackData.buffer.resize(outBufferSize);
@@ -181,7 +158,7 @@ void Mixer::processTrackChannels(size_t outBufferSize,
 
     bool filterTracks = (m_mode == ProcessMode::Idle) && !m_tracksToProcessWhenIdle.empty();
 
-    for (auto& t : m_tracks) {
+    for (auto &t : m_tracks) {
         if (OfflineCancellation::requested()) return;
         t.processed = false;
 
@@ -193,31 +170,20 @@ void Mixer::processTrackChannels(size_t outBufferSize,
     }
 }
 
-void Mixer::setNonMutedTrackCount(size_t count)
-{
-    m_nonMutedTrackCount = count;
-}
+void Mixer::setNonMutedTrackCount(size_t count) { m_nonMutedTrackCount = count; }
 
-void Mixer::setTracksToProcessWhenIdle(const std::unordered_set<TrackId>& trackIds)
-{
+void Mixer::setTracksToProcessWhenIdle(const std::unordered_set<TrackId> &trackIds) { m_tracksToProcessWhenIdle = trackIds; }
 
-    m_tracksToProcessWhenIdle = trackIds;
-}
-
-void Mixer::mixOutputFromChannel(float* outBuffer, const float* inBuffer, size_t bufferSize) const
-{
-    IF_ASSERT_FAILED(outBuffer && inBuffer) {
-        return;
-    }
+void Mixer::mixOutputFromChannel(float *outBuffer, const float *inBuffer, size_t bufferSize) const {
+    IF_ASSERT_FAILED(outBuffer && inBuffer) { return; }
 
     for (size_t i = 0; i < bufferSize; ++i) {
         outBuffer[i] += inBuffer[i];
     }
 }
 
-void Mixer::prepareAuxBuffers(size_t outBufferSize)
-{
-    for (auto& aux : m_auxTracks) {
+void Mixer::prepareAuxBuffers(size_t outBufferSize) {
+    for (auto &aux : m_auxTracks) {
         aux.processed = false;
         if (!aux.chain->fxChain()) {
             continue;
@@ -227,24 +193,23 @@ void Mixer::prepareAuxBuffers(size_t outBufferSize)
     }
 }
 
-void Mixer::writeTrackToAuxBuffers(const float* trackBuffer, size_t outBufferSize, const AuxSendsParams& auxSends)
-{
+void Mixer::writeTrackToAuxBuffers(const float *trackBuffer, size_t outBufferSize, const AuxSendsParams &auxSends) {
     for (aux_channel_idx_t auxIdx = 0; auxIdx < auxSends.size(); ++auxIdx) {
         if (auxIdx >= m_auxTracks.size()) {
             break;
         }
 
-        TrackData& aux = m_auxTracks.at(auxIdx);
+        TrackData &aux = m_auxTracks.at(auxIdx);
         if (!aux.chain->fxChain()) {
             continue;
         }
 
-        const AuxSendParams& auxSend = auxSends.at(auxIdx);
+        const AuxSendParams &auxSend = auxSends.at(auxIdx);
         if (!auxSend.active || muse::is_zero(auxSend.signalAmount)) {
             continue;
         }
 
-        float* auxBuffer = aux.buffer.data();
+        float *auxBuffer = aux.buffer.data();
         float signalAmount = auxSend.signalAmount;
 
         for (size_t i = 0; i < outBufferSize; ++i) {
@@ -255,11 +220,10 @@ void Mixer::writeTrackToAuxBuffers(const float* trackBuffer, size_t outBufferSiz
     }
 }
 
-void Mixer::processAuxChannels(float* buffer, samples_t samplesPerChannel)
-{
+void Mixer::processAuxChannels(float *buffer, samples_t samplesPerChannel) {
     const size_t outBufferSize = samplesPerChannel * m_outputSpec.audioChannelCount;
 
-    for (TrackData& aux : m_auxTracks) {
+    for (TrackData &aux : m_auxTracks) {
         if (OfflineCancellation::requested()) return;
         //! NOTE Process when the aux received a signal this block (aux.processed) and/or if
         //! it's not yet silent (e.g. reverb is still ringing out)
@@ -267,7 +231,7 @@ void Mixer::processAuxChannels(float* buffer, samples_t samplesPerChannel)
             continue;
         }
 
-        float* auxBuffer = aux.buffer.data();
+        float *auxBuffer = aux.buffer.data();
         aux.chain->process(auxBuffer, samplesPerChannel);
 
         //! NOTE If the signal is silent, do not write to the output buffer
@@ -277,8 +241,7 @@ void Mixer::processAuxChannels(float* buffer, samples_t samplesPerChannel)
     }
 }
 
-std::string Mixer::dump() const
-{
+std::string Mixer::dump() const {
     std::stringstream ss;
     ss << "\n";
     ss << name() << ":";
@@ -287,14 +250,14 @@ std::string Mixer::dump() const
 
     ss << "\n";
     ss << std::string(indent, ' ') << "tracks: " << m_tracks.size();
-    for (const auto& track : m_tracks) {
+    for (const auto &track : m_tracks) {
         ss << "\n";
         ss << std::string(indent, ' ') << "<--[" << track.trackId << "] " << track.chain->dump();
     }
 
     ss << "\n";
     ss << std::string(indent, ' ') << "auxs: " << m_auxTracks.size();
-    for (const auto& aux : m_auxTracks) {
+    for (const auto &aux : m_auxTracks) {
         ss << "\n";
         ss << std::string(indent, ' ') << "<--[" << aux.trackId << "] " << aux.chain->dump();
     }

@@ -36,17 +36,14 @@ namespace mu::engraving {
 //   mmRestRangeStyle
 //---------------------------------------------------------
 
-static const ElementStyle mmRestRangeStyle {
-    { Sid::mmRestRangeBracketType, Pid::MMREST_RANGE_BRACKET_TYPE },
-    { Sid::mmRestRangeVPlacement,  Pid::PLACEMENT },
-    { Sid::mmRestRangeHPlacement,  Pid::HPLACEMENT },
-    { Sid::mmRestRangeMinDistance, Pid::MIN_DISTANCE },
-    { Sid::mmRestRangeTextStyle, Pid::TEXT_STYLE }
-};
+static const ElementStyle mmRestRangeStyle{{Sid::mmRestRangeBracketType, Pid::MMREST_RANGE_BRACKET_TYPE},
+                                           {Sid::mmRestRangeVPlacement, Pid::PLACEMENT},
+                                           {Sid::mmRestRangeHPlacement, Pid::HPLACEMENT},
+                                           {Sid::mmRestRangeMinDistance, Pid::MIN_DISTANCE},
+                                           {Sid::mmRestRangeTextStyle, Pid::TEXT_STYLE}};
 
 MMRestRange::MMRestRange(DummyParentOr<Measure> parent)
-    : MeasureNumberBase(ElementType::MMREST_RANGE, parent, TextStyleType::MMREST_RANGE)
-{
+    : MeasureNumberBase(ElementType::MMREST_RANGE, parent, TextStyleType::MMREST_RANGE) {
     initElementStyle(&mmRestRangeStyle);
 }
 
@@ -55,32 +52,23 @@ MMRestRange::MMRestRange(DummyParentOr<Measure> parent)
 ///   Copy constructor
 //---------------------------------------------------------
 
-MMRestRange::MMRestRange(const MMRestRange& other)
-    : MeasureNumberBase(other)
-{
-    initElementStyle(&mmRestRangeStyle);
-}
+MMRestRange::MMRestRange(const MMRestRange &other) : MeasureNumberBase(other) { initElementStyle(&mmRestRangeStyle); }
 
-PropertyValue MMRestRange::getProperty(Pid id) const
-{
+PropertyValue MMRestRange::getProperty(Pid id) const {
     switch (id) {
-    case Pid::MMREST_RANGE_BRACKET_TYPE:
-        return int(bracketType());
-    default:
-        return MeasureNumberBase::getProperty(id);
+        case Pid::MMREST_RANGE_BRACKET_TYPE: return int(bracketType());
+        default: return MeasureNumberBase::getProperty(id);
     }
 }
 
-bool MMRestRange::setProperty(Pid id, const PropertyValue& val)
-{
+bool MMRestRange::setProperty(Pid id, const PropertyValue &val) {
     switch (id) {
-    case Pid::MMREST_RANGE_BRACKET_TYPE:
-        setBracketType(MMRestRangeBracketType(val.toInt()));
-        mutldata()->layoutInvalid = true;
-        triggerLayout();
-        return true;
-    default:
-        return MeasureNumberBase::setProperty(id, val);
+        case Pid::MMREST_RANGE_BRACKET_TYPE:
+            setBracketType(MMRestRangeBracketType(val.toInt()));
+            mutldata()->layoutInvalid = true;
+            triggerLayout();
+            return true;
+        default: return MeasureNumberBase::setProperty(id, val);
     }
 }
 
@@ -89,19 +77,12 @@ bool MMRestRange::setProperty(Pid id, const PropertyValue& val)
 ///   This is reimplemented from TextBase::setXmlText to take care of the brackets
 //---------------------------------------------------------
 
-void MMRestRange::setXmlText(const String& s)
-{
+void MMRestRange::setXmlText(const String &s) {
     switch (bracketType()) {
-    case MMRestRangeBracketType::BRACKETS:
-        TextBase::setXmlText(u"[" + s + u"]");
-        break;
-    case MMRestRangeBracketType::PARENTHESES:
-        TextBase::setXmlText(u"(" + s + u")");
-        break;
-    case MMRestRangeBracketType::NONE:
-    default:
-        TextBase::setXmlText(s);
-        break;
+        case MMRestRangeBracketType::BRACKETS: TextBase::setXmlText(u"[" + s + u"]"); break;
+        case MMRestRangeBracketType::PARENTHESES: TextBase::setXmlText(u"(" + s + u")"); break;
+        case MMRestRangeBracketType::NONE:
+        default: TextBase::setXmlText(s); break;
     }
 }
-} // namespace MS
+} // namespace mu::engraving

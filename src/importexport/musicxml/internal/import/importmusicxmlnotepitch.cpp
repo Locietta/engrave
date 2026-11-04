@@ -46,8 +46,7 @@ namespace mu::iex::musicxml {
 
 // TODO: split in reading parameters versus creation
 
-static Accidental* accidental(muse::XmlStreamReader& e, Score* score)
-{
+static Accidental *accidental(muse::XmlStreamReader &e, Score *score) {
     const bool cautionary = e.asciiAttribute("cautionary") == "yes";
     const bool editorial = e.asciiAttribute("editorial") == "yes";
     const bool parentheses = e.asciiAttribute("parentheses") == "yes";
@@ -62,12 +61,12 @@ static Accidental* accidental(muse::XmlStreamReader& e, Score* score)
     const AccidentalType type = musicXmlString2accidentalType(s, smufl);
 
     if (type != AccidentalType::NONE) {
-        Accidental* a = Factory::createAccidental(score->dummy());
+        Accidental *a = Factory::createAccidental(score->dummy());
         a->setAccidentalType(type);
         if (cautionary || editorial) { // no way to tell one from the other
             a->setRole(AccidentalRole::USER);
         } // except via the use of parentheses vs. brackets
-        if (noParentheses || noBrackets) { // explicitly none wanted
+        if (noParentheses || noBrackets) {      // explicitly none wanted
         } else if (parentheses || cautionary) { // set to "yes" or "cautionary" and not set at all
             a->setBracket(AccidentalBracket(AccidentalBracket::PARENTHESIS));
         } else if (brackets || editorial) { // set to "yes" or "editorial" and not set at all
@@ -91,8 +90,7 @@ static Accidental* accidental(muse::XmlStreamReader& e, Score* score)
  Handle <display-step> and <display-octave> for <rest> and <unpitched>
  */
 
-void MusicXmlNotePitch::displayStepOctave(muse::XmlStreamReader& e)
-{
+void MusicXmlNotePitch::displayStepOctave(muse::XmlStreamReader &e) {
     while (e.readNextStartElement()) {
         if (e.name() == "display-step") {
             const String step = e.readText();
@@ -101,7 +99,7 @@ void MusicXmlNotePitch::displayStepOctave(muse::XmlStreamReader& e)
                 m_displayStep = pos;
             } else {
                 //logError(String("invalid step '%1'").arg(strStep));
-                LOGD("invalid step '%s'", muPrintable(step));                // TODO
+                LOGD("invalid step '%s'", muPrintable(step)); // TODO
             }
         } else if (e.name() == "display-octave") {
             const String oct = e.readText();
@@ -109,11 +107,11 @@ void MusicXmlNotePitch::displayStepOctave(muse::XmlStreamReader& e)
             m_displayOctave = oct.toInt(&ok);
             if (!ok || m_displayOctave < 0 || m_displayOctave > 9) {
                 //logError(String("invalid octave '%1'").arg(strOct));
-                LOGD("invalid octave '%s'", muPrintable(oct));               // TODO
+                LOGD("invalid octave '%s'", muPrintable(oct)); // TODO
                 m_displayOctave = -1;
             }
         } else {
-            e.skipCurrentElement();                         // TODO log
+            e.skipCurrentElement(); // TODO log
         }
     }
 }
@@ -126,8 +124,7 @@ void MusicXmlNotePitch::displayStepOctave(muse::XmlStreamReader& e)
  Parse the /score-partwise/part/measure/note/pitch node.
  */
 
-void MusicXmlNotePitch::pitch(muse::XmlStreamReader& e)
-{
+void MusicXmlNotePitch::pitch(muse::XmlStreamReader &e) {
     // defaults
     m_step = -1;
     m_alter = 0;
@@ -186,8 +183,7 @@ void MusicXmlNotePitch::pitch(muse::XmlStreamReader& e)
  Return true if handled.
  */
 
-bool MusicXmlNotePitch::readProperties(muse::XmlStreamReader& e, Score* score)
-{
+bool MusicXmlNotePitch::readProperties(muse::XmlStreamReader &e, Score *score) {
     const AsciiStringView tag(e.name());
 
     if (tag == "accidental") {
@@ -203,4 +199,4 @@ bool MusicXmlNotePitch::readProperties(muse::XmlStreamReader& e, Score* score)
     }
     return false;
 }
-}
+} // namespace mu::iex::musicxml

@@ -30,24 +30,23 @@
 #include "../types/fontstypes.h"
 
 namespace muse::draw {
-class IFontsDatabase
-{
+class IFontsDatabase {
 public:
     virtual ~IFontsDatabase() = default;
 
-    virtual void setDefaultFont(Font::Type type, const FontDataKey& key) = 0;
-    virtual void insertSubstitution(const String& f1, const String& substituteName) = 0;
-    virtual void removeSubstitutions(const String& f1, const std::vector<String>& substituteNames) = 0;
+    virtual void setDefaultFont(Font::Type type, const FontDataKey &key) = 0;
+    virtual void insertSubstitution(const String &f1, const String &substituteName) = 0;
+    virtual void removeSubstitutions(const String &f1, const std::vector<String> &substituteNames) = 0;
 
-    virtual int addFont(const FontDataKey& key, const io::path_t& path) = 0;
-    virtual int addFont(const FontDataKey& key, std::shared_ptr<io::IODevice> device) = 0;
+    virtual int addFont(const FontDataKey &key, const io::path_t &path) = 0;
+    virtual int addFont(const FontDataKey &key, std::shared_ptr<io::IODevice> device) = 0;
 
-    virtual void removeFont(const FontDataKey& key) = 0;
+    virtual void removeFont(const FontDataKey &key) = 0;
 
-    virtual FontDataKey actualFont(const FontDataKey& requireKey, Font::Type type) const = 0;
-    virtual std::vector<FontDataKey> substitutionFonts(const FontDataKey& requireKey) const = 0;
-    virtual FontData fontData(const FontDataKey& requireKey, Font::Type type) const = 0;
+    virtual FontDataKey actualFont(const FontDataKey &requireKey, Font::Type type) const = 0;
+    virtual std::vector<FontDataKey> substitutionFonts(const FontDataKey &requireKey) const = 0;
+    virtual FontData fontData(const FontDataKey &requireKey, Font::Type type) const = 0;
 
     virtual uint64_t revision() const = 0;
 };
-}
+} // namespace muse::draw

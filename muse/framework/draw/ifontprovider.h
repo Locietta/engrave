@@ -33,36 +33,35 @@
 #include "types/geometry.h"
 
 namespace muse::draw {
-class IFontProvider
-{
+class IFontProvider {
 public:
     virtual ~IFontProvider() = default;
 
-    virtual int addSymbolFont(const String& family, const io::path_t& path) = 0;
-    virtual int addSymbolFont(const String& family, std::shared_ptr<io::IODevice> device) = 0;
+    virtual int addSymbolFont(const String &family, const io::path_t &path) = 0;
+    virtual int addSymbolFont(const String &family, std::shared_ptr<io::IODevice> device) = 0;
 
-    virtual double lineSpacing(const Font& f) const = 0;
-    virtual double xHeight(const Font& f) const = 0;
-    virtual double height(const Font& f) const = 0;
-    virtual double capHeight(const Font& f) const = 0;
-    virtual double ascent(const Font& f) const = 0;
-    virtual double descent(const Font& f) const = 0;
+    virtual double lineSpacing(const Font &f) const = 0;
+    virtual double xHeight(const Font &f) const = 0;
+    virtual double height(const Font &f) const = 0;
+    virtual double capHeight(const Font &f) const = 0;
+    virtual double ascent(const Font &f) const = 0;
+    virtual double descent(const Font &f) const = 0;
 
-    virtual double underlinePos(const Font& f) const = 0;
-    virtual double lineWidth(const Font& f) const = 0;
-    virtual double strikeOutPos(const Font& f) const = 0;
+    virtual double underlinePos(const Font &f) const = 0;
+    virtual double lineWidth(const Font &f) const = 0;
+    virtual double strikeOutPos(const Font &f) const = 0;
 
-    virtual bool inFont(const Font& f, char32_t ucs4) const = 0;
+    virtual bool inFont(const Font &f, char32_t ucs4) const = 0;
 
     // Text
-    virtual double horizontalAdvance(const Font& f, const String& string) const = 0;
-    virtual double horizontalAdvance(const Font& f, char32_t ucs4) const = 0;
+    virtual double horizontalAdvance(const Font &f, const String &string) const = 0;
+    virtual double horizontalAdvance(const Font &f, char32_t ucs4) const = 0;
 
-    virtual RectF boundingRect(const Font& f, const String& string) const = 0;
-    virtual RectF boundingRect(const Font& f, char32_t ucs4) const = 0;
+    virtual RectF boundingRect(const Font &f, const String &string) const = 0;
+    virtual RectF boundingRect(const Font &f, char32_t ucs4) const = 0;
 
-    virtual RectF tightBoundingRect(const Font& f, const String& string) const = 0;
+    virtual RectF tightBoundingRect(const Font &f, const String &string) const = 0;
 };
-}
+} // namespace muse::draw
 
 #endif // MUSE_DRAW_IFONTPROVIDER_H

@@ -26,12 +26,8 @@
 #include "textbase.h"
 
 namespace mu::engraving {
-enum class InstrumentNameType : char {
-    LONG, SHORT
-};
-enum class InstrumentNameRole : char {
-    STAFF, SHARED_STAFF, PART, GROUP
-};
+enum class InstrumentNameType : char { LONG, SHORT };
+enum class InstrumentNameRole : char { STAFF, SHARED_STAFF, PART, GROUP };
 
 class System;
 class SysStaff;
@@ -40,31 +36,32 @@ class SysStaff;
 //   InstrumentName
 //---------------------------------------------------------
 
-class InstrumentName final : public TextBase
-{
+class InstrumentName final : public TextBase {
     OBJECT_ALLOCATOR(engraving, InstrumentName)
     DECLARE_CLASSOF(ElementType::INSTRUMENT_NAME)
 
 public:
     InstrumentName(DummyParentOr<System>);
 
-    InstrumentName* clone() const override { return new InstrumentName(*this); }
+    InstrumentName *clone() const override { return new InstrumentName(*this); }
 
     InstrumentNameType instrumentNameType() const { return m_instrumentNameType; }
+
     void setInstrumentNameType(InstrumentNameType v);
 
     InstrumentNameRole instrumentNameRole() const { return m_instrumentNameRole; }
+
     void setInstrumentNameRole(InstrumentNameRole v) { m_instrumentNameRole = v; }
 
-    System* system() const { return toSystem(ownershipParent()); }
+    System *system() const { return toSystem(ownershipParent()); }
 
-    SysStaff* sysStaff() const { return m_sysStaff; }
-    void setSysStaff(SysStaff* s) { m_sysStaff = s; }
+    SysStaff *sysStaff() const { return m_sysStaff; }
+
+    void setSysStaff(SysStaff *s) { m_sysStaff = s; }
 
     double largestStaffSpatium() const;
 
-
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
 
     bool positionRelativeToNoteheadRest() const override { return false; }
 
@@ -73,8 +70,11 @@ public:
     struct LayoutData : public TextBase::LayoutData {
     public:
         int column() const { return m_column; }
+
         void setColumn(int v) { m_column = v; }
+
         staff_idx_t endIdxOfGroup() const { return m_endIdxOfGroup; }
+
         void setEndIdxOfGroup(staff_idx_t v) { m_endIdxOfGroup = v; }
 
     private:
@@ -87,7 +87,7 @@ private:
 
     InstrumentNameType m_instrumentNameType = InstrumentNameType::LONG;
     InstrumentNameRole m_instrumentNameRole = InstrumentNameRole::PART;
-    SysStaff* m_sysStaff = nullptr;
+    SysStaff *m_sysStaff = nullptr;
 };
 } // namespace mu::engraving
 #endif

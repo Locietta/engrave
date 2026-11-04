@@ -26,13 +26,13 @@
 #include "styledef.h"
 
 namespace mu::engraving {
-const std::vector<Sid>& pageStyles();
+const std::vector<Sid> &pageStyles();
 
 class MStyle;
-class PageSizeGetAccessor
-{
+
+class PageSizeGetAccessor {
 public:
-    PageSizeGetAccessor(const MStyle& style);
+    PageSizeGetAccessor(const MStyle &style);
 
     double width() const;
     double height() const;
@@ -47,13 +47,12 @@ public:
     double spatium() const;
 
 private:
-    const MStyle& m_style;
+    const MStyle &m_style;
 };
 
-class PageSizeSetAccessor
-{
+class PageSizeSetAccessor {
 public:
-    PageSizeSetAccessor(MStyle& style);
+    PageSizeSetAccessor(MStyle &style);
 
     double width() const;
     double height() const;
@@ -80,6 +79,6 @@ public:
     void setSpatium(double v);
 
 private:
-    MStyle& m_style;
+    MStyle &m_style;
 };
-}
+} // namespace mu::engraving

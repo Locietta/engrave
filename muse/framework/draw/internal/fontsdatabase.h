@@ -28,22 +28,21 @@
 #include "ifontsdatabase.h"
 
 namespace muse::draw {
-class FontsDatabase : public IFontsDatabase
-{
+class FontsDatabase : public IFontsDatabase {
 public:
     FontsDatabase() = default;
 
-    void setDefaultFont(Font::Type type, const FontDataKey& key) override;
-    void insertSubstitution(const String& f1, const String& substituteName) override;
-    void removeSubstitutions(const String& f1, const std::vector<String>& substituteNames) override;
+    void setDefaultFont(Font::Type type, const FontDataKey &key) override;
+    void insertSubstitution(const String &f1, const String &substituteName) override;
+    void removeSubstitutions(const String &f1, const std::vector<String> &substituteNames) override;
 
-    int addFont(const FontDataKey& key, const io::path_t& path) override;
-    int addFont(const FontDataKey& key, std::shared_ptr<io::IODevice> device) override;
-    void removeFont(const FontDataKey& key) override;
+    int addFont(const FontDataKey &key, const io::path_t &path) override;
+    int addFont(const FontDataKey &key, std::shared_ptr<io::IODevice> device) override;
+    void removeFont(const FontDataKey &key) override;
 
-    FontDataKey actualFont(const FontDataKey& requireKey, Font::Type type) const override;
-    std::vector<FontDataKey> substitutionFonts(const FontDataKey& requireKey) const override;
-    FontData fontData(const FontDataKey& requireKey, Font::Type type) const override;
+    FontDataKey actualFont(const FontDataKey &requireKey, Font::Type type) const override;
+    std::vector<FontDataKey> substitutionFonts(const FontDataKey &requireKey) const override;
+    FontData fontData(const FontDataKey &requireKey, Font::Type type) const override;
 
     uint64_t revision() const override;
 
@@ -57,13 +56,13 @@ private:
         bool valid() const { return id > -1; }
     };
 
-    const FontDataKey& defaultFont(Font::Type type) const;
-    const FontInfo& fontInfo(const FontDataKey& key) const;
-    void release(const FontInfo& fi);
+    const FontDataKey &defaultFont(Font::Type type) const;
+    const FontInfo &fontInfo(const FontDataKey &key) const;
+    void release(const FontInfo &fi);
 
     std::map<Font::Type, FontDataKey> m_defaults;
-    std::map<FontDataKey, std::vector<FontDataKey> > m_familySubstitutions;
+    std::map<FontDataKey, std::vector<FontDataKey>> m_familySubstitutions;
     std::map<FontDataKey, FontInfo> m_fonts;
     uint64_t m_revision = 0;
 };
-}
+} // namespace muse::draw

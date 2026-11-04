@@ -28,38 +28,31 @@
 using namespace muse;
 using namespace muse::io;
 
-struct ZipReader::Impl
-{
-    ZipContainer* zip = nullptr;
-    IODevice* device = nullptr;
+struct ZipReader::Impl {
+    ZipContainer *zip = nullptr;
+    IODevice *device = nullptr;
     bool isSelfDevice = false;
 };
 
-bool ZipReader::startsWithEntry(const ByteArray& data, std::span<const uint8_t> name)
-{
+bool ZipReader::startsWithEntry(const ByteArray &data, std::span<const uint8_t> name) {
     return ZipContainer::startsWithEntry(data.constData(), data.size(), name);
 }
 
-ZipReader::ZipReader(const io::path_t& filePath)
-    : m_filePath(filePath)
-{
+ZipReader::ZipReader(const io::path_t &filePath) : m_filePath(filePath) {
     m_impl = new Impl();
     m_impl->device = new File(filePath);
     m_impl->isSelfDevice = true;
-    if (m_impl->device->open(IODevice::ReadOnly)) {
-    }
+    if (m_impl->device->open(IODevice::ReadOnly)) {}
     m_impl->zip = new ZipContainer(m_impl->device);
 }
 
-ZipReader::ZipReader(IODevice* device)
-{
+ZipReader::ZipReader(IODevice *device) {
     m_impl = new Impl();
     m_impl->device = device;
     m_impl->zip = new ZipContainer(m_impl->device);
 }
 
-ZipReader::~ZipReader()
-{
+ZipReader::~ZipReader() {
     close();
     delete m_impl->zip;
     if (m_impl->isSelfDevice) {
@@ -68,8 +61,7 @@ ZipReader::~ZipReader()
     delete m_impl;
 }
 
-bool ZipReader::exists() const
-{
+bool ZipReader::exists() const {
     if (!m_filePath.empty()) {
         return File::exists(m_filePath);
     }
@@ -77,22 +69,15 @@ bool ZipReader::exists() const
     return true;
 }
 
-void ZipReader::close()
-{
-    m_impl->zip->close();
-}
+void ZipReader::close() { m_impl->zip->close(); }
 
-bool ZipReader::hasError() const
-{
-    return m_impl->zip->status() != ZipContainer::NoError;
-}
+bool ZipReader::hasError() const { return m_impl->zip->status() != ZipContainer::NoError; }
 
-std::vector<ZipReader::FileInfo> ZipReader::fileInfoList() const
-{
+std::vector<ZipReader::FileInfo> ZipReader::fileInfoList() const {
     std::vector<FileInfo> ret;
     std::vector<ZipContainer::FileInfo> fis = m_impl->zip->fileInfoList();
     ret.reserve(fis.size());
-    for (const ZipContainer::FileInfo& qfi : fis) {
+    for (const ZipContainer::FileInfo &qfi : fis) {
         FileInfo fi;
         fi.filePath = qfi.filePath;
         fi.isDir = qfi.isDir;
@@ -106,29 +91,22 @@ std::vector<ZipReader::FileInfo> ZipReader::fileInfoList() const
     return ret;
 }
 
-bool ZipReader::fileExists(const std::string& fileName) const
-{
-    return m_impl->zip->fileExists(fileName);
-}
+bool ZipReader::fileExists(const std::string &fileName) const { return m_impl->zip->fileExists(fileName); }
 
-ByteArray ZipReader::fileData(const std::string& fileName) const
-{
-    return m_impl->zip->fileData(fileName);
-}
+ByteArray ZipReader::fileData(const std::string &fileName) const { return m_impl->zip->fileData(fileName); }
 
 // ===========================
 // ZipUnpack
 // ===========================
 
-Ret ZipUnpack::unpack(const io::path_t& zipPath, const io::path_t& dirPath)
-{
+Ret ZipUnpack::unpack(const io::path_t &zipPath, const io::path_t &dirPath) {
     Ret ret = io::Dir::mkpath(dirPath);
     if (!ret) {
         return ret;
     }
 
     ZipReader zip(zipPath);
-    for (const ZipReader::FileInfo& fi : zip.fileInfoList()) {
+    for (const ZipReader::FileInfo &fi : zip.fileInfoList()) {
         const io::path_t filePath = dirPath + "/" + fi.filePath;
 
         if (fi.isDir) {

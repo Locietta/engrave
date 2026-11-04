@@ -28,8 +28,7 @@
 #include "soundid.h"
 
 namespace muse::mpe {
-struct PlaybackSetupData
-{
+struct PlaybackSetupData {
     String id;
     StringList subCategories;
 
@@ -42,40 +41,33 @@ struct PlaybackSetupData
 
     PlaybackSetupData() = default;
 
-    PlaybackSetupData(SoundId id, SoundCategory category, SoundSubCategories&& soundSubCategories = {}, bool supportsSND = false)
-        : id(soundIdToString(id)), category(category), supportsSingleNoteDynamics(supportsSND)
-    {
+    PlaybackSetupData(SoundId id, SoundCategory category, SoundSubCategories &&soundSubCategories = {}, bool supportsSND = false)
+        : id(soundIdToString(id)), category(category), supportsSingleNoteDynamics(supportsSND) {
         for (SoundSubCategory subCategory : soundSubCategories) {
             subCategories.push_back(soundSubCategoryToString(subCategory));
         }
     }
 
-    PlaybackSetupData(String id, SoundCategory category, StringList&& subCategories = {})
-        : id(std::move(id)), subCategories(std::move(subCategories)), category(category)
-    {}
+    PlaybackSetupData(String id, SoundCategory category, StringList &&subCategories = {})
+        : id(std::move(id)), subCategories(std::move(subCategories)), category(category) {}
 
-    SoundId soundId() const
-    {
-        return soundIdFromString(id);
-    }
+    SoundId soundId() const { return soundIdFromString(id); }
 
-    SoundSubCategories soundSubCategories() const
-    {
+    SoundSubCategories soundSubCategories() const {
         SoundSubCategories result;
-        for (const String& subCategory : subCategories) {
+        for (const String &subCategory : subCategories) {
             result.insert(soundSubCategoryFromString(subCategory));
         }
 
         return result;
     }
 
-    bool isKnownSound() const
-    {
+    bool isKnownSound() const {
         if (soundIdFromString(id) == SoundId::Unknown) {
             return false;
         }
 
-        for (const String& subCategory : subCategories) {
+        for (const String &subCategory : subCategories) {
             if (soundSubCategoryFromString(subCategory) == SoundSubCategory::Unknown) {
                 return false;
             }
@@ -84,14 +76,10 @@ struct PlaybackSetupData
         return true;
     }
 
-    bool contains(const SoundSubCategory subcategory) const
-    {
-        return muse::contains(subCategories, soundSubCategoryToString(subcategory));
-    }
+    bool contains(const SoundSubCategory subcategory) const { return muse::contains(subCategories, soundSubCategoryToString(subcategory)); }
 
-    void add(const SoundSubCategory subcategory)
-    {
-        auto insertPos = std::find_if(subCategories.cbegin(), subCategories.cend(), [subcategory](const String& str) {
+    void add(const SoundSubCategory subcategory) {
+        auto insertPos = std::find_if(subCategories.cbegin(), subCategories.cend(), [subcategory](const String &str) {
             SoundSubCategory existingSubCategory = soundSubCategoryFromString(str);
             return subcategory < existingSubCategory;
         });
@@ -99,16 +87,12 @@ struct PlaybackSetupData
         subCategories.insert(insertPos, soundSubCategoryToString(subcategory));
     }
 
-    bool operator==(const PlaybackSetupData& other) const
-    {
-        return id == other.id
-               && category == other.category
-               && subCategories == other.subCategories
-               && supportsSingleNoteDynamics == other.supportsSingleNoteDynamics;
+    bool operator==(const PlaybackSetupData &other) const {
+        return id == other.id && category == other.category && subCategories == other.subCategories &&
+               supportsSingleNoteDynamics == other.supportsSingleNoteDynamics;
     }
 
-    bool operator<(const PlaybackSetupData& other) const
-    {
+    bool operator<(const PlaybackSetupData &other) const {
         if (other.id > id) {
             return true;
         } else if (other.id == id) {
@@ -122,8 +106,7 @@ struct PlaybackSetupData
         return false;
     }
 
-    bool isValid() const
-    {
+    bool isValid() const {
         if (category == SoundCategory::Undefined) {
             return false;
         }
@@ -139,26 +122,19 @@ struct PlaybackSetupData
         return true;
     }
 
-    String toString() const
-    {
+    String toString() const {
         String result;
 
         if (!subCategories.empty()) {
-            result = String(u"%1.%2.%3")
-                     .arg(soundCategoryToString(category))
-                     .arg(id)
-                     .arg(subCategories.join(u":"));
+            result = String(u"%1.%2.%3").arg(soundCategoryToString(category)).arg(id).arg(subCategories.join(u":"));
         } else {
-            result = String(u"%1.%2")
-                     .arg(soundCategoryToString(category))
-                     .arg(id);
+            result = String(u"%1.%2").arg(soundCategoryToString(category)).arg(id);
         }
 
         return result;
     }
 
-    static PlaybackSetupData fromString(const String& str)
-    {
+    static PlaybackSetupData fromString(const String &str) {
         if (str.empty()) {
             return PlaybackSetupData();
         }
@@ -174,23 +150,15 @@ struct PlaybackSetupData
             subCategories = subStrList.at(2).split(u":");
         }
 
-        PlaybackSetupData result = {
-            subStrList.at(1),
-            soundCategoryFromString(subStrList.at(0)),
-            std::move(subCategories)
-        };
+        PlaybackSetupData result = {subStrList.at(1), soundCategoryFromString(subStrList.at(0)), std::move(subCategories)};
 
         return result;
     }
 };
 
-static const PlaybackSetupData GENERIC_SETUP_DATA = {
-    SoundId::Last,
-    SoundCategory::Last,
-    { SoundSubCategory::Last }
-};
+static const PlaybackSetupData GENERIC_SETUP_DATA = {SoundId::Last, SoundCategory::Last, {SoundSubCategory::Last}};
 
 static const String GENERIC_SETUP_DATA_STRING = GENERIC_SETUP_DATA.toString();
-}
+} // namespace muse::mpe
 
 #endif // MUSE_MPE_PLAYBACKSETUPDATA_H

@@ -26,21 +26,20 @@
 #include "layoutcontext.h"
 
 namespace mu::engraving::rendering::score {
-class SegmentLayout
-{
+class SegmentLayout {
 public:
 
-    static void layoutMeasureIndependentElements(const Segment& segment, track_idx_t track, const LayoutContext& ctx);
-    static void setChordMag(const Staff* staff, const Segment& segment, track_idx_t startTrack, track_idx_t endTrack,
-                            const LayoutConfiguration& conf);
-    static void checkStaffMoveValidity(const Segment& segment, track_idx_t startTrack, track_idx_t endTrack);
-    static void layoutChordDrumset(const Staff* staff, const Segment& segment, track_idx_t startTrack, track_idx_t endTrack,
-                                   const LayoutConfiguration& conf);
+    static void layoutMeasureIndependentElements(const Segment &segment, track_idx_t track, const LayoutContext &ctx);
+    static void setChordMag(const Staff *staff, const Segment &segment, track_idx_t startTrack, track_idx_t endTrack,
+                            const LayoutConfiguration &conf);
+    static void checkStaffMoveValidity(const Segment &segment, track_idx_t startTrack, track_idx_t endTrack);
+    static void layoutChordDrumset(const Staff *staff, const Segment &segment, track_idx_t startTrack, track_idx_t endTrack,
+                                   const LayoutConfiguration &conf);
 
-    static void computeChordsUp(const Segment& segment, track_idx_t startTrack, track_idx_t endTrack, const LayoutContext& ctx);
+    static void computeChordsUp(const Segment &segment, track_idx_t startTrack, track_idx_t endTrack, const LayoutContext &ctx);
 
-    static void layoutChordsStem(const Segment& segment, track_idx_t startTrack, track_idx_t endTrack, const LayoutContext& ctx);
+    static void layoutChordsStem(const Segment &segment, track_idx_t startTrack, track_idx_t endTrack, const LayoutContext &ctx);
 };
-}
+} // namespace mu::engraving::rendering::score
 
 #endif // MU_ENGRAVING_SEGMENTLAYOUT_DEV_H

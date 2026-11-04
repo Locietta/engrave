@@ -35,23 +35,18 @@
  */
 
 namespace muse::audio::fx {
-template<typename SampleT>
-class CircularSampleBuffer
-{
+template <typename SampleT>
+class CircularSampleBuffer {
 public:
-    CircularSampleBuffer()
-    {
-    }
+    CircularSampleBuffer() {}
 
-    ~CircularSampleBuffer()
-    {
+    ~CircularSampleBuffer() {
         if (m_buffer) {
             free(m_buffer);
         }
     }
 
-    void setSize(int n)
-    {
+    void setSize(int n) {
         if (n > m_allocatedSize) {
             auto oldSize = m_allocatedSize;
 
@@ -65,7 +60,7 @@ public:
 
             m_allocatedSize = findLargerPowerOfTwo(n);
             m_bufferSizeMask = m_allocatedSize - 1;
-            m_buffer = (SampleT*)std::realloc(m_buffer, m_allocatedSize * sizeof(SampleT));
+            m_buffer = (SampleT *) std::realloc(m_buffer, m_allocatedSize * sizeof(SampleT));
 
             // Reset the new memory region
             assert(m_buffer);
@@ -73,45 +68,30 @@ public:
         }
     }
 
-    int getAllocatedSize() const
-    {
-        return m_allocatedSize;
-    }
+    int getAllocatedSize() const { return m_allocatedSize; }
 
-    void reset()
-    {
+    void reset() {
         if (m_buffer && m_allocatedSize > 0) {
             std::memset(m_buffer, 0, sizeof(SampleT) * m_allocatedSize);
         }
         m_positionIndex = 0;
     }
 
-    void write(int offset, const SampleT& sample)
-    {
-        m_buffer[(m_positionIndex + offset) & m_bufferSizeMask] = sample;
-    }
+    void write(int offset, const SampleT &sample) { m_buffer[(m_positionIndex + offset) & m_bufferSizeMask] = sample; }
 
-    void writeOffset0(const SampleT& sample)
-    {
-        m_buffer[m_positionIndex] = sample;
-    }
+    void writeOffset0(const SampleT &sample) { m_buffer[m_positionIndex] = sample; }
 
-    const SampleT& read(int offset) const
-    {
-        return m_buffer[(m_positionIndex + offset) & m_bufferSizeMask];
-    }
+    const SampleT &read(int offset) const { return m_buffer[(m_positionIndex + offset) & m_bufferSizeMask]; }
 
     /// change the 0 position by n
-    void advance(int n)
-    {
+    void advance(int n) {
         m_positionIndex += n;
         m_positionIndex &= m_bufferSizeMask;
     }
 
 private:
-    template<typename fnc>
-    void splitBlockOffsetFunction(int startOffset, int n, fnc f) const
-    {
+    template <typename fnc>
+    void splitBlockOffsetFunction(int startOffset, int n, fnc f) const {
         assert(n <= m_allocatedSize);
         int firstIndex = (m_positionIndex + startOffset) & m_bufferSizeMask;
         int n_to_end = m_allocatedSize - firstIndex;
@@ -124,32 +104,29 @@ private:
     }
 
 public:
-    void writeBlock(int startOffset, int n, const SampleT* sourceBlock)
-    {
+    void writeBlock(int startOffset, int n, const SampleT *sourceBlock) {
         splitBlockOffsetFunction(startOffset, n, [this, sourceBlock](int bufferOff, int sampleOff, int n) {
             vo::copy(&sourceBlock[sampleOff], &m_buffer[bufferOff], n);
         });
     }
 
-    void readBlockWithGain(int startOffset, int n, SampleT* targetBlock, float gainFactor) const
-    {
+    void readBlockWithGain(int startOffset, int n, SampleT *targetBlock, float gainFactor) const {
         splitBlockOffsetFunction(startOffset, n, [this, targetBlock, gainFactor](int bufferOff, int sampleOff, int n) {
             vo::constantMultiply(&m_buffer[bufferOff], gainFactor, &targetBlock[sampleOff], n);
         });
     }
 
-    void readAddBlockWithGain(int startOffset, int n, SampleT* targetBlock, float gainFactor) const
-    {
+    void readAddBlockWithGain(int startOffset, int n, SampleT *targetBlock, float gainFactor) const {
         splitBlockOffsetFunction(startOffset, n, [this, targetBlock, gainFactor](int bufferOff, int sampleOff, int n) {
             vo::constantMultiplyAndAdd(&m_buffer[bufferOff], gainFactor, &targetBlock[sampleOff], n);
         });
     }
 
 private:
-    SampleT* m_buffer = nullptr;
+    SampleT *m_buffer = nullptr;
 
-    int m_positionIndex = 0;   // position of sample index 0 inside _buffer. This is where the next sample will be written to
-    int m_allocatedSize = 0; // 2^n buffer size
+    int m_positionIndex = 0;  // position of sample index 0 inside _buffer. This is where the next sample will be written to
+    int m_allocatedSize = 0;  // 2^n buffer size
     int m_bufferSizeMask = 0; // 2^n-1 buffer mask
 };
 } // namespace muse::audio::fx

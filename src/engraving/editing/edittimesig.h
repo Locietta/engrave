@@ -31,14 +31,13 @@ class Score;
 class TimeSig;
 class Transaction;
 
-class EditTimeSig
-{
+class EditTimeSig {
 public:
-    static void addTimeSig(Transaction& tx, Score* score, Measure* fm, staff_idx_t staffIdx, TimeSig* ts, bool local);
-    static void removeTimeSig(Transaction& tx, Score* score, TimeSig* ts);
+    static void addTimeSig(Transaction &tx, Score *score, Measure *fm, staff_idx_t staffIdx, TimeSig *ts, bool local);
+    static void removeTimeSig(Transaction &tx, Score *score, TimeSig *ts);
 
-    static bool rewriteMeasures(Transaction& tx, Score* score, Measure* startMeasure, Measure* endMeasure, const Fraction& newTimeSig,
+    static bool rewriteMeasures(Transaction &tx, Score *score, Measure *startMeasure, Measure *endMeasure, const Fraction &newTimeSig,
                                 staff_idx_t staffIdx);
-    static bool rewriteMeasures(Transaction& tx, Score* score, Measure* fm, const Fraction& ns, staff_idx_t staffIdx);
+    static bool rewriteMeasures(Transaction &tx, Score *score, Measure *fm, const Fraction &ns, staff_idx_t staffIdx);
 };
-}
+} // namespace mu::engraving

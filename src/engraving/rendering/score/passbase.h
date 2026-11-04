@@ -24,21 +24,21 @@
 
 namespace mu::engraving {
 class Score;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
 class LayoutContext;
-class PassBase
-{
+
+class PassBase {
 public:
     virtual ~PassBase() = default;
 
-    void run(Score* score, LayoutContext& ctx);
+    void run(Score *score, LayoutContext &ctx);
 
 private:
 
-    virtual void doRun(Score* score, LayoutContext& ctx) = 0;
+    virtual void doRun(Score *score, LayoutContext &ctx) = 0;
 };
-}
+} // namespace mu::engraving::rendering::score
 
 #endif // MU_ENGRAVING_PASSBASE_DEV_H

@@ -69,97 +69,94 @@
 using namespace mu::engraving;
 using namespace mu::engraving::compat;
 
-const std::set<SymId> CompatUtils::ORNAMENT_IDS {
-    SymId::ornamentTurn,
-    SymId::ornamentTurnInverted,
-    SymId::ornamentTurnSlash,
-    SymId::ornamentTrill,
-    SymId::brassMuteClosed,
-    SymId::ornamentMordent,
-    SymId::ornamentShortTrill,
-    SymId::ornamentTremblement,
-    SymId::ornamentPrallMordent,
-    SymId::ornamentLinePrall,
-    SymId::ornamentUpPrall,
-    SymId::ornamentUpMordent,
-    SymId::ornamentPrecompMordentUpperPrefix,
-    SymId::ornamentDownMordent,
-    SymId::ornamentPrallUp,
-    SymId::ornamentPrallDown,
-    SymId::ornamentPrecompSlide,
-    SymId::ornamentShake3,
-    SymId::ornamentShakeMuffat1,
-    SymId::ornamentTremblementCouperin,
-    SymId::ornamentPinceCouperin
+const std::set<SymId> CompatUtils::ORNAMENT_IDS{SymId::ornamentTurn,
+                                                SymId::ornamentTurnInverted,
+                                                SymId::ornamentTurnSlash,
+                                                SymId::ornamentTrill,
+                                                SymId::brassMuteClosed,
+                                                SymId::ornamentMordent,
+                                                SymId::ornamentShortTrill,
+                                                SymId::ornamentTremblement,
+                                                SymId::ornamentPrallMordent,
+                                                SymId::ornamentLinePrall,
+                                                SymId::ornamentUpPrall,
+                                                SymId::ornamentUpMordent,
+                                                SymId::ornamentPrecompMordentUpperPrefix,
+                                                SymId::ornamentDownMordent,
+                                                SymId::ornamentPrallUp,
+                                                SymId::ornamentPrallDown,
+                                                SymId::ornamentPrecompSlide,
+                                                SymId::ornamentShake3,
+                                                SymId::ornamentShakeMuffat1,
+                                                SymId::ornamentTremblementCouperin,
+                                                SymId::ornamentPinceCouperin};
+
+const std::map<Sid, Sid> CompatUtils::ALIGN_VALS_TO_CONVERT{
+    {Sid::defaultAlign, Sid::defaultPosition},
+    {Sid::titleAlign, Sid::titlePosition},
+    {Sid::subTitleAlign, Sid::subTitlePosition},
+    {Sid::composerAlign, Sid::composerPosition},
+    {Sid::lyricistAlign, Sid::lyricistPosition},
+    {Sid::lyricsEvenAlign, Sid::lyricsEvenPosition},
+    {Sid::lyricsOddAlign, Sid::lyricsOddPosition},
+    {Sid::fingeringAlign, Sid::fingeringPosition},
+    {Sid::lhGuitarFingeringAlign, Sid::lhGuitarFingeringPosition},
+    {Sid::rhGuitarFingeringAlign, Sid::rhGuitarFingeringPosition},
+    {Sid::hammerOnPullOffTappingAlign, Sid::hammerOnPullOffTappingPosition},
+    {Sid::stringNumberAlign, Sid::stringNumberPosition},
+    {Sid::staffTextAlign, Sid::staffTextPosition},
+    {Sid::fretDiagramFingeringAlign, Sid::fretDiagramFingeringPosition},
+    {Sid::fretDiagramFretNumberAlign, Sid::fretDiagramFretNumberPosition},
+    {Sid::harpPedalDiagramAlign, Sid::harpPedalDiagramPosition},
+    {Sid::harpPedalTextDiagramAlign, Sid::harpPedalTextDiagramPosition},
+    {Sid::longInstrumentAlign, Sid::longInstrumentPosition},
+    {Sid::shortInstrumentAlign, Sid::shortInstrumentPosition},
+    {Sid::partInstrumentAlign, Sid::partInstrumentPosition},
+    {Sid::dynamicsAlign, Sid::dynamicsPosition},
+    {Sid::expressionAlign, Sid::expressionPosition},
+    {Sid::tempoAlign, Sid::tempoPosition},
+    {Sid::tempoChangeAlign, Sid::tempoChangePosition},
+    {Sid::metronomeAlign, Sid::metronomePosition},
+    {Sid::measureNumberAlign, Sid::measureNumberPosition},
+    {Sid::mmRestRangeAlign, Sid::mmRestRangePosition},
+    {Sid::translatorAlign, Sid::translatorPosition},
+    {Sid::tupletAlign, Sid::tupletPosition},
+    {Sid::systemTextAlign, Sid::systemTextPosition},
+    {Sid::chordSymbolAAlign, Sid::chordSymPosition},
+    {Sid::repeatLeftAlign, Sid::repeatLeftPosition},
+    {Sid::repeatRightAlign, Sid::repeatRightPosition},
+    {Sid::frameAlign, Sid::framePosition},
+    {Sid::textLineTextAlign, Sid::textLinePosition},
+    {Sid::noteLineAlign, Sid::noteLinePosition},
+    {Sid::glissandoAlign, Sid::glissandoPosition},
+    {Sid::ottavaTextAlignAbove, Sid::ottavaPosition},
+    {Sid::voltaAlign, Sid::voltaPosition},
+    {Sid::pedalTextAlign, Sid::pedalPosition},
+    {Sid::letRingTextAlign, Sid::letRingPosition},
+    {Sid::palmMuteTextAlign, Sid::palmMutePosition},
+    {Sid::hairpinTextAlign, Sid::hairpinPosition},
+    {Sid::bendAlign, Sid::bendPosition},
+    {Sid::headerAlign, Sid::headerPosition},
+    {Sid::footerAlign, Sid::footerPosition},
+    {Sid::copyrightAlign, Sid::copyrightPosition},
+    {Sid::pageNumberAlign, Sid::pageNumberPosition},
+    {Sid::instrumentChangeAlign, Sid::instrumentChangePosition},
+    {Sid::stickingAlign, Sid::stickingPosition},
+    {Sid::user1Align, Sid::user1Position},
+    {Sid::user2Align, Sid::user2Position},
+    {Sid::user3Align, Sid::user3Position},
+    {Sid::user4Align, Sid::user4Position},
+    {Sid::user5Align, Sid::user5Position},
+    {Sid::user6Align, Sid::user6Position},
+    {Sid::user7Align, Sid::user7Position},
+    {Sid::user8Align, Sid::user8Position},
+    {Sid::user9Align, Sid::user9Position},
+    {Sid::user10Align, Sid::user10Position},
+    {Sid::user11Align, Sid::user11Position},
+    {Sid::user12Align, Sid::user12Position},
 };
 
-const std::map<Sid, Sid> CompatUtils::ALIGN_VALS_TO_CONVERT {
-    { Sid::defaultAlign, Sid::defaultPosition },
-    { Sid::titleAlign, Sid::titlePosition },
-    { Sid::subTitleAlign, Sid::subTitlePosition },
-    { Sid::composerAlign, Sid::composerPosition },
-    { Sid::lyricistAlign, Sid::lyricistPosition },
-    { Sid::lyricsEvenAlign, Sid::lyricsEvenPosition },
-    { Sid::lyricsOddAlign, Sid::lyricsOddPosition },
-    { Sid::fingeringAlign, Sid::fingeringPosition },
-    { Sid::lhGuitarFingeringAlign, Sid::lhGuitarFingeringPosition },
-    { Sid::rhGuitarFingeringAlign, Sid::rhGuitarFingeringPosition },
-    { Sid::hammerOnPullOffTappingAlign, Sid::hammerOnPullOffTappingPosition },
-    { Sid::stringNumberAlign, Sid::stringNumberPosition },
-    { Sid::staffTextAlign, Sid::staffTextPosition },
-    { Sid::fretDiagramFingeringAlign, Sid::fretDiagramFingeringPosition },
-    { Sid::fretDiagramFretNumberAlign, Sid::fretDiagramFretNumberPosition },
-    { Sid::harpPedalDiagramAlign, Sid::harpPedalDiagramPosition },
-    { Sid::harpPedalTextDiagramAlign, Sid::harpPedalTextDiagramPosition },
-    { Sid::longInstrumentAlign, Sid::longInstrumentPosition },
-    { Sid::shortInstrumentAlign, Sid::shortInstrumentPosition },
-    { Sid::partInstrumentAlign, Sid::partInstrumentPosition },
-    { Sid::dynamicsAlign, Sid::dynamicsPosition },
-    { Sid::expressionAlign, Sid::expressionPosition },
-    { Sid::tempoAlign, Sid::tempoPosition },
-    { Sid::tempoChangeAlign, Sid::tempoChangePosition },
-    { Sid::metronomeAlign, Sid::metronomePosition },
-    { Sid::measureNumberAlign, Sid::measureNumberPosition },
-    { Sid::mmRestRangeAlign, Sid::mmRestRangePosition },
-    { Sid::translatorAlign, Sid::translatorPosition },
-    { Sid::tupletAlign, Sid::tupletPosition },
-    { Sid::systemTextAlign, Sid::systemTextPosition },
-    { Sid::chordSymbolAAlign, Sid::chordSymPosition },
-    { Sid::repeatLeftAlign, Sid::repeatLeftPosition },
-    { Sid::repeatRightAlign, Sid::repeatRightPosition },
-    { Sid::frameAlign, Sid::framePosition },
-    { Sid::textLineTextAlign, Sid::textLinePosition },
-    { Sid::noteLineAlign, Sid::noteLinePosition },
-    { Sid::glissandoAlign, Sid::glissandoPosition },
-    { Sid::ottavaTextAlignAbove, Sid::ottavaPosition },
-    { Sid::voltaAlign, Sid::voltaPosition },
-    { Sid::pedalTextAlign, Sid::pedalPosition },
-    { Sid::letRingTextAlign, Sid::letRingPosition },
-    { Sid::palmMuteTextAlign, Sid::palmMutePosition },
-    { Sid::hairpinTextAlign, Sid::hairpinPosition },
-    { Sid::bendAlign, Sid::bendPosition },
-    { Sid::headerAlign, Sid::headerPosition },
-    { Sid::footerAlign, Sid::footerPosition },
-    { Sid::copyrightAlign, Sid::copyrightPosition },
-    { Sid::pageNumberAlign, Sid::pageNumberPosition },
-    { Sid::instrumentChangeAlign, Sid::instrumentChangePosition },
-    { Sid::stickingAlign, Sid::stickingPosition },
-    { Sid::user1Align, Sid::user1Position },
-    { Sid::user2Align, Sid::user2Position },
-    { Sid::user3Align, Sid::user3Position },
-    { Sid::user4Align, Sid::user4Position },
-    { Sid::user5Align, Sid::user5Position },
-    { Sid::user6Align, Sid::user6Position },
-    { Sid::user7Align, Sid::user7Position },
-    { Sid::user8Align, Sid::user8Position },
-    { Sid::user9Align, Sid::user9Position },
-    { Sid::user10Align, Sid::user10Position },
-    { Sid::user11Align, Sid::user11Position },
-    { Sid::user12Align, Sid::user12Position },
-};
-
-void CompatUtils::doCompatibilityConversions(MasterScore* masterScore)
-{
+void CompatUtils::doCompatibilityConversions(MasterScore *masterScore) {
     TRACEFUNC;
 
     if (!masterScore) {
@@ -198,42 +195,41 @@ void CompatUtils::doCompatibilityConversions(MasterScore* masterScore)
     }
 }
 
-void CompatUtils::replaceStaffTextWithPlayTechniqueAnnotation(MasterScore* score)
-{
+void CompatUtils::replaceStaffTextWithPlayTechniqueAnnotation(MasterScore *score) {
     TRACEFUNC;
 
     //! NOTE: Before MU4, they were available in the Staff Text Properties dialog (Change Channel page)
-    static const std::unordered_map<muse::String, PlayingTechniqueType> textToPlayTechniqueType {
-        { u"natural", PlayingTechniqueType::Natural },
-        { u"normal", PlayingTechniqueType::Natural },
+    static const std::unordered_map<muse::String, PlayingTechniqueType> textToPlayTechniqueType{
+        {u"natural", PlayingTechniqueType::Natural},
+        {u"normal", PlayingTechniqueType::Natural},
 
-        { u"open", PlayingTechniqueType::Open },
-        { u"mute", PlayingTechniqueType::Mute },
+        {u"open", PlayingTechniqueType::Open},
+        {u"mute", PlayingTechniqueType::Mute},
 
-        { u"distortion", PlayingTechniqueType::Distortion },
-        { u"overdriven", PlayingTechniqueType::Overdrive },
-        { u"harmonics", PlayingTechniqueType::Harmonics },
-        { u"jazz", PlayingTechniqueType::JazzTone },
+        {u"distortion", PlayingTechniqueType::Distortion},
+        {u"overdriven", PlayingTechniqueType::Overdrive},
+        {u"harmonics", PlayingTechniqueType::Harmonics},
+        {u"jazz", PlayingTechniqueType::JazzTone},
 
-        { u"arco", PlayingTechniqueType::Natural },
-        { u"pizzicato", PlayingTechniqueType::Pizzicato },
-        { u"tremolo", PlayingTechniqueType::Tremolo },
+        {u"arco", PlayingTechniqueType::Natural},
+        {u"pizzicato", PlayingTechniqueType::Pizzicato},
+        {u"tremolo", PlayingTechniqueType::Tremolo},
     };
 
-    std::map<StaffTextBase*, PlayingTechniqueType> oldPlayTechniquesAndNewTypes;
+    std::map<StaffTextBase *, PlayingTechniqueType> oldPlayTechniquesAndNewTypes;
 
-    for (Measure* measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) {
-        for (Segment* segment = measure->first(); segment; segment = segment->next()) {
-            std::vector<EngravingItem*> annotations = segment->annotations();
+    for (Measure *measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) {
+        for (Segment *segment = measure->first(); segment; segment = segment->next()) {
+            std::vector<EngravingItem *> annotations = segment->annotations();
 
-            for (EngravingItem* annotation : annotations) {
+            for (EngravingItem *annotation : annotations) {
                 if (!annotation || !annotation->isStaffTextBase()) {
                     continue;
                 }
 
-                StaffTextBase* text = toStaffTextBase(annotation);
-                PlayingTechniqueType type
-                    = muse::value(textToPlayTechniqueType, text->plainText().toLower(), PlayingTechniqueType::Undefined);
+                StaffTextBase *text = toStaffTextBase(annotation);
+                PlayingTechniqueType type =
+                    muse::value(textToPlayTechniqueType, text->plainText().toLower(), PlayingTechniqueType::Undefined);
 
                 if (type == PlayingTechniqueType::Undefined) {
                     muse::String channelName = text->channelName(0).toLower();
@@ -248,11 +244,11 @@ void CompatUtils::replaceStaffTextWithPlayTechniqueAnnotation(MasterScore* score
                 }
 
                 oldPlayTechniquesAndNewTypes.emplace(text, type);
-                LinkedObjects* links = text->links();
+                LinkedObjects *links = text->links();
                 if (!links || links->empty()) {
                     continue;
                 }
-                for (EngravingObject* linked : *links) {
+                for (EngravingObject *linked : *links) {
                     if (linked != text) {
                         oldPlayTechniquesAndNewTypes.emplace(toStaffTextBase(linked), type);
                     }
@@ -261,16 +257,16 @@ void CompatUtils::replaceStaffTextWithPlayTechniqueAnnotation(MasterScore* score
         }
     }
 
-    for (auto& pair : oldPlayTechniquesAndNewTypes) {
-        StaffTextBase* oldPlayTech = pair.first;
+    for (auto &pair : oldPlayTechniquesAndNewTypes) {
+        StaffTextBase *oldPlayTech = pair.first;
         PlayingTechniqueType type = pair.second;
-        Segment* parentSegment = oldPlayTech->segment();
+        Segment *parentSegment = oldPlayTech->segment();
 
-        PlayTechAnnotation* newPlayTech = Factory::createPlayTechAnnotation(parentSegment, type, oldPlayTech->textStyleType());
+        PlayTechAnnotation *newPlayTech = Factory::createPlayTechAnnotation(parentSegment, type, oldPlayTech->textStyleType());
         newPlayTech->setXmlText(oldPlayTech->xmlText());
         newPlayTech->setTrack(oldPlayTech->track());
 
-        LinkedObjects* links = oldPlayTech->links();
+        LinkedObjects *links = oldPlayTech->links();
         newPlayTech->setLinks(links);
         if (links) {
             links->push_back(newPlayTech);
@@ -282,19 +278,18 @@ void CompatUtils::replaceStaffTextWithPlayTechniqueAnnotation(MasterScore* score
     }
 }
 
-void CompatUtils::assignInitialPartToExcerpts(const std::vector<Excerpt*>& excerpts)
-{
+void CompatUtils::assignInitialPartToExcerpts(const std::vector<Excerpt *> &excerpts) {
     TRACEFUNC;
 
     std::set<ID> assignedPartIdSet;
 
-    auto assignInitialPartId = [&assignedPartIdSet](Excerpt* excerpt, const ID& initialPartId) {
+    auto assignInitialPartId = [&assignedPartIdSet](Excerpt *excerpt, const ID &initialPartId) {
         excerpt->setInitialPartId(initialPartId);
         assignedPartIdSet.insert(initialPartId);
     };
 
-    for (Excerpt* excerpt : excerpts) {
-        for (const Part* part : excerpt->excerptScore()->parts()) {
+    for (Excerpt *excerpt : excerpts) {
+        for (const Part *part : excerpt->excerptScore()->parts()) {
             if (excerpt->name() == part->partName()) {
                 assignInitialPartId(excerpt, part->id());
                 break;
@@ -302,12 +297,12 @@ void CompatUtils::assignInitialPartToExcerpts(const std::vector<Excerpt*>& excer
         }
     }
 
-    for (Excerpt* excerpt : excerpts) {
+    for (Excerpt *excerpt : excerpts) {
         if (excerpt->initialPartId().isValid()) {
             continue;
         }
 
-        for (Part* part : excerpt->excerptScore()->parts()) {
+        for (Part *part : excerpt->excerptScore()->parts()) {
             if (muse::contains(assignedPartIdSet, part->id())) {
                 continue;
             }
@@ -320,30 +315,29 @@ void CompatUtils::assignInitialPartToExcerpts(const std::vector<Excerpt*>& excer
     }
 }
 
-void CompatUtils::replaceOldWithNewOrnaments(MasterScore* score)
-{
-    std::set<Articulation*> oldOrnaments;     // ornaments used to be articulations
+void CompatUtils::replaceOldWithNewOrnaments(MasterScore *score) {
+    std::set<Articulation *> oldOrnaments; // ornaments used to be articulations
 
-    for (Measure* meas = score->firstMeasure(); meas; meas = meas->nextMeasure()) {
-        for (Segment& seg : meas->segments()) {
+    for (Measure *meas = score->firstMeasure(); meas; meas = meas->nextMeasure()) {
+        for (Segment &seg : meas->segments()) {
             if (!seg.isChordRestType()) {
                 continue;
             }
-            for (EngravingItem* item : seg.elist()) {
+            for (EngravingItem *item : seg.elist()) {
                 if (!item || !item->isChord()) {
                     continue;
                 }
-                for (Articulation* articulation : toChord(item)->articulations()) {
+                for (Articulation *articulation : toChord(item)->articulations()) {
                     if (articulation->isOrnament()) {
                         continue;
                     }
                     if (ORNAMENT_IDS.find(articulation->symId()) != ORNAMENT_IDS.end()) {
                         oldOrnaments.insert(articulation);
-                        LinkedObjects* links = articulation->links();
+                        LinkedObjects *links = articulation->links();
                         if (!links || links->empty()) {
                             continue;
                         }
-                        for (EngravingObject* linked : *links) {
+                        for (EngravingObject *linked : *links) {
                             if (linked != articulation) {
                                 oldOrnaments.insert(toArticulation(linked));
                             }
@@ -354,10 +348,10 @@ void CompatUtils::replaceOldWithNewOrnaments(MasterScore* score)
         }
     }
 
-    for (Articulation* oldOrnament : oldOrnaments) {
-        Chord* parentChord = toChord(oldOrnament->chordRest());
+    for (Articulation *oldOrnament : oldOrnaments) {
+        Chord *parentChord = toChord(oldOrnament->chordRest());
 
-        Ornament* newOrnament = Factory::createOrnament(parentChord);
+        Ornament *newOrnament = Factory::createOrnament(parentChord);
         newOrnament->setTrack(oldOrnament->track());
         newOrnament->setSymId(oldOrnament->symId());
         newOrnament->setPos(oldOrnament->pos());
@@ -366,7 +360,7 @@ void CompatUtils::replaceOldWithNewOrnaments(MasterScore* score)
         newOrnament->setAutoplace(oldOrnament->autoplace());
         newOrnament->setPlayArticulation(oldOrnament->playArticulation());
 
-        LinkedObjects* links = oldOrnament->links();
+        LinkedObjects *links = oldOrnament->links();
         newOrnament->setLinks(links);
         if (links) {
             links->push_back(newOrnament);
@@ -377,20 +371,19 @@ void CompatUtils::replaceOldWithNewOrnaments(MasterScore* score)
     }
 }
 
-void CompatUtils::replaceOldWithNewExpressions(MasterScore* score)
-{
-    std::set<StaffText*> oldExpressions; // Expressions used to be staff text
+void CompatUtils::replaceOldWithNewExpressions(MasterScore *score) {
+    std::set<StaffText *> oldExpressions; // Expressions used to be staff text
 
-    for (Measure* measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) {
-        for (Segment& seg : measure->segments()) {
-            for (EngravingItem* item : seg.annotations()) {
+    for (Measure *measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) {
+        for (Segment &seg : measure->segments()) {
+            for (EngravingItem *item : seg.annotations()) {
                 if (item && item->isStaffText() && toStaffText(item)->textStyleType() == TextStyleType::EXPRESSION) {
                     oldExpressions.insert(toStaffText(item));
-                    LinkedObjects* links = item->links();
+                    LinkedObjects *links = item->links();
                     if (!links || links->empty()) {
                         continue;
                     }
-                    for (EngravingObject* linkedItem : *links) {
+                    for (EngravingObject *linkedItem : *links) {
                         if (linkedItem != item) {
                             oldExpressions.insert(toStaffText(linkedItem));
                         }
@@ -400,15 +393,15 @@ void CompatUtils::replaceOldWithNewExpressions(MasterScore* score)
         }
     }
 
-    for (StaffText* oldExpression : oldExpressions) {
-        Segment* parentSegment = oldExpression->segment();
+    for (StaffText *oldExpression : oldExpressions) {
+        Segment *parentSegment = oldExpression->segment();
 
-        Expression* newExpression = Factory::createExpression(parentSegment);
+        Expression *newExpression = Factory::createExpression(parentSegment);
         newExpression->setTrack(oldExpression->track());
         newExpression->setXmlText(oldExpression->xmlText());
         newExpression->mapPropertiesFromOldExpressions(oldExpression);
 
-        LinkedObjects* links = oldExpression->links();
+        LinkedObjects *links = oldExpression->links();
         newExpression->setLinks(links);
         if (links) {
             links->push_back(newExpression);
@@ -420,22 +413,21 @@ void CompatUtils::replaceOldWithNewExpressions(MasterScore* score)
     }
 }
 
-void CompatUtils::reconstructTypeOfCustomDynamics(MasterScore* score)
-{
+void CompatUtils::reconstructTypeOfCustomDynamics(MasterScore *score) {
     // Before version 4.1, Dynamics containing custom text were saved as type "other"
     // We check the string to see if we can reconstruct their true type.
-    std::set<Dynamic*> otherTypeDynamic;
+    std::set<Dynamic *> otherTypeDynamic;
 
-    for (Measure* measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) {
-        for (Segment& seg : measure->segments()) {
-            for (EngravingItem* item : seg.annotations()) {
+    for (Measure *measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) {
+        for (Segment &seg : measure->segments()) {
+            for (EngravingItem *item : seg.annotations()) {
                 if (item && item->isDynamic() && toDynamic(item)->dynamicType() == DynamicType::OTHER) {
                     otherTypeDynamic.insert(toDynamic(item));
-                    LinkedObjects* links = item->links();
+                    LinkedObjects *links = item->links();
                     if (!links || links->empty()) {
                         continue;
                     }
-                    for (EngravingObject* linkedItem : *links) {
+                    for (EngravingObject *linkedItem : *links) {
                         if (linkedItem != item) {
                             otherTypeDynamic.insert(toDynamic(linkedItem));
                         }
@@ -445,30 +437,29 @@ void CompatUtils::reconstructTypeOfCustomDynamics(MasterScore* score)
         }
     }
 
-    for (Dynamic* dynamic : otherTypeDynamic) {
+    for (Dynamic *dynamic : otherTypeDynamic) {
         DynamicType dynType = reconstructDynamicTypeFromString(dynamic);
         dynamic->setDynamicType(dynType);
     }
 }
 
-void CompatUtils::splitArticulations(MasterScore* masterScore)
-{
-    std::set<Articulation*> toRemove;
-    for (Measure* meas = masterScore->firstMeasure(); meas; meas = meas->nextMeasure()) {
-        for (Segment& seg : meas->segments()) {
+void CompatUtils::splitArticulations(MasterScore *masterScore) {
+    std::set<Articulation *> toRemove;
+    for (Measure *meas = masterScore->firstMeasure(); meas; meas = meas->nextMeasure()) {
+        for (Segment &seg : meas->segments()) {
             if (!seg.isChordRestType()) {
                 continue;
             }
-            for (EngravingItem* item : seg.elist()) {
+            for (EngravingItem *item : seg.elist()) {
                 if (!item || !item->isChord()) {
                     continue;
                 }
-                Chord* chord = toChord(item);
-                for (Articulation* a : chord->articulations()) {
+                Chord *chord = toChord(item);
+                for (Articulation *a : chord->articulations()) {
                     if (a->isLinked()) {
                         continue; // only worry about main artics, links will be done later
                     }
-                    std::set<SymId> ids = mu::engraving::splitArticulations({ a->symId() });
+                    std::set<SymId> ids = mu::engraving::splitArticulations({a->symId()});
                     if (ids.size() <= 1) {
                         continue;
                     }
@@ -478,11 +469,11 @@ void CompatUtils::splitArticulations(MasterScore* masterScore)
         }
     }
     // separate into individual articulations
-    for (Articulation* combinedArtic : toRemove) {
-        auto components = mu::engraving::splitArticulations({ combinedArtic->symId() });
-        Chord* parentChord = toChord(combinedArtic->chordRest());
+    for (Articulation *combinedArtic : toRemove) {
+        auto components = mu::engraving::splitArticulations({combinedArtic->symId()});
+        Chord *parentChord = toChord(combinedArtic->chordRest());
         for (SymId id : components) {
-            Articulation* newArtic = Factory::createArticulation(parentChord);
+            Articulation *newArtic = Factory::createArticulation(parentChord);
             newArtic->setSymId(id);
             if (parentChord->hasArticulation(newArtic)) {
                 delete newArtic;
@@ -496,65 +487,60 @@ void CompatUtils::splitArticulations(MasterScore* masterScore)
             newArtic->setPlayArticulation(combinedArtic->playArticulation());
             newArtic->setVisible(combinedArtic->visible());
             newArtic->setOrnamentStyle(combinedArtic->ornamentStyle());
-            LinkedObjects* links = new LinkedObjects();
+            LinkedObjects *links = new LinkedObjects();
             links->push_back(newArtic);
             newArtic->setLinks(links);
             parentChord->add(newArtic);
 
             // newArtic is the main articulation
-            LinkedObjects* oldLinks = combinedArtic->links();
+            LinkedObjects *oldLinks = combinedArtic->links();
             if (!oldLinks || oldLinks->empty()) {
                 continue;
             }
-            for (EngravingObject* linkedItem : *oldLinks) {
-                IF_ASSERT_FAILED(linkedItem && linkedItem->isArticulation()) {
-                    continue;
-                }
+            for (EngravingObject *linkedItem : *oldLinks) {
+                IF_ASSERT_FAILED(linkedItem && linkedItem->isArticulation()) { continue; }
                 if (linkedItem == combinedArtic) {
                     continue;
                 }
-                Articulation* oldArtic = toArticulation(linkedItem);
-                Chord* oldParent = toChord(oldArtic->chordRest());
+                Articulation *oldArtic = toArticulation(linkedItem);
+                Chord *oldParent = toChord(oldArtic->chordRest());
                 oldParent->add(newArtic->linkedClone());
             }
         }
     }
     // finally, remove the combined articulations
-    for (Articulation* combinedArtic : toRemove) {
-        LinkedObjects* links = combinedArtic->links();
+    for (Articulation *combinedArtic : toRemove) {
+        LinkedObjects *links = combinedArtic->links();
         if (!links || links->empty()) {
-            Chord* parentChord = toChord(combinedArtic->chordRest());
+            Chord *parentChord = toChord(combinedArtic->chordRest());
             parentChord->remove(combinedArtic);
             delete combinedArtic;
             continue;
         }
-        std::set<Articulation*> removeLinks;
+        std::set<Articulation *> removeLinks;
         for (auto linked : *links) {
-            IF_ASSERT_FAILED(linked && linked->isArticulation()) {
-                continue;
-            }
+            IF_ASSERT_FAILED(linked && linked->isArticulation()) { continue; }
             removeLinks.insert(toArticulation(linked));
         }
-        for (Articulation* linkedArtic : removeLinks) {
+        for (Articulation *linkedArtic : removeLinks) {
             if (linkedArtic != combinedArtic) {
-                Chord* linkedParent = toChord(linkedArtic->chordRest());
+                Chord *linkedParent = toChord(linkedArtic->chordRest());
                 linkedParent->remove(linkedArtic);
                 delete linkedArtic;
             }
         }
-        Chord* parentChord = toChord(combinedArtic->chordRest());
+        Chord *parentChord = toChord(combinedArtic->chordRest());
         parentChord->remove(combinedArtic);
         delete combinedArtic;
     }
 }
 
-DynamicType CompatUtils::reconstructDynamicTypeFromString(Dynamic* dynamic)
-{
+DynamicType CompatUtils::reconstructDynamicTypeFromString(Dynamic *dynamic) {
     static std::vector<Dyn> sortedDynList; // copy of dynList sorted by string length
 
     if (sortedDynList.empty()) {
         sortedDynList = Dynamic::dynamicList();
-        std::sort(sortedDynList.begin(), sortedDynList.end(), [](const Dyn& a, const Dyn& b) {
+        std::sort(sortedDynList.begin(), sortedDynList.end(), [](const Dyn &a, const Dyn &b) {
             String stringA = String::fromUtf8(a.text);
             String stringB = String::fromUtf8(b.text);
             return stringA.size() > stringB.size();
@@ -573,26 +559,22 @@ DynamicType CompatUtils::reconstructDynamicTypeFromString(Dynamic* dynamic)
     return DynamicType::OTHER;
 }
 
-ArticulationAnchor CompatUtils::translateToNewArticulationAnchor(int anchor)
-{
+ArticulationAnchor CompatUtils::translateToNewArticulationAnchor(int anchor) {
     switch (anchor) {
-    case 0: // ArticulationAnchor::TOP_STAFF
-    case 3: // ArticulationAnchor::TOP_CHORD
-        return ArticulationAnchor::TOP;
-        break;
-    case 1: // ArticulationAnchor::BOTTOM_STAFF
-    case 4: // ArticulationAnchor::BOTTOM_CHORD
-        return ArticulationAnchor::BOTTOM;
-        break;
-    case 2: // ArticulationAnchor::CHORD
-    default:
-        return ArticulationAnchor::AUTO;
-        break;
+        case 0: // ArticulationAnchor::TOP_STAFF
+        case 3: // ArticulationAnchor::TOP_CHORD
+            return ArticulationAnchor::TOP;
+            break;
+        case 1: // ArticulationAnchor::BOTTOM_STAFF
+        case 4: // ArticulationAnchor::BOTTOM_CHORD
+            return ArticulationAnchor::BOTTOM;
+            break;
+        case 2: // ArticulationAnchor::CHORD
+        default: return ArticulationAnchor::AUTO; break;
     }
 }
 
-double CompatUtils::convertChordExtModUnits(double val)
-{
+double CompatUtils::convertChordExtModUnits(double val) {
     // Pre 4.6 this value was in 1/5 of a spatium
     // After 4.6 this is in % of root cap height
     // The best we can do for conversion of old files is to assume a default spatium of 1.75mm and a default font size of 10pt
@@ -600,24 +582,23 @@ double CompatUtils::convertChordExtModUnits(double val)
     const double DEFAULT_SPATIUM = StyleDef::styleValues[static_cast<size_t>(Sid::spatium)].defaultValue.toDouble();
     muse::draw::Font f(u"Edwin", muse::draw::Font::Type::Text);
     f.setPointSizeF(10);
-    const double DEFAULT_FONT_CAP_HEIGHT = muse::draw::FontMetrics::capHeight(f);   // 121
+    const double DEFAULT_FONT_CAP_HEIGHT = muse::draw::FontMetrics::capHeight(f); // 121
 
     return ((val / 5) * DEFAULT_SPATIUM) / DEFAULT_FONT_CAP_HEIGHT;
 }
 
-void CompatUtils::resetRestVerticalOffset(MasterScore* masterScore)
-{
-    for (Score* score : masterScore->scoreList()) {
-        for (Measure* measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) {
-            for (Segment& segment : measure->segments()) {
+void CompatUtils::resetRestVerticalOffset(MasterScore *masterScore) {
+    for (Score *score : masterScore->scoreList()) {
+        for (Measure *measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) {
+            for (Segment &segment : measure->segments()) {
                 if (!segment.isChordRestType()) {
                     continue;
                 }
-                for (EngravingItem* item : segment.elist()) {
+                for (EngravingItem *item : segment.elist()) {
                     if (!item || !item->isRest()) {
                         continue;
                     }
-                    Rest* rest = toRest(item);
+                    Rest *rest = toRest(item);
                     if (rest->offset().y() != 0) {
                         PointF newOffset = PointF(rest->offset().x(), 0.0);
                         rest->setProperty(Pid::OFFSET, newOffset);
@@ -628,20 +609,19 @@ void CompatUtils::resetRestVerticalOffset(MasterScore* masterScore)
     }
 }
 
-void CompatUtils::resetArticulationOffsets(MasterScore* masterScore)
-{
-    for (Score* score : masterScore->scoreList()) {
-        for (Measure* measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) {
-            for (Segment& segment : measure->segments()) {
+void CompatUtils::resetArticulationOffsets(MasterScore *masterScore) {
+    for (Score *score : masterScore->scoreList()) {
+        for (Measure *measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) {
+            for (Segment &segment : measure->segments()) {
                 if (!segment.isChordRestType()) {
                     continue;
                 }
-                for (EngravingItem* item : segment.elist()) {
+                for (EngravingItem *item : segment.elist()) {
                     if (!item || !item->isChord()) {
                         continue;
                     }
-                    Chord* chord = toChord(item);
-                    for (Articulation* artic : chord->articulations()) {
+                    Chord *chord = toChord(item);
+                    for (Articulation *artic : chord->articulations()) {
                         if (!artic) {
                             continue;
                         }
@@ -653,21 +633,20 @@ void CompatUtils::resetArticulationOffsets(MasterScore* masterScore)
     }
 }
 
-void CompatUtils::resetStemLengthsForTwoNoteTrems(MasterScore* masterScore)
-{
-    for (Score* score : masterScore->scoreList()) {
-        for (Measure* measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) {
-            for (Segment& segment : measure->segments()) {
+void CompatUtils::resetStemLengthsForTwoNoteTrems(MasterScore *masterScore) {
+    for (Score *score : masterScore->scoreList()) {
+        for (Measure *measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) {
+            for (Segment &segment : measure->segments()) {
                 if (!segment.isChordRestType()) {
                     continue;
                 }
-                for (EngravingItem* item : segment.elist()) {
+                for (EngravingItem *item : segment.elist()) {
                     if (!item || !item->isChord()) {
                         continue;
                     }
-                    Chord* chord = toChord(item);
-                    TremoloTwoChord* trem = chord->tremoloTwoChord();
-                    Stem* stem = chord->stem();
+                    Chord *chord = toChord(item);
+                    TremoloTwoChord *trem = chord->tremoloTwoChord();
+                    Stem *stem = chord->stem();
                     if (stem && trem) {
                         if (!stem->userLength().isZero()) {
                             stem->setUserLength(0_sp);
@@ -679,20 +658,19 @@ void CompatUtils::resetStemLengthsForTwoNoteTrems(MasterScore* masterScore)
     }
 }
 
-void CompatUtils::replaceStaffTextWithCapo(MasterScore* score)
-{
+void CompatUtils::replaceStaffTextWithCapo(MasterScore *score) {
     TRACEFUNC;
 
-    std::set<StaffTextBase*> oldCapoSet;
+    std::set<StaffTextBase *> oldCapoSet;
 
-    for (Measure* measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) {
-        for (Segment* segment = measure->first(); segment; segment = segment->next()) {
-            for (EngravingItem* annotation : segment->annotations()) {
+    for (Measure *measure = score->firstMeasure(); measure; measure = measure->nextMeasure()) {
+        for (Segment *segment = measure->first(); segment; segment = segment->next()) {
+            for (EngravingItem *annotation : segment->annotations()) {
                 if (!annotation || !annotation->isStaffTextBase()) {
                     continue;
                 }
 
-                StaffTextBase* text = toStaffTextBase(annotation);
+                StaffTextBase *text = toStaffTextBase(annotation);
 
                 if (text->capo() > 0) {
                     oldCapoSet.insert(text);
@@ -700,12 +678,12 @@ void CompatUtils::replaceStaffTextWithCapo(MasterScore* score)
                     continue;
                 }
 
-                LinkedObjects* links = text->links();
+                LinkedObjects *links = text->links();
                 if (!links || links->empty()) {
                     continue;
                 }
 
-                for (EngravingObject* linked : *links) {
+                for (EngravingObject *linked : *links) {
                     if (linked != text && linked && linked->isStaffTextBase()) {
                         oldCapoSet.insert(toStaffTextBase(linked));
                     }
@@ -714,9 +692,9 @@ void CompatUtils::replaceStaffTextWithCapo(MasterScore* score)
         }
     }
 
-    for (StaffTextBase* oldCapo : oldCapoSet) {
-        Segment* parentSegment = oldCapo->segment();
-        Capo* newCapo = Factory::createCapo(parentSegment);
+    for (StaffTextBase *oldCapo : oldCapoSet) {
+        Segment *parentSegment = oldCapo->segment();
+        Capo *newCapo = Factory::createCapo(parentSegment);
 
         int capoFretPosition = oldCapo->capo() - 1;
 
@@ -728,7 +706,7 @@ void CompatUtils::replaceStaffTextWithCapo(MasterScore* score)
         newCapo->setParams(params);
         newCapo->setProperty(Pid::PLACEMENT, oldCapo->placement());
 
-        LinkedObjects* links = oldCapo->links();
+        LinkedObjects *links = oldCapo->links();
         newCapo->setLinks(links);
         if (links) {
             links->push_back(newCapo);
@@ -741,16 +719,15 @@ void CompatUtils::replaceStaffTextWithCapo(MasterScore* score)
     }
 }
 
-void CompatUtils::addMissingInitKeyForTransposingInstrument(MasterScore* score)
-{
+void CompatUtils::addMissingInitKeyForTransposingInstrument(MasterScore *score) {
     TRACEFUNC;
 
-    for (Part* part : score->parts()) {
-        Instrument* instrument = part->instrument();
+    for (Part *part : score->parts()) {
+        Instrument *instrument = part->instrument();
         Interval v = instrument->transpose();
         if (v.chromatic % 12) {
-            for (Staff* staff : part->staves()) {
-                KeyList* keys = staff->keyList();
+            for (Staff *staff : part->staves()) {
+                KeyList *keys = staff->keyList();
                 if (keys->find(0) == keys->end()) {
                     KeySigEvent kse;
                     Key key = Key::C;
@@ -760,18 +737,17 @@ void CompatUtils::addMissingInitKeyForTransposingInstrument(MasterScore* score)
                     }
                     kse.setConcertKey(cKey);
                     kse.setKey(key);
-                    EditKeySig::undoChangeKeySig(score->transactionManager()->currentOrDummyTransaction(), score, staff,
-                                                 Fraction(0, 1), kse);
+                    EditKeySig::undoChangeKeySig(score->transactionManager()->currentOrDummyTransaction(), score, staff, Fraction(0, 1),
+                                                 kse);
                 }
             }
         }
     }
 }
 
-void CompatUtils::resetFramesExclusionFromParts(MasterScore* masterScore)
-{
-    for (Score* score : masterScore->scoreList()) {
-        for (MeasureBase* measureBase = score->first(); measureBase; measureBase = measureBase->next()) {
+void CompatUtils::resetFramesExclusionFromParts(MasterScore *masterScore) {
+    for (Score *score : masterScore->scoreList()) {
+        for (MeasureBase *measureBase = score->first(); measureBase; measureBase = measureBase->next()) {
             if (!measureBase->isMeasure()) {
                 measureBase->setExcludeFromOtherParts(false);
             }
@@ -779,15 +755,14 @@ void CompatUtils::resetFramesExclusionFromParts(MasterScore* masterScore)
     }
 }
 
-void CompatUtils::mapHeaderFooterStyles(MasterScore* score)
-{
+void CompatUtils::mapHeaderFooterStyles(MasterScore *score) {
     // Copyright and page numbers used header/footer styling before 4.4 - after 4.4 these have their own styles. To ensure nothing
     // changes visually when loading a pre-4.4 score for the first time, we must search the header/footer strings for copyright/page
     // number macros and set the "defaults" for copyright/page number styles based on where the macros were inserted...
-    const auto doMap = [score](const TextStyleType type, const std::vector<Sid>& headerFooterStringSids) {
-        const TextStyle* headerFooterTextStyle = textStyle(type);
-        const TextStyle* copyrightTextStyle = textStyle(TextStyleType::COPYRIGHT);
-        const TextStyle* pageNumberTextStyle = textStyle(TextStyleType::PAGE_NUMBER);
+    const auto doMap = [score](const TextStyleType type, const std::vector<Sid> &headerFooterStringSids) {
+        const TextStyle *headerFooterTextStyle = textStyle(type);
+        const TextStyle *copyrightTextStyle = textStyle(TextStyleType::COPYRIGHT);
+        const TextStyle *pageNumberTextStyle = textStyle(TextStyleType::PAGE_NUMBER);
 
         //! NOTE: Keep in sync with Page::replaceTextMacros
         const std::wregex copyrightSearch(LR"(\$[cC])");
@@ -818,23 +793,20 @@ void CompatUtils::mapHeaderFooterStyles(MasterScore* score)
         }
     };
 
-    doMap(TextStyleType::HEADER, { Sid::oddHeaderL,  Sid::oddHeaderC,  Sid::oddHeaderR,
-                                   Sid::evenHeaderL, Sid::evenHeaderC, Sid::evenHeaderR });
-    doMap(TextStyleType::FOOTER, { Sid::oddFooterL,  Sid::oddFooterC,  Sid::oddFooterR,
-                                   Sid::evenFooterL, Sid::evenFooterC, Sid::evenFooterR });
+    doMap(TextStyleType::HEADER, {Sid::oddHeaderL, Sid::oddHeaderC, Sid::oddHeaderR, Sid::evenHeaderL, Sid::evenHeaderC, Sid::evenHeaderR});
+    doMap(TextStyleType::FOOTER, {Sid::oddFooterL, Sid::oddFooterC, Sid::oddFooterR, Sid::evenFooterL, Sid::evenFooterC, Sid::evenFooterR});
 }
 
-NoteLine* CompatUtils::createNoteLineFromTextLine(TextLine* textLine)
-{
-    IF_ASSERT_FAILED((textLine->startElement() && textLine->startElement()->isNote())
-                     && (textLine->endElement() && textLine->endElement()->isNote())) {
+NoteLine *CompatUtils::createNoteLineFromTextLine(TextLine *textLine) {
+    IF_ASSERT_FAILED((textLine->startElement() && textLine->startElement()->isNote()) &&
+                     (textLine->endElement() && textLine->endElement()->isNote())) {
         LOGW("Skipping textline with non note endpoints");
         return nullptr;
     }
-    Note* startNote = toNote(textLine->startElement());
-    Note* endNote = toNote(textLine->endElement());
+    Note *startNote = toNote(textLine->startElement());
+    Note *endNote = toNote(textLine->endElement());
 
-    NoteLine* noteLine = Factory::createNoteLine(startNote);
+    NoteLine *noteLine = Factory::createNoteLine(startNote);
     noteLine->setStartElement(startNote);
     noteLine->setTrack(textLine->track());
     noteLine->setTick(textLine->tick());
@@ -849,15 +821,15 @@ NoteLine* CompatUtils::createNoteLineFromTextLine(TextLine* textLine)
         noteLine->setProperty(pid, textLine->getProperty(pid));
     }
 
-    for (const SpannerSegment* oldSeg : textLine->spannerSegments()) {
-        LineSegment* newSeg = noteLine->createLineSegment();
+    for (const SpannerSegment *oldSeg : textLine->spannerSegments()) {
+        LineSegment *newSeg = noteLine->createLineSegment();
         newSeg->setOffset(oldSeg->offset());
         newSeg->setUserOff2(oldSeg->userOff2());
 
         noteLine->add(newSeg);
     }
 
-    LinkedObjects* links = textLine->links();
+    LinkedObjects *links = textLine->links();
     noteLine->setLinks(links);
     if (links) {
         links->push_back(noteLine);
@@ -866,35 +838,34 @@ NoteLine* CompatUtils::createNoteLineFromTextLine(TextLine* textLine)
     return noteLine;
 }
 
-void CompatUtils::convertTextLineToNoteAnchoredLine(MasterScore* masterScore)
-{
-    std::set<TextLine*> oldLines; // NoteLines used to be TextLines
+void CompatUtils::convertTextLineToNoteAnchoredLine(MasterScore *masterScore) {
+    std::set<TextLine *> oldLines; // NoteLines used to be TextLines
 
-    for (Measure* measure = masterScore->firstMeasure(); measure; measure = measure->nextMeasure()) {
-        for (Segment& segment : measure->segments()) {
+    for (Measure *measure = masterScore->firstMeasure(); measure; measure = measure->nextMeasure()) {
+        for (Segment &segment : measure->segments()) {
             if (!segment.isChordRestType()) {
                 continue;
             }
             for (track_idx_t track = 0; track <= masterScore->ntracks(); track++) {
-                EngravingItem* el = segment.element(track);
+                EngravingItem *el = segment.element(track);
                 if (!el || !el->isChord()) {
                     continue;
                 }
-                Chord* chord = toChord(el);
-                for (Note* note : chord->notes()) {
-                    for (Spanner* spanner : note->spannerFor()) {
+                Chord *chord = toChord(el);
+                for (Note *note : chord->notes()) {
+                    for (Spanner *spanner : note->spannerFor()) {
                         if (!spanner->isTextLine()) {
                             continue;
                         }
 
                         oldLines.insert(toTextLine(spanner));
 
-                        LinkedObjects* links = spanner->links();
+                        LinkedObjects *links = spanner->links();
                         if (!links || links->empty()) {
                             continue;
                         }
 
-                        for (EngravingObject* linked : *links) {
+                        for (EngravingObject *linked : *links) {
                             if (linked != spanner && linked && linked->isTextLine()) {
                                 oldLines.insert(toTextLine(linked));
                             }
@@ -905,14 +876,14 @@ void CompatUtils::convertTextLineToNoteAnchoredLine(MasterScore* masterScore)
         }
     }
 
-    for (TextLine* oldLine : oldLines) {
-        NoteLine* newLine = createNoteLineFromTextLine(oldLine);
+    for (TextLine *oldLine : oldLines) {
+        NoteLine *newLine = createNoteLineFromTextLine(oldLine);
         if (!newLine) {
             oldLine->ownershipParentItem()->remove(oldLine);
             delete oldLine;
             continue;
         }
-        EngravingItem* parent = newLine->ownershipParentItem();
+        EngravingItem *parent = newLine->ownershipParentItem();
 
         parent->remove(oldLine);
         parent->add(newLine);
@@ -921,32 +892,31 @@ void CompatUtils::convertTextLineToNoteAnchoredLine(MasterScore* masterScore)
     }
 }
 
-void CompatUtils::convertLaissezVibArticToTie(MasterScore* masterScore)
-{
-    std::set<Articulation*> oldArtics; // NoteLines used to be TextLines
+void CompatUtils::convertLaissezVibArticToTie(MasterScore *masterScore) {
+    std::set<Articulation *> oldArtics; // NoteLines used to be TextLines
 
-    for (Measure* meas = masterScore->firstMeasure(); meas; meas = meas->nextMeasure()) {
-        for (Segment& seg : meas->segments()) {
+    for (Measure *meas = masterScore->firstMeasure(); meas; meas = meas->nextMeasure()) {
+        for (Segment &seg : meas->segments()) {
             if (!seg.isChordRestType()) {
                 continue;
             }
-            for (EngravingItem* item : seg.elist()) {
+            for (EngravingItem *item : seg.elist()) {
                 if (!item || !item->isChord()) {
                     continue;
                 }
-                Chord* chord = toChord(item);
-                for (Articulation* a : chord->articulations()) {
+                Chord *chord = toChord(item);
+                for (Articulation *a : chord->articulations()) {
                     if (!a->isLaissezVib()) {
                         continue;
                     }
                     oldArtics.insert(a);
 
-                    LinkedObjects* links = a->links();
+                    LinkedObjects *links = a->links();
                     if (!links || links->empty()) {
                         continue;
                     }
 
-                    for (EngravingObject* linked : *links) {
+                    for (EngravingObject *linked : *links) {
                         if (linked != a && linked && linked->isLaissezVib()) {
                             oldArtics.insert(toArticulation(linked));
                         }
@@ -956,36 +926,31 @@ void CompatUtils::convertLaissezVibArticToTie(MasterScore* masterScore)
         }
     }
 
-    for (Articulation* oldArtic : oldArtics) {
-        Chord* parentChord = toChord(oldArtic->chordRest());
-        Note* parentNote = oldArtic->up() ? parentChord->upNote() : parentChord->downNote();
+    for (Articulation *oldArtic : oldArtics) {
+        Chord *parentChord = toChord(oldArtic->chordRest());
+        Note *parentNote = oldArtic->up() ? parentChord->upNote() : parentChord->downNote();
 
         parentChord->remove(oldArtic);
 
-        LaissezVib* lv = Factory::createLaissezVib(parentNote);
+        LaissezVib *lv = Factory::createLaissezVib(parentNote);
         parentNote->add(lv);
 
         delete oldArtic;
     }
 }
 
-void CompatUtils::setHarmonyRootTpcFromFunction(HarmonyInfo* info, const Harmony* h, const muse::String& s)
-{
+void CompatUtils::setHarmonyRootTpcFromFunction(HarmonyInfo *info, const Harmony *h, const muse::String &s) {
     Key key = Key::INVALID;
-    const Staff* st = h->staff();
+    const Staff *st = h->staff();
     key = st ? st->key(h->tick()) : Key::INVALID;
     info->setRootTpc(function2Tpc(s, key));
 }
 
-Sid CompatUtils::positionStyleFromAlign(Sid align)
-{
-    return muse::value(ALIGN_VALS_TO_CONVERT, align, Sid::NOSTYLE);
-}
+Sid CompatUtils::positionStyleFromAlign(Sid align) { return muse::value(ALIGN_VALS_TO_CONVERT, align, Sid::NOSTYLE); }
 
-void CompatUtils::setPositionStylesFromAlign(MStyle* style, std::vector<Sid> ignoreSids)
-{
+void CompatUtils::setPositionStylesFromAlign(MStyle *style, std::vector<Sid> ignoreSids) {
     // Make sure new position styles are initially the same as align values
-    for (const StyleDef::StyleValue& st : StyleDef::styleValues) {
+    for (const StyleDef::StyleValue &st : StyleDef::styleValues) {
         if (muse::contains(ignoreSids, st.sid)) {
             continue;
         }
@@ -998,8 +963,7 @@ void CompatUtils::setPositionStylesFromAlign(MStyle* style, std::vector<Sid> ign
     }
 }
 
-void CompatUtils::setTextLineTextPositionFromAlign(TextLineBase* tl)
-{
+void CompatUtils::setTextLineTextPositionFromAlign(TextLineBase *tl) {
     tl->setBeginTextPosition(tl->beginTextAlign().horizontal);
     if (tl->beginTextPosition() != tl->propertyDefault(Pid::BEGIN_TEXT_POSITION).value<AlignH>()) {
         tl->setPropertyFlags(Pid::BEGIN_TEXT_POSITION, PropertyFlags::UNSTYLED);
@@ -1014,8 +978,7 @@ void CompatUtils::setTextLineTextPositionFromAlign(TextLineBase* tl)
     }
 }
 
-void CompatUtils::resetHookHeightSign(TextLineBase* tl)
-{
+void CompatUtils::resetHookHeightSign(TextLineBase *tl) {
     if (!tl->placeBelow()) {
         return;
     }
@@ -1030,8 +993,7 @@ void CompatUtils::resetHookHeightSign(TextLineBase* tl)
     }
 }
 
-void CompatUtils::setMusicSymbolSize470(MStyle& style)
-{
+void CompatUtils::setMusicSymbolSize470(MStyle &style) {
     // Music symbols have their own point size in 4.7
     // Initialize this to the text type's default font size
     for (TextStyleType textStyleType : allTextStyles()) {
@@ -1039,7 +1001,7 @@ void CompatUtils::setMusicSymbolSize470(MStyle& style)
             continue;
         }
 
-        const TextStyle* ts = textStyle(textStyleType);
+        const TextStyle *ts = textStyle(textStyleType);
         Sid musicSymbolSizeSid = Sid::NOSTYLE;
         Sid fontSizeSid = Sid::NOSTYLE;
 
@@ -1066,12 +1028,11 @@ void CompatUtils::setMusicSymbolSize470(MStyle& style)
     }
 }
 
-void CompatUtils::doMigrateNoteParens(EngravingItem* item)
-{
+void CompatUtils::doMigrateNoteParens(EngravingItem *item) {
     if (!item->isNote()) {
         return;
     }
-    Note* note = toNote(item);
+    Note *note = toNote(item);
     if (!note->leftParen() && !note->rightParen()) {
         return;
     }
@@ -1084,35 +1045,31 @@ void CompatUtils::doMigrateNoteParens(EngravingItem* item)
         note->remove(note->rightParen());
     }
 
-    Chord* chord = note->chord();
+    Chord *chord = note->chord();
 
-    EditChord::addChordParentheses(chord, { note });
+    EditChord::addChordParentheses(chord, {note});
 }
 
 static constexpr double PRE_470_DPI = 360;
 
-Spatium CompatUtils::convertPre470FrameRadius(double frameRadius)
-{
+Spatium CompatUtils::convertPre470FrameRadius(double frameRadius) {
     // The frame radius used to be expressed in raster units and divided by 2 at drawing. Since 4.7 it is expressed in spatium.
     return Spatium(frameRadius * (DPI / PRE_470_DPI) / DefaultStyle::baseStyle().value(Sid::spatium).toDouble()) / 2;
 }
 
-void CompatUtils::convertPre470ImageSize(Image* image)
-{
+void CompatUtils::convertPre470ImageSize(Image *image) {
     if (image->size().isNull() && image->score()->mscVersion() < 470) {
         image->init();
         image->setSize(image->size() * (DPI / PRE_470_DPI));
     }
 }
 
-PointF CompatUtils::getAdjustedOffset(EngravingItem* item, PointF offset)
-{
+PointF CompatUtils::getAdjustedOffset(EngravingItem *item, PointF offset) {
     PointF defaultOffset = item->defaultPos();
     return offset - defaultOffset;
 }
 
-void CompatUtils::migrateOffset500(EngravingItem* item, PropertyValue& offset)
-{
+void CompatUtils::migrateOffset500(EngravingItem *item, PropertyValue &offset) {
     if (!item->isTextBase() && !item->isSpanner() && !item->isSpannerSegment()) {
         return;
     }
@@ -1126,8 +1083,7 @@ void CompatUtils::migrateOffset500(EngravingItem* item, PropertyValue& offset)
     offset = getAdjustedOffset(item, offset.value<PointF>());
 }
 
-void CompatUtils::migrateOffsetPre302(EngravingItem* item, int mscVersion)
-{
+void CompatUtils::migrateOffsetPre302(EngravingItem *item, int mscVersion) {
     if (mscVersion > 301 || item->offset().isNull()) {
         return;
     }
@@ -1137,18 +1093,17 @@ void CompatUtils::migrateOffsetPre302(EngravingItem* item, int mscVersion)
     item->setProperty(Pid::OFFSET, offset);
 }
 
-static void reregisterInstrumentChanges(Score* score)
-{
+static void reregisterInstrumentChanges(Score *score) {
     /* When reading the <5.0 InstrumentChange MMRest copy, it has overwritten the Part's InstrumentList
      * entry for this segment's tick. Deleting the copies unregistered their Instruments from the
      * InstrumentList. So we need to restore the InstrumentList entries with the originals. */
-    for (MeasureBase* mb = score->first(); mb; mb = mb->next()) {
+    for (MeasureBase *mb = score->first(); mb; mb = mb->next()) {
         if (!mb->isMeasure()) {
             continue;
         }
-        for (Segment& seg : toMeasure(mb)->segments()) {
-            for (EngravingItem* annotation : seg.annotations()) {
-                Instrument* instr = nullptr;
+        for (Segment &seg : toMeasure(mb)->segments()) {
+            for (EngravingItem *annotation : seg.annotations()) {
+                Instrument *instr = nullptr;
                 if (annotation->isInstrumentChange()) {
                     instr = toInstrumentChange(annotation)->instrument();
                 } else if (annotation->isStaffState() && toStaffState(annotation)->staffStateType() == StaffStateType::INSTRUMENT) {
@@ -1162,40 +1117,39 @@ static void reregisterInstrumentChanges(Score* score)
     }
 }
 
-void CompatUtils::removeMMRestElements(MasterScore* masterScore)
-{
+void CompatUtils::removeMMRestElements(MasterScore *masterScore) {
     // <5.0 MMRests had copies of underlying elements. We now move the element when toggling the rests.
     // Remove redundant copies which are written to the file
 
-    for (Score* score : masterScore->scoreList()) {
+    for (Score *score : masterScore->scoreList()) {
         bool removedInstrumentChange = false;
 
-        for (MeasureBase* mb = score->first(); mb; mb = mb->next()) {
+        for (MeasureBase *mb = score->first(); mb; mb = mb->next()) {
             if (!mb->isMeasure()) {
                 continue;
             }
-            Measure* m = toMeasure(mb);
-            Measure* mmrest = m->mmRest();
+            Measure *m = toMeasure(mb);
+            Measure *mmrest = m->mmRest();
 
             if (!mmrest) {
                 continue;
             }
 
             // Remove jumps/markers/layout breaks
-            std::vector<EngravingItem*> measureEls = mmrest->el();
-            for (EngravingItem* el : measureEls) {
+            std::vector<EngravingItem *> measureEls = mmrest->el();
+            for (EngravingItem *el : measureEls) {
                 el->unlink();
                 score->removeElement(el);
                 delete el;
             }
 
             // Remove annotations
-            for (Segment& seg : mmrest->segments()) {
-                std::vector<EngravingItem*> annotations = seg.annotations();
-                for (EngravingItem* annotation : annotations) {
-                    removedInstrumentChange |= annotation->isInstrumentChange()
-                                               || (annotation->isStaffState()
-                                                   && toStaffState(annotation)->staffStateType() == StaffStateType::INSTRUMENT);
+            for (Segment &seg : mmrest->segments()) {
+                std::vector<EngravingItem *> annotations = seg.annotations();
+                for (EngravingItem *annotation : annotations) {
+                    removedInstrumentChange |=
+                        annotation->isInstrumentChange() ||
+                        (annotation->isStaffState() && toStaffState(annotation)->staffStateType() == StaffStateType::INSTRUMENT);
                     annotation->unlink();
                     score->removeElement(annotation);
                     delete annotation;
@@ -1205,7 +1159,7 @@ void CompatUtils::removeMMRestElements(MasterScore* masterScore)
                 }
                 // Remove time sigs, key sigs, clefs, ambitus, breaths, barlines
                 for (staff_idx_t staffIdx = 0; staffIdx < score->nstaves(); ++staffIdx) {
-                    EngravingItem* el = seg.element(staff2track(staffIdx));
+                    EngravingItem *el = seg.element(staff2track(staffIdx));
                     if (!el) {
                         continue;
                     }

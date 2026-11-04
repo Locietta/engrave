@@ -34,48 +34,47 @@ class MasterScore;
 class Score;
 enum class DynamicType : unsigned char;
 enum class SymId;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::compat {
-class CompatUtils
-{
+class CompatUtils {
 public:
-    static void assignInitialPartToExcerpts(const std::vector<Excerpt*>& excerpts);
-    static void doCompatibilityConversions(MasterScore* masterScore);
+    static void assignInitialPartToExcerpts(const std::vector<Excerpt *> &excerpts);
+    static void doCompatibilityConversions(MasterScore *masterScore);
     static ArticulationAnchor translateToNewArticulationAnchor(int anchor);
     static double convertChordExtModUnits(double val);
-    static void setHarmonyRootTpcFromFunction(HarmonyInfo* info, const Harmony* h, const muse::String& s);
+    static void setHarmonyRootTpcFromFunction(HarmonyInfo *info, const Harmony *h, const muse::String &s);
     static const std::set<SymId> ORNAMENT_IDS;
     static const std::map<Sid, Sid> ALIGN_VALS_TO_CONVERT;
-    static void setPositionStylesFromAlign(MStyle* style, std::vector<Sid> ignoreSids = {});
-    static void setTextLineTextPositionFromAlign(TextLineBase* tl);
-    static void resetHookHeightSign(TextLineBase* tl);
-    static void setMusicSymbolSize470(MStyle& style);
+    static void setPositionStylesFromAlign(MStyle *style, std::vector<Sid> ignoreSids = {});
+    static void setTextLineTextPositionFromAlign(TextLineBase *tl);
+    static void resetHookHeightSign(TextLineBase *tl);
+    static void setMusicSymbolSize470(MStyle &style);
     static Spatium convertPre470FrameRadius(double frameRadius);
-    static void convertPre470ImageSize(Image* image);
-    static void doMigrateNoteParens(EngravingItem* item);
-    static PointF getAdjustedOffset(EngravingItem* item, PointF offset);
-    static void migrateOffset500(EngravingItem* item, PropertyValue& offset);
-    static void migrateOffsetPre302(EngravingItem* item, int mscVersion);
+    static void convertPre470ImageSize(Image *image);
+    static void doMigrateNoteParens(EngravingItem *item);
+    static PointF getAdjustedOffset(EngravingItem *item, PointF offset);
+    static void migrateOffset500(EngravingItem *item, PropertyValue &offset);
+    static void migrateOffsetPre302(EngravingItem *item, int mscVersion);
 
 private:
     static Sid positionStyleFromAlign(Sid align);
-    static void replaceStaffTextWithPlayTechniqueAnnotation(MasterScore* score);
-    static void replaceOldWithNewOrnaments(MasterScore* score);
-    static void replaceOldWithNewExpressions(MasterScore* score);
-    static void reconstructTypeOfCustomDynamics(MasterScore* score);
-    static void splitArticulations(MasterScore* score);
-    static DynamicType reconstructDynamicTypeFromString(Dynamic* dynamic);
-    static void resetRestVerticalOffset(MasterScore* masterScore);
-    static void resetArticulationOffsets(MasterScore* masterScore);
-    static void resetStemLengthsForTwoNoteTrems(MasterScore* masterScore);
-    static void replaceStaffTextWithCapo(MasterScore* masterScore);
-    static void addMissingInitKeyForTransposingInstrument(MasterScore* score);
-    static void resetFramesExclusionFromParts(MasterScore* masterScore);
-    static void mapHeaderFooterStyles(MasterScore* masterScore);
-    static NoteLine* createNoteLineFromTextLine(TextLine* textLine);
-    static void convertTextLineToNoteAnchoredLine(MasterScore* masterScore);
-    static void convertLaissezVibArticToTie(MasterScore* masterScore);
-    static void removeMMRestElements(MasterScore* masterScore);
+    static void replaceStaffTextWithPlayTechniqueAnnotation(MasterScore *score);
+    static void replaceOldWithNewOrnaments(MasterScore *score);
+    static void replaceOldWithNewExpressions(MasterScore *score);
+    static void reconstructTypeOfCustomDynamics(MasterScore *score);
+    static void splitArticulations(MasterScore *score);
+    static DynamicType reconstructDynamicTypeFromString(Dynamic *dynamic);
+    static void resetRestVerticalOffset(MasterScore *masterScore);
+    static void resetArticulationOffsets(MasterScore *masterScore);
+    static void resetStemLengthsForTwoNoteTrems(MasterScore *masterScore);
+    static void replaceStaffTextWithCapo(MasterScore *masterScore);
+    static void addMissingInitKeyForTransposingInstrument(MasterScore *score);
+    static void resetFramesExclusionFromParts(MasterScore *masterScore);
+    static void mapHeaderFooterStyles(MasterScore *masterScore);
+    static NoteLine *createNoteLineFromTextLine(TextLine *textLine);
+    static void convertTextLineToNoteAnchoredLine(MasterScore *masterScore);
+    static void convertLaissezVibArticToTie(MasterScore *masterScore);
+    static void removeMMRestElements(MasterScore *masterScore);
 };
-}
+} // namespace mu::engraving::compat

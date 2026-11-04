@@ -23,7 +23,7 @@ enum struct Format {
     Mxl,       // compressed MusicXML
     Midi,      // Standard MIDI File, including karaoke (.kar)
     GuitarPro, // Guitar Pro 1-7 and Power Tab
-    Mnx, // MNX JSON, schema 27; import only (.mnx or recognised JSON content)
+    Mnx,       // MNX JSON, schema 27; import only (.mnx or recognised JSON content)
 };
 
 std::string_view to_string(Format format) noexcept;
@@ -73,16 +73,19 @@ struct ExportOutput {
 // Segment x/y preserve the legacy truncation to integer units. IDs are local to
 // this result, unrelated to ElementId. Page indices are zero-based.
 enum struct PositionKind { Measure, Segment };
+
 struct PositionElement {
     std::int32_t id = 0;
     double x = 0, y = 0, sx = 0, sy = 0;
     std::int32_t page = 0;
 };
+
 struct PositionEvent {
     std::int32_t elid = 0;
     // Repeat-expanded playback time in milliseconds, rounded as the legacy writer.
     std::int32_t position = 0;
 };
+
 struct Positions {
     // Size of the first page, matching the legacy pageSize field.
     double page_width = 0, page_height = 0;
@@ -92,15 +95,15 @@ struct Positions {
 
 // Dynamic result payload (not allocator overhead or the fixed Positions
 // object). The same accounting is used by CaptureOptions::max_bytes.
-inline std::uint64_t position_payload_bytes(const Positions& positions) noexcept {
-    return static_cast<std::uint64_t>(positions.elements.size()) * sizeof(PositionElement)
-           + static_cast<std::uint64_t>(positions.events.size()) * sizeof(PositionEvent);
+inline std::uint64_t position_payload_bytes(const Positions &positions) noexcept {
+    return static_cast<std::uint64_t>(positions.elements.size()) * sizeof(PositionElement) +
+           static_cast<std::uint64_t>(positions.events.size()) * sizeof(PositionEvent);
 }
 
 // Index storage used by a bounded position capture; see Document::positions
 // for the platform and allocator assumptions behind this estimate.
 inline constexpr std::uint64_t position_capture_index_bound(std::uint64_t max_bytes) noexcept {
-    return (max_bytes / sizeof(PositionElement)) * (sizeof(void*) + sizeof(std::size_t));
+    return (max_bytes / sizeof(PositionElement)) * (sizeof(void *) + sizeof(std::size_t));
 }
 
 // What render() draws.

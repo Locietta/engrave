@@ -26,15 +26,9 @@
 #include "number.h"
 
 namespace muse {
-[[nodiscard]] inline float db_to_linear(const float v)
-{
-    return std::pow(10.0f, v / 20.0f);
-}
+[[nodiscard]] inline float db_to_linear(const float v) { return std::pow(10.0f, v / 20.0f); }
 
-[[nodiscard]] inline float linear_to_db(const float v)
-{
-    return 20.0f * std::log10(std::abs(v));
-}
+[[nodiscard]] inline float linear_to_db(const float v) { return 20.0f * std::log10(std::abs(v)); }
 
 //! NOTE Just linear ratio
 using ratio_t = number_t<float>;
@@ -42,16 +36,10 @@ using ratio_t = number_t<float>;
 //! NOTE logarithmic ratio (decibel)
 using db_t = number_t<float>;
 
-inline ratio_t db_to_linear(db_t v)
-{
-    return muse::db_to_linear(v.raw());
-}
+inline ratio_t db_to_linear(db_t v) { return muse::db_to_linear(v.raw()); }
 
-inline db_t linear_to_db(ratio_t v)
-{
-    return muse::linear_to_db(v.raw());
-}
+inline db_t linear_to_db(ratio_t v) { return muse::linear_to_db(v.raw()); }
 
 //! NOTE Percent
 using percent_t = number_t<float>;
-}
+} // namespace muse

@@ -30,13 +30,11 @@ using namespace muse;
 using namespace muse::mpe;
 using namespace muse::mpe::tests;
 
-class MPE_MultiNoteArticulationsTest : public ::testing::Test
-{
+class MPE_MultiNoteArticulationsTest : public ::testing::Test {
 protected:
-    void SetUp() override
-    {
+    void SetUp() override {
         // [GIVEN] Rendering data of the very first quarter note on the score, with the 120BPM tempo and 4/4 time signature
-        NoteMetaData& firstNoteData = m_initialData[0];
+        NoteMetaData &firstNoteData = m_initialData[0];
         firstNoteData.nominalTimestamp = 0;
         firstNoteData.nominalDuration = 500;
         firstNoteData.voiceIdx = 0; // first voice
@@ -45,7 +43,7 @@ protected:
         firstNoteData.nominalDynamicLevel = dynamicLevelFromType(DynamicType::f);
 
         // [GIVEN] Rendering data of the second quarter note on the score, with the 120BPM tempo and 4/4 time signature
-        NoteMetaData& secondNoteData = m_initialData[1];
+        NoteMetaData &secondNoteData = m_initialData[1];
         secondNoteData.nominalTimestamp = 500;
         secondNoteData.nominalDuration = 500;
         secondNoteData.voiceIdx = 0; // first voice
@@ -54,7 +52,7 @@ protected:
         secondNoteData.nominalDynamicLevel = dynamicLevelFromType(DynamicType::f);
 
         // [GIVEN] Rendering data of the second quarter note on the score, with the 120BPM tempo and 4/4 time signature
-        NoteMetaData& thirdNoteData = m_initialData[2];
+        NoteMetaData &thirdNoteData = m_initialData[2];
         thirdNoteData.nominalTimestamp = 1000;
         thirdNoteData.nominalDuration = 500;
         thirdNoteData.voiceIdx = 0; // first voice
@@ -63,7 +61,7 @@ protected:
         thirdNoteData.nominalDynamicLevel = dynamicLevelFromType(DynamicType::f);
 
         // [GIVEN] Rendering data of the second quarter note on the score, with the 120BPM tempo and 4/4 time signature
-        NoteMetaData& fourthNoteData = m_initialData[3];
+        NoteMetaData &fourthNoteData = m_initialData[3];
         fourthNoteData.nominalTimestamp = 1500;
         fourthNoteData.nominalDuration = 500;
         fourthNoteData.voiceIdx = 0; // first voice
@@ -99,8 +97,7 @@ protected:
  *          So the actual PitchCurve of every note would be equal to the data from the "StandardPattern" in Articulation Profile.
  *          However, the actual ExpressionCurve would be adapted by the current dynamic value ("forte")
  */
-TEST_F(MPE_MultiNoteArticulationsTest, StandardPattern)
-{
+TEST_F(MPE_MultiNoteArticulationsTest, StandardPattern) {
     // [GIVEN] No articulations applied on the top of the note
     ArticulationPattern pattern;
     pattern.emplace(0, m_standardPattern);
@@ -120,35 +117,25 @@ TEST_F(MPE_MultiNoteArticulationsTest, StandardPattern)
     // [WHEN] Notes sequence with given parameters being built
     std::map<size_t, NoteEvent> noteEvents;
 
-    for (const auto& pair : m_initialData) {
-        NoteEvent noteEvent(pair.second.nominalTimestamp,
-                            pair.second.nominalDuration,
-                            pair.second.voiceIdx,
-                            pair.second.staffIdx,
-                            pair.second.nominalPitchLevel,
-                            pair.second.nominalDynamicLevel,
-                            appliedArticulations,
-                            0);
+    for (const auto &pair : m_initialData) {
+        NoteEvent noteEvent(pair.second.nominalTimestamp, pair.second.nominalDuration, pair.second.voiceIdx, pair.second.staffIdx,
+                            pair.second.nominalPitchLevel, pair.second.nominalDynamicLevel, appliedArticulations, 0);
 
         noteEvents.emplace(pair.first, std::move(noteEvent));
     }
 
-    for (const auto& pair : noteEvents) {
+    for (const auto &pair : noteEvents) {
         // [THEN] We expect that nominal timestamp of every note will be equal to the actual timestamp, since there is no arrangement modifiers
-        EXPECT_EQ(pair.second.arrangementCtx().nominalTimestamp,
-                  pair.second.arrangementCtx().actualTimestamp);
+        EXPECT_EQ(pair.second.arrangementCtx().nominalTimestamp, pair.second.arrangementCtx().actualTimestamp);
 
         // [THEN] We expect that nominal duration of every note will be equal to the actual duration, since there is no arrangement modifiers
-        EXPECT_EQ(pair.second.arrangementCtx().nominalDuration,
-                  pair.second.arrangementCtx().actualDuration);
+        EXPECT_EQ(pair.second.arrangementCtx().nominalDuration, pair.second.arrangementCtx().actualDuration);
 
         // [THEN] We expect that amplitude dynamic value in ExpressionCurve adapted for the current dynamic value ("forte")
-        EXPECT_EQ(pair.second.expressionCtx().expressionCurve.maxAmplitudeLevel(),
-                  dynamicLevelFromType(DynamicType::f));
+        EXPECT_EQ(pair.second.expressionCtx().expressionCurve.maxAmplitudeLevel(), dynamicLevelFromType(DynamicType::f));
 
         // [THEN] We expect that pitch curve of every note will be using default curve from the standard patterns
-        EXPECT_EQ(pair.second.pitchCtx().pitchCurve,
-                  m_standardPattern.pitchPattern.pitchOffsetMap);
+        EXPECT_EQ(pair.second.pitchCtx().pitchCurve, m_standardPattern.pitchPattern.pitchOffsetMap);
     }
 }
 
@@ -157,8 +144,7 @@ TEST_F(MPE_MultiNoteArticulationsTest, StandardPattern)
  * @details In this case we're gonna build a very simple note sequence with glissando articulation applied on the top of the first two notes
  *          So the actual PitchCurve of the first two notes would be equal to the data from the "GlissandoPattern" in Articulation Profile
  */
-TEST_F(MPE_MultiNoteArticulationsTest, GlissandoPattern)
-{
+TEST_F(MPE_MultiNoteArticulationsTest, GlissandoPattern) {
     std::map<size_t, ArticulationMap> appliedArticulations;
 
     // [GIVEN] Articulation pattern "Glissando", which instructs a performer to start on the pitch/rhythm
@@ -169,8 +155,8 @@ TEST_F(MPE_MultiNoteArticulationsTest, GlissandoPattern)
     ArticulationPatternSegment glissandoPattern;
     glissandoPattern.arrangementPattern = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
     glissandoPattern.pitchPattern = createSimplePitchPattern(pitchDiff / (MAX_PITCH_LEVEL / TEN_PERCENT) /*increment_pitch_diff*/);
-    glissandoPattern.expressionPattern
-        = createSimpleExpressionPattern(dynamicLevelFromType(DynamicType::Natural) /* no dynamic changes comparing to the natural one*/);
+    glissandoPattern.expressionPattern =
+        createSimpleExpressionPattern(dynamicLevelFromType(DynamicType::Natural) /* no dynamic changes comparing to the natural one*/);
 
     ArticulationPattern glissandoScope;
     glissandoScope.emplace(0, glissandoPattern);
@@ -219,35 +205,26 @@ TEST_F(MPE_MultiNoteArticulationsTest, GlissandoPattern)
     // [WHEN] Notes sequence with given parameters being built
     std::map<size_t, NoteEvent> noteEvents;
 
-    for (const auto& pair : m_initialData) {
-        NoteEvent noteEvent(pair.second.nominalTimestamp,
-                            pair.second.nominalDuration,
-                            pair.second.voiceIdx,
-                            pair.second.staffIdx,
-                            pair.second.nominalPitchLevel,
-                            pair.second.nominalDynamicLevel,
-                            appliedArticulations[pair.first],
-                            0);
+    for (const auto &pair : m_initialData) {
+        NoteEvent noteEvent(pair.second.nominalTimestamp, pair.second.nominalDuration, pair.second.voiceIdx, pair.second.staffIdx,
+                            pair.second.nominalPitchLevel, pair.second.nominalDynamicLevel, appliedArticulations[pair.first], 0);
 
         noteEvents.emplace(pair.first, std::move(noteEvent));
     }
 
-    for (const auto& pair : noteEvents) {
+    for (const auto &pair : noteEvents) {
         // [THEN] We expect that ExpressionCurve of every note will be adapted for the current dynamic value ("forte")
-        EXPECT_EQ(pair.second.expressionCtx().expressionCurve.maxAmplitudeLevel(),
-                  dynamicLevelFromType(DynamicType::f));
+        EXPECT_EQ(pair.second.expressionCtx().expressionCurve.maxAmplitudeLevel(), dynamicLevelFromType(DynamicType::f));
     }
 
     for (size_t i = 0; i < 2; ++i) {
         // [THEN] We expect that pitch curve of the notes 1 and 2 will be using a curve from the glissando pattern
-        EXPECT_EQ(noteEvents.at(i).pitchCtx().pitchCurve,
-                  glissandoPattern.pitchPattern.pitchOffsetMap);
+        EXPECT_EQ(noteEvents.at(i).pitchCtx().pitchCurve, glissandoPattern.pitchPattern.pitchOffsetMap);
     }
 
     for (size_t i = 2; i < 4; ++i) {
         // [THEN] We expect that pitch curve of the notes 3 and 4 will be using a curve from the standard pattern
-        EXPECT_EQ(noteEvents.at(i).pitchCtx().pitchCurve,
-                  m_standardPattern.pitchPattern.pitchOffsetMap);
+        EXPECT_EQ(noteEvents.at(i).pitchCtx().pitchCurve, m_standardPattern.pitchPattern.pitchOffsetMap);
     }
 }
 
@@ -257,8 +234,7 @@ TEST_F(MPE_MultiNoteArticulationsTest, GlissandoPattern)
  *          the top of these notes (from forte to fortissimo). So the actual ExpressionCurve of the notes would be equal
  *          to the data from the "CrescendoPattern" in Articulation Profile
  */
-TEST_F(MPE_MultiNoteArticulationsTest, CrescendoPattern)
-{
+TEST_F(MPE_MultiNoteArticulationsTest, CrescendoPattern) {
     std::map<size_t, ArticulationMap> appliedArticulations;
 
     // [GIVEN] Articulation pattern "Crescendo", which instructs a performer to gradually increase a volume of every note,
@@ -275,9 +251,8 @@ TEST_F(MPE_MultiNoteArticulationsTest, CrescendoPattern)
         ArticulationPatternSegment crescendoPattern;
         crescendoPattern.arrangementPattern = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
         crescendoPattern.pitchPattern = createSimplePitchPattern(0 /*increment_pitch_diff*/);
-        crescendoPattern.expressionPattern = createSimpleExpressionPattern(dynamicLevelFromType(
-                                                                               DynamicType::Natural) + i * DYNAMIC_LEVEL_STEP
-                                                                           / dynamicSegmentsCount);
+        crescendoPattern.expressionPattern =
+            createSimpleExpressionPattern(dynamicLevelFromType(DynamicType::Natural) + i * DYNAMIC_LEVEL_STEP / dynamicSegmentsCount);
 
         crescendoScope.emplace(25 * ONE_PERCENT * i, std::move(crescendoPattern));
     }
@@ -289,7 +264,7 @@ TEST_F(MPE_MultiNoteArticulationsTest, CrescendoPattern)
     crescendoMeta.overallDuration = m_initialData.at(1).nominalTimestamp + m_initialData.at(1).nominalDuration;
     crescendoMeta.overallDynamicChangesRange = dynamicLevelDiff;
 
-    for (const auto& pair : m_initialData) {
+    for (const auto &pair : m_initialData) {
         crescendoMeta.overallDuration += pair.second.nominalDuration;
     }
 
@@ -303,15 +278,9 @@ TEST_F(MPE_MultiNoteArticulationsTest, CrescendoPattern)
     // [WHEN] Notes sequence with given parameters being built
     std::map<size_t, NoteEvent> noteEvents;
 
-    for (const auto& pair : m_initialData) {
-        NoteEvent noteEvent(pair.second.nominalTimestamp,
-                            pair.second.nominalDuration,
-                            pair.second.voiceIdx,
-                            pair.second.staffIdx,
-                            pair.second.nominalPitchLevel,
-                            pair.second.nominalDynamicLevel,
-                            appliedArticulations[pair.first],
-                            0);
+    for (const auto &pair : m_initialData) {
+        NoteEvent noteEvent(pair.second.nominalTimestamp, pair.second.nominalDuration, pair.second.voiceIdx, pair.second.staffIdx,
+                            pair.second.nominalPitchLevel, pair.second.nominalDynamicLevel, appliedArticulations[pair.first], 0);
 
         noteEvents.emplace(pair.first, std::move(noteEvent));
     }
@@ -320,15 +289,13 @@ TEST_F(MPE_MultiNoteArticulationsTest, CrescendoPattern)
         // [THEN] We expect that ExpressionCurve of every note will be adapted to the applied CrescendoPattern
         //        That means that every note will be played louder on 125% than the previous one
 
-        dynamic_level_t actualResult = dynamicLevelFromType(DynamicType::f) + i * static_cast<dynamic_level_t>(dynamicLevelDiff)
-                                       / dynamicSegmentsCount;
-        EXPECT_EQ(noteEvents.at(i).expressionCtx().expressionCurve.maxAmplitudeLevel(),
-                  actualResult);
+        dynamic_level_t actualResult =
+            dynamicLevelFromType(DynamicType::f) + i * static_cast<dynamic_level_t>(dynamicLevelDiff) / dynamicSegmentsCount;
+        EXPECT_EQ(noteEvents.at(i).expressionCtx().expressionCurve.maxAmplitudeLevel(), actualResult);
     }
 }
 
-TEST_F(MPE_MultiNoteArticulationsTest, IsMultiNoteArticulation)
-{
+TEST_F(MPE_MultiNoteArticulationsTest, IsMultiNoteArticulation) {
     const ArticulationTypeSet MULTI_TYPES = {
         ArticulationType::Trill,
         ArticulationType::Crescendo,
@@ -344,7 +311,7 @@ TEST_F(MPE_MultiNoteArticulationsTest, IsMultiNoteArticulation)
         ArticulationType::ArpeggioStraightDown,
     };
 
-    const ArticulationTypeSet RANGED_TYPES {
+    const ArticulationTypeSet RANGED_TYPES{
         ArticulationType::Legato,
         ArticulationType::Pedal,
         ArticulationType::Multibend,

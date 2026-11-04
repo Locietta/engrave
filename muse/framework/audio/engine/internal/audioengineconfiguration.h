@@ -26,12 +26,11 @@
 #include "audio/common/audiotypes.h"
 
 namespace muse::audio::engine {
-class AudioEngineConfiguration : public IAudioEngineConfiguration
-{
+class AudioEngineConfiguration : public IAudioEngineConfiguration {
 public:
     AudioEngineConfiguration() = default;
 
-    void setConfig(const AudioEngineConfig& conf) override;
+    void setConfig(const AudioEngineConfig &conf) override;
 
     bool autoProcessOnlineSoundsInBackground() const override;
 
@@ -45,6 +44,5 @@ public:
 private:
 
     AudioEngineConfig m_conf;
-
 };
-}
+} // namespace muse::audio::engine

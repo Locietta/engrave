@@ -29,26 +29,24 @@
 using namespace mu::engraving;
 using namespace mu::iex::musicxml;
 
-String MusicXmlInstrument::toString() const
-{
+String MusicXmlInstrument::toString() const {
     return String(u"chan %1 prog %2 vol %3 pan %4 unpitched %5 name '%6' sound '%7' head %8 line %9 stemDir %10")
-           .arg(midiChannel)
-           .arg(midiProgram)
-           .arg(midiVolume)
-           .arg(midiPan)
-           .arg(unpitched)
-           .arg(name, sound)
-           .arg(int(notehead))
-           .arg(line)
-           .arg(int(stemDirection));
+        .arg(midiChannel)
+        .arg(midiProgram)
+        .arg(midiVolume)
+        .arg(midiPan)
+        .arg(unpitched)
+        .arg(name, sound)
+        .arg(int(notehead))
+        .arg(line)
+        .arg(int(stemDirection));
 }
 
 //---------------------------------------------------------
 //   interval
 //---------------------------------------------------------
 
-Interval MusicXmlIntervalList::interval(const Fraction f) const
-{
+Interval MusicXmlIntervalList::interval(const Fraction f) const {
     if (empty()) {
         return {};
     }
@@ -64,8 +62,7 @@ Interval MusicXmlIntervalList::interval(const Fraction f) const
 //   instrument
 //---------------------------------------------------------
 
-const String MusicXmlInstrList::instrument(const Fraction f) const
-{
+const String MusicXmlInstrList::instrument(const Fraction f) const {
     if (empty()) {
         return String();
     }
@@ -81,13 +78,11 @@ const String MusicXmlInstrList::instrument(const Fraction f) const
 //   setInstrument
 //---------------------------------------------------------
 
-void MusicXmlInstrList::setInstrument(const String instr, const Fraction f)
-{
+void MusicXmlInstrList::setInstrument(const String instr, const Fraction f) {
     // TODO determine how to handle multiple instrument changes at the same time
     // current implementation keeps the first one
-    if (!insert({ f, instr }).second) {
-        LOGD() << "element already exists, instr: " << instr
-               << ", tick: " << f.toString() << "(" << f.ticks() << ")";
+    if (!insert({f, instr}).second) {
+        LOGD() << "element already exists, instr: " << instr << ", tick: " << f.toString() << "(" << f.ticks() << ")";
     }
     //(*this)[f] = instr;
 }
@@ -113,10 +108,9 @@ void MusicXmlInstrList::setInstrument(const String instr, const Fraction f)
 //   addNumber
 //---------------------------------------------------------
 
-void LyricNumberHandler::addNumber(const String& number)
-{
+void LyricNumberHandler::addNumber(const String &number) {
     if (m_numberToNo.find(number) == m_numberToNo.end()) {
-        m_numberToNo[number] = -1;           // unassigned
+        m_numberToNo[number] = -1; // unassigned
     }
 }
 
@@ -124,10 +118,9 @@ void LyricNumberHandler::addNumber(const String& number)
 //   toString
 //---------------------------------------------------------
 
-String LyricNumberHandler::toString() const
-{
+String LyricNumberHandler::toString() const {
     String res;
-    for (const auto& p : m_numberToNo) {
+    for (const auto &p : m_numberToNo) {
         if (!res.isEmpty()) {
             res += u" ";
         }
@@ -140,8 +133,7 @@ String LyricNumberHandler::toString() const
 //   getLyricNo
 //---------------------------------------------------------
 
-int LyricNumberHandler::getLyricNo(const String& number) const
-{
+int LyricNumberHandler::getLyricNo(const String &number) const {
     const auto it = m_numberToNo.find(number);
     return it == m_numberToNo.end() ? 0 : it->second;
 }
@@ -150,10 +142,9 @@ int LyricNumberHandler::getLyricNo(const String& number) const
 //   determineLyricNos
 //---------------------------------------------------------
 
-void LyricNumberHandler::determineLyricNos()
-{
+void LyricNumberHandler::determineLyricNos() {
     int i = 0;
-    for (auto& p : m_numberToNo) {
+    for (auto &p : m_numberToNo) {
         p.second = i;
         ++i;
     }

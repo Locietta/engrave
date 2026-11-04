@@ -32,43 +32,33 @@
 using namespace mu::engraving;
 using namespace muse;
 
-static mpe::ArticulationType toArticulationType(TremoloType type)
-{
+static mpe::ArticulationType toArticulationType(TremoloType type) {
     switch (type) {
-    case TremoloType::R8:
-    case TremoloType::C8:
-        return mpe::ArticulationType::Tremolo8th;
-    case TremoloType::R16:
-    case TremoloType::C16:
-        return mpe::ArticulationType::Tremolo16th;
-    case TremoloType::R32:
-    case TremoloType::C32:
-        return mpe::ArticulationType::Tremolo32nd;
-    case TremoloType::R64:
-    case TremoloType::C64:
-    // Playback currently caps tremolo subdivisions at 64th; 128th and 256th
-    // tremolos intentionally reuse the 64th articulation pattern.
-    case TremoloType::R128:
-    case TremoloType::C128:
-    case TremoloType::R256:
-    case TremoloType::C256:
-        return mpe::ArticulationType::Tremolo64th;
-    case TremoloType::BUZZ_ROLL:
-        return mpe::ArticulationType::TremoloBuzz;
-    case TremoloType::INVALID_TREMOLO:
-        break;
+        case TremoloType::R8:
+        case TremoloType::C8: return mpe::ArticulationType::Tremolo8th;
+        case TremoloType::R16:
+        case TremoloType::C16: return mpe::ArticulationType::Tremolo16th;
+        case TremoloType::R32:
+        case TremoloType::C32: return mpe::ArticulationType::Tremolo32nd;
+        case TremoloType::R64:
+        case TremoloType::C64:
+        // Playback currently caps tremolo subdivisions at 64th; 128th and 256th
+        // tremolos intentionally reuse the 64th articulation pattern.
+        case TremoloType::R128:
+        case TremoloType::C128:
+        case TremoloType::R256:
+        case TremoloType::C256: return mpe::ArticulationType::Tremolo64th;
+        case TremoloType::BUZZ_ROLL: return mpe::ArticulationType::TremoloBuzz;
+        case TremoloType::INVALID_TREMOLO: break;
     }
 
     return mpe::ArticulationType::Undefined;
 }
 
-void TremoloSingleMetaParser::doParse(const EngravingItem* item, const RenderingContext& ctx, mpe::ArticulationMap& result)
-{
-    IF_ASSERT_FAILED(item->type() == ElementType::TREMOLO_SINGLECHORD) {
-        return;
-    }
+void TremoloSingleMetaParser::doParse(const EngravingItem *item, const RenderingContext &ctx, mpe::ArticulationMap &result) {
+    IF_ASSERT_FAILED(item->type() == ElementType::TREMOLO_SINGLECHORD) { return; }
 
-    const TremoloSingleChord* tremolo = item_cast<const TremoloSingleChord*>(item);
+    const TremoloSingleChord *tremolo = item_cast<const TremoloSingleChord *>(item);
 
     mpe::ArticulationType type = toArticulationType(tremolo->tremoloType());
     if (type == mpe::ArticulationType::Undefined) {
@@ -77,7 +67,7 @@ void TremoloSingleMetaParser::doParse(const EngravingItem* item, const Rendering
 
     int overallDurationTicks = ctx.nominalDurationTicks;
 
-    const mpe::ArticulationPattern& pattern = ctx.profile->pattern(type);
+    const mpe::ArticulationPattern &pattern = ctx.profile->pattern(type);
     if (pattern.empty()) {
         return;
     }
@@ -86,24 +76,19 @@ void TremoloSingleMetaParser::doParse(const EngravingItem* item, const Rendering
     articulationMeta.type = type;
     articulationMeta.pattern = pattern;
     articulationMeta.timestamp = ctx.nominalTimestamp;
-    articulationMeta.overallDuration = timestampFromTicks(ctx.score, ctx.nominalPositionStartTick + overallDurationTicks)
-                                       - ctx.nominalTimestamp;
+    articulationMeta.overallDuration =
+        timestampFromTicks(ctx.score, ctx.nominalPositionStartTick + overallDurationTicks) - ctx.nominalTimestamp;
 
     appendArticulationData(std::move(articulationMeta), result);
 }
 
-void TremoloTwoMetaParser::doParse(const EngravingItem* item, const RenderingContext& ctx, mpe::ArticulationMap& result)
-{
-    IF_ASSERT_FAILED(item->type() == ElementType::TREMOLO_TWOCHORD) {
-        return;
-    }
+void TremoloTwoMetaParser::doParse(const EngravingItem *item, const RenderingContext &ctx, mpe::ArticulationMap &result) {
+    IF_ASSERT_FAILED(item->type() == ElementType::TREMOLO_TWOCHORD) { return; }
 
-    const TremoloTwoChord* tremolo = item_cast<const TremoloTwoChord*>(item);
+    const TremoloTwoChord *tremolo = item_cast<const TremoloTwoChord *>(item);
 
-    const Chord* chord2 = tremolo->chord2();
-    IF_ASSERT_FAILED(chord2) {
-        return;
-    }
+    const Chord *chord2 = tremolo->chord2();
+    IF_ASSERT_FAILED(chord2) { return; }
 
     if (chord2->tick().ticks() == ctx.nominalPositionStartTick) {
         return;
@@ -119,7 +104,7 @@ void TremoloTwoMetaParser::doParse(const EngravingItem* item, const RenderingCon
         overallDurationTicks = tremolo->chord1()->actualTicks().ticks() + tremolo->chord2()->actualTicks().ticks();
     }
 
-    const mpe::ArticulationPattern& pattern = ctx.profile->pattern(type);
+    const mpe::ArticulationPattern &pattern = ctx.profile->pattern(type);
     if (pattern.empty()) {
         return;
     }
@@ -128,8 +113,8 @@ void TremoloTwoMetaParser::doParse(const EngravingItem* item, const RenderingCon
     articulationMeta.type = type;
     articulationMeta.pattern = pattern;
     articulationMeta.timestamp = ctx.nominalTimestamp;
-    articulationMeta.overallDuration = timestampFromTicks(ctx.score, ctx.nominalPositionStartTick + overallDurationTicks)
-                                       - ctx.nominalTimestamp;
+    articulationMeta.overallDuration =
+        timestampFromTicks(ctx.score, ctx.nominalPositionStartTick + overallDurationTicks) - ctx.nominalTimestamp;
 
     appendArticulationData(std::move(articulationMeta), result);
 }

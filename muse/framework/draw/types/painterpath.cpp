@@ -29,14 +29,13 @@ namespace muse::draw {
 static constexpr double pi = 3.14159265358979323846;
 static constexpr double pathKappa = 0.5522847498;
 
-static void findEllipseCoords(const RectF& r, double angle, double length, PointF* startPoint, PointF* endPoint);
+static void findEllipseCoords(const RectF &r, double angle, double length, PointF *startPoint, PointF *endPoint);
 
-static PointF curvesForArc(const RectF& rect, double startAngle, double sweepLength, PointF* curves, int* point_count);
+static PointF curvesForArc(const RectF &rect, double startAngle, double sweepLength, PointF *curves, int *point_count);
 
 static double angleForArc(double angle);
 
-void PainterPath::moveTo(const PointF& p)
-{
+void PainterPath::moveTo(const PointF &p) {
     if (!hasValidCoords(p)) {
         return;
     }
@@ -48,13 +47,12 @@ void PainterPath::moveTo(const PointF& p)
         m_elements.back().x = p.x();
         m_elements.back().y = p.y();
     } else {
-        m_elements.push_back({ p.x(), p.y(), ElementType::MoveToElement });
+        m_elements.push_back({p.x(), p.y(), ElementType::MoveToElement});
     }
     m_cStart = static_cast<int>(m_elements.size() - 1);
 }
 
-void PainterPath::lineTo(const PointF& p)
-{
+void PainterPath::lineTo(const PointF &p) {
     if (!hasValidCoords(p)) {
         return;
     }
@@ -67,12 +65,11 @@ void PainterPath::lineTo(const PointF& p)
         return;
     }
 
-    m_elements.push_back({ p.x(), p.y(), ElementType::LineToElement });
+    m_elements.push_back({p.x(), p.y(), ElementType::LineToElement});
     m_convex = m_elements.size() == 3 || (m_elements.size() == 4 && isClosed());
 }
 
-void PainterPath::cubicTo(const PointF& ctrlPt1, const PointF& ctrlPt2, const PointF& endPt)
-{
+void PainterPath::cubicTo(const PointF &ctrlPt1, const PointF &ctrlPt2, const PointF &endPt) {
     if (!hasValidCoords(ctrlPt1) || !hasValidCoords(ctrlPt2) || !hasValidCoords(endPt)) {
         return;
     }
@@ -88,13 +85,12 @@ void PainterPath::cubicTo(const PointF& ctrlPt1, const PointF& ctrlPt2, const Po
     }
     maybeMoveTo();
 
-    m_elements.push_back({ ctrlPt1.x(), ctrlPt1.y(), ElementType::CurveToElement });
-    m_elements.push_back({ ctrlPt2.x(), ctrlPt2.y(), ElementType::CurveToDataElement });
-    m_elements.push_back({ endPt.x(), endPt.y(), ElementType::CurveToDataElement });
+    m_elements.push_back({ctrlPt1.x(), ctrlPt1.y(), ElementType::CurveToElement});
+    m_elements.push_back({ctrlPt2.x(), ctrlPt2.y(), ElementType::CurveToDataElement});
+    m_elements.push_back({endPt.x(), endPt.y(), ElementType::CurveToDataElement});
 }
 
-void PainterPath::translate(double dx, double dy)
-{
+void PainterPath::translate(double dx, double dy) {
     if (RealIsNull(dx) && RealIsNull(dy)) {
         return;
     }
@@ -104,7 +100,7 @@ void PainterPath::translate(double dx, double dy)
     }
 
     setDirty();
-    PainterPath::Element* element = m_elements.data();
+    PainterPath::Element *element = m_elements.data();
     assert(element);
     while (m_elementsLeft--) {
         element->x += dx;
@@ -113,37 +109,27 @@ void PainterPath::translate(double dx, double dy)
     }
 }
 
-void PainterPath::translate(const PointF& offset)
-{
-    translate(offset.x(), offset.y());
-}
+void PainterPath::translate(const PointF &offset) { translate(offset.x(), offset.y()); }
 
-RectF PainterPath::boundingRect() const
-{
+RectF PainterPath::boundingRect() const {
     if (m_dirtyBounds) {
         computeBoundingRect();
     }
     return m_bounds;
 }
 
-bool PainterPath::isEmpty() const
-{
+bool PainterPath::isEmpty() const {
     return m_elements.empty() || (m_elements.size() == 1 && m_elements.front().type == ElementType::MoveToElement);
 }
 
-size_t PainterPath::elementCount() const
-{
-    return m_elements.size();
-}
+size_t PainterPath::elementCount() const { return m_elements.size(); }
 
-PainterPath::Element PainterPath::elementAt(size_t i) const
-{
+PainterPath::Element PainterPath::elementAt(size_t i) const {
     assert(i < elementCount());
     return m_elements.at(i);
 }
 
-void PainterPath::addRect(const RectF& r)
-{
+void PainterPath::addRect(const RectF &r) {
     if (!hasValidCoords(r)) {
         return;
     }
@@ -155,17 +141,16 @@ void PainterPath::addRect(const RectF& r)
 
     bool first = m_elements.size() < 2;
     moveTo(r.x(), r.y());
-    m_elements.push_back({ r.x() + r.width(), r.y(), ElementType::LineToElement });
-    m_elements.push_back({ r.x() + r.width(), r.y() + r.height(), ElementType::LineToElement });
-    m_elements.push_back({ r.x(), r.y() + r.height(), ElementType::LineToElement });
-    m_elements.push_back({ r.x(), r.y(), ElementType::LineToElement });
+    m_elements.push_back({r.x() + r.width(), r.y(), ElementType::LineToElement});
+    m_elements.push_back({r.x() + r.width(), r.y() + r.height(), ElementType::LineToElement});
+    m_elements.push_back({r.x(), r.y() + r.height(), ElementType::LineToElement});
+    m_elements.push_back({r.x(), r.y(), ElementType::LineToElement});
 
     m_requireMoveTo = true;
     m_convex = first;
 }
 
-void PainterPath::addEllipse(const RectF& boundingRect)
-{
+void PainterPath::addEllipse(const RectF &boundingRect) {
     if (!hasValidCoords(boundingRect)) {
         return;
     }
@@ -180,16 +165,15 @@ void PainterPath::addEllipse(const RectF& boundingRect)
     int point_count;
     PointF start = curvesForArc(boundingRect, 0, -360, pts, &point_count);
     moveTo(start);
-    cubicTo(pts[0], pts[1], pts[2]);           // 0 -> 270
-    cubicTo(pts[3], pts[4], pts[5]);           // 270 -> 180
-    cubicTo(pts[6], pts[7], pts[8]);           // 180 -> 90
-    cubicTo(pts[9], pts[10], pts[11]);         // 90 - >0
+    cubicTo(pts[0], pts[1], pts[2]);   // 0 -> 270
+    cubicTo(pts[3], pts[4], pts[5]);   // 270 -> 180
+    cubicTo(pts[6], pts[7], pts[8]);   // 180 -> 90
+    cubicTo(pts[9], pts[10], pts[11]); // 90 - >0
     m_requireMoveTo = true;
     m_convex = first;
 }
 
-void PainterPath::addRoundedRect(const RectF& rect, double xRadius, double yRadius)
-{
+void PainterPath::addRoundedRect(const RectF &rect, double xRadius, double yRadius) {
     RectF r = rect.normalized();
     if (r.isNull()) {
         return;
@@ -210,7 +194,7 @@ void PainterPath::addRoundedRect(const RectF& rect, double xRadius, double yRadi
         }
     }
 
-    if (xRadius <= 0 || yRadius <= 0) {             // add normal rectangle
+    if (xRadius <= 0 || yRadius <= 0) { // add normal rectangle
         addRect(r);
         return;
     }
@@ -234,8 +218,7 @@ void PainterPath::addRoundedRect(const RectF& rect, double xRadius, double yRadi
     m_convex = first;
 }
 
-void PainterPath::arcMoveTo(const RectF& rect, double angle)
-{
+void PainterPath::arcMoveTo(const RectF &rect, double angle) {
     if (rect.isNull()) {
         return;
     }
@@ -244,8 +227,7 @@ void PainterPath::arcMoveTo(const RectF& rect, double angle)
     moveTo(pt);
 }
 
-void PainterPath::arcTo(const RectF& rect, double startAngle, double sweepLength)
-{
+void PainterPath::arcTo(const RectF &rect, double startAngle, double sweepLength) {
     if (!hasValidCoords(rect) || !isValidCoord(startAngle) || !isValidCoord(sweepLength)) {
         return;
     }
@@ -259,40 +241,32 @@ void PainterPath::arcTo(const RectF& rect, double startAngle, double sweepLength
     PointF pts[15];
     PointF curve_start = curvesForArc(rect, startAngle, sweepLength, pts, &point_count);
     lineTo(curve_start);
-    for (int i=0; i < point_count; i+=3) {
-        cubicTo(pts[i].x(), pts[i].y(),
-                pts[i + 1].x(), pts[i + 1].y(),
-                pts[i + 2].x(), pts[i + 2].y());
+    for (int i = 0; i < point_count; i += 3) {
+        cubicTo(pts[i].x(), pts[i].y(), pts[i + 1].x(), pts[i + 1].y(), pts[i + 2].x(), pts[i + 2].y());
     }
 }
 
-
-void PainterPath::closeSubpath()
-{
+void PainterPath::closeSubpath() {
     if (isEmpty()) {
         return;
     }
     setDirty();
     m_requireMoveTo = true;
-    const Element& first = m_elements.at(m_cStart);
-    Element& last = m_elements.back();
+    const Element &first = m_elements.at(m_cStart);
+    Element &last = m_elements.back();
     if (first.x != last.x || first.y != last.y) {
         if (RealIsEqual(first.x, last.x) && RealIsEqual(first.y, last.y)) {
             last.x = first.x;
             last.y = first.y;
         } else {
-            m_elements.push_back({ first.x, first.y, ElementType::LineToElement });
+            m_elements.push_back({first.x, first.y, ElementType::LineToElement});
         }
     }
 }
 
-PainterPath::FillRule PainterPath::fillRule() const
-{
-    return isEmpty() ? FillRule::OddEvenFill : m_fillRule;
-}
+PainterPath::FillRule PainterPath::fillRule() const { return isEmpty() ? FillRule::OddEvenFill : m_fillRule; }
 
-void PainterPath::setFillRule(PainterPath::FillRule fillRule)
-{
+void PainterPath::setFillRule(PainterPath::FillRule fillRule) {
     ensureData();
     if (m_fillRule == fillRule) {
         return;
@@ -301,81 +275,67 @@ void PainterPath::setFillRule(PainterPath::FillRule fillRule)
     m_fillRule = fillRule;
 }
 
-void PainterPath::ensureData()
-{
+void PainterPath::ensureData() {
     if (m_elements.empty()) {
         m_elements.reserve(16);
-        m_elements.push_back({ 0, 0, ElementType::MoveToElement });
+        m_elements.push_back({0, 0, ElementType::MoveToElement});
     }
 }
 
-bool PainterPath::hasValidCoords(const PointF& p)
-{
-    return isValidCoord(p.x()) && isValidCoord(p.y());
-}
+bool PainterPath::hasValidCoords(const PointF &p) { return isValidCoord(p.x()) && isValidCoord(p.y()); }
 
-bool PainterPath::hasValidCoords(const RectF& r)
-{
+bool PainterPath::hasValidCoords(const RectF &r) {
     return isValidCoord(r.x()) && isValidCoord(r.y()) && isValidCoord(r.width()) && isValidCoord(r.height());
 }
 
-void PainterPath::computeBoundingRect() const
-{
+void PainterPath::computeBoundingRect() const {
     m_dirtyBounds = false;
 
     double maxx, maxy;
     double minx = maxx = m_elements.at(0).x;
     double miny = maxy = m_elements.at(0).y;
     for (size_t i = 1; i < m_elements.size(); ++i) {
-        const Element& e = m_elements.at(i);
+        const Element &e = m_elements.at(i);
         switch (e.type) {
-        case ElementType::MoveToElement:
-        case ElementType::LineToElement:
-            if (e.x > maxx) {
-                maxx = e.x;
-            } else if (e.x < minx) {
-                minx = e.x;
-            }
-            if (e.y > maxy) {
-                maxy = e.y;
-            } else if (e.y < miny) {
-                miny = e.y;
-            }
-            break;
-        case ElementType::CurveToElement:
-        {
-            Bezier b = Bezier::fromPoints(m_elements.at(i - 1),
-                                          e,
-                                          m_elements.at(i + 1),
-                                          m_elements.at(i + 2));
-            RectF r = painterpathBezierExtrema(b);
-            double right = r.right();
-            double bottom = r.bottom();
-            if (r.x() < minx) {
-                minx = r.x();
-            }
-            if (right > maxx) {
-                maxx = right;
-            }
-            if (r.y() < miny) {
-                miny = r.y();
-            }
-            if (bottom > maxy) {
-                maxy = bottom;
-            }
-            i += 2;
-        }
-        break;
-        default:
-            break;
+            case ElementType::MoveToElement:
+            case ElementType::LineToElement:
+                if (e.x > maxx) {
+                    maxx = e.x;
+                } else if (e.x < minx) {
+                    minx = e.x;
+                }
+                if (e.y > maxy) {
+                    maxy = e.y;
+                } else if (e.y < miny) {
+                    miny = e.y;
+                }
+                break;
+            case ElementType::CurveToElement: {
+                Bezier b = Bezier::fromPoints(m_elements.at(i - 1), e, m_elements.at(i + 1), m_elements.at(i + 2));
+                RectF r = painterpathBezierExtrema(b);
+                double right = r.right();
+                double bottom = r.bottom();
+                if (r.x() < minx) {
+                    minx = r.x();
+                }
+                if (right > maxx) {
+                    maxx = right;
+                }
+                if (r.y() < miny) {
+                    miny = r.y();
+                }
+                if (bottom > maxy) {
+                    maxy = bottom;
+                }
+                i += 2;
+            } break;
+            default: break;
         }
     }
     m_bounds = RectF(minx, miny, maxx - minx, maxy - miny);
 }
 
-static void findEllipseCoords(const RectF& r, double angle, double length,
-                              PointF* startPoint, PointF* endPoint)
-{
+static void findEllipseCoords(const RectF &r, double angle, double length, PointF *startPoint, PointF *endPoint) {
     if (r.isNull()) {
         if (startPoint) {
             *startPoint = PointF();
@@ -387,8 +347,8 @@ static void findEllipseCoords(const RectF& r, double angle, double length,
     }
     double w2 = r.width() / 2;
     double h2 = r.height() / 2;
-    double angles[2] = { angle, angle + length };
-    PointF* points[2] = { startPoint, endPoint };
+    double angles[2] = {angle, angle + length};
+    PointF *points[2] = {startPoint, endPoint};
     for (int i = 0; i < 2; ++i) {
         if (!points[i]) {
             continue;
@@ -418,14 +378,12 @@ static void findEllipseCoords(const RectF& r, double angle, double length,
     }
 }
 
-static PointF curvesForArc(const RectF& rect, double startAngle, double sweepLength,
-                           PointF* curves, int* point_count)
-{
+static PointF curvesForArc(const RectF &rect, double startAngle, double sweepLength, PointF *curves, int *point_count) {
     assert(point_count);
     assert(curves);
     *point_count = 0;
-    if (std::isnan(rect.x()) || std::isnan(rect.y()) || std::isnan(rect.width()) || std::isnan(rect.height())
-        || std::isnan(startAngle) || std::isnan(sweepLength)) {
+    if (std::isnan(rect.x()) || std::isnan(rect.y()) || std::isnan(rect.width()) || std::isnan(rect.height()) || std::isnan(startAngle) ||
+        std::isnan(sweepLength)) {
         LOGW("PainterPath::arcTo: Adding arc where a parameter is NaN, results are undefined");
         return PointF();
     }
@@ -440,27 +398,16 @@ static PointF curvesForArc(const RectF& rect, double startAngle, double sweepLen
     double h = rect.height();
     double h2 = rect.height() / 2;
     double h2k = h2 * pathKappa;
-    PointF points[16] =
-    {
-        // start point
-        PointF(x + w, y + h2),
-        // 0 -> 270 degrees
-        PointF(x + w, y + h2 + h2k),
-        PointF(x + w2 + w2k, y + h),
-        PointF(x + w2, y + h),
-        // 270 -> 180 degrees
-        PointF(x + w2 - w2k, y + h),
-        PointF(x, y + h2 + h2k),
-        PointF(x, y + h2),
-        // 180 -> 90 degrees
-        PointF(x, y + h2 - h2k),
-        PointF(x + w2 - w2k, y),
-        PointF(x + w2, y),
-        // 90 -> 0 degrees
-        PointF(x + w2 + w2k, y),
-        PointF(x + w, y + h2 - h2k),
-        PointF(x + w, y + h2)
-    };
+    PointF points[16] = {// start point
+                         PointF(x + w, y + h2),
+                         // 0 -> 270 degrees
+                         PointF(x + w, y + h2 + h2k), PointF(x + w2 + w2k, y + h), PointF(x + w2, y + h),
+                         // 270 -> 180 degrees
+                         PointF(x + w2 - w2k, y + h), PointF(x, y + h2 + h2k), PointF(x, y + h2),
+                         // 180 -> 90 degrees
+                         PointF(x, y + h2 - h2k), PointF(x + w2 - w2k, y), PointF(x + w2, y),
+                         // 90 -> 0 degrees
+                         PointF(x + w2 + w2k, y), PointF(x + w, y + h2 - h2k), PointF(x + w, y + h2)};
     if (sweepLength > 360) {
         sweepLength = 360;
     } else if (sweepLength < -360) {
@@ -540,12 +487,11 @@ static PointF curvesForArc(const RectF& rect, double startAngle, double sweepLen
         curves[(*point_count)++] = b.pt4();
     }
     assert(*point_count > 0);
-    curves[*(point_count) - 1] = endPoint;
+    curves[*(point_count) -1] = endPoint;
     return startPoint;
 }
 
-static double angleForArc(double angle)
-{
+static double angleForArc(double angle) {
     if (RealIsNull(angle)) {
         return 0;
     }
@@ -560,17 +506,17 @@ static double angleForArc(double angle)
     // do some iterations of newton's method to approximate cosAngle
     // finds the zero of the function b.pointAt(tc).x() - cosAngle
     tc -= ((((2 - 3 * pathKappa) * tc + 3 * (pathKappa - 1)) * tc) * tc + 1 - cosAngle) // value
-          / (((6 - 9 * pathKappa) * tc + 6 * (pathKappa - 1)) * tc); // derivative
+          / (((6 - 9 * pathKappa) * tc + 6 * (pathKappa - 1)) * tc);                    // derivative
     tc -= ((((2 - 3 * pathKappa) * tc + 3 * (pathKappa - 1)) * tc) * tc + 1 - cosAngle) // value
-          / (((6 - 9 * pathKappa) * tc + 6 * (pathKappa - 1)) * tc); // derivative
+          / (((6 - 9 * pathKappa) * tc + 6 * (pathKappa - 1)) * tc);                    // derivative
     // initial guess
     double ts = tc;
     // do some iterations of newton's method to approximate sinAngle
     // finds the zero of the function b.pointAt(tc).y() - sinAngle
-    ts -= ((((3 * pathKappa - 2) * ts - 6 * pathKappa + 3) * ts + 3 * pathKappa) * ts - sinAngle)
-          / (((9 * pathKappa - 6) * ts + 12 * pathKappa - 6) * ts + 3 * pathKappa);
-    ts -= ((((3 * pathKappa - 2) * ts - 6 * pathKappa + 3) * ts + 3 * pathKappa) * ts - sinAngle)
-          / (((9 * pathKappa - 6) * ts + 12 * pathKappa - 6) * ts + 3 * pathKappa);
+    ts -= ((((3 * pathKappa - 2) * ts - 6 * pathKappa + 3) * ts + 3 * pathKappa) * ts - sinAngle) /
+          (((9 * pathKappa - 6) * ts + 12 * pathKappa - 6) * ts + 3 * pathKappa);
+    ts -= ((((3 * pathKappa - 2) * ts - 6 * pathKappa + 3) * ts + 3 * pathKappa) * ts - sinAngle) /
+          (((9 * pathKappa - 6) * ts + 12 * pathKappa - 6) * ts + 3 * pathKappa);
     // use the average of the t that best approximates cosAngle
     // and the t that best approximates sinAngle
     double t = 0.5 * (tc + ts);
@@ -578,27 +524,24 @@ static double angleForArc(double angle)
     return t;
 }
 
-#define BEZIER_A(bezier, coord) 3 * (-bezier.m_##coord##1 \
-                                     + 3 * bezier.m_##coord##2 \
-                                     - 3 * bezier.m_##coord##3 \
-                                     + bezier.m_##coord##4)
-#define BEZIER_B(bezier, coord) 6 * (bezier.m_##coord##1 \
-                                     - 2 * bezier.m_##coord##2 \
-                                     + bezier.m_##coord##3)
-#define BEZIER_C(bezier, coord) 3 * (-bezier.m_##coord##1 \
-                                     + bezier.m_##coord##2)
+#define BEZIER_A(bezier, coord) 3 * (-bezier.m_##coord##1 + 3 * bezier.m_##coord##2 - 3 * bezier.m_##coord##3 + bezier.m_##coord##4)
+#define BEZIER_B(bezier, coord) 6 * (bezier.m_##coord##1 - 2 * bezier.m_##coord##2 + bezier.m_##coord##3)
+#define BEZIER_C(bezier, coord) 3 * (-bezier.m_##coord##1 + bezier.m_##coord##2)
 
 #define BEZIER_CHECK_T(bezier, t) \
-    if (t >= 0 && t <= 1) { \
-        PointF p(b.pointAt(t)); \
-        if (p.x() < minx) minx = p.x(); \
-        else if (p.x() > maxx) maxx = p.x(); \
-        if (p.y() < miny) miny = p.y(); \
-        else if (p.y() > maxy) maxy = p.y(); \
+    if (t >= 0 && t <= 1) {       \
+        PointF p(b.pointAt(t));   \
+        if (p.x() < minx)         \
+            minx = p.x();         \
+        else if (p.x() > maxx)    \
+            maxx = p.x();         \
+        if (p.y() < miny)         \
+            miny = p.y();         \
+        else if (p.y() > maxy)    \
+            maxy = p.y();         \
     }
 
-RectF PainterPath::painterpathBezierExtrema(const Bezier& b)
-{
+RectF PainterPath::painterpathBezierExtrema(const Bezier &b) {
     double minx, miny, maxx, maxy;
     // initialize with end points
     if (b.m_x1 < b.m_x4) {
@@ -666,9 +609,8 @@ RectF PainterPath::painterpathBezierExtrema(const Bezier& b)
     return RectF(minx, miny, maxx - minx, maxy - miny);
 }
 
-void PainterPath::setDirty()
-{
+void PainterPath::setDirty() {
     m_dirtyBounds = true;
     m_convex = false;
 }
-}
+} // namespace muse::draw

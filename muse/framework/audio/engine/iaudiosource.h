@@ -24,12 +24,10 @@
 
 #include <memory>
 
-
 #include "audio/common/audiotypes.h"
 
 namespace muse::audio::engine {
-class IAudioSource
-{
+class IAudioSource {
 public:
     virtual ~IAudioSource() = default;
 
@@ -37,15 +35,14 @@ public:
     virtual ProcessMode mode() const = 0;
 
     //! set current output spec. Called by destination.
-    virtual void setOutputSpec(const OutputSpec& spec) = 0;
+    virtual void setOutputSpec(const OutputSpec &spec) = 0;
 
     //! return substream count for this source: 1 for mono, 2 for stereo, 6 for surround
     virtual unsigned int audioChannelsCount() const = 0;
 
-
     //! move buffer forward for sampleCount samples
-    virtual samples_t process(float* buffer, samples_t samplesPerChannel) = 0;
+    virtual samples_t process(float *buffer, samples_t samplesPerChannel) = 0;
 };
 
 using IAudioSourcePtr = std::shared_ptr<IAudioSource>;
-}
+} // namespace muse::audio::engine

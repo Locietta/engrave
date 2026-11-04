@@ -25,11 +25,10 @@
 #include "types/string.h"
 
 namespace mu::engraving {
-class HtmlParser
-{
+class HtmlParser {
 public:
-    static muse::String parse(const muse::String& name);
+    static muse::String parse(const muse::String &name);
 };
-}
+} // namespace mu::engraving
 
 #endif // MU_ENGRAVING_HTMLPARSER_H
