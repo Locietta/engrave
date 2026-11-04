@@ -41,25 +41,22 @@
 
 using namespace mu::engraving;
 
-void EditVisibility::setSelectedElementsVisible(Transaction& tx, Score* score)
-{
-    for (EngravingItem* e : score->selection().elements()) {
+void EditVisibility::setSelectedElementsVisible(Transaction &tx, Score *score) {
+    for (EngravingItem *e : score->selection().elements()) {
         tx.push(new ChangeProperty(e, Pid::VISIBLE, true));
     }
 }
 
-void EditVisibility::setSelectedElementsInvisible(Transaction& tx, Score* score)
-{
-    for (EngravingItem* e : score->selection().elements()) {
+void EditVisibility::setSelectedElementsInvisible(Transaction &tx, Score *score) {
+    for (EngravingItem *e : score->selection().elements()) {
         tx.push(new ChangeProperty(e, Pid::VISIBLE, false));
     }
 }
 
-void EditVisibility::toggleVisible(Transaction& tx, Score* score)
-{
+void EditVisibility::toggleVisible(Transaction &tx, Score *score) {
     bool allVisible = true;
 
-    for (EngravingItem* item : score->selection().elements()) {
+    for (EngravingItem *item : score->selection().elements()) {
         if (!item->getProperty(Pid::VISIBLE).toBool()) {
             allVisible = false;
             break;
@@ -68,14 +65,13 @@ void EditVisibility::toggleVisible(Transaction& tx, Score* score)
 
     bool newVisible = !allVisible;
 
-    for (EngravingItem* item : score->selection().elements()) {
+    for (EngravingItem *item : score->selection().elements()) {
         undoChangeVisible(tx, item, newVisible);
     }
 }
 
-static bool chordHasVisibleNote(const Chord* chord)
-{
-    for (const Note* note : chord->notes()) {
+static bool chordHasVisibleNote(const Chord *chord) {
+    for (const Note *note : chord->notes()) {
         if (note->visible()) {
             return true;
         }
@@ -84,9 +80,8 @@ static bool chordHasVisibleNote(const Chord* chord)
     return false;
 }
 
-static bool beamHasVisibleNote(const Beam* beam)
-{
-    for (const EngravingItem* item : beam->elements()) {
+static bool beamHasVisibleNote(const Beam *beam) {
+    for (const EngravingItem *item : beam->elements()) {
         if (item->isChord() && chordHasVisibleNote(toChord(item))) {
             return true;
         }
@@ -95,10 +90,9 @@ static bool beamHasVisibleNote(const Beam* beam)
     return false;
 }
 
-static void undoChangeOrnamentVisibility(Ornament* ornament, bool visible);
+static void undoChangeOrnamentVisibility(Ornament *ornament, bool visible);
 
-static void undoChangeNoteVisibility(Note* note, bool visible)
-{
+static void undoChangeNoteVisibility(Note *note, bool visible) {
     note->undoChangeProperty(Pid::VISIBLE, visible);
 
     if (note->bendBack() || note->bendFor()) {
@@ -107,11 +101,11 @@ static void undoChangeNoteVisibility(Note* note, bool visible)
         note->setOverrideBendVisibilityRules(false);
     }
 
-    for (NoteDot* dot : note->dots()) {
+    for (NoteDot *dot : note->dots()) {
         dot->undoChangeProperty(Pid::VISIBLE, visible);
     }
 
-    for (EngravingItem* e : note->el()) {
+    for (EngravingItem *e : note->el()) {
         e->undoChangeProperty(Pid::VISIBLE, visible);
     }
 
@@ -119,12 +113,12 @@ static void undoChangeNoteVisibility(Note* note, bool visible)
         note->accidental()->undoChangeProperty(Pid::VISIBLE, visible);
     }
 
-    Chord* noteChord = note->chord();
-    Beam* beam = noteChord->beam();
-    std::vector<Chord*> chords;
+    Chord *noteChord = note->chord();
+    Beam *beam = noteChord->beam();
+    std::vector<Chord *> chords;
 
     if (beam) {
-        for (EngravingItem* item : beam->elements()) {
+        for (EngravingItem *item : beam->elements()) {
             if (item->isChord()) {
                 chords.push_back(toChord(item));
             }
@@ -133,23 +127,20 @@ static void undoChangeNoteVisibility(Note* note, bool visible)
         chords.push_back(noteChord);
     }
 
-    static const std::unordered_set<ElementType> IGNORED_TYPES {
-        ElementType::NOTE,
-        ElementType::LYRICS,
-        ElementType::SLUR,
-        ElementType::HAMMER_ON_PULL_OFF,
-        ElementType::CHORD, // grace notes
+    static const std::unordered_set<ElementType> IGNORED_TYPES{
+        ElementType::NOTE,        ElementType::LYRICS, ElementType::SLUR, ElementType::HAMMER_ON_PULL_OFF,
+        ElementType::CHORD,       // grace notes
         ElementType::LEDGER_LINE, // temporary objects, impossible to change visibility
     };
 
-    for (const Chord* chord : chords) {
-        for (const EngravingObject* obj : chord->linkList()) {
-            const Chord* linkedChord = toChord(obj);
+    for (const Chord *chord : chords) {
+        for (const EngravingObject *obj : chord->linkList()) {
+            const Chord *linkedChord = toChord(obj);
             const bool chordHasVisibleNote_ = chordHasVisibleNote(linkedChord);
             // note visibility can differ between scores, so check this score's own beam
-            const Beam* linkedBeam = linkedChord->beam();
+            const Beam *linkedBeam = linkedChord->beam();
             const bool beamHasVisibleNote_ = chordHasVisibleNote_ || (linkedBeam && beamHasVisibleNote(linkedBeam));
-            for (EngravingObject* child : linkedChord->getChildren()) {
+            for (EngravingObject *child : linkedChord->getChildren()) {
                 const ElementType type = child->type();
 
                 if (muse::contains(IGNORED_TYPES, type)) {
@@ -172,19 +163,17 @@ static void undoChangeNoteVisibility(Note* note, bool visible)
     }
 }
 
-static void undoChangeRestVisibility(Rest* rest, bool visible)
-{
+static void undoChangeRestVisibility(Rest *rest, bool visible) {
     rest->undoChangeProperty(Pid::VISIBLE, visible);
 
-    for (NoteDot* dot : rest->dotList()) {
+    for (NoteDot *dot : rest->dotList()) {
         dot->undoChangeProperty(Pid::VISIBLE, visible);
     }
 }
 
-static void undoChangeOrnamentVisibility(Ornament* ornament, bool visible)
-{
+static void undoChangeOrnamentVisibility(Ornament *ornament, bool visible) {
     ornament->undoChangeProperty(Pid::VISIBLE, visible);
-    Chord* cueNoteChord = ornament->cueNoteChord();
+    Chord *cueNoteChord = ornament->cueNoteChord();
     if (cueNoteChord) {
         undoChangeNoteVisibility(cueNoteChord->upNote(), visible);
     }
@@ -196,8 +185,7 @@ static void undoChangeOrnamentVisibility(Ornament* ornament, bool visible)
     }
 }
 
-void EditVisibility::undoChangeVisible(Transaction&, EngravingItem* item, bool visible)
-{
+void EditVisibility::undoChangeVisible(Transaction &, EngravingItem *item, bool visible) {
     if (item->isNote()) {
         undoChangeNoteVisibility(toNote(item), visible);
     } else if (item->isRest()) {
@@ -206,7 +194,7 @@ void EditVisibility::undoChangeVisible(Transaction&, EngravingItem* item, bool v
         undoChangeOrnamentVisibility(toOrnament(item), visible);
     } else if (item->isTrillSegment()) {
         item->undoChangeProperty(Pid::VISIBLE, visible);
-        Ornament* orn = toTrillSegment(item)->trill()->ornament();
+        Ornament *orn = toTrillSegment(item)->trill()->ornament();
         if (orn) {
             undoChangeOrnamentVisibility(orn, visible);
         }

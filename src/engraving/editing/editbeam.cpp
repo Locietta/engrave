@@ -39,9 +39,8 @@ using namespace mu::engraving;
 //   setBeamMode
 //---------------------------------------------------------
 
-void EditBeam::setBeamMode(Transaction&, Score* score, BeamMode mode)
-{
-    for (ChordRest* cr : score->getSelectedChordRests()) {
+void EditBeam::setBeamMode(Transaction &, Score *score, BeamMode mode) {
+    for (ChordRest *cr : score->getSelectedChordRests()) {
         if (cr) {
             cr->undoChangeProperty(Pid::BEAM_MODE, mode);
         }
@@ -52,8 +51,7 @@ void EditBeam::setBeamMode(Transaction&, Score* score, BeamMode mode)
 //   beamSelectedRange
 //---------------------------------------------------------
 
-void EditBeam::beamSelectedRange(Transaction& tx, Score* score)
-{
+void EditBeam::beamSelectedRange(Transaction &tx, Score *score) {
     if (!score->selection().isRange()) {
         return;
     }
@@ -69,15 +67,15 @@ void EditBeam::beamSelectedRange(Transaction& tx, Score* score)
             continue;
         }
 
-        ChordRest* firstChordRest = score->selection().firstChordRest(trackIdx);
-        ChordRest* lastChordRest = score->selection().lastChordRest(trackIdx);
+        ChordRest *firstChordRest = score->selection().firstChordRest(trackIdx);
+        ChordRest *lastChordRest = score->selection().lastChordRest(trackIdx);
 
         if (!firstChordRest || !lastChordRest) {
             continue;
         }
 
-        ChordRest* prev = Navigation::prevChordRest(firstChordRest);
-        ChordRest* cr = firstChordRest;
+        ChordRest *prev = Navigation::prevChordRest(firstChordRest);
+        ChordRest *cr = firstChordRest;
         BeamMode actualBeamMode = Groups::actualBeamMode(cr, prev);
         if (actualBeamMode != BeamMode::BEGIN) {
             cr->undoChangeProperty(Pid::BEAM_MODE, BeamMode::BEGIN);
@@ -107,8 +105,7 @@ void EditBeam::beamSelectedRange(Transaction& tx, Score* score)
 //   resetBeamMode
 //---------------------------------------------------------
 
-void EditBeam::resetBeamMode(Transaction&, Score* score)
-{
+void EditBeam::resetBeamMode(Transaction &, Score *score) {
     bool noSelection = score->selection().isNone();
     if (noSelection) {
         score->cmdSelectAll();
@@ -117,7 +114,7 @@ void EditBeam::resetBeamMode(Transaction&, Score* score)
         return;
     }
 
-    ChordRest* firstCr = score->selection().firstChordRest();
+    ChordRest *firstCr = score->selection().firstChordRest();
     if (!firstCr) {
         LOGD("no chord/rest in selection");
         return;
@@ -128,13 +125,13 @@ void EditBeam::resetBeamMode(Transaction&, Score* score)
     const Fraction endTick = score->selection().tickEnd();
     const SelectionFilter filter = score->selectionFilter();
 
-    for (Segment* seg = firstCr->segment(); seg && seg->tick() < endTick; seg = seg->next1(SegmentType::ChordRest)) {
+    for (Segment *seg = firstCr->segment(); seg && seg->tick() < endTick; seg = seg->next1(SegmentType::ChordRest)) {
         for (track_idx_t track = trackStart; track < trackEnd; ++track) {
             if (!filter.canSelectVoice(track)) {
                 continue;
             }
 
-            ChordRest* cr = toChordRest(seg->element(track));
+            ChordRest *cr = toChordRest(seg->element(track));
             if (!cr) {
                 continue;
             }

@@ -24,37 +24,40 @@
 
 namespace muse::mpe {
 class IArticulationProfilesRepository;
-}
+} // namespace muse::mpe
 
 namespace muse::io {
 class IODevice;
-}
+} // namespace muse::io
 
 namespace muse::audio {
 struct SoundTrackFormat;
-namespace encode { class AbstractAudioEncoder; }
-}
+
+namespace encode {
+class AbstractAudioEncoder;
+} // namespace encode
+} // namespace muse::audio
 
 namespace mu::engraving {
 class MasterScore;
-}
+} // namespace mu::engraving
 
 namespace music {
 
 // The engine's audio services, SoundFonts and render state. EngineContext owns
 // the only instance and creates it idle; initialize_engine_audio() builds the
 // services on first use. profiles must outlive it.
-class EngineAudio
-{
+class EngineAudio {
 public:
-    explicit EngineAudio(const muse::mpe::IArticulationProfilesRepository& profiles);
+    explicit EngineAudio(const muse::mpe::IArticulationProfilesRepository &profiles);
     ~EngineAudio();
 
-    EngineAudio(const EngineAudio&) = delete;
-    EngineAudio& operator=(const EngineAudio&) = delete;
+    EngineAudio(const EngineAudio &) = delete;
+    EngineAudio &operator=(const EngineAudio &) = delete;
 
     struct State;
-    State& state() const { return *m_state; }
+
+    State &state() const { return *m_state; }
 
 private:
     std::unique_ptr<State> m_state;
@@ -90,8 +93,8 @@ private:
 // has been handled yet (lastStaff() == -1, fluidsequencer.h:52,83), so the
 // pre-render flush adds no events. An empty function disables capture. Events
 // are sent on the engine thread; the hook must not re-enter the engine.
-using EngineAudioMidiEventHook = std::function<void(const muse::midi::Event&, std::uint64_t frame)>;
-void set_engine_audio_midi_event_hook(EngineAudio& audio, EngineAudioMidiEventHook hook);
+using EngineAudioMidiEventHook = std::function<void(const muse::midi::Event &, std::uint64_t frame)>;
+void set_engine_audio_midi_event_hook(EngineAudio &audio, EngineAudioMidiEventHook hook);
 
 // Initialises the engine's audio services and loads its SoundFonts:
 //   Capturing MIDI output, owned audio services, explicit
@@ -115,20 +118,21 @@ struct EngineAudioSetup {
     std::vector<std::string> soundfonts; // in order; the first is the default
     int sample_rate = 44100;
 };
+
 // Fully parse candidates without constructing audio services or refreshing live
 // SoundFont handles. The caller supplies immutable paths when retaining a list.
-bool validate_engine_soundfonts(const std::vector<std::string>& soundfonts, std::string* error = nullptr);
-bool initialize_engine_audio(EngineAudio& audio, const EngineAudioSetup& setup, std::string* error = nullptr);
+bool validate_engine_soundfonts(const std::vector<std::string> &soundfonts, std::string *error = nullptr);
+bool initialize_engine_audio(EngineAudio &audio, const EngineAudioSetup &setup, std::string *error = nullptr);
 // One SoundFont at 44100 Hz.
-bool initialize_engine_audio(EngineAudio& audio, const std::string& soundfont_path, std::string* error = nullptr);
-bool engine_audio_initialized(const EngineAudio& audio);
+bool initialize_engine_audio(EngineAudio &audio, const std::string &soundfont_path, std::string *error = nullptr);
+bool engine_audio_initialized(const EngineAudio &audio);
 
 // SoundFont identity of the successfully initialised engine's default (first)
 // font (empty when not initialised). The URI is the encoded "file://" form used
 // as the repository key; it lets callers verify the Windows drive-letter/UTF-8
 // round trip.
-std::string engine_soundfont_resource_id(const EngineAudio& audio);
-std::string engine_soundfont_uri(const EngineAudio& audio);
+std::string engine_soundfont_resource_id(const EngineAudio &audio);
+std::string engine_soundfont_uri(const EngineAudio &audio);
 
 enum class EngineAudioFormat {
     Wav,
@@ -158,8 +162,8 @@ struct AudioRenderRequest {
     EngineAudioFormat format = EngineAudioFormat::Wav;
     std::string output_path;
     // Internal test seam; an empty factory uses the format's built-in encoder.
-    std::function<std::unique_ptr<muse::audio::encode::AbstractAudioEncoder>(
-        const muse::audio::SoundTrackFormat&, muse::io::IODevice&)> encoder_factory;
+    std::function<std::unique_ptr<muse::audio::encode::AbstractAudioEncoder>(const muse::audio::SoundTrackFormat &, muse::io::IODevice &)>
+        encoder_factory;
     // -1 renders the master score. A non-negative value renders the master
     // score with every part that is absent from, or invisible in, that excerpt
     // muted, like MasterNotation::initNotationSoloMuteState
@@ -248,8 +252,7 @@ struct AudioRenderResult {
 // Never throws for a bad score/format/engine state; inspect AudioRenderResult.
 // Exceptions from request.cancelled are rethrown after closing/removing the
 // intermediate and idling the render graph; none unwind through codec callbacks.
-AudioRenderResult export_score_audio(EngineAudio& audio, mu::engraving::MasterScore* master,
-                                     const AudioRenderRequest& request);
+AudioRenderResult export_score_audio(EngineAudio &audio, mu::engraving::MasterScore *master, const AudioRenderRequest &request);
 
 // One playable track for score_audio_tracks. `id` is the raw score identity
 // (muse::ID hex string / muse::String); the public trackId is this entry's
@@ -273,7 +276,6 @@ struct EngineAudioTrackInfo {
 // trackId. excerpt_id == -1 lists the master score; a non-negative value lists
 // only the excerpt's parts, matching what export_score_audio() renders.
 // Throws std::invalid_argument for a null master or an invalid excerpt id.
-std::vector<EngineAudioTrackInfo> engine_audio_tracks(mu::engraving::MasterScore* master,
-                                                      int excerpt_id = -1);
+std::vector<EngineAudioTrackInfo> engine_audio_tracks(mu::engraving::MasterScore *master, int excerpt_id = -1);
 
 } // namespace music

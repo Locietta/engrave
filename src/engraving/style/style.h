@@ -35,66 +35,83 @@
 namespace mu::engraving::compat {
 class ReadChordListHook;
 class ReadStyleHook;
-}
+} // namespace mu::engraving::compat
 
 namespace mu::engraving {
 class XmlReader;
 class XmlWriter;
 
-class MStyle
-{
+class MStyle {
 public:
     MStyle() = default;
 
-    const PropertyValue& styleV(Sid idx) const { return value(idx); }
-    Spatium styleS(Sid idx) const
-    {
+    const PropertyValue &styleV(Sid idx) const { return value(idx); }
+
+    Spatium styleS(Sid idx) const {
         assert(MStyle::valueType(idx) == P_TYPE::SPATIUM);
         return value(idx).value<Spatium>();
     }
 
-    double   styleAbsolute(Sid idx) const { assert(MStyle::valueType(idx) == P_TYPE::SPATIUM); return valueAbsolute(idx); }
-    String   styleSt(Sid idx) const { assert(MStyle::valueType(idx) == P_TYPE::STRING); return value(idx).value<String>(); }
-    bool     styleB(Sid idx) const { assert(MStyle::valueType(idx) == P_TYPE::BOOL); return value(idx).toBool(); }
-    double   styleD(Sid idx) const { assert(MStyle::valueType(idx) == P_TYPE::REAL); return value(idx).toReal(); }
-    int      styleI(Sid idx) const { /* can be int or enum, so no assert */ return value(idx).toInt(); }
+    double styleAbsolute(Sid idx) const {
+        assert(MStyle::valueType(idx) == P_TYPE::SPATIUM);
+        return valueAbsolute(idx);
+    }
 
-    const PropertyValue& value(Sid idx) const;
+    String styleSt(Sid idx) const {
+        assert(MStyle::valueType(idx) == P_TYPE::STRING);
+        return value(idx).value<String>();
+    }
+
+    bool styleB(Sid idx) const {
+        assert(MStyle::valueType(idx) == P_TYPE::BOOL);
+        return value(idx).toBool();
+    }
+
+    double styleD(Sid idx) const {
+        assert(MStyle::valueType(idx) == P_TYPE::REAL);
+        return value(idx).toReal();
+    }
+
+    int styleI(Sid idx) const { /* can be int or enum, so no assert */ return value(idx).toInt(); }
+
+    const PropertyValue &value(Sid idx) const;
     double valueAbsolute(Sid idx) const;
 
-    void set(Sid idx, const PropertyValue& v);
+    void set(Sid idx, const PropertyValue &v);
 
     double spatium() const { return styleD(Sid::spatium); }
+
     void setSpatium(double v) { set(Sid::spatium, v); }
+
     double defaultSpatium() const;
 
     bool isDefault(Sid idx) const;
     void setDefaultStyleVersion(const int defaultsVersion);
     int defaultStyleVersion() const;
 
-    bool read(muse::io::IODevice* device, bool ign = false);
-    bool write(muse::io::IODevice* device);
-    void save(XmlWriter& xml, bool optimize);
-    static bool isValid(muse::io::IODevice* device);
+    bool read(muse::io::IODevice *device, bool ign = false);
+    bool write(muse::io::IODevice *device);
+    void save(XmlWriter &xml, bool optimize);
+    static bool isValid(muse::io::IODevice *device);
 
     void precomputeValues();
 
     static P_TYPE valueType(const Sid);
-    static const char* valueName(const Sid);
-    static Sid styleIdx(const String& name);
+    static const char *valueName(const Sid);
+    static Sid styleIdx(const String &name);
 
 private:
     friend class compat::ReadStyleHook;
 
-    void read(XmlReader& e, compat::ReadChordListHook* readChordListHook, int mscVersion);
+    void read(XmlReader &e, compat::ReadChordListHook *readChordListHook, int mscVersion);
 
-    bool readProperties(XmlReader&);
-    bool readStyleValCompat(XmlReader&);
-    bool readTextStyleValCompat(XmlReader&);
+    bool readProperties(XmlReader &);
+    bool readStyleValCompat(XmlReader &);
+    bool readTextStyleValCompat(XmlReader &);
 
     void applyCompatStyleVals(int mscVersion);
 
     std::array<PropertyValue, size_t(Sid::STYLES)> m_values;
     std::array<double, size_t(Sid::STYLES)> m_precomputedValues;
 };
-}
+} // namespace mu::engraving

@@ -45,8 +45,7 @@ using namespace mu::engraving;
 //   addMeasureRepeat
 //---------------------------------------------------------
 
-void EditMeasureRepeat::addMeasureRepeat(Transaction& tx, Score* score, Measure* firstMeasure, int numMeasures, staff_idx_t staffIdx)
-{
+void EditMeasureRepeat::addMeasureRepeat(Transaction &tx, Score *score, Measure *firstMeasure, int numMeasures, staff_idx_t staffIdx) {
     //
     // make measures into group
     //
@@ -65,13 +64,13 @@ void EditMeasureRepeat::addMeasureRepeat(Transaction& tx, Score* score, Measure*
         // even number, element anchored to last measure in first half of group
         measureWithElementNo = numMeasures / 2;
     }
-    Measure* measureWithElement = firstMeasure;
+    Measure *measureWithElement = firstMeasure;
     for (int i = 1; i < measureWithElementNo; ++i) {
         measureWithElement = measureWithElement->nextMeasure();
     }
     // MeasureRepeat element will be positioned appropriately (in center of measure / on following barline)
     // when stretchMeasure() is called on measureWithElement
-    MeasureRepeat* mr = addMeasureRepeat(tx, score, measureWithElement->tick(), staff2track(staffIdx), numMeasures);
+    MeasureRepeat *mr = addMeasureRepeat(tx, score, measureWithElement->tick(), staff2track(staffIdx), numMeasures);
     score->select(mr, SelectType::SINGLE, 0);
 }
 
@@ -81,14 +80,12 @@ void EditMeasureRepeat::addMeasureRepeat(Transaction& tx, Score* score, Measure*
 ///   returns false if these measures won't work or user aborted
 //---------------------------------------------------------
 
-bool EditMeasureRepeat::makeMeasureRepeatGroup(Transaction&, Score* score, Measure* firstMeasure, int numMeasures,
-                                               staff_idx_t staffIdx)
-{
+bool EditMeasureRepeat::makeMeasureRepeatGroup(Transaction &, Score *score, Measure *firstMeasure, int numMeasures, staff_idx_t staffIdx) {
     //
     // check that sufficient measures exist, with equal durations
     //
-    std::vector<Measure*> measures;
-    Measure* measure = firstMeasure;
+    std::vector<Measure *> measures;
+    Measure *measure = firstMeasure;
     for (int i = 1; i <= numMeasures; ++i) {
         if (!measure || measure->ticks() != firstMeasure->ticks()) {
             MScore::setError(MsError::INSUFFICIENT_MEASURES);
@@ -114,7 +111,7 @@ bool EditMeasureRepeat::makeMeasureRepeatGroup(Transaction&, Score* score, Measu
                 track_idx_t strack = staffIdx * VOICES;
                 track_idx_t etrack = strack + VOICES;
                 for (track_idx_t track = strack; track < etrack; ++track) {
-                    EngravingItem* e = seg->element(track);
+                    EngravingItem *e = seg->element(track);
                     if (e && !e->generated() && !e->isRest()) {
                         empty = false;
                         break;
@@ -126,7 +123,7 @@ bool EditMeasureRepeat::makeMeasureRepeatGroup(Transaction&, Score* score, Measu
 
     if (!empty) {
         auto b = MessageBox().warning(muse::trc("engraving", "Current contents of measures will be replaced"),
-                                                         muse::trc("engraving", "Continue with inserting measure repeat?"));
+                                      muse::trc("engraving", "Continue with inserting measure repeat?"));
         if (b == MessageBox::Button::Cancel) {
             return false;
         }
@@ -149,8 +146,8 @@ bool EditMeasureRepeat::makeMeasureRepeatGroup(Transaction&, Score* score, Measu
         }
         if (m != measures.back()) {
             m->undoSetNoBreak(true);
-            Segment* seg = m->findSegmentR(SegmentType::EndBarLine, m->ticks());
-            BarLine* endBarLine = toBarLine(seg->element(staff2track(staffIdx)));
+            Segment *seg = m->findSegmentR(SegmentType::EndBarLine, m->ticks());
+            BarLine *endBarLine = toBarLine(seg->element(staff2track(staffIdx)));
             score->deleteItem(endBarLine); // also takes care of Pid::REPEAT_END
         }
     }
@@ -165,11 +162,9 @@ bool EditMeasureRepeat::makeMeasureRepeatGroup(Transaction&, Score* score, Measu
 //    does NOT set measureRepeatCount or do anything else with measure(s)!
 //---------------------------------------------------------
 
-MeasureRepeat* EditMeasureRepeat::addMeasureRepeat(Transaction&, Score* score, const Fraction& tick, track_idx_t track,
-                                                   int numMeasures)
-{
-    Measure* measure = score->tick2measure(tick);
-    MeasureRepeat* mr = Factory::createMeasureRepeat(score->dummy());
+MeasureRepeat *EditMeasureRepeat::addMeasureRepeat(Transaction &, Score *score, const Fraction &tick, track_idx_t track, int numMeasures) {
+    Measure *measure = score->tick2measure(tick);
+    MeasureRepeat *mr = Factory::createMeasureRepeat(score->dummy());
     mr->setNumMeasures(numMeasures);
     mr->setTicks(measure->stretchedLen(score->staff(track2staff(track))));
     mr->setTrack(track);

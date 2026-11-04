@@ -27,23 +27,22 @@
 #include "draw/types/font.h"
 
 namespace mu::engraving::rendering::score {
-class TextLayout
-{
+class TextLayout {
 public:
-    static void layoutBaseTextBase(const TextBase* item, TextBase::LayoutData* data);
-    static void layoutBaseTextBase(TextBase* item, LayoutContext& ctx);
-    static void layoutBaseTextBase1(const TextBase* item, TextBase::LayoutData* data);
-    static void layoutBaseTextBase1(TextBase* item, const LayoutContext& ctx);
+    static void layoutBaseTextBase(const TextBase *item, TextBase::LayoutData *data);
+    static void layoutBaseTextBase(TextBase *item, LayoutContext &ctx);
+    static void layoutBaseTextBase1(const TextBase *item, TextBase::LayoutData *data);
+    static void layoutBaseTextBase1(TextBase *item, const LayoutContext &ctx);
 
-    static void computeTextHighResShape(const TextBase* item, TextBase::LayoutData* ldata);
-    static void layoutTextBlock(TextBlock* item, const TextBase* t);
+    static void computeTextHighResShape(const TextBase *item, TextBase::LayoutData *ldata);
+    static void layoutTextBlock(TextBlock *item, const TextBase *t);
 
-    static void substituteMusicFont(muse::draw::Font& font, double size);
+    static void substituteMusicFont(muse::draw::Font &font, double size);
 
 private:
-    static void textHorizontalLayout(const TextBase* item, Shape& shape, double maxBlockWidth, TextBase::LayoutData* ldata);
-    static void justifyLine(const TextBase* item, TextBlock* textBlock, double maxBlockWidth);
-    static double musicSymbolBaseLineAdjust(const TextBlock* block, const TextBase* t, const TextFragment& f,
+    static void textHorizontalLayout(const TextBase *item, Shape &shape, double maxBlockWidth, TextBase::LayoutData *ldata);
+    static void justifyLine(const TextBase *item, TextBlock *textBlock, double maxBlockWidth);
+    static double musicSymbolBaseLineAdjust(const TextBlock *block, const TextBase *t, const TextFragment &f,
                                             const std::list<TextFragment>::iterator fi);
 };
-}
+} // namespace mu::engraving::rendering::score

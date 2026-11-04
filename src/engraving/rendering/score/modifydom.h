@@ -26,25 +26,24 @@
 
 namespace mu::engraving {
 class Measure;
-}
+} // namespace mu::engraving
 
 //! NOTE Here collected functions of DOM modification, witch called on layout stage.
 //! They probably need to be called either before the layout or directly during the DOM modification,
 //! but not during the layout.
 namespace mu::engraving::rendering::score {
-class ModifyDom
-{
+class ModifyDom {
 public:
 
-    static void setCrossMeasure(const Measure* measure, LayoutContext& ctx);
-    static void connectTremolo(Measure* m);
-    static void cmdUpdateNotes(const Measure* measure, const DomAccessor& dom);
-    static void createStems(const Measure* measure, LayoutContext& ctx);
-    static void setTrackForChordGraceNotes(Measure* measure, const DomAccessor& dom);
-    static void sortMeasureSegments(Measure* measure, LayoutContext& ctx);
+    static void setCrossMeasure(const Measure *measure, LayoutContext &ctx);
+    static void connectTremolo(Measure *m);
+    static void cmdUpdateNotes(const Measure *measure, const DomAccessor &dom);
+    static void createStems(const Measure *measure, LayoutContext &ctx);
+    static void setTrackForChordGraceNotes(Measure *measure, const DomAccessor &dom);
+    static void sortMeasureSegments(Measure *measure, LayoutContext &ctx);
 private:
-    static void removeAndAddBeginSegments(Measure* measure);
+    static void removeAndAddBeginSegments(Measure *measure);
 };
-}
+} // namespace mu::engraving::rendering::score
 
 #endif // MU_ENGRAVING_MODIFYDOM_DEV_H

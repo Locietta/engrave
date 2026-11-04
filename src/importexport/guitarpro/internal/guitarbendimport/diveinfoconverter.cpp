@@ -28,11 +28,8 @@
 using namespace mu::engraving;
 
 namespace mu::iex::guitarpro {
-static std::vector<SegmentData> classifyDiveSegments(const PitchValues& pitchValues)
-{
-    enum class Dir {
-        NONE, UP, DOWN
-    };
+static std::vector<SegmentData> classifyDiveSegments(const PitchValues &pitchValues) {
+    enum class Dir { NONE, UP, DOWN };
 
     std::vector<SegmentData> segments;
     Dir prevDir = Dir::NONE;
@@ -52,9 +49,8 @@ static std::vector<SegmentData> classifyDiveSegments(const PitchValues& pitchVal
         Dir curDir = dp > 0 ? Dir::UP : Dir::DOWN;
 
         if (curDir == prevDir && !segments.empty()) {
-            SegmentData& last = segments.back();
-            last.quarterTones = gpPitchToQuarterTones(
-                pitchValues[i + 1].pitch - pitchValues[segStartIdx].pitch);
+            SegmentData &last = segments.back();
+            last.quarterTones = gpPitchToQuarterTones(pitchValues[i + 1].pitch - pitchValues[segStartIdx].pitch);
             last.endFactor = static_cast<double>(pitchValues[i + 1].time) / PitchValue::MAX_TIME;
             continue;
         }
@@ -72,13 +68,9 @@ static std::vector<SegmentData> classifyDiveSegments(const PitchValues& pitchVal
     return segments;
 }
 
-int gpPitchToQuarterTones(int gpPitch)
-{
-    return static_cast<int>(std::lround(static_cast<float>(gpPitch) / GP_PITCH_PER_QUARTERTONE));
-}
+int gpPitchToQuarterTones(int gpPitch) { return static_cast<int>(std::lround(static_cast<float>(gpPitch) / GP_PITCH_PER_QUARTERTONE)); }
 
-ImportedDiveInfo DiveInfoConverter::fromPitchValues(const PitchValues& pitchValues, bool isContinuedWhammy)
-{
+ImportedDiveInfo DiveInfoConverter::fromPitchValues(const PitchValues &pitchValues, bool isContinuedWhammy) {
     ImportedDiveInfo info;
 
     if (pitchValues.size() < 2) {
@@ -112,7 +104,7 @@ ImportedDiveInfo DiveInfoConverter::fromPitchValues(const PitchValues& pitchValu
     info.graceDiveSegments = std::move(chain);
 
     if (info.graceDiveSegments.size() == 1) {
-        SegmentData& only = info.graceDiveSegments.front();
+        SegmentData &only = info.graceDiveSegments.front();
         only.quarterTones = gpPitchToQuarterTones(destPitch - originPitch);
         only.startFactor = static_cast<double>(pitchValues.front().time) / PitchValue::MAX_TIME;
         only.endFactor = static_cast<double>(pitchValues.back().time) / PitchValue::MAX_TIME;
@@ -121,8 +113,7 @@ ImportedDiveInfo DiveInfoConverter::fromPitchValues(const PitchValues& pitchValu
     return info;
 }
 
-ImportedDiveInfo DiveInfoConverter::fillDiveInfo(const Note* note, const PitchValues& pitchValues, bool isContinuedWhammy)
-{
+ImportedDiveInfo DiveInfoConverter::fillDiveInfo(const Note *note, const PitchValues &pitchValues, bool isContinuedWhammy) {
     if (!note || pitchValues.size() < 2) {
         return {};
     }

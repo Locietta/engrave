@@ -29,23 +29,21 @@
 #include "signalnode.h"
 
 namespace muse::audio {
-struct TrackChainTag
-{
-    static constexpr const char* name = "TrackChain";
+struct TrackChainTag {
+    static constexpr const char *name = "TrackChain";
 };
-}
+} // namespace muse::audio
 
 namespace muse::audio::engine {
 //! NOTE A typical node chain for processing a track:
 //! signalnode <- controlnode <- fxnode[] <- audiosource
-class TrackChain : public ChainNode<TrackChainTag>
-{
+class TrackChain : public ChainNode<TrackChainTag> {
 public:
 
-    TrackChain(TrackId trackId, const std::string& trackName);
+    TrackChain(TrackId trackId, const std::string &trackName);
 
     TrackId trackId() const;
-    const std::string& trackName() const;
+    const std::string &trackName() const;
 
     void setSource(IAudioNodePtr source);
     IAudioNodePtr source() const;
@@ -63,7 +61,7 @@ public:
 
 protected:
 
-    void doSelfProcess(float*, samples_t) override {}
+    void doSelfProcess(float *, samples_t) override {}
 
     TrackId m_trackId = INVALID_TRACK_ID;
     std::string m_trackName;
@@ -75,4 +73,4 @@ protected:
 };
 
 using TrackChainPtr = std::shared_ptr<TrackChain>;
-}
+} // namespace muse::audio::engine

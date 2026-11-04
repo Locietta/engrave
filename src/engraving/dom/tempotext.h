@@ -27,8 +27,7 @@
 #include "textbase.h"
 
 namespace mu::engraving {
-enum class TempoTextType : signed char
-{
+enum class TempoTextType : signed char {
     NORMAL,
     A_TEMPO,
     TEMPO_PRIMO,
@@ -42,56 +41,67 @@ enum class TempoTextType : signed char
 //   @P followText  bool      determine tempo from text
 //-------------------------------------------------------------------
 
-class TempoText final : public TextBase
-{
+class TempoText final : public TextBase {
     OBJECT_ALLOCATOR(engraving, TempoText)
     DECLARE_CLASSOF(ElementType::TEMPO_TEXT)
 
 public:
     TempoText(DummyParentOr<Segment> parent);
 
-    TempoText* clone() const override { return new TempoText(*this); }
+    TempoText *clone() const override { return new TempoText(*this); }
 
-    Segment* segment() const { return toSegment(ownershipParent()); }
-    Measure* measure() const { return toMeasure(ownershipParent()->ownershipParent()); }
+    Segment *segment() const { return toSegment(ownershipParent()); }
+
+    Measure *measure() const { return toMeasure(ownershipParent()->ownershipParent()); }
 
     TempoTextType tempoTextType() const { return m_tempoTextType; }
+
     void setTempoTextType(TempoTextType);
 
     BeatsPerSecond tempo() const;
     double tempoBpm() const;
     void setTempo(BeatsPerSecond v);
+
     bool isRelative() const { return m_isRelative; }
-    void setRelative(double v) { m_isRelative = true; m_relative = v; }
+
+    void setRelative(double v) {
+        m_isRelative = true;
+        m_relative = v;
+    }
+
     double relativeValue() const { return m_relative; }
 
     bool isNormal() const { return m_tempoTextType == TempoTextType::NORMAL; }
+
     void setNormal() { setTempoTextType(TempoTextType::NORMAL); }
 
     bool isATempo() const { return m_tempoTextType == TempoTextType::A_TEMPO; }
+
     void setATempo() { setTempoTextType(TempoTextType::A_TEMPO); }
 
     bool isTempoPrimo() const { return m_tempoTextType == TempoTextType::TEMPO_PRIMO; }
+
     void setTempoPrimo() { setTempoTextType(TempoTextType::TEMPO_PRIMO); }
 
     bool playTempoText() const { return m_playTempoText; }
+
     void setPlayTempoText(bool v) { m_playTempoText = v; }
 
     bool followText() const { return m_followText; }
+
     void setFollowText(bool v) { m_followText = v; }
 
     void updateTempo();
 
     TDuration duration() const;
 
-    static int findTempoDuration(const String& s, int& len, TDuration& dur);
+    static int findTempoDuration(const String &s, int &len, TDuration &dur);
     static String duration2tempoTextString(const TDuration dur);
     static String duration2userName(const TDuration t);
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid id) const override;
-
 
     bool positionRelativeToNoteheadRest() const override { return true; }
 
@@ -102,11 +112,11 @@ public:
 protected:
     void commitText() override;
 
-    void undoChangeProperty(Pid id, const PropertyValue&, PropertyFlags ps) override;
+    void undoChangeProperty(Pid id, const PropertyValue &, PropertyFlags ps) override;
 
     TempoTextType m_tempoTextType;
-    BeatsPerSecond m_tempo;             // beats per second
-    bool m_followText = false;          // parse text to determine tempo
+    BeatsPerSecond m_tempo;    // beats per second
+    bool m_followText = false; // parse text to determine tempo
     bool m_playTempoText = true;
     double m_relative = 0.0;
     bool m_isRelative = false;

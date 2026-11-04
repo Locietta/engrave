@@ -35,11 +35,11 @@ class Transaction;
 //---------------------------------------------------------
 
 enum class TimeSigType : unsigned char {
-    NORMAL,              // use sz/sn text
-    FOUR_FOUR,           // common time (4/4)
-    ALLA_BREVE,          // cut time (2/2)
-    CUT_BACH,            // cut time (Bach)
-    CUT_TRIPLE,          // cut triple time (9/8)
+    NORMAL,     // use sz/sn text
+    FOUR_FOUR,  // common time (4/4)
+    ALLA_BREVE, // cut time (2/2)
+    CUT_BACH,   // cut time (Bach)
+    CUT_TRIPLE, // cut triple time (9/8)
 };
 
 //---------------------------------------------------------------------------------------
@@ -47,8 +47,7 @@ enum class TimeSigType : unsigned char {
 ///    This class represents a time signature.
 //---------------------------------------------------------------------------------------
 
-class TimeSig final : public EngravingItem
-{
+class TimeSig final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, TimeSig)
     DECLARE_CLASSOF(ElementType::TIMESIG)
 
@@ -59,66 +58,78 @@ public:
     void setOwnershipParent(DummyParentOr<Segment> parent);
 
     String ssig() const;
-    void setSSig(const String&);
+    void setSSig(const String &);
 
-    TimeSig* clone() const override { return new TimeSig(*this); }
+    TimeSig *clone() const override { return new TimeSig(*this); }
 
     TimeSigType timeSigType() const { return m_timeSigType; }
 
     int subtype() const override;
     TranslatableString subtypeUserName() const override;
 
-    bool operator==(const TimeSig&) const;
-    bool operator!=(const TimeSig& ts) const { return !(*this == ts); }
+    bool operator==(const TimeSig &) const;
+
+    bool operator!=(const TimeSig &ts) const { return !(*this == ts); }
 
     double mag() const override;
 
     Fraction sig() const { return m_sig; }
-    void setSig(const Fraction& f, TimeSigType st = TimeSigType::NORMAL);
+
+    void setSig(const Fraction &f, TimeSigType st = TimeSigType::NORMAL);
+
     int numerator() const { return m_sig.numerator(); }
+
     int denominator() const { return m_sig.denominator(); }
 
     Fraction stretch() const { return m_stretch; }
-    void setStretch(const Fraction& s) { m_stretch = s; }
+
+    void setStretch(const Fraction &s) { m_stretch = s; }
+
     int numeratorStretch() const { return m_stretch.numerator(); }
+
     int denominatorStretch() const { return m_stretch.denominator(); }
 
-    bool acceptDrop(EditData&) const override;
-    EngravingItem* drop(Transaction& tx, EditData&) override;
+    bool acceptDrop(EditData &) const override;
+    EngravingItem *drop(Transaction &tx, EditData &) override;
 
-    Segment* segment() const { return (Segment*)ownershipParent(); }
-    Measure* measure() const { return (Measure*)ownershipParent()->ownershipParent(); }
+    Segment *segment() const { return (Segment *) ownershipParent(); }
+
+    Measure *measure() const { return (Measure *) ownershipParent()->ownershipParent(); }
 
     bool showCourtesySig() const { return m_showCourtesySig; }
+
     void setShowCourtesySig(bool v) { m_showCourtesySig = v; }
 
-    const String& numeratorString() const { return m_numeratorString; }
-    void setNumeratorString(const String&);
+    const String &numeratorString() const { return m_numeratorString; }
 
-    const String& denominatorString() const { return m_denominatorString; }
-    void setDenominatorString(const String&);
+    void setNumeratorString(const String &);
+
+    const String &denominatorString() const { return m_denominatorString; }
+
+    void setDenominatorString(const String &);
 
     bool largeParentheses() const { return m_largeParentheses; }
+
     void setLargeParentheses(bool v) { m_largeParentheses = v; }
 
-    void setFrom(const TimeSig*);
+    void setFrom(const TimeSig *);
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid id) const override;
 
-    const Groups& groups() const { return m_groups; }
-    void setGroups(const Groups& e) { m_groups = e; }
+    const Groups &groups() const { return m_groups; }
+
+    void setGroups(const Groups &e) { m_groups = e; }
 
     bool isLocal() const { return m_stretch != Fraction(1, 1); }
 
     PointF staffOffset() const override;
 
-    EngravingItem* nextSegmentElement() override;
-    EngravingItem* prevSegmentElement() override;
+    EngravingItem *nextSegmentElement() override;
+    EngravingItem *prevSegmentElement() override;
 
-
-    void initElementStyle(const ElementStyle*) override;
+    void initElementStyle(const ElementStyle *) override;
     void styleChanged() override;
     Sid getPropertyStyle(Pid id) const override;
 
@@ -129,8 +140,10 @@ public:
     TimeSigStyle timeSigStyle() const;
     double numDist() const;
     double yPos() const;
-    const ScaleF& scale() const { return m_scale; }
-    void setScale(const ScaleF& s) { m_scale = s; } // TODO: think about what to do with this
+
+    const ScaleF &scale() const { return m_scale; }
+
+    void setScale(const ScaleF &s) { m_scale = s; } // TODO: think about what to do with this
 
     struct LayoutData : public EngravingItem::LayoutData {
         SymIdList ns;
@@ -151,11 +164,11 @@ private:
     friend class Factory;
     TimeSig(DummyParentOr<Segment> parent);
 
-    String m_numeratorString;       // calculated from actualSig() if !customText
+    String m_numeratorString; // calculated from actualSig() if !customText
     String m_denominatorString;
 
     Fraction m_sig;
-    Fraction m_stretch;        // localSig / globalSig
+    Fraction m_stretch; // localSig / globalSig
     Groups m_groups;
 
     ScaleF m_scale = ScaleF(1.0, 1.0);

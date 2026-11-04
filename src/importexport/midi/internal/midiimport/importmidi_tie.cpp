@@ -38,16 +38,13 @@
 
 using namespace mu::engraving;
 
-namespace mu::iex::midi {
-namespace MidiTie {
-static bool isTied(const Segment* seg, track_idx_t strack, voice_idx_t voice,
-                   mu::engraving::Tie* (Note::* tieFunc)() const)
-{
-    ChordRest* cr = toChordRest(seg->element(strack + voice));
+namespace mu::iex::midi { namespace MidiTie {
+static bool isTied(const Segment *seg, track_idx_t strack, voice_idx_t voice, mu::engraving::Tie *(Note::*tieFunc)() const) {
+    ChordRest *cr = toChordRest(seg->element(strack + voice));
     if (cr && cr->isChord()) {
-        Chord* chord = toChord(cr);
-        const auto& notes = chord->notes();
-        for (const Note* note: notes) {
+        Chord *chord = toChord(cr);
+        const auto &notes = chord->notes();
+        for (const Note *note : notes) {
             if ((note->*tieFunc)()) {
                 return true;
             }
@@ -56,21 +53,14 @@ static bool isTied(const Segment* seg, track_idx_t strack, voice_idx_t voice,
     return false;
 }
 
-bool isTiedFor(const Segment* seg, track_idx_t strack, voice_idx_t voice)
-{
-    return isTied(seg, strack, voice, &Note::tieFor);
-}
+bool isTiedFor(const Segment *seg, track_idx_t strack, voice_idx_t voice) { return isTied(seg, strack, voice, &Note::tieFor); }
 
-bool isTiedBack(const Segment* seg, track_idx_t strack, voice_idx_t voice)
-{
-    return isTied(seg, strack, voice, &Note::tieBack);
-}
+bool isTiedBack(const Segment *seg, track_idx_t strack, voice_idx_t voice) { return isTied(seg, strack, voice, &Note::tieBack); }
 
-void TieStateMachine::addSeg(const Segment* seg, track_idx_t strack)
-{
+void TieStateMachine::addSeg(const Segment *seg, track_idx_t strack) {
     bool isChord = false;
     for (voice_idx_t voice = 0; voice < VOICES; ++voice) {
-        ChordRest* cr = toChordRest(seg->element(strack + voice));
+        ChordRest *cr = toChordRest(seg->element(strack + voice));
         if (!cr || !cr->isChord()) {
             continue;
         }
@@ -91,13 +81,11 @@ void TieStateMachine::addSeg(const Segment* seg, track_idx_t strack)
         return;
     }
 
-    if (tiedVoices.empty() && (state_ == State::TIED_FOR
-                               || state_ == State::TIED_BOTH)) {
+    if (tiedVoices.empty() && (state_ == State::TIED_FOR || state_ == State::TIED_BOTH)) {
         state_ = State::TIED_BACK;
     } else if (tiedVoices.empty() && state_ == State::TIED_BACK) {
         state_ = State::UNTIED;
-    } else if (!tiedVoices.empty() && (state_ == State::TIED_BACK
-                                       || state_ == State::UNTIED)) {
+    } else if (!tiedVoices.empty() && (state_ == State::TIED_BACK || state_ == State::UNTIED)) {
         state_ = State::TIED_FOR;
     } else if (!tiedVoices.empty() && state_ == State::TIED_FOR) {
         state_ = State::TIED_BOTH;
@@ -106,22 +94,18 @@ void TieStateMachine::addSeg(const Segment* seg, track_idx_t strack)
 
 #ifndef NDEBUG
 
-static void printInconsistentTieLocation(int measureIndex, staff_idx_t staffIndex)
-{
-    LOGD() << "Ties are inconsistent; measure number (from 1):"
-           << measureIndex + 1
-           << ", staff index (from 0):" << staffIndex;
+static void printInconsistentTieLocation(int measureIndex, staff_idx_t staffIndex) {
+    LOGD() << "Ties are inconsistent; measure number (from 1):" << measureIndex + 1 << ", staff index (from 0):" << staffIndex;
 }
 
-bool areTiesConsistent(const Staff* staff)
-{
+bool areTiesConsistent(const Staff *staff) {
     const track_idx_t strack = staff->idx() * VOICES;
 
     for (voice_idx_t voice = 0; voice < VOICES; ++voice) {
         bool isTie = false;
-        for (Segment* seg = staff->score()->firstSegment(SegmentType::All); seg; seg = seg->next1()) {
+        for (Segment *seg = staff->score()->firstSegment(SegmentType::All); seg; seg = seg->next1()) {
             if (seg->segmentType() == SegmentType::ChordRest) {
-                ChordRest* cr = toChordRest(seg->element(strack + voice));
+                ChordRest *cr = toChordRest(seg->element(strack + voice));
 
                 if (cr && cr->isRest() && isTie) {
                     printInconsistentTieLocation(seg->measure()->measureNumber(), staff->idx());
@@ -151,5 +135,4 @@ bool areTiesConsistent(const Staff* staff)
 }
 
 #endif
-} // namespace MidiTie
-} // namespace mu::iex::midi
+}} // namespace mu::iex::midi::MidiTie

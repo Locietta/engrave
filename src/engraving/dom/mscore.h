@@ -29,42 +29,26 @@
 namespace mu::engraving {
 static constexpr size_t VOICES = 4;
 
-inline constexpr track_idx_t staff2track(staff_idx_t staffIdx, voice_idx_t voiceIdx = 0)
-{
+inline constexpr track_idx_t staff2track(staff_idx_t staffIdx, voice_idx_t voiceIdx = 0) {
     return staffIdx != muse::nidx ? staffIdx * VOICES + voiceIdx : muse::nidx;
 }
 
-inline constexpr staff_idx_t track2staff(track_idx_t track)
-{
-    return track != muse::nidx ? track / VOICES : muse::nidx;
-}
+inline constexpr staff_idx_t track2staff(track_idx_t track) { return track != muse::nidx ? track / VOICES : muse::nidx; }
 
-inline constexpr voice_idx_t track2voice(track_idx_t track)
-{
-    return track != muse::nidx ? track % VOICES : muse::nidx;
-}
+inline constexpr voice_idx_t track2voice(track_idx_t track) { return track != muse::nidx ? track % VOICES : muse::nidx; }
 
-inline constexpr track_idx_t trackZeroVoice(track_idx_t track)
-{
-    return track != muse::nidx ? (track / VOICES) * VOICES : muse::nidx;
-}
+inline constexpr track_idx_t trackZeroVoice(track_idx_t track) { return track != muse::nidx ? (track / VOICES) * VOICES : muse::nidx; }
 
-inline constexpr bool isUpVoice(voice_idx_t voiceIdx)
-{
-    return !(voiceIdx & 1);
-}
+inline constexpr bool isUpVoice(voice_idx_t voiceIdx) { return !(voiceIdx & 1); }
 
-inline constexpr bool isDownVoice(voice_idx_t voiceIdx)
-{
-    return voiceIdx & 1;
-}
+inline constexpr bool isDownVoice(voice_idx_t voiceIdx) { return voiceIdx & 1; }
 
 static constexpr int MAX_HEADERS = 3;
 static constexpr int MAX_FOOTERS = 3;
 
 // UNIVERSAL UNITS
-static constexpr double INCH      = 25.4; // millimitres per inch
-static constexpr double PPI       = 72.0; // typographical points per inch
+static constexpr double INCH = 25.4; // millimitres per inch
+static constexpr double PPI = 72.0;  // typographical points per inch
 
 // INTERNAL DRAWING UNITS
 static constexpr double DPI = 1200;
@@ -74,12 +58,12 @@ static constexpr double UI_ICONS_DEFAULT_FONT_SIZE = 12.0;
 
 static constexpr int MAX_STAVES = 4;
 
-static constexpr char mimeSymbolFormat[]     = "application/musescore/symbol";
+static constexpr char mimeSymbolFormat[] = "application/musescore/symbol";
 static constexpr char mimeSymbolListFormat[] = "application/musescore/symbollist";
-static constexpr char mimeStaffListFormat[]  = "application/musescore/stafflist";
+static constexpr char mimeStaffListFormat[] = "application/musescore/stafflist";
 
 static constexpr int INVALID_STRING_INDEX = -1; // no ordinal for a physical string (0 = topmost in instrument)
-static constexpr int INVALID_FRET_INDEX   = -1; // no ordinal for a fret
+static constexpr int INVALID_FRET_INDEX = -1;   // no ordinal for a fret
 
 static constexpr muse::ID INVALID_ID = 0;
 
@@ -87,33 +71,27 @@ static constexpr muse::ID INVALID_ID = 0;
 //   TransposeDirection
 //---------------------------------------------------------
 
-enum class TransposeDirection : char {
-    UP, DOWN, CLOSEST, UNKNOWN
-};
+enum class TransposeDirection : char { UP, DOWN, CLOSEST, UNKNOWN };
 
 //---------------------------------------------------------
 //   TransposeMode
 //---------------------------------------------------------
 
-enum class TransposeMode : char {
-    TO_KEY, BY_INTERVAL, DIATONICALLY, UNKNOWN
-};
+enum class TransposeMode : char { TO_KEY, BY_INTERVAL, DIATONICALLY, UNKNOWN };
 
 //---------------------------------------------------------
 //   SelectType
 //---------------------------------------------------------
 
-enum class SelectType : char {
-    SINGLE, RANGE, ADD, REPLACE
-};
+enum class SelectType : char { SINGLE, RANGE, ADD, REPLACE };
 
 //---------------------------------------------------------
 //   OffsetType
 //---------------------------------------------------------
 
 enum class OffsetType : unsigned char {
-    ABS,         ///< offset in point units
-    SPATIUM      ///< offset in staff space units
+    ABS,    ///< offset in point units
+    SPATIUM ///< offset in staff space units
 };
 
 //---------------------------------------------------------
@@ -162,8 +140,8 @@ enum class MsError : unsigned char {
 /// \cond PLUGIN_API \private \endcond
 struct MScoreError {
     MsError no;
-    const char* group;
-    const char* txt;
+    const char *group;
+    const char *txt;
 };
 
 //---------------------------------------------------------
@@ -171,8 +149,7 @@ struct MScoreError {
 //    MuseScore application object
 //---------------------------------------------------------
 
-class MScore
-{
+class MScore {
     static int _hRaster, _vRaster;
     static bool _verticalOrientation;
 
@@ -184,14 +161,21 @@ public:
     static void registerUiTypes();
 
     static double hRaster() { return _hRaster; }
+
     static double vRaster() { return _vRaster; }
+
     static void setHRaster(int val) { _hRaster = val; }
+
     static void setVRaster(int val) { _vRaster = val; }
+
     static void setNudgeStep(double val) { nudgeStep = val; }
+
     static void setNudgeStep10(double val) { nudgeStep10 = val; }
+
     static void setNudgeStep50(double val) { nudgeStep50 = val; }
 
     static bool verticalOrientation() { return _verticalOrientation; }
+
     static void setVerticalOrientation(bool val) { _verticalOrientation = val; }
 
     static bool warnPitchRange;
@@ -202,11 +186,11 @@ public:
     static double nudgeStep10;
     static double nudgeStep50;
 
-// #ifndef NDEBUG
+    // #ifndef NDEBUG
     static bool noHorizontalStretch;
     static bool noVerticalStretch;
     static bool useFallbackFont;
-// #endif
+    // #endif
     static bool debugMode;
     static bool testMode;
     static bool testWriteStyleToScore;
@@ -223,7 +207,10 @@ public:
     static double horizontalPageGapEven;
     static double horizontalPageGapOdd;
 
-    static void setError(MsError e, bool warning = false) { _error = e; _errorIsWarning = warning; }
+    static void setError(MsError e, bool warning = false) {
+        _error = e;
+        _errorIsWarning = warning;
+    }
 
     static std::string errorToString(MsError err);
 };

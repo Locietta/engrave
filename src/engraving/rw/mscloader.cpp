@@ -52,8 +52,7 @@ using namespace muse::io;
 using namespace mu::engraving;
 using namespace mu::engraving::rw;
 
-static RetVal<IReaderPtr> makeReader(int version, bool ignoreVersionError)
-{
+static RetVal<IReaderPtr> makeReader(int version, bool ignoreVersionError) {
     if (version < 460) {
         return RetVal<IReaderPtr>(make_ret(Err::FileTooOld));
     }
@@ -74,16 +73,12 @@ static RetVal<IReaderPtr> makeReader(int version, bool ignoreVersionError)
     return RetVal<IReaderPtr>::make_ok(RWRegister::reader(version));
 }
 
-Ret MscLoader::loadMscz(MasterScore* masterScore, const MscReader& mscReader, rw::ReadInOutData* inOut,
-                        bool ignoreVersionError)
-{
+Ret MscLoader::loadMscz(MasterScore *masterScore, const MscReader &mscReader, rw::ReadInOutData *inOut, bool ignoreVersionError) {
     TRACEFUNC;
 
     using namespace mu::engraving;
 
-    IF_ASSERT_FAILED(mscReader.isOpened()) {
-        return make_ret(Err::FileOpenError, mscReader.params().filePath);
-    }
+    IF_ASSERT_FAILED(mscReader.isOpened()) { return make_ret(Err::FileOpenError, mscReader.params().filePath); }
 
     ScoreLoad sl;
 
@@ -114,8 +109,8 @@ Ret MscLoader::loadMscz(MasterScore* masterScore, const MscReader& mscReader, rw
 
             if (!chordListOk) {
                 // See also ReadChordListHook::validate()
-                MStyle& style = masterScore->style();
-                ChordList* chordList = masterScore->chordList();
+                MStyle &style = masterScore->style();
+                ChordList *chordList = masterScore->chordList();
 
                 bool custom = style.styleV(Sid::chordStyle).value<ChordStylePreset>() == ChordStylePreset::CUSTOM;
                 chordList->setCustomChordList(custom);
@@ -129,7 +124,7 @@ Ret MscLoader::loadMscz(MasterScore* masterScore, const MscReader& mscReader, rw
         {
             if (!MScore::noImages) {
                 std::vector<String> images = mscReader.imageFileNames();
-                for (const String& name : images) {
+                for (const String &name : images) {
                     imageStore.add(name.toStdString(), mscReader.readImageFile(name));
                 }
             }
@@ -159,12 +154,12 @@ Ret MscLoader::loadMscz(MasterScore* masterScore, const MscReader& mscReader, rw
     // Read excerpts
     if (ret && masterScore->mscVersion() >= 400 && mscReader.isContainer()) {
         std::vector<String> excerptFileNames = mscReader.excerptFileNames();
-        for (const String& excerptFileName : excerptFileNames) {
-            Score* partScore = masterScore->createScore();
+        for (const String &excerptFileName : excerptFileNames) {
+            Score *partScore = masterScore->createScore();
 
             compat::ReadStyleHook::setupDefaultStyle(partScore);
 
-            Excerpt* ex = new Excerpt(masterScore);
+            Excerpt *ex = new Excerpt(masterScore);
             ex->setExcerptScore(partScore);
             ex->setFileName(excerptFileName);
 
@@ -199,9 +194,9 @@ Ret MscLoader::loadMscz(MasterScore* masterScore, const MscReader& mscReader, rw
 
                 if (nameFromMeta.empty()) {
                     // If that's also empty, fall back to the filename
-                    ex->setName(excerptFileName, /*saveAndNotify=*/ false);
+                    ex->setName(excerptFileName, /*saveAndNotify=*/false);
                 } else {
-                    ex->setName(nameFromMeta, /*saveAndNotify=*/ false);
+                    ex->setName(nameFromMeta, /*saveAndNotify=*/false);
                 }
             }
 
@@ -224,9 +219,8 @@ Ret MscLoader::loadMscz(MasterScore* masterScore, const MscReader& mscReader, rw
     return ret;
 }
 
-Ret MscLoader::readMasterScore(MasterScore* score, XmlReader& e, bool ignoreVersionError, ReadInOutData* out,
-                               compat::ReadStyleHook* styleHook)
-{
+Ret MscLoader::readMasterScore(MasterScore *score, XmlReader &e, bool ignoreVersionError, ReadInOutData *out,
+                               compat::ReadStyleHook *styleHook) {
     while (e.readNextStartElement()) {
         if (e.name() == "museScore") {
             const String version = e.attribute("version");
@@ -235,8 +229,7 @@ Ret MscLoader::readMasterScore(MasterScore* score, XmlReader& e, bool ignoreVers
             score->setMscVersion(sl[0].toInt() * 100 + sl[1].toInt());
             if (score->mscVersion() < 460) {
                 return Ret(static_cast<int>(Err::FileTooOld),
-                           "written by MuseScore " + version.toStdString()
-                           + "; scores from before MuseScore 4.6 are not supported");
+                           "written by MuseScore " + version.toStdString() + "; scores from before MuseScore 4.6 are not supported");
             }
 
             RetVal<IReaderPtr> reader = makeReader(score->mscVersion(), ignoreVersionError);
@@ -244,9 +237,7 @@ Ret MscLoader::readMasterScore(MasterScore* score, XmlReader& e, bool ignoreVers
                 return reader.ret;
             }
 
-            IF_ASSERT_FAILED(reader.val) {
-                return make_ret(Err::FileUnknownError);
-            }
+            IF_ASSERT_FAILED(reader.val) { return make_ret(Err::FileUnknownError); }
 
             //! NOTE We need to achieve that the default style corresponds to the version in which the score is created.
             //! The values that the user changed will be written on over (only they are stored in the `mscz` file)

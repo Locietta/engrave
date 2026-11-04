@@ -27,31 +27,30 @@ namespace mu::engraving {
 class Dynamic;
 class Transaction;
 
-class Expression final : public TextBase
-{
+class Expression final : public TextBase {
     M_PROPERTY(bool, snapToDynamics, setSnapToDynamics)
     DECLARE_CLASSOF(ElementType::EXPRESSION)
 
 public:
     Expression(DummyParentOr<Segment> parent);
-    Expression(const Expression& expression);
+    Expression(const Expression &expression);
 
-    Expression* clone() const override { return new Expression(*this); }
+    Expression *clone() const override { return new Expression(*this); }
 
-    Segment* segment() const { return toSegment(ownershipParent()); }
+    Segment *segment() const { return toSegment(ownershipParent()); }
 
     PropertyValue propertyDefault(Pid id) const override;
 
-    double computeDynamicExpressionDistance(const Dynamic* snappedDyn) const;
+    double computeDynamicExpressionDistance(const Dynamic *snappedDyn) const;
 
-    bool acceptDrop(EditData& ed) const override;
-    EngravingItem* drop(Transaction& tx, EditData& ed) override;
+    bool acceptDrop(EditData &ed) const override;
+    EngravingItem *drop(Transaction &tx, EditData &ed) override;
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue& v) override;
-    void mapPropertiesFromOldExpressions(StaffText* staffText);
+    bool setProperty(Pid propertyId, const PropertyValue &v) override;
+    void mapPropertiesFromOldExpressions(StaffText *staffText);
 
-    Dynamic* snappedDynamic() const;
+    Dynamic *snappedDynamic() const;
 
     bool hasVoiceAssignmentProperties() const override { return true; }
 
@@ -59,4 +58,4 @@ public:
 
     bool positionRelativeToNoteheadRest() const override { return true; }
 };
-}
+} // namespace mu::engraving

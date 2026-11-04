@@ -45,9 +45,8 @@ namespace mu::engraving {
 
 bool StringData::bFretting = false;
 
-StringData::StringData(int numFrets, int numStrings, int strings[], bool useFlats)
-{
-    instrString strg = { 0, false, 0 };
+StringData::StringData(int numFrets, int numStrings, int strings[], bool useFlats) {
+    instrString strg = {0, false, 0};
     m_frets = numFrets;
 
     const int safeNumStrings = std::max(0, numStrings);
@@ -60,25 +59,20 @@ StringData::StringData(int numFrets, int numStrings, int strings[], bool useFlat
     m_useFlats = useFlats;
 }
 
-StringData::StringData(int numFrets, std::vector<instrString>& strings)
-{
+StringData::StringData(int numFrets, std::vector<instrString> &strings) {
     m_frets = numFrets;
 
     m_stringTable.clear();
     m_stringTable.reserve(strings.size());
-    for (const instrString& i : strings) {
+    for (const instrString &i : strings) {
         m_stringTable.push_back(i);
     }
 }
 
-bool StringData::isNull() const
-{
-    return *this == StringData();
-}
+bool StringData::isNull() const { return *this == StringData(); }
 
 // called from import (musicxml/guitarpro/...)
-void StringData::set(const StringData& src)
-{
+void StringData::set(const StringData &src) {
     *this = src;
     if (isFiveStringBanjo()) {
         configBanjo5thString();
@@ -98,8 +92,7 @@ void StringData::set(const StringData& src)
 //          from highest (0) to lowest (strings()-1)
 //---------------------------------------------------------
 
-bool StringData::convertPitch(int pitch, const Staff* staff, int* string, int* fret) const
-{
+bool StringData::convertPitch(int pitch, const Staff *staff, int *string, int *fret) const {
     return convertPitch(pitch, pitchOffsetAt(staff), string, fret);
 }
 
@@ -116,8 +109,7 @@ bool StringData::convertPitch(int pitch, const Staff* staff, int* string, int* f
 //          from highest (0) to lowest (strings()-1)
 //---------------------------------------------------------
 
-bool StringData::convertPitch(int pitch, const Staff* staff, const Fraction& tick, int* string, int* fret) const
-{
+bool StringData::convertPitch(int pitch, const Staff *staff, const Fraction &tick, int *string, int *fret) const {
     return convertPitch(pitch, pitchOffsetAt(staff, tick), string, fret);
 }
 
@@ -129,10 +121,7 @@ bool StringData::convertPitch(int pitch, const Staff* staff, const Fraction& tic
 //    Note: frets above max fret are accepted.
 //---------------------------------------------------------
 
-int StringData::getPitch(int string, int fret, const Staff* staff) const
-{
-    return getPitch(string, fret, pitchOffsetAt(staff));
-}
+int StringData::getPitch(int string, int fret, const Staff *staff) const { return getPitch(string, fret, pitchOffsetAt(staff)); }
 
 //---------------------------------------------------------
 //   getPitch
@@ -142,10 +131,9 @@ int StringData::getPitch(int string, int fret, const Staff* staff) const
 //    Note: frets above max fret are accepted.
 //---------------------------------------------------------
 
-int StringData::getPitch(int string, int fret, const Staff* staff, const Fraction& tick) const
-{
-    const CapoParams& capo = staff->capo(tick);
-    bool ignoredString = capo.active && muse::contains(capo.ignoredStrings, (string_idx_t)string);
+int StringData::getPitch(int string, int fret, const Staff *staff, const Fraction &tick) const {
+    const CapoParams &capo = staff->capo(tick);
+    bool ignoredString = capo.active && muse::contains(capo.ignoredStrings, (string_idx_t) string);
     return ignoredString ? getPitch(string, fret, pitchOffsetAt(staff)) : getPitch(string, fret, pitchOffsetAt(staff, tick));
 }
 
@@ -156,13 +144,9 @@ int StringData::getPitch(int string, int fret, const Staff* staff, const Fractio
 //    Returns INVALID_FRET_INDEX if not possible
 //---------------------------------------------------------
 
-int StringData::fret(int pitch, int string, const Staff* staff) const
-{
-    return fret(pitch, string, pitchOffsetAt(staff));
-}
+int StringData::fret(int pitch, int string, const Staff *staff) const { return fret(pitch, string, pitchOffsetAt(staff)); }
 
-int StringData::fret(int pitch, int string, const Staff* staff, const Fraction& tick) const
-{
+int StringData::fret(int pitch, int string, const Staff *staff, const Fraction &tick) const {
     return fret(pitch, string, pitchOffsetAt(staff, tick));
 }
 
@@ -177,21 +161,18 @@ int StringData::fret(int pitch, int string, const Staff* staff, const Fraction& 
 //    a separate string
 //---------------------------------------------------------
 
-void StringData::fretChords(Chord* chord) const
-{
+void StringData::fretChords(Chord *chord) const {
     if (bFretting) {
         return;
     }
     bFretting = true;
-    DEFER {
-        bFretting = false;
-    };
+    DEFER { bFretting = false; };
 
     int strings = static_cast<int>(this->strings());
     const bool skipDeadNotes = chord->configuration()->keepDeadNotesUnchangedOnTranspose();
 
     // we need the notes sorted in order of string (from highest to lowest) and then pitch
-    std::map<int, Note*> sortedNotes;
+    std::map<int, Note *> sortedNotes;
     int count = 0;
     // if chord parent is not a segment, the chord is special (usually a grace chord):
     // fret it by itself, ignoring the segment
@@ -199,20 +180,20 @@ void StringData::fretChords(Chord* chord) const
         sortChordNotes(sortedNotes, chord, &count);
     } else {
         // scan each chord of seg from same staff as 'chord', inserting each of its notes in sortedNotes
-        Segment* seg = chord->segment();
+        Segment *seg = chord->segment();
         track_idx_t trk;
         track_idx_t trkFrom = (chord->track() / VOICES) * VOICES;
-        track_idx_t trkTo   = trkFrom + VOICES;
+        track_idx_t trkTo = trkFrom + VOICES;
         for (trk = trkFrom; trk < trkTo; ++trk) {
-            EngravingItem* ch = seg->elist().at(trk);
+            EngravingItem *ch = seg->elist().at(trk);
             if (ch && ch->isChord()) {
                 sortChordNotes(sortedNotes, toChord(ch), &count);
             }
         }
     }
 
-    for (const auto& p : sortedNotes) {
-        Note* note = p.second;
+    for (const auto &p : sortedNotes) {
+        Note *note = p.second;
         if (note->string() >= strings) {
             note->undoChangeProperty(Pid::STRING, INVALID_STRING_INDEX);
             note->undoChangeProperty(Pid::FRET, INVALID_FRET_INDEX);
@@ -229,8 +210,8 @@ void StringData::fretChords(Chord* chord) const
     // determine used range of frets
     int minFret = INT32_MAX;
     int maxFret = INT32_MIN;
-    for (const auto& p : sortedNotes) {
-        Note* note = p.second;
+    for (const auto &p : sortedNotes) {
+        Note *note = p.second;
         if (note->string() != INVALID_STRING_INDEX && note->displayFret() == Note::DisplayFretOption::NoHarmonic) {
             bUsed[note->string()]++;
         }
@@ -243,24 +224,23 @@ void StringData::fretChords(Chord* chord) const
     }
 
     // scan chord notes from highest, matching with strings from the highest
-    for (const auto& p : sortedNotes) {
-        Note* note = p.second;
+    for (const auto &p : sortedNotes) {
+        Note *note = p.second;
         int nString, nNewString;
-        int nFret,   nNewFret,   nTempFret;
+        int nFret, nNewFret, nTempFret;
 
         nString = nNewString = note->string();
-        nFret   = nNewFret   = note->fret();
-        note->setFretConflict(false);           // assume no conflicts on this note
+        nFret = nNewFret = note->fret();
+        note->setFretConflict(false); // assume no conflicts on this note
         if (skipDeadNotes && note->deadNote()) {
             continue;
         }
         // if no fretting (any invalid fretting has been erased by sortChordNotes() )
         if (nString == INVALID_STRING_INDEX /*|| nFret == INVALID_FRET_INDEX || getPitch(nString, nFret) != note->pitch()*/) {
-            const CapoParams& capo = note->staff()->capo(note->tick());
+            const CapoParams &capo = note->staff()->capo(note->tick());
             // get a new fretting
-            if (convertPitch(note->pitch(), pitchOffsetAt(chord->staff(), chord->tick()), &nNewString, &nNewFret,
-                             capo) && note->displayFret()
-                == Note::DisplayFretOption::NoHarmonic && !note->negativeFretUsed()) {
+            if (convertPitch(note->pitch(), pitchOffsetAt(chord->staff(), chord->tick()), &nNewString, &nNewFret, capo) &&
+                note->displayFret() == Note::DisplayFretOption::NoHarmonic && !note->negativeFretUsed()) {
                 // Check if this string should be ignored in capo params and updated fret
                 nNewFret = fret(note->pitch(), nNewString, pitchOffsetAt(chord->staff(), chord->tick(), nNewString));
                 // note can be fretted: use string
@@ -284,12 +264,12 @@ void StringData::fretChords(Chord* chord) const
         if (note->displayFret() == Note::DisplayFretOption::NoHarmonic && bUsed[nNewString] > 1) {
             // attempt to find a suitable string, from topmost
             for (int nTempString = 0; nTempString < strings; nTempString++) {
-                if (bUsed[nTempString] < 1
-                    && (nTempFret=fret(note->pitch(), nTempString,
-                                       pitchOffsetAt(chord->staff(), chord->tick(), nTempString))) != INVALID_FRET_INDEX) {
-                    bUsed[nNewString]--;              // free previous string
-                    bUsed[nTempString]++;             // and occupy new string
-                    nNewFret   = nTempFret;
+                if (bUsed[nTempString] < 1 &&
+                    (nTempFret = fret(note->pitch(), nTempString, pitchOffsetAt(chord->staff(), chord->tick(), nTempString))) !=
+                        INVALID_FRET_INDEX) {
+                    bUsed[nNewString]--;  // free previous string
+                    bUsed[nTempString]++; // and occupy new string
+                    nNewFret = nTempFret;
                     nNewString = nTempString;
                     break;
                 }
@@ -297,9 +277,8 @@ void StringData::fretChords(Chord* chord) const
         }
 
         // Still two notes on one string: try a free string with fret <0 or >maxFrets.
-        if (note->configuration()->negativeFretsAllowed()
-            && note->displayFret() == Note::DisplayFretOption::NoHarmonic
-            && bUsed[nNewString] > 1) {
+        if (note->configuration()->negativeFretsAllowed() && note->displayFret() == Note::DisplayFretOption::NoHarmonic &&
+            bUsed[nNewString] > 1) {
             tryResolveStringConflictWithOutOfRangeFret(note, strings, bUsed, nNewString, nNewFret);
         }
 
@@ -315,8 +294,8 @@ void StringData::fretChords(Chord* chord) const
     }
 
     // check for any remaining fret conflict
-    for (auto& p : sortedNotes) {
-        Note* note = p.second;
+    for (auto &p : sortedNotes) {
+        Note *note = p.second;
         if (skipDeadNotes && note->deadNote()) {
             continue;
         }
@@ -331,8 +310,7 @@ void StringData::fretChords(Chord* chord) const
 //    Returns the number of fretted strings.
 //---------------------------------------------------------
 
-int StringData::frettedStrings() const
-{
+int StringData::frettedStrings() const {
     int num = 0;
     for (auto s : m_stringTable) {
         if (!s.open) {
@@ -353,51 +331,42 @@ int StringData::frettedStrings() const
 //   For string data calculations, pitch offset may depend on transposition, capos and, possibly, ottavas.
 //---------------------------------------------------------
 
-int StringData::pitchOffsetAt(const Staff* staff)
-{
+int StringData::pitchOffsetAt(const Staff *staff) {
     return -(staff ? staff->originPart(Part::MAIN_INSTRUMENT_TICK)->instrument()->transpose().chromatic : 0);
 }
 
-int StringData::pitchOffsetAt(const Staff* staff, const Fraction& tick)
-{
+int StringData::pitchOffsetAt(const Staff *staff, const Fraction &tick) {
     if (!staff) {
         return 0;
     }
     int transp = staff->originPart(tick)->instrument(tick)->transpose().chromatic;
     int offset = -transp + staff->pitchOffset(tick);
-    const CapoParams& capo = staff->capo(tick);
+    const CapoParams &capo = staff->capo(tick);
     if (capo.active) {
         switch (capo.transposeMode) {
-        case CapoParams::TransposeMode::PLAYBACK_ONLY:
-            break;
-        case CapoParams::TransposeMode::STANDARD_ONLY:
-        case CapoParams::TransposeMode::TAB_ONLY:
-            offset -= capo.fretPosition;
-            break;
+            case CapoParams::TransposeMode::PLAYBACK_ONLY: break;
+            case CapoParams::TransposeMode::STANDARD_ONLY:
+            case CapoParams::TransposeMode::TAB_ONLY: offset -= capo.fretPosition; break;
         }
     }
     return offset;
 }
 
-int StringData::pitchOffsetAt(const Staff* staff, const Fraction& tick, int string)
-{
+int StringData::pitchOffsetAt(const Staff *staff, const Fraction &tick, int string) {
     if (!staff) {
         return 0;
     }
     int transp = staff->originPart(tick)->instrument(tick)->transpose().chromatic;
     int offset = -transp + staff->pitchOffset(tick);
-    const CapoParams& capo = staff->capo(tick);
-    if (capo.active && muse::contains(capo.ignoredStrings, (string_idx_t)string)) {
+    const CapoParams &capo = staff->capo(tick);
+    if (capo.active && muse::contains(capo.ignoredStrings, (string_idx_t) string)) {
         return offset;
     }
     if (capo.active) {
         switch (capo.transposeMode) {
-        case CapoParams::TransposeMode::PLAYBACK_ONLY:
-            break;
-        case CapoParams::TransposeMode::STANDARD_ONLY:
-        case CapoParams::TransposeMode::TAB_ONLY:
-            offset -= capo.fretPosition;
-            break;
+            case CapoParams::TransposeMode::PLAYBACK_ONLY: break;
+            case CapoParams::TransposeMode::STANDARD_ONLY:
+            case CapoParams::TransposeMode::TAB_ONLY: offset -= capo.fretPosition; break;
         }
     }
     return offset;
@@ -420,8 +389,7 @@ int StringData::pitchOffsetAt(const Staff* staff, const Fraction& tick, int stri
 //          from highest (0) to lowest (strings()-1)
 //---------------------------------------------------------
 
-bool StringData::convertPitch(int pitch, int pitchOffset, int* string, int* fret, const CapoParams& capo) const
-{
+bool StringData::convertPitch(int pitch, int pitchOffset, int *string, int *fret, const CapoParams &capo) const {
     int strings = static_cast<int>(m_stringTable.size());
     if (strings < 1) {
         return false;
@@ -432,7 +400,7 @@ bool StringData::convertPitch(int pitch, int pitchOffset, int* string, int* fret
     // if above max fret on highest string, fret on first string, but return failure
     if (pitch > m_stringTable.at(strings - 1).pitch + m_frets) {
         *string = 0;
-        *fret   = 0;
+        *fret = 0;
         return false;
     }
 
@@ -460,7 +428,7 @@ bool StringData::convertPitch(int pitch, int pitchOffset, int* string, int* fret
             instrString strg = m_stringTable.at(i);
             if (pitch >= strg.pitch) {
                 *string = strings - i - 1;
-                int fretCorrection = (capo.active && muse::contains(capo.ignoredStrings, (string_idx_t)*string)) ? capo.fretPosition : 0;
+                int fretCorrection = (capo.active && muse::contains(capo.ignoredStrings, (string_idx_t) *string)) ? capo.fretPosition : 0;
                 *fret = pitch - strg.pitch + fretCorrection;
                 return true;
             }
@@ -470,7 +438,7 @@ bool StringData::convertPitch(int pitch, int pitchOffset, int* string, int* fret
     // if no string found, pitch is below lowest string:
     // fret on last string, but return failure
     *string = strings - 1;
-    *fret   = 0;
+    *fret = 0;
     return false;
 }
 
@@ -481,8 +449,7 @@ bool StringData::convertPitch(int pitch, int pitchOffset, int* string, int* fret
 //    Note: frets above max fret are accepted.
 //---------------------------------------------------------
 
-int StringData::getPitch(int string, int fret, int pitchOffset) const
-{
+int StringData::getPitch(int string, int fret, int pitchOffset) const {
     size_t strings = m_stringTable.size();
     if (string < 0 || string >= static_cast<int>(strings)) {
         return INVALID_PITCH;
@@ -501,23 +468,22 @@ int StringData::getPitch(int string, int fret, int pitchOffset) const
 //    returns INVALID_FRET_INDEX if not possible
 //---------------------------------------------------------
 
-int StringData::fret(int pitch, int string, int pitchOffset) const
-{
+int StringData::fret(int pitch, int string, int pitchOffset) const {
     int strings = static_cast<int>(m_stringTable.size());
-    if (strings < 1) {                          // no strings at all!
+    if (strings < 1) { // no strings at all!
         return INVALID_FRET_INDEX;
     }
 
-    if (string < 0 || string >= strings) {      // no such a string
+    if (string < 0 || string >= strings) { // no such a string
         return INVALID_FRET_INDEX;
     }
 
     pitch += pitchOffset;
 
-    const instrString& strg = m_stringTable[strings - string - 1];
+    const instrString &strg = m_stringTable[strings - string - 1];
     int fret = pitch - strg.pitch;
     if (fret > 0 && strg.startFret > 0) {
-        fret += strg.startFret;  // banjo 5th string adjustment
+        fret += strg.startFret; // banjo 5th string adjustment
     }
 
     // fret number is invalid or string cannot be fretted
@@ -534,9 +500,8 @@ int StringData::fret(int pitch, int string, int pitchOffset) const
 //    ties break toward lower string index.
 //---------------------------------------------------------
 
-bool StringData::tryResolveStringConflictWithOutOfRangeFret(const Note* note, int numStrings, std::vector<int>& bUsed,
-                                                            int& nNewString, int& nNewFret) const
-{
+bool StringData::tryResolveStringConflictWithOutOfRangeFret(const Note *note, int numStrings, std::vector<int> &bUsed, int &nNewString,
+                                                            int &nNewFret) const {
     int bestString = -1;
     int bestDistance = INT32_MAX;
     int bestRawFret = 0;
@@ -546,18 +511,17 @@ bool StringData::tryResolveStringConflictWithOutOfRangeFret(const Note* note, in
             continue;
         }
         const int openPitch = m_stringTable.at(m_stringTable.size() - s - 1).pitch;
-        const int rawFret = note->pitch() + pitchOffsetAt(note->staff(), note->tick(), s) - openPitch;   // not clamped to 0..m_frets
+        const int rawFret = note->pitch() + pitchOffsetAt(note->staff(), note->tick(), s) - openPitch; // not clamped to 0..m_frets
         int distance;
         if (rawFret < 0) {
             distance = -rawFret;
         } else if (rawFret > m_frets) {
             distance = rawFret - m_frets;
         } else {
-            continue;   // only out-of-range frets here; in-range tried above in fretChords
+            continue; // only out-of-range frets here; in-range tried above in fretChords
         }
 
-        if (distance < bestDistance
-            || (distance == bestDistance && (bestString < 0 || s < bestString))) {
+        if (distance < bestDistance || (distance == bestDistance && (bestString < 0 || s < bestString))) {
             bestDistance = distance;
             bestRawFret = rawFret;
             bestString = s;
@@ -575,10 +539,8 @@ bool StringData::tryResolveStringConflictWithOutOfRangeFret(const Note* note, in
     return true;
 }
 
-static bool skipTabNote(const Note* n, bool skipDeadNotes)
-{
-    return n->displayFret() != Note::DisplayFretOption::NoHarmonic
-           || (skipDeadNotes && n->deadNote());
+static bool skipTabNote(const Note *n, bool skipDeadNotes) {
+    return n->displayFret() != Note::DisplayFretOption::NoHarmonic || (skipDeadNotes && n->deadNote());
 }
 
 //---------------------------------------------------------
@@ -586,10 +548,9 @@ static bool skipTabNote(const Note* n, bool skipDeadNotes)
 //    True if any note's pitch doesn't match its current string/fret.
 //---------------------------------------------------------
 
-bool StringData::hasPendingPitchChange(const Chord* chord) const
-{
+bool StringData::hasPendingPitchChange(const Chord *chord) const {
     const bool skipDead = chord->configuration()->keepDeadNotesUnchangedOnTranspose();
-    for (Note* note : chord->notes()) {
+    for (Note *note : chord->notes()) {
         if (skipTabNote(note, skipDead)) {
             continue;
         }
@@ -609,11 +570,10 @@ bool StringData::hasPendingPitchChange(const Chord* chord) const
 //    Set INVALID if the note can't stay on its string.
 //---------------------------------------------------------
 
-void StringData::updateFretsOnSameStrings(const Chord* chord) const
-{
+void StringData::updateFretsOnSameStrings(const Chord *chord) const {
     const bool skipDead = chord->configuration()->keepDeadNotesUnchangedOnTranspose();
 
-    for (Note* note : chord->notes()) {
+    for (Note *note : chord->notes()) {
         if (skipTabNote(note, skipDead)) {
             continue;
         }
@@ -632,7 +592,7 @@ void StringData::updateFretsOnSameStrings(const Chord* chord) const
         if (newFret < 0) {
             // Don't create a negative fret on a string that already holds another note — this would cause a false conflict
             bool sameStringConflict = false;
-            for (Note* other : chord->notes()) {
+            for (Note *other : chord->notes()) {
                 if (other != note && !skipTabNote(other, skipDead) && other->string() == note->string()) {
                     sameStringConflict = true;
                     break;
@@ -654,8 +614,7 @@ void StringData::updateFretsOnSameStrings(const Chord* chord) const
 //    string is free, move it there when the bass fret is shallower.
 //---------------------------------------------------------
 
-void StringData::preferBassStringForNegativeFret(const Chord* chord) const
-{
+void StringData::preferBassStringForNegativeFret(const Chord *chord) const {
     const bool skipDead = chord->configuration()->keepDeadNotesUnchangedOnTranspose();
     const int bassStr = static_cast<int>(strings()) - 1;
     if (bassStr <= 0) {
@@ -663,8 +622,8 @@ void StringData::preferBassStringForNegativeFret(const Chord* chord) const
     }
     const int openLow = m_stringTable.at(0).pitch;
 
-    auto bassTaken = [&](const Note* except) {
-        for (Note* o : chord->notes()) {
+    auto bassTaken = [&](const Note *except) {
+        for (Note *o : chord->notes()) {
             if (o != except && !skipTabNote(o, skipDead) && o->string() == bassStr) {
                 return true;
             }
@@ -672,7 +631,7 @@ void StringData::preferBassStringForNegativeFret(const Chord* chord) const
         return false;
     };
 
-    for (Note* note : chord->notes()) {
+    for (Note *note : chord->notes()) {
         if (skipTabNote(note, skipDead) || note->string() < 0 || note->string() == bassStr || note->fret() >= 0) {
             continue;
         }
@@ -693,13 +652,12 @@ void StringData::preferBassStringForNegativeFret(const Chord* chord) const
 //    Reset displaced chord-mates for fretChords to reassign.
 //---------------------------------------------------------
 
-void StringData::reassignNegativeFretNotes(const Chord* chord) const
-{
+void StringData::reassignNegativeFretNotes(const Chord *chord) const {
     const bool skipDead = chord->configuration()->keepDeadNotesUnchangedOnTranspose();
     const int pitchOffsetWithCapo = pitchOffsetAt(chord->staff(), chord->tick());
-    const CapoParams& capo = chord->staff()->capo(chord->tick());
+    const CapoParams &capo = chord->staff()->capo(chord->tick());
 
-    for (Note* note : chord->notes()) {
+    for (Note *note : chord->notes()) {
         if (skipTabNote(note, skipDead) || note->string() < 0 || note->fret() >= 0) {
             continue;
         }
@@ -708,8 +666,8 @@ void StringData::reassignNegativeFretNotes(const Chord* chord) const
         if (!convertPitch(note->pitch(), pitchOffsetWithCapo, &targetStr, &targetFret, capo)) {
             continue;
         }
-        Note* positiveOnTarget = nullptr;
-        for (Note* o : chord->notes()) {
+        Note *positiveOnTarget = nullptr;
+        for (Note *o : chord->notes()) {
             if (o != note && !skipTabNote(o, skipDead) && o->string() == targetStr && o->fret() >= 0) {
                 positiveOnTarget = o;
                 break;
@@ -733,8 +691,7 @@ void StringData::reassignNegativeFretNotes(const Chord* chord) const
 //    chord's pitches are transposed, updating only the fret.
 //---------------------------------------------------------
 
-void StringData::sortChordNotesUseSameString(const Chord* chord) const
-{
+void StringData::sortChordNotesUseSameString(const Chord *chord) const {
     if (!hasPendingPitchChange(chord)) {
         return;
     }
@@ -760,8 +717,7 @@ void StringData::sortChordNotesUseSameString(const Chord* chord) const
 //    Notes without a string assigned yet, are sorted according to the lowest string which can accommodate them.
 //---------------------------------------------------------
 
-void StringData::sortChordNotes(std::map<int, Note*>& sortedNotes, const Chord* chord, int* count) const
-{
+void StringData::sortChordNotes(std::map<int, Note *> &sortedNotes, const Chord *chord, int *count) const {
     bool useSameString = chord->configuration()->preferSameStringForTranspose();
     const bool skipDeadNotes = chord->configuration()->keepDeadNotesUnchangedOnTranspose();
     int transp = chord->staff() ? chord->originPart()->instrument(chord->tick())->transpose().chromatic : 0;
@@ -771,7 +727,7 @@ void StringData::sortChordNotes(std::map<int, Note*>& sortedNotes, const Chord* 
         sortChordNotesUseSameString(chord);
     }
 
-    for (Note* note : chord->notes()) {
+    for (Note *note : chord->notes()) {
         if (note->displayFret() != Note::DisplayFretOption::NoHarmonic) {
             continue;
         }
@@ -782,9 +738,8 @@ void StringData::sortChordNotes(std::map<int, Note*>& sortedNotes, const Chord* 
         int pitch = getPitch(string, noteFret, pitchOffsetAt(chord->staff(), chord->tick(), string));
         // if note not fretted yet or current fretting no longer valid,
         // use most convenient string as key
-        if (!(skipDeadNotes && note->deadNote()) && !note->negativeFretUsed()
-            && (string <= INVALID_STRING_INDEX || noteFret <= INVALID_FRET_INDEX
-                || (pitchIsValid(pitch) && pitch != note->pitch()))) {
+        if (!(skipDeadNotes && note->deadNote()) && !note->negativeFretUsed() &&
+            (string <= INVALID_STRING_INDEX || noteFret <= INVALID_FRET_INDEX || (pitchIsValid(pitch) && pitch != note->pitch()))) {
             note->setString(INVALID_STRING_INDEX);
             note->setFret(INVALID_FRET_INDEX);
         }
@@ -794,9 +749,9 @@ void StringData::sortChordNotes(std::map<int, Note*>& sortedNotes, const Chord* 
             // No string assigned yet: lower note first, then higher (transpose in one go or in steps must match).
             key += (note->pitch() + pitchOffset) * 100 + *count;
         } else {
-            key += -(note->pitch() + pitchOffset) * 100 + *count;   // disambiguate notes of equal pitch
+            key += -(note->pitch() + pitchOffset) * 100 + *count; // disambiguate notes of equal pitch
         }
-        sortedNotes.insert({ key, note });
+        sortedNotes.insert({key, note});
         (*count)++;
     }
 }
@@ -808,10 +763,9 @@ void StringData::sortChordNotes(std::map<int, Note*>& sortedNotes, const Chord* 
 //   appropriately.
 //---------------------------------------------------------
 
-void StringData::configBanjo5thString()
-{
+void StringData::configBanjo5thString() {
     // banjo 5th string (pitch 67 == G)
-    instrString& strg5 = m_stringTable[0];
+    instrString &strg5 = m_stringTable[0];
 
     m_frets = 24; // not needed after bug #316931 is fixed
 
@@ -819,7 +773,7 @@ void StringData::configBanjo5thString()
     if (strg5.pitch > 67 && strg5.pitch < 74) {
         strg5.startFret = strg5.pitch - 62;
     } else {
-        strg5.startFret = 5;  // no 5th string capo
+        strg5.startFret = 5; // no 5th string capo
     }
 }
 
@@ -830,10 +784,7 @@ void StringData::configBanjo5thString()
 //   Returns adjusted fret number
 //---------------------------------------------------------
 
-int StringData::adjustBanjo5thFret(int fret) const
-{
-    return (fret > 0 && isFiveStringBanjo()) ? fret + m_stringTable[0].startFret : fret;
-}
+int StringData::adjustBanjo5thFret(int fret) const { return (fret > 0 && isFiveStringBanjo()) ? fret + m_stringTable[0].startFret : fret; }
 
 //---------------------------------------------------------
 //    isFiveStringBanjo
@@ -842,8 +793,5 @@ int StringData::adjustBanjo5thFret(int fret) const
 //    pitch is higher than 4th (i.e. not a 5 string bass)
 //---------------------------------------------------------
 
-bool StringData::isFiveStringBanjo() const
-{
-    return m_stringTable.size() == 5 && m_stringTable[0].pitch > m_stringTable[1].pitch;
-}
-}
+bool StringData::isFiveStringBanjo() const { return m_stringTable.size() == 5 && m_stringTable[0].pitch > m_stringTable[1].pitch; }
+} // namespace mu::engraving

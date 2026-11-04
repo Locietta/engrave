@@ -36,27 +36,21 @@
 using namespace mu::engraving;
 using namespace mu::engraving::write;
 
-ConnectorInfoWriter::ConnectorInfoWriter(XmlWriter& xml, WriteContext* ctx, const EngravingItem* current,
-                                         const EngravingItem* connector,
-                                         int track,
-                                         Fraction frac)
-    : ConnectorInfo(current, track, frac), _connector(connector), m_xml(&xml), m_ctx(ctx)
-{
-    IF_ASSERT_FAILED(current) {
-        return;
-    }
+ConnectorInfoWriter::ConnectorInfoWriter(XmlWriter &xml, WriteContext *ctx, const EngravingItem *current, const EngravingItem *connector,
+                                         int track, Fraction frac)
+    : ConnectorInfo(current, track, frac), _connector(connector), m_xml(&xml), m_ctx(ctx) {
+    IF_ASSERT_FAILED(current) { return; }
     m_type = connector->type();
     updateCurrentInfo(m_ctx->clipboardmode());
 }
 
-void ConnectorInfoWriter::write()
-{
-    XmlWriter& xml = *m_xml;
-    WriteContext& ctx = *m_ctx;
+void ConnectorInfoWriter::write() {
+    XmlWriter &xml = *m_xml;
+    WriteContext &ctx = *m_ctx;
     if (!ctx.canWrite(_connector)) {
         return;
     }
-    xml.startElement(tagName(), { { "type", _connector->typeName() } });
+    xml.startElement(tagName(), {{"type", _connector->typeName()}});
     if (isStart()) {
         TWrite::writeItem(_connector, xml, ctx);
     }
@@ -79,8 +73,7 @@ void ConnectorInfoWriter::write()
 //   SpannerWriter::fillSpannerPosition
 //---------------------------------------------------------
 
-void SpannerWriter::fillSpannerPosition(Location& l, const MeasureBase* m, const Fraction& tick, bool clipboardmode)
-{
+void SpannerWriter::fillSpannerPosition(Location &l, const MeasureBase *m, const Fraction &tick, bool clipboardmode) {
     if (clipboardmode) {
         l.setMeasure(0);
         l.setFrac(tick);
@@ -100,30 +93,29 @@ void SpannerWriter::fillSpannerPosition(Location& l, const MeasureBase* m, const
 //   SpannerWriter::SpannerWriter
 //---------------------------------------------------------
 
-SpannerWriter::SpannerWriter(XmlWriter& xml, WriteContext* ctx, const EngravingItem* current, const Spanner* sp, int track, Fraction frac,
+SpannerWriter::SpannerWriter(XmlWriter &xml, WriteContext *ctx, const EngravingItem *current, const Spanner *sp, int track, Fraction frac,
                              bool start)
-    : ConnectorInfoWriter(xml, ctx, current, sp, track, frac)
-{
+    : ConnectorInfoWriter(xml, ctx, current, sp, track, frac) {
     const bool clipboardmode = ctx->clipboardmode();
-    if ((!sp->startElement() || !sp->endElement())
-        && (sp->anchor() == Spanner::Anchor::CHORDREST || sp->anchor() == Spanner::Anchor::NOTE)) {
+    if ((!sp->startElement() || !sp->endElement()) &&
+        (sp->anchor() == Spanner::Anchor::CHORDREST || sp->anchor() == Spanner::Anchor::NOTE)) {
         LOGW("SpannerWriter: spanner (%s) doesn't have an endpoint!", sp->typeName());
         return;
     }
-    if (current->isMeasure() || current->isSegment() || !sp->startElement() || !sp->endElement()
-        || (sp->startElement()->type() != current->type())) {
+    if (current->isMeasure() || current->isSegment() || !sp->startElement() || !sp->endElement() ||
+        (sp->startElement()->type() != current->type())) {
         // (The latter is the hairpins' case, for example, though they are
         // covered by the other checks too.)
         // We cannot determine position of the spanner from its start/end
         // elements and will try to obtain this info from the spanner itself.
         if (!start) {
             m_prevLoc.setTrack(static_cast<int>(sp->track()));
-            Measure* m = sp->score()->tick2measure(sp->tick());
+            Measure *m = sp->score()->tick2measure(sp->tick());
             fillSpannerPosition(m_prevLoc, m, sp->tick(), clipboardmode);
         } else {
             const track_idx_t track2 = (sp->track2() != muse::nidx) ? sp->track2() : sp->track();
             m_nextLoc.setTrack(static_cast<int>(track2));
-            Measure* m = sp->score()->tick2measure(sp->tick2());
+            Measure *m = sp->score()->tick2measure(sp->tick2());
             fillSpannerPosition(m_nextLoc, m, sp->tick2(), clipboardmode);
         }
     } else {

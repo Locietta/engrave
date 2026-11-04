@@ -36,50 +36,49 @@ using namespace mu;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-static const ElementStyle palmMuteStyle {
-    { Sid::palmMuteFontFace,                      Pid::BEGIN_FONT_FACE },
-    { Sid::palmMuteFontFace,                      Pid::CONTINUE_FONT_FACE },
-    { Sid::palmMuteFontFace,                      Pid::END_FONT_FACE },
-    { Sid::palmMuteFontSize,                      Pid::BEGIN_FONT_SIZE },
-    { Sid::palmMuteFontSize,                      Pid::CONTINUE_FONT_SIZE },
-    { Sid::palmMuteFontSize,                      Pid::END_FONT_SIZE },
-    { Sid::palmMuteFontStyle,                     Pid::BEGIN_FONT_STYLE },
-    { Sid::palmMuteFontStyle,                     Pid::CONTINUE_FONT_STYLE },
-    { Sid::palmMuteFontStyle,                     Pid::END_FONT_STYLE },
-    { Sid::palmMuteTextAlign,                     Pid::BEGIN_TEXT_ALIGN },
-    { Sid::palmMuteTextAlign,                     Pid::CONTINUE_TEXT_ALIGN },
-    { Sid::palmMuteTextAlign,                     Pid::END_TEXT_ALIGN },
-    { Sid::palmMutePosition,                      Pid::BEGIN_TEXT_POSITION },
-    { Sid::palmMutePosition,                      Pid::CONTINUE_TEXT_POSITION },
-    { Sid::palmMutePosition,                      Pid::END_TEXT_POSITION },
-    { Sid::palmMuteHookHeight,                    Pid::BEGIN_HOOK_HEIGHT },
-    { Sid::palmMuteHookHeight,                    Pid::END_HOOK_HEIGHT },
-    { Sid::palmMuteLineStyle,                     Pid::LINE_STYLE },
-    { Sid::palmMuteDashLineLen,                   Pid::DASH_LINE_LEN },
-    { Sid::palmMuteDashGapLen,                    Pid::DASH_GAP_LEN },
-    { Sid::palmMuteFontSpatiumDependent,          Pid::TEXT_SIZE_SPATIUM_DEPENDENT },
-    { Sid::palmMuteEndHookType,                   Pid::END_HOOK_TYPE },
-    { Sid::palmMuteLineWidth,                     Pid::LINE_WIDTH },
-    { Sid::palmMutePlacement,                     Pid::PLACEMENT },
-    { Sid::palmMuteEndLineArrowHeight,            Pid::END_LINE_ARROW_HEIGHT },
-    { Sid::palmMuteEndLineArrowWidth,             Pid::END_LINE_ARROW_WIDTH },
-    { Sid::palmMuteBeginLineArrowHeight,          Pid::BEGIN_LINE_ARROW_HEIGHT },
-    { Sid::palmMuteBeginLineArrowWidth,           Pid::BEGIN_LINE_ARROW_WIDTH },
-    { Sid::palmMuteEndFilledArrowHeight,          Pid::END_FILLED_ARROW_HEIGHT },
-    { Sid::palmMuteEndFilledArrowWidth,           Pid::END_FILLED_ARROW_WIDTH },
-    { Sid::palmMuteBeginFilledArrowHeight,        Pid::BEGIN_FILLED_ARROW_HEIGHT },
-    { Sid::palmMuteBeginFilledArrowWidth,         Pid::BEGIN_FILLED_ARROW_WIDTH },
-    { Sid::palmMuteMusicalSymbolSize,             Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE },
-    { Sid::palmMuteMusicalSymbolSize,             Pid::CONTINUE_TEXT_MUSIC_SYMBOLS_SIZE },
-    { Sid::palmMuteMusicalSymbolSize,             Pid::END_TEXT_MUSIC_SYMBOLS_SIZE },
-    { Sid::dummyMusicalSymbolsScale,              Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE },
-    { Sid::dummyMusicalSymbolsScale,              Pid::CONTINUE_TEXT_MUSICAL_SYMBOLS_SCALE },
-    { Sid::dummyMusicalSymbolsScale,              Pid::END_TEXT_MUSICAL_SYMBOLS_SCALE },
+static const ElementStyle palmMuteStyle{
+    {Sid::palmMuteFontFace, Pid::BEGIN_FONT_FACE},
+    {Sid::palmMuteFontFace, Pid::CONTINUE_FONT_FACE},
+    {Sid::palmMuteFontFace, Pid::END_FONT_FACE},
+    {Sid::palmMuteFontSize, Pid::BEGIN_FONT_SIZE},
+    {Sid::palmMuteFontSize, Pid::CONTINUE_FONT_SIZE},
+    {Sid::palmMuteFontSize, Pid::END_FONT_SIZE},
+    {Sid::palmMuteFontStyle, Pid::BEGIN_FONT_STYLE},
+    {Sid::palmMuteFontStyle, Pid::CONTINUE_FONT_STYLE},
+    {Sid::palmMuteFontStyle, Pid::END_FONT_STYLE},
+    {Sid::palmMuteTextAlign, Pid::BEGIN_TEXT_ALIGN},
+    {Sid::palmMuteTextAlign, Pid::CONTINUE_TEXT_ALIGN},
+    {Sid::palmMuteTextAlign, Pid::END_TEXT_ALIGN},
+    {Sid::palmMutePosition, Pid::BEGIN_TEXT_POSITION},
+    {Sid::palmMutePosition, Pid::CONTINUE_TEXT_POSITION},
+    {Sid::palmMutePosition, Pid::END_TEXT_POSITION},
+    {Sid::palmMuteHookHeight, Pid::BEGIN_HOOK_HEIGHT},
+    {Sid::palmMuteHookHeight, Pid::END_HOOK_HEIGHT},
+    {Sid::palmMuteLineStyle, Pid::LINE_STYLE},
+    {Sid::palmMuteDashLineLen, Pid::DASH_LINE_LEN},
+    {Sid::palmMuteDashGapLen, Pid::DASH_GAP_LEN},
+    {Sid::palmMuteFontSpatiumDependent, Pid::TEXT_SIZE_SPATIUM_DEPENDENT},
+    {Sid::palmMuteEndHookType, Pid::END_HOOK_TYPE},
+    {Sid::palmMuteLineWidth, Pid::LINE_WIDTH},
+    {Sid::palmMutePlacement, Pid::PLACEMENT},
+    {Sid::palmMuteEndLineArrowHeight, Pid::END_LINE_ARROW_HEIGHT},
+    {Sid::palmMuteEndLineArrowWidth, Pid::END_LINE_ARROW_WIDTH},
+    {Sid::palmMuteBeginLineArrowHeight, Pid::BEGIN_LINE_ARROW_HEIGHT},
+    {Sid::palmMuteBeginLineArrowWidth, Pid::BEGIN_LINE_ARROW_WIDTH},
+    {Sid::palmMuteEndFilledArrowHeight, Pid::END_FILLED_ARROW_HEIGHT},
+    {Sid::palmMuteEndFilledArrowWidth, Pid::END_FILLED_ARROW_WIDTH},
+    {Sid::palmMuteBeginFilledArrowHeight, Pid::BEGIN_FILLED_ARROW_HEIGHT},
+    {Sid::palmMuteBeginFilledArrowWidth, Pid::BEGIN_FILLED_ARROW_WIDTH},
+    {Sid::palmMuteMusicalSymbolSize, Pid::BEGIN_TEXT_MUSIC_SYMBOLS_SIZE},
+    {Sid::palmMuteMusicalSymbolSize, Pid::CONTINUE_TEXT_MUSIC_SYMBOLS_SIZE},
+    {Sid::palmMuteMusicalSymbolSize, Pid::END_TEXT_MUSIC_SYMBOLS_SIZE},
+    {Sid::dummyMusicalSymbolsScale, Pid::BEGIN_TEXT_MUSICAL_SYMBOLS_SCALE},
+    {Sid::dummyMusicalSymbolsScale, Pid::CONTINUE_TEXT_MUSICAL_SYMBOLS_SCALE},
+    {Sid::dummyMusicalSymbolsScale, Pid::END_TEXT_MUSICAL_SYMBOLS_SCALE},
 };
 
-PalmMuteSegment::PalmMuteSegment(PalmMute* sp)
-    : TextLineBaseSegment(ElementType::PALM_MUTE_SEGMENT, sp, ElementFlag::MOVABLE | ElementFlag::ON_STAFF)
-{
+PalmMuteSegment::PalmMuteSegment(PalmMute *sp)
+    : TextLineBaseSegment(ElementType::PALM_MUTE_SEGMENT, sp, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
     m_text->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
     m_endText->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
 }
@@ -88,9 +87,7 @@ PalmMuteSegment::PalmMuteSegment(PalmMute* sp)
 //   PalmMute
 //---------------------------------------------------------
 
-PalmMute::PalmMute(DummyParentOr<EngravingItem> parent)
-    : ChordTextLineBase(ElementType::PALM_MUTE, parent)
-{
+PalmMute::PalmMute(DummyParentOr<EngravingItem> parent) : ChordTextLineBase(ElementType::PALM_MUTE, parent) {
     initElementStyle(&palmMuteStyle);
     resetProperty(Pid::LINE_VISIBLE);
 
@@ -106,13 +103,12 @@ PalmMute::PalmMute(DummyParentOr<EngravingItem> parent)
 //   createLineSegment
 //---------------------------------------------------------
 
-static const ElementStyle palmMuteSegmentStyle {
-    { Sid::palmMuteMinDistance,                   Pid::MIN_DISTANCE },
+static const ElementStyle palmMuteSegmentStyle{
+    {Sid::palmMuteMinDistance, Pid::MIN_DISTANCE},
 };
 
-LineSegment* PalmMute::createLineSegment()
-{
-    PalmMuteSegment* pms = new PalmMuteSegment(this);
+LineSegment *PalmMute::createLineSegment() {
+    PalmMuteSegment *pms = new PalmMuteSegment(this);
     pms->setTrack(track());
     pms->initElementStyle(&palmMuteSegmentStyle);
     return pms;
@@ -122,52 +118,39 @@ LineSegment* PalmMute::createLineSegment()
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue PalmMute::propertyDefault(Pid propertyId) const
-{
+PropertyValue PalmMute::propertyDefault(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::LINE_WIDTH:
-        return style().styleV(Sid::palmMuteLineWidth);
+        case Pid::LINE_WIDTH: return style().styleV(Sid::palmMuteLineWidth);
 
-    case Pid::ALIGN:
-        return Align(AlignH::LEFT, AlignV::BASELINE);
+        case Pid::ALIGN: return Align(AlignH::LEFT, AlignV::BASELINE);
 
-    case Pid::LINE_STYLE:
-        return style().styleV(Sid::palmMuteLineStyle);
+        case Pid::LINE_STYLE: return style().styleV(Sid::palmMuteLineStyle);
 
-    case Pid::LINE_VISIBLE:
-        return true;
+        case Pid::LINE_VISIBLE: return true;
 
-    case Pid::BEGIN_TEXT_OFFSET:
-    case Pid::CONTINUE_TEXT_OFFSET:
-    case Pid::END_TEXT_OFFSET:
-        return PropertyValue::fromValue(PointF(0, 0));
+        case Pid::BEGIN_TEXT_OFFSET:
+        case Pid::CONTINUE_TEXT_OFFSET:
+        case Pid::END_TEXT_OFFSET: return PropertyValue::fromValue(PointF(0, 0));
 
-    case Pid::BEGIN_TEXT:
-    case Pid::CONTINUE_TEXT:
-        return style().styleV(Sid::palmMuteText);
-    case Pid::END_TEXT:
-        return "";
+        case Pid::BEGIN_TEXT:
+        case Pid::CONTINUE_TEXT: return style().styleV(Sid::palmMuteText);
+        case Pid::END_TEXT: return "";
 
-    case Pid::BEGIN_HOOK_TYPE:
-        return HookType::NONE;
+        case Pid::BEGIN_HOOK_TYPE: return HookType::NONE;
 
-    case Pid::BEGIN_TEXT_PLACE:
-    case Pid::CONTINUE_TEXT_PLACE:
-    case Pid::END_TEXT_PLACE:
-        return TextPlace::AUTO;
+        case Pid::BEGIN_TEXT_PLACE:
+        case Pid::CONTINUE_TEXT_PLACE:
+        case Pid::END_TEXT_PLACE: return TextPlace::AUTO;
 
-    case Pid::TEXT_STYLE:
-        return TextStyleType::PALM_MUTE;
+        case Pid::TEXT_STYLE: return TextStyleType::PALM_MUTE;
 
-    default:
-        return TextLineBase::propertyDefault(propertyId);
+        default: return TextLineBase::propertyDefault(propertyId);
     }
 }
 
-void PalmMute::setChannel()
-{
-    EngravingItem* startEl = startElement();
-    EngravingItem* endEl = endElement();
+void PalmMute::setChannel() {
+    EngravingItem *startEl = startElement();
+    EngravingItem *endEl = endElement();
 
     if (!startEl || !endEl) {
         return;
@@ -177,10 +160,10 @@ void PalmMute::setChannel()
         return;
     }
 
-    ChordRest* startCR = toChordRest(startEl);
-    ChordRest* endCR = toChordRest(endEl);
+    ChordRest *startCR = toChordRest(startEl);
+    ChordRest *endCR = toChordRest(endEl);
 
-    Instrument* instrument = startCR->originPart()->instrument(startCR->tick());
+    Instrument *instrument = startCR->originPart()->instrument(startCR->tick());
     int idx = instrument->channelIdx(String::fromUtf8(InstrChannel::PALM_MUTE_NAME));
     if (idx > 0) {
         staff()->insertIntoChannelList(voice(), startCR->tick(), idx);
@@ -188,8 +171,5 @@ void PalmMute::setChannel()
     }
 }
 
-Sid PalmMute::defaultPosSid() const
-{
-    return placeAbove() ? Sid::palmMutePosAbove : Sid::palmMutePosBelow;
-}
-}
+Sid PalmMute::defaultPosSid() const { return placeAbove() ? Sid::palmMutePosAbove : Sid::palmMutePosBelow; }
+} // namespace mu::engraving

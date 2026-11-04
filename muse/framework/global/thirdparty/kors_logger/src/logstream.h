@@ -25,46 +25,47 @@ SOFTWARE.
 #include <string>
 #include <string_view>
 #include <vector>
+
 namespace kors::logger {
 class Stream {
 public:
     Stream();
     ~Stream();
-    Stream(const Stream&) = delete;
-    Stream& operator=(const Stream&) = delete;
-    Stream& operator<<(bool);
-    Stream& operator<<(char);
-    Stream& operator<<(short);
-    Stream& operator<<(unsigned short);
-    Stream& operator<<(char16_t);
-    Stream& operator<<(char32_t);
-    Stream& operator<<(int);
-    Stream& operator<<(unsigned int);
-    Stream& operator<<(long);
-    Stream& operator<<(unsigned long);
-    Stream& operator<<(long long);
-    Stream& operator<<(unsigned long long);
-    Stream& operator<<(float);
-    Stream& operator<<(double);
-    Stream& operator<<(const void*);
-    Stream& operator<<(const char*);
-    Stream& operator<<(const std::string&);
-    Stream& operator<<(const std::string_view&);
+    Stream(const Stream &) = delete;
+    Stream &operator=(const Stream &) = delete;
+    Stream &operator<<(bool);
+    Stream &operator<<(char);
+    Stream &operator<<(short);
+    Stream &operator<<(unsigned short);
+    Stream &operator<<(char16_t);
+    Stream &operator<<(char32_t);
+    Stream &operator<<(int);
+    Stream &operator<<(unsigned int);
+    Stream &operator<<(long);
+    Stream &operator<<(unsigned long);
+    Stream &operator<<(long long);
+    Stream &operator<<(unsigned long long);
+    Stream &operator<<(float);
+    Stream &operator<<(double);
+    Stream &operator<<(const void *);
+    Stream &operator<<(const char *);
+    Stream &operator<<(const std::string &);
+    Stream &operator<<(const std::string_view &);
+
     template <class T>
-    Stream& operator<<(const std::vector<T>& values)
-    {
+    Stream &operator<<(const std::vector<T> &values) {
         *this << '[';
         for (size_t i = 0; i < values.size(); ++i) {
-            if (i)
-                *this << ',';
+            if (i) *this << ',';
             *this << values[i];
         }
         return *this << ']';
     }
+
     std::string str() const;
 
 private:
     struct Impl;
-    Impl* m_impl;
+    Impl *m_impl;
 };
-}
+} // namespace kors::logger

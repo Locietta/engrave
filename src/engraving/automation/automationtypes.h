@@ -47,26 +47,19 @@ struct AutomationPoint {
 
     muse::mpe::AutomationPoint value;
     std::optional<EID> itemId; // valid if it was created from an engraving item (e.g., Dynamic)
-    bool generated = false; // true if the point was generated automatically and hasn't been edited by the user
+    bool generated = false;    // true if the point was generated automatically and hasn't been edited by the user
 
-    bool operator==(const AutomationPoint& p) const
-    {
-        return value == p.value && itemId == p.itemId && generated == p.generated;
-    }
+    bool operator==(const AutomationPoint &p) const { return value == p.value && itemId == p.itemId && generated == p.generated; }
 };
 
 using utick_t = int;
 using AutomationCurve = muse::SharedMap<utick_t, AutomationPoint>;
 
-inline std::optional<AutomationPoint::Ease> ease(const AutomationPoint& point) noexcept
-{
-    return muse::mpe::ease(point.value);
-}
+inline std::optional<AutomationPoint::Ease> ease(const AutomationPoint &point) noexcept { return muse::mpe::ease(point.value); }
 
-inline muse::real_t resolveInValue(const AutomationCurve& curve, AutomationCurve::const_iterator it)
-{
-    const std::optional<muse::real_t> prevOutValue = it == curve.begin()
-                                                     ? std::nullopt : std::optional(std::prev(it)->second.value.outValue);
+inline muse::real_t resolveInValue(const AutomationCurve &curve, AutomationCurve::const_iterator it) {
+    const std::optional<muse::real_t> prevOutValue =
+        it == curve.begin() ? std::nullopt : std::optional(std::prev(it)->second.value.outValue);
     return muse::mpe::resolveInValue(it->second.value, prevOutValue);
 }
 
@@ -84,8 +77,10 @@ struct AutomationCurveKey {
         InstrumentTrackId trackId;
 
         bool isValid() const { return trackId.isValid(); }
-        bool operator==(const Instrument& o) const { return trackId == o.trackId; }
-        bool operator<(const Instrument& o) const { return trackId < o.trackId; }
+
+        bool operator==(const Instrument &o) const { return trackId == o.trackId; }
+
+        bool operator<(const Instrument &o) const { return trackId < o.trackId; }
     };
 
     //! NOTE: applies to a specific staff (and optionally voice) (e.g. Dynamics)
@@ -94,8 +89,10 @@ struct AutomationCurveKey {
         std::optional<size_t> voiceIdx;
 
         bool isValid() const { return staffId.isValid(); }
-        bool operator==(const StaffVoice& o) const { return staffId == o.staffId && voiceIdx == o.voiceIdx; }
-        bool operator<(const StaffVoice& o) const { return std::tie(staffId, voiceIdx) < std::tie(o.staffId, o.voiceIdx); }
+
+        bool operator==(const StaffVoice &o) const { return staffId == o.staffId && voiceIdx == o.voiceIdx; }
+
+        bool operator<(const StaffVoice &o) const { return std::tie(staffId, voiceIdx) < std::tie(o.staffId, o.voiceIdx); }
     };
 
     //! NOTE: std::monostate scope means the key applies to the whole score (e.g. Tempo)
@@ -104,87 +101,72 @@ struct AutomationCurveKey {
     AutomationType type = AutomationType::Unknown;
     Scope scope;
 
-    static AutomationCurveKey global(AutomationType type)
-    {
+    static AutomationCurveKey global(AutomationType type) {
         AutomationCurveKey key;
         key.type = type;
         return key;
     }
 
-    static AutomationCurveKey instrument(AutomationType type, const InstrumentTrackId& trackId)
-    {
+    static AutomationCurveKey instrument(AutomationType type, const InstrumentTrackId &trackId) {
         AutomationCurveKey key;
         key.type = type;
-        key.scope = Instrument { trackId };
+        key.scope = Instrument{trackId};
         return key;
     }
 
-    static AutomationCurveKey staff(AutomationType type, const muse::ID& staffId, std::optional<size_t> voiceIdx = std::nullopt)
-    {
+    static AutomationCurveKey staff(AutomationType type, const muse::ID &staffId, std::optional<size_t> voiceIdx = std::nullopt) {
         AutomationCurveKey key;
         key.type = type;
-        key.scope = StaffVoice { staffId, voiceIdx };
+        key.scope = StaffVoice{staffId, voiceIdx};
         return key;
     }
 
-    bool isValid() const
-    {
+    bool isValid() const {
         if (type == AutomationType::Unknown) {
             return false;
         }
 
-        return std::visit([](const auto& s) {
-            using T = std::decay_t<decltype(s)>;
-            if constexpr (std::is_same_v<T, std::monostate>) {
-                return true;
-            } else {
-                return s.isValid();
-            }
-        }, scope);
+        return std::visit(
+            [](const auto &s) {
+                using T = std::decay_t<decltype(s)>;
+                if constexpr (std::is_same_v<T, std::monostate>) {
+                    return true;
+                } else {
+                    return s.isValid();
+                }
+            },
+            scope);
     }
 
-    bool isGlobal() const
-    {
-        return std::holds_alternative<std::monostate>(scope);
-    }
+    bool isGlobal() const { return std::holds_alternative<std::monostate>(scope); }
 
-    std::optional<InstrumentTrackId> trackId() const
-    {
-        const Instrument* instrument = std::get_if<Instrument>(&scope);
+    std::optional<InstrumentTrackId> trackId() const {
+        const Instrument *instrument = std::get_if<Instrument>(&scope);
         return instrument ? std::optional(instrument->trackId) : std::nullopt;
     }
 
-    std::optional<muse::ID> staffId() const
-    {
-        const StaffVoice* staffVoice = std::get_if<StaffVoice>(&scope);
+    std::optional<muse::ID> staffId() const {
+        const StaffVoice *staffVoice = std::get_if<StaffVoice>(&scope);
         return staffVoice ? std::optional(staffVoice->staffId) : std::nullopt;
     }
 
-    std::optional<size_t> voiceIdx() const
-    {
-        const StaffVoice* staffVoice = std::get_if<StaffVoice>(&scope);
+    std::optional<size_t> voiceIdx() const {
+        const StaffVoice *staffVoice = std::get_if<StaffVoice>(&scope);
         return staffVoice ? staffVoice->voiceIdx : std::nullopt;
     }
 
     //! NOTE: same staff, but the shared (voice-independent) curve
-    AutomationCurveKey withoutVoice() const
-    {
+    AutomationCurveKey withoutVoice() const {
         AutomationCurveKey copy = *this;
-        if (StaffVoice* staffVoice = std::get_if<StaffVoice>(&copy.scope)) {
+        if (StaffVoice *staffVoice = std::get_if<StaffVoice>(&copy.scope)) {
             staffVoice->voiceIdx = std::nullopt;
         }
         return copy;
     }
 
-    bool operator==(const AutomationCurveKey& k) const
-    {
-        return type == k.type && scope == k.scope;
-    }
+    bool operator==(const AutomationCurveKey &k) const { return type == k.type && scope == k.scope; }
 
-    bool operator<(const AutomationCurveKey& k) const
-    {
-        return std::tie(type, scope) < std::tie(k.type, k.scope);
-    }
+    bool operator<(const AutomationCurveKey &k) const { return std::tie(type, scope) < std::tie(k.type, k.scope); }
 };
 
 using AutomationCurveMap = muse::SharedMap<AutomationCurveKey, AutomationCurve>;
@@ -196,11 +178,13 @@ struct AutomationPointEdit {
     struct SetPoint {
         AutomationPoint point;
     };
+
     //! NOTE: write point at tick, removing whatever point currently sits at from
     struct MovePoint {
         AutomationPoint point;
         utick_t from = 0;
     };
+
     //! NOTE: erase whatever point currently sits at tick
     struct ErasePoint {};
 
@@ -216,26 +200,18 @@ struct AutomationChanges {
     utick_t tickFrom = -1;
     utick_t tickTo = -1;
 
-    bool isEmpty() const
-    {
-        return !isFullReset && affectedKeys.empty();
-    }
+    bool isEmpty() const { return !isFullReset && affectedKeys.empty(); }
 
-    void extend(utick_t from, utick_t to)
-    {
+    void extend(utick_t from, utick_t to) {
         tickFrom = (tickFrom < 0) ? from : std::min(tickFrom, from);
         tickTo = std::max(tickTo, to);
     }
 
-    void extend(const AutomationCurveKey& key, utick_t from, utick_t to)
-    {
+    void extend(const AutomationCurveKey &key, utick_t from, utick_t to) {
         affectedKeys.insert(key);
         extend(from, to);
     }
 
-    void clear()
-    {
-        *this = {};
-    }
+    void clear() { *this = {}; }
 };
-}
+} // namespace mu::engraving

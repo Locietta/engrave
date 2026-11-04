@@ -44,54 +44,45 @@ namespace mu::engraving {
 //   lyricsElementStyle
 //---------------------------------------------------------
 
-static const ElementStyle lyricsElementStyle {
-    { Sid::lyricsPlacement, Pid::PLACEMENT },
-    { Sid::lyricsAvoidBarlines, Pid::AVOID_BARLINES },
+static const ElementStyle lyricsElementStyle{
+    {Sid::lyricsPlacement, Pid::PLACEMENT},
+    {Sid::lyricsAvoidBarlines, Pid::AVOID_BARLINES},
 };
 
 //---------------------------------------------------------
 //   Lyrics
 //---------------------------------------------------------
 
-Lyrics::Lyrics(DummyParentOr<ChordRest> parent)
-    : TextBase(ElementType::LYRICS, parent, TextStyleType::LYRICS_ODD, ElementFlag::ON_STAFF)
-{
-    m_separator  = 0;
+Lyrics::Lyrics(DummyParentOr<ChordRest> parent) : TextBase(ElementType::LYRICS, parent, TextStyleType::LYRICS_ODD, ElementFlag::ON_STAFF) {
+    m_separator = 0;
     initElementStyle(&lyricsElementStyle);
-    m_verse         = 0;
-    m_ticks      = Fraction(0, 1);
-    m_syllabic   = LyricsSyllabic::SINGLE;
+    m_verse = 0;
+    m_ticks = Fraction(0, 1);
+    m_syllabic = LyricsSyllabic::SINGLE;
 }
 
-Lyrics::Lyrics(const Lyrics& l)
-    : TextBase(l)
-{
-    m_verse        = l.m_verse;
-    m_ticks     = l.m_ticks;
-    m_syllabic  = l.m_syllabic;
+Lyrics::Lyrics(const Lyrics &l) : TextBase(l) {
+    m_verse = l.m_verse;
+    m_ticks = l.m_ticks;
+    m_syllabic = l.m_syllabic;
     m_separator = 0;
 }
 
-Lyrics::~Lyrics()
-{
+Lyrics::~Lyrics() {
     if (m_separator) {
         remove(m_separator);
     }
 }
 
-TranslatableString Lyrics::subtypeUserName() const
-{
-    return TranslatableString("engraving", "Verse %1").arg(m_verse + 1);
-}
+TranslatableString Lyrics::subtypeUserName() const { return TranslatableString("engraving", "Verse %1").arg(m_verse + 1); }
 
 //---------------------------------------------------------
 //   add
 //---------------------------------------------------------
 
-void Lyrics::add(EngravingItem* el)
-{
+void Lyrics::add(EngravingItem *el) {
     if (el->isLyricsLine()) {
-        LyricsLine* separator = toLyricsLine(el);
+        LyricsLine *separator = toLyricsLine(el);
         m_separator = separator;
         score()->addUnmanagedSpanner(separator);
     } else {
@@ -103,14 +94,13 @@ void Lyrics::add(EngravingItem* el)
 //   remove
 //---------------------------------------------------------
 
-void Lyrics::remove(EngravingItem* el)
-{
+void Lyrics::remove(EngravingItem *el) {
     if (el->isLyricsLine()) {
         // only if separator still exists and is the right one
         if (m_separator && el == m_separator) {
             // Lyrics::remove() and LyricsLine::removeUnmanaged() call each other;
             // be sure each finds a clean context
-            LyricsLine* separ = m_separator;
+            LyricsLine *separ = m_separator;
             m_separator = 0;
             separ->removeUnmanaged();
         }
@@ -123,8 +113,7 @@ void Lyrics::remove(EngravingItem* el)
 //   isMelisma
 //---------------------------------------------------------
 
-bool Lyrics::isMelisma() const
-{
+bool Lyrics::isMelisma() const {
     // entered as melisma using underscore?
     if (m_ticks > Fraction(0, 1)) {
         return true;
@@ -134,18 +123,18 @@ bool Lyrics::isMelisma() const
     // if so, it is a melisma only if there is no lyric in same verse on next CR
     if (m_separator && (m_syllabic == LyricsSyllabic::BEGIN || m_syllabic == LyricsSyllabic::MIDDLE)) {
         // find next CR and check for existence of lyric in same verse and placement (in any voice)
-        const ChordRest* cr = chordRest();
+        const ChordRest *cr = chordRest();
         if (cr) {
-            const Segment* s = cr->segment()->next1();
+            const Segment *s = cr->segment()->next1();
             const track_idx_t strack = staffIdx() * VOICES;
             const track_idx_t etrack = strack + VOICES;
             const track_idx_t lyrTrack = track();
-            const ChordRest* lyrVoiceNextCR = s ? s->nextChordRest(lyrTrack) : nullptr;
+            const ChordRest *lyrVoiceNextCR = s ? s->nextChordRest(lyrTrack) : nullptr;
             for (track_idx_t track = strack; track < etrack; ++track) {
-                const ChordRest* trackNextCR = s ? s->nextChordRest(track) : nullptr;
+                const ChordRest *trackNextCR = s ? s->nextChordRest(track) : nullptr;
                 if (trackNextCR) {
-                    if (lyrTrack != track && lyrVoiceNextCR
-                        && !lyrVoiceNextCR->lyrics(m_verse, placement()) && lyrVoiceNextCR->tick() < trackNextCR->tick()) {
+                    if (lyrTrack != track && lyrVoiceNextCR && !lyrVoiceNextCR->lyrics(m_verse, placement()) &&
+                        lyrVoiceNextCR->tick() < trackNextCR->tick()) {
                         // There is an intermediary note in a different voice, this is a melisma
                         return true;
                     }
@@ -167,8 +156,7 @@ bool Lyrics::isMelisma() const
 //   paste
 //---------------------------------------------------------
 
-void Lyrics::paste(const String& txt)
-{
+void Lyrics::paste(const String &txt) {
     if (txt.startsWith('<') && txt.contains('>')) {
         TextBase::paste(txt);
         return;
@@ -188,7 +176,7 @@ void Lyrics::paste(const String& txt)
     if (hyph.size() > 1) {
         score()->undo(new InsertText(cursor(), hyph[0]));
         hyph.removeAt(0);
-        sl[0] =  hyph.join(u"-");
+        sl[0] = hyph.join(u"-");
     } else if (sl.size() > 1 && sl[1] == u"-") {
         score()->undo(new InsertText(cursor(), sl[0]));
         sl.removeAt(0);
@@ -221,26 +209,19 @@ void Lyrics::paste(const String& txt)
 //   endTick
 //---------------------------------------------------------
 
-Fraction Lyrics::endTick() const
-{
-    return segment()->tick() + ticks();
-}
+Fraction Lyrics::endTick() const { return segment()->tick() + ticks(); }
 
 //---------------------------------------------------------
 //   acceptDrop
 //---------------------------------------------------------
 
-bool Lyrics::acceptDrop(EditData& data) const
-{
-    return data.dropElement->isText() || TextBase::acceptDrop(data);
-}
+bool Lyrics::acceptDrop(EditData &data) const { return data.dropElement->isText() || TextBase::acceptDrop(data); }
 
 //---------------------------------------------------------
 //   drop
 //---------------------------------------------------------
 
-EngravingItem* Lyrics::drop(Transaction& tx, EditData& data)
-{
+EngravingItem *Lyrics::drop(Transaction &tx, EditData &data) {
     ElementType type = data.dropElement->type();
     if (type == ElementType::SYMBOL || type == ElementType::FSYMBOL) {
         TextBase::drop(tx, data);
@@ -251,21 +232,20 @@ EngravingItem* Lyrics::drop(Transaction& tx, EditData& data)
         data.dropElement = 0;
         return 0;
     }
-    Text* e = toText(data.dropElement);
+    Text *e = toText(data.dropElement);
     e->setOwnershipParent(this);
     score()->undoAddElement(e);
     return e;
 }
 
-void Lyrics::adjustPrevious()
-{
-    Lyrics* prev = Navigation::prevLyrics(toLyrics(this));
+void Lyrics::adjustPrevious() {
+    Lyrics *prev = Navigation::prevLyrics(toLyrics(this));
     if (prev && prev->ticks().isNotZero()) {
         // search for lyric spanners to split at this point if necessary
         if (prev->tick() + prev->ticks() >= tick()) {
             // the previous lyric has a spanner attached that goes through this one
             // we need to shorten it
-            Segment* s = score()->tick2segment(tick());
+            Segment *s = score()->tick2segment(tick());
             if (s) {
                 s = s->prev1(SegmentType::ChordRest);
                 if (s->tick() > prev->tick()) {
@@ -280,13 +260,12 @@ void Lyrics::adjustPrevious()
     }
 }
 
-void Lyrics::setNeedRemoveInvalidSegments()
-{
+void Lyrics::setNeedRemoveInvalidSegments() {
     // Allow "invalid" segments when there is a following repeat item
 
-    const Measure* meas = measure();
-    const ChordRest* separatorEndChord = m_separator ? toChordRest(m_separator->endElement()) : nullptr;
-    const ChordRest* lastChordRest = meas ? meas->lastChordRest(track()) : nullptr;
+    const Measure *meas = measure();
+    const ChordRest *separatorEndChord = m_separator ? toChordRest(m_separator->endElement()) : nullptr;
+    const ChordRest *lastChordRest = meas ? meas->lastChordRest(track()) : nullptr;
     const bool endChordIsLastInMeasure = separatorEndChord == lastChordRest;
     const bool hasFollowingJump = lastChordRest ? lastChordRest->hasFollowingJumpItem() : false;
 
@@ -300,18 +279,17 @@ void Lyrics::setNeedRemoveInvalidSegments()
 //   removeFromScore
 //---------------------------------------------------------
 
-void Lyrics::removeFromScore()
-{
+void Lyrics::removeFromScore() {
     if (m_ticks.isNotZero()) {
         // clear melismaEnd flag from end cr
-        ChordRest* ecr = score()->findCR(endTick(), track());
+        ChordRest *ecr = score()->findCR(endTick(), track());
         if (ecr) {
             ecr->setMelismaEnd(false);
         }
     }
 
     if (!plainText().isEmpty()) {
-        PartialLyricsLine* partialDash = findPrevPartialLyricsLineDash(this);
+        PartialLyricsLine *partialDash = findPrevPartialLyricsLineDash(this);
         if (partialDash) {
             score()->undoRemoveElement(partialDash);
         }
@@ -322,7 +300,7 @@ void Lyrics::removeFromScore()
         delete m_separator;
         m_separator = 0;
     }
-    Lyrics* prev = Navigation::prevLyrics(this);
+    Lyrics *prev = Navigation::prevLyrics(this);
     if (prev) {
         // check to make sure we haven't created an invalid segment by deleting this lyric
         prev->setNeedRemoveInvalidSegments();
@@ -333,19 +311,13 @@ void Lyrics::removeFromScore()
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Lyrics::getProperty(Pid propertyId) const
-{
+PropertyValue Lyrics::getProperty(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::SYLLABIC:
-        return int(m_syllabic);
-    case Pid::LYRIC_TICKS:
-        return m_ticks;
-    case Pid::VERSE:
-        return m_verse;
-    case Pid::AVOID_BARLINES:
-        return m_avoidBarlines;
-    default:
-        return TextBase::getProperty(propertyId);
+        case Pid::SYLLABIC: return int(m_syllabic);
+        case Pid::LYRIC_TICKS: return m_ticks;
+        case Pid::VERSE: return m_verse;
+        case Pid::AVOID_BARLINES: return m_avoidBarlines;
+        default: return TextBase::getProperty(propertyId);
     }
 }
 
@@ -353,72 +325,63 @@ PropertyValue Lyrics::getProperty(Pid propertyId) const
 //   setProperty
 //---------------------------------------------------------
 
-bool Lyrics::setProperty(Pid propertyId, const PropertyValue& v)
-{
-    ChordRest* scr = nullptr;
-    ChordRest* ecr = nullptr;
+bool Lyrics::setProperty(Pid propertyId, const PropertyValue &v) {
+    ChordRest *scr = nullptr;
+    ChordRest *ecr = nullptr;
 
     switch (propertyId) {
-    case Pid::PLACEMENT:
-    {
-        PlacementV newVal = v.value<PlacementV>();
-        if (newVal != placement()) {
-            if (Lyrics* l = Navigation::prevLyrics(this)) {
-                l->setNeedRemoveInvalidSegments();
+        case Pid::PLACEMENT: {
+            PlacementV newVal = v.value<PlacementV>();
+            if (newVal != placement()) {
+                if (Lyrics *l = Navigation::prevLyrics(this)) {
+                    l->setNeedRemoveInvalidSegments();
+                }
+                if (Navigation::nextLyrics(this)) {
+                    setNeedRemoveInvalidSegments();
+                }
+                setPlacement(newVal);
             }
-            if (Navigation::nextLyrics(this)) {
+        } break;
+        case Pid::SYLLABIC: m_syllabic = LyricsSyllabic(v.toInt()); break;
+        case Pid::LYRIC_TICKS:
+            if (m_ticks.isNotZero()) {
+                // clear melismaEnd flag from previous end cr
+                // this might be premature, as there may be other melismas ending there
+                // but flag will be generated correctly on layout
+                // TODO: after inserting a measure,
+                // endTick info is wrong.
+                // Somehow we need to fix this.
+                // See https://musescore.org/en/node/285304 and https://musescore.org/en/node/311289
+                ecr = score()->findCR(endTick(), track());
+                if (ecr) {
+                    ecr->setMelismaEnd(false);
+                }
+            }
+            scr = score()->findCR(tick(), track());
+            m_ticks = v.value<Fraction>();
+            if (scr && m_ticks <= scr->ticks()) {
+                // if no ticks, we have to relayout in order to remove invalid melisma segments
                 setNeedRemoveInvalidSegments();
             }
-            setPlacement(newVal);
-        }
-    }
-    break;
-    case Pid::SYLLABIC:
-        m_syllabic = LyricsSyllabic(v.toInt());
-        break;
-    case Pid::LYRIC_TICKS:
-        if (m_ticks.isNotZero()) {
-            // clear melismaEnd flag from previous end cr
-            // this might be premature, as there may be other melismas ending there
-            // but flag will be generated correctly on layout
-            // TODO: after inserting a measure,
-            // endTick info is wrong.
-            // Somehow we need to fix this.
-            // See https://musescore.org/en/node/285304 and https://musescore.org/en/node/311289
-            ecr = score()->findCR(endTick(), track());
-            if (ecr) {
-                ecr->setMelismaEnd(false);
+            break;
+        case Pid::VERSE: {
+            if (Lyrics *l = Navigation::prevLyrics(this)) {
+                l->setNeedRemoveInvalidSegments();
             }
+            bool followTextStyle = getProperty(Pid::TEXT_STYLE) == propertyDefault(Pid::TEXT_STYLE);
+            m_verse = v.toInt();
+            if (followTextStyle) {
+                setProperty(Pid::TEXT_STYLE, propertyDefault(Pid::TEXT_STYLE));
+            }
+            break;
         }
-        scr = score()->findCR(tick(), track());
-        m_ticks = v.value<Fraction>();
-        if (scr && m_ticks <= scr->ticks()) {
-            // if no ticks, we have to relayout in order to remove invalid melisma segments
-            setNeedRemoveInvalidSegments();
-        }
-        break;
-    case Pid::VERSE: {
-        if (Lyrics* l = Navigation::prevLyrics(this)) {
-            l->setNeedRemoveInvalidSegments();
-        }
-        bool followTextStyle = getProperty(Pid::TEXT_STYLE) == propertyDefault(Pid::TEXT_STYLE);
-        m_verse = v.toInt();
-        if (followTextStyle) {
-            setProperty(Pid::TEXT_STYLE, propertyDefault(Pid::TEXT_STYLE));
-        }
-        break;
-    }
-    case Pid::AVOID_BARLINES:
-        m_avoidBarlines = v.toBool();
-        break;
-    case Pid::VISIBLE:
-        setVisible(v.toBool());
-        break;
-    default:
-        if (!TextBase::setProperty(propertyId, v)) {
-            return false;
-        }
-        break;
+        case Pid::AVOID_BARLINES: m_avoidBarlines = v.toBool(); break;
+        case Pid::VISIBLE: setVisible(v.toBool()); break;
+        default:
+            if (!TextBase::setProperty(propertyId, v)) {
+                return false;
+            }
+            break;
     }
     triggerLayout();
     return true;
@@ -428,33 +391,24 @@ bool Lyrics::setProperty(Pid propertyId, const PropertyValue& v)
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Lyrics::propertyDefault(Pid id) const
-{
+PropertyValue Lyrics::propertyDefault(Pid id) const {
     switch (id) {
-    case Pid::TEXT_STYLE:
-        return isEven() ? TextStyleType::LYRICS_EVEN : TextStyleType::LYRICS_ODD;
-    case Pid::PLACEMENT:
-        return style().styleV(Sid::lyricsPlacement);
-    case Pid::SYLLABIC:
-        return int(LyricsSyllabic::SINGLE);
-    case Pid::LYRIC_TICKS:
-        return Fraction(0, 1);
-    case Pid::VERSE:
-        return 0;
-    case Pid::AVOID_BARLINES:
-        return style().styleB(Sid::lyricsAvoidBarlines);
-    case Pid::POSITION:
-        if (isMelisma()) {
-            return style().styleV(Sid::lyricsMelismaAlign).value<Align>().horizontal;
-        }
-    // fall through
-    default:
-        return TextBase::propertyDefault(id);
+        case Pid::TEXT_STYLE: return isEven() ? TextStyleType::LYRICS_EVEN : TextStyleType::LYRICS_ODD;
+        case Pid::PLACEMENT: return style().styleV(Sid::lyricsPlacement);
+        case Pid::SYLLABIC: return int(LyricsSyllabic::SINGLE);
+        case Pid::LYRIC_TICKS: return Fraction(0, 1);
+        case Pid::VERSE: return 0;
+        case Pid::AVOID_BARLINES: return style().styleB(Sid::lyricsAvoidBarlines);
+        case Pid::POSITION:
+            if (isMelisma()) {
+                return style().styleV(Sid::lyricsMelismaAlign).value<Align>().horizontal;
+            }
+        // fall through
+        default: return TextBase::propertyDefault(id);
     }
 }
 
-void Lyrics::triggerLayout() const
-{
+void Lyrics::triggerLayout() const {
     if (m_separator) {
         // The separator may extend to next system(s), so we must use Spanner::triggerLayout()
         m_separator->triggerLayout();
@@ -464,14 +418,12 @@ void Lyrics::triggerLayout() const
     }
 }
 
-double Lyrics::yRelativeToStaff() const
-{
+double Lyrics::yRelativeToStaff() const {
     const double yOff = staffOffsetY();
     return pos().y() + chordRest()->pos().y() + yOff;
 }
 
-void Lyrics::setYRelativeToStaff(double y)
-{
+void Lyrics::setYRelativeToStaff(double y) {
     const double yOff = staffOffsetY();
     mutldata()->setPosY(y - chordRest()->pos().y() - yOff);
 }
@@ -480,12 +432,11 @@ void Lyrics::setYRelativeToStaff(double y)
 //   forAllLyrics
 //---------------------------------------------------------
 
-void Score::forAllLyrics(std::function<void(Lyrics*)> f)
-{
-    for (Segment* s = firstSegment(SegmentType::ChordRest); s; s = s->next1(SegmentType::ChordRest)) {
-        for (EngravingItem* e : s->elist()) {
+void Score::forAllLyrics(std::function<void(Lyrics *)> f) {
+    for (Segment *s = firstSegment(SegmentType::ChordRest); s; s = s->next1(SegmentType::ChordRest)) {
+        for (EngravingItem *e : s->elist()) {
             if (e) {
-                for (Lyrics* l : toChordRest(e)->lyrics()) {
+                for (Lyrics *l : toChordRest(e)->lyrics()) {
                     f(l);
                 }
             }
@@ -497,12 +448,11 @@ void Score::forAllLyrics(std::function<void(Lyrics*)> f)
 //   undoChangeProperty
 //---------------------------------------------------------
 
-void Lyrics::undoChangeProperty(Pid id, const PropertyValue& v, PropertyFlags ps)
-{
+void Lyrics::undoChangeProperty(Pid id, const PropertyValue &v, PropertyFlags ps) {
     if (id == Pid::VERSE && verse() != v.toInt()) {
-        PartialLyricsLine* prevPartial = findPrevPartialLyricsLineDash(this);
+        PartialLyricsLine *prevPartial = findPrevPartialLyricsLineDash(this);
 
-        for (Lyrics* l : chordRest()->lyrics()) {
+        for (Lyrics *l : chordRest()->lyrics()) {
             if (l->verse() == v.toInt()) {
                 // verse already exists, swap
                 l->TextBase::undoChangeProperty(id, verse(), ps);
@@ -529,8 +479,7 @@ void Lyrics::undoChangeProperty(Pid id, const PropertyValue& v, PropertyFlags ps
 //   reset
 //---------------------------------------------------------
 
-void Lyrics::reset()
-{
+void Lyrics::reset() {
     undoResetProperty(Pid::CENTER_BETWEEN_STAVES);
     TextBase::reset();
 }
@@ -541,8 +490,7 @@ void Lyrics::reset()
 // Remove lyric-final melisma lines and reset the alignment of the lyric
 //---------------------------------------------------------
 
-void Lyrics::removeInvalidSegments()
-{
+void Lyrics::removeInvalidSegments() {
     m_needRemoveInvalidSegments = false;
     if (m_separator && isMelisma() && m_ticks < m_separator->startCR()->ticks()) {
         setTicks(Fraction(0, 1));
@@ -557,4 +505,4 @@ void Lyrics::removeInvalidSegments()
         }
     }
 }
-}
+} // namespace mu::engraving

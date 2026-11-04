@@ -44,18 +44,15 @@ namespace mu::engraving {
 //    The PauseMap and tempo events are fully unwound to account for pauses on repeats.
 //---------------------------------------------------------
 
-void PauseMap::calculate(const Score* s)
-{
-    IF_ASSERT_FAILED(s) {
-        LOGE() << "failed to calculate pause map";
-    }
+void PauseMap::calculate(const Score *s) {
+    IF_ASSERT_FAILED(s) { LOGE() << "failed to calculate pause map"; }
 
-    insert(std::pair<const int, int>(0, 0));    // can't start with a pause
+    insert(std::pair<const int, int>(0, 0)); // can't start with a pause
 
-    const TimeSigMap* sigmap = s->sigmap();
-    const RepeatList& repeatList = s->repeatList();
+    const TimeSigMap *sigmap = s->sigmap();
+    const RepeatList &repeatList = s->repeatList();
 
-    for (const TempoTimePoint& point : s->tempoTimeline().points()) {
+    for (const TempoTimePoint &point : s->tempoTimeline().points()) {
         const int utick = point.utick;
 
         if (point.pause <= 0.0) {
@@ -68,10 +65,10 @@ void PauseMap::calculate(const Score* s)
         const int tick = repeatList.utick2tick(utick);
         Fraction timeSig(sigmap->timesig(tick).timesig());
         double quarterNotesPerMeasure = (4.0 * timeSig.numerator()) / timeSig.denominator();
-        int ticksPerMeasure =  quarterNotesPerMeasure * Constants::DIVISION;           // store a full measure of ticks to keep barlines in same places
-        m_tempoEvents[tickWithPauses(utick)] = quarterNotesPerMeasure / point.pause;           // new tempo for pause
-        insert(std::pair<const int, int>(utick, ticksPerMeasure + offsetAtUTick(utick)));            // store running total of extra ticks
-        m_tempoEvents[tickWithPauses(utick)] = point.bps;           // restore previous tempo
+        int ticksPerMeasure = quarterNotesPerMeasure * Constants::DIVISION; // store a full measure of ticks to keep barlines in same places
+        m_tempoEvents[tickWithPauses(utick)] = quarterNotesPerMeasure / point.pause;      // new tempo for pause
+        insert(std::pair<const int, int>(utick, ticksPerMeasure + offsetAtUTick(utick))); // store running total of extra ticks
+        m_tempoEvents[tickWithPauses(utick)] = point.bps;                                 // restore previous tempo
     }
 }
 
@@ -80,12 +77,9 @@ void PauseMap::calculate(const Score* s)
 //    In total, how many extra ticks have been inserted prior to this utick.
 //---------------------------------------------------------
 
-int PauseMap::offsetAtUTick(int utick) const
-{
+int PauseMap::offsetAtUTick(int utick) const {
     // make sure calculate was called
-    IF_ASSERT_FAILED(!empty()) {
-        LOGE() << "accessing empty container";
-    }
+    IF_ASSERT_FAILED(!empty()) { LOGE() << "accessing empty container"; }
 
     auto i = upper_bound(utick);
     if (i != begin()) {
@@ -93,4 +87,4 @@ int PauseMap::offsetAtUTick(int utick) const
     }
     return i->second;
 }
-}
+} // namespace mu::engraving

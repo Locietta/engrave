@@ -47,30 +47,25 @@ using namespace mu::engraving;
 using namespace muse::draw;
 
 namespace mu::engraving {
-static const ElementStyle boxStyle {
-    { Sid::systemFrameDistance,                Pid::TOP_GAP },
-    { Sid::frameSystemDistance,                Pid::BOTTOM_GAP },
-    { Sid::paddingToNotationAbove,             Pid::PADDING_TO_NOTATION_ABOVE },
-    { Sid::paddingToNotationBelow,             Pid::PADDING_TO_NOTATION_BELOW },
+static const ElementStyle boxStyle{
+    {Sid::systemFrameDistance, Pid::TOP_GAP},
+    {Sid::frameSystemDistance, Pid::BOTTOM_GAP},
+    {Sid::paddingToNotationAbove, Pid::PADDING_TO_NOTATION_ABOVE},
+    {Sid::paddingToNotationBelow, Pid::PADDING_TO_NOTATION_BELOW},
 };
 
-static const ElementStyle hBoxStyle {
-};
+static const ElementStyle hBoxStyle{};
 
 static const String FRET_BOX_DIAGRAMS_SEPARATOR = u",";
 
-Box::Box(const ElementType& type, Score* parent)
-    : MeasureBase(type, parent)
-{
-}
+Box::Box(const ElementType &type, Score *parent) : MeasureBase(type, parent) {}
 
 //---------------------------------------------------------
 //   computeMinWidth
 //---------------------------------------------------------
 
-void HBox::computeMinWidth()
-{
-    setWidth(absoluteFromSpatium(boxWidth() + topGap() + bottomGap()));    // top/bottom is really left/right
+void HBox::computeMinWidth() {
+    setWidth(absoluteFromSpatium(boxWidth() + topGap() + bottomGap())); // top/bottom is really left/right
 }
 
 //---------------------------------------------------------
@@ -78,25 +73,22 @@ void HBox::computeMinWidth()
 ///   Add new EngravingItem \a el to Box
 //---------------------------------------------------------
 
-void Box::add(EngravingItem* e)
-{
+void Box::add(EngravingItem *e) {
     if (e->isText()) {
         toText(e)->setLayoutToParentWidth(true);
     }
     MeasureBase::add(e);
 }
 
-double Box::absoluteFromSpatium(const Spatium& val) const
-{
+double Box::absoluteFromSpatium(const Spatium &val) const {
     const double sp = sizeIsSpatiumDependent() ? spatium() : style().defaultSpatium();
     return val.val() * sp;
 }
 
-RectF Box::contentRect() const
-{
+RectF Box::contentRect() const {
     RectF result;
 
-    for (const EngravingItem* element : el()) {
+    for (const EngravingItem *element : el()) {
         result = result.united(element->ldata()->bbox());
     }
 
@@ -107,29 +99,18 @@ RectF Box::contentRect() const
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Box::getProperty(Pid propertyId) const
-{
+PropertyValue Box::getProperty(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::BOX_HEIGHT:
-        return m_boxHeight;
-    case Pid::BOX_WIDTH:
-        return m_boxWidth;
-    case Pid::TOP_GAP:
-        return m_topGap;
-    case Pid::BOTTOM_GAP:
-        return m_bottomGap;
-    case Pid::LEFT_MARGIN:
-        return m_leftMargin;
-    case Pid::RIGHT_MARGIN:
-        return m_rightMargin;
-    case Pid::TOP_MARGIN:
-        return m_topMargin;
-    case Pid::BOTTOM_MARGIN:
-        return m_bottomMargin;
-    case Pid::BOX_AUTOSIZE:
-        return (score()->mscVersion() >= 302) ? m_isAutoSizeEnabled : false;
-    default:
-        return MeasureBase::getProperty(propertyId);
+        case Pid::BOX_HEIGHT: return m_boxHeight;
+        case Pid::BOX_WIDTH: return m_boxWidth;
+        case Pid::TOP_GAP: return m_topGap;
+        case Pid::BOTTOM_GAP: return m_bottomGap;
+        case Pid::LEFT_MARGIN: return m_leftMargin;
+        case Pid::RIGHT_MARGIN: return m_rightMargin;
+        case Pid::TOP_MARGIN: return m_topMargin;
+        case Pid::BOTTOM_MARGIN: return m_bottomMargin;
+        case Pid::BOX_AUTOSIZE: return (score()->mscVersion() >= 302) ? m_isAutoSizeEnabled : false;
+        default: return MeasureBase::getProperty(propertyId);
     }
 }
 
@@ -137,38 +118,18 @@ PropertyValue Box::getProperty(Pid propertyId) const
 //   setProperty
 //---------------------------------------------------------
 
-bool Box::setProperty(Pid propertyId, const PropertyValue& v)
-{
+bool Box::setProperty(Pid propertyId, const PropertyValue &v) {
     switch (propertyId) {
-    case Pid::BOX_HEIGHT:
-        m_boxHeight = v.value<Spatium>();
-        break;
-    case Pid::BOX_WIDTH:
-        m_boxWidth = v.value<Spatium>();
-        break;
-    case Pid::TOP_GAP:
-        m_topGap = v.value<Spatium>();
-        break;
-    case Pid::BOTTOM_GAP:
-        m_bottomGap = v.value<Spatium>();
-        break;
-    case Pid::LEFT_MARGIN:
-        m_leftMargin = v.toDouble();
-        break;
-    case Pid::RIGHT_MARGIN:
-        m_rightMargin = v.toDouble();
-        break;
-    case Pid::TOP_MARGIN:
-        m_topMargin = v.toDouble();
-        break;
-    case Pid::BOTTOM_MARGIN:
-        m_bottomMargin = v.toDouble();
-        break;
-    case Pid::BOX_AUTOSIZE:
-        m_isAutoSizeEnabled = v.toBool();
-        break;
-    default:
-        return MeasureBase::setProperty(propertyId, v);
+        case Pid::BOX_HEIGHT: m_boxHeight = v.value<Spatium>(); break;
+        case Pid::BOX_WIDTH: m_boxWidth = v.value<Spatium>(); break;
+        case Pid::TOP_GAP: m_topGap = v.value<Spatium>(); break;
+        case Pid::BOTTOM_GAP: m_bottomGap = v.value<Spatium>(); break;
+        case Pid::LEFT_MARGIN: m_leftMargin = v.toDouble(); break;
+        case Pid::RIGHT_MARGIN: m_rightMargin = v.toDouble(); break;
+        case Pid::TOP_MARGIN: m_topMargin = v.toDouble(); break;
+        case Pid::BOTTOM_MARGIN: m_bottomMargin = v.toDouble(); break;
+        case Pid::BOX_AUTOSIZE: m_isAutoSizeEnabled = v.toBool(); break;
+        default: return MeasureBase::setProperty(propertyId, v);
     }
     triggerLayout();
     return true;
@@ -178,53 +139,41 @@ bool Box::setProperty(Pid propertyId, const PropertyValue& v)
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Box::propertyDefault(Pid id) const
-{
+PropertyValue Box::propertyDefault(Pid id) const {
     switch (id) {
-    case Pid::BOX_HEIGHT:
-    case Pid::BOX_WIDTH:
-        return 0.0_sp;
+        case Pid::BOX_HEIGHT:
+        case Pid::BOX_WIDTH: return 0.0_sp;
 
-    case Pid::TOP_GAP:
-        return isHBox() ? 0.0_sp : style().styleS(Sid::systemFrameDistance);
-    case Pid::BOTTOM_GAP:
-        return isHBox() ? 0.0_sp : style().styleS(Sid::frameSystemDistance);
+        case Pid::TOP_GAP: return isHBox() ? 0.0_sp : style().styleS(Sid::systemFrameDistance);
+        case Pid::BOTTOM_GAP: return isHBox() ? 0.0_sp : style().styleS(Sid::frameSystemDistance);
 
-    case Pid::LEFT_MARGIN:
-    case Pid::RIGHT_MARGIN:
-    case Pid::TOP_MARGIN:
-    case Pid::BOTTOM_MARGIN:
-        return 0.0;
-    case Pid::BOX_AUTOSIZE:
-        return true;
-    case Pid::SIZE_SPATIUM_DEPENDENT:
-        return !isTitleFrame();
-    default:
-        return MeasureBase::propertyDefault(id);
+        case Pid::LEFT_MARGIN:
+        case Pid::RIGHT_MARGIN:
+        case Pid::TOP_MARGIN:
+        case Pid::BOTTOM_MARGIN: return 0.0;
+        case Pid::BOX_AUTOSIZE: return true;
+        case Pid::SIZE_SPATIUM_DEPENDENT: return !isTitleFrame();
+        default: return MeasureBase::propertyDefault(id);
     }
 }
 
-bool Box::isTitleFrame() const
-{
-    return this == score()->first() && isVBox();
-}
+bool Box::isTitleFrame() const { return this == score()->first() && isVBox(); }
 
 //---------------------------------------------------------
 //   copyValues
 //---------------------------------------------------------
 
-void Box::copyValues(Box* origin)
-{
-    m_boxHeight    = origin->boxHeight();
-    m_boxWidth     = origin->boxWidth();
+void Box::copyValues(Box *origin) {
+    m_boxHeight = origin->boxHeight();
+    m_boxWidth = origin->boxWidth();
 
-    double factor  = magS() / origin->magS();
-    m_bottomGap    = origin->bottomGap() * factor;
-    m_topGap       = origin->topGap() * factor;
+    double factor = magS() / origin->magS();
+    m_bottomGap = origin->bottomGap() * factor;
+    m_topGap = origin->topGap() * factor;
     m_bottomMargin = origin->bottomMargin() * factor;
-    m_topMargin    = origin->topMargin() * factor;
-    m_leftMargin   = origin->leftMargin() * factor;
-    m_rightMargin  = origin->rightMargin() * factor;
+    m_topMargin = origin->topMargin() * factor;
+    m_leftMargin = origin->leftMargin() * factor;
+    m_rightMargin = origin->rightMargin() * factor;
 
     setSizeIsSpatiumDependent(origin->sizeIsSpatiumDependent());
 }
@@ -233,9 +182,7 @@ void Box::copyValues(Box* origin)
 //   HBox
 //---------------------------------------------------------
 
-HBox::HBox(Score* parent)
-    : Box(ElementType::HBOX, parent)
-{
+HBox::HBox(Score *parent) : Box(ElementType::HBOX, parent) {
     initElementStyle(&hBoxStyle);
     resetProperty(Pid::BOX_WIDTH);
 }
@@ -244,8 +191,7 @@ HBox::HBox(Score* parent)
 //   acceptDrop
 //---------------------------------------------------------
 
-bool Box::acceptDrop(EditData& data) const
-{
+bool Box::acceptDrop(EditData &data) const {
     if (data.dropElement->flag(ElementFlag::ON_STAFF)) {
         return false;
     }
@@ -254,27 +200,22 @@ bool Box::acceptDrop(EditData& data) const
     }
     ElementType t = data.dropElement->type();
     switch (t) {
-    case ElementType::TEXT:
-    case ElementType::STAFF_TEXT:
-    case ElementType::IMAGE:
-    case ElementType::SYMBOL:
-        return true;
-    case ElementType::ACTION_ICON:
-        switch (toActionIcon(data.dropElement)->actionType()) {
-        case ActionIconType::VFRAME:
-        case ActionIconType::TFRAME:
-        case ActionIconType::FFRAME:
-        case ActionIconType::HFRAME:
-        case ActionIconType::MEASURE:
-            return true;
-        default:
+        case ElementType::TEXT:
+        case ElementType::STAFF_TEXT:
+        case ElementType::IMAGE:
+        case ElementType::SYMBOL: return true;
+        case ElementType::ACTION_ICON:
+            switch (toActionIcon(data.dropElement)->actionType()) {
+                case ActionIconType::VFRAME:
+                case ActionIconType::TFRAME:
+                case ActionIconType::FFRAME:
+                case ActionIconType::HFRAME:
+                case ActionIconType::MEASURE: return true;
+                default: break;
+            }
             break;
-        }
-        break;
-    case ElementType::BAR_LINE:
-        return isHBox();
-    default:
-        break;
+        case ElementType::BAR_LINE: return isHBox();
+        default: break;
     }
     return MeasureBase::acceptDrop(data);
 }
@@ -283,9 +224,8 @@ bool Box::acceptDrop(EditData& data) const
 //   drop
 //---------------------------------------------------------
 
-EngravingItem* Box::drop(Transaction& tx, EditData& data)
-{
-    EngravingItem* e = data.dropElement;
+EngravingItem *Box::drop(Transaction &tx, EditData &data) {
+    EngravingItem *e = data.dropElement;
     if (e->flag(ElementFlag::ON_STAFF)) {
         return 0;
     }
@@ -293,67 +233,53 @@ EngravingItem* Box::drop(Transaction& tx, EditData& data)
         LOGD("<%s>", e->typeName());
     }
     switch (e->type()) {
-    case ElementType::STAFF_TEXT:
-    {
-        Text* text = Factory::createText(this, TextStyleType::FRAME);
-        text->setXmlText(toStaffText(e)->xmlText());
-        score()->undoAddElement(text);
-        delete e;
-        return text;
-    }
-
-    case ElementType::ACTION_ICON:
-        switch (toActionIcon(e)->actionType()) {
-        case ActionIconType::VFRAME:
-            score()->insertBox(ElementType::VBOX, this);
-            break;
-        case ActionIconType::TFRAME:
-            score()->insertBox(ElementType::TBOX, this);
-            break;
-        case ActionIconType::FFRAME:
-            score()->insertBox(ElementType::FBOX, this);
-            break;
-        case ActionIconType::HFRAME:
-            score()->insertBox(ElementType::HBOX, this);
-            break;
-        case ActionIconType::MEASURE:
-            score()->insertMeasure(ElementType::MEASURE, this);
-            break;
-        default:
-            break;
+        case ElementType::STAFF_TEXT: {
+            Text *text = Factory::createText(this, TextStyleType::FRAME);
+            text->setXmlText(toStaffText(e)->xmlText());
+            score()->undoAddElement(text);
+            delete e;
+            return text;
         }
-        break;
 
-    case ElementType::TEXT:
-    case ElementType::IMAGE:
-    case ElementType::SYMBOL:
-        e->setOwnershipParent(this);
-        score()->undoAddElement(e);
-        return e;
-    default:
-        break;
+        case ElementType::ACTION_ICON:
+            switch (toActionIcon(e)->actionType()) {
+                case ActionIconType::VFRAME: score()->insertBox(ElementType::VBOX, this); break;
+                case ActionIconType::TFRAME: score()->insertBox(ElementType::TBOX, this); break;
+                case ActionIconType::FFRAME: score()->insertBox(ElementType::FBOX, this); break;
+                case ActionIconType::HFRAME: score()->insertBox(ElementType::HBOX, this); break;
+                case ActionIconType::MEASURE: score()->insertMeasure(ElementType::MEASURE, this); break;
+                default: break;
+            }
+            break;
+
+        case ElementType::TEXT:
+        case ElementType::IMAGE:
+        case ElementType::SYMBOL:
+            e->setOwnershipParent(this);
+            score()->undoAddElement(e);
+            return e;
+        default: break;
     }
 
     return MeasureBase::drop(tx, data);
 }
 
-void Box::manageExclusionFromParts(bool exclude)
-{
+void Box::manageExclusionFromParts(bool exclude) {
     // manage Layout Breaks - remove old ones first
-    LayoutBreak* sectionBreak = sectionBreakElement();
+    LayoutBreak *sectionBreak = sectionBreakElement();
     if (sectionBreak) {
         toEngravingItem(sectionBreak)->manageExclusionFromParts(true);
     }
 
     bool titleFrame = isTitleFrame();
     if (exclude) {
-        const std::list<EngravingObject*> links = linkList();
-        for (EngravingObject* linkedObject : links) {
+        const std::list<EngravingObject *> links = linkList();
+        for (EngravingObject *linkedObject : links) {
             // Only remove title frame from score
             if (linkedObject->score() == score() || (!this->score()->isMaster() && titleFrame && !linkedObject->score()->isMaster())) {
                 continue;
             }
-            EngravingItem* linkedItem = toEngravingItem(linkedObject);
+            EngravingItem *linkedItem = toEngravingItem(linkedObject);
             if (linkedItem->selected()) {
                 linkedItem->score()->deselect(linkedItem);
             }
@@ -363,13 +289,13 @@ void Box::manageExclusionFromParts(bool exclude)
 
         // manage Layout Breaks - there are no linked boxes, so add linked Line Breaks to previous measure
         if (sectionBreak && !titleFrame) {
-            if (MeasureBase* prevMeasure = this->prevMeasure()) {
-                for (Score* score : masterScore()->scoreList()) {
+            if (MeasureBase *prevMeasure = this->prevMeasure()) {
+                for (Score *score : masterScore()->scoreList()) {
                     if (score == this->score()) {
                         continue;
                     }
-                    if (MeasureBase* localPrevMeasure = score->tick2measure(prevMeasure->tick())) {
-                        EngravingItem* newSectionBreak = sectionBreak->linkedClone();
+                    if (MeasureBase *localPrevMeasure = score->tick2measure(prevMeasure->tick())) {
+                        EngravingItem *newSectionBreak = sectionBreak->linkedClone();
                         newSectionBreak->setScore(score);
                         newSectionBreak->setOwnershipParent(localPrevMeasure);
                         score->doUndoAddElement(newSectionBreak);
@@ -378,20 +304,20 @@ void Box::manageExclusionFromParts(bool exclude)
             }
         }
     } else {
-        for (Score* score : masterScore()->scoreList()) {
+        for (Score *score : masterScore()->scoreList()) {
             if (score == this->score() || (titleFrame && !this->score()->isMaster() && !score->isMaster())) {
                 continue;
             }
 
-            MeasureBase* newMB = next() ? next()->getInScore(score, true) : nullptr;
+            MeasureBase *newMB = next() ? next()->getInScore(score, true) : nullptr;
             Score::InsertMeasureOptions options;
             options.cloneBoxToAllParts = false;
-            MeasureBase* newFrame = score->insertBox(type(), newMB, options);
+            MeasureBase *newFrame = score->insertBox(type(), newMB, options);
             newFrame->setExcludeFromOtherParts(false);
             // newFrame->setSizeIsSpatiumDependent(!titleFrame);
 
             if (!isFBox()) {
-                for (EngravingItem* item : el()) {
+                for (EngravingItem *item : el()) {
                     // Don't add instrument name from current part
                     if (item->isText() && toText(item)->textStyleType() == TextStyleType::INSTRUMENT_EXCERPT) {
                         continue;
@@ -402,7 +328,7 @@ void Box::manageExclusionFromParts(bool exclude)
             }
 
             if (isTBox()) {
-                Text* thisText = toTBox(this)->text();
+                Text *thisText = toTBox(this)->text();
                 toTBox(newFrame)->add(thisText->linkedClone());
             }
 
@@ -410,7 +336,7 @@ void Box::manageExclusionFromParts(bool exclude)
                 // Title frame - add part name
                 String partLabel = score->name();
                 if (!partLabel.empty()) {
-                    Text* txt = Factory::createText(newFrame, TextStyleType::INSTRUMENT_EXCERPT);
+                    Text *txt = Factory::createText(newFrame, TextStyleType::INSTRUMENT_EXCERPT);
                     txt->setPlainText(partLabel);
                     newFrame->add(txt);
 
@@ -427,22 +353,16 @@ void Box::manageExclusionFromParts(bool exclude)
 //   isMovable
 //---------------------------------------------------------
 
-bool HBox::isMovable() const
-{
-    return ownershipParent() && (ownershipParent()->isHBox() || ownershipParent()->isVBox());
-}
+bool HBox::isMovable() const { return ownershipParent() && (ownershipParent()->isHBox() || ownershipParent()->isVBox()); }
 
 //---------------------------------------------------------
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue HBox::getProperty(Pid propertyId) const
-{
+PropertyValue HBox::getProperty(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::CREATE_SYSTEM_HEADER:
-        return createSystemHeader();
-    default:
-        return Box::getProperty(propertyId);
+        case Pid::CREATE_SYSTEM_HEADER: return createSystemHeader();
+        default: return Box::getProperty(propertyId);
     }
 }
 
@@ -450,15 +370,13 @@ PropertyValue HBox::getProperty(Pid propertyId) const
 //   setProperty
 //---------------------------------------------------------
 
-bool HBox::setProperty(Pid propertyId, const PropertyValue& v)
-{
+bool HBox::setProperty(Pid propertyId, const PropertyValue &v) {
     switch (propertyId) {
-    case Pid::CREATE_SYSTEM_HEADER:
-        setCreateSystemHeader(v.toBool());
-        triggerLayout();
-        break;
-    default:
-        return Box::setProperty(propertyId, v);
+        case Pid::CREATE_SYSTEM_HEADER:
+            setCreateSystemHeader(v.toBool());
+            triggerLayout();
+            break;
+        default: return Box::setProperty(propertyId, v);
     }
     return true;
 }
@@ -467,15 +385,11 @@ bool HBox::setProperty(Pid propertyId, const PropertyValue& v)
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue HBox::propertyDefault(Pid id) const
-{
+PropertyValue HBox::propertyDefault(Pid id) const {
     switch (id) {
-    case Pid::CREATE_SYSTEM_HEADER:
-        return true;
-    case Pid::BOX_WIDTH:
-        return 5.0_sp;
-    default:
-        return Box::propertyDefault(id);
+        case Pid::CREATE_SYSTEM_HEADER: return true;
+        case Pid::BOX_WIDTH: return 5.0_sp;
+        default: return Box::propertyDefault(id);
     }
 }
 
@@ -483,9 +397,7 @@ PropertyValue HBox::propertyDefault(Pid id) const
 //   VBox
 //---------------------------------------------------------
 
-VBox::VBox(const ElementType& type, Score* parent)
-    : Box(type, parent)
-{
+VBox::VBox(const ElementType &type, Score *parent) : Box(type, parent) {
     initElementStyle(&boxStyle);
 
     resetProperty(Pid::BOX_HEIGHT);
@@ -493,16 +405,10 @@ VBox::VBox(const ElementType& type, Score* parent)
     setLineBreak(true);
 }
 
-VBox::VBox(Score* parent)
-    : VBox(ElementType::VBOX, parent)
-{
-}
+VBox::VBox(Score *parent) : VBox(ElementType::VBOX, parent) {}
 
-void VBox::add(EngravingItem* e)
-{
-    IF_ASSERT_FAILED(e) {
-        return;
-    }
+void VBox::add(EngravingItem *e) {
+    IF_ASSERT_FAILED(e) { return; }
     if (e->isLayoutBreak()) {
         const LayoutBreakType type = toLayoutBreak(e)->layoutBreakType();
         if (type == LayoutBreakType::LINE) {
@@ -520,27 +426,16 @@ void VBox::add(EngravingItem* e)
     Box::add(e);
 }
 
-double VBox::minHeight() const
-{
-    return absoluteFromSpatium(10_sp);
-}
+double VBox::minHeight() const { return absoluteFromSpatium(10_sp); }
 
-double VBox::maxHeight() const
-{
-    return absoluteFromSpatium(30_sp);
-}
+double VBox::maxHeight() const { return absoluteFromSpatium(30_sp); }
 
-PropertyValue VBox::getProperty(Pid propertyId) const
-{
+PropertyValue VBox::getProperty(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::BOX_AUTOSIZE:
-        return isAutoSizeEnabled();
-    case Pid::PADDING_TO_NOTATION_ABOVE:
-        return m_paddingToNotationAbove;
-    case Pid::PADDING_TO_NOTATION_BELOW:
-        return m_paddingToNotationBelow;
-    default:
-        return Box::getProperty(propertyId);
+        case Pid::BOX_AUTOSIZE: return isAutoSizeEnabled();
+        case Pid::PADDING_TO_NOTATION_ABOVE: return m_paddingToNotationAbove;
+        case Pid::PADDING_TO_NOTATION_BELOW: return m_paddingToNotationBelow;
+        default: return Box::getProperty(propertyId);
     }
 }
 
@@ -548,27 +443,18 @@ PropertyValue VBox::getProperty(Pid propertyId) const
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue VBox::propertyDefault(Pid id) const
-{
+PropertyValue VBox::propertyDefault(Pid id) const {
     switch (id) {
-    case Pid::BOX_HEIGHT:
-        return 10.0_sp;
-    default:
-        return Box::propertyDefault(id);
+        case Pid::BOX_HEIGHT: return 10.0_sp;
+        default: return Box::propertyDefault(id);
     }
 }
 
-bool VBox::setProperty(Pid propertyId, const PropertyValue& v)
-{
+bool VBox::setProperty(Pid propertyId, const PropertyValue &v) {
     switch (propertyId) {
-    case Pid::PADDING_TO_NOTATION_ABOVE:
-        m_paddingToNotationAbove = v.value<Spatium>();
-        break;
-    case Pid::PADDING_TO_NOTATION_BELOW:
-        m_paddingToNotationBelow = v.value<Spatium>();
-        break;
-    default:
-        return Box::setProperty(propertyId, v);
+        case Pid::PADDING_TO_NOTATION_ABOVE: m_paddingToNotationAbove = v.value<Spatium>(); break;
+        case Pid::PADDING_TO_NOTATION_BELOW: m_paddingToNotationBelow = v.value<Spatium>(); break;
+        default: return Box::setProperty(propertyId, v);
     }
 
     triggerLayout();
@@ -579,12 +465,9 @@ bool VBox::setProperty(Pid propertyId, const PropertyValue& v)
 //   startDragGrip
 //---------------------------------------------------------
 
-bool VBox::acceptDrop(EditData& data) const
-{
-    const EngravingItem* e = data.dropElement;
-    IF_ASSERT_FAILED(e) {
-        return false;
-    }
+bool VBox::acceptDrop(EditData &data) const {
+    const EngravingItem *e = data.dropElement;
+    IF_ASSERT_FAILED(e) { return false; }
     if (e->isLayoutBreak()) {
         const LayoutBreakType type = toLayoutBreak(e)->layoutBreakType();
         if (type == LayoutBreakType::LINE) {
@@ -605,9 +488,7 @@ bool VBox::acceptDrop(EditData& data) const
 ///   Add new EngravingItem \a e to fret diagram box
 //---------------------------------------------------------
 
-FBox::FBox(Score* parent)
-    : VBox(ElementType::FBOX, parent)
-{
+FBox::FBox(Score *parent) : VBox(ElementType::FBOX, parent) {
     resetProperty(Pid::FRET_FRAME_TEXT_SCALE);
     resetProperty(Pid::FRET_FRAME_DIAGRAM_SCALE);
     resetProperty(Pid::FRET_FRAME_COLUMN_GAP);
@@ -626,21 +507,20 @@ FBox::FBox(Score* parent)
     resetProperty(Pid::POSITION_LINKED_TO_MASTER);
 }
 
-void FBox::init()
-{
+void FBox::init() {
     StringList oldDiagramsNames;
-    std::vector<FretDiagram*> oldDiagrams;
-    for (EngravingItem* element : el()) {
-        FretDiagram* diagram = toFretDiagram(element);
+    std::vector<FretDiagram *> oldDiagrams;
+    for (EngravingItem *element : el()) {
+        FretDiagram *diagram = toFretDiagram(element);
         oldDiagrams.push_back(diagram);
         oldDiagramsNames.push_back(diagram->harmonyDisplayText());
     }
 
     StringList diagramsNamesInScore;
-    std::vector<EngravingItem*> harmonyOrDiagramsInScore;
-    for (mu::engraving::Segment* segment = score()->firstSegment(mu::engraving::SegmentType::ChordRest); segment;
+    std::vector<EngravingItem *> harmonyOrDiagramsInScore;
+    for (mu::engraving::Segment *segment = score()->firstSegment(mu::engraving::SegmentType::ChordRest); segment;
          segment = segment->next1(mu::engraving::SegmentType::ChordRest)) {
-        for (EngravingItem* item : segment->annotations()) {
+        for (EngravingItem *item : segment->annotations()) {
             if (!item || !item->part()) {
                 continue;
             }
@@ -653,9 +533,9 @@ void FBox::init()
                 continue;
             }
 
-            String harmonyName = item->isHarmony() ? toHarmony(item)->displayText()
-                                 : item->isFretDiagram() ? toFretDiagram(item)->harmonyDisplayText()
-                                 : String();
+            String harmonyName = item->isHarmony()     ? toHarmony(item)->displayText() :
+                                 item->isFretDiagram() ? toFretDiagram(item)->harmonyDisplayText() :
+                                                         String();
             if (harmonyName.empty() || muse::contains(diagramsNamesInScore, harmonyName)) {
                 continue;
             }
@@ -677,7 +557,7 @@ void FBox::init()
     for (size_t i = 0; i < diagramsNamesInScore.size(); ++i) {
         String newName = diagramsNamesInScore[i];
         if (!muse::contains(oldDiagramsNames, newName)) {
-            FretDiagram* newDiagram = FretDiagram::makeFromHarmonyOrFretDiagram(harmonyOrDiagramsInScore[i]);
+            FretDiagram *newDiagram = FretDiagram::makeFromHarmonyOrFretDiagram(harmonyOrDiagramsInScore[i]);
             newDiagram->setOwnershipParent(this);
             String nameOfDiagramBeforeThis = i > 0 ? diagramsNamesInScore[i - 1] : String();
             size_t idx = computeInsertionIdx(nameOfDiagramBeforeThis);
@@ -686,8 +566,7 @@ void FBox::init()
     }
 }
 
-void FBox::add(EngravingItem* e)
-{
+void FBox::add(EngravingItem *e) {
     e->setOwnershipParent(this);
     if (e->isFretDiagram()) {
         addAtIdx(toFretDiagram(e), muse::nidx);
@@ -697,13 +576,12 @@ void FBox::add(EngravingItem* e)
     }
 }
 
-void FBox::addAtIdx(FretDiagram* fretDiagram, size_t idx)
-{
+void FBox::addAtIdx(FretDiagram *fretDiagram, size_t idx) {
     fretDiagram->setTrack(muse::nidx);
     fretDiagram->setFlag(ElementFlag::MOVABLE, false);
     fretDiagram->setFlag(ElementFlag::ON_STAFF, false);
 
-    Harmony* harmony = fretDiagram->harmony();
+    Harmony *harmony = fretDiagram->harmony();
     harmony->setTrack(muse::nidx);
     harmony->setFlag(ElementFlag::MOVABLE, false);
     harmony->setFlag(ElementFlag::ON_STAFF, false);
@@ -717,14 +595,13 @@ void FBox::addAtIdx(FretDiagram* fretDiagram, size_t idx)
     fretDiagram->added();
 }
 
-size_t FBox::computeInsertionIdx(const String& nameOfDiagramBeforeThis)
-{
+size_t FBox::computeInsertionIdx(const String &nameOfDiagramBeforeThis) {
     if (nameOfDiagramBeforeThis.empty()) {
         return 0;
     }
 
     for (size_t i = 0; i < m_el.size(); ++i) {
-        FretDiagram* fretDiagram = toFretDiagram(m_el[i]);
+        FretDiagram *fretDiagram = toFretDiagram(m_el[i]);
         if (fretDiagram->harmonyDisplayText() == nameOfDiagramBeforeThis) {
             return i + 1;
         }
@@ -733,100 +610,64 @@ size_t FBox::computeInsertionIdx(const String& nameOfDiagramBeforeThis)
     return muse::nidx;
 }
 
-PropertyValue FBox::getProperty(Pid propertyId) const
-{
+PropertyValue FBox::getProperty(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::FRET_FRAME_TEXT_SCALE:
-        return m_textScale;
-    case Pid::FRET_FRAME_DIAGRAM_SCALE:
-        return m_diagramScale;
-    case Pid::FRET_FRAME_COLUMN_GAP:
-        return m_columnGap;
-    case Pid::FRET_FRAME_ROW_GAP:
-        return m_rowGap;
-    case Pid::FRET_FRAME_CHORDS_PER_ROW:
-        return m_chordsPerRow;
-    case Pid::FRET_FRAME_H_ALIGN:
-        return static_cast<int>(m_contentAlignmentH);
-    case Pid::LEFT_MARGIN:
-        return m_contentAlignmentH == AlignH::LEFT ? VBox::getProperty(propertyId) : PropertyValue();
-    case Pid::RIGHT_MARGIN:
-        return m_contentAlignmentH == AlignH::RIGHT ? VBox::getProperty(propertyId) : PropertyValue();
-    case Pid::FRET_FRAME_DIAGRAMS_ORDER:
-        return diagramsOrder().join(FRET_BOX_DIAGRAMS_SEPARATOR);
-    default:
-        return VBox::getProperty(propertyId);
+        case Pid::FRET_FRAME_TEXT_SCALE: return m_textScale;
+        case Pid::FRET_FRAME_DIAGRAM_SCALE: return m_diagramScale;
+        case Pid::FRET_FRAME_COLUMN_GAP: return m_columnGap;
+        case Pid::FRET_FRAME_ROW_GAP: return m_rowGap;
+        case Pid::FRET_FRAME_CHORDS_PER_ROW: return m_chordsPerRow;
+        case Pid::FRET_FRAME_H_ALIGN: return static_cast<int>(m_contentAlignmentH);
+        case Pid::LEFT_MARGIN: return m_contentAlignmentH == AlignH::LEFT ? VBox::getProperty(propertyId) : PropertyValue();
+        case Pid::RIGHT_MARGIN: return m_contentAlignmentH == AlignH::RIGHT ? VBox::getProperty(propertyId) : PropertyValue();
+        case Pid::FRET_FRAME_DIAGRAMS_ORDER: return diagramsOrder().join(FRET_BOX_DIAGRAMS_SEPARATOR);
+        default: return VBox::getProperty(propertyId);
     }
 }
 
-bool FBox::setProperty(Pid propertyId, const PropertyValue& val)
-{
+bool FBox::setProperty(Pid propertyId, const PropertyValue &val) {
     switch (propertyId) {
-    case Pid::FRET_FRAME_TEXT_SCALE:
-        m_textScale = val.toDouble();
-        break;
-    case Pid::FRET_FRAME_DIAGRAM_SCALE:
-        m_diagramScale = val.toDouble();
-        break;
-    case Pid::FRET_FRAME_COLUMN_GAP:
-        m_columnGap = val.value<Spatium>();
-        break;
-    case Pid::FRET_FRAME_ROW_GAP:
-        m_rowGap = val.value<Spatium>();
-        break;
-    case Pid::FRET_FRAME_CHORDS_PER_ROW:
-        m_chordsPerRow = val.toInt();
-        break;
-    case Pid::FRET_FRAME_H_ALIGN:
-        m_contentAlignmentH = static_cast<AlignH>(val.toInt());
-        resetProperty(Pid::LEFT_MARGIN);
-        resetProperty(Pid::RIGHT_MARGIN);
-        break;
-    case Pid::FRET_FRAME_DIAGRAMS_ORDER:
-        reorderElements(val.value<String>().split(FRET_BOX_DIAGRAMS_SEPARATOR));
-        break;
-    default:
-        return VBox::setProperty(propertyId, val);
+        case Pid::FRET_FRAME_TEXT_SCALE: m_textScale = val.toDouble(); break;
+        case Pid::FRET_FRAME_DIAGRAM_SCALE: m_diagramScale = val.toDouble(); break;
+        case Pid::FRET_FRAME_COLUMN_GAP: m_columnGap = val.value<Spatium>(); break;
+        case Pid::FRET_FRAME_ROW_GAP: m_rowGap = val.value<Spatium>(); break;
+        case Pid::FRET_FRAME_CHORDS_PER_ROW: m_chordsPerRow = val.toInt(); break;
+        case Pid::FRET_FRAME_H_ALIGN:
+            m_contentAlignmentH = static_cast<AlignH>(val.toInt());
+            resetProperty(Pid::LEFT_MARGIN);
+            resetProperty(Pid::RIGHT_MARGIN);
+            break;
+        case Pid::FRET_FRAME_DIAGRAMS_ORDER: reorderElements(val.value<String>().split(FRET_BOX_DIAGRAMS_SEPARATOR)); break;
+        default: return VBox::setProperty(propertyId, val);
     }
 
     triggerLayout();
     return true;
 }
 
-PropertyValue FBox::propertyDefault(Pid propertyId) const
-{
+PropertyValue FBox::propertyDefault(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::FRET_FRAME_TEXT_SCALE:
-    case Pid::FRET_FRAME_DIAGRAM_SCALE:
-        return 1.0;
-    case Pid::FRET_FRAME_COLUMN_GAP:
-    case Pid::FRET_FRAME_ROW_GAP:
-        return 3.0_sp;
-    case Pid::FRET_FRAME_CHORDS_PER_ROW:
-        return 8;
-    case Pid::FRET_FRAME_H_ALIGN:
-        return static_cast<int>(AlignH::HCENTER);
-    case Pid::FRET_FRAME_DIAGRAMS_ORDER:
-        return m_diagramsOrderInScore.join(FRET_BOX_DIAGRAMS_SEPARATOR);
-    case Pid::EXCLUDE_FROM_OTHER_PARTS:
-        return true;
-    case Pid::APPEARANCE_LINKED_TO_MASTER:
-    case Pid::POSITION_LINKED_TO_MASTER:
-        return false;
-    default:
-        return VBox::propertyDefault(propertyId);
+        case Pid::FRET_FRAME_TEXT_SCALE:
+        case Pid::FRET_FRAME_DIAGRAM_SCALE: return 1.0;
+        case Pid::FRET_FRAME_COLUMN_GAP:
+        case Pid::FRET_FRAME_ROW_GAP: return 3.0_sp;
+        case Pid::FRET_FRAME_CHORDS_PER_ROW: return 8;
+        case Pid::FRET_FRAME_H_ALIGN: return static_cast<int>(AlignH::HCENTER);
+        case Pid::FRET_FRAME_DIAGRAMS_ORDER: return m_diagramsOrderInScore.join(FRET_BOX_DIAGRAMS_SEPARATOR);
+        case Pid::EXCLUDE_FROM_OTHER_PARTS: return true;
+        case Pid::APPEARANCE_LINKED_TO_MASTER:
+        case Pid::POSITION_LINKED_TO_MASTER: return false;
+        default: return VBox::propertyDefault(propertyId);
     }
 }
 
-void FBox::undoReorderElements(const StringList& newOrder)
-{
+void FBox::undoReorderElements(const StringList &newOrder) {
     undoChangeProperty(Pid::FRET_FRAME_DIAGRAMS_ORDER, newOrder.join(FRET_BOX_DIAGRAMS_SEPARATOR));
     triggerLayout();
 }
 
-void FBox::reorderElements(const StringList& newOrder)
-{
-    std::sort(m_el.begin(), m_el.end(), [&](EngravingItem* a, EngravingItem* b) {
+void FBox::reorderElements(const StringList &newOrder) {
+    std::sort(m_el.begin(), m_el.end(), [&](EngravingItem *a, EngravingItem *b) {
         String nameA = toFretDiagram(a)->harmonyDisplayText();
         String nameB = toFretDiagram(b)->harmonyDisplayText();
         auto iterA = std::find(newOrder.begin(), newOrder.end(), nameA);
@@ -835,10 +676,9 @@ void FBox::reorderElements(const StringList& newOrder)
     });
 }
 
-StringList FBox::diagramsOrder() const
-{
+StringList FBox::diagramsOrder() const {
     StringList result;
-    for (EngravingItem* item : m_el) {
+    for (EngravingItem *item : m_el) {
         result.push_back(toFretDiagram(item)->harmonyDisplayText());
     }
 
@@ -849,29 +689,21 @@ StringList FBox::diagramsOrder() const
 //   TBox
 //---------------------------------------------------------
 
-TBox::TBox(Score* parent)
-    : VBox(ElementType::TBOX, parent)
-{
+TBox::TBox(Score *parent) : VBox(ElementType::TBOX, parent) {
     resetProperty(Pid::BOX_HEIGHT);
-    m_text  = Factory::createText(this, TextStyleType::FRAME);
+    m_text = Factory::createText(this, TextStyleType::FRAME);
     m_text->setLayoutToParentWidth(true);
 }
 
-TBox::TBox(const TBox& tbox)
-    : VBox(tbox)
-{
+TBox::TBox(const TBox &tbox) : VBox(tbox) {
     if (tbox.m_text) {
         add(Factory::copyText(*(tbox.m_text)));
     }
 }
 
-TBox::~TBox()
-{
-    delete m_text;
-}
+TBox::~TBox() { delete m_text; }
 
-void TBox::scanElements(std::function<void(EngravingItem*)> func)
-{
+void TBox::scanElements(std::function<void(EngravingItem *)> func) {
     m_text->scanElements(func);
     Box::scanElements(func);
 }
@@ -880,16 +712,14 @@ void TBox::scanElements(std::function<void(EngravingItem*)> func)
 //   drop
 //---------------------------------------------------------
 
-EngravingItem* TBox::drop(Transaction& tx, EditData& data)
-{
-    EngravingItem* e = data.dropElement;
+EngravingItem *TBox::drop(Transaction &tx, EditData &data) {
+    EngravingItem *e = data.dropElement;
     switch (e->type()) {
-    case ElementType::TEXT:
-        m_text->undoChangeProperty(Pid::TEXT, toText(e)->xmlText());
-        delete e;
-        return m_text;
-    default:
-        return VBox::drop(tx, data);
+        case ElementType::TEXT:
+            m_text->undoChangeProperty(Pid::TEXT, toText(e)->xmlText());
+            delete e;
+            return m_text;
+        default: return VBox::drop(tx, data);
     }
 }
 
@@ -898,8 +728,7 @@ EngravingItem* TBox::drop(Transaction& tx, EditData& data)
 ///   Add new EngravingItem \a el to TBox
 //---------------------------------------------------------
 
-void TBox::add(EngravingItem* e)
-{
+void TBox::add(EngravingItem *e) {
     if (e->isText()) {
         if (m_text) {
             delete m_text;
@@ -917,8 +746,7 @@ void TBox::add(EngravingItem* e)
 //   remove
 //---------------------------------------------------------
 
-void TBox::remove(EngravingItem* el)
-{
+void TBox::remove(EngravingItem *el) {
     if (el == m_text) {
         // does not normally happen, since Score::deleteItem() handles this directly
         // but if it does:
@@ -937,13 +765,10 @@ void TBox::remove(EngravingItem* el)
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue TBox::propertyDefault(Pid id) const
-{
+PropertyValue TBox::propertyDefault(Pid id) const {
     switch (id) {
-    case Pid::BOX_HEIGHT:
-        return 1_sp;
-    default:
-        return VBox::propertyDefault(id);
+        case Pid::BOX_HEIGHT: return 1_sp;
+        default: return VBox::propertyDefault(id);
     }
 }
 
@@ -951,4 +776,4 @@ PropertyValue TBox::propertyDefault(Pid id) const
 //   accessibleExtraInfo
 //---------------------------------------------------------
 
-}
+} // namespace mu::engraving

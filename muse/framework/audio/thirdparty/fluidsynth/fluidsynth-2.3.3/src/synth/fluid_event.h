@@ -18,7 +18,6 @@
  * 02110-1301, USA
  */
 
-
 #ifndef _FLUID_EVENT_PRIV_H
 #define _FLUID_EVENT_PRIV_H
 
@@ -32,8 +31,7 @@ typedef int fluid_note_id_t;
 
 /* Private data for event */
 /* ?? should be optimized in size, using unions */
-struct _fluid_event_t
-{
+struct _fluid_event_t {
     unsigned int time;
     int type;
     fluid_seq_id_t src;

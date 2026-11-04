@@ -11,13 +11,10 @@
 #include "ioretcodes.h"
 
 namespace muse::io {
-class StreamingFileDevice final : public IODevice
-{
+class StreamingFileDevice final : public IODevice {
 public:
-    explicit StreamingFileDevice(std::filesystem::path path,
-                                 std::optional<std::uint64_t> maxBytes = {},
-                                 std::optional<std::uint64_t> maxWriteBytes = {},
-                                 std::function<bool()> cancelled = {})
+    explicit StreamingFileDevice(std::filesystem::path path, std::optional<std::uint64_t> maxBytes = {},
+                                 std::optional<std::uint64_t> maxWriteBytes = {}, std::function<bool()> cancelled = {})
         : m_path(std::move(path)), m_maxBytes(maxBytes), m_maxWriteBytes(maxWriteBytes), m_cancelled(std::move(cancelled)) {}
 
     ~StreamingFileDevice() override { close(); }
@@ -25,8 +22,7 @@ public:
     bool limitExceeded() const { return m_limitExceeded; }
 
 protected:
-    bool doOpen(OpenMode mode) override
-    {
+    bool doOpen(OpenMode mode) override {
         if (mode != WriteOnly) {
             setError(static_cast<int>(io::Err::FSWriteError), "audio output is write-only");
             return false;
@@ -47,8 +43,7 @@ protected:
         return true;
     }
 
-    void doClose() override
-    {
+    void doClose() override {
         if (m_stream.is_open()) {
             m_stream.flush();
             const bool flushed = m_stream.good();
@@ -60,10 +55,10 @@ protected:
     }
 
     size_t dataSize() const override { return m_size; }
-    const uint8_t* rawData() const override { return nullptr; }
 
-    bool resizeData(size_t size) override
-    {
+    const uint8_t *rawData() const override { return nullptr; }
+
+    bool resizeData(size_t size) override {
         if (m_limitExceeded || (m_maxBytes && size > *m_maxBytes)) {
             m_limitExceeded = true;
             return false;
@@ -73,14 +68,13 @@ protected:
         return true;
     }
 
-    size_t writeData(const uint8_t* data, size_t len) override
-    {
+    size_t writeData(const uint8_t *data, size_t len) override {
         if (m_cancelled && m_cancelled()) return 0;
         // IODevice can overwrite already allocated space without resizeData.
         // Check both limits before touching the file, including final header
         // rewrites and writes after a previously rejected operation.
-        if (m_limitExceeded || (m_maxBytes && (pos() > *m_maxBytes || len > *m_maxBytes - pos()))
-            || (m_maxWriteBytes && (m_written > *m_maxWriteBytes || len > *m_maxWriteBytes - m_written))) {
+        if (m_limitExceeded || (m_maxBytes && (pos() > *m_maxBytes || len > *m_maxBytes - pos())) ||
+            (m_maxWriteBytes && (m_written > *m_maxWriteBytes || len > *m_maxWriteBytes - m_written))) {
             m_limitExceeded = true;
             return 0;
         }
@@ -104,7 +98,7 @@ protected:
         for (size_t offset = 0; offset < len;) {
             if (offset && m_cancelled && m_cancelled()) return 0;
             const size_t count = std::min<size_t>(4096, len - offset);
-            m_stream.write(reinterpret_cast<const char*>(data + offset), static_cast<std::streamsize>(count));
+            m_stream.write(reinterpret_cast<const char *>(data + offset), static_cast<std::streamsize>(count));
             if (!m_stream) {
                 setError(static_cast<int>(io::Err::FSWriteError), "cannot write output");
                 return 0;
@@ -113,8 +107,8 @@ protected:
         }
 
         m_streamPos = pos() + len;
-        m_written = len > std::numeric_limits<std::uint64_t>::max() - m_written
-                    ? std::numeric_limits<std::uint64_t>::max() : m_written + len;
+        m_written =
+            len > std::numeric_limits<std::uint64_t>::max() - m_written ? std::numeric_limits<std::uint64_t>::max() : m_written + len;
         return len;
     }
 
@@ -129,4 +123,4 @@ private:
     bool m_limitExceeded = false;
     std::function<bool()> m_cancelled;
 };
-}
+} // namespace muse::io

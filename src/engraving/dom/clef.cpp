@@ -47,58 +47,56 @@ using namespace mu::engraving;
 namespace mu::engraving {
 // table must be in sync with enum ClefType in types.h
 const ClefInfo ClefInfo::clefTable[] = {
-//                     line pOff|-lines for sharps---||---lines for flats--   |  symbol                | valid in staff group
-    { ClefType::G,       2, 45, { 0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7 }, SymId::gClef,            StaffGroup::STANDARD },
-    { ClefType::G15_MB,  2, 31, { 0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7 }, SymId::gClef15mb,        StaffGroup::STANDARD },
-    { ClefType::G8_VB,   2, 38, { 0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7 }, SymId::gClef8vb,         StaffGroup::STANDARD },
-    { ClefType::G8_VA,   2, 52, { 0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7 }, SymId::gClef8va,         StaffGroup::STANDARD },
-    { ClefType::G15_MA,  2, 59, { 0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7 }, SymId::gClef15ma,        StaffGroup::STANDARD },
-    { ClefType::G8_VB_O, 2, 38, { 0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7 }, SymId::gClef8vbOld,      StaffGroup::STANDARD },
-    { ClefType::G8_VB_P, 2, 45, { 0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7 }, SymId::gClef8vbParens,   StaffGroup::STANDARD },
-    { ClefType::G_1,     1, 47, { 2, 5, 1, 4, 7, 3, 6, 6, 3, 7, 4, 8, 5, 9 },  SymId::gClef,            StaffGroup::STANDARD },
+    //                     line pOff|-lines for sharps---||---lines for flats--   |  symbol                | valid in staff group
+    {ClefType::G, 2, 45, {0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7}, SymId::gClef, StaffGroup::STANDARD},
+    {ClefType::G15_MB, 2, 31, {0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7}, SymId::gClef15mb, StaffGroup::STANDARD},
+    {ClefType::G8_VB, 2, 38, {0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7}, SymId::gClef8vb, StaffGroup::STANDARD},
+    {ClefType::G8_VA, 2, 52, {0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7}, SymId::gClef8va, StaffGroup::STANDARD},
+    {ClefType::G15_MA, 2, 59, {0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7}, SymId::gClef15ma, StaffGroup::STANDARD},
+    {ClefType::G8_VB_O, 2, 38, {0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7}, SymId::gClef8vbOld, StaffGroup::STANDARD},
+    {ClefType::G8_VB_P, 2, 45, {0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7}, SymId::gClef8vbParens, StaffGroup::STANDARD},
+    {ClefType::G_1, 1, 47, {2, 5, 1, 4, 7, 3, 6, 6, 3, 7, 4, 8, 5, 9}, SymId::gClef, StaffGroup::STANDARD},
 
-    { ClefType::C1,      1, 43, { 5, 1, 4, 0, 3, -1, 2, 2, 6, 3, 7, 4, 8, 5 }, SymId::cClef,            StaffGroup::STANDARD },
-    { ClefType::C2,      2, 41, { 3, 6, 2, 5, 1, 4, 0, 0, 4, 1, 5, 2, 6, 3 },  SymId::cClef,            StaffGroup::STANDARD },
-    { ClefType::C3,      3, 39, { 1, 4, 0, 3, 6, 2, 5, 5, 2, 6, 3, 7, 4, 8 },  SymId::cClef,            StaffGroup::STANDARD },
-    { ClefType::C4,      4, 37, { 6, 2, 5, 1, 4, 0, 3, 3, 0, 4, 1, 5, 2, 6 },  SymId::cClef,            StaffGroup::STANDARD },
-    { ClefType::C5,      5, 35, { 4, 0, 3, -1, 2, 5, 1, 1, 5, 2, 6, 3, 7, 4 }, SymId::cClef,            StaffGroup::STANDARD },
-    { ClefType::C_19C,   2, 45, { 0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7 }, SymId::cClefSquare,      StaffGroup::STANDARD },
-    { ClefType::C1_F18C, 1, 43, { 5, 1, 4, 0, 3, -1, 2, 2, 6, 3, 7, 4, 8, 5 }, SymId::cClefFrench,      StaffGroup::STANDARD },
-    { ClefType::C3_F18C, 3, 39, { 1, 4, 0, 3, 6, 2, 5, 5, 2, 6, 3, 7, 4, 8 },  SymId::cClefFrench,      StaffGroup::STANDARD },
-    { ClefType::C4_F18C, 4, 37, { 6, 2, 5, 1, 4, 0, 3, 3, 0, 4, 1, 5, 2, 6 },  SymId::cClefFrench,      StaffGroup::STANDARD },
-    { ClefType::C1_F20C, 1, 43, { 5, 1, 4, 0, 3, -1, 2, 2, 6, 3, 7, 4, 8, 5 }, SymId::cClefFrench20C,   StaffGroup::STANDARD },
-    { ClefType::C3_F20C, 3, 39, { 1, 4, 0, 3, 6, 2, 5, 5, 2, 6, 3, 7, 4, 8 },  SymId::cClefFrench20C,   StaffGroup::STANDARD },
-    { ClefType::C4_F20C, 4, 37, { 6, 2, 5, 1, 4, 0, 3, 3, 0, 4, 1, 5, 2, 6 },  SymId::cClefFrench20C,   StaffGroup::STANDARD },
+    {ClefType::C1, 1, 43, {5, 1, 4, 0, 3, -1, 2, 2, 6, 3, 7, 4, 8, 5}, SymId::cClef, StaffGroup::STANDARD},
+    {ClefType::C2, 2, 41, {3, 6, 2, 5, 1, 4, 0, 0, 4, 1, 5, 2, 6, 3}, SymId::cClef, StaffGroup::STANDARD},
+    {ClefType::C3, 3, 39, {1, 4, 0, 3, 6, 2, 5, 5, 2, 6, 3, 7, 4, 8}, SymId::cClef, StaffGroup::STANDARD},
+    {ClefType::C4, 4, 37, {6, 2, 5, 1, 4, 0, 3, 3, 0, 4, 1, 5, 2, 6}, SymId::cClef, StaffGroup::STANDARD},
+    {ClefType::C5, 5, 35, {4, 0, 3, -1, 2, 5, 1, 1, 5, 2, 6, 3, 7, 4}, SymId::cClef, StaffGroup::STANDARD},
+    {ClefType::C_19C, 2, 45, {0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7}, SymId::cClefSquare, StaffGroup::STANDARD},
+    {ClefType::C1_F18C, 1, 43, {5, 1, 4, 0, 3, -1, 2, 2, 6, 3, 7, 4, 8, 5}, SymId::cClefFrench, StaffGroup::STANDARD},
+    {ClefType::C3_F18C, 3, 39, {1, 4, 0, 3, 6, 2, 5, 5, 2, 6, 3, 7, 4, 8}, SymId::cClefFrench, StaffGroup::STANDARD},
+    {ClefType::C4_F18C, 4, 37, {6, 2, 5, 1, 4, 0, 3, 3, 0, 4, 1, 5, 2, 6}, SymId::cClefFrench, StaffGroup::STANDARD},
+    {ClefType::C1_F20C, 1, 43, {5, 1, 4, 0, 3, -1, 2, 2, 6, 3, 7, 4, 8, 5}, SymId::cClefFrench20C, StaffGroup::STANDARD},
+    {ClefType::C3_F20C, 3, 39, {1, 4, 0, 3, 6, 2, 5, 5, 2, 6, 3, 7, 4, 8}, SymId::cClefFrench20C, StaffGroup::STANDARD},
+    {ClefType::C4_F20C, 4, 37, {6, 2, 5, 1, 4, 0, 3, 3, 0, 4, 1, 5, 2, 6}, SymId::cClefFrench20C, StaffGroup::STANDARD},
 
-    { ClefType::F,       4, 33, { 2, 5, 1, 4, 7, 3, 6, 6, 3, 7, 4, 8, 5, 9 },  SymId::fClef,            StaffGroup::STANDARD },
-    { ClefType::F15_MB,  4, 19, { 2, 5, 1, 4, 7, 3, 6, 6, 3, 7, 4, 8, 5, 9 },  SymId::fClef15mb,        StaffGroup::STANDARD },
-    { ClefType::F8_VB,   4, 26, { 2, 5, 1, 4, 7, 3, 6, 6, 3, 7, 4, 8, 5, 9 },  SymId::fClef8vb,         StaffGroup::STANDARD },
-    { ClefType::F_8VA,   4, 40, { 2, 5, 1, 4, 7, 3, 6, 6, 3, 7, 4, 8, 5, 9 },  SymId::fClef8va,         StaffGroup::STANDARD },
-    { ClefType::F_15MA,  4, 47, { 2, 5, 1, 4, 7, 3, 6, 6, 3, 7, 4, 8, 5, 9 },  SymId::fClef15ma,        StaffGroup::STANDARD },
-    { ClefType::F_B,     3, 35, { 4, 0, 3, -1, 2, 5, 1, 1, 5, 2, 6, 3, 7, 4 }, SymId::fClef,            StaffGroup::STANDARD },
-    { ClefType::F_C,     5, 31, { 0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7 }, SymId::fClef,            StaffGroup::STANDARD },
-    { ClefType::F_F18C,  4, 33, { 2, 5, 1, 4, 7, 3, 6, 6, 3, 7, 4, 8, 5, 9 },  SymId::fClefFrench,      StaffGroup::STANDARD },
-    { ClefType::F_19C,   4, 33, { 2, 5, 1, 4, 7, 3, 6, 6, 3, 7, 4, 8, 5, 9 },  SymId::fClef19thCentury, StaffGroup::STANDARD },
+    {ClefType::F, 4, 33, {2, 5, 1, 4, 7, 3, 6, 6, 3, 7, 4, 8, 5, 9}, SymId::fClef, StaffGroup::STANDARD},
+    {ClefType::F15_MB, 4, 19, {2, 5, 1, 4, 7, 3, 6, 6, 3, 7, 4, 8, 5, 9}, SymId::fClef15mb, StaffGroup::STANDARD},
+    {ClefType::F8_VB, 4, 26, {2, 5, 1, 4, 7, 3, 6, 6, 3, 7, 4, 8, 5, 9}, SymId::fClef8vb, StaffGroup::STANDARD},
+    {ClefType::F_8VA, 4, 40, {2, 5, 1, 4, 7, 3, 6, 6, 3, 7, 4, 8, 5, 9}, SymId::fClef8va, StaffGroup::STANDARD},
+    {ClefType::F_15MA, 4, 47, {2, 5, 1, 4, 7, 3, 6, 6, 3, 7, 4, 8, 5, 9}, SymId::fClef15ma, StaffGroup::STANDARD},
+    {ClefType::F_B, 3, 35, {4, 0, 3, -1, 2, 5, 1, 1, 5, 2, 6, 3, 7, 4}, SymId::fClef, StaffGroup::STANDARD},
+    {ClefType::F_C, 5, 31, {0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7}, SymId::fClef, StaffGroup::STANDARD},
+    {ClefType::F_F18C, 4, 33, {2, 5, 1, 4, 7, 3, 6, 6, 3, 7, 4, 8, 5, 9}, SymId::fClefFrench, StaffGroup::STANDARD},
+    {ClefType::F_19C, 4, 33, {2, 5, 1, 4, 7, 3, 6, 6, 3, 7, 4, 8, 5, 9}, SymId::fClef19thCentury, StaffGroup::STANDARD},
 
-    { ClefType::PERC,    2, 45, { 0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7 }, SymId::unpitchedPercussionClef1, StaffGroup::PERCUSSION },
-    { ClefType::PERC2,   2, 45, { 0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7 }, SymId::unpitchedPercussionClef2, StaffGroup::PERCUSSION },
+    {ClefType::PERC, 2, 45, {0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7}, SymId::unpitchedPercussionClef1, StaffGroup::PERCUSSION},
+    {ClefType::PERC2, 2, 45, {0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7}, SymId::unpitchedPercussionClef2, StaffGroup::PERCUSSION},
 
-    { ClefType::TAB,     5, 45,  { 0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7 }, SymId::sixStringTabClef,         StaffGroup::TAB },
-    { ClefType::TAB4,    5, 45,  { 0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7 }, SymId::fourStringTabClef,        StaffGroup::TAB },
-    { ClefType::TAB_SERIF, 5, 45,  { 0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7 }, SymId::sixStringTabClefSerif,  StaffGroup::TAB },
-    { ClefType::TAB4_SERIF, 5, 45,  { 0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7 }, SymId::fourStringTabClefSerif, StaffGroup::TAB },
+    {ClefType::TAB, 5, 45, {0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7}, SymId::sixStringTabClef, StaffGroup::TAB},
+    {ClefType::TAB4, 5, 45, {0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7}, SymId::fourStringTabClef, StaffGroup::TAB},
+    {ClefType::TAB_SERIF, 5, 45, {0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7}, SymId::sixStringTabClefSerif, StaffGroup::TAB},
+    {ClefType::TAB4_SERIF, 5, 45, {0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7}, SymId::fourStringTabClefSerif, StaffGroup::TAB},
 
-    { ClefType::C4_8VB,  4, 30, { 6, 2, 5, 1, 4, 0, 3, 3, 0, 4, 1, 5, 2, 6 },  SymId::cClef8vb,         StaffGroup::STANDARD },
-    { ClefType::G8_VB_C, 2, 38, { 0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7 }, SymId::gClef8vbCClef,    StaffGroup::STANDARD },
+    {ClefType::C4_8VB, 4, 30, {6, 2, 5, 1, 4, 0, 3, 3, 0, 4, 1, 5, 2, 6}, SymId::cClef8vb, StaffGroup::STANDARD},
+    {ClefType::G8_VB_C, 2, 38, {0, 3, -1, 2, 5, 1, 4, 4, 1, 5, 2, 6, 3, 7}, SymId::gClef8vbCClef, StaffGroup::STANDARD},
 };
 
 //---------------------------------------------------------
 //   Clef
 //---------------------------------------------------------
 
-Clef::Clef(DummyParentOr<Segment> parent)
-    : EngravingItem(ElementType::CLEF, parent, ElementFlag::ON_STAFF)
-{
+Clef::Clef(DummyParentOr<Segment> parent) : EngravingItem(ElementType::CLEF, parent, ElementFlag::ON_STAFF) {
     m_clefToBarlinePosition = ClefToBarlinePosition::AUTO;
 }
 
@@ -106,8 +104,7 @@ Clef::Clef(DummyParentOr<Segment> parent)
 //   mag
 //---------------------------------------------------------
 
-double Clef::mag() const
-{
+double Clef::mag() const {
     double mag = staff() ? staff()->staffMag(this) : 1.0;
     if (m_isSmall) {
         mag *= style().styleD(Sid::smallClefMag);
@@ -119,22 +116,18 @@ double Clef::mag() const
 //   acceptDrop
 //---------------------------------------------------------
 
-bool Clef::acceptDrop(EditData& data) const
-{
-    return data.dropElement->isClef() || (/*!generated() &&*/ data.dropElement->isAmbitus());
-}
+bool Clef::acceptDrop(EditData &data) const { return data.dropElement->isClef() || (/*!generated() &&*/ data.dropElement->isAmbitus()); }
 
 //---------------------------------------------------------
 //   drop
 //---------------------------------------------------------
 
-EngravingItem* Clef::drop(Transaction& tx, EditData& data)
-{
-    EngravingItem* e = data.dropElement;
-    Clef* c = 0;
+EngravingItem *Clef::drop(Transaction &tx, EditData &data) {
+    EngravingItem *e = data.dropElement;
+    Clef *c = 0;
     if (e->isClef()) {
-        Clef* clef = toClef(e);
-        ClefType stype  = clef->clefType();
+        Clef *clef = toClef(e);
+        ClefType stype = clef->clefType();
         if (clefType() != stype) {
             EditClef::undoChangeClef(tx, score(), staff(), this, stype);
             c = this;
@@ -142,12 +135,12 @@ EngravingItem* Clef::drop(Transaction& tx, EditData& data)
     } else if (e->isAmbitus()) {
         /*if (!generated())*/
         {
-            Measure* meas  = measure();
-            Segment* segm  = meas->getSegment(SegmentType::Ambitus, meas->tick());
+            Measure *meas = measure();
+            Segment *segm = meas->getSegment(SegmentType::Ambitus, meas->tick());
             if (segm->element(track())) {
                 score()->undoRemoveElement(segm->element(track()));
             }
-            Ambitus* r = Factory::createAmbitus(segm);
+            Ambitus *r = Factory::createAmbitus(segm);
             r->setTrack(track());
             score()->undoAddElement(r);
         }
@@ -160,17 +153,13 @@ EngravingItem* Clef::drop(Transaction& tx, EditData& data)
 //   setSmall
 //---------------------------------------------------------
 
-void Clef::setSmall(bool val)
-{
-    m_isSmall = val;
-}
+void Clef::setSmall(bool val) { m_isSmall = val; }
 
 //---------------------------------------------------------
 //   setClefType
 //---------------------------------------------------------
 
-void Clef::setClefType(ClefType i)
-{
+void Clef::setClefType(ClefType i) {
     if (concertPitch()) {
         m_clefTypes.concertClef = i;
         if (m_clefTypes.transposingClef == ClefType::INVALID) {
@@ -188,26 +177,19 @@ void Clef::setClefType(ClefType i)
 //   setConcertClef
 //---------------------------------------------------------
 
-void Clef::setConcertClef(ClefType val)
-{
-    m_clefTypes.concertClef = val;
-}
+void Clef::setConcertClef(ClefType val) { m_clefTypes.concertClef = val; }
 
 //---------------------------------------------------------
 //   setTransposingClef
 //---------------------------------------------------------
 
-void Clef::setTransposingClef(ClefType val)
-{
-    m_clefTypes.transposingClef = val;
-}
+void Clef::setTransposingClef(ClefType val) { m_clefTypes.transposingClef = val; }
 
 //---------------------------------------------------------
 //   clefType
 //---------------------------------------------------------
 
-ClefType Clef::clefType() const
-{
+ClefType Clef::clefType() const {
     if (concertPitch()) {
         return m_clefTypes.concertClef;
     } else {
@@ -219,39 +201,32 @@ ClefType Clef::clefType() const
 //   spatiumChanged
 //---------------------------------------------------------
 
-void Clef::spatiumChanged(double oldValue, double newValue)
-{
-    EngravingItem::spatiumChanged(oldValue, newValue);
-}
+void Clef::spatiumChanged(double oldValue, double newValue) { EngravingItem::spatiumChanged(oldValue, newValue); }
 
 //---------------------------------------------------------
 //   undoSetShowCourtesy
 //---------------------------------------------------------
 
-void Clef::undoSetShowCourtesy(bool v)
-{
-    undoChangeProperty(Pid::SHOW_COURTESY, v);
-}
+void Clef::undoSetShowCourtesy(bool v) { undoChangeProperty(Pid::SHOW_COURTESY, v); }
 
 //---------------------------------------------------------
 //   otherClef
 //    try to locate the 'other clef' of a courtesy / main pair
 //---------------------------------------------------------
 
-Clef* Clef::otherClef()
-{
+Clef *Clef::otherClef() {
     // if not in a clef-segment-measure hierarchy, do nothing
     if (!ownershipParent() || !ownershipParent()->isSegment()) {
         return nullptr;
     }
-    Segment* segm = toSegment(ownershipParent());
+    Segment *segm = toSegment(ownershipParent());
     if (!segm->ownershipParent() || !segm->ownershipParent()->isMeasure()) {
         return 0;
     }
-    Measure* meas = toMeasure(segm->ownershipParent());
-    Measure* otherMeas = nullptr;
-    Segment* otherSegm = nullptr;
-    Fraction segmTick  = segm->tick();
+    Measure *meas = toMeasure(segm->ownershipParent());
+    Measure *otherMeas = nullptr;
+    Segment *otherSegm = nullptr;
+    Fraction segmTick = segm->tick();
     SegmentType type = SegmentType::Clef;
     if (segmTick == meas->tick() && segm->segmentType() == SegmentType::HeaderClef) { // if clef segm is measure-initial
         otherMeas = meas->prevMeasure();                                              // look for a previous measure
@@ -275,17 +250,15 @@ Clef* Clef::otherClef()
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Clef::getProperty(Pid propertyId) const
-{
+PropertyValue Clef::getProperty(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::CLEF_TYPE_CONCERT:     return m_clefTypes.concertClef;
-    case Pid::CLEF_TYPE_TRANSPOSING: return m_clefTypes.transposingClef;
-    case Pid::SHOW_COURTESY: return showCourtesy();
-    case Pid::SMALL:         return isSmall();
-    case Pid::CLEF_TO_BARLINE_POS: return m_clefToBarlinePosition;
-    case Pid::IS_COURTESY: return m_isCourtesy;
-    default:
-        return EngravingItem::getProperty(propertyId);
+        case Pid::CLEF_TYPE_CONCERT: return m_clefTypes.concertClef;
+        case Pid::CLEF_TYPE_TRANSPOSING: return m_clefTypes.transposingClef;
+        case Pid::SHOW_COURTESY: return showCourtesy();
+        case Pid::SMALL: return isSmall();
+        case Pid::CLEF_TO_BARLINE_POS: return m_clefToBarlinePosition;
+        case Pid::IS_COURTESY: return m_isCourtesy;
+        default: return EngravingItem::getProperty(propertyId);
     }
 }
 
@@ -293,71 +266,59 @@ PropertyValue Clef::getProperty(Pid propertyId) const
 //   setProperty
 //---------------------------------------------------------
 
-bool Clef::setProperty(Pid propertyId, const PropertyValue& v)
-{
+bool Clef::setProperty(Pid propertyId, const PropertyValue &v) {
     switch (propertyId) {
-    case Pid::CLEF_TYPE_CONCERT:
-        setConcertClef(v.value<ClefType>());
-        break;
-    case Pid::CLEF_TYPE_TRANSPOSING:
-        setTransposingClef(v.value<ClefType>());
-        break;
-    case Pid::SHOW_COURTESY:
-        m_showCourtesy = v.toBool();
-        if (m_showCourtesy && isHeader() && selected()) {
-            Clef* courtesyClef = otherClef();
-            if (courtesyClef) {
-                score()->deselect(this);
-                score()->select(courtesyClef, SelectType::ADD, staffIdx());
+        case Pid::CLEF_TYPE_CONCERT: setConcertClef(v.value<ClefType>()); break;
+        case Pid::CLEF_TYPE_TRANSPOSING: setTransposingClef(v.value<ClefType>()); break;
+        case Pid::SHOW_COURTESY:
+            m_showCourtesy = v.toBool();
+            if (m_showCourtesy && isHeader() && selected()) {
+                Clef *courtesyClef = otherClef();
+                if (courtesyClef) {
+                    score()->deselect(this);
+                    score()->select(courtesyClef, SelectType::ADD, staffIdx());
+                }
             }
-        }
-        break;
-    case Pid::SMALL:
-        setSmall(v.toBool());
-        break;
-    case Pid::CLEF_TO_BARLINE_POS: {
-        const auto newClefToBlPos = v.value<ClefToBarlinePosition>();
+            break;
+        case Pid::SMALL: setSmall(v.toBool()); break;
+        case Pid::CLEF_TO_BARLINE_POS: {
+            const auto newClefToBlPos = v.value<ClefToBarlinePosition>();
 
-        if (newClefToBlPos != m_clefToBarlinePosition && !isHeader()) {
-            changeClefToBarlinePos(newClefToBlPos);
+            if (newClefToBlPos != m_clefToBarlinePosition && !isHeader()) {
+                changeClefToBarlinePos(newClefToBlPos);
+            }
+            break;
         }
-        break;
-    }
-    case Pid::IS_COURTESY:
-        m_isCourtesy = v.toBool();
-        break;
-    default:
-        return EngravingItem::setProperty(propertyId, v);
+        case Pid::IS_COURTESY: m_isCourtesy = v.toBool(); break;
+        default: return EngravingItem::setProperty(propertyId, v);
     }
     triggerLayout();
     return true;
 }
 
-void Clef::changeClefToBarlinePos(ClefToBarlinePosition newPos)
-{
+void Clef::changeClefToBarlinePos(ClefToBarlinePosition newPos) {
     m_clefToBarlinePosition = newPos;
 
     if (!ownershipParent()) {
         return;
     }
 
-    Segment* seg = segment();
+    Segment *seg = segment();
 
     staff_idx_t nStaves = score()->nstaves();
     for (staff_idx_t staffIndex = 0; staffIndex < nStaves; ++staffIndex) {
-        Clef* clef = toClef(seg->element(staffIndex * VOICES));
+        Clef *clef = toClef(seg->element(staffIndex * VOICES));
         if (clef) {
             clef->m_clefToBarlinePosition = newPos;
         }
     }
 }
 
-void Clef::undoChangeProperty(Pid id, const PropertyValue& v, PropertyFlags ps)
-{
+void Clef::undoChangeProperty(Pid id, const PropertyValue &v, PropertyFlags ps) {
     if (id == Pid::SHOW_COURTESY) {
         if (v.toBool() != m_showCourtesy) {
             score()->undo(new ChangeProperty(this, id, v, ps));
-            Clef* pairedClef = otherClef();
+            Clef *pairedClef = otherClef();
             if (pairedClef) {
                 score()->undo(new ChangeProperty(pairedClef, id, v, ps));
             }
@@ -370,28 +331,23 @@ void Clef::undoChangeProperty(Pid id, const PropertyValue& v, PropertyFlags ps)
     }
 }
 
-bool Clef::isHeader() const
-{
-    const Segment* seg = segment();
+bool Clef::isHeader() const {
+    const Segment *seg = segment();
     return seg && seg->isHeaderClefType();
 }
 
-bool Clef::isMidMeasureClef() const
-{
-    return segment() && segment()->rtick().isNotZero();
-}
+bool Clef::isMidMeasureClef() const { return segment() && segment()->rtick().isNotZero(); }
 
-void Clef::manageExclusionFromParts(bool exclude)
-{
+void Clef::manageExclusionFromParts(bool exclude) {
     if (exclude) {
         EngravingItem::manageExclusionFromParts(exclude);
     } else {
-        Measure* measure = findMeasure();
-        EngravingItem* nextEl = measure && rtick() == measure->ticks() ? measure->next() : nullptr;
+        Measure *measure = findMeasure();
+        EngravingItem *nextEl = measure && rtick() == measure->ticks() ? measure->next() : nullptr;
         if (!nextEl) {
             nextEl = nextElement();
         }
-        Transaction& tx = score()->transactionManager()->currentOrDummyTransaction();
+        Transaction &tx = score()->transactionManager()->currentOrDummyTransaction();
         EditClef::undoChangeClef(tx, score(), staff(), nextEl, clefType(), false, this);
     }
 }
@@ -400,16 +356,15 @@ void Clef::manageExclusionFromParts(bool exclude)
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Clef::propertyDefault(Pid id) const
-{
+PropertyValue Clef::propertyDefault(Pid id) const {
     switch (id) {
-    case Pid::CLEF_TYPE_CONCERT:     return ClefType::INVALID;
-    case Pid::CLEF_TYPE_TRANSPOSING: return ClefType::INVALID;
-    case Pid::SHOW_COURTESY: return true;
-    case Pid::SMALL:         return false;
-    case Pid::CLEF_TO_BARLINE_POS: return ClefToBarlinePosition::AUTO;
-    case Pid::IS_COURTESY: return false;
-    default:              return EngravingItem::propertyDefault(id);
+        case Pid::CLEF_TYPE_CONCERT: return ClefType::INVALID;
+        case Pid::CLEF_TYPE_TRANSPOSING: return ClefType::INVALID;
+        case Pid::SHOW_COURTESY: return true;
+        case Pid::SMALL: return false;
+        case Pid::CLEF_TO_BARLINE_POS: return ClefToBarlinePosition::AUTO;
+        case Pid::IS_COURTESY: return false;
+        default: return EngravingItem::propertyDefault(id);
     }
 }
 
@@ -417,48 +372,36 @@ PropertyValue Clef::propertyDefault(Pid id) const
 //   nextSegmentElement
 //---------------------------------------------------------
 
-EngravingItem* Clef::nextSegmentElement()
-{
-    return segment()->firstInNextSegments(staffIdx());
-}
+EngravingItem *Clef::nextSegmentElement() { return segment()->firstInNextSegments(staffIdx()); }
 
 //---------------------------------------------------------
 //   prevSegmentElement
 //---------------------------------------------------------
 
-EngravingItem* Clef::prevSegmentElement()
-{
-    return segment()->lastInPrevSegments(staffIdx());
-}
+EngravingItem *Clef::prevSegmentElement() { return segment()->lastInPrevSegments(staffIdx()); }
 
 //---------------------------------------------------------
 //   accessibleInfo
 //---------------------------------------------------------
 
-
-
 //---------------------------------------------------------
 //   subtypeUserName
 //---------------------------------------------------------
 
-TranslatableString Clef::subtypeUserName() const
-{
-    return TConv::userName(clefType());
-}
+TranslatableString Clef::subtypeUserName() const { return TConv::userName(clefType()); }
 
 //---------------------------------------------------------
 //   clear
 //---------------------------------------------------------
 
-void Clef::clear()
-{
-    LayoutData* ldata = mutldata();
+void Clef::clear() {
+    LayoutData *ldata = mutldata();
     ldata->clearBbox();
     ldata->symId = SymId::noSym;
-    Clef* pairedClef = otherClef();
+    Clef *pairedClef = otherClef();
     if (selected() && score()->selection().isList() && !isHeader() && pairedClef) {
         score()->deselect(this);
         score()->select(pairedClef, SelectType::ADD, staffIdx());
     }
 }
-}
+} // namespace mu::engraving

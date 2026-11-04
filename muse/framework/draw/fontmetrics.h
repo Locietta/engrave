@@ -30,15 +30,14 @@
 #include "ifontprovider.h"
 
 namespace muse::draw {
-class FontMetrics
-{
+class FontMetrics {
 public:
-    FontMetrics(const Font& font);
+    FontMetrics(const Font &font);
 
     // FontMetrics is a value type constructed throughout layout without an owner
     // to carry a provider, so EngineContext binds its font provider here for its
     // lifetime; null outside it.
-    static void setProvider(IFontProvider* provider);
+    static void setProvider(IFontProvider *provider);
 
     double lineSpacing() const;
     double xHeight() const;
@@ -51,31 +50,31 @@ public:
     double lineWidth() const;
     double strikeOutPos() const;
 
-    double width(const String& string) const;
-    double width(const Char& ch) const;
+    double width(const String &string) const;
+    double width(const Char &ch) const;
 
-    double horizontalAdvance(const String& string) const;
+    double horizontalAdvance(const String &string) const;
     double horizontalAdvance(char32_t ucs4) const;
 
-    RectF boundingRect(const String& string) const;
+    RectF boundingRect(const String &string) const;
     RectF boundingRect(char32_t ucs4) const;
 
-    RectF tightBoundingRect(const String& string) const;
-    RectF tightBoundingRect(const Char& ch) const;
+    RectF tightBoundingRect(const String &string) const;
+    RectF tightBoundingRect(const Char &ch) const;
 
     bool inFont(char32_t ucs4) const;
 
-    static double width(const Font& f, const String& string);
-    static RectF boundingRect(const Font& f, const String& string);
-    static RectF tightBoundingRect(const Font& f, const String& string);
-    static double ascent(const Font& f);
-    static double capHeight(const Font& f);
+    static double width(const Font &f, const String &string);
+    static RectF boundingRect(const Font &f, const String &string);
+    static RectF tightBoundingRect(const Font &f, const String &string);
+    static double ascent(const Font &f);
+    static double capHeight(const Font &f);
 
 private:
-    static IFontProvider* fontProvider();
+    static IFontProvider *fontProvider();
 
     Font m_font;
 };
-}
+} // namespace muse::draw
 
 #endif // MUSE_DRAW_FONTMETRICS_H

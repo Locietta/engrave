@@ -25,12 +25,11 @@
 #include "../iengravingcontextconfiguration.h"
 
 namespace mu::engraving {
-class EngravingContextConfiguration : public IEngravingContextConfiguration
-{
+class EngravingContextConfiguration : public IEngravingContextConfiguration {
 public:
 
     double guiScaling() const override;
 
     bool isAccessibleEnabled() const override;
 };
-}
+} // namespace mu::engraving

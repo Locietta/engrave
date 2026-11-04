@@ -31,11 +31,11 @@
  - for case (1), FLUID_NOISE_FLOOR should be the noise floor for 24 bits (i.e -138 dB).
  - for case (2) or (3), FLUID_NOISE_FLOOR should be the noise floor for 16 bits (i.e -90 dB).
  */
-#define FLUID_PEAK_ATTENUATION  960.0f
+#define FLUID_PEAK_ATTENUATION 960.0f
 
-#define FLUID_CENTS_HZ_SIZE     1200
-#define FLUID_VEL_CB_SIZE       128
-#define FLUID_CB_AMP_SIZE       1441
-#define FLUID_PAN_SIZE          1002
+#define FLUID_CENTS_HZ_SIZE 1200
+#define FLUID_VEL_CB_SIZE 128
+#define FLUID_CB_AMP_SIZE 1441
+#define FLUID_PAN_SIZE 1002
 
 #endif

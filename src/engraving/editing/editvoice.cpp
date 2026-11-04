@@ -54,10 +54,9 @@ using namespace mu::engraving;
 //    moves selected notes into specified voice if possible
 //---------------------------------------------------------
 
-void EditVoice::changeSelectedElementsVoice(Transaction&, Score* score, voice_idx_t voice)
-{
-    auto isOperationValid = [](Score* score, track_idx_t origTrack, track_idx_t dstTrack) {
-        Excerpt* excerpt = score->excerpt();
+void EditVoice::changeSelectedElementsVoice(Transaction &, Score *score, voice_idx_t voice) {
+    auto isOperationValid = [](Score *score, track_idx_t origTrack, track_idx_t dstTrack) {
+        Excerpt *excerpt = score->excerpt();
         if (!excerpt) {
             return true;
         }
@@ -77,22 +76,23 @@ void EditVoice::changeSelectedElementsVoice(Transaction&, Score* score, voice_id
 
     // Track groups of parentheses to recreate in new chord
     struct MovedParenGroup {
-        Chord* dstChord = nullptr;
+        Chord *dstChord = nullptr;
         bool generated = false;
         bool leftVisible = true;
         bool rightVisible = true;
         PointF leftOffset = PointF();
         PointF rightOffset = PointF();
-        std::vector<Note*> notes;
+        std::vector<Note *> notes;
     };
-    std::map<const NoteParenthesisInfo*, MovedParenGroup> movedParenGroups;
 
-    std::vector<EngravingItem*> newElements;
-    std::vector<EngravingItem*> oel = score->selection().elements();       // make copy
-    for (EngravingItem* e : oel) {
+    std::map<const NoteParenthesisInfo *, MovedParenGroup> movedParenGroups;
+
+    std::vector<EngravingItem *> newElements;
+    std::vector<EngravingItem *> oel = score->selection().elements(); // make copy
+    for (EngravingItem *e : oel) {
         if (e->isNote()) {
-            Note* note   = toNote(e);
-            Chord* chord = note->chord();
+            Note *note = toNote(e);
+            Chord *chord = note->chord();
 
             // move grace notes with main chord only
             if (chord->isGrace() || chord->isTrillCueNote()) {
@@ -103,7 +103,7 @@ void EditVoice::changeSelectedElementsVoice(Transaction&, Score* score, voice_id
                 continue;
             }
 
-            Score* elementScore = score;
+            Score *elementScore = score;
             if (score->excerpt() && !chord->staff()->isVoiceVisible(voice)) {
                 // We are on a linked stave with the desired voice not visible
                 // Get note in main score to continue
@@ -111,12 +111,12 @@ void EditVoice::changeSelectedElementsVoice(Transaction&, Score* score, voice_id
                 chord = note->chord();
                 elementScore = score->masterScore();
             }
-            Segment* s       = chord->segment();
-            Measure* m       = s->measure();
-            size_t notes     = chord->notes().size();
+            Segment *s = chord->segment();
+            Measure *m = s->measure();
+            size_t notes = chord->notes().size();
             track_idx_t dstTrack = chord->staffIdx() * VOICES + voice;
-            ChordRest* dstCR = toChordRest(s->element(dstTrack));
-            Chord* dstChord  = nullptr;
+            ChordRest *dstCR = toChordRest(s->element(dstTrack));
+            Chord *dstChord = nullptr;
 
             if (!isOperationValid(elementScore, chord->track(), dstTrack)) {
                 continue;
@@ -144,21 +144,19 @@ void EditVoice::changeSelectedElementsVoice(Transaction&, Score* score, voice_id
                 //   insert new chord if the rests / gap are long enough
                 //   then move note in
                 bool hasIncompatibleTuplet = false;
-                const Chord* cBefore = nullptr;
-                const Chord* cAfterStart = nullptr;
-                for (const Segment* s2 = m->first(SegmentType::ChordRest); s2; s2 = s2->next(SegmentType::ChordRest)) {
-                    const ChordRest* cr2 = toChordRest(s2->element(dstTrack));
+                const Chord *cBefore = nullptr;
+                const Chord *cAfterStart = nullptr;
+                for (const Segment *s2 = m->first(SegmentType::ChordRest); s2; s2 = s2->next(SegmentType::ChordRest)) {
+                    const ChordRest *cr2 = toChordRest(s2->element(dstTrack));
                     if (!cr2) {
                         continue;
                     }
-                    if (const Tuplet* topTuplet = cr2->topTuplet()) {
-                        if (topTuplet->tick() < s->tick()
-                            && topTuplet->endTick() > s->tick()) {
+                    if (const Tuplet *topTuplet = cr2->topTuplet()) {
+                        if (topTuplet->tick() < s->tick() && topTuplet->endTick() > s->tick()) {
                             hasIncompatibleTuplet = true;
                             break;
                         }
-                        if (topTuplet->tick() < chord->endTick()
-                            && topTuplet->endTick() > chord->endTick()) {
+                        if (topTuplet->tick() < chord->endTick() && topTuplet->endTick() > chord->endTick()) {
                             hasIncompatibleTuplet = true;
                             break;
                         }
@@ -206,7 +204,7 @@ void EditVoice::changeSelectedElementsVoice(Transaction&, Score* score, voice_id
             // move note to destination chord
 
             // create & add new note
-            Note* newNote = Factory::copyNote(*note);
+            Note *newNote = Factory::copyNote(*note);
             newNote->setSelected(false);
             newNote->setOwnershipParent(dstChord);
             elementScore->undoAddElement(newNote);
@@ -215,13 +213,13 @@ void EditVoice::changeSelectedElementsVoice(Transaction&, Score* score, voice_id
             if (dstChord != dstCR) {
                 elementScore->undoAddCR(dstChord, m, s->tick());
             }
-            for (EngravingObject* linked : note->linkList()) {
-                Note* linkedNote = toNote(linked);
-                Note* linkedNewNote = linked == note ? newNote : toNote(newNote->findLinkedInStaff(linkedNote->staff()));
+            for (EngravingObject *linked : note->linkList()) {
+                Note *linkedNote = toNote(linked);
+                Note *linkedNewNote = linked == note ? newNote : toNote(newNote->findLinkedInStaff(linkedNote->staff()));
                 // reconnect the tie to this note, if any
-                Tie* tie = linkedNote->tieBack();
+                Tie *tie = linkedNote->tieBack();
                 if (tie) {
-                    Note* startNote = tie->isPartialTie() && !toPartialTie(tie)->isOutgoing() ? nullptr : tie->startNote();
+                    Note *startNote = tie->isPartialTie() && !toPartialTie(tie)->isOutgoing() ? nullptr : tie->startNote();
                     elementScore->undoChangeSpannerElements(tie, startNote, linkedNewNote);
                 }
                 // reconnect the tie from this note, if any
@@ -231,33 +229,33 @@ void EditVoice::changeSelectedElementsVoice(Transaction&, Score* score, voice_id
                 }
 
                 // Reconnect note anchored spanners
-                for (EngravingItem* item : linkedNote->spannerBack()) {
+                for (EngravingItem *item : linkedNote->spannerBack()) {
                     if (!item || !item->isSpanner()) {
                         continue;
                     }
-                    Spanner* spanner = toSpanner(item);
+                    Spanner *spanner = toSpanner(item);
                     elementScore->undoChangeSpannerElements(spanner, spanner->startElement(), linkedNewNote);
                 }
 
-                for (EngravingItem* item : linkedNote->spannerFor()) {
+                for (EngravingItem *item : linkedNote->spannerFor()) {
                     if (!item || !item->isSpanner()) {
                         continue;
                     }
-                    Spanner* spanner = toSpanner(item);
+                    Spanner *spanner = toSpanner(item);
                     elementScore->undoChangeSpannerElements(spanner, linkedNewNote, spanner->endElement());
                 }
             }
 
             // Move paren to corresponding group in new chord
             if (!chord->noteParentheses().empty()) {
-                const NoteParenthesisInfo* noteParenInfo = chord->findNoteParenthesisInfo(note);
+                const NoteParenthesisInfo *noteParenInfo = chord->findNoteParenthesisInfo(note);
                 if (noteParenInfo) {
-                    Parenthesis* leftParen = noteParenInfo->leftParen();
-                    Parenthesis* rightParen = noteParenInfo->rightParen();
+                    Parenthesis *leftParen = noteParenInfo->leftParen();
+                    Parenthesis *rightParen = noteParenInfo->rightParen();
                     DO_ASSERT(leftParen && rightParen);
                     if (leftParen && rightParen) {
                         bool generated = leftParen->generated();
-                        MovedParenGroup& movedGroup = movedParenGroups[noteParenInfo];
+                        MovedParenGroup &movedGroup = movedParenGroups[noteParenInfo];
                         movedGroup.dstChord = dstChord;
                         movedGroup.generated = generated;
                         movedGroup.notes.push_back(newNote);
@@ -265,7 +263,7 @@ void EditVoice::changeSelectedElementsVoice(Transaction&, Score* score, voice_id
                         movedGroup.rightOffset = rightParen->offset();
                         movedGroup.leftVisible = leftParen->visible();
                         movedGroup.rightVisible = rightParen->visible();
-                        EditChord::removeChordParentheses(chord, { note }, /*addToLinked*/ true, generated);
+                        EditChord::removeChordParentheses(chord, {note}, /*addToLinked*/ true, generated);
                     }
                 }
             }
@@ -277,11 +275,11 @@ void EditVoice::changeSelectedElementsVoice(Transaction&, Score* score, voice_id
                 // take care of slurs
                 int currentTick = chord->tick().ticks();
                 for (auto it : elementScore->spannerMap().findOverlapping(currentTick, currentTick + 1)) {
-                    Spanner* spanner = it.value;
+                    Spanner *spanner = it.value;
                     if (!spanner->isSlur()) {
                         continue;
                     }
-                    Slur* slur = toSlur(spanner);
+                    Slur *slur = toSlur(spanner);
                     if (slur->startElement() == chord && slur->endElement() == chord) {
                         elementScore->undoChangeSpannerElements(slur, dstChord, dstChord);
                         slur->undoChangeProperty(Pid::VOICE, voice);
@@ -292,22 +290,22 @@ void EditVoice::changeSelectedElementsVoice(Transaction&, Score* score, voice_id
                     }
                 }
                 // move articulations
-                for (Articulation* artic : chord->articulations()) {
+                for (Articulation *artic : chord->articulations()) {
                     if (dstChord->hasArticulation(artic)) {
                         continue;
                     }
                     elementScore->undoChangeParent(artic, dstChord, dstChord->staffIdx());
                 }
                 // create rest to leave behind
-                Rest* r = Factory::createRest(s);
+                Rest *r = Factory::createRest(s);
                 r->setTrack(chord->track());
                 r->setDurationType(chord->durationType());
                 r->setTicks(chord->ticks());
                 r->setTuplet(chord->tuplet());
                 // if there were grace notes, move them
                 while (!chord->graceNotes().empty()) {
-                    Chord* gc = chord->graceNotes().front();
-                    Chord* ngc = Factory::copyChord(*gc);
+                    Chord *gc = chord->graceNotes().front();
+                    Chord *ngc = Factory::copyChord(*gc);
                     elementScore->undoRemoveElement(gc);
                     ngc->setOwnershipParent(dstChord);
                     ngc->setTrack(dstChord->track());
@@ -319,12 +317,12 @@ void EditVoice::changeSelectedElementsVoice(Transaction&, Score* score, voice_id
             }
 
             // Move lyrics
-            for (Lyrics* lyric : chord->lyrics()) {
+            for (Lyrics *lyric : chord->lyrics()) {
                 if (!lyric || dstChord->lyrics(lyric->verse(), lyric->placement())) {
                     continue;
                 }
 
-                Lyrics* newLyric = Factory::copyLyrics(*lyric);
+                Lyrics *newLyric = Factory::copyLyrics(*lyric);
                 newLyric->setOwnershipParent(dstChord);
                 newLyric->setSelected(false);
                 newLyric->setTrack(dstTrack);
@@ -350,20 +348,16 @@ void EditVoice::changeSelectedElementsVoice(Transaction&, Score* score, voice_id
     }
 
     // Recreate parenthesis groups
-    for (auto& pair : movedParenGroups) {
-        MovedParenGroup& movedGroup = pair.second;
-        IF_ASSERT_FAILED(!movedGroup.notes.empty()) {
-            continue;
-        }
+    for (auto &pair : movedParenGroups) {
+        MovedParenGroup &movedGroup = pair.second;
+        IF_ASSERT_FAILED(!movedGroup.notes.empty()) { continue; }
         EditChord::addChordParentheses(movedGroup.dstChord, movedGroup.notes, /*addToLinked*/ true, movedGroup.generated);
 
-        const NoteParenthesisInfo* info = movedGroup.notes.front()->parenthesisInfo();
-        Parenthesis* leftParen = info ? info->leftParen() : nullptr;
-        Parenthesis* rightParen = info ? info->rightParen() : nullptr;
+        const NoteParenthesisInfo *info = movedGroup.notes.front()->parenthesisInfo();
+        Parenthesis *leftParen = info ? info->leftParen() : nullptr;
+        Parenthesis *rightParen = info ? info->rightParen() : nullptr;
 
-        IF_ASSERT_FAILED(info && leftParen && rightParen) {
-            continue;
-        }
+        IF_ASSERT_FAILED(info && leftParen && rightParen) { continue; }
 
         leftParen->undoSetVisible(movedGroup.leftVisible);
         rightParen->undoSetVisible(movedGroup.rightVisible);
@@ -379,11 +373,10 @@ void EditVoice::changeSelectedElementsVoice(Transaction&, Score* score, voice_id
     score->setLayoutAll();
 }
 
-void EditVoice::changeSelectedElementsVoiceAssignment(Transaction&, Score* score, VoiceAssignment voiceAssignment)
-{
-    std::vector<EngravingItem*> newElements;
+void EditVoice::changeSelectedElementsVoiceAssignment(Transaction &, Score *score, VoiceAssignment voiceAssignment) {
+    std::vector<EngravingItem *> newElements;
 
-    for (EngravingItem* e : score->selection().elements()) {
+    for (EngravingItem *e : score->selection().elements()) {
         if (e->hasVoiceAssignmentProperties()) {
             e->undoChangeProperty(Pid::VOICE_ASSIGNMENT, voiceAssignment);
             newElements.push_back(e);

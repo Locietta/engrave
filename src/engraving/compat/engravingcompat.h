@@ -28,44 +28,42 @@ namespace mu::engraving {
 class MasterScore;
 class EngravingItem;
 class System;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::compat {
-class EngravingCompat
-{
+class EngravingCompat {
 public:
-    static void doPreLayoutCompatIfNeeded(MasterScore* score);
-    static void doPostLayoutCompatIfNeeded(MasterScore* score);
+    static void doPreLayoutCompatIfNeeded(MasterScore *score);
+    static void doPostLayoutCompatIfNeeded(MasterScore *score);
 
 private:
-    static void correctPedalEndPoints(MasterScore* score);
-    static void undoStaffTextExcludeFromPart(MasterScore* masterScore);
-    static void migrateDynamicPosOnVocalStaves(MasterScore* masterScore);
-    static void resetIneffectiveCenterBetweenStaves(MasterScore* masterScore);
-    static void resetMarkerLeftFontSize(MasterScore* masterScore);
-    static void resetRestVerticalOffsets(MasterScore* masterScore);
-    static void adjustVBoxDistances(MasterScore* masterScore);
-    static void pre470TextCompat(MasterScore* masterScore);
-    static void migrateNoteParens(MasterScore* masterScore);
-    static void migrateOffset500(MasterScore* masterScore);
-    static void migrateOffsetAfterAutoplace(MasterScore* masterScore);
+    static void correctPedalEndPoints(MasterScore *score);
+    static void undoStaffTextExcludeFromPart(MasterScore *masterScore);
+    static void migrateDynamicPosOnVocalStaves(MasterScore *masterScore);
+    static void resetIneffectiveCenterBetweenStaves(MasterScore *masterScore);
+    static void resetMarkerLeftFontSize(MasterScore *masterScore);
+    static void resetRestVerticalOffsets(MasterScore *masterScore);
+    static void adjustVBoxDistances(MasterScore *masterScore);
+    static void pre470TextCompat(MasterScore *masterScore);
+    static void migrateNoteParens(MasterScore *masterScore);
+    static void migrateOffset500(MasterScore *masterScore);
+    static void migrateOffsetAfterAutoplace(MasterScore *masterScore);
 
-    static bool relayoutUserModifiedCrossStaffBeams(MasterScore* masterScore);
-    static bool setLyricLineVisibility(MasterScore* masterScore);
+    static bool relayoutUserModifiedCrossStaffBeams(MasterScore *masterScore);
+    static bool setLyricLineVisibility(MasterScore *masterScore);
 
-    static void resetAllElementsPositions(MasterScore* masterScore);
-    static void resetAllCrossBeams(MasterScore* masterScore);
+    static void resetAllElementsPositions(MasterScore *masterScore);
+    static void resetAllCrossBeams(MasterScore *masterScore);
 
-    static void applyPre400StyleCompat(MasterScore* masterScore);
+    static void applyPre400StyleCompat(MasterScore *masterScore);
 };
 
-class AlignmentMigration500
-{
+class AlignmentMigration500 {
 public:
-    static void migrateSnappedAndSameItemTypeAlignment(MasterScore* masterScore);
-    static void migrateHopoLetterAlignment(MasterScore* masterScore);
+    static void migrateSnappedAndSameItemTypeAlignment(MasterScore *masterScore);
+    static void migrateHopoLetterAlignment(MasterScore *masterScore);
 private:
-    static bool rowItemIsAbove(const EngravingItem* item);
-    static void alignItemOffsetGroup(const std::vector<EngravingItem*>& group);
+    static bool rowItemIsAbove(const EngravingItem *item);
+    static void alignItemOffsetGroup(const std::vector<EngravingItem *> &group);
 };
 } // namespace mu::engraving::compat

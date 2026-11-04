@@ -26,14 +26,13 @@ namespace mu::engraving {
 class Score;
 class Transaction;
 
-class EditDuration
-{
+class EditDuration {
 public:
-    static void doubleDuration(Transaction& tx, Score* score);
-    static void halfDuration(Transaction& tx, Score* score);
-    static void incDurationDotted(Transaction& tx, Score* score);
-    static void decDurationDotted(Transaction& tx, Score* score);
-    static void incDecDuration(Transaction& tx, Score* score, int nSteps, bool stepDotted = false);
-    static void extendToNextNote(Transaction& tx, Score* score);
+    static void doubleDuration(Transaction &tx, Score *score);
+    static void halfDuration(Transaction &tx, Score *score);
+    static void incDurationDotted(Transaction &tx, Score *score);
+    static void decDurationDotted(Transaction &tx, Score *score);
+    static void incDecDuration(Transaction &tx, Score *score, int nSteps, bool stepDotted = false);
+    static void extendToNextNote(Transaction &tx, Score *score);
 };
-}
+} // namespace mu::engraving

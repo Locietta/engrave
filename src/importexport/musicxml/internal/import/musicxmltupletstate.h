@@ -27,41 +27,35 @@
 
 namespace mu::engraving {
 class TDuration;
-}
+} // namespace mu::engraving
 
 namespace mu::iex::musicxml {
 enum class MusicXmlStartStop : char;
-enum class MusicXmlTupletFlag : char {
-    NONE = 0,
-    STOP_PREVIOUS = 1,
-    START_NEW = 2,
-    ADD_CHORD = 4,
-    STOP_CURRENT = 8
-};
+enum class MusicXmlTupletFlag : char { NONE = 0, STOP_PREVIOUS = 1, START_NEW = 2, ADD_CHORD = 4, STOP_CURRENT = 8 };
 typedef muse::Flags<MusicXmlTupletFlag> MusicXmlTupletFlags;
 
-class MusicXmlTupletState
-{
+class MusicXmlTupletState {
 public:
     MusicXmlTupletFlags determineTupletAction(const engraving::Fraction noteDuration, const engraving::Fraction timeMod,
                                               const MusicXmlStartStop tupletStartStop, const engraving::TDuration normalType,
-                                              engraving::Fraction& missingPreviousDuration, engraving::Fraction& missingCurrentDuration);
-    static void determineTupletFractionAndFullDuration(const engraving::Fraction duration, engraving::Fraction& fraction,
-                                                       engraving::Fraction& fullDuration);
+                                              engraving::Fraction &missingPreviousDuration, engraving::Fraction &missingCurrentDuration);
+    static void determineTupletFractionAndFullDuration(const engraving::Fraction duration, engraving::Fraction &fraction,
+                                                       engraving::Fraction &fullDuration);
     static engraving::Fraction missingTupletDuration(const engraving::Fraction duration);
 private:
     void addDurationToTuplet(const engraving::Fraction duration, const engraving::Fraction timeMod);
-    void smallestTypeAndCount(const engraving::TDuration durType, int& type, int& count);
-    void matchTypeAndCount(int& noteType, int& noteCount);
+    void smallestTypeAndCount(const engraving::TDuration durType, int &type, int &count);
+    void matchTypeAndCount(int &noteType, int &noteCount);
     bool isTupletFilled(const engraving::TDuration normalType, const engraving::Fraction timeMod);
 
     bool inTuplet = false;
     bool implicit = false;
     int actualNotes = 1;
     int normalNotes = 1;
-    engraving::Fraction duration { 0, 1 };
-    int smallestNoteType = 0;   // smallest note type in the tuplet
-    int smallestNoteCount = 0;   // number of smallest notes in the tuplet
+    engraving::Fraction duration{0, 1};
+    int smallestNoteType = 0;  // smallest note type in the tuplet
+    int smallestNoteCount = 0; // number of smallest notes in the tuplet
 };
+
 using MusicXmlTupletStates = std::map<muse::String, MusicXmlTupletState>;
-}
+} // namespace mu::iex::musicxml

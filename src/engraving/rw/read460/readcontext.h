@@ -45,7 +45,7 @@ class Spanner;
 class Staff;
 class Tuplet;
 class MStyle;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::read460 {
 struct TextStyleMap {
@@ -53,21 +53,21 @@ struct TextStyleMap {
     TextStyleType ss;
 };
 
-class ReadContext
-{
+class ReadContext {
 public:
 
     ReadContext() = default;
-    ReadContext(Score* score);
+    ReadContext(Score *score);
     ~ReadContext();
 
-    Score* score() const;
-    void setScore(Score* score);
+    Score *score() const;
+    void setScore(Score *score);
 
-    const MStyle& style() const;
+    const MStyle &style() const;
     std::shared_ptr<IEngravingFontsProvider> engravingFonts() const;
 
     bool pasteMode() const { return _pasteMode; }
+
     void setPasteMode(bool v) { _pasteMode = v; }
 
     String mscoreVersion() const;
@@ -78,79 +78,99 @@ public:
 
     double spatium() const;
     void setSpatium(double v);
-    void setPropertiesToSkip(const PropertyIdSet& propertiesToSkip) { m_propertiesToSkip = propertiesToSkip; }
+
+    void setPropertiesToSkip(const PropertyIdSet &propertiesToSkip) { m_propertiesToSkip = propertiesToSkip; }
+
     bool shouldSkipProperty(Pid pid) const { return muse::contains(m_propertiesToSkip, pid); }
 
     bool forcePageMode() const { return m_forcePageMode; }
+
     void setForcePageMode(bool v) { m_forcePageMode = v; }
 
-    DummyParent* dummy() const;
+    DummyParent *dummy() const;
 
-    Staff* staff(staff_idx_t n);
+    Staff *staff(staff_idx_t n);
 
-    bool isSameScore(const EngravingObject* obj) const;
+    bool isSameScore(const EngravingObject *obj) const;
 
-    Fraction tick()  const { return _tick + _tickOffset; }
-    Fraction rtick()  const;
+    Fraction tick() const { return _tick + _tickOffset; }
+
+    Fraction rtick() const;
+
     Fraction tickOffset() const { return _tickOffset; }
-    void setTick(const Fraction& f);
-    void incTick(const Fraction& f);
-    void setTickOffset(const Fraction& val) { _tickOffset = val; }
+
+    void setTick(const Fraction &f);
+    void incTick(const Fraction &f);
+
+    void setTickOffset(const Fraction &val) { _tickOffset = val; }
 
     track_idx_t track() const { return _track + _trackOffset; }
+
     void setTrackOffset(int val) { _trackOffset = val; }
+
     int trackOffset() const { return _trackOffset; }
+
     void setTrack(track_idx_t val) { _track = val; }
 
-    void setCurrentMeasure(Measure* m) { _curMeasure = m; }
-    Measure* currentMeasure() const { return _curMeasure; }
-    void setLastMeasure(Measure* m) { _lastMeasure = m; }
-    Measure* lastMeasure() const { return _lastMeasure; }
+    void setCurrentMeasure(Measure *m) { _curMeasure = m; }
+
+    Measure *currentMeasure() const { return _curMeasure; }
+
+    void setLastMeasure(Measure *m) { _lastMeasure = m; }
+
+    Measure *lastMeasure() const { return _lastMeasure; }
+
     void setCurrentMeasureIndex(int idx) { _curMeasureIdx = idx; }
+
     int currentMeasureIndex() const { return _curMeasureIdx; }
 
     Interval transpose() const { return _transpose; }
+
     void setTransposeChromatic(int8_t v) { _transpose.chromatic = v; }
+
     void setTransposeDiatonic(int8_t v) { _transpose.diatonic = v; }
 
-    TracksMap& tracks() { return _tracks; }
+    TracksMap &tracks() { return _tracks; }
 
     void addPartAudioSettingCompat(PartAudioSettingsCompat partAudioSetting);
-    const SettingsCompat& settingCompat() { return _settingsCompat; }
+
+    const SettingsCompat &settingCompat() { return _settingsCompat; }
 
     Fraction timeSigForNextMeasure() { return m_timeSigForNextMeasure; }
+
     void setTimeSigForNextMeasure(Fraction timeSig) { m_timeSigForNextMeasure = timeSig; }
 
     Location location(bool forceAbsFrac = false) const;
-    void fillLocation(Location&, bool forceAbsFrac = false) const;
-    void setLocation(const Location&);   // sets a new reading point, taking into account its type (absolute or relative).
+    void fillLocation(Location &, bool forceAbsFrac = false) const;
+    void setLocation(const Location &); // sets a new reading point, taking into account its type (absolute or relative).
 
-    void addConnectorInfoLater(std::shared_ptr<ConnectorInfoReader> c);   // add connector info to be checked after calling checkConnectors()
+    void addConnectorInfoLater(std::shared_ptr<ConnectorInfoReader> c); // add connector info to be checked after calling checkConnectors()
     void checkConnectors();
     void reconnectBrokenConnectors();
     void clearOrphanedConnectors();
 
 private:
     void addConnectorInfo(std::shared_ptr<ConnectorInfoReader>);
-    void removeConnector(const ConnectorInfoReader*);   // Removes the whole ConnectorInfo chain from the connectors list.
+    void removeConnector(const ConnectorInfoReader *); // Removes the whole ConnectorInfo chain from the connectors list.
 
-    Score* m_score = nullptr;
+    Score *m_score = nullptr;
 
-    bool _pasteMode = false;  // modifies read behaviour on paste operation
+    bool _pasteMode = false; // modifies read behaviour on paste operation
     bool m_forcePageMode = false;
 
-    std::vector<std::shared_ptr<ConnectorInfoReader> > _connectors;
-    std::vector<std::shared_ptr<ConnectorInfoReader> > _pendingConnectors;  // connectors that are pending to be updated and added to _connectors. That will happen when checkConnectors() is called.
+    std::vector<std::shared_ptr<ConnectorInfoReader>> _connectors;
+    std::vector<std::shared_ptr<ConnectorInfoReader>>
+        _pendingConnectors; // connectors that are pending to be updated and added to _connectors. That will happen when checkConnectors() is called.
 
-    Fraction _tick             { Fraction(0, 1) };
-    Fraction _tickOffset       { Fraction(0, 1) };
+    Fraction _tick{Fraction(0, 1)};
+    Fraction _tickOffset{Fraction(0, 1)};
     int _intTick = 0;
 
     int _trackOffset = 0;
     track_idx_t _track = 0;
 
-    Measure* _curMeasure = nullptr;
-    Measure* _lastMeasure = nullptr;
+    Measure *_curMeasure = nullptr;
+    Measure *_lastMeasure = nullptr;
     int _curMeasureIdx = 0;
 
     Interval _transpose;
@@ -162,4 +182,4 @@ private:
 
     Fraction m_timeSigForNextMeasure = Fraction(0, 1);
 };
-}
+} // namespace mu::engraving::read460

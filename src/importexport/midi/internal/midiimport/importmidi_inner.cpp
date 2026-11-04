@@ -37,24 +37,14 @@
 #include "log.h"
 
 namespace mu::iex::midi {
-MTrack::MTrack(const MTrack& other)
-    : program(other.program)
-    , staff(other.staff)
-    , mtrack(other.mtrack)
-    , name(other.name)
-    , hasKey(other.hasKey)
-    , indexOfOperation(other.indexOfOperation)
-    , division(other.division)
-    , isDivisionInTps(other.isDivisionInTps)
-    , hadInitialNotes(other.hadInitialNotes)
-    , volumes(other.volumes)
-    , chords(other.chords)
-{
+MTrack::MTrack(const MTrack &other)
+    : program(other.program), staff(other.staff), mtrack(other.mtrack), name(other.name), hasKey(other.hasKey),
+      indexOfOperation(other.indexOfOperation), division(other.division), isDivisionInTps(other.isDivisionInTps),
+      hadInitialNotes(other.hadInitialNotes), volumes(other.volumes), chords(other.chords) {
     updateTupletsFromChords();
 }
 
-MTrack& MTrack::operator=(MTrack other)
-{
+MTrack &MTrack::operator=(MTrack other) {
     std::swap(program, other.program);
     std::swap(staff, other.staff);
     std::swap(mtrack, other.mtrack);
@@ -74,13 +64,12 @@ MTrack& MTrack::operator=(MTrack other)
 // chords of the MTrack are considered to be created/copied already;
 // tuplets here are extracted and inserted to the tuplet map of the MTrack
 // from tuplet iterators in chords/notes
-void MTrack::updateTupletsFromChords()
-{
-    for (auto& chord: chords) {
+void MTrack::updateTupletsFromChords() {
+    for (auto &chord : chords) {
         if (chord.second.isInTuplet) {
             updateTuplet(chord.second.tuplet);
         }
-        for (auto& note: chord.second.notes) {
+        for (auto &note : chord.second.notes) {
             if (note.isInTuplet) {
                 updateTuplet(note.tuplet);
             }
@@ -88,9 +77,7 @@ void MTrack::updateTupletsFromChords()
     }
 }
 
-void MTrack::updateTuplet(
-    std::multimap<ReducedFraction, MidiTuplet::TupletData>::iterator& tupletIt)
-{
+void MTrack::updateTuplet(std::multimap<ReducedFraction, MidiTuplet::TupletData>::iterator &tupletIt) {
     auto foundTuplet = tuplets.end();
     const auto foundTupletsRange = tuplets.equal_range(tupletIt->first);
     for (auto it = foundTupletsRange.first; it != foundTupletsRange.second; ++it) {
@@ -102,78 +89,43 @@ void MTrack::updateTuplet(
     if (foundTuplet != tuplets.end()) {
         tupletIt = foundTuplet;
     } else {
-        tupletIt = tuplets.insert({ tupletIt->first, tupletIt->second });
+        tupletIt = tuplets.insert({tupletIt->first, tupletIt->second});
     }
 }
 
 namespace Meter {
-ReducedFraction userTimeSigToFraction(
-    MidiOperations::TimeSigNumerator timeSigNumerator,
-    MidiOperations::TimeSigDenominator timeSigDenominator)
-{
+ReducedFraction userTimeSigToFraction(MidiOperations::TimeSigNumerator timeSigNumerator,
+                                      MidiOperations::TimeSigDenominator timeSigDenominator) {
     int numerator = 4;
     int denominator = 4;
 
     switch (timeSigNumerator) {
-    case MidiOperations::TimeSigNumerator::_2:
-        numerator = 2;
-        break;
-    case MidiOperations::TimeSigNumerator::_3:
-        numerator = 3;
-        break;
-    case MidiOperations::TimeSigNumerator::_4:
-        numerator = 4;
-        break;
-    case MidiOperations::TimeSigNumerator::_5:
-        numerator = 5;
-        break;
-    case MidiOperations::TimeSigNumerator::_6:
-        numerator = 6;
-        break;
-    case MidiOperations::TimeSigNumerator::_7:
-        numerator = 7;
-        break;
-    case MidiOperations::TimeSigNumerator::_9:
-        numerator = 9;
-        break;
-    case MidiOperations::TimeSigNumerator::_12:
-        numerator = 12;
-        break;
-    case MidiOperations::TimeSigNumerator::_15:
-        numerator = 15;
-        break;
-    case MidiOperations::TimeSigNumerator::_21:
-        numerator = 21;
-        break;
-    default:
-        break;
+        case MidiOperations::TimeSigNumerator::_2: numerator = 2; break;
+        case MidiOperations::TimeSigNumerator::_3: numerator = 3; break;
+        case MidiOperations::TimeSigNumerator::_4: numerator = 4; break;
+        case MidiOperations::TimeSigNumerator::_5: numerator = 5; break;
+        case MidiOperations::TimeSigNumerator::_6: numerator = 6; break;
+        case MidiOperations::TimeSigNumerator::_7: numerator = 7; break;
+        case MidiOperations::TimeSigNumerator::_9: numerator = 9; break;
+        case MidiOperations::TimeSigNumerator::_12: numerator = 12; break;
+        case MidiOperations::TimeSigNumerator::_15: numerator = 15; break;
+        case MidiOperations::TimeSigNumerator::_21: numerator = 21; break;
+        default: break;
     }
 
     switch (timeSigDenominator) {
-    case MidiOperations::TimeSigDenominator::_2:
-        denominator = 2;
-        break;
-    case MidiOperations::TimeSigDenominator::_4:
-        denominator = 4;
-        break;
-    case MidiOperations::TimeSigDenominator::_8:
-        denominator = 8;
-        break;
-    case MidiOperations::TimeSigDenominator::_16:
-        denominator = 16;
-        break;
-    case MidiOperations::TimeSigDenominator::_32:
-        denominator = 32;
-        break;
-    default:
-        break;
+        case MidiOperations::TimeSigDenominator::_2: denominator = 2; break;
+        case MidiOperations::TimeSigDenominator::_4: denominator = 4; break;
+        case MidiOperations::TimeSigDenominator::_8: denominator = 8; break;
+        case MidiOperations::TimeSigDenominator::_16: denominator = 16; break;
+        case MidiOperations::TimeSigDenominator::_32: denominator = 32; break;
+        default: break;
     }
 
     return ReducedFraction(numerator, denominator);
 }
 
-MidiOperations::TimeSigNumerator fractionNumeratorToUserValue(int n)
-{
+MidiOperations::TimeSigNumerator fractionNumeratorToUserValue(int n) {
     MidiOperations::TimeSigNumerator numerator = MidiOperations::TimeSigNumerator::_4;
 
     if (n == 2) {
@@ -203,8 +155,7 @@ MidiOperations::TimeSigNumerator fractionNumeratorToUserValue(int n)
     return numerator;
 }
 
-MidiOperations::TimeSigDenominator fractionDenominatorToUserValue(int z)
-{
+MidiOperations::TimeSigDenominator fractionDenominatorToUserValue(int z) {
     MidiOperations::TimeSigDenominator denominator = MidiOperations::TimeSigDenominator::_4;
 
     if (z == 2) {
@@ -226,29 +177,24 @@ MidiOperations::TimeSigDenominator fractionDenominatorToUserValue(int z)
 } // namespace Meter
 
 namespace MidiTuplet {
-bool haveIntersection(const std::pair<ReducedFraction, ReducedFraction>& interval1,
-                      const std::pair<ReducedFraction, ReducedFraction>& interval2,
-                      bool strictComparison)
-{
+bool haveIntersection(const std::pair<ReducedFraction, ReducedFraction> &interval1,
+                      const std::pair<ReducedFraction, ReducedFraction> &interval2, bool strictComparison) {
     if (strictComparison) {
         return interval1.second > interval2.first && interval1.first < interval2.second;
     }
     return interval1.second >= interval2.first && interval1.first <= interval2.second;
 }
 
-bool haveIntersection(
-    const std::pair<ReducedFraction, ReducedFraction>& interval,
-    const std::vector<std::pair<ReducedFraction, ReducedFraction> >& intervals,
-    bool strictComparison)
-{
-    for (const auto& i: intervals) {
+bool haveIntersection(const std::pair<ReducedFraction, ReducedFraction> &interval,
+                      const std::vector<std::pair<ReducedFraction, ReducedFraction>> &intervals, bool strictComparison) {
+    for (const auto &i : intervals) {
         if (haveIntersection(i, interval, strictComparison)) {
             return true;
         }
     }
     return false;
 }
-}
+} // namespace MidiTuplet
 
 namespace MidiCharset {
 namespace {
@@ -257,43 +203,36 @@ namespace {
 // ellipsis, trademark), so decoding it as Latin-1 would silently corrupt the
 // lyric text.  Undefined bytes are preserved as the corresponding C1 control
 // code point instead of being dropped.
-char16_t decodeWindows1252Byte(unsigned char byte)
-{
+char16_t decodeWindows1252Byte(unsigned char byte) {
     if (byte >= 0x80 && byte <= 0x9F) {
-        static constexpr char16_t map[32] = {
-            0x20AC, 0x0081, 0x201A, 0x0192, 0x201E, 0x2026, 0x2020, 0x2021,
-            0x02C6, 0x2030, 0x0160, 0x2039, 0x0152, 0x008D, 0x017D, 0x008F,
-            0x0090, 0x2018, 0x2019, 0x201C, 0x201D, 0x2022, 0x2013, 0x2014,
-            0x02DC, 0x2122, 0x0161, 0x203A, 0x0153, 0x009D, 0x017E, 0x0178
-        };
+        static constexpr char16_t map[32] = {0x20AC, 0x0081, 0x201A, 0x0192, 0x201E, 0x2026, 0x2020, 0x2021, 0x02C6, 0x2030, 0x0160,
+                                             0x2039, 0x0152, 0x008D, 0x017D, 0x008F, 0x0090, 0x2018, 0x2019, 0x201C, 0x201D, 0x2022,
+                                             0x2013, 0x2014, 0x02DC, 0x2122, 0x0161, 0x203A, 0x0153, 0x009D, 0x017E, 0x0178};
         return map[byte - 0x80];
     }
     return static_cast<char16_t>(byte);
 }
 
-muse::String fromSingleByte(const std::string& text, bool windows1252)
-{
+muse::String fromSingleByte(const std::string &text, bool windows1252) {
     std::u16string utf16;
     utf16.reserve(text.size());
-    for (const char ch: text) {
+    for (const char ch : text) {
         const auto byte = static_cast<unsigned char>(ch);
-        utf16.push_back(windows1252 ? decodeWindows1252Byte(byte)
-                        : static_cast<char16_t>(byte));
+        utf16.push_back(windows1252 ? decodeWindows1252Byte(byte) : static_cast<char16_t>(byte));
     }
 
     muse::String result;
     result.reserve(utf16.size());
-    for (const char16_t ch: utf16) {
+    for (const char16_t ch : utf16) {
         result.append(muse::Char(ch));
     }
     return result;
 }
 
-std::string normalizedCharsetName(const std::string& charset)
-{
+std::string normalizedCharsetName(const std::string &charset) {
     std::string normalized;
     normalized.reserve(charset.size());
-    for (const char ch: charset) {
+    for (const char ch : charset) {
         if (ch == ' ' || ch == '_') {
             continue;
         }
@@ -302,8 +241,7 @@ std::string normalizedCharsetName(const std::string& charset)
     return normalized;
 }
 
-muse::String decodeWithFallback(const std::string& text, const std::string& charset)
-{
+muse::String decodeWithFallback(const std::string &text, const std::string &charset) {
     const std::string normalized = normalizedCharsetName(charset);
 
     if (normalized.empty() || normalized == "utf-8" || normalized == "utf8") {
@@ -320,16 +258,14 @@ muse::String decodeWithFallback(const std::string& text, const std::string& char
     if (normalized == "windows-1252" || normalized == "cp1252" || normalized == "win1252") {
         return fromSingleByte(text, true);
     }
-    if (normalized == "iso-8859-1" || normalized == "iso8859-1"
-        || normalized == "latin1" || normalized == "latin-1") {
+    if (normalized == "iso-8859-1" || normalized == "iso8859-1" || normalized == "latin1" || normalized == "latin-1") {
         return fromSingleByte(text, false);
     }
 
     // A real multi-codec backend (ICU or libiconv) is required for the full
     // QTextCodec surface.  Until then, never guess an arbitrary encoding:
     // prefer strict UTF-8 and otherwise preserve Latin-1/Windows-1252 bytes.
-    LOGW() << "MIDI import: unsupported charset" << charset
-           << "in the Qt-free build; using UTF-8/Windows-1252 fallback";
+    LOGW() << "MIDI import: unsupported charset" << charset << "in the Qt-free build; using UTF-8/Windows-1252 fallback";
     if (muse::UtfCodec::isValidUtf8(text)) {
         return muse::String::fromUtf8(text);
     }
@@ -337,36 +273,28 @@ muse::String decodeWithFallback(const std::string& text, const std::string& char
 }
 } // namespace
 
-muse::String convertToCharset(const std::string& text)
-{
-    const auto* data = midiImportOperations.data();
+muse::String convertToCharset(const std::string &text) {
+    const auto *data = midiImportOperations.data();
     return decodeWithFallback(text, data ? data->charset : defaultCharset());
 }
 
-std::string defaultCharset()
-{
-    return "UTF-8";
-}
+std::string defaultCharset() { return "UTF-8"; }
 
-std::string fromUchar(const unsigned char* text)
-{
-    return text ? std::string(reinterpret_cast<const char*>(text)) : std::string();
-}
+std::string fromUchar(const unsigned char *text) { return text ? std::string(reinterpret_cast<const char *>(text)) : std::string(); }
 } // namespace MidiCharset
 
 namespace MidiBar {
-ReducedFraction findBarStart(const ReducedFraction& time, const engraving::TimeSigMap* sigmap)
-{
+ReducedFraction findBarStart(const ReducedFraction &time, const engraving::TimeSigMap *sigmap) {
     int barIndex, beat, tick;
     sigmap->tickValues(time.ticks(), &barIndex, &beat, &tick);
     return ReducedFraction::fromTicks(sigmap->bar2tick(barIndex, 0));
 }
 } // namespace MidiBar
+
 namespace MidiDuration {
-double durationCount(const std::vector<std::pair<ReducedFraction, engraving::TDuration> >& durations)
-{
+double durationCount(const std::vector<std::pair<ReducedFraction, engraving::TDuration>> &durations) {
     double count = durations.size();
-    for (const auto& d: durations) {
+    for (const auto &d : durations) {
         if (d.second.dots()) {
             count += 0.5;
         }

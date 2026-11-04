@@ -18,33 +18,37 @@
 #include "inoteproperty.h"
 
 namespace mu::iex::guitarpro {
-class GPDomModel
-{
+class GPDomModel {
 public:
 
     GPDomModel() = default;
     virtual ~GPDomModel() = default;
 
-    GPDomModel(const GPDomModel& gp) = delete;
-    GPDomModel& operator=(const GPDomModel&) = delete;
+    GPDomModel(const GPDomModel &gp) = delete;
+    GPDomModel &operator=(const GPDomModel &) = delete;
 
-    void addGPScore(std::unique_ptr<GPScore>&& score) { _score = std::move(score); }
+    void addGPScore(std::unique_ptr<GPScore> &&score) { _score = std::move(score); }
 
-    void addGPMasterTracks(std::unique_ptr<GPMasterTracks>&& mTr) { _masterTracks.swap(mTr); }
-    void addGPTracks(std::map<int, std::unique_ptr<GPTrack> >&& tr) { _tracks.swap(tr); }
-    void addGPMasterBars(std::vector<std::unique_ptr<GPMasterBar> >&& mB) { _masterBars.swap(mB); }
+    void addGPMasterTracks(std::unique_ptr<GPMasterTracks> &&mTr) { _masterTracks.swap(mTr); }
 
-    const GPScore* score() const { return _score.get(); }
-    const GPMasterTracks* masterTracks() const { return _masterTracks.get(); }
-    const std::map<int, std::unique_ptr<GPTrack> >& tracks() const { return _tracks; }
-    const std::vector<std::unique_ptr<GPMasterBar> >& masterBars() const { return _masterBars; }
+    void addGPTracks(std::map<int, std::unique_ptr<GPTrack>> &&tr) { _tracks.swap(tr); }
+
+    void addGPMasterBars(std::vector<std::unique_ptr<GPMasterBar>> &&mB) { _masterBars.swap(mB); }
+
+    const GPScore *score() const { return _score.get(); }
+
+    const GPMasterTracks *masterTracks() const { return _masterTracks.get(); }
+
+    const std::map<int, std::unique_ptr<GPTrack>> &tracks() const { return _tracks; }
+
+    const std::vector<std::unique_ptr<GPMasterBar>> &masterBars() const { return _masterBars; }
 
 private:
 
     std::unique_ptr<GPScore> _score;
     std::unique_ptr<GPMasterTracks> _masterTracks;
-    std::map<int, std::unique_ptr<GPTrack> > _tracks;
-    std::vector<std::unique_ptr<GPMasterBar> > _masterBars;
+    std::map<int, std::unique_ptr<GPTrack>> _tracks;
+    std::vector<std::unique_ptr<GPMasterBar>> _masterBars;
 };
 } // namespace mu::iex::guitarpro
 #endif // MU_IMPORTEXPORT_GPDOMMODEL_H

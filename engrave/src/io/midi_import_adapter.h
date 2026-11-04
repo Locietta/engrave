@@ -6,7 +6,7 @@
 
 namespace mu::engraving {
 class MasterScore;
-}
+} // namespace mu::engraving
 
 namespace music {
 //! Qt-free typed entry for the MIDI/KAR importer.
@@ -21,5 +21,5 @@ namespace music {
 //! of the call and removes its temporary entry before returning.  A non-NoError
 //! result must be treated as a failed import (the score may be partially
 //! populated).
-mu::engraving::Err import_midi_score(mu::engraving::MasterScore* score, const std::string& bytes);
-}
+mu::engraving::Err import_midi_score(mu::engraving::MasterScore *score, const std::string &bytes);
+} // namespace music

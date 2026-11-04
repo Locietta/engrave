@@ -35,14 +35,13 @@ using namespace muse::draw;
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-void Paint::paintScore(Painter* painter, Score* score, const IScoreRenderer::ScorePaintOptions& opt)
-{
+void Paint::paintScore(Painter *painter, Score *score, const IScoreRenderer::ScorePaintOptions &opt) {
     TRACEFUNC;
     if (!score) {
         return;
     }
 
-    const std::vector<Page*>& pages = score->pages();
+    const std::vector<Page *> &pages = score->pages();
     if (pages.empty()) {
         return;
     }
@@ -79,7 +78,7 @@ void Paint::paintScore(Painter* painter, Score* score, const IScoreRenderer::Sco
     for (int copy = 0; copy < opt.copyCount; ++copy) {
         bool firstPage = true;
         for (int pi = fromPage; pi <= toPage; ++pi) {
-            Page* page = pages.at(pi);
+            Page *page = pages.at(pi);
 
             PointF pagePos = page->pos();
             RectF pageRect = page->ldata()->bbox();
@@ -145,7 +144,7 @@ void Paint::paintScore(Painter* painter, Score* score, const IScoreRenderer::Sco
                 disableClipping = true;
             }
 
-            std::vector<EngravingItem*> elements = page->items(drawRect.translated(-pagePos));
+            std::vector<EngravingItem *> elements = page->items(drawRect.translated(-pagePos));
             paintItems(*painter, elements, opt);
 
             if (disableClipping) {
@@ -177,8 +176,7 @@ void Paint::paintScore(Painter* painter, Score* score, const IScoreRenderer::Sco
     score->setPrinting(wasPrinting);
 }
 
-SizeF Paint::pageSizeInch(const Score* score)
-{
+SizeF Paint::pageSizeInch(const Score *score) {
     if (!score) {
         return SizeF();
     }
@@ -186,15 +184,14 @@ SizeF Paint::pageSizeInch(const Score* score)
     //! NOTE If now it is not PAGE view mode,
     //! then the page sizes will differ from the standard sizes (in PAGE view mode)
     if (score->npages() > 0) {
-        const Page* page = score->pages().front();
+        const Page *page = score->pages().front();
         return SizeF(page->ldata()->bbox().width() / mu::engraving::DPI, page->ldata()->bbox().height() / mu::engraving::DPI);
     }
 
     return SizeF(score->style().styleD(Sid::pageWidth), score->style().styleD(Sid::pageHeight));
 }
 
-SizeF Paint::pageSizeInch(const Score* score, const IScoreRenderer::ScorePaintOptions& opt)
-{
+SizeF Paint::pageSizeInch(const Score *score, const IScoreRenderer::ScorePaintOptions &opt) {
     if (!score) {
         return SizeF();
     }
@@ -204,7 +201,7 @@ SizeF Paint::pageSizeInch(const Score* score, const IScoreRenderer::ScorePaintOp
         return SizeF();
     }
 
-    const Page* page = score->pages().at(pageNo);
+    const Page *page = score->pages().at(pageNo);
 
     RectF pageRect = page->ldata()->bbox();
 
@@ -217,8 +214,7 @@ SizeF Paint::pageSizeInch(const Score* score, const IScoreRenderer::ScorePaintOp
     return pageRect.size() / mu::engraving::DPI;
 }
 
-void Paint::paintItem(Painter& painter, const EngravingItem* item, const PaintOptions& opt)
-{
+void Paint::paintItem(Painter &painter, const EngravingItem *item, const PaintOptions &opt) {
     TRACEFUNC;
     if (item->ldata()->isSkipDraw()) {
         return;
@@ -231,14 +227,13 @@ void Paint::paintItem(Painter& painter, const EngravingItem* item, const PaintOp
     painter.translate(-itemPosition);
 }
 
-void Paint::paintItems(Painter& painter, const std::vector<EngravingItem*>& items, const PaintOptions& opt)
-{
+void Paint::paintItems(Painter &painter, const std::vector<EngravingItem *> &items, const PaintOptions &opt) {
     TRACEFUNC;
-    std::vector<EngravingItem*> sortedItems(items.begin(), items.end());
+    std::vector<EngravingItem *> sortedItems(items.begin(), items.end());
 
     std::sort(sortedItems.begin(), sortedItems.end(), mu::engraving::elementLessThan);
 
-    for (const EngravingItem* item : sortedItems) {
+    for (const EngravingItem *item : sortedItems) {
         if (!item->isInteractionAvailable()) {
             continue;
         }

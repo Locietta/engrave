@@ -38,12 +38,13 @@ class Score;
 //    MIDI files cannot contain pauses so need to insert
 //    extra ticks extra ticks and tempo changes instead.
 //---------------------------------------------------
-class PauseMap : std::map<int, int>
-{
+class PauseMap : std::map<int, int> {
 public:
-    void calculate(const engraving::Score* s);
+    void calculate(const engraving::Score *s);
+
     inline int tickWithPauses(int utick) const { return utick + offsetAtUTick(utick); }
-    const std::map<int, double>& tempoEvents() const { return m_tempoEvents; }
+
+    const std::map<int, double> &tempoEvents() const { return m_tempoEvents; }
 
 private:
     int offsetAtUTick(int utick) const;

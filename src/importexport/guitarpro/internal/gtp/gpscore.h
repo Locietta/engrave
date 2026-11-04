@@ -4,23 +4,35 @@
 #include "types/string.h"
 
 namespace mu::iex::guitarpro {
-class GPScore
-{
+class GPScore {
 public:
 
-    void setTitle(const muse::String& title) { _title = title; }
+    void setTitle(const muse::String &title) { _title = title; }
+
     muse::String title() const { return _title; }
-    void setSubTitle(const muse::String& subTitle) { _subTitle = subTitle; }
+
+    void setSubTitle(const muse::String &subTitle) { _subTitle = subTitle; }
+
     muse::String subTitle() const { return _subTitle; }
-    void setArtist(const muse::String& artist) { _artist = artist; }
+
+    void setArtist(const muse::String &artist) { _artist = artist; }
+
     muse::String artist() const { return _artist; }
-    void setAlbum(const muse::String& album) { _album = album; }
+
+    void setAlbum(const muse::String &album) { _album = album; }
+
     muse::String album() const { return _album; }
-    void setPoet(const muse::String& poet) { _poet = poet; }
+
+    void setPoet(const muse::String &poet) { _poet = poet; }
+
     muse::String poet() const { return _poet; }
-    void setComposer(const muse::String& composer) { _composer = composer; }
+
+    void setComposer(const muse::String &composer) { _composer = composer; }
+
     muse::String composer() const { return _composer; }
+
     void setMultiVoice(bool multiVoice) { _multiVoice = multiVoice; }
+
     bool multiVoice() const { return _multiVoice; }
 
 private:

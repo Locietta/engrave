@@ -31,11 +31,10 @@ namespace mu::engraving {
 //   UpdateState
 //---------------------------------------------------------
 
-struct UpdateState
-{
-    RectF refresh;           ///< area to update, canvas coordinates
-    bool playNote = false;       ///< play selected note after command
-    bool playChord = false;      ///< play whole chord for the selected note
+struct UpdateState {
+    RectF refresh;          ///< area to update, canvas coordinates
+    bool playNote = false;  ///< play selected note after command
+    bool playChord = false; ///< play whole chord for the selected note
     bool selectionChanged = false;
 };
 
@@ -47,8 +46,7 @@ struct UpdateState
 //    determine what to layout and what to repaint:
 //---------------------------------------------------------
 
-class CmdState
-{
+class CmdState {
 public:
     LayoutFlags layoutFlags;
 
@@ -56,45 +54,57 @@ public:
     bool instrumentsChanged = false;
 
     void reset();
+
     UpdateMode updateMode() const { return m_updateMode; }
+
     void setUpdateMode(UpdateMode m);
     void _setUpdateMode(UpdateMode m);
-    bool layoutRange() const { return m_updateMode == UpdateMode::Layout; }
-    bool updateAll() const { return int(m_updateMode) >= int(UpdateMode::UpdateAll); }
-    bool updateRange() const { return m_updateMode == UpdateMode::Update; }
-    void setTick(const Fraction& t);
-    void setStaff(staff_idx_t staff);
-    void setElement(const EngravingItem* e);
-    void unsetElement(const EngravingItem* e);
-    Fraction startTick() const { return m_startTick; }
-    Fraction endTick() const { return m_endTick; }
-    staff_idx_t startStaff() const { return m_startStaff; }
-    staff_idx_t endStaff() const { return m_endStaff; }
-    const EngravingItem* element() const;
 
-    void deleteLater(EngravingObject* e);
-    std::vector<EngravingObject*> takePostponedDeletions();
+    bool layoutRange() const { return m_updateMode == UpdateMode::Layout; }
+
+    bool updateAll() const { return int(m_updateMode) >= int(UpdateMode::UpdateAll); }
+
+    bool updateRange() const { return m_updateMode == UpdateMode::Update; }
+
+    void setTick(const Fraction &t);
+    void setStaff(staff_idx_t staff);
+    void setElement(const EngravingItem *e);
+    void unsetElement(const EngravingItem *e);
+
+    Fraction startTick() const { return m_startTick; }
+
+    Fraction endTick() const { return m_endTick; }
+
+    staff_idx_t startStaff() const { return m_startStaff; }
+
+    staff_idx_t endStaff() const { return m_endStaff; }
+
+    const EngravingItem *element() const;
+
+    void deleteLater(EngravingObject *e);
+    std::vector<EngravingObject *> takePostponedDeletions();
 
     void lock() { m_locked = true; }
+
     void unlock() { m_locked = false; }
 #ifndef NDEBUG
     void dump();
 #endif
 
 private:
-    void setMeasureBase(const MeasureBase* mb);
+    void setMeasureBase(const MeasureBase *mb);
 
     UpdateMode m_updateMode = UpdateMode::DoNothing;
-    Fraction m_startTick { -1, 1 };            // start tick for mode LayoutTick
-    Fraction m_endTick   { -1, 1 };              // end tick for mode LayoutTick
+    Fraction m_startTick{-1, 1}; // start tick for mode LayoutTick
+    Fraction m_endTick{-1, 1};   // end tick for mode LayoutTick
     staff_idx_t m_startStaff = muse::nidx;
     staff_idx_t m_endStaff = muse::nidx;
-    const EngravingItem* m_el = nullptr;
-    const MeasureBase* m_mb = nullptr;
+    const EngravingItem *m_el = nullptr;
+    const MeasureBase *m_mb = nullptr;
     bool m_oneElement = true;
     bool m_oneMeasureBase = true;
-    std::vector<EngravingObject*> m_postponedDeletions;
+    std::vector<EngravingObject *> m_postponedDeletions;
 
     bool m_locked = false;
 };
-}
+} // namespace mu::engraving

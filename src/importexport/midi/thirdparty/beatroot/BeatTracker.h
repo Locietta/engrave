@@ -20,30 +20,25 @@
 
 #include <vector>
 
-
 class AgentParameters;
 
 namespace BeatTracker {
 
-      /** Perform beat tracking.
+/** Perform beat tracking.
        *  @param events The onsets or peaks in a feature list
        *  @param beats The initial beats which are given, if any
        *  @return The list of beats, or an empty list if beat tracking fails
        */
-      std::vector<double> beatTrack(const AgentParameters &params,
-                                    const EventList &events,
-                                    const EventList &beats);
+std::vector<double> beatTrack(const AgentParameters &params, const EventList &events, const EventList &beats);
 
-      /** Perform beat tracking.
+/** Perform beat tracking.
        *  @param events The onsets or peaks in a feature list
        *  @return The list of beats, or an empty list if beat tracking fails
        */
-      std::vector<double> beatTrack(const AgentParameters &params, const EventList &events);
+std::vector<double> beatTrack(const AgentParameters &params, const EventList &events);
 
-      std::vector<double> beatTrack(const EventList &events);
+std::vector<double> beatTrack(const EventList &events);
 
 } // namespace BeatTracker
 
-
 #endif
-

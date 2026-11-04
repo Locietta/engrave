@@ -26,12 +26,11 @@
 #include "filterbase.h"
 
 namespace mu::engraving {
-class ChordFilter : public FilterBase<ChordFilter>
-{
+class ChordFilter : public FilterBase<ChordFilter> {
 protected:
     friend class FilterBase<ChordFilter>;
-    static bool isPlayable(const EngravingItem* item, const RenderingContext& ctx);
+    static bool isPlayable(const EngravingItem *item, const RenderingContext &ctx);
 };
-}
+} // namespace mu::engraving
 
 #endif // MU_ENGRAVING_CHORDFILTER_H

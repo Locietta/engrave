@@ -31,78 +31,39 @@ using namespace muse;
 using namespace muse::io;
 
 namespace {
-IFileSystem* s_fileSystem = nullptr;
-}
+IFileSystem *s_fileSystem = nullptr;
+} // namespace
 
-IFileSystem* muse::io::fileSystem()
-{
-    return s_fileSystem;
-}
+IFileSystem *muse::io::fileSystem() { return s_fileSystem; }
 
-void muse::io::setFileSystem(IFileSystem* fileSystem)
-{
-    s_fileSystem = fileSystem;
-}
+void muse::io::setFileSystem(IFileSystem *fileSystem) { s_fileSystem = fileSystem; }
 
-File::File(const path_t& filePath)
-    : m_filePath(filePath)
-{
-    setMeta("file_path", m_filePath.toStdString());
-}
+File::File(const path_t &filePath) : m_filePath(filePath) { setMeta("file_path", m_filePath.toStdString()); }
 
-File::~File()
-{
-    close();
-}
+File::~File() { close(); }
 
-const path_t& File::filePath() const
-{
-    return m_filePath;
-}
+const path_t &File::filePath() const { return m_filePath; }
 
-bool File::exists() const
-{
-    return fileSystem()->exists(m_filePath);
-}
+bool File::exists() const { return fileSystem()->exists(m_filePath); }
 
-bool File::exists(const path_t& filePath)
-{
-    return fileSystem()->exists(filePath);
-}
+bool File::exists(const path_t &filePath) { return fileSystem()->exists(filePath); }
 
-bool File::remove(const path_t& filePath)
-{
-    return fileSystem()->remove(filePath);
-}
+bool File::remove(const path_t &filePath) { return fileSystem()->remove(filePath); }
 
-bool File::copy(const path_t& src, const path_t& dst, bool replace)
-{
-    return fileSystem()->copy(src, dst, replace);
-}
+bool File::copy(const path_t &src, const path_t &dst, bool replace) { return fileSystem()->copy(src, dst, replace); }
 
-Ret File::readFile(const io::path_t& filePath, ByteArray& out)
-{
+Ret File::readFile(const io::path_t &filePath, ByteArray &out) {
     bool ok = fileSystem()->readFile(filePath, out);
     return make_ret(ok ? Err::NoError : Err::FSReadError);
 }
 
-Ret File::writeFile(const io::path_t& filePath, const ByteArray& data)
-{
-    return fileSystem()->writeFile(filePath, data);
-}
+Ret File::writeFile(const io::path_t &filePath, const ByteArray &data) { return fileSystem()->writeFile(filePath, data); }
 
-bool File::setPermissionsAllowedForAll(const path_t& filePath)
-{
-    return fileSystem()->setPermissionsAllowedForAll(filePath);
-}
+bool File::setPermissionsAllowedForAll(const path_t &filePath) { return fileSystem()->setPermissionsAllowedForAll(filePath); }
 
-bool File::remove()
-{
-    return fileSystem()->remove(m_filePath);
-}
+bool File::remove() { return fileSystem()->remove(m_filePath); }
 
-bool File::doOpen(OpenMode m)
-{
+bool File::doOpen(OpenMode m) {
     if (m == IODevice::WriteOnly) {
         Ret ret = fileSystem()->isWritable(m_filePath);
         if (!ret) {
@@ -131,24 +92,16 @@ bool File::doOpen(OpenMode m)
     return true;
 }
 
-size_t File::dataSize() const
-{
-    return m_data.size();
-}
+size_t File::dataSize() const { return m_data.size(); }
 
-const uint8_t* File::rawData() const
-{
-    return m_data.constData();
-}
+const uint8_t *File::rawData() const { return m_data.constData(); }
 
-bool File::resizeData(size_t size)
-{
+bool File::resizeData(size_t size) {
     m_data.resize(size);
     return true;
 }
 
-size_t File::writeData(const uint8_t* data, size_t len)
-{
+size_t File::writeData(const uint8_t *data, size_t len) {
     std::memcpy(m_data.data() + pos(), data, len);
     Ret ret = fileSystem()->writeFile(m_filePath, m_data);
     if (!ret) {

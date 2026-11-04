@@ -27,16 +27,14 @@
 
 namespace muse::mpe::tests {
 inline ArrangementPattern createArrangementPattern(const duration_percentage_t durationFactor,
-                                                   const duration_percentage_t timestampOffset)
-{
+                                                   const duration_percentage_t timestampOffset) {
     ArrangementPattern result;
     result.durationFactor = durationFactor;
     result.timestampOffset = timestampOffset;
     return result;
 }
 
-inline PitchPattern createSimplePitchPattern(const pitch_level_t incrementDiff = 0)
-{
+inline PitchPattern createSimplePitchPattern(const pitch_level_t incrementDiff = 0) {
     PitchPattern result;
 
     for (size_t i = 0; i < ArticulationMap::EXPECTED_SIZE; ++i) {
@@ -46,24 +44,22 @@ inline PitchPattern createSimplePitchPattern(const pitch_level_t incrementDiff =
     return result;
 }
 
-inline ExpressionPattern createSimpleExpressionPattern(const dynamic_level_t amplitudeLevel)
-{
+inline ExpressionPattern createSimpleExpressionPattern(const dynamic_level_t amplitudeLevel) {
     ExpressionPattern result;
 
     double amplitudeSqrt = std::sqrt(amplitudeLevel);
 
     for (size_t i = 0; i < ArticulationMap::EXPECTED_SIZE; ++i) {
         duration_percentage_t currentPos = static_cast<int>(i) * TEN_PERCENT;
-        dynamic_level_t value = amplitudeLevel - static_cast<dynamic_level_t>(std::pow(
-                                                                                  (2
-                                                                                   * (amplitudeSqrt / static_cast<float>(HUNDRED_PERCENT))
-                                                                                   * currentPos) - amplitudeSqrt, 2));
+        dynamic_level_t value =
+            amplitudeLevel - static_cast<dynamic_level_t>(
+                                 std::pow((2 * (amplitudeSqrt / static_cast<float>(HUNDRED_PERCENT)) * currentPos) - amplitudeSqrt, 2));
 
         result.dynamicOffsetMap.insert_or_assign(currentPos, value);
     }
 
     return result;
 }
-}
+} // namespace muse::mpe::tests
 
 #endif // MUSE_MPE_TESTS_ARTICULATIONSPROFILEEXAMPLE_H

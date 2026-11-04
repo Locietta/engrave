@@ -18,7 +18,6 @@
  * 02110-1301, USA
  */
 
-
 #ifndef _FLUID_RVOICE_H
 #define _FLUID_RVOICE_H
 
@@ -39,22 +38,15 @@ typedef struct _fluid_rvoice_t fluid_rvoice_t;
  * 24 bits => 144-4 = 140 dB dynamic range => 1.e-7
  * 1.e-7 * 2 == 2.e-7 :)
  */
-#define FLUID_NOISE_FLOOR ((fluid_real_t)2.e-7)
+#define FLUID_NOISE_FLOOR ((fluid_real_t) 2.e-7)
 
-enum fluid_loop
-{
-    FLUID_UNLOOPED = 0,
-    FLUID_LOOP_DURING_RELEASE = 1,
-    FLUID_NOTUSED = 2,
-    FLUID_LOOP_UNTIL_RELEASE = 3
-};
+enum fluid_loop { FLUID_UNLOOPED = 0, FLUID_LOOP_DURING_RELEASE = 1, FLUID_NOTUSED = 2, FLUID_LOOP_UNTIL_RELEASE = 3 };
 
 /*
  * rvoice ticks-based parameters
  * These parameters must be updated even if the voice is currently quiet.
  */
-struct _fluid_rvoice_envlfo_t
-{
+struct _fluid_rvoice_envlfo_t {
     /* Note-off minimum length */
     unsigned int ticks;
     unsigned int noteoff_ticks;
@@ -81,8 +73,7 @@ struct _fluid_rvoice_envlfo_t
 /*
  * rvoice parameters needed for dsp interpolation
  */
-struct _fluid_rvoice_dsp_t
-{
+struct _fluid_rvoice_dsp_t {
     /* interpolation method, as in fluid_interp in fluidsynth.h */
     enum fluid_interp interp_method;
     enum fluid_loop samplemode;
@@ -99,15 +90,15 @@ struct _fluid_rvoice_dsp_t
     int start;
     int end;
     int loopstart;
-    int loopend;	/* Note: first point following the loop (superimposed on loopstart) */
+    int loopend; /* Note: first point following the loop (superimposed on loopstart) */
 
     /* Stuff needed for portamento calculations */
-    fluid_real_t pitchoffset;        /* the portamento range in midicents */
-    fluid_real_t pitchinc;           /* the portamento increment in midicents */
+    fluid_real_t pitchoffset; /* the portamento range in midicents */
+    fluid_real_t pitchinc;    /* the portamento increment in midicents */
 
     /* Stuff needed for phase calculations */
 
-    fluid_real_t pitch;              /* the pitch in midicents */
+    fluid_real_t pitch; /* the pitch in midicents */
     fluid_real_t root_pitch_hz;
     fluid_real_t output_rate;
 
@@ -120,15 +111,15 @@ struct _fluid_rvoice_dsp_t
 					  * during the lifetime of the voice */
     fluid_real_t amplitude_that_reaches_noise_floor_nonloop;
     fluid_real_t amplitude_that_reaches_noise_floor_loop;
-    fluid_real_t synth_gain; 	/* master gain */
+    fluid_real_t synth_gain; /* master gain */
 
     /* Dynamic input to the interpolator below */
 
-    fluid_real_t amp;                /* current linear amplitude */
-    fluid_real_t amp_incr;		/* amplitude increment value for the next FLUID_BUFSIZE samples */
+    fluid_real_t amp;      /* current linear amplitude */
+    fluid_real_t amp_incr; /* amplitude increment value for the next FLUID_BUFSIZE samples */
 
-    fluid_phase_t phase;             /* the phase (current sample offset) of the sample wave */
-    fluid_real_t phase_incr;	/* the phase increment for the next FLUID_BUFSIZE samples */
+    fluid_phase_t phase;     /* the phase (current sample offset) of the sample wave */
+    fluid_real_t phase_incr; /* the phase increment for the next FLUID_BUFSIZE samples */
 };
 
 /* Currently left, right, reverb, chorus. To be changed if we
@@ -138,11 +129,10 @@ struct _fluid_rvoice_dsp_t
 /*
  * rvoice mixer-related parameters
  */
-struct _fluid_rvoice_buffers_t
-{
+struct _fluid_rvoice_buffers_t {
     unsigned int count; /* Number of records in "bufs" */
-    struct
-    {
+
+    struct {
         /* the actual, linearly interpolated amplitude with which the dsp sample should be mixed into the buf */
         fluid_real_t current_amp;
 
@@ -154,19 +144,16 @@ struct _fluid_rvoice_buffers_t
     } bufs[FLUID_RVOICE_MAX_BUFS];
 };
 
-
 /*
  * Hard real-time parameters needed to synthesize a voice
  */
-struct _fluid_rvoice_t
-{
+struct _fluid_rvoice_t {
     fluid_rvoice_envlfo_t envlfo;
     fluid_rvoice_dsp_t dsp;
-    fluid_iir_filter_t resonant_filter; /* IIR resonant dsp filter */
+    fluid_iir_filter_t resonant_filter;        /* IIR resonant dsp filter */
     fluid_iir_filter_t resonant_custom_filter; /* optional custom/general-purpose IIR resonant filter */
     fluid_rvoice_buffers_t buffers;
 };
-
 
 int fluid_rvoice_write(fluid_rvoice_t *voice, fluid_real_t *dsp_buf);
 
@@ -205,27 +192,23 @@ int fluid_rvoice_dsp_interpolate_linear(fluid_rvoice_dsp_t *voice, fluid_real_t 
 int fluid_rvoice_dsp_interpolate_4th_order(fluid_rvoice_dsp_t *voice, fluid_real_t *FLUID_RESTRICT dsp_buf, int is_looping);
 int fluid_rvoice_dsp_interpolate_7th_order(fluid_rvoice_dsp_t *voice, fluid_real_t *FLUID_RESTRICT dsp_buf, int is_looping);
 
-
 /*
  * Combines the most significant 16 bit part of a sample with a potentially present
  * least sig. 8 bit part in order to create a 24 bit sample.
  */
-static FLUID_INLINE int32_t
-fluid_rvoice_get_sample(const short int *dsp_msb, const char *dsp_lsb, unsigned int idx)
-{
+static FLUID_INLINE int32_t fluid_rvoice_get_sample(const short int *dsp_msb, const char *dsp_lsb, unsigned int idx) {
     /* cast sample to unsigned type, so we can safely shift and bitwise or
      * without relying on undefined behaviour (should never happen anyway ofc...) */
-    uint32_t msb = (uint32_t)dsp_msb[idx];
+    uint32_t msb = (uint32_t) dsp_msb[idx];
     uint8_t lsb = 0U;
 
     /* most soundfonts have 16 bit samples, assume that it's unlikely we
      * experience 24 bit samples here */
-    if(FLUID_UNLIKELY(dsp_lsb != NULL))
-    {
-        lsb = (uint8_t)dsp_lsb[idx];
+    if (FLUID_UNLIKELY(dsp_lsb != NULL)) {
+        lsb = (uint8_t) dsp_lsb[idx];
     }
 
-    return (int32_t)((msb << 8) | lsb);
+    return (int32_t) ((msb << 8) | lsb);
 }
 
 #endif

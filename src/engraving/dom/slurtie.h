@@ -32,10 +32,10 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 struct SlurTiePos {
-    PointF p1;               // start point of slur in system coordinates
-    System* system1 = nullptr;          // start system of slur
-    PointF p2;               // end point of slur in system coordinates
-    System* system2 = nullptr;           // end system of slur
+    PointF p1;                 // start point of slur in system coordinates
+    System *system1 = nullptr; // start system of slur
+    PointF p2;                 // end point of slur in system coordinates
+    System *system2 = nullptr; // end system of slur
 };
 
 struct SlurOffsets {
@@ -47,11 +47,12 @@ struct SlurOffsets {
 //---------------------------------------------------------
 
 struct UP {
-    PointF p;              // layout position relative to pos()
-    PointF off;            // user offset in point units
+    PointF p;   // layout position relative to pos()
+    PointF off; // user offset in point units
 
     PointF pos() const { return p + off; }
-    bool operator!=(const UP& up) const { return p != up.p || off != up.off; }
+
+    bool operator!=(const UP &up) const { return p != up.p || off != up.off; }
 };
 
 //---------------------------------------------------------
@@ -60,19 +61,16 @@ struct UP {
 //    calculation.
 //---------------------------------------------------------
 
-class CubicBezier
-{
+class CubicBezier {
     PointF p1;
     PointF p2;
     PointF p3;
     PointF p4;
 
 public:
-    CubicBezier(PointF _p1, PointF _p2, PointF _p3, PointF _p4)
-        : p1(_p1), p2(_p2), p3(_p3), p4(_p4) {}
+    CubicBezier(PointF _p1, PointF _p2, PointF _p3, PointF _p4) : p1(_p1), p2(_p2), p3(_p3), p4(_p4) {}
 
-    PointF pointAtPercent(double t) const
-    {
+    PointF pointAtPercent(double t) const {
         assert(t >= 0.0 && t <= 1.0);
         const double r = 1.0 - t;
         const PointF B123 = r * (r * p1 + t * p2) + t * (r * p2 + t * p3);
@@ -87,30 +85,31 @@ class SlurTie;
 //   SlurTieSegment
 //---------------------------------------------------------
 
-class SlurTieSegment : public SpannerSegment
-{
+class SlurTieSegment : public SpannerSegment {
     OBJECT_ALLOCATOR(engraving, SlurTieSegment)
 
 public:
 
     virtual void spatiumChanged(double, double) override;
-    SlurTie* slurTie() const { return (SlurTie*)spanner(); }
+
+    SlurTie *slurTie() const { return (SlurTie *) spanner(); }
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid id) const override;
-    virtual EngravingObject* propertyDelegate(Pid) const override;
+    virtual EngravingObject *propertyDelegate(Pid) const override;
     virtual void reset() override;
-    void undoChangeProperty(Pid id, const PropertyValue&, PropertyFlags ps) override;
-    void move(const PointF& s) override;
+    void undoChangeProperty(Pid id, const PropertyValue &, PropertyFlags ps) override;
+    void move(const PointF &s) override;
 
     int subtype() const override;
     TranslatableString subtypeUserName() const override;
 
-    void setSlurOffset(Grip i, const PointF& val) { m_ups[int(i)].off = val; }
-    const UP& ups(Grip i) const { return m_ups[int(i)]; }
-    UP& ups(Grip i) { return m_ups[int(i)]; }
+    void setSlurOffset(Grip i, const PointF &val) { m_ups[int(i)].off = val; }
 
+    const UP &ups(Grip i) const { return m_ups[int(i)]; }
+
+    UP &ups(Grip i) { return m_ups[int(i)]; }
 
     virtual bool isUserModified() const override;
 
@@ -118,16 +117,15 @@ public:
     virtual double midWidth() const = 0;
     virtual double dottedWidth() const = 0;
 
-    struct LayoutData : public SpannerSegment::LayoutData
-    {
+    struct LayoutData : public SpannerSegment::LayoutData {
         ld_field<muse::draw::PainterPath> path = "path";
         ld_field<double> midThickness = "midThickness";
     };
     DECLARE_LAYOUTDATA_METHODS(SlurTieSegment)
 
 protected:
-    SlurTieSegment(const ElementType& type, SlurTie* sp);
-    SlurTieSegment(const SlurTieSegment&);
+    SlurTieSegment(const ElementType &type, SlurTie *sp);
+    SlurTieSegment(const SlurTieSegment &);
 
     struct UP m_ups[int(Grip::GRIPS)];
 };
@@ -139,39 +137,44 @@ protected:
 //   @P maskSlurTie    enum (AutoOnOff.AUTO, AutoOnOff.ON, AutoOnOff.OFF)
 //-------------------------------------------------------------------
 
-class SlurTie : public Spanner
-{
+class SlurTie : public Spanner {
     OBJECT_ALLOCATOR(engraving, SlurTie)
 
 public:
-    SlurTie(const ElementType& type, EngravingObject* parent);
-    SlurTie(const SlurTie&);
+    SlurTie(const ElementType &type, EngravingObject *parent);
+    SlurTie(const SlurTie &);
     ~SlurTie();
 
     bool up() const { return m_up; }
+
     void setUp(bool val) { m_up = val; }
 
     virtual void reset() override;
 
     DirectionV slurDirection() const { return m_slurDirection; }
+
     void setSlurDirection(DirectionV d) { m_slurDirection = d; }
+
     void undoSetSlurDirection(DirectionV d);
 
-    virtual bool contains(const PointF&) const { return false; }    // not selectable
+    virtual bool contains(const PointF &) const { return false; } // not selectable
 
     SlurStyleType styleType() const { return m_styleType; }
+
     void setStyleType(SlurStyleType type) { m_styleType = type; }
 
     int subtype() const override { return static_cast<int>(m_styleType) + 1; }
+
     TranslatableString subtypeUserName() const override;
 
     AutoOnOff maskSlurTie() const { return m_maskSlurTie; }
+
     void setMaskSlurTie(AutoOnOff val) { m_maskSlurTie = val; }
 
-    virtual SlurTieSegment* newSlurTieSegment() = 0;
+    virtual SlurTieSegment *newSlurTieSegment() = 0;
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid id) const override;
 
     void fixupSegments(unsigned nsegs);
@@ -180,7 +183,7 @@ public:
 
 protected:
 
-    bool m_up = true;                 // actual direction
+    bool m_up = true; // actual direction
 
     DirectionV m_slurDirection = DirectionV::AUTO;
 
@@ -189,4 +192,4 @@ private:
     SlurStyleType m_styleType = SlurStyleType::Undefined;
     AutoOnOff m_maskSlurTie = AutoOnOff::AUTO;
 };
-}
+} // namespace mu::engraving

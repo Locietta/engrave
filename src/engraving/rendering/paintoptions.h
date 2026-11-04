@@ -28,17 +28,16 @@
 
 namespace mu::engraving {
 class EngravingItem;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::rendering {
-struct PaintOptions
-{
+struct PaintOptions {
     bool isPrinting = false;
     bool invertColors = false;
 
     // Paint items with their literal color, without substituting the user's displayed default color
     bool ignoreDisplayedDefaultColor = false;
 
-    std::function<muse::Color(const EngravingItem* item, muse::Color defaultColor)> overrideItemColor;
+    std::function<muse::Color(const EngravingItem *item, muse::Color defaultColor)> overrideItemColor;
 };
-}
+} // namespace mu::engraving::rendering

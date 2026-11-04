@@ -27,20 +27,18 @@ namespace mu::engraving {
 class Chord;
 struct SwingParameters;
 
-class Swing
-{
+class Swing {
 public:
-    struct ChordDurationAdjustment
-    {
+    struct ChordDurationAdjustment {
         double remainingDurationMultiplier = 0.;
         double durationMultiplier = 0.;
 
         bool isNull() const;
     };
 
-    static ChordDurationAdjustment applySwing(const Chord* chord, const SwingParameters& params);
-    static void swingAdjustParams(const Chord* chord, const SwingParameters& params, int& onTime, int& gateTime);
+    static ChordDurationAdjustment applySwing(const Chord *chord, const SwingParameters &params);
+    static void swingAdjustParams(const Chord *chord, const SwingParameters &params, int &onTime, int &gateTime);
 };
-}
+} // namespace mu::engraving
 
 #endif // MU_ENGRAVING_SWING_H

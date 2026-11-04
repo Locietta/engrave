@@ -31,17 +31,13 @@ using namespace muse::audio::engine;
 
 static const AudioResourceId DEFAULT_SOUND_FONT_NAME = "MS Basic";
 static const AudioResourceAttributes DEFAULT_AUDIO_RESOURCE_ATTRIBUTES = {
-    { PLAYBACK_SETUP_DATA_ATTRIBUTE, muse::mpe::GENERIC_SETUP_DATA_STRING },
-    { synth::SOUNDFONT_NAME_ATTRIBUTE, String::fromStdString(DEFAULT_SOUND_FONT_NAME) } };
+    {PLAYBACK_SETUP_DATA_ATTRIBUTE, muse::mpe::GENERIC_SETUP_DATA_STRING},
+    {synth::SOUNDFONT_NAME_ATTRIBUTE, String::fromStdString(DEFAULT_SOUND_FONT_NAME)}};
 
-static const AudioResourceMeta DEFAULT_AUDIO_RESOURCE_META = {
-    DEFAULT_SOUND_FONT_NAME,
-    "Fluid",
-    DEFAULT_AUDIO_RESOURCE_ATTRIBUTES,
-    std::string(FLUID_SOUNDFONT_TYPE_NAME) };
+static const AudioResourceMeta DEFAULT_AUDIO_RESOURCE_META = {DEFAULT_SOUND_FONT_NAME, "Fluid", DEFAULT_AUDIO_RESOURCE_ATTRIBUTES,
+                                                              std::string(FLUID_SOUNDFONT_TYPE_NAME)};
 
-void AudioEngineConfiguration::setConfig(const AudioEngineConfig& conf)
-{
+void AudioEngineConfiguration::setConfig(const AudioEngineConfig &conf) {
 
     if (conf.autoProcessOnlineSoundsInBackground != m_conf.autoProcessOnlineSoundsInBackground) {
         m_conf.autoProcessOnlineSoundsInBackground = conf.autoProcessOnlineSoundsInBackground;
@@ -54,13 +50,9 @@ void AudioEngineConfiguration::setConfig(const AudioEngineConfig& conf)
     }
 }
 
-bool AudioEngineConfiguration::autoProcessOnlineSoundsInBackground() const
-{
-    return m_conf.autoProcessOnlineSoundsInBackground;
-}
+bool AudioEngineConfiguration::autoProcessOnlineSoundsInBackground() const { return m_conf.autoProcessOnlineSoundsInBackground; }
 
-void AudioEngineConfiguration::setIsLazyProcessingOfOnlineSoundsEnabled(bool enabled)
-{
+void AudioEngineConfiguration::setIsLazyProcessingOfOnlineSoundsEnabled(bool enabled) {
     if (m_conf.isLazyProcessingOfOnlineSoundsEnabled == enabled) {
         return;
     }
@@ -68,18 +60,11 @@ void AudioEngineConfiguration::setIsLazyProcessingOfOnlineSoundsEnabled(bool ena
     m_conf.isLazyProcessingOfOnlineSoundsEnabled = enabled;
 }
 
-bool AudioEngineConfiguration::isLazyProcessingOfOnlineSoundsEnabled() const
-{
-    return m_conf.isLazyProcessingOfOnlineSoundsEnabled;
-}
+bool AudioEngineConfiguration::isLazyProcessingOfOnlineSoundsEnabled() const { return m_conf.isLazyProcessingOfOnlineSoundsEnabled; }
 
-bool AudioEngineConfiguration::useSoundFontLowPassFilter() const
-{
-    return m_conf.useSoundFontLowPassFilter;
-}
+bool AudioEngineConfiguration::useSoundFontLowPassFilter() const { return m_conf.useSoundFontLowPassFilter; }
 
-AudioInputParams AudioEngineConfiguration::defaultAudioInputParams() const
-{
+AudioInputParams AudioEngineConfiguration::defaultAudioInputParams() const {
     AudioInputParams result;
     result.resourceMeta = DEFAULT_AUDIO_RESOURCE_META;
 

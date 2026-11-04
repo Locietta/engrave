@@ -26,8 +26,7 @@
 #include "engraving/dom/line.h"
 
 namespace mu::iex::guitarpro {
-class ContiniousElementsBuilder
-{
+class ContiniousElementsBuilder {
 public:
     enum class ImportType {
         NONE,
@@ -75,15 +74,9 @@ public:
         W_TREM_BAR_WIDE,
     };
 
-    enum HarmonicMarkSubType : sub_type_t {
-        ARTIFICIAL = 0,
-        PINCH,
-        TAP,
-        SEMI,
-        FEEDBACK
-    };
+    enum HarmonicMarkSubType : sub_type_t { ARTIFICIAL = 0, PINCH, TAP, SEMI, FEEDBACK };
 
-    ContiniousElementsBuilder(mu::engraving::Score* score);
+    ContiniousElementsBuilder(mu::engraving::Score *score);
 
     /**
      * Making the current element of continious type (octave, let ring, trill etc.. inherited from SLine) longer or starting a new one
@@ -95,7 +88,7 @@ public:
      * @param elemExists indicates if element exists in imported file on current beat
      * @param subType is used when elements of same MU type with different subtypes can overlap each other (ex, vibrato)
      */
-    void buildContiniousElement(mu::engraving::ChordRest* cr, mu::engraving::ElementType muType, ImportType importType, bool elemExists,
+    void buildContiniousElement(mu::engraving::ChordRest *cr, mu::engraving::ElementType muType, ImportType importType, bool elemExists,
                                 sub_type_t subType = 0);
     void notifyUncompletedMeasure();
     void addElementsToScore();
@@ -118,19 +111,19 @@ private:
     ContiniousElementState calculateState(bool isRest, bool elemExists, bool splitByRests, bool importTypeChanged) const;
 
     struct ContiniousElement {
-        std::vector<mu::engraving::Spanner*> elements;
+        std::vector<mu::engraving::Spanner *> elements;
         bool endedOnRest = false;
     };
 
-    std::unordered_map<ImportType, std::vector<mu::engraving::Spanner*> > m_elementsByType;
+    std::unordered_map<ImportType, std::vector<mu::engraving::Spanner *>> m_elementsByType;
 
-    std::unordered_map<mu::engraving::ElementType,
-                       std::unordered_map<track_idx_t, std::unordered_map<sub_type_t, ImportType> > > m_lastImportTypes;
-    std::unordered_map<track_idx_t, std::unordered_map<ImportType, std::set<mu::engraving::Spanner*> > > m_spannersWithoutEndElement;
-    std::unordered_map<track_idx_t, std::unordered_map<ImportType, ContiniousElement> > m_elementsToAddToScore;
-    std::vector<mu::engraving::Spanner*> m_orderedAddedElements;
+    std::unordered_map<mu::engraving::ElementType, std::unordered_map<track_idx_t, std::unordered_map<sub_type_t, ImportType>>>
+        m_lastImportTypes;
+    std::unordered_map<track_idx_t, std::unordered_map<ImportType, std::set<mu::engraving::Spanner *>>> m_spannersWithoutEndElement;
+    std::unordered_map<track_idx_t, std::unordered_map<ImportType, ContiniousElement>> m_elementsToAddToScore;
+    std::vector<mu::engraving::Spanner *> m_orderedAddedElements;
 
-    mu::engraving::Score* m_score = nullptr;
+    mu::engraving::Score *m_score = nullptr;
 };
-} // mu::iex::guitarpro
+} // namespace mu::iex::guitarpro
 #endif // MU_IMPORTEXPORT_CONTINIOUSELEMENTSBUILDER_H

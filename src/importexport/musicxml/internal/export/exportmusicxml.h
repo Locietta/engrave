@@ -27,13 +27,13 @@
 
 namespace mu::engraving {
 class Score;
-}
+} // namespace mu::engraving
 
 namespace mu::iex::musicxml {
 class IMusicXmlConfiguration;
 
-bool saveMxl(engraving::Score*, muse::io::IODevice*, const IMusicXmlConfiguration& configuration);
-bool saveMxl(engraving::Score* score, const muse::String& name, const IMusicXmlConfiguration& configuration);
-bool saveXml(engraving::Score*, muse::io::IODevice*, const IMusicXmlConfiguration& configuration);
-bool saveXml(engraving::Score*, const muse::String&, const IMusicXmlConfiguration& configuration);
-}
+bool saveMxl(engraving::Score *, muse::io::IODevice *, const IMusicXmlConfiguration &configuration);
+bool saveMxl(engraving::Score *score, const muse::String &name, const IMusicXmlConfiguration &configuration);
+bool saveXml(engraving::Score *, muse::io::IODevice *, const IMusicXmlConfiguration &configuration);
+bool saveXml(engraving::Score *, const muse::String &, const IMusicXmlConfiguration &configuration);
+} // namespace mu::iex::musicxml

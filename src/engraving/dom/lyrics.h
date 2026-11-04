@@ -35,8 +35,7 @@ class Transaction;
 
 class LyricsLine;
 
-class Lyrics final : public TextBase
-{
+class Lyrics final : public TextBase {
     OBJECT_ALLOCATOR(engraving, Lyrics)
     DECLARE_CLASSOF(ElementType::LYRICS)
 
@@ -48,55 +47,70 @@ public:
     // it should be cleared to 0 at some point, so that it will not be carried over
     // if the melisma is not extended beyond a single chord, but no suitable place to do this
     // has been identified yet.
-    static constexpr Fraction TEMP_MELISMA_TICKS = Fraction::eps(); // THIS WAS A HORRIBLE HACK. At some point we must remove it and replace it with a proper solution. (M.S.)
+    static constexpr Fraction TEMP_MELISMA_TICKS =
+        Fraction::eps(); // THIS WAS A HORRIBLE HACK. At some point we must remove it and replace it with a proper solution. (M.S.)
 
     ~Lyrics();
 
-    Lyrics* clone() const override { return new Lyrics(*this); }
-    bool acceptDrop(EditData&) const override;
-    EngravingItem* drop(Transaction& tx, EditData&) override;
+    Lyrics *clone() const override { return new Lyrics(*this); }
 
-    Segment* segment() const { return toSegment(ownershipParent()->ownershipParent()); }
-    Measure* measure() const { return toMeasure(ownershipParent()->ownershipParent()->ownershipParent()); }
-    ChordRest* chordRest() const { return toChordRest(ownershipParent()); }
+    bool acceptDrop(EditData &) const override;
+    EngravingItem *drop(Transaction &tx, EditData &) override;
+
+    Segment *segment() const { return toSegment(ownershipParent()->ownershipParent()); }
+
+    Measure *measure() const { return toMeasure(ownershipParent()->ownershipParent()->ownershipParent()); }
+
+    ChordRest *chordRest() const { return toChordRest(ownershipParent()); }
 
     int subtype() const override { return m_verse; }
+
     TranslatableString subtypeUserName() const override;
+
     void setVerse(int n) { m_verse = n; }
+
     int verse() const { return m_verse; }
+
     bool isEven() const { return m_verse % 2; }
+
     void setSyllabic(LyricsSyllabic s) { m_syllabic = s; }
+
     LyricsSyllabic syllabic() const { return m_syllabic; }
-    void add(EngravingItem*) override;
-    void remove(EngravingItem*) override;
+
+    void add(EngravingItem *) override;
+    void remove(EngravingItem *) override;
 
     bool positionRelativeToNoteheadRest() const override { return true; }
 
-    const Fraction& ticks() const { return m_ticks; }
-    void setTicks(const Fraction& tick) { m_ticks = tick; }
+    const Fraction &ticks() const { return m_ticks; }
+
+    void setTicks(const Fraction &tick) { m_ticks = tick; }
+
     Fraction endTick() const;
     void removeFromScore();
 
     void adjustPrevious();
 
     bool needRemoveInvalidSegments() const { return m_needRemoveInvalidSegments; }
+
     void setNeedRemoveInvalidSegments();
     void removeInvalidSegments();
 
-    LyricsLine* separator() const { return m_separator; }
-    void setSeparator(LyricsLine* s) { m_separator = s; }
+    LyricsLine *separator() const { return m_separator; }
+
+    void setSeparator(LyricsLine *s) { m_separator = s; }
 
     bool isMelisma() const;
 
     bool allowTimeAnchor() const override { return false; }
 
     using EngravingObject::undoChangeProperty;
-    void paste(const String& txt) override;
+    void paste(const String &txt) override;
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid id) const override;
-    void undoChangeProperty(Pid id, const PropertyValue&, PropertyFlags ps) override;
+    void undoChangeProperty(Pid id, const PropertyValue &, PropertyFlags ps) override;
     void reset() override;
     void triggerLayout() const override;
 
@@ -104,18 +118,19 @@ public:
     void setYRelativeToStaff(double y);
 
     bool avoidBarlines() const { return m_avoidBarlines; }
+
     void setAvoidBarlines(bool v) { m_avoidBarlines = v; }
 
 private:
 
     friend class Factory;
     Lyrics(DummyParentOr<ChordRest> parent);
-    Lyrics(const Lyrics&);
+    Lyrics(const Lyrics &);
 
-    int m_verse = 0;              // row index
-    Fraction m_ticks;          // if > 0 then draw an underline to tick() + _ticks (melisma)
+    int m_verse = 0;  // row index
+    Fraction m_ticks; // if > 0 then draw an underline to tick() + _ticks (melisma)
     LyricsSyllabic m_syllabic = LyricsSyllabic::SINGLE;
-    LyricsLine* m_separator = nullptr;
+    LyricsLine *m_separator = nullptr;
     bool m_needRemoveInvalidSegments = false;
     bool m_avoidBarlines = true;
 };
@@ -125,38 +140,41 @@ private:
 ///   \cond PLUGIN_API \private \endcond
 //---------------------------------------------------------
 
-class LyricsLine : public SLine
-{
+class LyricsLine : public SLine {
     OBJECT_ALLOCATOR(engraving, LyricsLine)
     DECLARE_CLASSOF(ElementType::LYRICSLINE)
 
 public:
     LyricsLine(DummyParentOr<EngravingItem> parent);
-    LyricsLine(const LyricsLine&);
+    LyricsLine(const LyricsLine &);
 
-    LyricsLine* clone() const override { return new LyricsLine(*this); }
+    LyricsLine *clone() const override { return new LyricsLine(*this); }
 
     Anchor anchor() const override { return Anchor::SEGMENT; }
 
-    LineSegment* createLineSegment() override;
+    LineSegment *createLineSegment() override;
     void removeUnmanaged() override;
 
-    virtual Lyrics* lyrics() const { return toLyrics(ownershipParent()); }
-    Lyrics* nextLyrics() const { return m_nextLyrics; }
-    void setNextLyrics(Lyrics* l) { m_nextLyrics = l; }
+    virtual Lyrics *lyrics() const { return toLyrics(ownershipParent()); }
+
+    Lyrics *nextLyrics() const { return m_nextLyrics; }
+
+    void setNextLyrics(Lyrics *l) { m_nextLyrics = l; }
+
     virtual bool isEndMelisma() const { return lyrics() && lyrics()->ticks().isNotZero(); }
+
     bool isDash() const { return !isEndMelisma(); }
 
-    bool setProperty(Pid propertyId, const PropertyValue& v) override;
+    bool setProperty(Pid propertyId, const PropertyValue &v) override;
     PropertyValue propertyDefault(Pid id) const override;
     Sid getPropertyStyle(Pid) const override;
 
 protected:
-    LyricsLine(const ElementType& type, DummyParentOr<EngravingItem> parent, ElementFlags = ElementFlag::NOTHING);
+    LyricsLine(const ElementType &type, DummyParentOr<EngravingItem> parent, ElementFlags = ElementFlag::NOTHING);
 
     bool isInSpannerMap() const override { return false; }
 
-    Lyrics* m_nextLyrics = nullptr;
+    Lyrics *m_nextLyrics = nullptr;
 
     void doComputeEndElement() override;
 };
@@ -166,82 +184,93 @@ protected:
 ///   \cond PLUGIN_API \private \endcond
 //---------------------------------------------------------
 
-class LyricsLineSegment : public LineSegment
-{
+class LyricsLineSegment : public LineSegment {
     OBJECT_ALLOCATOR(engraving, LyricsLineSegment)
     DECLARE_CLASSOF(ElementType::LYRICSLINE_SEGMENT)
 
 public:
-    LyricsLineSegment(LyricsLine*);
+    LyricsLineSegment(LyricsLine *);
 
-    LyricsLineSegment* clone() const override { return new LyricsLineSegment(*this); }
+    LyricsLineSegment *clone() const override { return new LyricsLineSegment(*this); }
 
-    LyricsLine* lyricsLine() const { return toLyricsLine(spanner()); }
-    virtual Lyrics* lyrics() const { return lyricsLine()->lyrics(); }
+    LyricsLine *lyricsLine() const { return toLyricsLine(spanner()); }
+
+    virtual Lyrics *lyrics() const { return lyricsLine()->lyrics(); }
 
     virtual double baseLineShift() const;
 
     virtual int verse() const { return lyrics()->verse(); }
+
     virtual bool lyricsPlaceAbove() const { return lyrics()->placeAbove(); }
+
     virtual bool lyricsAddToSkyline() const { return lyrics()->addToSkyline(); }
+
     virtual double lineSpacing() const { return lyrics()->lineSpacing(); }
+
     Color color() const override { return lyrics()->color(); }
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid propertyId) const override;
-    EngravingObject* propertyDelegate(Pid propertyId) const override;
+    EngravingObject *propertyDelegate(Pid propertyId) const override;
 
     bool allowTimeAnchor() const override { return false; }
 
     struct LayoutData : public LineSegment::LayoutData {
     public:
-        const std::vector<LineF>& dashes() const { return m_dashes; }
+        const std::vector<LineF> &dashes() const { return m_dashes; }
+
         void clearDashes() { m_dashes.clear(); }
-        void addDash(const LineF& dash) { m_dashes.push_back(dash); }
+
+        void addDash(const LineF &dash) { m_dashes.push_back(dash); }
     private:
         std::vector<LineF> m_dashes;
     };
     DECLARE_LAYOUTDATA_METHODS(LyricsLineSegment)
 
 protected:
-    LyricsLineSegment(const ElementType& type, LyricsLine* sp, ElementFlags f = ElementFlag::NOTHING);
+    LyricsLineSegment(const ElementType &type, LyricsLine *sp, ElementFlags f = ElementFlag::NOTHING);
 };
 
-class PartialLyricsLine final : public LyricsLine
-{
+class PartialLyricsLine final : public LyricsLine {
     OBJECT_ALLOCATOR(engraving, PartialLyricsLine)
     DECLARE_CLASSOF(ElementType::PARTIAL_LYRICSLINE)
 
 public:
     PartialLyricsLine(DummyParentOr<EngravingItem> parent);
-    PartialLyricsLine(const PartialLyricsLine&);
-    PartialLyricsLine* clone() const override { return new PartialLyricsLine(*this); }
-    LineSegment* createLineSegment() override;
+    PartialLyricsLine(const PartialLyricsLine &);
 
-    Lyrics* lyrics() const override { return nullptr; }
+    PartialLyricsLine *clone() const override { return new PartialLyricsLine(*this); }
+
+    LineSegment *createLineSegment() override;
+
+    Lyrics *lyrics() const override { return nullptr; }
 
     void setIsEndMelisma(bool val) { m_isEndMelisma = val; }
+
     bool isEndMelisma() const override { return m_isEndMelisma; }
 
     void setVerse(int val) { m_verse = val; }
+
     int verse() const { return m_verse; }
 
     void setCenterBetweenStaves(AutoOnOff v) { m_centerBetweenStaves = v; }
+
     AutoOnOff centerBetweenStaves() const { return m_centerBetweenStaves; }
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid propertyId) const override;
     Sid getPropertyStyle(Pid propertyId) const override;
-    void undoChangeProperty(Pid id, const PropertyValue&, PropertyFlags ps) override;
+    void undoChangeProperty(Pid id, const PropertyValue &, PropertyFlags ps) override;
     void reset() override;
 
-    Lyrics* findLyricsInPreviousRepeatSeg() const;
-    Lyrics* findAdjacentLyricsOrDefault() const;
+    Lyrics *findLyricsInPreviousRepeatSeg() const;
+    Lyrics *findAdjacentLyricsOrDefault() const;
 
 protected:
     void doComputeEndElement() override;
+
     bool isInSpannerMap() const override { return true; }
 
 private:
@@ -250,26 +279,31 @@ private:
     AutoOnOff m_centerBetweenStaves = AutoOnOff::AUTO;
 };
 
-class PartialLyricsLineSegment final : public LyricsLineSegment
-{
+class PartialLyricsLineSegment final : public LyricsLineSegment {
     OBJECT_ALLOCATOR(engraving, PartialLyricsLineSegment)
     DECLARE_CLASSOF(ElementType::PARTIAL_LYRICSLINE_SEGMENT)
 
 public:
-    PartialLyricsLineSegment(PartialLyricsLine*);
+    PartialLyricsLineSegment(PartialLyricsLine *);
 
-    LyricsLineSegment* clone() const override { return new PartialLyricsLineSegment(*this); }
+    LyricsLineSegment *clone() const override { return new PartialLyricsLineSegment(*this); }
 
-    PartialLyricsLine* lyricsLine() const { return toPartialLyricsLine(spanner()); }
-    Lyrics* lyrics() const override { return nullptr; }
+    PartialLyricsLine *lyricsLine() const { return toPartialLyricsLine(spanner()); }
+
+    Lyrics *lyrics() const override { return nullptr; }
 
     int verse() const override { return lyricsLine()->verse(); }
+
     double lineSpacing() const override;
-    bool lyricsPlaceAbove() const override { return lyricsLine()->placeAbove(); }// Delegate?
+
+    bool lyricsPlaceAbove() const override { return lyricsLine()->placeAbove(); } // Delegate?
+
     bool lyricsAddToSkyline() const override { return lyricsLine()->addToSkyline(); }
+
     Color color() const override { return lyricsLine()->color(); }
+
     double baseLineShift() const override;
 
-    EngravingObject* propertyDelegate(Pid) const override;
+    EngravingObject *propertyDelegate(Pid) const override;
 };
 } // namespace mu::engraving

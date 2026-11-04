@@ -31,27 +31,22 @@
 #include "system.h"
 
 namespace mu::engraving {
-PageLockIndicator::PageLockIndicator(DummyParentOr<System> parent, const RangeLock* lock)
+PageLockIndicator::PageLockIndicator(DummyParentOr<System> parent, const RangeLock *lock)
     : IndicatorIcon(ElementType::PAGE_LOCK_INDICATOR, parent, ElementFlag::SYSTEM | ElementFlag::GENERATED), m_pageLock(lock) {}
 
-void PageLockIndicator::setSelected(bool v)
-{
+void PageLockIndicator::setSelected(bool v) {
     EngravingItem::setSelected(v);
     renderer()->layoutItem(this);
     system()->page()->invalidateBspTree();
 }
 
-const Page* PageLockIndicator::page() const
-{
-    return system() ? system()->page() : nullptr;
-}
+const Page *PageLockIndicator::page() const { return system() ? system()->page() : nullptr; }
 
-String PageLockIndicator::formatBarsAndBeats() const
-{
-    const MeasureBase* startMB = m_pageLock->startMB();
-    const MeasureBase* endMB = m_pageLock->endMB();
-    const Measure* startMeasure = startMB->isMeasure() ? toMeasure(startMB) : toMeasure(startMB->prevMeasure());
-    const Measure* endMeasure = endMB->isMeasure() ? toMeasure(endMB) : toMeasure(endMB->prevMeasure());
+String PageLockIndicator::formatBarsAndBeats() const {
+    const MeasureBase *startMB = m_pageLock->startMB();
+    const MeasureBase *endMB = m_pageLock->endMB();
+    const Measure *startMeasure = startMB->isMeasure() ? toMeasure(startMB) : toMeasure(startMB->prevMeasure());
+    const Measure *endMeasure = endMB->isMeasure() ? toMeasure(endMB) : toMeasure(endMB->prevMeasure());
     const int startMeasureNum = startMeasure ? startMeasure->measureNumber() : -1;
     const int endMeasureNum = endMeasure ? endMeasure->measureNumber() : -1;
     return muse::mtrc("engraving", "Start measure: %1; End measure: %2").arg(startMeasureNum).arg(endMeasureNum);

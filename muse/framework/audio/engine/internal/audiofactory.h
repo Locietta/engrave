@@ -28,38 +28,39 @@
 #include "../ifxresolver.h"
 
 namespace muse::audio::engine {
-class AudioFactory : public IAudioFactory
-{
+class AudioFactory : public IAudioFactory {
     OutputSpec m_spec;
-    synth::ISynthResolver& m_synthResolver;
-    fx::IFxResolver& m_fxResolver;
+    synth::ISynthResolver &m_synthResolver;
+    fx::IFxResolver &m_fxResolver;
 
-    synth::ISynthResolver* synthResolver() const { return &m_synthResolver; }
-    fx::IFxResolver* fxResolver() const { return &m_fxResolver; }
+    synth::ISynthResolver *synthResolver() const { return &m_synthResolver; }
+
+    fx::IFxResolver *fxResolver() const { return &m_fxResolver; }
 
 public:
     // Both resolvers must outlive the factory.
-    AudioFactory(synth::ISynthResolver& synthResolver, fx::IFxResolver& fxResolver)
+    AudioFactory(synth::ISynthResolver &synthResolver, fx::IFxResolver &fxResolver)
         : m_synthResolver(synthResolver), m_fxResolver(fxResolver) {}
-    void setOutputSpec(const OutputSpec& spec) { m_spec = spec; }
+
+    void setOutputSpec(const OutputSpec &spec) { m_spec = spec; }
 
     // Available resources
     AudioResourceMetaList availableInputResources() const override;
-    SoundPresetList availableSoundPresets(const AudioResourceMeta& resourceMeta) const override;
+    SoundPresetList availableSoundPresets(const AudioResourceMeta &resourceMeta) const override;
     AudioResourceMetaList availableOutputResources() const override;
 
     // Make audio sources
-    RetVal<synth::ISynthesizerPtr> makeSynth(const TrackId trackId, const AudioInputParams& params,
-                                             const PlaybackSetupData& setupData) const override;
+    RetVal<synth::ISynthesizerPtr> makeSynth(const TrackId trackId, const AudioInputParams &params,
+                                             const PlaybackSetupData &setupData) const override;
     RetVal<synth::ISynthesizerPtr> makeDefaultSynth(const TrackId trackId) const override;
     void clearSynthSources() override;
 
-    RetVal<AudioSourceNodePtr> makeEventSource(const TrackId trackId, const mpe::PlaybackData& playbackData,
-                                               const AudioInputParams& params) const override;
+    RetVal<AudioSourceNodePtr> makeEventSource(const TrackId trackId, const mpe::PlaybackData &playbackData,
+                                               const AudioInputParams &params) const override;
 
     // Make FX
-    FxChainPtr makeMasterFxChain(const AudioFxChain& fxChain) const override;
-    FxChainPtr makeTrackFxChain(const TrackId trackId, const AudioFxChain& fxChain) const override;
+    FxChainPtr makeMasterFxChain(const AudioFxChain &fxChain) const override;
+    FxChainPtr makeTrackFxChain(const TrackId trackId, const AudioFxChain &fxChain) const override;
     void clearAllFx() override;
 };
-}
+} // namespace muse::audio::engine

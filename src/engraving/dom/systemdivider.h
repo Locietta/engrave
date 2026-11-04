@@ -29,26 +29,25 @@ namespace mu::engraving {
 //---------------------------------------------------------
 //   SystemDivider
 //---------------------------------------------------------
-enum class SystemDividerType : unsigned char {
-    LEFT, RIGHT
-};
+enum class SystemDividerType : unsigned char { LEFT, RIGHT };
 
-class SystemDivider final : public Symbol
-{
+class SystemDivider final : public Symbol {
     OBJECT_ALLOCATOR(engraving, SystemDivider)
     DECLARE_CLASSOF(ElementType::SYSTEM_DIVIDER)
 
 public:
     SystemDivider(DummyParentOr<System> parent);
-    SystemDivider(const SystemDivider&);
+    SystemDivider(const SystemDivider &);
 
-    SystemDivider* clone() const override { return new SystemDivider(*this); }
+    SystemDivider *clone() const override { return new SystemDivider(*this); }
 
     SystemDividerType dividerType() const { return m_dividerType; }
+
     void setDividerType(SystemDividerType v);
 
-    Segment* segment() const override { return nullptr; }
-    System* system() const { return (System*)ownershipParent(); }
+    Segment *segment() const override { return nullptr; }
+
+    System *system() const { return (System *) ownershipParent(); }
 
     PropertyValue propertyDefault(Pid id) const override;
 

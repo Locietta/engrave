@@ -26,11 +26,10 @@
 #include "setupresolverbase.h"
 
 namespace mu::engraving {
-class StringsSetupDataResolver : public SetupDataResolverBase<StringsSetupDataResolver>
-{
+class StringsSetupDataResolver : public SetupDataResolverBase<StringsSetupDataResolver> {
 public:
-    static muse::mpe::PlaybackSetupData doResolve(const Instrument* instrument);
+    static muse::mpe::PlaybackSetupData doResolve(const Instrument *instrument);
 };
-}
+} // namespace mu::engraving
 
 #endif // MU_ENGRAVING_STRINGSSETUPDATARESOLVER_H

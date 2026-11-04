@@ -70,9 +70,9 @@ struct RuntimeFontInfo {
 };
 
 struct TemplateInfo {
-    std::string id;       // e.g. "Treble_Clef"
-    std::string title;    // e.g. "Treble Clef"
-    std::string category; // e.g. "General"
+    std::string id;             // e.g. "Treble_Clef"
+    std::string title;          // e.g. "Treble Clef"
+    std::string category;       // e.g. "General"
     std::filesystem::path path; // the template's .mscx
 };
 
@@ -94,8 +94,8 @@ struct OpenOptions {
 // Exactly one of template_id and template_path must be set. Parts, measures,
 // key and tempo come from the template.
 struct CreateOptions {
-    std::string template_id;              // a TemplateInfo::id
-    std::filesystem::path template_path;  // an .mscx in an MSCX directory
+    std::string template_id;             // a TemplateInfo::id
+    std::filesystem::path template_path; // an .mscx in an MSCX directory
     std::string title;
     std::string subtitle;
     std::string composer;
@@ -110,19 +110,19 @@ struct Engine {
     // Fails without consuming the one Engine of the process when the
     // resources or a font path do not exist. A font that exists but cannot be
     // used fails after the runtime started, so the process cannot retry.
-    static Result<std::unique_ptr<Engine>> create(const EngineOptions& options);
+    static Result<std::unique_ptr<Engine>> create(const EngineOptions &options);
 
     // Aborts while Documents are still open.
     ~Engine();
-    Engine(const Engine&) = delete;
-    Engine& operator=(const Engine&) = delete;
+    Engine(const Engine &) = delete;
+    Engine &operator=(const Engine &) = delete;
 
     Capabilities capabilities() const;
 
     // Register an immutable copy of a text font. NotFound for a missing file,
     // InvalidInput for an unusable font. Existing documents keep their revision;
     // their next layout-dependent call relays out all scores.
-    Result<void> add_font(const std::filesystem::path& file);
+    Result<void> add_font(const std::filesystem::path &file);
 
     // Snapshot of active runtime text fonts, excluding bundled fonts. Its size
     // is the registration count. A replacement for the same family and style
@@ -136,19 +136,19 @@ struct Engine {
     // capabilities().soundfonts returns the retained paths usable in AudioOptions.
     // NotFound for missing files, InvalidInput for malformed files. Failure keeps
     // the previous selection (validated copies may remain cached until shutdown).
-    Result<void> set_soundfonts(const std::vector<std::filesystem::path>& files);
+    Result<void> set_soundfonts(const std::vector<std::filesystem::path> &files);
 
     // The templates listed in resources/templates/categories.json, in that
     // file's order.
     std::vector<TemplateInfo> templates() const;
 
     // Unsupported for MSCX/MSCZ written before MuseScore 4.6 (mscVersion < 460).
-    Result<std::unique_ptr<Document>> open(std::span<const std::byte> data, const OpenOptions& options = {});
+    Result<std::unique_ptr<Document>> open(std::span<const std::byte> data, const OpenOptions &options = {});
     // Unsupported for MSCX/MSCZ written before MuseScore 4.6 (mscVersion < 460).
-    Result<std::unique_ptr<Document>> open(const std::filesystem::path& file, const OpenOptions& options = {});
+    Result<std::unique_ptr<Document>> open(const std::filesystem::path &file, const OpenOptions &options = {});
 
     // A new score from a template, at revision 1.
-    Result<std::unique_ptr<Document>> create_document(const CreateOptions& options);
+    Result<std::unique_ptr<Document>> create_document(const CreateOptions &options);
 
     // The catalogue: every element type the engine recognises, sorted by name,
     // with the properties its class handles, and every style in style id order.

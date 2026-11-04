@@ -26,32 +26,30 @@
 #include <vector>
 #include <algorithm>
 
-
 #include "global/logstream.h"
 
 namespace muse {
-class ID
-{
+class ID {
 public:
     ID();
-    ID(const ID& id);
-    ID(const std::string& id);
-    constexpr ID(const uint64_t& id)
-        : m_id(id) {}
+    ID(const ID &id);
+    ID(const std::string &id);
+
+    constexpr ID(const uint64_t &id) : m_id(id) {}
 
     bool isValid() const;
 
-    ID& operator=(const ID& id);
-    ID& operator+=(const ID& id);
+    ID &operator=(const ID &id);
+    ID &operator+=(const ID &id);
 
-    ID operator+(const ID& id) const;
-    ID operator^(const ID& id) const;
+    ID operator+(const ID &id) const;
+    ID operator^(const ID &id) const;
 
-    bool operator==(const ID& id) const;
+    bool operator==(const ID &id) const;
     bool operator==(uint64_t id) const;
-    bool operator!=(const ID& id) const;
-    bool operator<(const ID& id) const;
-    bool operator>(const ID& id) const;
+    bool operator!=(const ID &id) const;
+    bool operator<(const ID &id) const;
+    bool operator>(const ID &id) const;
 
     uint64_t toUint64() const;
     std::string toStdString() const;
@@ -63,14 +61,10 @@ private:
 
 using IDList = std::vector<ID>;
 
-inline bool containsId(const IDList& list, const ID& id)
-{
-    return std::find(list.cbegin(), list.cend(), id) != list.cend();
-}
-}
+inline bool containsId(const IDList &list, const ID &id) { return std::find(list.cbegin(), list.cend(), id) != list.cend(); }
+} // namespace muse
 
-inline muse::logger::Stream& operator<<(muse::logger::Stream& s, const muse::ID& v)
-{
+inline muse::logger::Stream &operator<<(muse::logger::Stream &s, const muse::ID &v) {
     s << v.toUint64();
     return s;
 }

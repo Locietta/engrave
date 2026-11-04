@@ -39,11 +39,10 @@ using namespace mu::engraving;
 //   EditSpanner
 //---------------------------------------------------------
 
-void EditSpanner::addSpanner(Transaction&, Score* score, Spanner* spanner, const PointF& pos, bool systemStavesOnly)
-{
+void EditSpanner::addSpanner(Transaction &, Score *score, Spanner *spanner, const PointF &pos, bool systemStavesOnly) {
     staff_idx_t staffIdx = spanner->staffIdx();
-    Segment* segment;
-    Measure* measure = score->pos2measure(pos, &staffIdx, /*pitch*/ 0, &segment, /*offset*/ 0);
+    Segment *segment;
+    Measure *measure = score->pos2measure(pos, &staffIdx, /*pitch*/ 0, &segment, /*offset*/ 0);
     if (systemStavesOnly) {
         staffIdx = 0;
     }
@@ -74,9 +73,8 @@ void EditSpanner::addSpanner(Transaction&, Score* score, Spanner* spanner, const
     score->undoAddElement(spanner, true /*addToLinkedStaves*/, ctrlModifier);
 }
 
-void EditSpanner::addSpanner(Transaction&, Score* score, Spanner* spanner, staff_idx_t staffIdx, Segment* startSegment,
-                             Segment* endSegment, bool ctrlModifier)
-{
+void EditSpanner::addSpanner(Transaction &, Score *score, Spanner *spanner, staff_idx_t staffIdx, Segment *startSegment,
+                             Segment *endSegment, bool ctrlModifier) {
     track_idx_t track = staffIdx * VOICES;
     spanner->setTrack(track);
     spanner->setTrack2(track);
@@ -97,7 +95,7 @@ void EditSpanner::addSpanner(Transaction&, Score* score, Spanner* spanner, staff
         tick2 = endSegment->tick();
     }
     if (isMeasureAnchor) {
-        Measure* endMeasure = score->tick2measureMM(tick2);
+        Measure *endMeasure = score->tick2measureMM(tick2);
         if (endMeasure->tick() != tick2) {
             tick2 = endMeasure->endTick();
         }
@@ -111,25 +109,24 @@ void EditSpanner::addSpanner(Transaction&, Score* score, Spanner* spanner, staff
 //   ChangeSpannerElements
 //---------------------------------------------------------
 
-void ChangeSpannerElements::flip()
-{
-    EngravingItem* oldStartElement   = spanner->startElement();
-    EngravingItem* oldEndElement     = spanner->endElement();
+void ChangeSpannerElements::flip() {
+    EngravingItem *oldStartElement = spanner->startElement();
+    EngravingItem *oldEndElement = spanner->endElement();
     bool isPartialSpanner = spanner->isPartialTie() || spanner->isLaissezVib();
     if (spanner->anchor() == Spanner::Anchor::NOTE) {
         // be sure new spanner elements are of the right type
         if (!isPartialSpanner && (!startElement || !startElement->isNote() || !endElement || !endElement->isNote())) {
             return;
         }
-        Note* oldStartNote = toNote(oldStartElement);
-        Note* oldEndNote = toNote(oldEndElement);
-        Note* newStartNote = toNote(startElement);
-        Note* newEndNote = toNote(endElement);
+        Note *oldStartNote = toNote(oldStartElement);
+        Note *oldEndNote = toNote(oldEndElement);
+        Note *newStartNote = toNote(startElement);
+        Note *newEndNote = toNote(endElement);
         // update spanner's start and end notes
         if ((newStartNote && newEndNote) || (isPartialSpanner && (newStartNote || newEndNote))) {
             spanner->setNoteSpan(newStartNote, newEndNote);
             if (spanner->isTie()) {
-                Tie* tie = toTie(spanner);
+                Tie *tie = toTie(spanner);
                 if (oldStartNote && newStartNote) {
                     oldStartNote->setTieFor(nullptr);
                     newStartNote->setTieFor(tie);
@@ -153,7 +150,7 @@ void ChangeSpannerElements::flip()
         spanner->setEndElement(endElement);
     }
     startElement = oldStartElement;
-    endElement   = oldEndElement;
+    endElement = oldEndElement;
     spanner->triggerLayout();
 }
 
@@ -161,12 +158,11 @@ void ChangeSpannerElements::flip()
 //   ChangeStartEndSpanner
 //---------------------------------------------------------
 
-void ChangeStartEndSpanner::flip()
-{
-    EngravingItem* s = spanner->startElement();
-    EngravingItem* e = spanner->endElement();
+void ChangeStartEndSpanner::flip() {
+    EngravingItem *s = spanner->startElement();
+    EngravingItem *e = spanner->endElement();
     spanner->setStartElement(start);
     spanner->setEndElement(end);
     start = s;
-    end   = e;
+    end = e;
 }

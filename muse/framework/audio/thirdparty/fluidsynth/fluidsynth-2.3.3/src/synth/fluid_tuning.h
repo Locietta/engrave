@@ -18,7 +18,6 @@
  * 02110-1301, USA
  */
 
-
 /*
 
   More information about micro tuning can be found at:
@@ -34,13 +33,12 @@
 
 #include "fluidsynth_priv.h"
 
-struct _fluid_tuning_t
-{
+struct _fluid_tuning_t {
     char *name;
     int bank;
     int prog;
-    double pitch[128];  /* the pitch of every key, in cents */
-    fluid_atomic_int_t refcount;         /* Tuning reference count */
+    double pitch[128];           /* the pitch of every key, in cents */
+    fluid_atomic_int_t refcount; /* Tuning reference count */
 };
 
 fluid_tuning_t *new_fluid_tuning(const char *name, int bank, int prog);
@@ -62,8 +60,5 @@ void fluid_tuning_set_octave(fluid_tuning_t *tuning, const double *pitch_deriv);
 
 void fluid_tuning_set_all(fluid_tuning_t *tuning, const double *pitch);
 #define fluid_tuning_get_all(_t) (&(_t)->pitch[0])
-
-
-
 
 #endif /* _FLUID_TUNING_H */

@@ -27,23 +27,22 @@
 namespace mu::engraving {
 class RangeLock;
 
-class SystemLockIndicator : public IndicatorIcon
-{
+class SystemLockIndicator : public IndicatorIcon {
     OBJECT_ALLOCATOR(engraving, SystemLockIndicator)
     DECLARE_CLASSOF(ElementType::SYSTEM_LOCK_INDICATOR)
 
 public:
-    SystemLockIndicator(DummyParentOr<System> parent, const RangeLock* lock);
+    SystemLockIndicator(DummyParentOr<System> parent, const RangeLock *lock);
 
     void setSelected(bool v) override;
 
-    const RangeLock* systemLock() const { return m_systemLock; }
+    const RangeLock *systemLock() const { return m_systemLock; }
 
     char16_t iconCode() const override { return 0xF487; }
 
     String formatBarsAndBeats() const override;
 
 private:
-    const RangeLock* m_systemLock = nullptr;
+    const RangeLock *m_systemLock = nullptr;
 };
 } // namespace mu::engraving

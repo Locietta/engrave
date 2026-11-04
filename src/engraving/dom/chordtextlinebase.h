@@ -30,11 +30,10 @@ namespace mu::engraving {
 //   @@ ChordTextLineBase
 //---------------------------------------------------------
 
-class ChordTextLineBase : public TextLineBase
-{
+class ChordTextLineBase : public TextLineBase {
     OBJECT_ALLOCATOR(engraving, ChordTextLineBase)
 public:
-    ChordTextLineBase(const ElementType& type, EngravingObject* parent, ElementFlags = ElementFlag::NOTHING);
+    ChordTextLineBase(const ElementType &type, EngravingObject *parent, ElementFlags = ElementFlag::NOTHING);
 
     Anchor anchor() const override { return Anchor::SEGMENT; }
 

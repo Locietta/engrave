@@ -30,31 +30,32 @@
 #include "geometry.h"
 #include "global/realfn.h"
 
-
 namespace muse::draw {
-class LinearGradient
-{
+class LinearGradient {
 public:
     struct ColorStop {
         double position = 0.0;
         Color color = Color::BLACK;
 
-        inline bool operator==(const ColorStop& o) const { return RealIsEqual(position, o.position) && color == o.color; }
-        inline bool operator!=(const ColorStop& o) const { return !this->operator==(o); }
+        inline bool operator==(const ColorStop &o) const { return RealIsEqual(position, o.position) && color == o.color; }
+
+        inline bool operator!=(const ColorStop &o) const { return !this->operator==(o); }
     };
 
     LinearGradient() = default;
-    LinearGradient(const PointF& start, const PointF& finalStop)
-        : m_start(start), m_finalStop(finalStop) {}
 
-    inline const PointF& start() const { return m_start; }
-    void setStart(const PointF& start) { m_start = start; }
-    inline const PointF& finalStop() const { return m_finalStop; }
-    void setFinalStop(const PointF& finalStop) { m_finalStop = finalStop; }
+    LinearGradient(const PointF &start, const PointF &finalStop) : m_start(start), m_finalStop(finalStop) {}
 
-    void setColorAt(double position, const Color& color)
-    {
-        for (ColorStop& stop : m_colorStops) {
+    inline const PointF &start() const { return m_start; }
+
+    void setStart(const PointF &start) { m_start = start; }
+
+    inline const PointF &finalStop() const { return m_finalStop; }
+
+    void setFinalStop(const PointF &finalStop) { m_finalStop = finalStop; }
+
+    void setColorAt(double position, const Color &color) {
+        for (ColorStop &stop : m_colorStops) {
             if (RealIsEqual(stop.position, position)) {
                 stop.color = color;
                 return;
@@ -62,18 +63,17 @@ public:
         }
 
         auto it = std::lower_bound(m_colorStops.begin(), m_colorStops.end(), position,
-                                   [](const ColorStop& stop, double pos) { return stop.position < pos; });
-        m_colorStops.insert(it, { position, color });
+                                   [](const ColorStop &stop, double pos) { return stop.position < pos; });
+        m_colorStops.insert(it, {position, color});
     }
 
-    inline const std::vector<ColorStop>& colorStops() const { return m_colorStops; }
+    inline const std::vector<ColorStop> &colorStops() const { return m_colorStops; }
 
-    inline bool operator==(const LinearGradient& o) const
-    {
+    inline bool operator==(const LinearGradient &o) const {
         return m_start == o.m_start && m_finalStop == o.m_finalStop && m_colorStops == o.m_colorStops;
     }
 
-    inline bool operator!=(const LinearGradient& o) const { return !this->operator==(o); }
+    inline bool operator!=(const LinearGradient &o) const { return !this->operator==(o); }
 
 private:
     PointF m_start;
@@ -81,20 +81,17 @@ private:
     std::vector<ColorStop> m_colorStops;
 };
 
-class Brush
-{
+class Brush {
 public:
     Brush() {}
-    Brush(BrushStyle style)
-        : m_style(style) {}
-    Brush(const Color& color)
-        : m_color(color) {}
-    Brush(const LinearGradient& gradient)
-        : m_style(BrushStyle::LinearGradientPattern), m_linearGradient(gradient) {}
 
+    Brush(BrushStyle style) : m_style(style) {}
 
-    inline bool operator==(const Brush& o) const
-    {
+    Brush(const Color &color) : m_color(color) {}
+
+    Brush(const LinearGradient &gradient) : m_style(BrushStyle::LinearGradientPattern), m_linearGradient(gradient) {}
+
+    inline bool operator==(const Brush &o) const {
         if (m_style != o.m_style) {
             return false;
         }
@@ -106,15 +103,19 @@ public:
         return m_color == o.m_color;
     }
 
-    inline bool operator!=(const Brush& o) const { return !this->operator==(o); }
+    inline bool operator!=(const Brush &o) const { return !this->operator==(o); }
 
     inline BrushStyle style() const { return m_style; }
+
     void setStyle(BrushStyle style) { m_style = style; }
-    inline const Color& color() const { return m_color; }
-    void setColor(const Color& color) { m_color = color; }
-    inline const LinearGradient& linearGradient() const { return m_linearGradient; }
-    void setLinearGradient(const LinearGradient& gradient)
-    {
+
+    inline const Color &color() const { return m_color; }
+
+    void setColor(const Color &color) { m_color = color; }
+
+    inline const LinearGradient &linearGradient() const { return m_linearGradient; }
+
+    void setLinearGradient(const LinearGradient &gradient) {
         m_style = BrushStyle::LinearGradientPattern;
         m_linearGradient = gradient;
     }

@@ -32,7 +32,7 @@
 namespace mu::engraving {
 class Score;
 class SynthesizerState;
-}
+} // namespace mu::engraving
 
 namespace mu::iex::midi {
 using MidiPath = muse::io::path_t;
@@ -41,20 +41,20 @@ using MidiPath = muse::io::path_t;
 //   ExportMidi
 //---------------------------------------------------------
 
-class ExportMidi
-{
+class ExportMidi {
 public:
-    ExportMidi(engraving::Score* s) { m_score = s; }
-    bool write(const MidiPath& name, bool midiExpandRepeats, bool exportRPNs);
-    bool write(MidiIODevice* device, bool midiExpandRepeats, bool exportRPNs);
-    bool write(const MidiPath& name, bool midiExpandRepeats, bool exportRPNs, const engraving::SynthesizerState& synthState);
-    bool write(MidiIODevice* device, bool midiExpandRepeats, bool exportRPNs, const engraving::SynthesizerState& synthState);
+    ExportMidi(engraving::Score *s) { m_score = s; }
+
+    bool write(const MidiPath &name, bool midiExpandRepeats, bool exportRPNs);
+    bool write(MidiIODevice *device, bool midiExpandRepeats, bool exportRPNs);
+    bool write(const MidiPath &name, bool midiExpandRepeats, bool exportRPNs, const engraving::SynthesizerState &synthState);
+    bool write(MidiIODevice *device, bool midiExpandRepeats, bool exportRPNs, const engraving::SynthesizerState &synthState);
 
 private:
-    void writeHeader(const engraving::CompatMidiRendererInternal::Context& context);
+    void writeHeader(const engraving::CompatMidiRendererInternal::Context &context);
 
     MidiFile m_midiFile;
-    engraving::Score* m_score = nullptr;
+    engraving::Score *m_score = nullptr;
 };
-}
+} // namespace mu::iex::midi
 #endif // EXPORTMIDI_H

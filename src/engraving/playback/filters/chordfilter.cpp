@@ -27,7 +27,4 @@
 using namespace mu::engraving;
 using namespace muse;
 
-bool ChordFilter::isPlayable(const EngravingItem* item, const RenderingContext& ctx)
-{
-    return TremoloFilter::isItemPlayable(item, ctx);
-}
+bool ChordFilter::isPlayable(const EngravingItem *item, const RenderingContext &ctx) { return TremoloFilter::isItemPlayable(item, ctx); }

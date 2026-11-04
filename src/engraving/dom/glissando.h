@@ -36,27 +36,25 @@ enum class GlissandoType : unsigned char;
 //   @@ GlissandoSegment
 //---------------------------------------------------------
 
-class GlissandoSegment final : public LineSegment
-{
+class GlissandoSegment final : public LineSegment {
     OBJECT_ALLOCATOR(engraving, GlissandoSegment)
     DECLARE_CLASSOF(ElementType::GLISSANDO_SEGMENT)
 
 public:
-    GlissandoSegment(Glissando* sp);
+    GlissandoSegment(Glissando *sp);
 
-    Glissando* glissando() const { return toGlissando(spanner()); }
+    Glissando *glissando() const { return toGlissando(spanner()); }
 
-    GlissandoSegment* clone() const override { return new GlissandoSegment(*this); }
+    GlissandoSegment *clone() const override { return new GlissandoSegment(*this); }
 
-    EngravingObject* propertyDelegate(Pid) const override;
+    EngravingObject *propertyDelegate(Pid) const override;
 };
 
 //---------------------------------------------------------
 //   Glissando
 //---------------------------------------------------------
 
-class Glissando final : public SLine
-{
+class Glissando final : public SLine {
     OBJECT_ALLOCATOR(engraving, Glissando)
     DECLARE_CLASSOF(ElementType::GLISSANDO)
 
@@ -76,31 +74,32 @@ public:
     static constexpr double GLISS_PALETTE_HEIGHT = 4.0;
 
     Glissando(DummyParentOr<EngravingItem> parent);
-    Glissando(const Glissando&);
+    Glissando(const Glissando &);
 
     Anchor anchor() const override { return Anchor::NOTE; }
 
-    static Note* guessInitialNote(Chord* chord);
+    static Note *guessInitialNote(Chord *chord);
 
     std::optional<bool> isHarpGliss() const { return m_isHarpGliss; }
+
     void setIsHarpGliss(std::optional<bool> v) { m_isHarpGliss = v; }
 
     // overridden inherited methods
-    Glissando* clone() const override { return new Glissando(*this); }
+    Glissando *clone() const override { return new Glissando(*this); }
 
-    LineSegment* createLineSegment() override;
+    LineSegment *createLineSegment() override;
 
     bool allowTimeAnchor() const override { return false; }
 
     // property/style methods
     Sid getPropertyStyle(Pid id) const override;
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid) const override;
 
     TranslatableString subtypeUserName() const override;
 
-    static bool pitchSteps(const Spanner* spanner, std::vector<int>& pitchOffsets);
+    static bool pitchSteps(const Spanner *spanner, std::vector<int> &pitchOffsets);
 
 protected:
     bool isInSpannerMap() const override { return false; }

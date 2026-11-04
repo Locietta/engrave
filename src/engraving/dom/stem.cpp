@@ -35,133 +35,86 @@ using namespace mu;
 using namespace muse::draw;
 using namespace mu::engraving;
 
-static const ElementStyle stemStyle {
-    { Sid::stemWidth, Pid::LINE_WIDTH }
-};
+static const ElementStyle stemStyle{{Sid::stemWidth, Pid::LINE_WIDTH}};
 
-Stem::Stem(DummyParentOr<Chord> parent)
-    : EngravingItem(ElementType::STEM, parent)
-{
+Stem::Stem(DummyParentOr<Chord> parent) : EngravingItem(ElementType::STEM, parent) {
     initElementStyle(&stemStyle);
     resetProperty(Pid::USER_LEN);
 }
 
-EngravingItem* Stem::elementBase() const
-{
-    return chord();
-}
+EngravingItem *Stem::elementBase() const { return chord(); }
 
-staff_idx_t Stem::vStaffIdx() const
-{
-    return staffIdx() + chord()->staffMove();
-}
+staff_idx_t Stem::vStaffIdx() const { return staffIdx() + chord()->staffMove(); }
 
-bool Stem::up() const
-{
-    return chord() ? chord()->up() : true;
-}
+bool Stem::up() const { return chord() ? chord()->up() : true; }
 
-void Stem::setBaseLength(Spatium baseLength)
-{
-    m_baseLength = Spatium(std::abs(baseLength.val()));
-}
+void Stem::setBaseLength(Spatium baseLength) { m_baseLength = Spatium(std::abs(baseLength.val())); }
 
-double Stem::lineWidthMag() const
-{
-    return absoluteFromSpatium(m_lineWidth) * chord()->intrinsicMag();
-}
+double Stem::lineWidthMag() const { return absoluteFromSpatium(m_lineWidth) * chord()->intrinsicMag(); }
 
 //! In chord coordinates
-PointF Stem::flagPosition() const
-{
-    return pos() + PointF(ldata()->bbox().left(), up() ? -length() : length());
-}
+PointF Stem::flagPosition() const { return pos() + PointF(ldata()->bbox().left(), up() ? -length() : length()); }
 
-void Stem::reset()
-{
+void Stem::reset() {
     undoChangeProperty(Pid::USER_LEN, 0.0_sp);
     EngravingItem::reset();
 }
 
-bool Stem::acceptDrop(EditData& data) const
-{
-    const EngravingItem* e = data.dropElement;
+bool Stem::acceptDrop(EditData &data) const {
+    const EngravingItem *e = data.dropElement;
     switch (e->type()) {
-    case ElementType::TREMOLO_SINGLECHORD:
-        return item_cast<const TremoloSingleChord*>(e)->tremoloType() <= TremoloType::R256;
-    default:
-        break;
+        case ElementType::TREMOLO_SINGLECHORD: return item_cast<const TremoloSingleChord *>(e)->tremoloType() <= TremoloType::R256;
+        default: break;
     }
 
     return false;
 }
 
-EngravingItem* Stem::drop(Transaction&, EditData& data)
-{
-    EngravingItem* e = data.dropElement;
-    Chord* ch  = chord();
+EngravingItem *Stem::drop(Transaction &, EditData &data) {
+    EngravingItem *e = data.dropElement;
+    Chord *ch = chord();
 
     switch (e->type()) {
-    case ElementType::TREMOLO_SINGLECHORD:
-        item_cast<TremoloSingleChord*>(e)->setOwnershipParent(ch);
-        undoAddElement(e);
-        return e;
-    default:
-        delete e;
-        break;
+        case ElementType::TREMOLO_SINGLECHORD:
+            item_cast<TremoloSingleChord *>(e)->setOwnershipParent(ch);
+            undoAddElement(e);
+            return e;
+        default: delete e; break;
     }
     return 0;
 }
 
-PropertyValue Stem::getProperty(Pid propertyId) const
-{
+PropertyValue Stem::getProperty(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::LINE_WIDTH:
-        return lineWidth();
-    case Pid::USER_LEN:
-        return userLength();
-    case Pid::STEM_DIRECTION:
-        return PropertyValue::fromValue<DirectionV>(chord()->stemDirection());
-    case Pid::APPEARANCE_LINKED_TO_MASTER:
-        return chord() ? chord()->isPropertyLinkedToMaster(Pid::STEM_DIRECTION) : true;
-    default:
-        return EngravingItem::getProperty(propertyId);
+        case Pid::LINE_WIDTH: return lineWidth();
+        case Pid::USER_LEN: return userLength();
+        case Pid::STEM_DIRECTION: return PropertyValue::fromValue<DirectionV>(chord()->stemDirection());
+        case Pid::APPEARANCE_LINKED_TO_MASTER: return chord() ? chord()->isPropertyLinkedToMaster(Pid::STEM_DIRECTION) : true;
+        default: return EngravingItem::getProperty(propertyId);
     }
 }
 
-bool Stem::setProperty(Pid propertyId, const PropertyValue& v)
-{
+bool Stem::setProperty(Pid propertyId, const PropertyValue &v) {
     switch (propertyId) {
-    case Pid::LINE_WIDTH:
-        setLineWidth(v.value<Spatium>());
-        break;
-    case Pid::USER_LEN:
-        setUserLength(v.value<Spatium>());
-        break;
-    case Pid::STEM_DIRECTION:
-        chord()->setStemDirection(v.value<DirectionV>());
-        break;
-    case Pid::APPEARANCE_LINKED_TO_MASTER:
-        if (chord() && v.toBool() == true) {
-            chord()->relinkPropertyToMaster(Pid::STEM_DIRECTION);
-            break;
-        }
-    // fall through
-    default:
-        return EngravingItem::setProperty(propertyId, v);
+        case Pid::LINE_WIDTH: setLineWidth(v.value<Spatium>()); break;
+        case Pid::USER_LEN: setUserLength(v.value<Spatium>()); break;
+        case Pid::STEM_DIRECTION: chord()->setStemDirection(v.value<DirectionV>()); break;
+        case Pid::APPEARANCE_LINKED_TO_MASTER:
+            if (chord() && v.toBool() == true) {
+                chord()->relinkPropertyToMaster(Pid::STEM_DIRECTION);
+                break;
+            }
+        // fall through
+        default: return EngravingItem::setProperty(propertyId, v);
     }
     triggerLayout();
     return true;
 }
 
-PropertyValue Stem::propertyDefault(Pid id) const
-{
+PropertyValue Stem::propertyDefault(Pid id) const {
     switch (id) {
-    case Pid::USER_LEN:
-        return 0.0_sp;
-    case Pid::STEM_DIRECTION:
-        return PropertyValue::fromValue<DirectionV>(DirectionV::AUTO);
-    default:
-        return EngravingItem::propertyDefault(id);
+        case Pid::USER_LEN: return 0.0_sp;
+        case Pid::STEM_DIRECTION: return PropertyValue::fromValue<DirectionV>(DirectionV::AUTO);
+        default: return EngravingItem::propertyDefault(id);
     }
 }

@@ -29,23 +29,11 @@ using StreamId = int;
 static constexpr StreamId INVALID_STREAM_ID = -1;
 static constexpr uint64_t STREAM_POS_CURRENT = ~uint64_t(0);
 
-enum class OpenMode {
-    WriteOnly,
-    Append
-};
+enum class OpenMode { WriteOnly, Append };
 
-enum class ScanMode {
-    FilesInCurrentDir,
-    FoldersInCurrentDir,
-    FilesAndFoldersInCurrentDir,
-    FilesInCurrentDirAndSubdirs
-};
+enum class ScanMode { FilesInCurrentDir, FoldersInCurrentDir, FilesAndFoldersInCurrentDir, FilesInCurrentDirAndSubdirs };
 
-enum class EntryType {
-    Undefined = 0,
-    File,
-    Dir
-};
-}
+enum class EntryType { Undefined = 0, File, Dir };
+} // namespace muse::io
 
 #endif // MUSE_IO_IOENUMS_H

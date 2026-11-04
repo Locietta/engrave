@@ -25,9 +25,8 @@
 namespace mu::engraving {
 class Score;
 
-class AutoSpatium
-{
+class AutoSpatium {
 public:
-    static void update(Score* score);
+    static void update(Score *score);
 };
-}
+} // namespace mu::engraving

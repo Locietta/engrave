@@ -27,14 +27,14 @@
 namespace mu::engraving {
 class KeyList;
 class Staff;
-}
+} // namespace mu::engraving
 
 namespace mu::iex::midi {
 class MTrack;
 
 namespace MidiKey {
-void assignKeyListToStaff(const engraving::KeyList& kl, engraving::Staff* staff);
-void recognizeMainKeySig(std::vector<MTrack>& tracks);
+void assignKeyListToStaff(const engraving::KeyList &kl, engraving::Staff *staff);
+void recognizeMainKeySig(std::vector<MTrack> &tracks);
 } // namespace MidiKey
 } // namespace mu::iex::midi
 

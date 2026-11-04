@@ -27,96 +27,51 @@ using namespace muse::draw;
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-PaintDebugger::PaintDebugger(IPaintProviderPtr real)
-    : m_real(real)
-{
-}
+PaintDebugger::PaintDebugger(IPaintProviderPtr real) : m_real(real) {}
 
-IPaintProviderPtr PaintDebugger::realProvider() const
-{
-    return m_real;
-}
+IPaintProviderPtr PaintDebugger::realProvider() const { return m_real; }
 
-void PaintDebugger::setDebugPenColor(const Color& c)
-{
+void PaintDebugger::setDebugPenColor(const Color &c) {
     m_debugPenColor = c;
-    const Pen& originalPen = pen();
+    const Pen &originalPen = pen();
     m_originalPenColor = originalPen.color();
     Pen p = originalPen;
     p.setColor(c);
     setPen(p);
 }
 
-void PaintDebugger::restorePenColor()
-{
+void PaintDebugger::restorePenColor() {
     Pen p = pen();
     p.setColor(m_originalPenColor);
     setPen(p);
     m_debugPenColor = Color();
 }
 
-void PaintDebugger::beginTarget(const std::string& name)
-{
-    m_real->beginTarget(name);
-}
+void PaintDebugger::beginTarget(const std::string &name) { m_real->beginTarget(name); }
 
-void PaintDebugger::beforeEndTargetHook(Painter* p)
-{
-    m_real->beforeEndTargetHook(p);
-}
+void PaintDebugger::beforeEndTargetHook(Painter *p) { m_real->beforeEndTargetHook(p); }
 
-bool PaintDebugger::endTarget(bool endDraw)
-{
-    return m_real->endTarget(endDraw);
-}
+bool PaintDebugger::endTarget(bool endDraw) { return m_real->endTarget(endDraw); }
 
-bool PaintDebugger::isActive() const
-{
-    return m_real->isActive();
-}
+bool PaintDebugger::isActive() const { return m_real->isActive(); }
 
-void PaintDebugger::beginObject(const std::string& name)
-{
-    m_real->beginObject(name);
-}
+void PaintDebugger::beginObject(const std::string &name) { m_real->beginObject(name); }
 
-void PaintDebugger::endObject()
-{
-    m_real->endObject();
-}
+void PaintDebugger::endObject() { m_real->endObject(); }
 
-void PaintDebugger::setAntialiasing(bool arg)
-{
-    m_real->setAntialiasing(arg);
-}
+void PaintDebugger::setAntialiasing(bool arg) { m_real->setAntialiasing(arg); }
 
-void PaintDebugger::setCompositionMode(CompositionMode mode)
-{
-    m_real->setCompositionMode(mode);
-}
+void PaintDebugger::setCompositionMode(CompositionMode mode) { m_real->setCompositionMode(mode); }
 
-void PaintDebugger::setWindow(const RectF& window)
-{
-    m_real->setWindow(window);
-}
+void PaintDebugger::setWindow(const RectF &window) { m_real->setWindow(window); }
 
-void PaintDebugger::setViewport(const RectF& viewport)
-{
-    m_real->setViewport(viewport);
-}
+void PaintDebugger::setViewport(const RectF &viewport) { m_real->setViewport(viewport); }
 
-void PaintDebugger::setFont(const Font& f)
-{
-    m_real->setFont(f);
-}
+void PaintDebugger::setFont(const Font &f) { m_real->setFont(f); }
 
-const Font& PaintDebugger::font() const
-{
-    return m_real->font();
-}
+const Font &PaintDebugger::font() const { return m_real->font(); }
 
-void PaintDebugger::setPen(const Pen& pen)
-{
+void PaintDebugger::setPen(const Pen &pen) {
     Pen p = pen;
     if (m_debugPenColor.isValid()) {
         p.setColor(m_debugPenColor);
@@ -124,105 +79,50 @@ void PaintDebugger::setPen(const Pen& pen)
     m_real->setPen(p);
 }
 
-void PaintDebugger::setNoPen()
-{
-    m_real->setNoPen();
-}
+void PaintDebugger::setNoPen() { m_real->setNoPen(); }
 
-const Pen& PaintDebugger::pen() const
-{
-    return m_real->pen();
-}
+const Pen &PaintDebugger::pen() const { return m_real->pen(); }
 
-void PaintDebugger::setBrush(const Brush& brush)
-{
-    m_real->setBrush(brush);
-}
+void PaintDebugger::setBrush(const Brush &brush) { m_real->setBrush(brush); }
 
-const Brush& PaintDebugger::brush() const
-{
-    return m_real->brush();
-}
+const Brush &PaintDebugger::brush() const { return m_real->brush(); }
 
-void PaintDebugger::save()
-{
-    m_real->save();
-}
+void PaintDebugger::save() { m_real->save(); }
 
-void PaintDebugger::restore()
-{
-    m_real->restore();
-}
+void PaintDebugger::restore() { m_real->restore(); }
 
-void PaintDebugger::setTransform(const Transform& transform)
-{
-    m_real->setTransform(transform);
-}
+void PaintDebugger::setTransform(const Transform &transform) { m_real->setTransform(transform); }
 
-const Transform& PaintDebugger::transform() const
-{
-    return m_real->transform();
-}
+const Transform &PaintDebugger::transform() const { return m_real->transform(); }
 
 // drawing functions
 
-void PaintDebugger::drawPath(const PainterPath& path)
-{
-    m_real->drawPath(path);
-}
+void PaintDebugger::drawPath(const PainterPath &path) { m_real->drawPath(path); }
 
-void PaintDebugger::drawPolygon(const PointF* points, size_t pointCount, PolygonMode mode)
-{
+void PaintDebugger::drawPolygon(const PointF *points, size_t pointCount, PolygonMode mode) {
     m_real->drawPolygon(points, pointCount, mode);
 }
 
-void PaintDebugger::drawText(const PointF& point, const String& text)
-{
-    m_real->drawText(point, text);
-}
+void PaintDebugger::drawText(const PointF &point, const String &text) { m_real->drawText(point, text); }
 
-void PaintDebugger::drawText(const RectF& rect, Alignment alignment, TextFlags textFlags, const String& text)
-{
+void PaintDebugger::drawText(const RectF &rect, Alignment alignment, TextFlags textFlags, const String &text) {
     m_real->drawText(rect, alignment, textFlags, text);
 }
 
-void PaintDebugger::drawSymbol(const PointF& point, char32_t ucs4Code)
-{
-    m_real->drawSymbol(point, ucs4Code);
-}
+void PaintDebugger::drawSymbol(const PointF &point, char32_t ucs4Code) { m_real->drawSymbol(point, ucs4Code); }
 
-void PaintDebugger::drawPixmap(const PointF& p, const Pixmap& pm)
-{
-    m_real->drawPixmap(p, pm);
-}
+void PaintDebugger::drawPixmap(const PointF &p, const Pixmap &pm) { m_real->drawPixmap(p, pm); }
 
-void PaintDebugger::drawTiledPixmap(const RectF& rect, const Pixmap& pm, const PointF& offset)
-{
+void PaintDebugger::drawTiledPixmap(const RectF &rect, const Pixmap &pm, const PointF &offset) {
     m_real->drawTiledPixmap(rect, pm, offset);
 }
 
+bool PaintDebugger::hasClipping() const { return m_real->hasClipping(); }
 
-bool PaintDebugger::hasClipping() const
-{
-    return m_real->hasClipping();
-}
+void PaintDebugger::setClipRect(const RectF &rect) { m_real->setClipRect(rect); }
 
-void PaintDebugger::setClipRect(const RectF& rect)
-{
-    m_real->setClipRect(rect);
-}
+void PaintDebugger::setMask(const RectF &background, const std::vector<RectF> &maskRects) { m_real->setMask(background, maskRects); }
 
-void PaintDebugger::setMask(const RectF& background, const std::vector<RectF>& maskRects)
-{
-    m_real->setMask(background, maskRects);
-}
+void PaintDebugger::setClipping(bool enable) { m_real->setClipping(enable); }
 
-void PaintDebugger::setClipping(bool enable)
-{
-    m_real->setClipping(enable);
-}
-
-double mu::engraving::rendering::score::PaintDebugger::deviceLogicalDpi() const
-{
-    return m_real->deviceLogicalDpi();
-}
+double mu::engraving::rendering::score::PaintDebugger::deviceLogicalDpi() const { return m_real->deviceLogicalDpi(); }

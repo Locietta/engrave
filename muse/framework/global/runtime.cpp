@@ -35,8 +35,7 @@
 
 static thread_local std::string s_threadName;
 
-void muse::runtime::setThreadName(const std::string& name)
-{
+void muse::runtime::setThreadName(const std::string &name) {
     s_threadName = name;
 #if defined(__linux__) || defined(__FreeBSD__)
     // Set thread name through pthreads to aid debuggers that display such names.
@@ -52,8 +51,7 @@ void muse::runtime::setThreadName(const std::string& name)
 #endif
 }
 
-const std::string& muse::runtime::threadName()
-{
+const std::string &muse::runtime::threadName() {
     if (s_threadName.empty()) {
         static thread_local std::string id = toString(std::this_thread::get_id());
         return id;

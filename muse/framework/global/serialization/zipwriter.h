@@ -29,25 +29,24 @@ class ByteArray;
 
 namespace io {
 class IODevice;
-}
+} // namespace io
 
-class ZipWriter
-{
+class ZipWriter {
 public:
-    explicit ZipWriter(io::IODevice* device);
+    explicit ZipWriter(io::IODevice *device);
     ~ZipWriter();
 
     void close();
     bool hasError() const;
 
-    void addFile(const std::string& fileName, const ByteArray& data);
+    void addFile(const std::string &fileName, const ByteArray &data);
 
 private:
 
     void flush();
 
     struct Impl;
-    Impl* m_impl = nullptr;
-    io::IODevice* m_device = nullptr;
+    Impl *m_impl = nullptr;
+    io::IODevice *m_device = nullptr;
 };
-}
+} // namespace muse

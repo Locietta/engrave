@@ -49,15 +49,11 @@ constexpr percentage_t FIFTY_PERCENT = ONE_PERCENT * 50;
 constexpr percentage_t HUNDRED_PERCENT = ONE_PERCENT * 100;
 constexpr percentage_t TEN_PERCENT = ONE_PERCENT * 10;
 
-constexpr inline float percentageToFactor(const percentage_t percents)
-{
+constexpr inline float percentageToFactor(const percentage_t percents) {
     return static_cast<float>(percents) / static_cast<float>(HUNDRED_PERCENT);
 }
 
-constexpr inline percentage_t percentageFromFactor(const float factor)
-{
-    return static_cast<percentage_t>(factor * HUNDRED_PERCENT);
-}
+constexpr inline percentage_t percentageFromFactor(const float factor) { return static_cast<percentage_t>(factor * HUNDRED_PERCENT); }
 
 // Arrangement
 using timestamp_t = usecs_t;
@@ -76,51 +72,35 @@ struct TimestampAndDuration {
 
 static constexpr voice_layer_idx_t MAX_VOICES = 4;
 
-constexpr inline layer_idx_t makeLayerIdx(const staff_layer_idx_t staffIdx, const voice_layer_idx_t voiceIdx)
-{
+constexpr inline layer_idx_t makeLayerIdx(const staff_layer_idx_t staffIdx, const voice_layer_idx_t voiceIdx) {
     return staffIdx * MAX_VOICES + voiceIdx;
 }
 
-constexpr inline duration_percentage_t occupiedPercentage(const timestamp_t timestamp,
-                                                          const duration_t overallDuration)
-{
+constexpr inline duration_percentage_t occupiedPercentage(const timestamp_t timestamp, const duration_t overallDuration) {
     return percentageFromFactor(static_cast<float>(timestamp) / static_cast<float>(overallDuration));
 }
 
-template<typename T>
-struct ValuesCurve : public SharedMap<duration_percentage_t, T>
-{
-    std::pair<duration_percentage_t, T> amplitudeValuePoint() const
-    {
-        auto max = std::max_element(this->cbegin(), this->cend(), [](const auto& f, const auto& s) {
-            return std::abs(f.second) < std::abs(s.second);
-        });
+template <typename T>
+struct ValuesCurve : public SharedMap<duration_percentage_t, T> {
+    std::pair<duration_percentage_t, T> amplitudeValuePoint() const {
+        auto max = std::max_element(this->cbegin(), this->cend(),
+                                    [](const auto &f, const auto &s) { return std::abs(f.second) < std::abs(s.second); });
 
         if (max == this->cend()) {
-            static const std::pair<duration_percentage_t, T> empty { 0, {} };
+            static const std::pair<duration_percentage_t, T> empty{0, {}};
             return empty;
         }
 
         return *max;
     }
 
-    T maxAmplitudeLevel() const
-    {
-        return amplitudeValuePoint().second;
-    }
+    T maxAmplitudeLevel() const { return amplitudeValuePoint().second; }
 
-    duration_percentage_t attackPhaseDuration() const
-    {
-        return amplitudeValuePoint().first;
-    }
+    duration_percentage_t attackPhaseDuration() const { return amplitudeValuePoint().first; }
 
-    duration_percentage_t releasePhaseDuration() const
-    {
-        return this->empty() ? 0 : this->rbegin()->first - amplitudeValuePoint().first;
-    }
+    duration_percentage_t releasePhaseDuration() const { return this->empty() ? 0 : this->rbegin()->first - amplitudeValuePoint().first; }
 
-    float velocityFraction() const
-    {
+    float velocityFraction() const {
         auto amplitudePoint = amplitudeValuePoint();
         duration_percentage_t duration = amplitudePoint.first;
 
@@ -139,7 +119,7 @@ enum class PitchClass : signed char {
     C = 0,
     C_sharp = 1,
     D = 2,
-    D_sharp= 3,
+    D_sharp = 3,
     E = 4,
     F = 5,
     F_sharp = 6,
@@ -161,19 +141,16 @@ constexpr pitch_level_t MAX_PITCH_LEVEL = HUNDRED_PERCENT;
 
 constexpr int ZERO_PITCH_LEVEL_MIDI_EQUIVALENT = 12; // C0 in MIDI standard
 
-constexpr inline pitch_level_t pitchLevel(const PitchClass pitchClass, const octave_t octave)
-{
+constexpr inline pitch_level_t pitchLevel(const PitchClass pitchClass, const octave_t octave) {
     return (PITCH_LEVEL_STEP * STEPS_PER_OCTAVE * octave) + (PITCH_LEVEL_STEP * static_cast<int>(pitchClass));
 }
 
-constexpr inline pitch_level_t pitchLevelDiff(const PitchClass fClass, const octave_t fOctave,
-                                              const PitchClass sClass, const octave_t sOctave)
-{
+constexpr inline pitch_level_t pitchLevelDiff(const PitchClass fClass, const octave_t fOctave, const PitchClass sClass,
+                                              const octave_t sOctave) {
     return pitchLevel(fClass, fOctave) - pitchLevel(sClass, sOctave);
 }
 
-constexpr inline size_t pitchStepsCount(const pitch_level_t pitchRange)
-{
+constexpr inline size_t pitchStepsCount(const pitch_level_t pitchRange) {
     size_t range = pitchRange > 0 ? pitchRange : -pitchRange;
     return range / PITCH_LEVEL_STEP;
 }
@@ -334,9 +311,8 @@ enum class ArticulationType : signed char {
 
 using ArticulationTypeSet = std::unordered_set<ArticulationType>;
 
-inline bool isMultiNoteArticulation(const ArticulationType type)
-{
-    static const ArticulationTypeSet MULTI_TYPES {
+inline bool isMultiNoteArticulation(const ArticulationType type) {
+    static const ArticulationTypeSet MULTI_TYPES{
         ArticulationType::Trill,
         ArticulationType::Crescendo,
         ArticulationType::Diminuendo,
@@ -354,20 +330,14 @@ inline bool isMultiNoteArticulation(const ArticulationType type)
     return muse::contains(MULTI_TYPES, type);
 }
 
-inline bool isSingleNoteArticulation(const ArticulationType type)
-{
-    return !isMultiNoteArticulation(type);
-}
+inline bool isSingleNoteArticulation(const ArticulationType type) { return !isMultiNoteArticulation(type); }
 
-inline bool isRangedArticulation(const ArticulationType type)
-{
+inline bool isRangedArticulation(const ArticulationType type) {
     if (isSingleNoteArticulation(type)) {
         return false;
     }
 
-    return type == ArticulationType::Legato
-           || type == ArticulationType::Pedal
-           || type == ArticulationType::Multibend;
+    return type == ArticulationType::Legato || type == ArticulationType::Pedal || type == ArticulationType::Multibend;
 }
 
 static const String ORDINARY_PLAYING_TECHNIQUE_CODE(u"ordinary_technique");
@@ -377,8 +347,7 @@ constexpr dynamic_level_t MAX_DYNAMIC_LEVEL = HUNDRED_PERCENT;
 constexpr dynamic_level_t MIN_DYNAMIC_LEVEL = 0;
 constexpr dynamic_level_t DYNAMIC_LEVEL_STEP = 5 * ONE_PERCENT;
 
-inline dynamic_level_t dynamicLevelFromNormalized(const real_t normalized)
-{
+inline dynamic_level_t dynamicLevelFromNormalized(const real_t normalized) {
     return static_cast<dynamic_level_t>(lround(normalized.raw() * MAX_DYNAMIC_LEVEL));
 }
 
@@ -408,8 +377,7 @@ enum class DynamicType : percentage_t {
     Last
 };
 
-inline DynamicType approximateDynamicType(const dynamic_level_t dynamicLevel)
-{
+inline DynamicType approximateDynamicType(const dynamic_level_t dynamicLevel) {
     if (dynamicLevel < MIN_DYNAMIC_LEVEL) {
         return DynamicType::ppppppppp;
     }
@@ -421,8 +389,7 @@ inline DynamicType approximateDynamicType(const dynamic_level_t dynamicLevel)
     return static_cast<DynamicType>(dynamicLevel);
 }
 
-constexpr inline dynamic_level_t dynamicLevelFromType(const DynamicType type)
-{
+constexpr inline dynamic_level_t dynamicLevelFromType(const DynamicType type) {
     if (type == DynamicType::Undefined) {
         return MIN_DYNAMIC_LEVEL;
     }
@@ -430,114 +397,86 @@ constexpr inline dynamic_level_t dynamicLevelFromType(const DynamicType type)
     return static_cast<dynamic_level_t>(type);
 }
 
-struct ArrangementPattern
-{
+struct ArrangementPattern {
     duration_percentage_t durationFactor = 0;
     duration_percentage_t timestampOffset = 0;
 
     ArrangementPattern() = default;
 
     ArrangementPattern(duration_percentage_t _durationFactor, duration_percentage_t _timestampOffset)
-        : durationFactor(_durationFactor), timestampOffset(_timestampOffset)
-    {
-    }
+        : durationFactor(_durationFactor), timestampOffset(_timestampOffset) {}
 
-    bool operator==(const ArrangementPattern& other) const
-    {
-        return durationFactor == other.durationFactor
-               && timestampOffset == other.timestampOffset;
+    bool operator==(const ArrangementPattern &other) const {
+        return durationFactor == other.durationFactor && timestampOffset == other.timestampOffset;
     }
 };
 
 using ArrangementPatternList = std::vector<ArrangementPattern>;
 
-struct PitchPattern
-{
+struct PitchPattern {
     using PitchOffsetMap = PitchCurve;
 
     PitchOffsetMap pitchOffsetMap;
 
     PitchPattern() = default;
 
-    PitchPattern(size_t size, percentage_t step, pitch_level_t defaultValue)
-    {
+    PitchPattern(size_t size, percentage_t step, pitch_level_t defaultValue) {
         for (size_t i = 0; i < size; ++i) {
             pitchOffsetMap.emplace(step * static_cast<int>(i), defaultValue);
         }
     }
 
-    pitch_level_t maxAmplitudeLevel() const
-    {
-        return pitchOffsetMap.maxAmplitudeLevel();
-    }
+    pitch_level_t maxAmplitudeLevel() const { return pitchOffsetMap.maxAmplitudeLevel(); }
 
-    bool operator==(const PitchPattern& other) const
-    {
-        return pitchOffsetMap == other.pitchOffsetMap;
-    }
+    bool operator==(const PitchPattern &other) const { return pitchOffsetMap == other.pitchOffsetMap; }
 };
 
 using PitchPatternList = std::vector<PitchPattern>;
 
 using ExpressionCurve = ValuesCurve<dynamic_level_t>;
 
-struct ExpressionPattern
-{
+struct ExpressionPattern {
     using DynamicOffsetMap = ExpressionCurve;
 
     ExpressionCurve dynamicOffsetMap;
 
     ExpressionPattern() = default;
 
-    ExpressionPattern(size_t size, percentage_t step, dynamic_level_t defaultValue)
-    {
+    ExpressionPattern(size_t size, percentage_t step, dynamic_level_t defaultValue) {
         for (size_t i = 0; i < size; ++i) {
             dynamicOffsetMap.emplace(step * static_cast<int>(i), defaultValue);
         }
     }
 
-    dynamic_level_t maxAmplitudeLevel() const
-    {
-        return dynamicOffsetMap.maxAmplitudeLevel();
-    }
+    dynamic_level_t maxAmplitudeLevel() const { return dynamicOffsetMap.maxAmplitudeLevel(); }
 
-    bool operator==(const ExpressionPattern& other) const
-    {
-        return dynamicOffsetMap == other.dynamicOffsetMap;
-    }
+    bool operator==(const ExpressionPattern &other) const { return dynamicOffsetMap == other.dynamicOffsetMap; }
 };
 
 using ExpressionPatternList = std::vector<ExpressionPattern>;
 
-struct ArticulationPatternSegment
-{
+struct ArticulationPatternSegment {
     ArrangementPattern arrangementPattern;
     PitchPattern pitchPattern;
     ExpressionPattern expressionPattern;
 
     ArticulationPatternSegment() = default;
 
-    ArticulationPatternSegment(ArrangementPattern&& arrangement, PitchPattern&& pitch, ExpressionPattern&& expression)
-        : arrangementPattern(arrangement), pitchPattern(pitch), expressionPattern(expression)
-    {}
+    ArticulationPatternSegment(ArrangementPattern &&arrangement, PitchPattern &&pitch, ExpressionPattern &&expression)
+        : arrangementPattern(arrangement), pitchPattern(pitch), expressionPattern(expression) {}
 
-    bool operator==(const ArticulationPatternSegment& other) const
-    {
-        return arrangementPattern == other.arrangementPattern
-               && pitchPattern == other.pitchPattern
-               && expressionPattern == other.expressionPattern;
+    bool operator==(const ArticulationPatternSegment &other) const {
+        return arrangementPattern == other.arrangementPattern && pitchPattern == other.pitchPattern &&
+               expressionPattern == other.expressionPattern;
     }
 };
 
 using ArticulationPattern = SharedMap<duration_percentage_t, ArticulationPatternSegment>;
 
-struct ArticulationsProfile
-{
+struct ArticulationsProfile {
     std::vector<ArticulationFamily> supportedFamilies;
 
-    const ArticulationPattern& pattern(const ArticulationType type,
-                                       const ArticulationType fallback = ArticulationType::Undefined) const
-    {
+    const ArticulationPattern &pattern(const ArticulationType type, const ArticulationType fallback = ArticulationType::Undefined) const {
         auto search = m_patterns.find(type);
         if (search == m_patterns.cend() && fallback != ArticulationType::Undefined) {
             search = m_patterns.find(fallback);
@@ -551,35 +490,17 @@ struct ArticulationsProfile
         return search->second;
     }
 
-    void setPattern(const ArticulationType type, const ArticulationPattern& scope)
-    {
-        m_patterns.insert_or_assign(type, scope);
-    }
+    void setPattern(const ArticulationType type, const ArticulationPattern &scope) { m_patterns.insert_or_assign(type, scope); }
 
-    void removePattern(const ArticulationType type)
-    {
-        m_patterns.erase(type);
-    }
+    void removePattern(const ArticulationType type) { m_patterns.erase(type); }
 
-    const SharedHashMap<ArticulationType, ArticulationPattern>& data() const
-    {
-        return m_patterns;
-    }
+    const SharedHashMap<ArticulationType, ArticulationPattern> &data() const { return m_patterns; }
 
-    bool contains(const ArticulationType type) const
-    {
-        return m_patterns.find(type) != m_patterns.cend();
-    }
+    bool contains(const ArticulationType type) const { return m_patterns.find(type) != m_patterns.cend(); }
 
-    bool isValid() const
-    {
-        return !m_patterns.empty();
-    }
+    bool isValid() const { return !m_patterns.empty(); }
 
-    bool operator==(const ArticulationsProfile& other) const
-    {
-        return m_patterns == other.m_patterns;
-    }
+    bool operator==(const ArticulationsProfile &other) const { return m_patterns == other.m_patterns; }
 
 private:
     SharedHashMap<ArticulationType, ArticulationPattern> m_patterns;
@@ -587,8 +508,7 @@ private:
 
 using ArticulationsProfilePtr = std::shared_ptr<ArticulationsProfile>;
 
-struct ArticulationMeta
-{
+struct ArticulationMeta {
     ArticulationType type = ArticulationType::Undefined;
     ArticulationPattern pattern;
 
@@ -599,43 +519,21 @@ struct ArticulationMeta
 
     ArticulationMeta() = default;
 
-    ArticulationMeta(const ArticulationType _type)
-        : type(_type)
-    {}
+    ArticulationMeta(const ArticulationType _type) : type(_type) {}
 
-    ArticulationMeta(const ArticulationType _type,
-                     const ArticulationPattern& _pattern,
-                     const timestamp_t _timestamp,
-                     const duration_t _duration,
-                     const pitch_level_t overallPitchRange = 0,
-                     const dynamic_level_t overallDynamicRange = 0)
-        : type(_type),
-        pattern(_pattern),
-        timestamp(_timestamp),
-        overallDuration(_duration),
-        overallPitchChangesRange(overallPitchRange),
-        overallDynamicChangesRange(overallDynamicRange)
-    {}
+    ArticulationMeta(const ArticulationType _type, const ArticulationPattern &_pattern, const timestamp_t _timestamp,
+                     const duration_t _duration, const pitch_level_t overallPitchRange = 0, const dynamic_level_t overallDynamicRange = 0)
+        : type(_type), pattern(_pattern), timestamp(_timestamp), overallDuration(_duration), overallPitchChangesRange(overallPitchRange),
+          overallDynamicChangesRange(overallDynamicRange) {}
 
-    bool operator==(const ArticulationMeta& other) const
-    {
-        return type == other.type
-               && pattern == other.pattern
-               && timestamp == other.timestamp
-               && overallDuration == other.overallDuration
-               && overallPitchChangesRange == other.overallPitchChangesRange
-               && overallDynamicChangesRange == other.overallDynamicChangesRange;
+    bool operator==(const ArticulationMeta &other) const {
+        return type == other.type && pattern == other.pattern && timestamp == other.timestamp && overallDuration == other.overallDuration &&
+               overallPitchChangesRange == other.overallPitchChangesRange && overallDynamicChangesRange == other.overallDynamicChangesRange;
     }
 
-    bool hasStart() const
-    {
-        return overallDuration > 0;
-    }
+    bool hasStart() const { return overallDuration > 0; }
 
-    bool hasEnd() const
-    {
-        return overallDuration != mpe::INFINITE_DURATION;
-    }
+    bool hasEnd() const { return overallDuration != mpe::INFINITE_DURATION; }
 };
 
 using ArticulationMetaMap = SharedHashMap<ArticulationType, ArticulationMeta>;
@@ -653,34 +551,25 @@ struct ArticulationAppliedData {
 
     ArticulationAppliedData() = default;
 
-    explicit ArticulationAppliedData(ArticulationMeta&& _meta,
-                                     const duration_percentage_t _occupiedFrom,
+    explicit ArticulationAppliedData(ArticulationMeta &&_meta, const duration_percentage_t _occupiedFrom,
                                      const duration_percentage_t _occupiedTo)
-        : meta(std::move(_meta))
-    {
+        : meta(std::move(_meta)) {
         updateOccupiedRange(_occupiedFrom, _occupiedTo);
     }
 
-    explicit ArticulationAppliedData(const ArticulationMeta& _meta,
-                                     const duration_percentage_t _occupiedFrom,
+    explicit ArticulationAppliedData(const ArticulationMeta &_meta, const duration_percentage_t _occupiedFrom,
                                      const duration_percentage_t _occupiedTo)
-        : meta(_meta)
-    {
+        : meta(_meta) {
         updateOccupiedRange(_occupiedFrom, _occupiedTo);
     }
 
-    bool operator==(const ArticulationAppliedData& other) const
-    {
-        return meta == other.meta
-               && appliedPatternSegment == other.appliedPatternSegment
-               && occupiedFrom == other.occupiedFrom
-               && occupiedTo == other.occupiedTo
-               && occupiedPitchChangesRange == other.occupiedPitchChangesRange
-               && occupiedDynamicChangesRange == other.occupiedDynamicChangesRange;
+    bool operator==(const ArticulationAppliedData &other) const {
+        return meta == other.meta && appliedPatternSegment == other.appliedPatternSegment && occupiedFrom == other.occupiedFrom &&
+               occupiedTo == other.occupiedTo && occupiedPitchChangesRange == other.occupiedPitchChangesRange &&
+               occupiedDynamicChangesRange == other.occupiedDynamicChangesRange;
     }
 
-    void updateOccupiedRange(const duration_percentage_t from, const duration_percentage_t to)
-    {
+    void updateOccupiedRange(const duration_percentage_t from, const duration_percentage_t to) {
         occupiedFrom = from;
         occupiedTo = to;
 
@@ -699,7 +588,7 @@ struct ArticulationAppliedData {
         occupiedPitchChangesRange = static_cast<pitch_level_t>(static_cast<float>(meta.overallPitchChangesRange) * occupiedFactor);
         occupiedDynamicChangesRange = static_cast<pitch_level_t>(static_cast<float>(meta.overallDynamicChangesRange) * occupiedFactor);
 
-        const auto& lower = meta.pattern.lower_bound(occupiedFrom);
+        const auto &lower = meta.pattern.lower_bound(occupiedFrom);
 
         if (lower != meta.pattern.cend()) {
             appliedPatternSegment = lower->second;
@@ -709,17 +598,16 @@ struct ArticulationAppliedData {
     }
 };
 
-struct ArticulationMap : public SharedHashMap<ArticulationType, ArticulationAppliedData>
-{
+struct ArticulationMap : public SharedHashMap<ArticulationType, ArticulationAppliedData> {
     static constexpr size_t EXPECTED_SIZE = (HUNDRED_PERCENT / TEN_PERCENT) + 1;
 
-    void updateOccupiedRange(const ArticulationType type, const duration_percentage_t occupiedFrom, const duration_percentage_t occupiedTo)
-    {
+    void updateOccupiedRange(const ArticulationType type, const duration_percentage_t occupiedFrom,
+                             const duration_percentage_t occupiedTo) {
         if (!contains(type)) {
             return;
         }
 
-        ArticulationAppliedData& data = at(type);
+        ArticulationAppliedData &data = at(type);
         data.updateOccupiedRange(occupiedFrom, occupiedTo);
 
         if (occupiedFrom == 0 && occupiedTo == HUNDRED_PERCENT) {
@@ -729,50 +617,28 @@ struct ArticulationMap : public SharedHashMap<ArticulationType, ArticulationAppl
         preCalculateAverageData();
     }
 
-    duration_percentage_t averageDurationFactor() const
-    {
-        return m_averageDurationFactor;
-    }
+    duration_percentage_t averageDurationFactor() const { return m_averageDurationFactor; }
 
-    duration_percentage_t averageTimestampOffset() const
-    {
-        return m_averageTimestampOffset;
-    }
+    duration_percentage_t averageTimestampOffset() const { return m_averageTimestampOffset; }
 
-    const PitchPattern::PitchOffsetMap& averagePitchOffsetMap() const
-    {
-        return m_averagePitchOffsetMap;
-    }
+    const PitchPattern::PitchOffsetMap &averagePitchOffsetMap() const { return m_averagePitchOffsetMap; }
 
-    pitch_level_t averagePitchRange() const
-    {
-        return m_averagePitchRange;
-    }
+    pitch_level_t averagePitchRange() const { return m_averagePitchRange; }
 
-    dynamic_level_t averageMaxAmplitudeLevel() const
-    {
-        return m_averageMaxAmplitudeLevel;
-    }
+    dynamic_level_t averageMaxAmplitudeLevel() const { return m_averageMaxAmplitudeLevel; }
 
-    dynamic_level_t averageDynamicRange() const
-    {
-        return m_averageDynamicRange;
-    }
+    dynamic_level_t averageDynamicRange() const { return m_averageDynamicRange; }
 
-    const ExpressionPattern::DynamicOffsetMap& averageDynamicOffsetMap() const
-    {
-        return m_averageDynamicOffsetMap;
-    }
+    const ExpressionPattern::DynamicOffsetMap &averageDynamicOffsetMap() const { return m_averageDynamicOffsetMap; }
 
-    void preCalculateAverageData()
-    {
+    void preCalculateAverageData() {
         if (empty()) {
             return;
         }
 
         if (size() == 1) {
-            const ArticulationAppliedData& artData = cbegin()->second;
-            const ArticulationPatternSegment& segment = artData.appliedPatternSegment;
+            const ArticulationAppliedData &artData = cbegin()->second;
+            const ArticulationPatternSegment &segment = artData.appliedPatternSegment;
             m_averageDurationFactor = segment.arrangementPattern.durationFactor;
             m_averageTimestampOffset = segment.arrangementPattern.timestampOffset;
             m_averageMaxAmplitudeLevel = segment.expressionPattern.maxAmplitudeLevel();
@@ -792,7 +658,7 @@ struct ArticulationMap : public SharedHashMap<ArticulationType, ArticulationAppl
         }
 
         for (auto it = cbegin(); it != cend(); ++it) {
-            const ArticulationAppliedData& appliedArticulation = it->second;
+            const ArticulationAppliedData &appliedArticulation = it->second;
             sumUpData(appliedArticulation, paramsSum);
         }
 
@@ -800,8 +666,7 @@ struct ArticulationMap : public SharedHashMap<ArticulationType, ArticulationAppl
     }
 
 private:
-    void resetData()
-    {
+    void resetData() {
         m_averageDurationFactor = 0;
         m_averageTimestampOffset = 0;
         m_averageMaxAmplitudeLevel = 0;
@@ -821,9 +686,8 @@ private:
         ValuesCurve<int> dynamicOffsetMap;
     };
 
-    void sumUpData(const ArticulationAppliedData& appliedArticulation, ParamsSum& out)
-    {
-        const ArticulationPatternSegment& segment = appliedArticulation.appliedPatternSegment;
+    void sumUpData(const ArticulationAppliedData &appliedArticulation, ParamsSum &out) {
+        const ArticulationPatternSegment &segment = appliedArticulation.appliedPatternSegment;
 
         out.durationFactor += segment.arrangementPattern.durationFactor;
         out.timestampOffset += segment.arrangementPattern.timestampOffset;
@@ -834,12 +698,11 @@ private:
         sumUpOffsets(segment, out);
     }
 
-    void sumUpOffsets(const ArticulationPatternSegment& segment, ParamsSum& out)
-    {
+    void sumUpOffsets(const ArticulationPatternSegment &segment, ParamsSum &out) {
         // Dynamic offsets
-        const ExpressionPattern& expPattern = segment.expressionPattern;
-        const bool hasMeaningfulDynamicOffset = !expPattern.dynamicOffsetMap.empty()
-                                                && expPattern.maxAmplitudeLevel() != dynamicLevelFromType(DynamicType::Natural);
+        const ExpressionPattern &expPattern = segment.expressionPattern;
+        const bool hasMeaningfulDynamicOffset =
+            !expPattern.dynamicOffsetMap.empty() && expPattern.maxAmplitudeLevel() != dynamicLevelFromType(DynamicType::Natural);
 
         if (hasMeaningfulDynamicOffset) {
             auto outIt = out.dynamicOffsetMap.begin();
@@ -853,9 +716,8 @@ private:
         }
 
         // Pitch offsets
-        const PitchPattern& pitchPattern = segment.pitchPattern;
-        const bool hasMeaningfulPitchOffset = !pitchPattern.pitchOffsetMap.empty()
-                                              && pitchPattern.maxAmplitudeLevel() != 0;
+        const PitchPattern &pitchPattern = segment.pitchPattern;
+        const bool hasMeaningfulPitchOffset = !pitchPattern.pitchOffsetMap.empty() && pitchPattern.maxAmplitudeLevel() != 0;
 
         if (hasMeaningfulPitchOffset) {
             auto outIt = out.pitchOffsetMap.begin();
@@ -869,8 +731,7 @@ private:
         }
     }
 
-    void calculateAverage(const ParamsSum& paramsSum)
-    {
+    void calculateAverage(const ParamsSum &paramsSum) {
         int count = static_cast<int>(size());
 
         if (count == 1) {
@@ -887,10 +748,9 @@ private:
             // dynamic change. Otherwise two articulations without an expression pattern (the default in the
             // 5.0 profiles) produce a non-empty all-zero average map, and noteVelocity() then reads a maximum
             // amplitude level of 0 instead of falling back to the nominal dynamic level.
-            const ExpressionPattern& expPattern = it->second.appliedPatternSegment.expressionPattern;
-            const bool hasMeaningfulDynamicOffset = !expPattern.dynamicOffsetMap.empty()
-                                                    && expPattern.maxAmplitudeLevel()
-                                                    != dynamicLevelFromType(DynamicType::Natural);
+            const ExpressionPattern &expPattern = it->second.appliedPatternSegment.expressionPattern;
+            const bool hasMeaningfulDynamicOffset =
+                !expPattern.dynamicOffsetMap.empty() && expPattern.maxAmplitudeLevel() != dynamicLevelFromType(DynamicType::Natural);
 
             if (hasMeaningfulDynamicOffset) {
                 dynamicChangesCount++;
@@ -915,7 +775,7 @@ private:
             m_averageMaxAmplitudeLevel = paramsSum.maxAmplitudeLevel / dynamicChangesCount;
             m_averageDynamicRange = paramsSum.dynamicRange / dynamicChangesCount;
 
-            for (const auto& pair : paramsSum.dynamicOffsetMap) {
+            for (const auto &pair : paramsSum.dynamicOffsetMap) {
                 m_averageDynamicOffsetMap.insert_or_assign(pair.first, pair.second / dynamicChangesCount);
             }
         } else if (dynamicChangesCount == 0) {
@@ -927,7 +787,7 @@ private:
         if (pitchChangesCount > 0) {
             m_averagePitchRange = paramsSum.pitchRange / pitchChangesCount;
 
-            for (const auto& pair : paramsSum.pitchOffsetMap) {
+            for (const auto &pair : paramsSum.pitchOffsetMap) {
                 m_averagePitchOffsetMap.insert_or_assign(pair.first, pair.second / pitchChangesCount);
             }
         } else if (pitchChangesCount == 0) {
@@ -944,4 +804,4 @@ private:
     PitchPattern::PitchOffsetMap m_averagePitchOffsetMap;
     ExpressionPattern::DynamicOffsetMap m_averageDynamicOffsetMap;
 };
-}
+} // namespace muse::mpe

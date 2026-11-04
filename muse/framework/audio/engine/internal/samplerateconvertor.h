@@ -26,20 +26,18 @@
 #include <deque>
 
 namespace muse::audio::engine {
-class SampleRateConvertor
-{
+class SampleRateConvertor {
 public:
-    enum Method {
-        SINC, FIR
-    };
-    explicit SampleRateConvertor(const std::vector<float>& data, unsigned int channelsCount, unsigned int sampleRateIn,
+    enum Method { SINC, FIR };
+
+    explicit SampleRateConvertor(const std::vector<float> &data, unsigned int channelsCount, unsigned int sampleRateIn,
                                  unsigned int sampleRateOut);
 
     //! offline convert full data set
     std::vector<float> convert();
 
     //! online convert
-    unsigned int convert(float* buffer, unsigned int from, unsigned int count);
+    unsigned int convert(float *buffer, unsigned int from, unsigned int count);
 
     void setChannelCount(unsigned int count);
     void setSampleRateIn(unsigned int sampleRate);
@@ -62,7 +60,7 @@ private:
     void initWindow();
 
     const static unsigned int USE_SAMPLES = 16; //!< this value defines the quality and complexity of SRC.
-    const std::vector<float>& m_data;
+    const std::vector<float> &m_data;
 
     //! values of window function for USE_SAMPLES
     const static unsigned int FIR_LENGTH = 33;
@@ -75,6 +73,6 @@ private:
     unsigned int m_sampleRateOut = 0;
     Method m_method = FIR;
 };
-}
+} // namespace muse::audio::engine
 
 #endif // MUSE_AUDIO_SAMPLERATECONVERTOR_H

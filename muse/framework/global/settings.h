@@ -27,7 +27,6 @@
 #include "types/val.h"
 #include "io/path.h"
 
-
 //! NOTE We are gradually abandoning Qt in non-GUI classes.
 //! This settings interface is almost independent of Qt,
 //! QSettings are used only in the implementation for compatibility with current settings.
@@ -36,13 +35,11 @@
 class QSettings;
 
 namespace muse {
-class Settings
-{
+class Settings {
 public:
-    static Settings* instance();
+    static Settings *instance();
 
-    struct Key
-    {
+    struct Key {
         std::string moduleName;
         std::string key;
 
@@ -50,12 +47,11 @@ public:
         Key(std::string moduleName, std::string key);
 
         bool isNull() const;
-        bool operator==(const Key& k) const;
-        bool operator<(const Key& k) const;
+        bool operator==(const Key &k) const;
+        bool operator<(const Key &k) const;
     };
 
-    struct Item
-    {
+    struct Item {
         Key key;
         Val value;
         Val defaultValue;
@@ -70,33 +66,32 @@ public:
 
     using Items = std::map<Key, Item>;
 
-    const Items& items() const;
+    const Items &items() const;
 
     void reload();
     void load();
 
     void reset(bool keepDefaultSettings = false, bool notifyAboutChanges = true, bool notifyOtherInstances = true);
 
-    const Val& value(const Key& key) const;
-    const Val& defaultValue(const Key& key) const;
+    const Val &value(const Key &key) const;
+    const Val &defaultValue(const Key &key) const;
 
     //! NOTE Will be write to global config and sync between all instances
-    void setSharedValue(const Key& key, const Val& value);
+    void setSharedValue(const Key &key, const Val &value);
 
     //! NOTE Will be write to global config and NOT sync between instances
-    void setLocalValue(const Key& key, const Val& value);
+    void setLocalValue(const Key &key, const Val &value);
 
-    void setDefaultValue(const Key& key, const Val& value);
+    void setDefaultValue(const Key &key, const Val &value);
 
-    void setDescription(const Key& key, const std::string& value);
+    void setDescription(const Key &key, const std::string &value);
 
-    void setCanBeManuallyEdited(const Settings::Key& key, bool canBeManuallyEdited, const Val& minValue = Val(),
-                                const Val& maxValue = Val());
+    void setCanBeManuallyEdited(const Settings::Key &key, bool canBeManuallyEdited, const Val &minValue = Val(),
+                                const Val &maxValue = Val());
 
     void beginTransaction(bool notifyToOtherInstances = true);
     void commitTransaction(bool notifyToOtherInstances = true);
     void rollbackTransaction(bool notifyToOtherInstances = true);
-
 
     io::path_t filePath() const;
 
@@ -104,22 +99,18 @@ private:
     Settings();
     ~Settings();
 
-    Item& findItem(const Key& key) const;
+    Item &findItem(const Key &key) const;
 
-    void insertNewItem(const Key& key, const Val& value);
+    void insertNewItem(const Key &key, const Val &value);
 
     Items readItems() const;
-    void writeValue(const Key& key, const Val& value);
+    void writeValue(const Key &key, const Val &value);
 
-
-    QSettings* m_settings = nullptr;
+    QSettings *m_settings = nullptr;
     mutable Items m_items;
     mutable Items m_localSettings;
     mutable bool m_isTransactionStarted = false;
 };
 
-inline Settings* settings()
-{
-    return Settings::instance();
-}
-}
+inline Settings *settings() { return Settings::instance(); }
+} // namespace muse

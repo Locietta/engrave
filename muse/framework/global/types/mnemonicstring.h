@@ -22,44 +22,29 @@
 #ifndef MUSE_GLOBAL_MNEMONICSTRING_H
 #define MUSE_GLOBAL_MNEMONICSTRING_H
 
-
 #include "translatablestring.h"
 
 namespace muse {
-class MnemonicString
-{
+class MnemonicString {
 public:
     MnemonicString() = default;
-    MnemonicString(const TranslatableString& raw)
-        : m_raw(raw) {}
 
-    MnemonicString(const char* context, const char* str, const char* disambiguation = nullptr, int n = -1)
+    MnemonicString(const TranslatableString &raw) : m_raw(raw) {}
+
+    MnemonicString(const char *context, const char *str, const char *disambiguation = nullptr, int n = -1)
         : m_raw(context, str, disambiguation, n) {}
 
-    inline bool isEmpty() const
-    {
-        return m_raw.isEmpty();
-    }
+    inline bool isEmpty() const { return m_raw.isEmpty(); }
 
-    inline const TranslatableString& raw() const
-    {
-        return m_raw;
-    }
+    inline const TranslatableString &raw() const { return m_raw; }
 
+    inline bool operator==(const MnemonicString &other) const { return m_raw == other.m_raw; }
 
-    inline bool operator ==(const MnemonicString& other) const
-    {
-        return m_raw == other.m_raw;
-    }
-
-    inline bool operator !=(const MnemonicString& other) const
-    {
-        return m_raw != other.m_raw;
-    }
+    inline bool operator!=(const MnemonicString &other) const { return m_raw != other.m_raw; }
 
 private:
     TranslatableString m_raw;
 };
-}
+} // namespace muse
 
 #endif // MUSE_GLOBAL_MNEMONICSTRING_H

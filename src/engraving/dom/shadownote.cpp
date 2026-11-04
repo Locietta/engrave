@@ -40,22 +40,16 @@ namespace mu::engraving {
 //   ShadowNote
 //---------------------------------------------------------
 
-ShadowNote::ShadowNote(Score* s)
-    : EngravingItem(ElementType::SHADOW_NOTE, s), m_noteheadSymbol(SymId::noSym)
-{
+ShadowNote::ShadowNote(Score *s) : EngravingItem(ElementType::SHADOW_NOTE, s), m_noteheadSymbol(SymId::noSym) {
     m_lineIndex = 1000;
     m_duration = TDuration(DurationType::V_INVALID);
     m_isRest = false;
 }
 
-bool ShadowNote::isValid() const
-{
-    return m_noteheadSymbol != SymId::noSym;
-}
+bool ShadowNote::isValid() const { return m_noteheadSymbol != SymId::noSym; }
 
 void ShadowNote::setState(SymId noteSymbol, TDuration duration, bool rest, bool beyondScore, AccidentalType accidentalType,
-                          const std::set<SymId>& articulationIds)
-{
+                          const std::set<SymId> &articulationIds) {
     m_noteheadSymbol = noteSymbol;
     m_duration = duration;
     m_isRest = rest;
@@ -64,18 +58,11 @@ void ShadowNote::setState(SymId noteSymbol, TDuration duration, bool rest, bool 
     m_articulationIds = articulationIds;
 }
 
-bool ShadowNote::hasStem() const
-{
-    return !m_isRest && m_duration.hasStem();
-}
+bool ShadowNote::hasStem() const { return !m_isRest && m_duration.hasStem(); }
 
-bool ShadowNote::hasFlag() const
-{
-    return hasStem() && m_duration.hooks() > 0;
-}
+bool ShadowNote::hasFlag() const { return hasStem() && m_duration.hooks() > 0; }
 
-SymId ShadowNote::flagSym() const
-{
+SymId ShadowNote::flagSym() const {
     if (!hasStem()) {
         return SymId::noSym;
     }
@@ -85,28 +72,18 @@ SymId ShadowNote::flagSym() const
     return Hook::symIdForHookIndex(hooks, straight);
 }
 
-AccidentalType ShadowNote::accidentalType() const
-{
-    return m_accidentalType;
-}
+AccidentalType ShadowNote::accidentalType() const { return m_accidentalType; }
 
-const std::set<SymId>& ShadowNote::articulationIds() const
-{
-    return m_articulationIds;
-}
+const std::set<SymId> &ShadowNote::articulationIds() const { return m_articulationIds; }
 
-bool ShadowNote::ledgerLinesVisible() const
-{
-    return !m_isRest && m_lineIndex < 100 && m_lineIndex > -100;
-}
+bool ShadowNote::ledgerLinesVisible() const { return !m_isRest && m_lineIndex < 100 && m_lineIndex > -100; }
 
 //---------------------------------------------------------
 //   computeUp
 //---------------------------------------------------------
 
-bool ShadowNote::computeUp() const
-{
-    const StaffType* staffType = this->staffType();
+bool ShadowNote::computeUp() const {
+    const StaffType *staffType = this->staffType();
     bool tabStaff = staffType && staffType->isTabStaff();
 
     if (tabStaff && (staffType->stemless() || !staffType->stemThrough())) {
@@ -123,8 +100,7 @@ bool ShadowNote::computeUp() const
 
 // draw articulations, laying them out in a fashion similar to
 // ChordLayout::layoutArticulations
-void ShadowNote::drawArticulations(Painter* painter) const
-{
+void ShadowNote::drawArticulations(Painter *painter) const {
     // Approximate bounding box of note, including stem, relative to notehead
     double noteheadWidth = symWidth(m_noteheadSymbol);
     double noteheadHeight = symHeight(m_noteheadSymbol);
@@ -148,7 +124,7 @@ void ShadowNote::drawArticulations(Painter* painter) const
     // Articulations close to the note are defined in Articulation::layoutCloseToNote
     bool wasStaccato = false; // keep track for special accent-staccato kerning
     SymId prevArticulation = mu::engraving::SymId::noSym;
-    for (const SymId& artic: m_articulationIds) {
+    for (const SymId &artic : m_articulationIds) {
         String articName = Articulation::symId2ArticulationName(artic);
         if (articName == u"staccato") {
             wasStaccato = true;
@@ -181,7 +157,7 @@ void ShadowNote::drawArticulations(Painter* painter) const
         }
     }
 
-    for (const SymId& artic: m_articulationIds) {
+    for (const SymId &artic : m_articulationIds) {
         String articName = Articulation::symId2ArticulationName(artic);
         if (articName == u"staccato" || articName == u"tenuto") {
             continue;
@@ -194,16 +170,15 @@ void ShadowNote::drawArticulations(Painter* painter) const
                 drawFarArticulation(painter, artic, boundRect, up, wasStaccato);
             } else {
                 // Other articulations (e.g., laissez-vibrer)
-                drawFarArticulation(painter, artic, boundRect,  up, false);
+                drawFarArticulation(painter, artic, boundRect, up, false);
             }
             wasStaccato = false;
         }
     }
 }
 
-void ShadowNote::drawCloseArticulation(muse::draw::Painter* painter, const SymId& artic, RectF& boundRect, bool up,
-                                       const SymId& prevArticulation) const
-{
+void ShadowNote::drawCloseArticulation(muse::draw::Painter *painter, const SymId &artic, RectF &boundRect, bool up,
+                                       const SymId &prevArticulation) const {
     PointF coord;
     double spacing = spatium();
     SymId articSym = artic;
@@ -250,9 +225,8 @@ void ShadowNote::drawCloseArticulation(muse::draw::Painter* painter, const SymId
     drawSymbol(articSym, painter, coord);
 }
 
-void ShadowNote::drawFarArticulation(muse::draw::Painter* painter, const SymId& artic, RectF& boundRect, bool up,
-                                     bool accentStaccatoKern) const
-{
+void ShadowNote::drawFarArticulation(muse::draw::Painter *painter, const SymId &artic, RectF &boundRect, bool up,
+                                     bool accentStaccatoKern) const {
     PointF coord;
     double spacing = spatium();
     SymId articSym = artic;
@@ -292,4 +266,4 @@ void ShadowNote::drawFarArticulation(muse::draw::Painter* painter, const SymId& 
 
     drawSymbol(articSym, painter, coord);
 }
-}
+} // namespace mu::engraving

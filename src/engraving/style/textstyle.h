@@ -64,20 +64,26 @@ struct TextStyle {
     OffsetSids offsetSids;
 
     auto begin() { return properties.begin(); }
+
     auto end() { return properties.end(); }
+
     auto begin() const { return properties.begin(); }
+
     auto end() const { return properties.end(); }
 
     auto size() const { return properties.size(); }
 
-    auto& operator[](size_t i) { return properties[i]; }
-    const auto& operator[](size_t i) const { return properties[i]; }
-    auto& at(size_t i) { return properties.at(i); }
-    const auto& at(size_t i) const { return properties.at(i); }
+    auto &operator[](size_t i) { return properties[i]; }
+
+    const auto &operator[](size_t i) const { return properties[i]; }
+
+    auto &at(size_t i) { return properties.at(i); }
+
+    const auto &at(size_t i) const { return properties.at(i); }
 };
 
-const TextStyle* textStyle(TextStyleType);
-const std::vector<TextStyleType>& allTextStyles();
-const std::vector<TextStyleType>& editableTextStyles();
-const std::vector<TextStyleType>& primaryTextStyles();
-}
+const TextStyle *textStyle(TextStyleType);
+const std::vector<TextStyleType> &allTextStyles();
+const std::vector<TextStyleType> &editableTextStyles();
+const std::vector<TextStyleType> &primaryTextStyles();
+} // namespace mu::engraving

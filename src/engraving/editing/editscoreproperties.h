@@ -27,74 +27,66 @@
 #include "../dom/score.h"
 
 namespace mu::engraving {
-class ChangeMetaTags : public UndoableCommand
-{
+class ChangeMetaTags : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeMetaTags)
 
-    Score* score = nullptr;
+    Score *score = nullptr;
     std::map<String, String> metaTags;
 
     void flip() override;
 
 public:
-    ChangeMetaTags(Score* s, const std::map<String, String>& m)
-        : score(s), metaTags(m) {}
+    ChangeMetaTags(Score *s, const std::map<String, String> &m) : score(s), metaTags(m) {}
 
     UNDO_TYPE(CommandType::ChangeMetaInfo)
     UNDO_NAME("ChangeMetaTags")
-    UNDO_CHANGED_OBJECTS({ score })
+    UNDO_CHANGED_OBJECTS({score})
 };
 
-class ChangeMetaText : public UndoableCommand
-{
+class ChangeMetaText : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeMetaText)
 
-    Score* score = nullptr;
+    Score *score = nullptr;
     String id;
     String text;
 
     void flip() override;
 
 public:
-    ChangeMetaText(Score* s, const String& i, const String& t)
-        : score(s), id(i), text(t) {}
+    ChangeMetaText(Score *s, const String &i, const String &t) : score(s), id(i), text(t) {}
 
     UNDO_TYPE(CommandType::ChangeMetaInfo)
     UNDO_NAME("ChangeMetaText")
-    UNDO_CHANGED_OBJECTS({ score })
+    UNDO_CHANGED_OBJECTS({score})
 };
 
-class ChangeScoreOrder : public UndoableCommand
-{
+class ChangeScoreOrder : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeScoreOrder)
 
-    Score* score = nullptr;
+    Score *score = nullptr;
     ScoreOrder order;
     void flip() override;
 
 public:
-    ChangeScoreOrder(Score* sc, ScoreOrder so)
-        : score(sc), order(so) {}
+    ChangeScoreOrder(Score *sc, ScoreOrder so) : score(sc), order(so) {}
 
     UNDO_TYPE(CommandType::ChangeScoreOrder)
     UNDO_NAME("ChangeScoreOrder")
-    UNDO_CHANGED_OBJECTS({ score })
+    UNDO_CHANGED_OBJECTS({score})
 };
 
-class ChangePageNumberOffset : public UndoableCommand
-{
+class ChangePageNumberOffset : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangePageNumberOffset)
 
-    Score* score = nullptr;
+    Score *score = nullptr;
     int pageOffset = 0;
 
     void flip() override;
 
 public:
-    ChangePageNumberOffset(Score* s, int po)
-        : score(s), pageOffset(po) {}
+    ChangePageNumberOffset(Score *s, int po) : score(s), pageOffset(po) {}
 
     UNDO_NAME("ChangePageNumberOffset")
-    UNDO_CHANGED_OBJECTS({ score })
+    UNDO_CHANGED_OBJECTS({score})
 };
-}
+} // namespace mu::engraving

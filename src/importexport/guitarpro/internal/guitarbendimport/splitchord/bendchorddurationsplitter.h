@@ -25,11 +25,10 @@
 #include <engraving/types/fraction.h>
 
 namespace mu::iex::guitarpro {
-class BendChordDurationSplitter
-{
+class BendChordDurationSplitter {
 public:
-    static std::vector<mu::engraving::Fraction> findValidNoteSplit(const mu::engraving::Fraction& totalDuration,
-                                                                   const std::vector<mu::engraving::Fraction>& proportions,
+    static std::vector<mu::engraving::Fraction> findValidNoteSplit(const mu::engraving::Fraction &totalDuration,
+                                                                   const std::vector<mu::engraving::Fraction> &proportions,
                                                                    int maxDenominator);
 };
-} // mu::iex::guitarpro
+} // namespace mu::iex::guitarpro

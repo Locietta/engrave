@@ -27,10 +27,9 @@ class ChordRest;
 class Score;
 class Transaction;
 
-class EditCrossStaff
-{
+class EditCrossStaff {
 public:
-    static void moveUp(Transaction& tx, Score* score, ChordRest* cr);
-    static void moveDown(Transaction& tx, Score* score, ChordRest* cr);
+    static void moveUp(Transaction &tx, Score *score, ChordRest *cr);
+    static void moveDown(Transaction &tx, Score *score, ChordRest *cr);
 };
-}
+} // namespace mu::engraving

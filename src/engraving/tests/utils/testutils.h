@@ -25,11 +25,10 @@
 #include "engraving/dom/score.h"
 
 namespace mu::engraving {
-class TestUtils
-{
+class TestUtils {
 public:
-    static Score* createPart(MasterScore* masterScore, size_t partNumber = 0);
-    static Score* createEmptyPart(MasterScore* masterScore);
-    static void createParts(MasterScore* masterScore, size_t numberOfParts);
+    static Score *createPart(MasterScore *masterScore, size_t partNumber = 0);
+    static Score *createEmptyPart(MasterScore *masterScore);
+    static void createParts(MasterScore *masterScore, size_t numberOfParts);
 };
-}
+} // namespace mu::engraving

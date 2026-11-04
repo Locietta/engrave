@@ -28,19 +28,18 @@
 #include "envelopefilterconfig.h"
 
 namespace muse::audio::dsp {
-class Limiter
-{
+class Limiter {
 public:
     Limiter(const unsigned int sampleRate);
 
     bool isActive() const;
     void setIsActive(const bool active);
 
-    void process(const float& linearRms, float* buffer, const audioch_t& audioChannelsCount, const samples_t samplesPerChannel);
+    void process(const float &linearRms, float *buffer, const audioch_t &audioChannelsCount, const samples_t samplesPerChannel);
 
 private:
     volume_db_t gainSmoothing(const float newGainReduction) const;
-    volume_db_t computeGain(const volume_db_t& logarithmSample) const;
+    volume_db_t computeGain(const volume_db_t &logarithmSample) const;
 
     EnvelopeFilterConfig m_filterConfig;
 
@@ -50,6 +49,6 @@ private:
 };
 
 using LimiterPtr = std::unique_ptr<Limiter>;
-}
+} // namespace muse::audio::dsp
 
 #endif // MUSE_AUDIO_LIMITER_H

@@ -26,19 +26,16 @@
 #include "../dom/location.h"
 
 namespace mu::engraving {
-class LinksIndexer
-{
+class LinksIndexer {
 public:
 
-    inline bool operator==(const LinksIndexer& i) const
-    {
+    inline bool operator==(const LinksIndexer &i) const {
         return _lastLocalIndex == i._lastLocalIndex && _lastLinkedElementLoc == i._lastLinkedElementLoc;
     }
 
-    inline bool operator!=(const LinksIndexer& i) const { return !this->operator==(i); }
+    inline bool operator!=(const LinksIndexer &i) const { return !this->operator==(i); }
 
-    int assignLocalIndex(const Location& mainElementLocation)
-    {
+    int assignLocalIndex(const Location &mainElementLocation) {
         if (_lastLinkedElementLoc == mainElementLocation) {
             return ++_lastLocalIndex;
         }
@@ -53,6 +50,6 @@ private:
     int _lastLocalIndex = -1;
     Location _lastLinkedElementLoc = Location::absolute();
 };
-}
+} // namespace mu::engraving
 
 #endif // MU_ENGRAVING_LINKSINDEXER_H

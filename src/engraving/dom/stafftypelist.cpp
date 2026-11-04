@@ -29,8 +29,7 @@ namespace mu::engraving {
 //   staffType
 //---------------------------------------------------------
 
-const StaffType& StaffTypeList::staffType(const Fraction& tick) const
-{
+const StaffType &StaffTypeList::staffType(const Fraction &tick) const {
     if (tick.negative()) {
         static const StaffType st;
         return st;
@@ -52,8 +51,7 @@ const StaffType& StaffTypeList::staffType(const Fraction& tick) const
 //   staffType
 //---------------------------------------------------------
 
-StaffType& StaffTypeList::staffType(const Fraction& tick)
-{
+StaffType &StaffTypeList::staffType(const Fraction &tick) {
     assert(!tick.negative());
 
     if (m_staffTypeChanges.empty()) {
@@ -71,8 +69,7 @@ StaffType& StaffTypeList::staffType(const Fraction& tick)
 //   setStaffType
 //---------------------------------------------------------
 
-StaffType* StaffTypeList::setStaffType(const Fraction& tick, const StaffType& st)
-{
+StaffType *StaffTypeList::setStaffType(const Fraction &tick, const StaffType &st) {
     assert(!tick.negative());
 
     if (tick.isZero()) {
@@ -81,7 +78,7 @@ StaffType* StaffTypeList::setStaffType(const Fraction& tick, const StaffType& st
     }
 
     auto i = m_staffTypeChanges.find(tick.ticks());
-    StaffType* nst;
+    StaffType *nst;
     if (i == m_staffTypeChanges.end()) {
         auto k = m_staffTypeChanges.insert(std::pair<int, StaffType>(tick.ticks(), st));
         nst = &(k.first->second);
@@ -96,8 +93,7 @@ StaffType* StaffTypeList::setStaffType(const Fraction& tick, const StaffType& st
 //   removeStaffType
 //---------------------------------------------------------
 
-bool StaffTypeList::removeStaffType(const Fraction& tick)
-{
+bool StaffTypeList::removeStaffType(const Fraction &tick) {
     assert(!tick.negative());
     if (tick.isZero()) {
         m_firstStaffType = StaffType();
@@ -114,13 +110,11 @@ bool StaffTypeList::removeStaffType(const Fraction& tick)
     return true;
 }
 
-bool StaffTypeList::isStaffTypeStartFrom(const Fraction& tick) const
-{
+bool StaffTypeList::isStaffTypeStartFrom(const Fraction &tick) const {
     return m_staffTypeChanges.find(tick.ticks()) != m_staffTypeChanges.end();
 }
 
-void StaffTypeList::moveStaffType(const Fraction& from, const Fraction& to)
-{
+void StaffTypeList::moveStaffType(const Fraction &from, const Fraction &to) {
     StaffType tmp = staffType(from);
     removeStaffType(from);
     setStaffType(to, tmp);
@@ -130,16 +124,15 @@ void StaffTypeList::moveStaffType(const Fraction& from, const Fraction& to)
 //   staffTypeRange
 //---------------------------------------------------------
 
-std::pair<int, int> StaffTypeList::staffTypeRange(const Fraction& tick) const
-{
+std::pair<int, int> StaffTypeList::staffTypeRange(const Fraction &tick) const {
     if (tick.negative()) {
-        return { -1, -1 };
+        return {-1, -1};
     }
 
     auto i = m_staffTypeChanges.upper_bound(tick.ticks());
     const int end = (i == m_staffTypeChanges.end()) ? -1 : i->first;
     const int start = (i == m_staffTypeChanges.begin()) ? 0 : (--i)->first;
 
-    return { start, end };
+    return {start, end};
 }
-}
+} // namespace mu::engraving

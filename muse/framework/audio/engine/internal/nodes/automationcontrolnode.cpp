@@ -28,46 +28,30 @@ using namespace muse;
 using namespace muse::audio;
 using namespace muse::audio::engine;
 
-void AutomationControlNode::setPlayheadPosition(const PlayheadPositionPtr& playheadPosition)
-{
+void AutomationControlNode::setPlayheadPosition(const PlayheadPositionPtr &playheadPosition) {
     m_playheadPosition = playheadPosition;
     m_lastGainsPos = std::nullopt;
 }
 
-void AutomationControlNode::setVolume(const AutomatableValue<volume_db_t>& volume)
-{
+void AutomationControlNode::setVolume(const AutomatableValue<volume_db_t> &volume) {
     m_volume = volume;
     updateChannelGains(currentPos());
 }
 
-void AutomationControlNode::setPan(const AutomatableValue<balance_t>& pan)
-{
+void AutomationControlNode::setPan(const AutomatableValue<balance_t> &pan) {
     m_pan = pan;
     updateChannelGains(currentPos());
 }
 
-void AutomationControlNode::setMuted(bool muted)
-{
-    setEnabled(!muted);
-}
+void AutomationControlNode::setMuted(bool muted) { setEnabled(!muted); }
 
-bool AutomationControlNode::muted() const
-{
-    return !enabled();
-}
+bool AutomationControlNode::muted() const { return !enabled(); }
 
-void AutomationControlNode::onOutputSpecChanged(const OutputSpec&)
-{
-    updateChannelGains(currentPos());
-}
+void AutomationControlNode::onOutputSpecChanged(const OutputSpec &) { updateChannelGains(currentPos()); }
 
-secs_t AutomationControlNode::currentPos() const
-{
-    return m_playheadPosition ? m_playheadPosition->currentPosition().time() : secs_t(0.0);
-}
+secs_t AutomationControlNode::currentPos() const { return m_playheadPosition ? m_playheadPosition->currentPosition().time() : secs_t(0.0); }
 
-void AutomationControlNode::updateChannelGains(secs_t pos)
-{
+void AutomationControlNode::updateChannelGains(secs_t pos) {
     const volume_db_t volumeDb = m_volume.evaluateAt(pos, VOLUME_DB_MIN, VOLUME_DB_MAX);
     const balance_t panValue = m_pan.evaluateAt(pos, BALANCE_MIN, BALANCE_MAX);
 
@@ -90,8 +74,7 @@ void AutomationControlNode::updateChannelGains(secs_t pos)
     m_lastGainsPos = pos;
 }
 
-void AutomationControlNode::doSelfProcess(float* buffer, samples_t samplesPerChannel)
-{
+void AutomationControlNode::doSelfProcess(float *buffer, samples_t samplesPerChannel) {
     if (m_volume.hasAutomation() || m_pan.hasAutomation()) {
         const secs_t pos = currentPos();
         if (m_lastGainsPos != pos) {
@@ -105,7 +88,7 @@ void AutomationControlNode::doSelfProcess(float* buffer, samples_t samplesPerCha
         const size_t frameOffset = s * channelsCount;
         for (size_t ch = 0; ch < channelsCount; ++ch) {
             const size_t idx = frameOffset + ch;
-            dsp::SmoothLinearValue<float>& gain = m_channelGains[ch];
+            dsp::SmoothLinearValue<float> &gain = m_channelGains[ch];
             buffer[idx] = buffer[idx] * gain.getValue();
             gain.tick();
         }

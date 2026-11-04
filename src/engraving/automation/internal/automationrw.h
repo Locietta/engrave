@@ -26,10 +26,9 @@
 namespace mu::engraving {
 class AutomationData;
 
-class AutomationRW
-{
+class AutomationRW {
 public:
-    static void read(AutomationData& data, const muse::ByteArray& json);
-    static muse::ByteArray write(const AutomationData& data, bool writeGenerated);
+    static void read(AutomationData &data, const muse::ByteArray &json);
+    static muse::ByteArray write(const AutomationData &data, bool writeGenerated);
 };
-}
+} // namespace mu::engraving

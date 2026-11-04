@@ -26,13 +26,12 @@
 
 namespace mu::engraving {
 class MeasureBase;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::read500 {
-class StaffRead
-{
+class StaffRead {
 public:
 
-    static void readStaff(Score* score, XmlReader&, ReadContext& ctx);
+    static void readStaff(Score *score, XmlReader &, ReadContext &ctx);
 };
-}
+} // namespace mu::engraving::read500

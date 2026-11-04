@@ -32,13 +32,13 @@
 namespace mu::engraving {
 struct SymNames {
     static muse::AsciiStringView nameForSymId(SymId id);
-    static const muse::TranslatableString& userNameForSymId(SymId id);
+    static const muse::TranslatableString &userNameForSymId(SymId id);
     static muse::String translatedUserNameForSymId(SymId id);
 
-    static SymId symIdByName(const muse::AsciiStringView& name, SymId def = SymId::noSym);
-    static SymId symIdByName(const muse::String& name, SymId def = SymId::noSym);
-    static SymId symIdByOldName(const muse::AsciiStringView& oldName);
-    static SymId symIdByUserName(const muse::String& userName);
+    static SymId symIdByName(const muse::AsciiStringView &name, SymId def = SymId::noSym);
+    static SymId symIdByName(const muse::String &name, SymId def = SymId::noSym);
+    static SymId symIdByOldName(const muse::AsciiStringView &oldName);
+    static SymId symIdByUserName(const muse::String &userName);
 
 private:
     static void loadNameToSymIdHash();
@@ -50,4 +50,4 @@ private:
     static std::map<muse::AsciiStringView, SymId> s_nameToSymIdHash;
     static const std::map<muse::AsciiStringView, SymId> s_oldNameToSymIdHash;
 };
-}
+} // namespace mu::engraving

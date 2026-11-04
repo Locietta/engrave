@@ -40,8 +40,10 @@ struct Interval {
     void reduce();
     Interval reduced();
     bool isZero() const;
-    bool operator!=(const Interval& a) const { return diatonic != a.diatonic || chromatic != a.chromatic; }
-    bool operator==(const Interval& a) const { return diatonic == a.diatonic && chromatic == a.chromatic; }
+
+    bool operator!=(const Interval &a) const { return diatonic != a.diatonic || chromatic != a.chromatic; }
+
+    bool operator==(const Interval &a) const { return diatonic == a.diatonic && chromatic == a.chromatic; }
 
     static Interval fromOrnamentInterval(OrnamentInterval ornInt);
 
@@ -59,4 +61,4 @@ struct Interval {
     /// @return The number of diatonic steps in the interval.
     static int chromatic2diatonic(int semitones);
 };
-}
+} // namespace mu::engraving

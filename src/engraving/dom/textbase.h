@@ -37,33 +37,27 @@ class TextBase;
 class TextBlock;
 class Transaction;
 
-static constexpr double SUBSCRIPT_SIZE     = 0.6;
-static constexpr double SUBSCRIPT_OFFSET   = 0.5;  // of x-height
+static constexpr double SUBSCRIPT_SIZE = 0.6;
+static constexpr double SUBSCRIPT_OFFSET = 0.5;    // of x-height
 static constexpr double SUPERSCRIPT_OFFSET = -0.9; // of x-height
 
 //---------------------------------------------------------
 //   FrameType
 //---------------------------------------------------------
 
-enum class FrameType : char {
-    NO_FRAME, RECTANGLE, CIRCLE
-};
+enum class FrameType : char { NO_FRAME, RECTANGLE, CIRCLE };
 
 //---------------------------------------------------------
 //   VerticalAlignment
 //---------------------------------------------------------
 
-enum class VerticalAlignment : signed char {
-    AlignUndefined = -1, AlignNormal, AlignSuperScript, AlignSubScript
-};
+enum class VerticalAlignment : signed char { AlignUndefined = -1, AlignNormal, AlignSuperScript, AlignSubScript };
 
 //---------------------------------------------------------
 //   FormatId
 //---------------------------------------------------------
 
-enum class FormatId : char {
-    Bold, Italic, Underline, Strike, Valign, FontSize, FontFamily
-};
+enum class FormatId : char { Bold, Italic, Underline, Strike, Valign, FontSize, FontFamily };
 
 using FormatValue = std::variant<std::monostate, bool, int, double, String>;
 
@@ -71,43 +65,58 @@ using FormatValue = std::variant<std::monostate, bool, int, double, String>;
 //   MultiClick
 //---------------------------------------------------------
 
-enum class SelectTextType : char {
-    Word, All
-};
+enum class SelectTextType : char { Word, All };
 
 //---------------------------------------------------------
 //   CharFormat
 //---------------------------------------------------------
 
-class CharFormat
-{
+class CharFormat {
 public:
     CharFormat() {}
-    CharFormat(const CharFormat& cf) { *this = cf; }
-    bool operator==(const CharFormat& cf) const;
-    bool operator!=(const CharFormat& cf) const { return !(*this == cf); }
-    CharFormat& operator=(const CharFormat& cf);
+
+    CharFormat(const CharFormat &cf) { *this = cf; }
+
+    bool operator==(const CharFormat &cf) const;
+
+    bool operator!=(const CharFormat &cf) const { return !(*this == cf); }
+
+    CharFormat &operator=(const CharFormat &cf);
 
     FontStyle style() const { return m_style; }
+
     void setStyle(FontStyle s) { m_style = s; }
+
     bool bold() const { return m_style & FontStyle::Bold; }
+
     bool italic() const { return m_style & FontStyle::Italic; }
+
     bool underline() const { return m_style & FontStyle::Underline; }
+
     bool strike() const { return m_style & FontStyle::Strike; }
+
     void setBold(bool val) { m_style = val ? m_style + FontStyle::Bold : m_style - FontStyle::Bold; }
+
     void setItalic(bool val) { m_style = val ? m_style + FontStyle::Italic : m_style - FontStyle::Italic; }
+
     void setUnderline(bool val) { m_style = val ? m_style + FontStyle::Underline : m_style - FontStyle::Underline; }
+
     void setStrike(bool val) { m_style = val ? m_style + FontStyle::Strike : m_style - FontStyle::Strike; }
 
     VerticalAlignment valign() const { return m_valign; }
+
     double fontSize() const { return m_fontSize; }
+
     String fontFamily() const { return m_fontFamily; }
+
     void setValign(VerticalAlignment val) { m_valign = val; }
+
     void setFontSize(double val) { m_fontSize = val; }
-    void setFontFamily(const String& val) { m_fontFamily = val; }
+
+    void setFontFamily(const String &val) { m_fontFamily = val; }
 
     FormatValue formatValue(FormatId) const;
-    void setFormatValue(FormatId, const FormatValue& val);
+    void setFormatValue(FormatId, const FormatValue &val);
 
 private:
 
@@ -123,52 +132,52 @@ private:
 //    during editing.
 //---------------------------------------------------------
 
-class TextCursor
-{
+class TextCursor {
 public:
-    enum class MoveOperation : unsigned char {
-        Start,
-        Up,
-        StartOfLine,
-        Left,
-        WordLeft,
-        End,
-        Down,
-        EndOfLine,
-        NextWord,
-        Right
-    };
+    enum class MoveOperation : unsigned char { Start, Up, StartOfLine, Left, WordLeft, End, Down, EndOfLine, NextWord, Right };
 
-    enum class MoveMode : unsigned char {
-        MoveAnchor,
-        KeepAnchor
-    };
+    enum class MoveMode : unsigned char { MoveAnchor, KeepAnchor };
 
-    TextCursor(TextBase* t)
-        : m_text(t) {}
+    TextCursor(TextBase *t) : m_text(t) {}
 
-    TextBase* text() const { return m_text; }
+    TextBase *text() const { return m_text; }
+
     bool hasSelection() const { return (m_selectLine != m_row) || (m_selectColumn != m_column); }
+
     void clearSelection();
     void endEdit();
     void startEdit();
+
     bool editing() const { return m_editing; }
+
     bool visible() const { return m_visible; }
+
     void setVisible(bool val) { m_visible = val; }
+
     void toggleVisible() { setVisible(!m_visible); }
 
-    CharFormat* format() { return &m_format; }
-    const CharFormat* format() const { return &m_format; }
-    void setFormat(const CharFormat& f) { m_format = f; }
+    CharFormat *format() { return &m_format; }
+
+    const CharFormat *format() const { return &m_format; }
+
+    void setFormat(const CharFormat &f) { m_format = f; }
 
     size_t row() const { return m_row; }
+
     size_t column() const { return m_column; }
+
     size_t selectLine() const { return m_selectLine; }
+
     size_t selectColumn() const { return m_selectColumn; }
+
     void setRow(size_t val) { m_row = val; }
+
     void setColumn(size_t val) { m_column = val; }
+
     void setSelectLine(size_t val) { m_selectLine = val; }
+
     void setSelectColumn(size_t val) { m_selectColumn = val; }
+
     size_t columns() const;
     void init();
 
@@ -183,33 +192,36 @@ public:
     int currentPosition() const;
     Range selectionRange() const;
 
-    const TextBlock& curLine() const;
-    TextBlock& curLine();
+    const TextBlock &curLine() const;
+    TextBlock &curLine();
 
     RectF cursorRect() const;
     RectF cursorCanvasRect() const;
     bool movePosition(TextCursor::MoveOperation op, TextCursor::MoveMode mode = TextCursor::MoveMode::MoveAnchor, int count = 1);
     void selectWord();
+
     void moveCursorToEnd() { movePosition(TextCursor::MoveOperation::End); }
+
     void moveCursorToStart() { movePosition(TextCursor::MoveOperation::Start); }
+
     Char currentCharacter() const;
-    bool set(const PointF& p, TextCursor::MoveMode mode = TextCursor::MoveMode::MoveAnchor);
+    bool set(const PointF &p, TextCursor::MoveMode mode = TextCursor::MoveMode::MoveAnchor);
     String selectedText(bool withFormat = false) const;
     String extractText(int r1, int c1, int r2, int c2, bool withFormat = false) const;
     void updateCursorFormat();
     void setFormat(FormatId, FormatValue val);
-    void changeSelectionFormat(FormatId id, const FormatValue& val);
+    void changeSelectionFormat(FormatId id, const FormatValue &val);
     const CharFormat selectedFragmentsFormat() const;
 
 private:
     Range range(int start, int end) const;
     int position(int row, int column) const;
 
-    TextBase* m_text = nullptr;
+    TextBase *m_text = nullptr;
     CharFormat m_format;
     size_t m_row = 0;
     size_t m_column = 0;
-    size_t m_selectLine = 0;           // start of selection
+    size_t m_selectLine = 0; // start of selection
     size_t m_selectColumn = 0;
     bool m_editing = false;
     bool m_visible = false;
@@ -220,32 +232,31 @@ private:
 //    contains a styled text
 //---------------------------------------------------------
 
-class TextFragment
-{
+class TextFragment {
 public:
 
 public:
     mutable CharFormat format;
-    PointF pos;                    // y is relative to TextBlock->y()
+    PointF pos; // y is relative to TextBlock->y()
     mutable String text;
 
     TextFragment() = default;
-    TextFragment(const String& s);
-    TextFragment(TextCursor*, const String&);
-    TextFragment(const TextFragment& f);
+    TextFragment(const String &s);
+    TextFragment(TextCursor *, const String &);
+    TextFragment(const TextFragment &f);
 
-    TextFragment& operator =(const TextFragment& f);
+    TextFragment &operator=(const TextFragment &f);
 
-    bool operator ==(const TextFragment& f) const;
+    bool operator==(const TextFragment &f) const;
 
     TextFragment split(int column);
-    muse::draw::Font font(const TextBase*) const;
-    double calculatedFontSize(const TextBase*) const;
+    muse::draw::Font font(const TextBase *) const;
+    double calculatedFontSize(const TextBase *) const;
     int columns() const;
-    void changeFormat(FormatId id, const FormatValue& data);
+    void changeFormat(FormatId id, const FormatValue &data);
 
 private:
-    void resolveFallback(muse::draw::Font::Type fontType, const muse::draw::FontMetrics& fm, String& family) const;
+    void resolveFallback(muse::draw::Font::Type fontType, const muse::draw::FontMetrics &fm, String &family) const;
 };
 
 //---------------------------------------------------------
@@ -253,41 +264,55 @@ private:
 //    represents a block of formatted text
 //---------------------------------------------------------
 
-class TextBlock
-{
+class TextBlock {
 public:
     TextBlock() = default;
 
-    bool operator ==(const TextBlock& x) const { return m_fragments == x.m_fragments; }
-    bool operator !=(const TextBlock& x) const { return m_fragments != x.m_fragments; }
+    bool operator==(const TextBlock &x) const { return m_fragments == x.m_fragments; }
 
-    const std::list<TextFragment>& fragments() const { return m_fragments; }
-    std::list<TextFragment>& fragments() { return m_fragments; }
+    bool operator!=(const TextBlock &x) const { return m_fragments != x.m_fragments; }
+
+    const std::list<TextFragment> &fragments() const { return m_fragments; }
+
+    std::list<TextFragment> &fragments() { return m_fragments; }
+
     std::list<TextFragment> fragmentsWithoutEmpty();
-    const Shape& shape() const { return m_shape; }
-    Shape& shape() { return m_shape; }
-    const RectF& boundingRect() const { return m_shape.bbox(); }
-    RectF boundingRect(int col1, int col2, const TextBase*) const;
+
+    const Shape &shape() const { return m_shape; }
+
+    Shape &shape() { return m_shape; }
+
+    const RectF &boundingRect() const { return m_shape.bbox(); }
+
+    RectF boundingRect(int col1, int col2, const TextBase *) const;
     size_t columns() const;
-    void insert(TextCursor*, const String&);
-    void insertEmptyFragmentIfNeeded(TextCursor*);
+    void insert(TextCursor *, const String &);
+    void insertEmptyFragmentIfNeeded(TextCursor *);
     void removeEmptyFragment();
-    String remove(int column, TextCursor*);
-    String remove(int start, int n, TextCursor*);
-    int column(double x, TextBase*) const;
-    TextBlock split(int column, TextCursor* cursor);
-    double xpos(size_t col, const TextBase*) const;
-    const CharFormat* formatAt(int) const;
-    const TextFragment* fragment(int col) const;
-    std::list<TextFragment>::iterator fragment(int column, int* rcol, int* ridx);
+    String remove(int column, TextCursor *);
+    String remove(int start, int n, TextCursor *);
+    int column(double x, TextBase *) const;
+    TextBlock split(int column, TextCursor *cursor);
+    double xpos(size_t col, const TextBase *) const;
+    const CharFormat *formatAt(int) const;
+    const TextFragment *fragment(int col) const;
+    std::list<TextFragment>::iterator fragment(int column, int *rcol, int *ridx);
+
     double y() const { return m_y; }
+
     void setY(double val) { m_y = val; }
+
     double lineSpacing() const { return m_lineSpacing; }
+
     void setLineSpacing(double val) { m_lineSpacing = val; }
-    String text(int, int, const TextBase*, bool = false) const;
+
+    String text(int, int, const TextBase *, bool = false) const;
+
     bool eol() const { return m_eol; }
+
     void setEol(bool val) { m_eol = val; }
-    void changeFormat(FormatId, const FormatValue& val, int start, int n);
+
+    void changeFormat(FormatId, const FormatValue &val, int start, int n);
 
 private:
     void simplify();
@@ -303,8 +328,7 @@ private:
 //   TextBase
 //---------------------------------------------------------
 
-class TextBase : public EngravingItem
-{
+class TextBase : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, TextBase)
 
     M_PROPERTY2(bool, isTextLinkedToMaster, setTextLinkedToMaster, true)
@@ -313,61 +337,74 @@ public:
 
     ~TextBase();
 
-    Text& operator=(const Text&) = delete;
+    Text &operator=(const Text &) = delete;
 
     Align align() const { return m_align; }
+
     void setAlign(Align a) { m_align = a; }
+
     AlignH position() const { return m_position; }
+
     void setPosition(AlignH val) { m_position = val; }
 
-    static String plainToXmlText(const String& s) { return s.toXmlEscaped(); }
-    void setPlainText(const String& t) { setXmlText(plainToXmlText(t)); }
-    virtual void setXmlText(const String&);
-    void setXmlText(const char* str) { setXmlText(String::fromUtf8(str)); }
-    void checkCustomFormatting(const String&);
+    static String plainToXmlText(const String &s) { return s.toXmlEscaped(); }
+
+    void setPlainText(const String &t) { setXmlText(plainToXmlText(t)); }
+
+    virtual void setXmlText(const String &);
+
+    void setXmlText(const char *str) { setXmlText(String::fromUtf8(str)); }
+
+    void checkCustomFormatting(const String &);
     String xmlText() const;
     String plainText() const;
     void resetFormatting();
 
-    void insertText(const String&);
+    void insertText(const String &);
 
     double lineSpacing() const;
     double lineHeight() const;
     virtual double baseLine() const override;
 
     bool empty() const { return xmlText().isEmpty(); }
+
     void clear() { setXmlText(String()); }
 
     virtual FontStyle fontStyle() const;
     virtual String family() const;
     virtual double size() const;
 
-    virtual void setFontStyle(const FontStyle& val);
-    virtual void setFamily(const String& val);
-    virtual void setSize(const double& val);
+    virtual void setFontStyle(const FontStyle &val);
+    virtual void setFamily(const String &val);
+    virtual void setSize(const double &val);
 
     bool anchorToEndOfPrevious() const { return m_anchorToEndOfPrevious; }
+
     void setAnchorToEndOfPrevious(bool v) { m_anchorToEndOfPrevious = v; }
 
     bool hasParentSegment() const { return ownershipParent() && parent()->isSegment(); }
+
     virtual bool allowTimeAnchor() const override { return hasParentSegment(); }
+
     void movePosition(TextCursor::MoveOperation);
 
     bool deleteSelectedText();
 
     void selectAll();
     void select(SelectTextType);
+
     bool isPrimed() const { return m_primed; }
+
     void setPrimed(bool primed) { m_primed = primed; }
 
-    virtual void paste(const String& txt);
+    virtual void paste(const String &txt);
 
     RectF pageRectangle() const;
 
-    const Shape& highResShape() const { return ldata()->highResShape.value(); }
+    const Shape &highResShape() const { return ldata()->highResShape.value(); }
 
-    virtual bool acceptDrop(EditData&) const override;
-    virtual EngravingItem* drop(Transaction& tx, EditData&) override;
+    virtual bool acceptDrop(EditData &) const override;
+    virtual EngravingItem *drop(Transaction &tx, EditData &) override;
 
     friend class TextBlock;
     friend class TextFragment;
@@ -378,10 +415,12 @@ public:
     int subtype() const override;
     TranslatableString subtypeUserName() const override;
 
-    std::list<TextFragment> fragmentList() const;   // for MusicXML formatted export
+    std::list<TextFragment> fragmentList() const; // for MusicXML formatted export
 
-    static bool validateText(String& s);
+    static bool validateText(String &s);
+
     bool inHexState() const { return m_hexState >= 0; }
+
     void endHexState();
 
     muse::draw::Font font() const;
@@ -390,70 +429,89 @@ public:
     bool isPropertyLinkedToMaster(Pid id) const override;
     bool isUnlinkedFromMaster() const override;
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue& v) override;
+    bool setProperty(Pid propertyId, const PropertyValue &v) override;
     PropertyValue propertyDefault(Pid id) const override;
-    void undoChangeProperty(Pid id, const PropertyValue& v, PropertyFlags ps) override;
+    void undoChangeProperty(Pid id, const PropertyValue &v, PropertyFlags ps) override;
     Sid getPropertyStyle(Pid) const override;
     void styleChanged() override;
-    void editInsertText(TextCursor*, const String&);
+    void editInsertText(TextCursor *, const String &);
 
-    TextCursor* cursor() const { return m_cursor; }
+    TextCursor *cursor() const { return m_cursor; }
 
     void setTextInvalid() { m_textInvalid = true; }
+
     bool isTextInvalid() const { return m_textInvalid; }
 
     // helper functions
     bool hasFrame() const { return m_frameType != FrameType::NO_FRAME; }
+
     bool circle() const { return m_frameType == FrameType::CIRCLE; }
+
     bool rectangle() const { return m_frameType == FrameType::RECTANGLE; }
 
     TextStyleType textStyleType() const { return m_textStyleType; }
+
     void setTextStyleType(TextStyleType id) { m_textStyleType = id; }
+
     void initTextStyleType(TextStyleType id);
     void initTextStyleType(TextStyleType id, bool preserveDifferent);
-    virtual void initElementStyle(const ElementStyle*) override;
+    virtual void initElementStyle(const ElementStyle *) override;
 
     static const String UNDEFINED_FONT_FAMILY;
     static const double UNDEFINED_FONT_SIZE;
 
     static bool isSorted(size_t r1, size_t c1, size_t r2, size_t c2);
-    static void sort(size_t& r1, size_t& c1, size_t& r2, size_t& c2);
+    static void sort(size_t &r1, size_t &c1, size_t &r2, size_t &c2);
 
     bool bold() const { return fontStyle() & FontStyle::Bold; }
-    bool italic() const { return fontStyle() & FontStyle::Italic; }
-    bool underline() const { return fontStyle() & FontStyle::Underline; }
-    bool strike() const { return fontStyle() & FontStyle::Strike; }
-    void setBold(bool val) { setFontStyle(val ? fontStyle() + FontStyle::Bold : fontStyle() - FontStyle::Bold); }
-    void setItalic(bool val) { setFontStyle(val ? fontStyle() + FontStyle::Italic : fontStyle() - FontStyle::Italic); }
-    void setUnderline(bool val)
-    {
-        setFontStyle(val ? fontStyle() + FontStyle::Underline : fontStyle() - FontStyle::Underline);
-    }
 
-    void setStrike(bool val)
-    {
-        setFontStyle(val ? fontStyle() + FontStyle::Strike : fontStyle() - FontStyle::Strike);
-    }
+    bool italic() const { return fontStyle() & FontStyle::Italic; }
+
+    bool underline() const { return fontStyle() & FontStyle::Underline; }
+
+    bool strike() const { return fontStyle() & FontStyle::Strike; }
+
+    void setBold(bool val) { setFontStyle(val ? fontStyle() + FontStyle::Bold : fontStyle() - FontStyle::Bold); }
+
+    void setItalic(bool val) { setFontStyle(val ? fontStyle() + FontStyle::Italic : fontStyle() - FontStyle::Italic); }
+
+    void setUnderline(bool val) { setFontStyle(val ? fontStyle() + FontStyle::Underline : fontStyle() - FontStyle::Underline); }
+
+    void setStrike(bool val) { setFontStyle(val ? fontStyle() + FontStyle::Strike : fontStyle() - FontStyle::Strike); }
 
     bool hasCustomFormatting() const;
 
     friend class TextCursor;
     using EngravingObject::undoChangeProperty;
 
-    Color textColor(const rendering::PaintOptions& opt) const;
+    Color textColor(const rendering::PaintOptions &opt) const;
+
     FrameType frameType() const { return m_frameType; }
+
     void setFrameType(FrameType val) { m_frameType = val; }
+
     double textLineSpacing() const { return m_textLineSpacing; }
+
     void setTextLineSpacing(double val) { m_textLineSpacing = val; }
+
     Color bgColor() const { return m_bgColor; }
-    void setBgColor(const Color& val) { m_bgColor = val; }
+
+    void setBgColor(const Color &val) { m_bgColor = val; }
+
     Color frameColor() const { return m_frameColor; }
-    void setFrameColor(const Color& val) { m_frameColor = val; }
+
+    void setFrameColor(const Color &val) { m_frameColor = val; }
+
     Spatium frameWidth() const { return m_frameWidth; }
+
     void setFrameWidth(Spatium val) { m_frameWidth = val; }
+
     Spatium paddingWidth() const { return m_paddingWidth; }
+
     void setPaddingWidth(Spatium val) { m_paddingWidth = val; }
+
     Spatium frameRound() const { return m_frameRound; }
+
     void setFrameRound(Spatium val) { m_frameRound = val; }
 
     struct LayoutData : public EngravingItem::LayoutData {
@@ -463,17 +521,19 @@ public:
         RectF frame;
 
         size_t rows() const { return blocks.size(); }
-        const TextBlock& textBlock(size_t i) const { return blocks.at(i); }
-        TextBlock& textBlock(size_t i) { return blocks[i]; }
 
-        ld_field<Shape> highResShape = { "[TextBase] highResShape", Shape() };
+        const TextBlock &textBlock(size_t i) const { return blocks.at(i); }
+
+        TextBlock &textBlock(size_t i) { return blocks[i]; }
+
+        ld_field<Shape> highResShape = {"[TextBase] highResShape", Shape()};
     };
     DECLARE_LAYOUTDATA_METHODS(TextBase)
 
     void createBlocks();
-    void createBlocks(LayoutData* ldata) const;
+    void createBlocks(LayoutData *ldata) const;
     void layoutFrame();
-    void layoutFrame(LayoutData* ldata) const;
+    void layoutFrame(LayoutData *ldata) const;
 
     //! NOTE It can only be set for some types of text, see who has the setter.
     //! At the moment it's: Text, Jump, Marker
@@ -482,60 +542,70 @@ public:
     virtual bool positionRelativeToNoteheadRest() const = 0;
 
     void setVoiceAssignment(VoiceAssignment v) { m_voiceAssignment = v; }
+
     VoiceAssignment voiceAssignment() const { return m_voiceAssignment; }
+
     void setDirection(DirectionV v) { m_direction = v; }
+
     DirectionV direction() const { return m_direction; }
+
     void setCenterBetweenStaves(AutoOnOff v) { m_centerBetweenStaves = v; }
+
     AutoOnOff centerBetweenStaves() const { return m_centerBetweenStaves; }
+
     void genText();
 
     double symbolSize() const { return m_symbolSize; }
+
     void setSymbolSize(double v) { m_symbolSize = v; }
 
     double symbolScale() const { return m_symbolScale; }
+
     void setSymbolScale(double v) { m_symbolScale = v; }
 
     bool hasSymbolScale() const;
+
     bool hasSymbolSize() const { return !hasSymbolScale(); }
 
     double spatiumScaling() const;
 
     double textAngle() const { return m_textAngle; }
+
     void setTextAngle(double v) { m_textAngle = v; }
 
     PointF defaultPos() const override;
 
 protected:
-    TextBase(const ElementType& type, EngravingObject* parent = 0, TextStyleType tid = TextStyleType::DEFAULT,
+    TextBase(const ElementType &type, EngravingObject *parent = 0, TextStyleType tid = TextStyleType::DEFAULT,
              ElementFlags = ElementFlag::NOTHING);
-    TextBase(const ElementType& type, EngravingObject* parent, ElementFlags);
-    TextBase(const TextBase&);
+    TextBase(const ElementType &type, EngravingObject *parent, ElementFlags);
+    TextBase(const TextBase &);
 
     void insertSym(SymId id);
-    void prepareFormat(const String& token, TextCursor& cursor);
-    bool prepareFormat(const String& token, CharFormat& format);
+    void prepareFormat(const String &token, TextCursor &cursor);
+    bool prepareFormat(const String &token, CharFormat &format);
 
     virtual void commitText();
 
     bool m_layoutToParentWidth = false;
 
 private:
-    void insert(TextCursor*, char32_t code, LayoutData* ldata) const;
-    String genText(const LayoutData* ldata) const;
+    void insert(TextCursor *, char32_t code, LayoutData *ldata) const;
+    String genText(const LayoutData *ldata) const;
 
     virtual int getPropertyFlagsIdx(Pid id) const override;
     String stripText(bool, bool, bool) const;
 
-    static String getHtmlStartTag(double, double&, const String&, String&, FontStyle, VerticalAlignment);
+    static String getHtmlStartTag(double, double &, const String &, String &, FontStyle, VerticalAlignment);
     static String getHtmlEndTag(FontStyle, VerticalAlignment);
 
-    static void swap(size_t& r1, size_t& c1, size_t& r2, size_t& c2);
+    static void swap(size_t &r1, size_t &c1, size_t &r2, size_t &c2);
 
     Sid defaultPosSid() const override;
 
     void notifyAboutTextCursorChanged();
-    void notifyAboutTextInserted(int startPosition, int endPosition, const String& text);
-    void notifyAboutTextRemoved(int startPosition, int endPosition, const String& text);
+    void notifyAboutTextInserted(int startPosition, int endPosition, const String &text);
+    void notifyAboutTextRemoved(int startPosition, int endPosition, const String &text);
 
     Align m_align;
 
@@ -552,10 +622,10 @@ private:
     // there are two representations of text; only one
     // might be valid and the other can be constructed from it
 
-    String m_text;                          // cached
+    String m_text; // cached
     bool m_textInvalid = true;
 
-    TextStyleType m_textStyleType = TextStyleType::DEFAULT;           // text style id
+    TextStyleType m_textStyleType = TextStyleType::DEFAULT; // text style id
 
     int m_hexState = -1;
     bool m_primed = 0;
@@ -563,7 +633,7 @@ private:
     double m_symbolSize = 18.0;
     double m_symbolScale = 1.0;
 
-    TextCursor* m_cursor = nullptr;
+    TextCursor *m_cursor = nullptr;
 
     VoiceAssignment m_voiceAssignment = VoiceAssignment::ALL_VOICE_IN_INSTRUMENT;
     DirectionV m_direction = DirectionV::AUTO;

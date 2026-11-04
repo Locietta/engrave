@@ -53,27 +53,26 @@ using namespace mu::engraving;
 //    'dur' is in local (stretched) time
 //    return segment of last created chord
 //---------------------------------------------------------
-static Segment* setChord(Score* score, Segment* segment, track_idx_t track, const Chord* chordTemplate, Fraction dur)
-{
+static Segment *setChord(Score *score, Segment *segment, track_idx_t track, const Chord *chordTemplate, Fraction dur) {
     assert(segment->segmentType() == SegmentType::ChordRest);
 
     Fraction tick = segment->tick();
-    Chord* nr     = nullptr;   //current added chord used so we can select the last added chord and so we can apply ties
-    std::vector<Tie*> tie(chordTemplate->notes().size());   //keep pointer to a tie for each note in the chord in case we need to tie notes
-    ChordRest* cr = toChordRest(segment->element(track));   //chord rest under the segment for the specified track
+    Chord *nr = nullptr; //current added chord used so we can select the last added chord and so we can apply ties
+    std::vector<Tie *> tie(chordTemplate->notes().size()); //keep pointer to a tie for each note in the chord in case we need to tie notes
+    ChordRest *cr = toChordRest(segment->element(track));  //chord rest under the segment for the specified track
 
     bool addTie = false;
 
-    Measure* measure = nullptr;
+    Measure *measure = nullptr;
     //keep creating chords and tieing them until we created the full duration asked for (dur)
     for (;;) {
         if (track % VOICES) {
             score->expandVoice(segment, track);
         }
 
-        Tuplet* t = cr ? cr->tuplet() : 0;
+        Tuplet *t = cr ? cr->tuplet() : 0;
         Fraction tDur = segment->ticks();
-        Segment* seg = segment->next();
+        Segment *seg = segment->next();
 
         //we need to get a correct subduration so that makeGap can function properly
         //since makeGap() takes "normal" duration rather than actual length
@@ -81,32 +80,31 @@ static Segment* setChord(Score* score, Segment* segment, track_idx_t track, cons
             if (seg->segmentType() == SegmentType::ChordRest) {
                 //design choice made to keep multiple notes across a tuplet as tied single notes rather than combining them
                 //since it's arguably more readable, but the other code is still here (commented)
-                ChordRest* testCr = toChordRest(seg->element(track));
+                ChordRest *testCr = toChordRest(seg->element(track));
 
                 //code here allows us to combine tuplet realization together which I have opted not to do for readability (of the music)
                 //if (!!t ^ (testCr && testCr->tuplet())) //stop if we started with a tuplet and reach something that's not a tuplet,
                 //      break;                          //or start with not a tuplet and reach a tuplet
 
-                if (testCr && testCr->tuplet()) {       //stop on tuplet
+                if (testCr && testCr->tuplet()) { //stop on tuplet
                     break;
                 }
                 tDur += seg->ticks();
             }
-            if (tDur >= dur) {       //do not go further than the duration asked for
+            if (tDur >= dur) { //do not go further than the duration asked for
                 tDur = dur;
                 break;
             }
-            seg = seg->next();       //iterate only across measure (hence usage of next() rather than next1())
+            seg = seg->next(); //iterate only across measure (hence usage of next() rather than next1())
         }
         if (t) {
-            tDur *= t->ratio();       //scale by tuplet ratio to get "normal" length rather than actual length when dealing with tuplets
+            tDur *= t->ratio(); //scale by tuplet ratio to get "normal" length rather than actual length when dealing with tuplets
         }
         // the returned gap ends at the measure boundary or at tuplet end
         Fraction dd = score->makeGap(segment, track, tDur, t);
 
         if (dd.isZero()) {
-            LOGD("cannot get gap at %d type: %d/%d", tick.ticks(), dur.numerator(),
-                 dur.denominator());
+            LOGD("cannot get gap at %d type: %d/%d", tick.ticks(), dur.numerator(), dur.denominator());
             break;
         }
 
@@ -115,10 +113,10 @@ static Segment* setChord(Score* score, Segment* segment, track_idx_t track, cons
         size_t n = dl.size();
         //add chord, tieing when necessary within measure
         for (size_t i = 0; i < n; ++i) {
-            const TDuration& d = dl[i];
+            const TDuration &d = dl[i];
 
             //create new chord from template and add it
-            Chord* chord = Factory::copyChord(*chordTemplate);
+            Chord *chord = Factory::copyChord(*chordTemplate);
             nr = chord;
 
             chord->setTrack(track);
@@ -128,7 +126,7 @@ static Segment* setChord(Score* score, Segment* segment, track_idx_t track, cons
             score->undoAddCR(chord, measure, tick);
             //if there is something to tie, complete tie backwards
             //and add the tie to score
-            const std::vector<Note*> notes = chord->notes();
+            const std::vector<Note *> notes = chord->notes();
             if (addTie) {
                 for (size_t j = 0; j < notes.size(); ++j) {
                     tie[j]->setEndNote(notes[j]);
@@ -166,7 +164,7 @@ static Segment* setChord(Score* score, Segment* segment, track_idx_t track, cons
         }
 
         //go to next segment unless we are at the score (which means we will just be done there)
-        Segment* nseg = score->tick2segment(tick, false, SegmentType::ChordRest);
+        Segment *nseg = score->tick2segment(tick, false, SegmentType::ChordRest);
         if (!nseg) {
             LOGD("reached end of score");
             break;
@@ -192,7 +190,7 @@ static Segment* setChord(Score* score, Segment* segment, track_idx_t track, cons
         //
         //  Note does not fit on current measure, create Tie to
         //  next part of note
-        std::vector<Note*> notes = nr->notes();
+        std::vector<Note *> notes = nr->notes();
         for (size_t i = 0; i < notes.size(); ++i) {
             tie[i] = Factory::createTie(notes[i]);
             tie[i]->setStartNote(notes[i]);
@@ -220,34 +218,33 @@ static Segment* setChord(Score* score, Segment* segment, track_idx_t track, cons
 ///   harmony object will be used.
 //---------------------------------------------------------
 
-void RealizeChordSymbols::realizeChordSymbols(Transaction&, Score* score, bool literal, Voicing voicing, HDuration durationType)
-{
+void RealizeChordSymbols::realizeChordSymbols(Transaction &, Score *score, bool literal, Voicing voicing, HDuration durationType) {
     // Create copy, because setChord selects newly created chord and thus
     // modifies selection().elements() while we're iterating over it
-    const std::vector<EngravingItem*> elist = score->selection().elements();
+    const std::vector<EngravingItem *> elist = score->selection().elements();
 
-    for (EngravingItem* e : elist) {
+    for (EngravingItem *e : elist) {
         if (!e->isHarmony()) {
             continue;
         }
-        Harmony* h = toHarmony(e);
+        Harmony *h = toHarmony(e);
         if (!h->isRealizable()) {
             continue;
         }
-        const RealizedHarmony& r = h->getRealizedHarmony();
-        Segment* seg = h->ownershipParent()->isSegment() ? toSegment(h->ownershipParent()) : toSegment(
-            h->ownershipParent()->ownershipParent());
+        const RealizedHarmony &r = h->getRealizedHarmony();
+        Segment *seg =
+            h->ownershipParent()->isSegment() ? toSegment(h->ownershipParent()) : toSegment(h->ownershipParent()->ownershipParent());
         Fraction tick = seg->tick();
         Fraction duration = r.getActualDuration(tick.ticks(), durationType) * h->staff()->timeStretch(tick);
         bool concertPitch = score->style().styleB(Sid::concertPitch);
 
-        Chord* chord = Factory::createChord(score->dummy());     //chord template
-        chord->setTrack(h->track());     //set track so notes have a track to sit on
+        Chord *chord = Factory::createChord(score->dummy()); //chord template
+        chord->setTrack(h->track());                         //set track so notes have a track to sit on
 
         //create chord from notes
         RealizedHarmony::PitchMap notes;
         if (voicing == Voicing::INVALID || durationType == HDuration::INVALID) {
-            notes = r.notes();       //no override, just use notes from realize harmony
+            notes = r.notes(); //no override, just use notes from realize harmony
         } else {
             //generate notes list based on overridden settings
             int offset = 0;
@@ -255,12 +252,11 @@ void RealizeChordSymbols::realizeChordSymbols(Transaction&, Score* score, bool l
             if (!concertPitch) {
                 offset = interval.chromatic;
             }
-            notes = r.generateNotes(h->rootTpc(), h->bassTpc(),
-                                    literal, voicing, offset);
+            notes = r.generateNotes(h->rootTpc(), h->bassTpc(), literal, voicing, offset);
         }
 
-        for (const auto& p : notes) {
-            Note* note = Factory::createNote(chord);
+        for (const auto &p : notes) {
+            Note *note = Factory::createNote(chord);
             NoteVal nval;
             nval.pitch = p.first;
             if (concertPitch) {
@@ -268,17 +264,17 @@ void RealizeChordSymbols::realizeChordSymbols(Transaction&, Score* score, bool l
             } else {
                 nval.tpc2 = p.second;
             }
-            chord->add(note);       //add note first to set track and such
+            chord->add(note); //add note first to set track and such
             note->setNval(nval, tick);
         }
 
         if (!seg->isChordRestType()) {
-            Segment* newCrSeg = seg->measure()->undoGetSegment(SegmentType::ChordRest, seg->tick());
+            Segment *newCrSeg = seg->measure()->undoGetSegment(SegmentType::ChordRest, seg->tick());
             newCrSeg->setTicks(seg->ticks());
             seg = newCrSeg;
         }
 
-        setChord(score, seg, h->track(), chord, duration);     //add chord using template
+        setChord(score, seg, h->track(), chord, duration); //add chord using template
         delete chord;
     }
 }

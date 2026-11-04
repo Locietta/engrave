@@ -32,22 +32,22 @@ class Vibrato;
 //   @@ VibratoSegment
 //---------------------------------------------------------
 
-class VibratoSegment final : public LineSegment
-{
+class VibratoSegment final : public LineSegment {
     OBJECT_ALLOCATOR(engraving, VibratoSegment)
     DECLARE_CLASSOF(ElementType::VIBRATO_SEGMENT)
 
 public:
-    VibratoSegment(Vibrato* sp);
+    VibratoSegment(Vibrato *sp);
 
-    VibratoSegment* clone() const override { return new VibratoSegment(*this); }
+    VibratoSegment *clone() const override { return new VibratoSegment(*this); }
 
-    Vibrato* vibrato() const { return toVibrato(spanner()); }
+    Vibrato *vibrato() const { return toVibrato(spanner()); }
 
-    EngravingObject* propertyDelegate(Pid) const override;
+    EngravingObject *propertyDelegate(Pid) const override;
 
-    const SymIdList& symbols() const { return m_symbols; }
-    void setSymbols(const SymIdList& s) { m_symbols = s; }
+    const SymIdList &symbols() const { return m_symbols; }
+
+    void setSymbols(const SymIdList &s) { m_symbols = s; }
 
     void symbolLine(SymId start, SymId fill);
     void symbolLine(SymId start, SymId fill, SymId end);
@@ -60,8 +60,7 @@ private:
 //   Vibrato
 //---------------------------------------------------------
 
-class Vibrato final : public SLine
-{
+class Vibrato final : public SLine {
     OBJECT_ALLOCATOR(engraving, Vibrato)
     DECLARE_CLASSOF(ElementType::VIBRATO)
 
@@ -69,25 +68,27 @@ public:
     Vibrato(DummyParentOr<EngravingItem> parent);
     ~Vibrato();
 
-    Vibrato* clone() const override { return new Vibrato(*this); }
+    Vibrato *clone() const override { return new Vibrato(*this); }
 
     Anchor anchor() const override { return Anchor::SEGMENT; }
 
-    LineSegment* createLineSegment() override;
-    PointF linePos(Grip grip, System** system) const override;
+    LineSegment *createLineSegment() override;
+    PointF linePos(Grip grip, System **system) const override;
 
     void setVibratoType(VibratoType tt) { m_vibratoType = tt; }
+
     VibratoType vibratoType() const { return m_vibratoType; }
+
     String vibratoTypeUserName() const;
 
-    Segment* segment() const { return (Segment*)ownershipParent(); }
+    Segment *segment() const { return (Segment *) ownershipParent(); }
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid) const override;
 
-
     int subtype() const override { return int(m_vibratoType); }
+
     TranslatableString subtypeUserName() const override;
 
 protected:

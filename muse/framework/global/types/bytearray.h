@@ -26,41 +26,40 @@
 #include <memory>
 #include <vector>
 
-
 namespace muse {
-class ByteArray
-{
+class ByteArray {
 public:
     typedef uint8_t value_type;
 
     ByteArray();
-    ByteArray(const uint8_t* data, size_t size);
-    ByteArray(const char* str, size_t size = static_cast<size_t>(-1));
+    ByteArray(const uint8_t *data, size_t size);
+    ByteArray(const char *str, size_t size = static_cast<size_t>(-1));
     ByteArray(size_t size);
 
     //! NOTE Not coped!!!
-    static ByteArray fromRawData(const uint8_t* data, size_t size);
-    static ByteArray fromRawData(const char* data, size_t size);
+    static ByteArray fromRawData(const uint8_t *data, size_t size);
+    static ByteArray fromRawData(const char *data, size_t size);
 
-    bool operator==(const ByteArray& other) const;
-    bool operator!=(const ByteArray& other) const { return !operator==(other); }
+    bool operator==(const ByteArray &other) const;
 
-    uint8_t* data();
-    std::vector<uint8_t>& vdata();
-    const uint8_t* constData() const;
-    const char* constChar() const; // data as char*
-    const std::vector<uint8_t>& constVData() const;
+    bool operator!=(const ByteArray &other) const { return !operator==(other); }
+
+    uint8_t *data();
+    std::vector<uint8_t> &vdata();
+    const uint8_t *constData() const;
+    const char *constChar() const; // data as char*
+    const std::vector<uint8_t> &constVData() const;
     size_t size() const;
     bool empty() const;
 
-    ByteArray& insert(size_t pos, uint8_t b);
+    ByteArray &insert(size_t pos, uint8_t b);
     void push_back(uint8_t b);
-    void push_back(const uint8_t* b, size_t len);
-    void push_back(const ByteArray& ba);
+    void push_back(const uint8_t *b, size_t len);
+    void push_back(const ByteArray &ba);
 
     uint8_t at(size_t pos) const;
     uint8_t operator[](size_t pos) const;
-    uint8_t& operator[](size_t pos);
+    uint8_t &operator[](size_t pos);
 
     void reserve(size_t nsize);
     void resize(size_t nsize);
@@ -73,8 +72,9 @@ public:
 
 private:
     using Data = std::vector<uint8_t>;
+
     struct RawData {
-        const uint8_t* data = nullptr;
+        const uint8_t *data = nullptr;
         size_t size = 0;
     };
 
@@ -83,6 +83,6 @@ private:
     std::shared_ptr<Data> m_data;
     RawData m_raw;
 };
-}
+} // namespace muse
 
 #endif // MUSE_GLOBAL_BYTEARRAY_H

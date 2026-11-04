@@ -30,19 +30,13 @@
 using namespace mu::engraving;
 using namespace muse::draw;
 
-IndicatorIcon::IndicatorIcon(const ElementType& type, DummyParentOr<System> parent, ElementFlags flags)
-    : EngravingItem(type, parent, flags)
-{
-}
+IndicatorIcon::IndicatorIcon(const ElementType &type, DummyParentOr<System> parent, ElementFlags flags)
+    : EngravingItem(type, parent, flags) {}
 
-Font IndicatorIcon::font() const
-{
+Font IndicatorIcon::font() const {
     Font font(configuration()->iconsFontFamily(), Font::Type::Icon);
     font.setPointSizeF(UI_ICONS_DEFAULT_FONT_SIZE * magS());
     return font;
 }
 
-Fraction IndicatorIcon::tick() const
-{
-    return system() ? system()->endTick() : Fraction(0, 1);
-}
+Fraction IndicatorIcon::tick() const { return system() ? system()->endTick() : Fraction(0, 1); }

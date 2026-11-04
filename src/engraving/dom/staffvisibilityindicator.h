@@ -25,8 +25,7 @@
 #include "indicatoricon.h"
 
 namespace mu::engraving {
-class StaffVisibilityIndicator : public IndicatorIcon
-{
+class StaffVisibilityIndicator : public IndicatorIcon {
     OBJECT_ALLOCATOR(engraving, StaffVisibilityIndicator)
     DECLARE_CLASSOF(ElementType::STAFF_VISIBILITY_INDICATOR)
 
@@ -35,4 +34,4 @@ public:
 
     char16_t iconCode() const override { return 0xF4AE; }
 };
-}
+} // namespace mu::engraving

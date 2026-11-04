@@ -27,16 +27,16 @@
 
 namespace mu::engraving {
 class Chord;
-}
+} // namespace mu::engraving
 
 namespace mu::iex::guitarpro {
-class DiveDataCollector
-{
+class DiveDataCollector {
 public:
     DiveDataCollector() = default;
 
-    void collectDiveData(const mu::engraving::Chord* chord, const mu::engraving::PitchValues& pitchValues);
-    DiveDataContext& context() { return m_ctx; }
+    void collectDiveData(const mu::engraving::Chord *chord, const mu::engraving::PitchValues &pitchValues);
+
+    DiveDataContext &context() { return m_ctx; }
 
 private:
     struct PrevWhammy {

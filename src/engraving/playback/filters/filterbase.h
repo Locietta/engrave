@@ -28,19 +28,15 @@
 #include "playback/renderingcontext.h"
 
 namespace mu::engraving {
-template<class T>
-class FilterBase
-{
+template <class T>
+class FilterBase {
 public:
-    static bool isItemPlayable(const EngravingItem* item, const RenderingContext& ctx)
-    {
-        IF_ASSERT_FAILED(item) {
-            return false;
-        }
+    static bool isItemPlayable(const EngravingItem *item, const RenderingContext &ctx) {
+        IF_ASSERT_FAILED(item) { return false; }
 
         return T::isPlayable(item, ctx);
     }
 };
-}
+} // namespace mu::engraving
 
 #endif // MU_ENGRAVING_FILTERBASE_H

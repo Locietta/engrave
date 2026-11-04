@@ -29,39 +29,28 @@
 #include "stafftext.h"
 
 namespace mu::engraving {
-static const ElementStyle expressionStyle {
-    { Sid::expressionPlacement, Pid::PLACEMENT },
-    { Sid::expressionMinDistance, Pid::MIN_DISTANCE },
-    { Sid::snapToDynamics, Pid::SNAP_TO_DYNAMICS },
+static const ElementStyle expressionStyle{
+    {Sid::expressionPlacement, Pid::PLACEMENT},
+    {Sid::expressionMinDistance, Pid::MIN_DISTANCE},
+    {Sid::snapToDynamics, Pid::SNAP_TO_DYNAMICS},
 };
 
 Expression::Expression(DummyParentOr<Segment> parent)
-    : TextBase(ElementType::EXPRESSION, parent, TextStyleType::EXPRESSION, ElementFlag::MOVABLE | ElementFlag::ON_STAFF)
-{
+    : TextBase(ElementType::EXPRESSION, parent, TextStyleType::EXPRESSION, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
     initElementStyle(&expressionStyle);
 }
 
-Expression::Expression(const Expression& expression)
-    : TextBase(expression)
-{
-    _snapToDynamics = expression._snapToDynamics;
-}
+Expression::Expression(const Expression &expression) : TextBase(expression) { _snapToDynamics = expression._snapToDynamics; }
 
-PropertyValue Expression::propertyDefault(Pid id) const
-{
+PropertyValue Expression::propertyDefault(Pid id) const {
     switch (id) {
-    case Pid::TEXT_STYLE:
-        return TextStyleType::EXPRESSION;
-    default:
-        return TextBase::propertyDefault(id);
+        case Pid::TEXT_STYLE: return TextStyleType::EXPRESSION;
+        default: return TextBase::propertyDefault(id);
     }
 }
 
-double Expression::computeDynamicExpressionDistance(const Dynamic* snappedDyn) const
-{
-    IF_ASSERT_FAILED(snappedDyn) {
-        return 0.0;
-    }
+double Expression::computeDynamicExpressionDistance(const Dynamic *snappedDyn) const {
+    IF_ASSERT_FAILED(snappedDyn) { return 0.0; }
     // We are essentially faking the kerning behaviour of dynamic VS expression text
     // There's no other way to do this because the dynamic is a different font.
     String dynamicTextString = snappedDyn->xmlText();
@@ -71,16 +60,12 @@ double Expression::computeDynamicExpressionDistance(const Dynamic* snappedDyn) c
     return distance;
 }
 
-bool Expression::acceptDrop(EditData& ed) const
-{
-    return ed.dropElement->isDynamic() || TextBase::acceptDrop(ed);
-}
+bool Expression::acceptDrop(EditData &ed) const { return ed.dropElement->isDynamic() || TextBase::acceptDrop(ed); }
 
-EngravingItem* Expression::drop(Transaction& tx, EditData& ed)
-{
-    EngravingItem* item = ed.dropElement;
+EngravingItem *Expression::drop(Transaction &tx, EditData &ed) {
+    EngravingItem *item = ed.dropElement;
     if (item->isDynamic()) {
-        Dynamic* snappedDyn = snappedDynamic();
+        Dynamic *snappedDyn = snappedDynamic();
         if (snappedDyn) {
             return snappedDyn->drop(tx, ed);
         }
@@ -95,37 +80,32 @@ EngravingItem* Expression::drop(Transaction& tx, EditData& ed)
     return TextBase::drop(tx, ed);
 }
 
-PropertyValue Expression::getProperty(Pid propertyId) const
-{
+PropertyValue Expression::getProperty(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::SNAP_TO_DYNAMICS:
-        return _snapToDynamics;
-    default:
-        return TextBase::getProperty(propertyId);
+        case Pid::SNAP_TO_DYNAMICS: return _snapToDynamics;
+        default: return TextBase::getProperty(propertyId);
     }
 }
 
-bool Expression::setProperty(Pid propertyId, const PropertyValue& v)
-{
+bool Expression::setProperty(Pid propertyId, const PropertyValue &v) {
     switch (propertyId) {
-    case Pid::SNAP_TO_DYNAMICS:
-        if (_snapToDynamics == false && v.toBool() == true) {
-            resetProperty(Pid::OFFSET);
-        }
-        setSnapToDynamics(v.toBool());
-        break;
-    default:
-        if (!TextBase::setProperty(propertyId, v)) {
-            return false;
-        }
-        break;
+        case Pid::SNAP_TO_DYNAMICS:
+            if (_snapToDynamics == false && v.toBool() == true) {
+                resetProperty(Pid::OFFSET);
+            }
+            setSnapToDynamics(v.toBool());
+            break;
+        default:
+            if (!TextBase::setProperty(propertyId, v)) {
+                return false;
+            }
+            break;
     }
     triggerLayout();
     return true;
 }
 
-void Expression::mapPropertiesFromOldExpressions(StaffText* staffText)
-{
+void Expression::mapPropertiesFromOldExpressions(StaffText *staffText) {
     if (staffText->minDistance() != propertyDefault(Pid::MIN_DISTANCE).value<Spatium>()) {
         setMinDistance(staffText->minDistance());
         setPropertyFlags(Pid::MIN_DISTANCE, PropertyFlags::UNSTYLED);
@@ -148,18 +128,16 @@ void Expression::mapPropertiesFromOldExpressions(StaffText* staffText)
     }
 }
 
-Dynamic* Expression::snappedDynamic() const
-{
-    EngravingItem* item = ldata()->itemSnappedBefore();
+Dynamic *Expression::snappedDynamic() const {
+    EngravingItem *item = ldata()->itemSnappedBefore();
     return item && item->isDynamic() ? toDynamic(item) : nullptr;
 }
 
-void Expression::reset()
-{
+void Expression::reset() {
     undoResetProperty(Pid::DIRECTION);
     undoResetProperty(Pid::CENTER_BETWEEN_STAVES);
     TextBase::reset();
-    Dynamic* snappedDyn = snappedDynamic();
+    Dynamic *snappedDyn = snappedDynamic();
     if (snappedDyn && !snappedDyn->offset().isNull()) {
         snappedDyn->reset();
     }

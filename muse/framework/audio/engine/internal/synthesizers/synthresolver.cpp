@@ -22,26 +22,21 @@
 
 #include "synthresolver.h"
 
-
 #include "log.h"
 
 using namespace muse::audio;
 using namespace muse::audio::synth;
 
-void SynthResolver::init(const AudioInputParams& defaultInputParams, const OutputSpec& defaultOutputSpec)
-{
+void SynthResolver::init(const AudioInputParams &defaultInputParams, const OutputSpec &defaultOutputSpec) {
 
-    IF_ASSERT_FAILED(defaultInputParams.isValid() && defaultOutputSpec.isValid()) {
-        return;
-    }
+    IF_ASSERT_FAILED(defaultInputParams.isValid() && defaultOutputSpec.isValid()) { return; }
 
     m_defaultInputParams = defaultInputParams;
     m_defaultOutputSpec = defaultOutputSpec;
 }
 
-ISynthesizerPtr SynthResolver::resolveSynth(const TrackId trackId, const AudioInputParams& params, const audio::OutputSpec& spec,
-                                            const PlaybackSetupData& setupData) const
-{
+ISynthesizerPtr SynthResolver::resolveSynth(const TrackId trackId, const AudioInputParams &params, const audio::OutputSpec &spec,
+                                            const PlaybackSetupData &setupData) const {
 
     TRACEFUNC;
 
@@ -58,7 +53,7 @@ ISynthesizerPtr SynthResolver::resolveSynth(const TrackId trackId, const AudioIn
         return nullptr;
     }
 
-    const IResolverPtr& resolver = search->second;
+    const IResolverPtr &resolver = search->second;
 
     if (!resolver->hasCompatibleResources(setupData)) {
         return nullptr;
@@ -67,20 +62,14 @@ ISynthesizerPtr SynthResolver::resolveSynth(const TrackId trackId, const AudioIn
     return resolver->resolveSynth(trackId, params, spec);
 }
 
-ISynthesizerPtr SynthResolver::resolveDefaultSynth(const TrackId trackId) const
-{
+ISynthesizerPtr SynthResolver::resolveDefaultSynth(const TrackId trackId) const {
 
     return resolveSynth(trackId, m_defaultInputParams, m_defaultOutputSpec, {});
 }
 
-AudioInputParams SynthResolver::resolveDefaultInputParams() const
-{
+AudioInputParams SynthResolver::resolveDefaultInputParams() const { return m_defaultInputParams; }
 
-    return m_defaultInputParams;
-}
-
-AudioResourceMetaList SynthResolver::resolveAvailableResources() const
-{
+AudioResourceMetaList SynthResolver::resolveAvailableResources() const {
 
     TRACEFUNC;
 
@@ -88,16 +77,15 @@ AudioResourceMetaList SynthResolver::resolveAvailableResources() const
 
     AudioResourceMetaList result;
 
-    for (const auto& pair : m_resolvers) {
-        const AudioResourceMetaList& resolvedResources = pair.second->resolveResources();
+    for (const auto &pair : m_resolvers) {
+        const AudioResourceMetaList &resolvedResources = pair.second->resolveResources();
         result.insert(result.end(), resolvedResources.begin(), resolvedResources.end());
     }
 
     return result;
 }
 
-SoundPresetList SynthResolver::resolveAvailableSoundPresets(const AudioResourceMeta& resourceMeta) const
-{
+SoundPresetList SynthResolver::resolveAvailableSoundPresets(const AudioResourceMeta &resourceMeta) const {
 
     TRACEFUNC;
 
@@ -111,16 +99,14 @@ SoundPresetList SynthResolver::resolveAvailableSoundPresets(const AudioResourceM
     return search->second->resolveSoundPresets(resourceMeta);
 }
 
-void SynthResolver::registerResolver(const AudioSourceType type, IResolverPtr resolver)
-{
+void SynthResolver::registerResolver(const AudioSourceType type, IResolverPtr resolver) {
 
     std::lock_guard lock(m_mutex);
 
     m_resolvers.insert_or_assign(type, std::move(resolver));
 }
 
-void SynthResolver::clearSources()
-{
+void SynthResolver::clearSources() {
 
     std::lock_guard lock(m_mutex);
 

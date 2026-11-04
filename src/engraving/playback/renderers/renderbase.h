@@ -28,27 +28,22 @@
 #include "playback/renderingcontext.h"
 
 namespace mu::engraving {
-template<class T>
-class RenderBase
-{
+template <class T>
+class RenderBase {
 public:
-    static bool isAbleToRender(const muse::mpe::ArticulationType& type)
-    {
-        const muse::mpe::ArticulationTypeSet& supportedTypes = T::supportedTypes();
+    static bool isAbleToRender(const muse::mpe::ArticulationType &type) {
+        const muse::mpe::ArticulationTypeSet &supportedTypes = T::supportedTypes();
 
         return supportedTypes.find(type) != supportedTypes.cend();
     }
 
-    static void render(const EngravingItem* item, const muse::mpe::ArticulationType preferredType, const RenderingContext& context,
-                       muse::mpe::PlaybackEventList& result)
-    {
-        IF_ASSERT_FAILED(item) {
-            return;
-        }
+    static void render(const EngravingItem *item, const muse::mpe::ArticulationType preferredType, const RenderingContext &context,
+                       muse::mpe::PlaybackEventList &result) {
+        IF_ASSERT_FAILED(item) { return; }
 
         T::doRender(item, preferredType, context, result);
     }
 };
-}
+} // namespace mu::engraving
 
 #endif // MU_ENGRAVING_RENDERBASE_H

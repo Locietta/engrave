@@ -30,29 +30,25 @@
 
 using namespace mu::engraving;
 
-StaffTextBase::StaffTextBase(const ElementType& type, DummyParentOr<Segment> parent, TextStyleType tid, ElementFlags flags)
-    : TextBase(type, parent, tid, flags)
-{
+StaffTextBase::StaffTextBase(const ElementType &type, DummyParentOr<Segment> parent, TextStyleType tid, ElementFlags flags)
+    : TextBase(type, parent, tid, flags) {
     setSwingParameters(Constants::DIVISION / 2, 60);
 }
 
-void StaffTextBase::clear()
-{
+void StaffTextBase::clear() {
     for (voice_idx_t voice = 0; voice < VOICES; ++voice) {
         m_channelNames[voice].clear();
     }
     clearAeolusStops();
 }
 
-void StaffTextBase::clearAeolusStops()
-{
+void StaffTextBase::clearAeolusStops() {
     for (int i = 0; i < 4; ++i) {
         m_aeolusStops[i] = 0;
     }
 }
 
-void StaffTextBase::setAeolusStop(int group, int idx, bool val)
-{
+void StaffTextBase::setAeolusStop(int group, int idx, bool val) {
     if (val) {
         m_aeolusStops[group] |= (1 << idx);
     } else {
@@ -60,46 +56,34 @@ void StaffTextBase::setAeolusStop(int group, int idx, bool val)
     }
 }
 
-void StaffTextBase::setAeolusStop(int group, int val)
-{
-    m_aeolusStops[group] = val;
-}
+void StaffTextBase::setAeolusStop(int group, int val) { m_aeolusStops[group] = val; }
 
-bool StaffTextBase::getAeolusStop(int group, int idx) const
-{
-    return m_aeolusStops[group] & (1 << idx);
-}
+bool StaffTextBase::getAeolusStop(int group, int idx) const { return m_aeolusStops[group] & (1 << idx); }
 
-int StaffTextBase::aeolusStop(int group) const
-{
-    return m_aeolusStops[group];
-}
+int StaffTextBase::aeolusStop(int group) const { return m_aeolusStops[group]; }
 
-Segment* StaffTextBase::segment() const
-{
+Segment *StaffTextBase::segment() const {
     if (!ownershipParent()->isSegment()) {
         LOGD("parent %s", ownershipParent()->typeName());
         return 0;
     }
-    Segment* s = toSegment(ownershipParent());
+    Segment *s = toSegment(ownershipParent());
     return s;
 }
 
-void StaffTextBase::added()
-{
+void StaffTextBase::added() {
     TextBase::added();
 
-    Score* s = score();
+    Score *s = score();
     if (s && swing()) {
         s->updateSwing();
     }
 }
 
-void StaffTextBase::removed()
-{
+void StaffTextBase::removed() {
     TextBase::removed();
 
-    Score* s = score();
+    Score *s = score();
     if (s && swing()) {
         s->updateSwing();
     }

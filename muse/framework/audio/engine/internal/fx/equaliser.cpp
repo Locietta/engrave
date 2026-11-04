@@ -28,33 +28,20 @@
 using namespace muse::audio;
 using namespace muse::audio::fx;
 
-void Equaliser::setOutputSpec(const OutputSpec& spec)
-{
+void Equaliser::setOutputSpec(const OutputSpec &spec) {
     m_outputSpec = spec;
     calculate();
 }
 
-bool Equaliser::active() const
-{
-    return m_active;
-}
+bool Equaliser::active() const { return m_active; }
 
-void Equaliser::setActive(bool active)
-{
-    m_active = active;
-}
+void Equaliser::setActive(bool active) { m_active = active; }
 
-void Equaliser::setMode(const ProcessMode)
-{
-}
+void Equaliser::setMode(const ProcessMode) {}
 
-bool Equaliser::shouldProcessDuringSilence() const
-{
-    return false;
-}
+bool Equaliser::shouldProcessDuringSilence() const { return false; }
 
-void Equaliser::process(float* buffer, samples_t sampleCount, samples_t)
-{
+void Equaliser::process(float *buffer, samples_t sampleCount, samples_t) {
     for (samples_t i = 0; i < sampleCount; ++i) {
         m_x[2] = m_x[1];
         m_x[1] = m_x[0];
@@ -68,8 +55,7 @@ void Equaliser::process(float* buffer, samples_t sampleCount, samples_t)
     }
 }
 
-void Equaliser::calculate()
-{
+void Equaliser::calculate() {
     if (!m_outputSpec.sampleRate) {
         return;
     }
@@ -86,20 +72,17 @@ void Equaliser::calculate()
     m_a[2] = 1 - alpha / a;
 }
 
-void Equaliser::setFrequency(float value)
-{
+void Equaliser::setFrequency(float value) {
     m_frequency = value;
     calculate();
 }
 
-void Equaliser::setGain(float value)
-{
+void Equaliser::setGain(float value) {
     m_gain = value;
     calculate();
 }
 
-void Equaliser::setQ(float value)
-{
+void Equaliser::setQ(float value) {
     m_q = value;
     calculate();
 }

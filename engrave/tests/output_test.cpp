@@ -53,7 +53,7 @@ std::filesystem::path g_assets;
 std::filesystem::path g_self;
 
 std::filesystem::path corpus_file(std::string_view name) {
-    for (const auto& path : g_corpus) {
+    for (const auto &path : g_corpus) {
         if (path.filename() == name) return path;
     }
     return {};
@@ -68,21 +68,21 @@ std::filesystem::path probe_binary() {
     return candidate;
 }
 
-int run_probe(const std::vector<std::string>& arguments) {
+int run_probe(const std::vector<std::string> &arguments) {
     std::vector<std::string> command;
     command.push_back(probe_binary().string());
     command.insert(command.end(), arguments.begin(), arguments.end());
 #ifdef _WIN32
     std::vector<std::wstring> wide;
     wide.reserve(command.size());
-    for (const std::string& argument : command) wide.push_back(std::filesystem::path(argument).wstring());
-    std::vector<const wchar_t*> pointers;
-    for (const std::wstring& argument : wide) pointers.push_back(argument.c_str());
+    for (const std::string &argument : command) wide.push_back(std::filesystem::path(argument).wstring());
+    std::vector<const wchar_t *> pointers;
+    for (const std::wstring &argument : wide) pointers.push_back(argument.c_str());
     pointers.push_back(nullptr);
     return _wspawnv(_P_WAIT, std::filesystem::path(command.front()).wstring().c_str(), pointers.data());
 #else
-    std::vector<char*> pointers;
-    for (std::string& argument : command) pointers.push_back(argument.data());
+    std::vector<char *> pointers;
+    for (std::string &argument : command) pointers.push_back(argument.data());
     pointers.push_back(nullptr);
     pid_t pid = 0;
     if (posix_spawn(&pid, command.front().c_str(), nullptr, nullptr, pointers.data(), ::environ) != 0) return -1;
@@ -94,7 +94,7 @@ int run_probe(const std::vector<std::string>& arguments) {
 
 namespace {
 
-constexpr const char* golden_file_name = "render_goldens.json";
+constexpr const char *golden_file_name = "render_goldens.json";
 
 std::string platform_name() {
 #ifdef _WIN32
@@ -104,21 +104,17 @@ std::string platform_name() {
 #endif
 }
 
-std::span<const std::byte> bytes_of(const std::vector<std::byte>& data) {
-    return std::span<const std::byte>(data.data(), data.size());
-}
+std::span<const std::byte> bytes_of(const std::vector<std::byte> &data) { return std::span<const std::byte>(data.data(), data.size()); }
 
-std::string as_text(const std::vector<std::byte>& data) {
-    return std::string(reinterpret_cast<const char*>(data.data()), data.size());
-}
+std::string as_text(const std::vector<std::byte> &data) { return std::string(reinterpret_cast<const char *>(data.data()), data.size()); }
 
 // scripts/golden.py reads and writes the SVG text as UTF-8 with universal
 // newlines, so a CRLF from the canvas becomes LF in the golden.
-std::vector<std::byte> with_lf_newlines(const std::vector<std::byte>& data) {
+std::vector<std::byte> with_lf_newlines(const std::vector<std::byte> &data) {
     std::vector<std::byte> result;
     result.reserve(data.size());
     for (const std::byte value : data) {
-        if (value == std::byte{ '\r' }) continue;
+        if (value == std::byte{'\r'}) continue;
         result.push_back(value);
     }
     return result;
@@ -126,7 +122,7 @@ std::vector<std::byte> with_lf_newlines(const std::vector<std::byte>& data) {
 
 nlohmann::json load_goldens() {
     std::filesystem::path path = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests" / golden_file_name;
-    const char* env = std::getenv("ENGRAVE_RENDER_GOLDENS");
+    const char *env = std::getenv("ENGRAVE_RENDER_GOLDENS");
     if (env) path = std::filesystem::u8path(env);
     std::ifstream file(path, std::ios::binary);
     if (!file) throw std::runtime_error("cannot read the render goldens in '" + path.string() + "'");
@@ -137,7 +133,7 @@ struct OpenedScore {
     std::unique_ptr<engrave::Document> document;
 };
 
-OpenedScore open(const std::string& name) {
+OpenedScore open(const std::string &name) {
     const std::filesystem::path path = corpus_file(name);
     if (path.empty()) return {};
     auto result = g_engine->open(path);
@@ -145,10 +141,10 @@ OpenedScore open(const std::string& name) {
         std::fprintf(stderr, "cannot open %s: %s\n", path.string().c_str(), result.error().message.c_str());
         return {};
     }
-    return OpenedScore{ std::move(*result) };
+    return OpenedScore{std::move(*result)};
 }
 
-void expect_code(const engrave::Result<engrave::RenderOutput>& result, engrave::ErrorCode code, std::string_view what) {
+void expect_code(const engrave::Result<engrave::RenderOutput> &result, engrave::ErrorCode code, std::string_view what) {
     ASSERT_FALSE(result) << what << ": expected " << engrave::to_string(code) << ", got a value";
     EXPECT_EQ(result.error().code, code) << what << ": " << result.error().message;
 }
@@ -160,13 +156,13 @@ namespace {
 
 using music::test::g_engine;
 
-void collect(const std::filesystem::path& path) {
+void collect(const std::filesystem::path &path) {
     std::error_code ec;
     if (std::filesystem::is_directory(path, ec)) {
         std::vector<std::filesystem::path> files;
-        for (const auto& entry : std::filesystem::directory_iterator(path, ec)) files.push_back(entry.path());
+        for (const auto &entry : std::filesystem::directory_iterator(path, ec)) files.push_back(entry.path());
         std::ranges::sort(files);
-        for (const auto& file : files) collect(file);
+        for (const auto &file : files) collect(file);
         return;
     }
     if (std::filesystem::is_regular_file(path, ec)) music::test::g_corpus.push_back(path);
@@ -174,11 +170,11 @@ void collect(const std::filesystem::path& path) {
 
 TEST(Output, CapabilitiesListTheRenderAndAudioFormats) {
     const engrave::Capabilities capabilities = g_engine->capabilities();
-    EXPECT_EQ(capabilities.render_formats, (std::vector<engrave::RenderFormat>{
-                                               engrave::RenderFormat::Pdf, engrave::RenderFormat::Png, engrave::RenderFormat::Svg }));
+    EXPECT_EQ(capabilities.render_formats,
+              (std::vector<engrave::RenderFormat>{engrave::RenderFormat::Pdf, engrave::RenderFormat::Png, engrave::RenderFormat::Svg}));
     EXPECT_EQ(capabilities.audio_formats,
-              (std::vector<engrave::AudioFormat>{ engrave::AudioFormat::Wav, engrave::AudioFormat::Flac, engrave::AudioFormat::Opus,
-                                                  engrave::AudioFormat::Mp3, engrave::AudioFormat::Aac }));
+              (std::vector<engrave::AudioFormat>{engrave::AudioFormat::Wav, engrave::AudioFormat::Flac, engrave::AudioFormat::Opus,
+                                                 engrave::AudioFormat::Mp3, engrave::AudioFormat::Aac}));
     EXPECT_EQ(capabilities.soundfonts, music::test::g_soundfonts);
     EXPECT_EQ(capabilities.audio_sample_rate, 44100);
 }
@@ -189,12 +185,12 @@ TEST(Output, RenderMatchesTheA2Goldens) {
     const nlohmann::json goldens = music::test::load_goldens().at("fixtures");
     const std::string platform = music::test::platform_name();
     int compared = 0;
-    for (const auto& [name, platforms] : goldens.items()) {
+    for (const auto &[name, platforms] : goldens.items()) {
         if (!platforms.contains(platform)) continue;
         music::test::OpenedScore opened = music::test::open(name);
         ASSERT_TRUE(opened.document) << "the corpus has no " << name << " (pass --corpus=<directory>)";
-        engrave::Document& document = *opened.document;
-        const nlohmann::json& golden = platforms.at(platform);
+        engrave::Document &document = *opened.document;
+        const nlohmann::json &golden = platforms.at(platform);
 
         const auto count = document.page_count();
         ASSERT_TRUE(count) << name << ": " << count.error().message;
@@ -204,7 +200,7 @@ TEST(Output, RenderMatchesTheA2Goldens) {
         options.format = engrave::RenderFormat::Svg;
         const auto svg = document.render(options);
         ASSERT_TRUE(svg) << name << ": " << svg.error().message;
-        const auto& pages = golden.at("svg");
+        const auto &pages = golden.at("svg");
         ASSERT_EQ(svg->pages.size(), pages.size()) << name << ": rendered pages";
         for (std::size_t page = 0; page < svg->pages.size(); ++page) {
             EXPECT_EQ(music::test::sha256_hex(music::test::bytes_of(music::test::with_lf_newlines(svg->pages[page]))),
@@ -219,7 +215,7 @@ TEST(Output, RenderMatchesTheA2Goldens) {
         std::string error;
         const auto image = music::test::decode_png(music::test::bytes_of(png->pages.front()), error);
         ASSERT_TRUE(image) << name << ": " << error;
-        const nlohmann::json& expected = golden.at("png");
+        const nlohmann::json &expected = golden.at("png");
         EXPECT_EQ(image->width, expected.at("width").get<std::uint32_t>()) << name << ": PNG width";
         EXPECT_EQ(image->height, expected.at("height").get<std::uint32_t>()) << name << ": PNG height";
         EXPECT_EQ(music::test::sha256_hex(image->rgba), expected.at("sha256").get<std::string>())
@@ -240,7 +236,7 @@ TEST(Output, RenderMatchesTheA2Goldens) {
 TEST(Output, PageRangesAndLimits) {
     music::test::OpenedScore opened = music::test::open("slurs.mscz");
     ASSERT_TRUE(opened.document);
-    engrave::Document& document = *opened.document;
+    engrave::Document &document = *opened.document;
     ASSERT_EQ(*document.page_count(), 2);
 
     engrave::RenderOptions all;
@@ -306,7 +302,7 @@ TEST(Output, CancellationPollsPageBoundariesAndDiscardsAllPages) {
     // This fixture has exactly two pages on both supported platforms.
     auto opened = music::test::open("slurs.mscz");
     ASSERT_TRUE(opened.document);
-    auto& document = *opened.document;
+    auto &document = *opened.document;
     ASSERT_EQ(*document.page_count(), 2);
     for (auto format : {engrave::RenderFormat::Pdf, engrave::RenderFormat::Svg, engrave::RenderFormat::Png}) {
         engrave::RenderOptions options;
@@ -326,7 +322,10 @@ TEST(Output, CancellationPollsPageBoundariesAndDiscardsAllPages) {
             ASSERT_TRUE(document.render(options));
         }
         int polls = 0;
-        options.cancelled = [&] { ++polls; return false; };
+        options.cancelled = [&] {
+            ++polls;
+            return false;
+        };
         ASSERT_TRUE(document.render(options));
         EXPECT_EQ(polls, total);
     }
@@ -335,12 +334,12 @@ TEST(Output, CancellationPollsPageBoundariesAndDiscardsAllPages) {
 TEST(Output, SelectionsNameTheScoreOrOneOfItsExcerpts) {
     music::test::OpenedScore opened = music::test::open("linked_parts.mscx");
     ASSERT_TRUE(opened.document);
-    engrave::Document& document = *opened.document;
+    engrave::Document &document = *opened.document;
     const auto outline = document.outline();
     ASSERT_TRUE(outline);
     ASSERT_FALSE(outline->excerpts.empty()) << "the fixture has no linked part";
 
-    const engrave::ScoreSel excerpt{ outline->excerpts.front().id };
+    const engrave::ScoreSel excerpt{outline->excerpts.front().id};
     // An excerpt is not laid out until something asks for its pages, so the
     // outline that has never done so reports none; page_count lays it out.
     const auto excerpt_pages = document.page_count(excerpt);
@@ -366,16 +365,16 @@ TEST(Output, SelectionsNameTheScoreOrOneOfItsExcerpts) {
     engrave::ElementId absent;
     absent.hi = 1;
     absent.lo = 2;
-    music::test::expect_code(document.render(engrave::RenderOptions{ .score = engrave::ScoreSel{ absent } }),
-                             engrave::ErrorCode::NotFound, "an id no element has");
+    music::test::expect_code(document.render(engrave::RenderOptions{.score = engrave::ScoreSel{absent}}), engrave::ErrorCode::NotFound,
+                             "an id no element has");
 
-    const auto score = document.page_count(engrave::ScoreSel{ outline->excerpts.front().id });
+    const auto score = document.page_count(engrave::ScoreSel{outline->excerpts.front().id});
     ASSERT_TRUE(score);
 
-    const auto note = document.query(engrave::Query{ .types = { "Note" }, .limit = 1 });
+    const auto note = document.query(engrave::Query{.types = {"Note"}, .limit = 1});
     ASSERT_TRUE(note);
     ASSERT_FALSE(note->elements.empty());
-    music::test::expect_code(document.render(engrave::RenderOptions{ .score = engrave::ScoreSel{ note->elements.front().id } }),
+    music::test::expect_code(document.render(engrave::RenderOptions{.score = engrave::ScoreSel{note->elements.front().id}}),
                              engrave::ErrorCode::InvalidArgument, "a selection that names a note");
 }
 
@@ -391,12 +390,11 @@ TEST(RuntimeAssets, FontRegistrationRelayoutsExistingScoresWithoutAnEdit) {
     xml.insert(frame, "<Text><style>title</style><text><font face=\"Petaluma Script\"/>MMMWWWiii012345</text></Text>");
     const auto excerpt_text = xml.find("<text>Flute</text>");
     ASSERT_NE(excerpt_text, std::string::npos);
-    xml.replace(excerpt_text, std::string("<text>Flute</text>").size(),
-                "<text><font face=\"Petaluma Script\"/>MMMWWWiii012345</text>");
-    const auto* bytes = reinterpret_cast<const std::byte*>(xml.data());
+    xml.replace(excerpt_text, std::string("<text>Flute</text>").size(), "<text><font face=\"Petaluma Script\"/>MMMWWWiii012345</text>");
+    const auto *bytes = reinterpret_cast<const std::byte *>(xml.data());
     auto opened = g_engine->open(std::span<const std::byte>(bytes, xml.size()), {.format = engrave::Format::Mscx});
     ASSERT_TRUE(opened);
-    auto& document = **opened;
+    auto &document = **opened;
     const auto outline = document.outline();
     ASSERT_TRUE(outline);
     ASSERT_FALSE(outline->excerpts.empty());
@@ -438,14 +436,19 @@ TEST(RuntimeAssets, FontMetadataTracksRetainedCopiesAndReplacements) {
 #else
     const int process = getpid();
 #endif
-    const auto copy = std::filesystem::temp_directory_path()
-                      / ("engrave-font-metadata-" + std::to_string(process) + ".otf");
+    const auto copy = std::filesystem::temp_directory_path() / ("engrave-font-metadata-" + std::to_string(process) + ".otf");
+
     struct Cleanup {
         std::filesystem::path path;
-        ~Cleanup() { std::error_code ec; std::filesystem::remove(path, ec); }
+
+        ~Cleanup() {
+            std::error_code ec;
+            std::filesystem::remove(path, ec);
+        }
     } cleanup{copy};
+
     ASSERT_TRUE(std::filesystem::copy_file(source, copy));
-    const auto read = [](const std::filesystem::path& path) {
+    const auto read = [](const std::filesystem::path &path) {
         std::ifstream file(path, std::ios::binary);
         return std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
     };
@@ -453,9 +456,8 @@ TEST(RuntimeAssets, FontMetadataTracksRetainedCopiesAndReplacements) {
     ASSERT_FALSE(originalBytes.empty());
     ASSERT_TRUE(g_engine->add_font(copy));
     const auto firstSnapshot = g_engine->runtime_fonts();
-    const auto first = std::find_if(firstSnapshot.begin(), firstSnapshot.end(), [&](const auto& font) {
-        return read(font.path) == originalBytes;
-    });
+    const auto first =
+        std::find_if(firstSnapshot.begin(), firstSnapshot.end(), [&](const auto &font) { return read(font.path) == originalBytes; });
     ASSERT_NE(first, firstSnapshot.end());
     const auto original = *first;
     EXPECT_GT(original.id, 0);
@@ -466,11 +468,15 @@ TEST(RuntimeAssets, FontMetadataTracksRetainedCopiesAndReplacements) {
 
     // An appended byte leaves this font usable but creates a distinct copy of
     // the same family/style, exercising replacement without another fixture.
-    { std::ofstream file(copy, std::ios::binary | std::ios::app); file.put('\0'); ASSERT_TRUE(file); }
+    {
+        std::ofstream file(copy, std::ios::binary | std::ios::app);
+        file.put('\0');
+        ASSERT_TRUE(file);
+    }
     ASSERT_TRUE(g_engine->add_font(copy));
     const auto replaced = g_engine->runtime_fonts();
     ASSERT_EQ(replaced.size(), firstSnapshot.size());
-    const auto entry = std::find_if(replaced.begin(), replaced.end(), [&](const auto& font) {
+    const auto entry = std::find_if(replaced.begin(), replaced.end(), [&](const auto &font) {
         return font.family == original.family && font.bold == original.bold && font.italic == original.italic;
     });
     ASSERT_NE(entry, replaced.end());
@@ -482,17 +488,19 @@ TEST(RuntimeAssets, FontMetadataTracksRetainedCopiesAndReplacements) {
 
     ASSERT_TRUE(g_engine->add_font(source));
     const auto restored = g_engine->runtime_fonts();
-    const auto again = std::find_if(restored.begin(), restored.end(), [&](const auto& font) { return font.id == original.id; });
+    const auto again = std::find_if(restored.begin(), restored.end(), [&](const auto &font) { return font.id == original.id; });
     ASSERT_NE(again, restored.end());
     EXPECT_EQ(again->path, original.path);
-    { std::ofstream file(copy, std::ios::binary | std::ios::trunc); file << "invalid-font"; }
+    {
+        std::ofstream file(copy, std::ios::binary | std::ios::trunc);
+        file << "invalid-font";
+    }
     const auto invalid = g_engine->add_font(copy);
     ASSERT_FALSE(invalid);
     EXPECT_EQ(invalid.error().code, engrave::ErrorCode::InvalidInput);
     const auto unchanged = g_engine->runtime_fonts();
     EXPECT_EQ(unchanged.size(), restored.size());
-    EXPECT_NE(std::find_if(unchanged.begin(), unchanged.end(), [&](const auto& font) { return font.id == original.id; }),
-              unchanged.end());
+    EXPECT_NE(std::find_if(unchanged.begin(), unchanged.end(), [&](const auto &font) { return font.id == original.id; }), unchanged.end());
 }
 
 TEST(RuntimeAssets, InitialEngineFontIsListedInMetadata) {
@@ -508,7 +516,7 @@ TEST(RuntimeAssets, InitialEngineFontIsListedInMetadata) {
     EXPECT_EQ(music::test::run_probe(arguments), 0);
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);
     std::filesystem::path assets;
     for (int i = 1; i < argc; ++i) {
@@ -522,13 +530,13 @@ int main(int argc, char** argv) {
         }
     }
     if (music::test::g_soundfonts.empty()) {
-        if (const char* env = std::getenv("MUSIC_MCP_SOUNDFONT")) music::test::g_soundfonts.push_back(std::filesystem::u8path(env));
+        if (const char *env = std::getenv("MUSIC_MCP_SOUNDFONT")) music::test::g_soundfonts.push_back(std::filesystem::u8path(env));
     }
     music::test::g_self = std::filesystem::absolute(argv[0]);
     music::test::g_assets = assets;
     if (music::test::g_corpus.empty()) {
-        for (const auto& candidate : { std::filesystem::path("fixtures/golden"), std::filesystem::path("../fixtures/golden"),
-                                       std::filesystem::path("../../fixtures/golden") }) {
+        for (const auto &candidate : {std::filesystem::path("fixtures/golden"), std::filesystem::path("../fixtures/golden"),
+                                      std::filesystem::path("../../fixtures/golden")}) {
             if (std::filesystem::is_directory(candidate)) {
                 collect(candidate);
                 break;
@@ -546,7 +554,7 @@ int main(int argc, char** argv) {
     music::test::g_engine = std::move(*engine);
     int result = RUN_ALL_TESTS();
     music::test::g_engine.reset();
-    for (const auto& path : music::test::g_retained_for_cleanup) {
+    for (const auto &path : music::test::g_retained_for_cleanup) {
         if (std::filesystem::exists(path)) {
             std::fprintf(stderr, "retained SoundFont survived Engine teardown: %s\n", path.string().c_str());
             result = 1;

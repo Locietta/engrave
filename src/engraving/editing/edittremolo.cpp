@@ -33,19 +33,14 @@ using namespace mu::engraving;
 //   MoveTremolo
 //---------------------------------------------------------
 
-void MoveTremolo::redo()
-{
+void MoveTremolo::redo() {
     // Find new tremolo chords
-    Measure* m1 = score->tick2measure(chord1Tick);
-    Measure* m2 = score->tick2measure(chord2Tick);
-    IF_ASSERT_FAILED(m1 && m2) {
-        return;
-    }
-    Chord* c1 = m1->findChord(chord1Tick, track);
-    Chord* c2 = m2->findChord(chord2Tick, track);
-    IF_ASSERT_FAILED(c1 && c2) {
-        return;
-    }
+    Measure *m1 = score->tick2measure(chord1Tick);
+    Measure *m2 = score->tick2measure(chord2Tick);
+    IF_ASSERT_FAILED(m1 && m2) { return; }
+    Chord *c1 = m1->findChord(chord1Tick, track);
+    Chord *c2 = m2->findChord(chord2Tick, track);
+    IF_ASSERT_FAILED(c1 && c2) { return; }
 
     // Remember the old tremolo chords
     oldC1 = trem->chord1();
@@ -62,13 +57,13 @@ void MoveTremolo::redo()
         } else {
             c1->tremoloTwoChord()->setChords(c1, nullptr);
         }
-        TremoloTwoChord* oldTremolo  = c1->tremoloTwoChord();
+        TremoloTwoChord *oldTremolo = c1->tremoloTwoChord();
         c1->setTremoloTwoChord(nullptr);
         delete oldTremolo;
     }
     if (c2->tremoloTwoChord() && (c2->tremoloTwoChord() != trem)) {
         c2->tremoloTwoChord()->setChords(nullptr, c2);
-        TremoloTwoChord* oldTremolo  = c2->tremoloTwoChord();
+        TremoloTwoChord *oldTremolo = c2->tremoloTwoChord();
         c2->setTremoloTwoChord(nullptr);
         delete oldTremolo;
     }
@@ -90,8 +85,7 @@ void MoveTremolo::redo()
     }
 }
 
-void MoveTremolo::undo()
-{
+void MoveTremolo::undo() {
     // Move tremolo to old position
     trem->chord1()->setTremoloTwoChord(nullptr);
     trem->chord2()->setTremoloTwoChord(nullptr);

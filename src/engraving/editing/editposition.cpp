@@ -28,15 +28,13 @@
 
 using namespace mu::engraving;
 
-void EditPosition::freezeItemsPositions(Transaction& tx, const std::vector<EngravingItem*>& items)
-{
-    for (EngravingItem* item : items) {
+void EditPosition::freezeItemsPositions(Transaction &tx, const std::vector<EngravingItem *> &items) {
+    for (EngravingItem *item : items) {
         freezeItemPosition(tx, item);
     }
 }
 
-void EditPosition::freezeItemPosition(Transaction&, EngravingItem* item)
-{
+void EditPosition::freezeItemPosition(Transaction &, EngravingItem *item) {
     if (item->generated() || !autoplaceAppliesToType(item->type()) || !item->autoplace()) {
         return;
     }

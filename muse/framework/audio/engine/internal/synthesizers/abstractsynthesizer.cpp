@@ -22,37 +22,21 @@
 
 #include "abstractsynthesizer.h"
 
-
 using namespace muse;
 using namespace muse::mpe;
 using namespace muse::audio;
 using namespace muse::audio::synth;
 
-AbstractSynthesizer::AbstractSynthesizer(const AudioInputParams& params, const engine::IAudioEngineConfiguration& config)
-    : m_params(params), m_config(config)
-{
-}
+AbstractSynthesizer::AbstractSynthesizer(const AudioInputParams &params, const engine::IAudioEngineConfiguration &config)
+    : m_params(params), m_config(config) {}
 
-void AbstractSynthesizer::setMode(const ProcessMode mode)
-{
+void AbstractSynthesizer::setMode(const ProcessMode mode) { m_mode = mode; }
 
-    m_mode = mode;
-}
+ProcessMode AbstractSynthesizer::mode() const { return m_mode; }
 
-ProcessMode AbstractSynthesizer::mode() const
-{
+const AudioInputParams &AbstractSynthesizer::params() const { return m_params; }
 
-    return m_mode;
-}
-
-const AudioInputParams& AbstractSynthesizer::params() const
-{
-
-    return m_params;
-}
-
-void AbstractSynthesizer::setup(const mpe::PlaybackData& playbackData)
-{
+void AbstractSynthesizer::setup(const mpe::PlaybackData &playbackData) {
 
     m_setupData = playbackData.setupData;
 
@@ -60,42 +44,22 @@ void AbstractSynthesizer::setup(const mpe::PlaybackData& playbackData)
     setupEvents(playbackData);
 }
 
-void AbstractSynthesizer::prepareToPlay()
-{
-}
+void AbstractSynthesizer::prepareToPlay() {}
 
-bool AbstractSynthesizer::readyToPlay() const
-{
+bool AbstractSynthesizer::readyToPlay() const { return true; }
 
-    return true;
-}
+bool AbstractSynthesizer::hasPendingChunks() const { return m_hasPendingChunks; }
 
-bool AbstractSynthesizer::hasPendingChunks() const
-{
+void AbstractSynthesizer::processInput() {}
 
-    return m_hasPendingChunks;
-}
+InputProcessingProgress AbstractSynthesizer::inputProcessingProgress() const { return m_inputProcessingProgress; }
 
-void AbstractSynthesizer::processInput()
-{
-}
+void AbstractSynthesizer::clearCache() {}
 
-InputProcessingProgress AbstractSynthesizer::inputProcessingProgress() const
-{
-
-    return m_inputProcessingProgress;
-}
-
-void AbstractSynthesizer::clearCache()
-{
-}
-
-muse::audio::msecs_t AbstractSynthesizer::samplesToMsecs(const samples_t samplesPerChannel, const samples_t sampleRate) const
-{
+muse::audio::msecs_t AbstractSynthesizer::samplesToMsecs(const samples_t samplesPerChannel, const samples_t sampleRate) const {
     return samplesPerChannel * 1000000 / sampleRate;
 }
 
-samples_t AbstractSynthesizer::microSecsToSamples(const msecs_t msec, const samples_t sampleRate) const
-{
+samples_t AbstractSynthesizer::microSecsToSamples(const msecs_t msec, const samples_t sampleRate) const {
     return (msec.raw() / 1000000.f) * sampleRate;
 }

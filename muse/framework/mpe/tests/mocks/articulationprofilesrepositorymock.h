@@ -28,14 +28,13 @@
 #include "mpe/iarticulationprofilesrepository.h"
 
 namespace muse::mpe {
-class ArticulationProfilesRepositoryMock : public IArticulationProfilesRepository
-{
+class ArticulationProfilesRepositoryMock : public IArticulationProfilesRepository {
 public:
     MOCK_METHOD(ArticulationsProfilePtr, createNew, (), (const, override));
     MOCK_METHOD(ArticulationsProfilePtr, defaultProfile, (const ArticulationFamily), (const, override));
-    MOCK_METHOD(ArticulationsProfilePtr, loadProfile, (const io::path_t&), (const, override));
-    MOCK_METHOD(void, saveProfile, (const io::path_t&, const ArticulationsProfilePtr), (override));
+    MOCK_METHOD(ArticulationsProfilePtr, loadProfile, (const io::path_t &), (const, override));
+    MOCK_METHOD(void, saveProfile, (const io::path_t &, const ArticulationsProfilePtr), (override));
 };
-}
+} // namespace muse::mpe
 
 #endif // MUSE_MPE_ARTICULATIONPROFILESREPOSITORYMOCK_H

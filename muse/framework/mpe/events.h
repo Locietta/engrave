@@ -35,8 +35,7 @@
 #include "playbacksetupdata.h"
 
 namespace muse::mpe {
-struct ArrangementContext
-{
+struct ArrangementContext {
     timestamp_t nominalTimestamp = 0;
     timestamp_t actualTimestamp = 0;
     duration_t nominalDuration = 0;
@@ -45,80 +44,48 @@ struct ArrangementContext
     staff_layer_idx_t staffLayerIndex = 0;
     double bps = 0.0;
 
-    bool hasStart() const
-    {
-        return actualDuration > 0;
-    }
+    bool hasStart() const { return actualDuration > 0; }
 
-    bool hasEnd() const
-    {
-        return actualDuration != mpe::INFINITE_DURATION;
-    }
+    bool hasEnd() const { return actualDuration != mpe::INFINITE_DURATION; }
 
-    bool operator==(const ArrangementContext& other) const
-    {
-        return nominalTimestamp == other.nominalTimestamp
-               && actualTimestamp == other.actualTimestamp
-               && nominalDuration == other.nominalDuration
-               && actualDuration == other.actualDuration
-               && voiceLayerIndex == other.voiceLayerIndex
-               && staffLayerIndex == other.staffLayerIndex
-               && muse::is_equal(bps, other.bps);
+    bool operator==(const ArrangementContext &other) const {
+        return nominalTimestamp == other.nominalTimestamp && actualTimestamp == other.actualTimestamp &&
+               nominalDuration == other.nominalDuration && actualDuration == other.actualDuration &&
+               voiceLayerIndex == other.voiceLayerIndex && staffLayerIndex == other.staffLayerIndex && muse::is_equal(bps, other.bps);
     }
 };
 
-struct PitchContext
-{
+struct PitchContext {
     pitch_level_t nominalPitchLevel = 0;
     PitchCurve pitchCurve;
 
-    bool operator==(const PitchContext& other) const
-    {
-        return nominalPitchLevel == other.nominalPitchLevel
-               && pitchCurve == other.pitchCurve;
+    bool operator==(const PitchContext &other) const {
+        return nominalPitchLevel == other.nominalPitchLevel && pitchCurve == other.pitchCurve;
     }
 };
 
-struct ExpressionContext
-{
+struct ExpressionContext {
     ArticulationMap articulations;
     dynamic_level_t nominalDynamicLevel = MIN_DYNAMIC_LEVEL;
     ExpressionCurve expressionCurve;
     std::optional<float> velocityOverride;
 
-    bool operator==(const ExpressionContext& other) const
-    {
-        return articulations == other.articulations
-               && nominalDynamicLevel == other.nominalDynamicLevel
-               && expressionCurve == other.expressionCurve
-               && velocityOverride == velocityOverride;
+    bool operator==(const ExpressionContext &other) const {
+        return articulations == other.articulations && nominalDynamicLevel == other.nominalDynamicLevel &&
+               expressionCurve == other.expressionCurve && velocityOverride == velocityOverride;
     }
 };
 
-struct NoteEvent
-{
+struct NoteEvent {
     NoteEvent() = default;
 
-    explicit NoteEvent(ArrangementContext&& arrangementCtx,
-                       PitchContext&& pitchCtx,
-                       ExpressionContext&& expressionCtx)
-        : m_arrangementCtx(arrangementCtx),
-        m_pitchCtx(pitchCtx),
-        m_expressionCtx(expressionCtx)
-    {
-    }
+    explicit NoteEvent(ArrangementContext &&arrangementCtx, PitchContext &&pitchCtx, ExpressionContext &&expressionCtx)
+        : m_arrangementCtx(arrangementCtx), m_pitchCtx(pitchCtx), m_expressionCtx(expressionCtx) {}
 
-    explicit NoteEvent(const timestamp_t nominalTimestamp,
-                       const duration_t nominalDuration,
-                       const voice_layer_idx_t voiceIdx,
-                       const staff_layer_idx_t staffIdx,
-                       const pitch_level_t nominalPitchLevel,
-                       const dynamic_level_t nominalDynamicLevel,
-                       const ArticulationMap& articulationsApplied,
-                       const double bps,
-                       const float requiredVelocityFraction = 0.f,
-                       const PitchCurve& requiredPitchCurve = {})
-    {
+    explicit NoteEvent(const timestamp_t nominalTimestamp, const duration_t nominalDuration, const voice_layer_idx_t voiceIdx,
+                       const staff_layer_idx_t staffIdx, const pitch_level_t nominalPitchLevel, const dynamic_level_t nominalDynamicLevel,
+                       const ArticulationMap &articulationsApplied, const double bps, const float requiredVelocityFraction = 0.f,
+                       const PitchCurve &requiredPitchCurve = {}) {
         m_arrangementCtx.nominalDuration = nominalDuration;
         m_arrangementCtx.nominalTimestamp = nominalTimestamp;
         m_arrangementCtx.voiceLayerIndex = voiceIdx;
@@ -133,38 +100,24 @@ struct NoteEvent
         setUp(requiredVelocityFraction, requiredPitchCurve);
     }
 
-    const ArrangementContext& arrangementCtx() const
-    {
-        return m_arrangementCtx;
-    }
+    const ArrangementContext &arrangementCtx() const { return m_arrangementCtx; }
 
-    const PitchContext& pitchCtx() const
-    {
-        return m_pitchCtx;
-    }
+    const PitchContext &pitchCtx() const { return m_pitchCtx; }
 
-    const ExpressionContext& expressionCtx() const
-    {
-        return m_expressionCtx;
-    }
+    const ExpressionContext &expressionCtx() const { return m_expressionCtx; }
 
-    bool operator==(const NoteEvent& other) const
-    {
-        return m_arrangementCtx == other.m_arrangementCtx
-               && m_pitchCtx == other.m_pitchCtx
-               && m_expressionCtx == other.m_expressionCtx;
+    bool operator==(const NoteEvent &other) const {
+        return m_arrangementCtx == other.m_arrangementCtx && m_pitchCtx == other.m_pitchCtx && m_expressionCtx == other.m_expressionCtx;
     }
 
 private:
 
-    template<typename T>
-    inline T mult(T v, float f)
-    {
+    template <typename T>
+    inline T mult(T v, float f) {
         return static_cast<T>(static_cast<float>(v) * f);
     }
 
-    void setUp(const float requiredVelocityFraction, const PitchCurve& requiredPitchCurve)
-    {
+    void setUp(const float requiredVelocityFraction, const PitchCurve &requiredPitchCurve) {
         calculateActualDuration(m_expressionCtx.articulations);
         calculateActualTimestamp(m_expressionCtx.articulations);
 
@@ -177,34 +130,31 @@ private:
         calculateExpressionCurve(m_expressionCtx.articulations, requiredVelocityFraction);
     }
 
-    void calculateActualTimestamp(const ArticulationMap& articulationsApplied)
-    {
+    void calculateActualTimestamp(const ArticulationMap &articulationsApplied) {
         m_arrangementCtx.actualTimestamp = m_arrangementCtx.nominalTimestamp;
 
         if (articulationsApplied.empty()) {
             return;
         }
 
-        timestamp_t timestampOffsetValue = mult(m_arrangementCtx.nominalDuration,
-                                                percentageToFactor(articulationsApplied.averageTimestampOffset()));
+        timestamp_t timestampOffsetValue =
+            mult(m_arrangementCtx.nominalDuration, percentageToFactor(articulationsApplied.averageTimestampOffset()));
 
         m_arrangementCtx.actualTimestamp += timestampOffsetValue;
     }
 
-    void calculateActualDuration(const ArticulationMap& articulationsApplied)
-    {
+    void calculateActualDuration(const ArticulationMap &articulationsApplied) {
         m_arrangementCtx.actualDuration = m_arrangementCtx.nominalDuration;
 
         if (articulationsApplied.empty() || m_arrangementCtx.nominalDuration == INFINITE_DURATION) {
             return;
         }
 
-        m_arrangementCtx.actualDuration = mult(m_arrangementCtx.actualDuration,
-                                               percentageToFactor(articulationsApplied.averageDurationFactor()));
+        m_arrangementCtx.actualDuration =
+            mult(m_arrangementCtx.actualDuration, percentageToFactor(articulationsApplied.averageDurationFactor()));
     }
 
-    void calculatePitchCurve(const ArticulationMap& articulationsApplied)
-    {
+    void calculatePitchCurve(const ArticulationMap &articulationsApplied) {
         m_pitchCtx.pitchCurve = articulationsApplied.averagePitchOffsetMap();
 
         pitch_level_t averagePitchRange = articulationsApplied.averagePitchRange();
@@ -215,13 +165,12 @@ private:
         float ratio = static_cast<float>(averagePitchRange) / static_cast<float>(PITCH_LEVEL_STEP);
         float patternUnitRatio = PITCH_LEVEL_STEP / static_cast<float>(ONE_PERCENT);
 
-        for (auto& pair : m_pitchCtx.pitchCurve) {
+        for (auto &pair : m_pitchCtx.pitchCurve) {
             pair.second = static_cast<pitch_level_t>(RealRound(static_cast<float>(pair.second) * ratio * patternUnitRatio, 0));
         }
     }
 
-    void calculateExpressionCurve(const ArticulationMap& articulationsApplied, const float requiredVelocityFraction)
-    {
+    void calculateExpressionCurve(const ArticulationMap &articulationsApplied, const float requiredVelocityFraction) {
         m_expressionCtx.expressionCurve = articulationsApplied.averageDynamicOffsetMap();
 
         if (!RealIsNull(requiredVelocityFraction)) {
@@ -239,8 +188,8 @@ private:
 
         float dynamicAmplifyFactor = static_cast<float>(articulationDynamicLevel - naturalDynamicLevel) / DYNAMIC_LEVEL_STEP;
 
-        dynamic_level_t amplificationDiff = mult(std::max(articulationsApplied.averageDynamicRange(), DYNAMIC_LEVEL_STEP),
-                                                 dynamicAmplifyFactor);
+        dynamic_level_t amplificationDiff =
+            mult(std::max(articulationsApplied.averageDynamicRange(), DYNAMIC_LEVEL_STEP), dynamicAmplifyFactor);
 
         dynamic_level_t actualDynamicLevel = nominalDynamicLevel + amplificationDiff;
 
@@ -250,7 +199,7 @@ private:
 
         float ratio = static_cast<float>(actualDynamicLevel) / static_cast<float>(articulationDynamicLevel);
 
-        for (auto& pair : m_expressionCtx.expressionCurve) {
+        for (auto &pair : m_expressionCtx.expressionCurve) {
             pair.second = static_cast<dynamic_level_t>(RealRound(pair.second * ratio, 0));
         }
     }
@@ -274,10 +223,7 @@ struct ControllerChangeEvent {
     Value val; // [0;1]
     layer_idx_t layerIdx = 0;
 
-    bool operator==(const ControllerChangeEvent& e) const
-    {
-        return type == e.type && val == e.val && layerIdx == e.layerIdx;
-    }
+    bool operator==(const ControllerChangeEvent &e) const { return type == e.type && val == e.val && layerIdx == e.layerIdx; }
 };
 
 using ControllerChangeEventList = std::vector<ControllerChangeEvent>;
@@ -292,10 +238,7 @@ struct TextArticulationEvent {
     layer_idx_t layerIdx = 0;
     Flags<FlagType> flags;
 
-    bool operator==(const TextArticulationEvent& e) const
-    {
-        return text == e.text && layerIdx == e.layerIdx && flags == e.flags;
-    }
+    bool operator==(const TextArticulationEvent &e) const { return text == e.text && layerIdx == e.layerIdx && flags == e.flags; }
 };
 
 using TextArticulationEventList = std::vector<TextArticulationEvent>;
@@ -304,10 +247,7 @@ struct SoundPresetChangeEvent {
     String code;
     layer_idx_t layerIdx = 0;
 
-    bool operator==(const SoundPresetChangeEvent& e) const
-    {
-        return code == e.code && layerIdx == e.layerIdx;
-    }
+    bool operator==(const SoundPresetChangeEvent &e) const { return code == e.code && layerIdx == e.layerIdx; }
 };
 
 using SoundPresetChangeEventList = std::vector<SoundPresetChangeEvent>;
@@ -323,20 +263,13 @@ struct SyllableEvent {
     layer_idx_t layerIdx = 0;
     Flags<FlagType> flags;
 
-    bool operator==(const SyllableEvent& e) const
-    {
-        return text == e.text && layerIdx == e.layerIdx && flags == e.flags;
-    }
+    bool operator==(const SyllableEvent &e) const { return text == e.text && layerIdx == e.layerIdx && flags == e.flags; }
 };
 
 using SyllableEventList = std::vector<SyllableEvent>;
 
-using PlaybackEvent = std::variant<std::monostate,
-                                   NoteEvent,
-                                   TextArticulationEvent,
-                                   SoundPresetChangeEvent,
-                                   SyllableEvent,
-                                   ControllerChangeEvent>;
+using PlaybackEvent =
+    std::variant<std::monostate, NoteEvent, TextArticulationEvent, SoundPresetChangeEvent, SyllableEvent, ControllerChangeEvent>;
 
 using PlaybackEventList = std::vector<PlaybackEvent>;
 using PlaybackEventsMap = SharedMap<timestamp_t, PlaybackEventList>;
@@ -344,23 +277,15 @@ using PlaybackEventsMap = SharedMap<timestamp_t, PlaybackEventList>;
 using DynamicAutomationMap = AutomationCurve<timestamp_t>;
 using DynamicAutomationLayers = SharedMap<layer_idx_t, DynamicAutomationMap>;
 
-
 struct PlaybackData {
     PlaybackEventsMap originEvents;
     PlaybackSetupData setupData;
     DynamicAutomationLayers dynamics;
 
-
-    bool operator==(const PlaybackData& other) const
-    {
-        return originEvents == other.originEvents
-               && setupData == other.setupData
-               && dynamics == other.dynamics;
+    bool operator==(const PlaybackData &other) const {
+        return originEvents == other.originEvents && setupData == other.setupData && dynamics == other.dynamics;
     }
 
-    bool isValid() const
-    {
-        return setupData.isValid();
-    }
+    bool isValid() const { return setupData.isValid(); }
 };
-}
+} // namespace muse::mpe

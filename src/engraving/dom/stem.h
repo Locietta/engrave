@@ -28,47 +28,50 @@ namespace mu::engraving {
 class Chord;
 class Transaction;
 
-class Stem final : public EngravingItem
-{
+class Stem final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, Stem)
     DECLARE_CLASSOF(ElementType::STEM)
 
 public:
 
-    Stem(const Stem&) = default;
-    Stem& operator=(const Stem&) = delete;
+    Stem(const Stem &) = default;
+    Stem &operator=(const Stem &) = delete;
 
-    Stem* clone() const override { return new Stem(*this); }
+    Stem *clone() const override { return new Stem(*this); }
 
-    EngravingItem* elementBase() const override;
+    EngravingItem *elementBase() const override;
 
-
-    bool acceptDrop(EditData&) const override;
-    EngravingItem* drop(Transaction& tx, EditData&) override;
+    bool acceptDrop(EditData &) const override;
+    EngravingItem *drop(Transaction &tx, EditData &) override;
 
     void reset() override;
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid id) const override;
 
     staff_idx_t vStaffIdx() const override;
 
-    Chord* chord() const { return toChord(ownershipParent()); }
+    Chord *chord() const { return toChord(ownershipParent()); }
+
     bool up() const;
 
     Spatium baseLength() const { return m_baseLength; }
+
     void setBaseLength(Spatium baseLength);
 
     Spatium userLength() const { return m_userLength; }
+
     void setUserLength(Spatium userLength) { m_userLength = userLength; }
 
     Spatium lineWidth() const { return m_lineWidth; }
+
     double lineWidthMag() const;
+
     void setLineWidth(Spatium lineWidth) { m_lineWidth = lineWidth; }
 
     PointF flagPosition() const;
-    double length() const { return absoluteFromSpatium(m_baseLength + m_userLength); }
 
+    double length() const { return absoluteFromSpatium(m_baseLength + m_userLength); }
 
     struct LayoutData : public EngravingItem::LayoutData {
         LineF line;
@@ -85,4 +88,4 @@ private:
     Spatium m_userLength = 0.0_sp;
     Spatium m_lineWidth = 0.0_sp;
 };
-}
+} // namespace mu::engraving

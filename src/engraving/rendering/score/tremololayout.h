@@ -29,24 +29,23 @@
 namespace mu::engraving {
 class TremoloTwoChord;
 class TremoloSingleChord;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class TremoloLayout
-{
+class TremoloLayout {
 public:
 
-    static void layout(TremoloTwoChord* item, const LayoutContext& ctx);
-    static void layout(TremoloSingleChord* item, const LayoutContext& ctx);
+    static void layout(TremoloTwoChord *item, const LayoutContext &ctx);
+    static void layout(TremoloSingleChord *item, const LayoutContext &ctx);
 
-    static std::pair<double, double> extendedStemLenWithTwoNoteTremolo(TremoloTwoChord* tremolo, double stemLen1, double stemLen2);
+    static std::pair<double, double> extendedStemLenWithTwoNoteTremolo(TremoloTwoChord *tremolo, double stemLen1, double stemLen2);
 
-    static void createBeamSegments(TremoloTwoChord* item, const LayoutContext& ctx);
+    static void createBeamSegments(TremoloTwoChord *item, const LayoutContext &ctx);
 private:
-    static void layoutOneNoteTremolo(TremoloSingleChord* item, const LayoutContext& ctx, double x, double y, double h, double spatium);
-    static void layoutTwoNotesTremolo(TremoloTwoChord* item, const LayoutContext& ctx, double x, double y, double h, double spatium);
-    static void calcIsUp(TremoloTwoChord* item);
+    static void layoutOneNoteTremolo(TremoloSingleChord *item, const LayoutContext &ctx, double x, double y, double h, double spatium);
+    static void layoutTwoNotesTremolo(TremoloTwoChord *item, const LayoutContext &ctx, double x, double y, double h, double spatium);
+    static void calcIsUp(TremoloTwoChord *item);
 };
-}
+} // namespace mu::engraving::rendering::score
 
 #endif // MU_ENGRAVING_TREMOLOLAYOUT_DEV_H

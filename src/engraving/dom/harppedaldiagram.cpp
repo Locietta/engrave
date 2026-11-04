@@ -39,56 +39,39 @@ using namespace mu::engraving;
 // Position of separator character in diagram
 static constexpr size_t SEPARATOR_IDX = 3;
 
-static const String harpStringTypeToString(HarpStringType type)
-{
+static const String harpStringTypeToString(HarpStringType type) {
     switch (type) {
-    case HarpStringType::A:
-        return String(u"A");
-    case HarpStringType::B:
-        return String(u"B");
-    case HarpStringType::C:
-        return String(u"C");
-    case HarpStringType::D:
-        return String(u"D");
-    case HarpStringType::E:
-        return String(u"E");
-    case HarpStringType::F:
-        return String(u"F");
-    case HarpStringType::G:
-        return String(u"G");
+        case HarpStringType::A: return String(u"A");
+        case HarpStringType::B: return String(u"B");
+        case HarpStringType::C: return String(u"C");
+        case HarpStringType::D: return String(u"D");
+        case HarpStringType::E: return String(u"E");
+        case HarpStringType::F: return String(u"F");
+        case HarpStringType::G: return String(u"G");
     }
     return String();
 }
 
 // STYLE
-static const ElementStyle harpPedalDiagramStyle {
-    { Sid::harpPedalDiagramPlacement, Pid::PLACEMENT },
-    { Sid::harpPedalDiagramMinDistance, Pid::MIN_DISTANCE },
+static const ElementStyle harpPedalDiagramStyle{
+    {Sid::harpPedalDiagramPlacement, Pid::PLACEMENT},
+    {Sid::harpPedalDiagramMinDistance, Pid::MIN_DISTANCE},
 };
 
-static const ElementStyle harpPedalTextDiagramStyle {
-    { Sid::harpPedalTextDiagramPlacement, Pid::PLACEMENT },
-    { Sid::harpPedalTextDiagramMinDistance, Pid::MIN_DISTANCE },
+static const ElementStyle harpPedalTextDiagramStyle{
+    {Sid::harpPedalTextDiagramPlacement, Pid::PLACEMENT},
+    {Sid::harpPedalTextDiagramMinDistance, Pid::MIN_DISTANCE},
 };
 
 // HarpPedalDiagram
-void HarpPedalDiagram::setPlayableTpcs()
-{
+void HarpPedalDiagram::setPlayableTpcs() {
     std::set<int> playableTpcs;
-    static const std::map<HarpStringType, int> string2step = {
-        { HarpStringType::C, 0 },
-        { HarpStringType::D, 1 },
-        { HarpStringType::E, 2 },
-        { HarpStringType::F, 3 },
-        { HarpStringType::G, 4 },
-        { HarpStringType::A, 5 },
-        { HarpStringType::B, 6 }
-    };
-    static const std::map<PedalPosition, AccidentalVal> position2accidentalVal = {
-        { PedalPosition::FLAT, AccidentalVal::FLAT },
-        { PedalPosition::NATURAL, AccidentalVal::NATURAL },
-        { PedalPosition::SHARP, AccidentalVal::SHARP }
-    };
+    static const std::map<HarpStringType, int> string2step = {{HarpStringType::C, 0}, {HarpStringType::D, 1}, {HarpStringType::E, 2},
+                                                              {HarpStringType::F, 3}, {HarpStringType::G, 4}, {HarpStringType::A, 5},
+                                                              {HarpStringType::B, 6}};
+    static const std::map<PedalPosition, AccidentalVal> position2accidentalVal = {{PedalPosition::FLAT, AccidentalVal::FLAT},
+                                                                                  {PedalPosition::NATURAL, AccidentalVal::NATURAL},
+                                                                                  {PedalPosition::SHARP, AccidentalVal::SHARP}};
 
     for (size_t i = 0; i < m_pedalState.size(); i++) {
         int stringStep = string2step.at(HarpStringType(i));
@@ -101,34 +84,28 @@ void HarpPedalDiagram::setPlayableTpcs()
 }
 
 HarpPedalDiagram::HarpPedalDiagram(DummyParentOr<Segment> parent)
-    : TextBase(ElementType::HARP_DIAGRAM, parent, TextStyleType::HARP_PEDAL_DIAGRAM, ElementFlag::MOVABLE | ElementFlag::ON_STAFF)
-{
+    : TextBase(ElementType::HARP_DIAGRAM, parent, TextStyleType::HARP_PEDAL_DIAGRAM, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
     initElementStyle(&harpPedalDiagramStyle);
-    m_pedalState
-        = std::array<PedalPosition, HARP_STRING_NO> { PedalPosition::NATURAL, PedalPosition::NATURAL, PedalPosition::NATURAL,
-                                                      PedalPosition::NATURAL,
-                                                      PedalPosition::NATURAL, PedalPosition::NATURAL, PedalPosition::NATURAL };
+    m_pedalState = std::array<PedalPosition, HARP_STRING_NO>{PedalPosition::NATURAL, PedalPosition::NATURAL, PedalPosition::NATURAL,
+                                                             PedalPosition::NATURAL, PedalPosition::NATURAL, PedalPosition::NATURAL,
+                                                             PedalPosition::NATURAL};
     setPlayableTpcs();
 }
 
-HarpPedalDiagram::HarpPedalDiagram(const HarpPedalDiagram& h)
-    : TextBase(h)
-{
+HarpPedalDiagram::HarpPedalDiagram(const HarpPedalDiagram &h) : TextBase(h) {
     m_pedalState = h.m_pedalState;
     m_isDiagram = h.m_isDiagram;
     setPlayableTpcs();
 }
 
-void HarpPedalDiagram::setPedalState(std::array<PedalPosition, HARP_STRING_NO> state)
-{
+void HarpPedalDiagram::setPedalState(std::array<PedalPosition, HARP_STRING_NO> state) {
     m_pedalState = state;
     setPlayableTpcs();
 }
 
-void HarpPedalDiagram::setIsDiagram(bool diagram)
-{
+void HarpPedalDiagram::setIsDiagram(bool diagram) {
     m_isDiagram = diagram;
-    const ElementStyle& styleMap = m_isDiagram ? harpPedalDiagramStyle : harpPedalTextDiagramStyle;
+    const ElementStyle &styleMap = m_isDiagram ? harpPedalDiagramStyle : harpPedalTextDiagramStyle;
 
     if (m_isDiagram) {
         setTextStyleType(TextStyleType::HARP_PEDAL_DIAGRAM);
@@ -139,14 +116,12 @@ void HarpPedalDiagram::setIsDiagram(bool diagram)
     initElementStyle(&styleMap);
 }
 
-void HarpPedalDiagram::setPedal(HarpStringType harpString, PedalPosition pedal)
-{
+void HarpPedalDiagram::setPedal(HarpStringType harpString, PedalPosition pedal) {
     m_pedalState.at(harpString) = pedal;
     setPlayableTpcs();
 }
 
-String HarpPedalDiagram::createDiagramText()
-{
+String HarpPedalDiagram::createDiagramText() {
     String diagram;
     if (m_isDiagram) {
         for (size_t idx = 0; idx < m_pedalState.size(); idx++) {
@@ -155,28 +130,21 @@ String HarpPedalDiagram::createDiagramText()
                 diagram.append(u"<sym>harpPedalDivider</sym>");
             }
             switch (m_pedalState[idx]) {
-            case PedalPosition::FLAT:
-                diagram.append(u"<sym>harpPedalRaised</sym>");
-                break;
-            case PedalPosition::NATURAL:
-                diagram.append(u"<sym>harpPedalCentered</sym>");
-                break;
-            case PedalPosition::SHARP:
-                diagram.append(u"<sym>harpPedalLowered</sym>");
-                break;
-            case PedalPosition::UNSET:
-                break;
+                case PedalPosition::FLAT: diagram.append(u"<sym>harpPedalRaised</sym>"); break;
+                case PedalPosition::NATURAL: diagram.append(u"<sym>harpPedalCentered</sym>"); break;
+                case PedalPosition::SHARP: diagram.append(u"<sym>harpPedalLowered</sym>"); break;
+                case PedalPosition::UNSET: break;
             }
         }
     } else {
         // find difference between pedal state of previous diagram and this one
         // if no previous, the pedals are "unset" meaning the whole diagram will be displayed
 
-        constexpr std::array<PedalPosition, HARP_STRING_NO> initState
-            = { PedalPosition::UNSET, PedalPosition::UNSET, PedalPosition::UNSET, PedalPosition::UNSET, PedalPosition::UNSET,
-                PedalPosition::UNSET, PedalPosition::UNSET };
+        constexpr std::array<PedalPosition, HARP_STRING_NO> initState = {PedalPosition::UNSET, PedalPosition::UNSET, PedalPosition::UNSET,
+                                                                         PedalPosition::UNSET, PedalPosition::UNSET, PedalPosition::UNSET,
+                                                                         PedalPosition::UNSET};
         std::array<PedalPosition, HARP_STRING_NO> prevState;
-        HarpPedalDiagram* prevDiagram = nullptr;
+        HarpPedalDiagram *prevDiagram = nullptr;
         if (originPart() && segment()) {
             prevDiagram = originPart()->prevHarpDiagram(segment()->tick());
         }
@@ -211,17 +179,10 @@ String HarpPedalDiagram::createDiagramText()
             if (m_pedalState[idx] != prevState[idx]) {
                 String strName = harpStringTypeToString(HarpStringType(idx));
                 switch (m_pedalState[idx]) {
-                case PedalPosition::FLAT:
-                    strName.append(u"<sym>csymAccidentalFlat</sym> ");
-                    break;
-                case PedalPosition::NATURAL:
-                    strName.append(u"<sym>csymAccidentalNatural</sym> ");
-                    break;
-                case PedalPosition::SHARP:
-                    strName.append(u"<sym>csymAccidentalSharp</sym> ");
-                    break;
-                case PedalPosition::UNSET:
-                    break;
+                    case PedalPosition::FLAT: strName.append(u"<sym>csymAccidentalFlat</sym> "); break;
+                    case PedalPosition::NATURAL: strName.append(u"<sym>csymAccidentalNatural</sym> "); break;
+                    case PedalPosition::SHARP: strName.append(u"<sym>csymAccidentalSharp</sym> "); break;
+                    case PedalPosition::UNSET: break;
                 }
                 if (idx < SEPARATOR_IDX) {
                     bottomLine.append(strName);
@@ -241,21 +202,17 @@ String HarpPedalDiagram::createDiagramText()
     return diagram;
 }
 
-void HarpPedalDiagram::updateDiagramText()
-{
-    undoChangeProperty(Pid::TEXT, createDiagramText(), PropertyFlags::STYLED);
-}
+void HarpPedalDiagram::updateDiagramText() { undoChangeProperty(Pid::TEXT, createDiagramText(), PropertyFlags::STYLED); }
 
-void HarpPedalDiagram::undoChangePedalState(std::array<PedalPosition, HARP_STRING_NO> _pedalState)
-{
-    const std::list<EngravingObject*> links = linkList();
-    for (EngravingObject* obj : links) {
+void HarpPedalDiagram::undoChangePedalState(std::array<PedalPosition, HARP_STRING_NO> _pedalState) {
+    const std::list<EngravingObject *> links = linkList();
+    for (EngravingObject *obj : links) {
         if (!obj || !obj->isHarpPedalDiagram()) {
             continue;
         }
 
-        HarpPedalDiagram* item = toHarpPedalDiagram(obj);
-        Score* linkedScore = item->score();
+        HarpPedalDiagram *item = toHarpPedalDiagram(obj);
+        Score *linkedScore = item->score();
         if (!linkedScore) {
             continue;
         }
@@ -264,43 +221,30 @@ void HarpPedalDiagram::undoChangePedalState(std::array<PedalPosition, HARP_STRIN
     }
 }
 
-bool HarpPedalDiagram::isTpcPlayable(int tpc)
-{
-    return m_playableTpcs.find(tpc) != m_playableTpcs.cend();
-}
+bool HarpPedalDiagram::isTpcPlayable(int tpc) { return m_playableTpcs.find(tpc) != m_playableTpcs.cend(); }
 
-PropertyValue HarpPedalDiagram::getProperty(Pid propertyId) const
-{
+PropertyValue HarpPedalDiagram::getProperty(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::HARP_IS_DIAGRAM:
-        return m_isDiagram;
-    default:
-        return TextBase::getProperty(propertyId);
+        case Pid::HARP_IS_DIAGRAM: return m_isDiagram;
+        default: return TextBase::getProperty(propertyId);
     }
 }
 
-bool HarpPedalDiagram::setProperty(Pid propertyId, const PropertyValue& v)
-{
+bool HarpPedalDiagram::setProperty(Pid propertyId, const PropertyValue &v) {
     switch (propertyId) {
-    case Pid::HARP_IS_DIAGRAM:
-        setIsDiagram(v.toBool());
-        break;
-    default:
-        if (!TextBase::setProperty(propertyId, v)) {
-            return false;
-        }
+        case Pid::HARP_IS_DIAGRAM: setIsDiagram(v.toBool()); break;
+        default:
+            if (!TextBase::setProperty(propertyId, v)) {
+                return false;
+            }
     }
     return true;
 }
 
-PropertyValue HarpPedalDiagram::propertyDefault(Pid id) const
-{
+PropertyValue HarpPedalDiagram::propertyDefault(Pid id) const {
     switch (id) {
-    case Pid::TEXT_STYLE:
-        return TextStyleType::HARP_PEDAL_DIAGRAM;
-    case Pid::HARP_IS_DIAGRAM:
-        return true;
-    default:
-        return TextBase::propertyDefault(id);
+        case Pid::TEXT_STYLE: return TextStyleType::HARP_PEDAL_DIAGRAM;
+        case Pid::HARP_IS_DIAGRAM: return true;
+        default: return TextBase::propertyDefault(id);
     }
 }

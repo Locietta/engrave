@@ -20,15 +20,15 @@ namespace engrave {
 // closes the score.
 struct Document {
     ~Document();
-    Document(const Document&) = delete;
-    Document& operator=(const Document&) = delete;
+    Document(const Document &) = delete;
+    Document &operator=(const Document &) = delete;
 
     // 1 after open or create; only committed edits change it. Exports do not,
     // although the writer assigns element ids.
     std::uint64_t revision() const;
 
     // Problems found while opening or creating the score.
-    const std::vector<Diagnostic>& diagnostics() const;
+    const std::vector<Diagnostic> &diagnostics() const;
 
     // Unsupported for a format the engine does not write (see Capabilities).
     // Score selection errors are the same as outline(). Excerpts are standalone
@@ -48,18 +48,18 @@ struct Document {
     // its intermediate score and style XML sizes before parsing; this can
     // reject a capture whose final bytes would fit. Parsing itself cannot be
     // interrupted by the cancellation callback.
-    Result<std::vector<std::byte>> export_score(const ExportOptions& options);
+    Result<std::vector<std::byte>> export_score(const ExportOptions &options);
 
     // Returns warnings along with the bytes. The compatibility writer refuses
     // content it cannot convert, returning Unsupported with export_warnings on
     // the Error. The byte-only overload refuses any successful export with
     // warnings as well, so a caller cannot accidentally discard them.
-    Result<ExportOutput> export_score_with_warnings(const ExportOptions& options);
+    Result<ExportOutput> export_score_with_warnings(const ExportOptions &options);
 
     // Exact legacy measurePositions / segmentPositions data, including expanded
     // repeat event times. Selection errors are the same as outline(); Poisoned
     // after failed recovery. Ensures layout before reading; does not edit revision.
-    Result<Positions> positions(PositionKind kind, const ScoreSel& score = {});
+    Result<Positions> positions(PositionKind kind, const ScoreSel &score = {});
     // Bounded capture of the dynamic element/event payload. A counting pass
     // checks the limit before allocating the result; its second pass uses an
     // additional pointer-plus-size_t index for each element. Reserve at most
@@ -69,22 +69,22 @@ struct Document {
     // reserve allocates the requested count; it is not a bound on layout, the
     // repeat list, or general process memory. Cancellation is checked at each
     // position and event, but cannot interrupt layout or repeat-list creation.
-    Result<Positions> positions(PositionKind kind, const ScoreSel& score, const CaptureOptions& capture);
+    Result<Positions> positions(PositionKind kind, const ScoreSel &score, const CaptureOptions &capture);
 
     // How many pages the selected score has. NotFound, StaleHandle and
     // InvalidArgument as outline() reports them; an excerpt that has never been
     // laid out is laid out first.
-    Result<std::int32_t> page_count(const ScoreSel& score = {});
+    Result<std::int32_t> page_count(const ScoreSel &score = {});
 
     // Draws pages of the selected score. InvalidArgument for an unknown format, a
     // page range outside the score, a PNG dpi outside 36..1200 or a non-default
     // dpi for PDF/SVG; ResourceLimit for a page the renderer's size limit rejects.
     // Throws std::runtime_error if the engine's renderer fails.
-    Result<RenderOutput> render(const RenderOptions& options);
+    Result<RenderOutput> render(const RenderOptions &options);
 
     // The score's playback tracks and the document's default mix, in the same
     // order a render uses.
-    Result<AudioTracks> audio_tracks(const ScoreSel& score = {});
+    Result<AudioTracks> audio_tracks(const ScoreSel &score = {});
 
     // Renders the selected score's audio and hands the encoded stream to the sink
     // in chunks. Unsupported when the current SoundFont selection is empty, for
@@ -94,13 +94,13 @@ struct Document {
     // output exceeds the 1 GiB cap or a caller-supplied audio byte limit.
     // Throws std::runtime_error if the engine's
     // audio graph or encoder fails.
-    Result<AudioRenderResult> render_audio(const AudioOptions& options, const ByteSink& sink);
+    Result<AudioRenderResult> render_audio(const AudioOptions &options, const ByteSink &sink);
 
     // The score's structure: metadata, parts and staves, measures, time, key and
     // tempo changes, and the excerpts. NotFound when nothing has the excerpt id,
     // StaleHandle when the score it names is gone, InvalidArgument when it names
     // something other than a score.
-    Result<Outline> outline(const ScoreSel& score = {});
+    Result<Outline> outline(const ScoreSel &score = {});
 
     // The elements that match, in a stable order. NotFound for a property name the
     // catalogue does not know, InvalidArgument for a type name it does not know and for
@@ -109,13 +109,13 @@ struct Document {
     // denominator, a reversed tick range, a cursor
     // past the end, a limit of 0), ResourceLimit when more elements match than one query
     // may report.
-    Result<QueryResult> query(const Query& request);
+    Result<QueryResult> query(const Query &request);
 
     // The properties of one element.  The default is every property the catalogue
     // lists for its type. NotFound for a property name the catalogue does not know
     // and for a reference nothing answers; InvalidArgument for a property the
     // element's type does not have, and for an OpRef, which only a batch can use.
-    Result<std::vector<PropertyRead>> get(const Ref& target, const std::vector<std::string>& props = {});
+    Result<std::vector<PropertyRead>> get(const Ref &target, const std::vector<std::string> &props = {});
 
     // Runs a batch as one transaction. It fails and leaves the document as it was
     // with RevisionConflict when expected_revision is set and is not the current
@@ -135,7 +135,7 @@ struct Document {
     // if saved and reopened and can place elements differently. A batch that ran
     // a Snapshot-policy operation or threw therefore does not promise bit-exact
     // layout. Failed recovery throws and poisons the document.
-    Result<EditResult> edit(const Batch& batch, std::optional<std::uint64_t> expected_revision = {});
+    Result<EditResult> edit(const Batch &batch, std::optional<std::uint64_t> expected_revision = {});
 
 private:
     friend struct Engine;

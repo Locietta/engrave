@@ -28,15 +28,14 @@
 namespace mu::engraving {
 class Note;
 class Score;
-}
+} // namespace mu::engraving
 
 namespace mu::iex::guitarpro {
-class BendBuilder
-{
+class BendBuilder {
 public:
-    void addElementsToScore(mu::engraving::Score* score, const BendDataContext& bendCtx, const DiveDataContext& diveCtx);
+    void addElementsToScore(mu::engraving::Score *score, const BendDataContext &bendCtx, const DiveDataContext &diveCtx);
 
 private:
     std::unique_ptr<BendDataProcessorSplitChord> m_bendDataProcessorSplitChord;
 };
-} // mu::iex::guitarpro
+} // namespace mu::iex::guitarpro

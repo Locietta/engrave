@@ -21,29 +21,27 @@
  */
 #pragma once
 
-
 #include "automationtypes.h"
 
 #include <memory>
 #include <string>
 
 namespace mu::engraving {
-class AutomationData
-{
+class AutomationData {
 public:
-    const AutomationCurveMap& curves() const;
-    const AutomationCurve& curve(const AutomationCurveKey& key) const;
+    const AutomationCurveMap &curves() const;
+    const AutomationCurve &curve(const AutomationCurveKey &key) const;
 
     bool isEmpty() const;
 
     //! NOTE: full replacement; any existing key absent from the argument is removed
-    void setCurves(const AutomationCurveMap& curves);
+    void setCurves(const AutomationCurveMap &curves);
 
     //! NOTE: replaces only the given curves, keeping all others; keys absent from the argument are untouched
-    void replaceCurves(const AutomationCurveMap& curves);
+    void replaceCurves(const AutomationCurveMap &curves);
 
     //! NOTE: writes, moves, or erases points in one batch, per each edit's SetPoint/MovePoint/ErasePoint
-    void editPoints(const AutomationCurveKey& key, const AutomationPointEdits& edits);
+    void editPoints(const AutomationCurveKey &key, const AutomationPointEdits &edits);
 
     std::string dump() const;
 
@@ -54,4 +52,4 @@ private:
 
 using AutomationDataPtr = std::shared_ptr<AutomationData>;
 using AutomationDataConstPtr = std::shared_ptr<const AutomationData>;
-}
+} // namespace mu::engraving

@@ -26,9 +26,9 @@
 
 namespace muse::audio {
 enum class Err {
-    Undefined       = int(Ret::Code::Undefined),
-    NoError         = int(Ret::Code::Ok),
-    UnknownError    = int(Ret::Code::AudioFirst),
+    Undefined = int(Ret::Code::Undefined),
+    NoError = int(Ret::Code::Ok),
+    UnknownError = int(Ret::Code::AudioFirst),
 
     // driver
     DriverNotFound = 301,
@@ -74,15 +74,9 @@ enum class Err {
     OnlineSoundsLimitReached = 362,
 };
 
-inline Ret make_ret(Err e)
-{
-    return Ret(static_cast<int>(e));
-}
+inline Ret make_ret(Err e) { return Ret(static_cast<int>(e)); }
 
-inline Ret make_ret(Err e, const std::string& text)
-{
-    return Ret(static_cast<int>(e), text);
-}
-}
+inline Ret make_ret(Err e, const std::string &text) { return Ret(static_cast<int>(e), text); }
+} // namespace muse::audio
 
 #endif // MUSE_AUDIO_AUDIOERRORS_H

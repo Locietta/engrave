@@ -26,4 +26,4 @@
 
 namespace muse::draw {
 using Color = muse::Color;
-}
+} // namespace muse::draw

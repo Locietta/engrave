@@ -46,18 +46,14 @@
 
 using namespace mu::engraving;
 
-namespace mu::iex::midi {
-namespace MidiKey {
-class KeyData
-{
+namespace mu::iex::midi { namespace MidiKey {
+class KeyData {
 public:
-    KeyData(Key key, int count)
-        : key_(key), count_(count) {}
+    KeyData(Key key, int count) : key_(key), count_(count) {}
 
     Key key() const { return key_; }
 
-    bool operator<(const KeyData& second) const
-    {
+    bool operator<(const KeyData &second) const {
         // choose key with max sum count of transitions
         if (count_ > second.count_) {
             return true;
@@ -65,7 +61,7 @@ public:
             return false;
         }
         // if equal - prefer key with less accitential count
-        return std::abs((int)key_) < std::abs((int)second.key_);
+        return std::abs((int) key_) < std::abs((int) second.key_);
     }
 
 private:
@@ -73,25 +69,24 @@ private:
     int count_;
 };
 
-void assignKeyListToStaff(const KeyList& kl, Staff* staff)
-{
-    Score* score = staff->score();
+void assignKeyListToStaff(const KeyList &kl, Staff *staff) {
+    Score *score = staff->score();
     const track_idx_t track = staff->idx() * VOICES;
     Key pkey = Key::C;
 
     for (auto it = kl.begin(); it != kl.end(); ++it) {
         const int tick = it->first;
-        Key key  = it->second.key();
-        if ((key == Key::C) && (key == pkey)) {       // don’t insert unnecessary C key // really?
+        Key key = it->second.key();
+        if ((key == Key::C) && (key == pkey)) { // don’t insert unnecessary C key // really?
             continue;
         }
         pkey = key;
-        Measure* m = score->tick2measure(Fraction::fromTicks(tick));
+        Measure *m = score->tick2measure(Fraction::fromTicks(tick));
         if (!m) {
             continue;
         }
-        Segment* seg = m->getSegment(SegmentType::KeySig, Fraction::fromTicks(tick));
-        KeySig* ks = Factory::createKeySig(seg);
+        Segment *seg = m->getSegment(SegmentType::KeySig, Fraction::fromTicks(tick));
+        KeySig *ks = Factory::createKeySig(seg);
         ks->setTrack(track);
         ks->setGenerated(false);
         ks->setKey(key);
@@ -100,12 +95,11 @@ void assignKeyListToStaff(const KeyList& kl, Staff* staff)
     }
 }
 
-Key findKey(const std::vector<MTrack>& tracks)
-{
+Key findKey(const std::vector<MTrack> &tracks) {
     const int octave = 12;
     std::vector<int> counts(octave);
 
-    for (const auto& track: tracks) {
+    for (const auto &track : tracks) {
         if (track.mtrack->drumTrack()) {
             continue;
         }
@@ -115,8 +109,8 @@ Key findKey(const std::vector<MTrack>& tracks)
                 continue;
             }
 
-            for (const auto& note1: it->second.notes) {
-                for (const auto& note2: next->second.notes) {
+            for (const auto &note1 : it->second.notes) {
+                for (const auto &note2 : next->second.notes) {
                     if (std::abs(note1.pitch - note2.pitch) == 1) {
                         ++counts[std::min(note1.pitch, note2.pitch) % octave];
                     }
@@ -125,41 +119,28 @@ Key findKey(const std::vector<MTrack>& tracks)
         }
     }
 
-    std::vector<KeyData> keys = {
-        { Key::C_B, counts[3] + counts[10] },
-        { Key::G_B, counts[10] + counts[5] },
-        { Key::D_B, counts[5] + counts[0] },
-        { Key::A_B, counts[0] + counts[7] },
-        { Key::E_B, counts[7] + counts[2] },
-        { Key::B_B, counts[2] + counts[9] },
-        { Key::F, counts[9] + counts[4] },
-        { Key::C, counts[4] + counts[11] },
-        { Key::G, counts[11] + counts[6] },
-        { Key::D, counts[6] + counts[1] },
-        { Key::A, counts[1] + counts[8] },
-        { Key::E, counts[8] + counts[3] },
-        { Key::B, counts[3] + counts[10] },
-        { Key::F_S, counts[10] + counts[5] },
-        { Key::C_S, counts[5] + counts[0] }
-    };
+    std::vector<KeyData> keys = {{Key::C_B, counts[3] + counts[10]}, {Key::G_B, counts[10] + counts[5]}, {Key::D_B, counts[5] + counts[0]},
+                                 {Key::A_B, counts[0] + counts[7]},  {Key::E_B, counts[7] + counts[2]},  {Key::B_B, counts[2] + counts[9]},
+                                 {Key::F, counts[9] + counts[4]},    {Key::C, counts[4] + counts[11]},   {Key::G, counts[11] + counts[6]},
+                                 {Key::D, counts[6] + counts[1]},    {Key::A, counts[1] + counts[8]},    {Key::E, counts[8] + counts[3]},
+                                 {Key::B, counts[3] + counts[10]},   {Key::F_S, counts[10] + counts[5]}, {Key::C_S, counts[5] + counts[0]}};
 
     std::sort(keys.begin(), keys.end());
 
     return keys[0].key();
 }
 
-void recognizeMainKeySig(std::vector<MTrack>& tracks)
-{
+void recognizeMainKeySig(std::vector<MTrack> &tracks) {
     bool needToFindKey = false;
 
-    const auto& opers = midiImportOperations;
+    const auto &opers = midiImportOperations;
     const bool isHuman = opers.data()->trackOpers.isHumanPerformance.value();
     if (isHuman) {
         needToFindKey = true;
     }
 
     if (!needToFindKey) {
-        for (const MTrack& track: tracks) {
+        for (const MTrack &track : tracks) {
             if (track.mtrack->drumTrack()) {
                 continue;
             }
@@ -175,7 +156,7 @@ void recognizeMainKeySig(std::vector<MTrack>& tracks)
 
     const Key key = findKey(tracks);
 
-    for (MTrack& track: tracks) {
+    for (MTrack &track : tracks) {
         if (track.mtrack->drumTrack()) {
             continue;
         }
@@ -183,18 +164,17 @@ void recognizeMainKeySig(std::vector<MTrack>& tracks)
         if (!track.hasKey || isHuman) {
             KeySigEvent ke;
             Interval v = track.staff->part()->instrument()->transpose();
-            Score* score = track.staff->score();
+            Score *score = track.staff->score();
             ke.setConcertKey(key);
             if (!v.isZero() && !score->style().styleB(Sid::concertPitch)) {
                 v.flip();
                 ke.setKey(Transpose::transposeKey(key, v));
             }
 
-            KeyList& staffKeyList = *track.staff->keyList();
+            KeyList &staffKeyList = *track.staff->keyList();
             staffKeyList[0] = ke;
             assignKeyListToStaff(staffKeyList, track.staff);
         }
     }
 }
-} // namespace MidiKey
-} // namespace mu::iex::midi
+}} // namespace mu::iex::midi::MidiKey

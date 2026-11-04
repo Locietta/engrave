@@ -29,11 +29,10 @@
 #include "../dom/staff.h"
 
 namespace mu::engraving {
-class ChangeProperty : public UndoableCommand
-{
+class ChangeProperty : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeProperty)
 protected:
-    EngravingObject* element = nullptr;
+    EngravingObject *element = nullptr;
     Pid id;
     PropertyValue property;
     PropertyFlags flags;
@@ -43,49 +42,47 @@ protected:
     void flip() override;
 
 public:
-    ChangeProperty(EngravingObject* e, Pid i, const PropertyValue& v, PropertyFlags ps = PropertyFlags::NOSTYLE, bool resetPath = false)
+    ChangeProperty(EngravingObject *e, Pid i, const PropertyValue &v, PropertyFlags ps = PropertyFlags::NOSTYLE, bool resetPath = false)
         : element(e), id(i), property(v), flags(ps), resetChordLinePath(resetPath) {}
 
     Pid getId() const { return id; }
-    EngravingObject* getElement() const { return element; }
+
+    EngravingObject *getElement() const { return element; }
+
     PropertyValue data() const { return property; }
 
     UNDO_TYPE(CommandType::ChangeProperty)
     UNDO_NAME("ChangeProperty")
 
-    std::vector<EngravingObject*> objectItems() const override;
+    std::vector<EngravingObject *> objectItems() const override;
 
-    bool matchesFilter(UndoableCommandFilter f, const EngravingItem* target) const override
-    {
+    bool matchesFilter(UndoableCommandFilter f, const EngravingItem *target) const override {
         return f == UndoableCommandFilter::ChangePropertyLinked && muse::contains(target->linkList(), element);
     }
 };
 
-class ChangeBracketProperty : public ChangeProperty
-{
+class ChangeBracketProperty : public ChangeProperty {
     OBJECT_ALLOCATOR(engraving, ChangeBracketProperty)
 
-    Staff* staff = nullptr;
+    Staff *staff = nullptr;
     size_t level = 0;
 
     void flip() override;
 
 public:
-    ChangeBracketProperty(Staff* s, size_t l, Pid i, const PropertyValue& v, PropertyFlags ps = PropertyFlags::NOSTYLE)
+    ChangeBracketProperty(Staff *s, size_t l, Pid i, const PropertyValue &v, PropertyFlags ps = PropertyFlags::NOSTYLE)
         : ChangeProperty(nullptr, i, v, ps), staff(s), level(l) {}
     UNDO_NAME("ChangeBracketProperty")
-    UNDO_CHANGED_OBJECTS({ })
+    UNDO_CHANGED_OBJECTS({})
 };
 
-class ChangeTextLineProperty : public ChangeProperty
-{
+class ChangeTextLineProperty : public ChangeProperty {
     OBJECT_ALLOCATOR(engraving, ChangeTextLineProperty)
 
     void flip() override;
 
 public:
-    ChangeTextLineProperty(EngravingObject* e, PropertyValue v)
-        : ChangeProperty(e, Pid::SYSTEM_FLAG, v, PropertyFlags::NOSTYLE) {}
+    ChangeTextLineProperty(EngravingObject *e, PropertyValue v) : ChangeProperty(e, Pid::SYSTEM_FLAG, v, PropertyFlags::NOSTYLE) {}
     UNDO_NAME("ChangeTextLineProperty")
 };
-}
+} // namespace mu::engraving

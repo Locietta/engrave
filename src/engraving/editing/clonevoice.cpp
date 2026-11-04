@@ -43,16 +43,15 @@
 
 using namespace mu::engraving;
 
-static void doCloneVoice(Score* destScore, track_idx_t srcTrack, track_idx_t dstTrack, Segment* sourceSeg, const Fraction& lTick,
-                         bool link = true)
-{
-    Score* sourceScore = sourceSeg->score();
+static void doCloneVoice(Score *destScore, track_idx_t srcTrack, track_idx_t dstTrack, Segment *sourceSeg, const Fraction &lTick,
+                         bool link = true) {
+    Score *sourceScore = sourceSeg->score();
     Fraction start = sourceSeg->tick();
     TieMap tieMap;
-    TupletMap tupletMap;      // tuplets cannot cross measure boundaries
-    TremoloTwoChord* tremolo = nullptr;
+    TupletMap tupletMap; // tuplets cannot cross measure boundaries
+    TremoloTwoChord *tremolo = nullptr;
 
-    auto maybeLinkedClone = [link](EngravingItem* item) -> EngravingItem* {
+    auto maybeLinkedClone = [link](EngravingItem *item) -> EngravingItem * {
         // If we want to maintain the link (exchange voice) create a linked clone
         // If we want new, unlinked elements (implode/explode) create a clone
         if (link) {
@@ -62,15 +61,15 @@ static void doCloneVoice(Score* destScore, track_idx_t srcTrack, track_idx_t dst
         }
     };
 
-    for (Segment* oseg = sourceSeg; oseg && oseg->tick() < lTick; oseg = oseg->next1()) {
-        Segment* ns = 0;            //create segment later, on demand
-        Measure* dm = destScore->tick2measure(oseg->tick());
+    for (Segment *oseg = sourceSeg; oseg && oseg->tick() < lTick; oseg = oseg->next1()) {
+        Segment *ns = 0; //create segment later, on demand
+        Measure *dm = destScore->tick2measure(oseg->tick());
 
-        EngravingItem* oe = oseg->element(srcTrack);
+        EngravingItem *oe = oseg->element(srcTrack);
 
         if (oe && !oe->generated() && oe->isChordRest()) {
-            ChordRest* ocr = toChordRest(oe);
-            ChordRest* ncr = toChordRest(maybeLinkedClone(ocr));
+            ChordRest *ocr = toChordRest(oe);
+            ChordRest *ncr = toChordRest(maybeLinkedClone(ocr));
             ncr->setScore(destScore);
             ncr->setTrack(dstTrack);
 
@@ -81,7 +80,7 @@ static void doCloneVoice(Score* destScore, track_idx_t srcTrack, track_idx_t dst
 
             //Handle beams
             if (ocr->beam() && !ocr->beam()->empty() && ocr->beam()->elements().front() == ocr) {
-                Beam* nb = ocr->beam()->clone();
+                Beam *nb = ocr->beam()->clone();
                 nb->clear();
                 nb->setTrack(dstTrack);
                 nb->setScore(destScore);
@@ -90,19 +89,19 @@ static void doCloneVoice(Score* destScore, track_idx_t srcTrack, track_idx_t dst
             }
 
             // clone Tuplets
-            Tuplet* ot = ocr->tuplet();
+            Tuplet *ot = ocr->tuplet();
             if (ot) {
                 ot->setTrack(srcTrack);
-                Tuplet* nt = tupletMap.findNew(ot);
+                Tuplet *nt = tupletMap.findNew(ot);
                 if (nt == 0) {
                     nt = toTuplet(maybeLinkedClone(ot));
                     nt->setTrack(dstTrack);
                     nt->setOwnershipParent(dm);
                     tupletMap.add(ot, nt);
 
-                    Tuplet* nt1 = nt;
+                    Tuplet *nt1 = nt;
                     while (ot->tuplet()) {
-                        Tuplet* nt2 = tupletMap.findNew(ot->tuplet());
+                        Tuplet *nt2 = tupletMap.findNew(ot->tuplet());
                         if (nt2 == 0) {
                             nt2 = toTuplet(maybeLinkedClone(ot->tuplet()));
                             nt2->setTrack(dstTrack);
@@ -121,18 +120,18 @@ static void doCloneVoice(Score* destScore, track_idx_t srcTrack, track_idx_t dst
 
             // clone additional settings
             if (oe->isRest()) {
-                Rest* ore = toRest(ocr);
+                Rest *ore = toRest(ocr);
                 // If we would clone a full measure rest just don't clone this rest
                 if (ore->isFullMeasureRest() && (dstTrack % VOICES)) {
                     continue;
                 }
             }
 
-            auto cloneChord = [&](Chord* oldChord, Chord* newChord) {
+            auto cloneChord = [&](Chord *oldChord, Chord *newChord) {
                 size_t n = oldChord->notes().size();
                 for (size_t i = 0; i < n; ++i) {
-                    Note* on = oldChord->notes().at(i);
-                    Note* nn = newChord->notes().at(i);
+                    Note *on = oldChord->notes().at(i);
+                    Note *nn = newChord->notes().at(i);
                     staff_idx_t idx = track2staff(dstTrack);
                     Fraction tick = oseg->tick();
                     Interval v = destScore->staff(idx) ? destScore->staff(idx)->transpose(tick) : Interval();
@@ -145,7 +144,7 @@ static void doCloneVoice(Score* destScore, track_idx_t srcTrack, track_idx_t dst
                     }
 
                     if (on->tieFor()) {
-                        Tie* tie = toTie(maybeLinkedClone(on->tieFor()));
+                        Tie *tie = toTie(maybeLinkedClone(on->tieFor()));
                         tie->setScore(destScore);
                         nn->setTieFor(tie);
                         tie->setStartNote(nn);
@@ -154,7 +153,7 @@ static void doCloneVoice(Score* destScore, track_idx_t srcTrack, track_idx_t dst
                         tieMap.add(on->tieFor(), tie);
                     }
                     if (on->tieBack()) {
-                        Tie* tie = tieMap.findNew(on->tieBack());
+                        Tie *tie = tieMap.findNew(on->tieBack());
                         if (tie) {
                             nn->setTieBack(tie);
                             tie->setEndNote(nn);
@@ -165,10 +164,10 @@ static void doCloneVoice(Score* destScore, track_idx_t srcTrack, track_idx_t dst
                     // add back spanners (going back from end to start spanner element
                     // makes sure the 'other' spanner anchor element is already set up)
                     // 'on' is the old spanner end note and 'nn' is the new spanner end note
-                    for (Spanner* oldSp : on->spannerBack()) {
-                        Note* newStart = Spanner::startElementFromSpanner(oldSp, nn);
+                    for (Spanner *oldSp : on->spannerBack()) {
+                        Note *newStart = Spanner::startElementFromSpanner(oldSp, nn);
                         if (newStart) {
-                            Spanner* newSp = toSpanner(maybeLinkedClone(oldSp));
+                            Spanner *newSp = toSpanner(maybeLinkedClone(oldSp));
                             newSp->setNoteSpan(newStart, nn);
                             destScore->doUndoAddElement(newSp);
                         } else {
@@ -182,7 +181,7 @@ static void doCloneVoice(Score* destScore, track_idx_t srcTrack, track_idx_t dst
                         if (tremolo) {
                             LOGD("unconnected two note tremolo");
                         }
-                        tremolo = item_cast<TremoloTwoChord*>(maybeLinkedClone(oldChord->tremoloTwoChord()));
+                        tremolo = item_cast<TremoloTwoChord *>(maybeLinkedClone(oldChord->tremoloTwoChord()));
                         tremolo->setScore(newChord->score());
                         tremolo->setOwnershipParent(newChord);
                         tremolo->setTrack(newChord->track());
@@ -203,8 +202,8 @@ static void doCloneVoice(Score* destScore, track_idx_t srcTrack, track_idx_t dst
             if (oe->isChord()) {
                 cloneChord(toChord(ocr), toChord(ncr));
                 for (size_t i = 0; i < toChord(ocr)->graceNotes().size(); ++i) {
-                    Chord* ogc = toChord(ocr)->graceNotes().at(i);
-                    Chord* ngc = toChord(ncr)->graceNotes().at(i);
+                    Chord *ogc = toChord(ocr)->graceNotes().at(i);
+                    Chord *ngc = toChord(ncr)->graceNotes().at(i);
                     cloneChord(ogc, ngc);
                 }
             }
@@ -223,14 +222,14 @@ static void doCloneVoice(Score* destScore, track_idx_t srcTrack, track_idx_t dst
             }
         }
 
-        Segment* tst = dm->segments().firstCRSegment();
+        Segment *tst = dm->segments().firstCRSegment();
         if (srcTrack % VOICES && !(dstTrack % VOICES) && (!tst || (!tst->element(dstTrack)))) {
-            Rest* rest = Factory::createRest(destScore->dummy());
+            Rest *rest = Factory::createRest(destScore->dummy());
             rest->setTicks(dm->ticks());
             rest->setDurationType(DurationType::V_MEASURE);
             rest->setTrack(dstTrack);
             if (link) {
-                Segment* segment = dm->undoGetSegment(SegmentType::ChordRest, dm->tick());
+                Segment *segment = dm->undoGetSegment(SegmentType::ChordRest, dm->tick());
                 rest->setOwnershipParent(segment);
                 destScore->doUndoAddElement(rest);
             } else {
@@ -238,13 +237,13 @@ static void doCloneVoice(Score* destScore, track_idx_t srcTrack, track_idx_t dst
             }
         }
 
-        const std::vector<EngravingItem*> annotations = oseg->annotations();
-        for (EngravingItem* annotation : annotations) {
+        const std::vector<EngravingItem *> annotations = oseg->annotations();
+        for (EngravingItem *annotation : annotations) {
             if (!annotation->elementAppliesToTrack(srcTrack)) {
                 continue;
             }
 
-            EngravingItem* newAnnotation = maybeLinkedClone(annotation);
+            EngravingItem *newAnnotation = maybeLinkedClone(annotation);
             newAnnotation->setTrack(dstTrack);
 
             if (!ns) {
@@ -264,10 +263,10 @@ static void doCloneVoice(Score* destScore, track_idx_t srcTrack, track_idx_t dst
     }
 
     // Find and add corresponding slurs and hairpins
-    static const std::set<ElementType> SPANNERS_TO_COPY { ElementType::SLUR, ElementType::HAMMER_ON_PULL_OFF, ElementType::HAIRPIN };
+    static const std::set<ElementType> SPANNERS_TO_COPY{ElementType::SLUR, ElementType::HAMMER_ON_PULL_OFF, ElementType::HAIRPIN};
     auto spanners = sourceScore->spannerMap().findOverlapping(start.ticks(), lTick.ticks());
     for (auto i = spanners.begin(); i < spanners.end(); i++) {
-        Spanner* sp      = i->value;
+        Spanner *sp = i->value;
         Fraction spStart = sp->tick();
         Fraction spEnd = spStart + sp->ticks();
 
@@ -275,7 +274,7 @@ static void doCloneVoice(Score* destScore, track_idx_t srcTrack, track_idx_t dst
             if (!sp->elementAppliesToTrack(srcTrack)) {
                 continue;
             }
-            Spanner* ns = toSpanner(maybeLinkedClone(sp));
+            Spanner *ns = toSpanner(maybeLinkedClone(sp));
 
             ns->setScore(destScore);
             ns->setOwnershipParent(0);
@@ -283,14 +282,14 @@ static void doCloneVoice(Score* destScore, track_idx_t srcTrack, track_idx_t dst
             ns->setTrack2(dstTrack);
 
             // set start/end element for slur
-            ChordRest* cr1 = sp->startCR();
-            ChordRest* cr2 = sp->endCR();
+            ChordRest *cr1 = sp->startCR();
+            ChordRest *cr2 = sp->endCR();
 
             ns->setStartElement(0);
             ns->setEndElement(0);
             if (cr1 && cr1->links()) {
-                for (EngravingObject* e : *cr1->links()) {
-                    ChordRest* cr = toChordRest(e);
+                for (EngravingObject *e : *cr1->links()) {
+                    ChordRest *cr = toChordRest(e);
                     if (cr == cr1) {
                         continue;
                     }
@@ -301,8 +300,8 @@ static void doCloneVoice(Score* destScore, track_idx_t srcTrack, track_idx_t dst
                 }
             }
             if (cr2 && cr2->links()) {
-                for (EngravingObject* e : *cr2->links()) {
-                    ChordRest* cr = toChordRest(e);
+                for (EngravingObject *e : *cr2->links()) {
+                    ChordRest *cr = toChordRest(e);
                     if (cr == cr2) {
                         continue;
                     }
@@ -321,23 +320,19 @@ static void doCloneVoice(Score* destScore, track_idx_t srcTrack, track_idx_t dst
     }
 }
 
-void CloneVoice::cloneVoice(
-    Segment* sourceSeg, // first source segment
-    const Fraction& lTick, // last tick to clone
-    Segment* destSeg, // first destination segment
-    track_idx_t strack,
-    track_idx_t dtrack,
-    bool deleteSource,
-    bool link // if true  add elements in destination segment only
-              // if false add elements in every linked staff
-    )
-{
-    Score* s = destSeg->score();
+void CloneVoice::cloneVoice(Segment *sourceSeg,    // first source segment
+                            const Fraction &lTick, // last tick to clone
+                            Segment *destSeg,      // first destination segment
+                            track_idx_t strack, track_idx_t dtrack, bool deleteSource,
+                            bool link // if true  add elements in destination segment only
+                                      // if false add elements in every linked staff
+) {
+    Score *s = destSeg->score();
     Fraction ticks = destSeg->tick() + lTick - sourceSeg->tick();
 
     // Clear destination voice (in case of not linked and otrack = -1 we would delete our source
-    for (Segment* seg = destSeg; seg && seg->tick() < ticks; seg = seg->next1()) {
-        EngravingItem* el = seg->element(dtrack);
+    for (Segment *seg = destSeg; seg && seg->tick() < ticks; seg = seg->next1()) {
+        EngravingItem *el = seg->element(dtrack);
         if (el && el->isChordRest()) {
             link ? s->doUndoRemoveElement(el) : s->undoRemoveElement(el);
         }
@@ -348,19 +343,19 @@ void CloneVoice::cloneVoice(
     if (deleteSource) {
         auto spanners = s->spannerMap().findOverlapping(sourceSeg->tick().ticks(), lTick.ticks());
         for (auto i = spanners.begin(); i < spanners.end(); i++) {
-            Spanner* sp = i->value;
+            Spanner *sp = i->value;
             if (sp->isSlur() && (sp->track() == strack || sp->track2() == strack)) {
                 link ? s->doUndoRemoveElement(sp) : s->undoRemoveElement(sp);
             }
         }
-        for (Segment* seg = destSeg; seg && seg->tick() < ticks; seg = seg->next1()) {
-            EngravingItem* el = seg->element(strack);
+        for (Segment *seg = destSeg; seg && seg->tick() < ticks; seg = seg->next1()) {
+            EngravingItem *el = seg->element(strack);
             if (el && el->isChordRest()) {
                 link ? s->doUndoRemoveElement(el) : s->undoRemoveElement(el);
             }
 
-            const std::vector<EngravingItem*> annotations = seg->annotations();
-            for (EngravingItem* annotation : annotations) {
+            const std::vector<EngravingItem *> annotations = seg->annotations();
+            for (EngravingItem *annotation : annotations) {
                 if (annotation && annotation->track() == strack) {
                     if (annotation->hasVoiceAssignmentProperties()) {
                         VoiceAssignment voiceAssignment = annotation->getProperty(Pid::VOICE_ASSIGNMENT).value<VoiceAssignment>();

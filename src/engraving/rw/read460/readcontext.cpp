@@ -37,112 +37,63 @@
 using namespace mu::engraving;
 using namespace mu::engraving::read460;
 
-ReadContext::ReadContext(Score* score)
-    : m_score(score)
-{
-}
+ReadContext::ReadContext(Score *score) : m_score(score) {}
 
-ReadContext::~ReadContext()
-{
+ReadContext::~ReadContext() {
     if (!_connectors.empty() || !_pendingConnectors.empty()) {
         LOGD("XmlReader::~XmlReader: there are unpaired connectors left");
-        for (auto& c : _connectors) {
-            EngravingItem* conn = c->releaseConnector();
+        for (auto &c : _connectors) {
+            EngravingItem *conn = c->releaseConnector();
             if (conn && !conn->isTuplet()) { // tuplets are added to score even when not finished
                 delete conn;
             }
         }
-        for (auto& c : _pendingConnectors) {
+        for (auto &c : _pendingConnectors) {
             delete c->releaseConnector();
         }
     }
 }
 
-Score* ReadContext::score() const
-{
-    return m_score;
-}
+Score *ReadContext::score() const { return m_score; }
 
-void ReadContext::setScore(Score* score)
-{
-    m_score = score;
-}
+void ReadContext::setScore(Score *score) { m_score = score; }
 
-const MStyle& ReadContext::style() const
-{
-    return score()->style();
-}
+const MStyle &ReadContext::style() const { return score()->style(); }
 
-std::shared_ptr<IEngravingFontsProvider> ReadContext::engravingFonts() const
-{
-    return score()->engravingFonts();
-}
+std::shared_ptr<IEngravingFontsProvider> ReadContext::engravingFonts() const { return score()->engravingFonts(); }
 
-String ReadContext::mscoreVersion() const
-{
-    return m_score->mscoreVersion();
-}
+String ReadContext::mscoreVersion() const { return m_score->mscoreVersion(); }
 
-int ReadContext::mscVersion() const
-{
-    return m_score->mscVersion();
-}
+int ReadContext::mscVersion() const { return m_score->mscVersion(); }
 
-int ReadContext::fileDivision() const
-{
-    return m_score->fileDivision();
-}
+int ReadContext::fileDivision() const { return m_score->fileDivision(); }
 
-int ReadContext::fileDivision(int t) const
-{
-    return m_score->fileDivision(t);
-}
+int ReadContext::fileDivision(int t) const { return m_score->fileDivision(t); }
 
-double ReadContext::spatium() const
-{
-    return m_score->style().spatium();
-}
+double ReadContext::spatium() const { return m_score->style().spatium(); }
 
-void ReadContext::setSpatium(double v)
-{
-    m_score->style().set(Sid::spatium, v);
-}
+void ReadContext::setSpatium(double v) { m_score->style().set(Sid::spatium, v); }
 
-DummyParent* ReadContext::dummy() const
-{
-    return m_score->dummy();
-}
+DummyParent *ReadContext::dummy() const { return m_score->dummy(); }
 
-Staff* ReadContext::staff(staff_idx_t n)
-{
-    return m_score->staff(n);
-}
+Staff *ReadContext::staff(staff_idx_t n) { return m_score->staff(n); }
 
-bool ReadContext::isSameScore(const EngravingObject* obj) const
-{
-    return obj->score() == m_score;
-}
+bool ReadContext::isSameScore(const EngravingObject *obj) const { return obj->score() == m_score; }
 
-Fraction ReadContext::rtick() const
-{
-    return _curMeasure ? _tick - _curMeasure->tick() : _tick;
-}
+Fraction ReadContext::rtick() const { return _curMeasure ? _tick - _curMeasure->tick() : _tick; }
 
-void ReadContext::setTick(const Fraction& f)
-{
+void ReadContext::setTick(const Fraction &f) {
     _tick = f.reduced();
     _intTick = _tick.ticks();
 }
 
-void ReadContext::incTick(const Fraction& f)
-{
+void ReadContext::incTick(const Fraction &f) {
     _tick += f;
     _tick.reduce();
     _intTick += f.ticks();
 }
 
-Location ReadContext::location(bool forceAbsFrac) const
-{
+Location ReadContext::location(bool forceAbsFrac) const {
     Location l = Location::absolute();
     fillLocation(l, forceAbsFrac);
     return l;
@@ -157,8 +108,7 @@ Location ReadContext::location(bool forceAbsFrac) const
 //    zero.
 //---------------------------------------------------------
 
-void ReadContext::fillLocation(Location& l, bool forceAbsFrac) const
-{
+void ReadContext::fillLocation(Location &l, bool forceAbsFrac) const {
     constexpr Location defaults = Location::absolute();
     const bool absFrac = (pasteMode() || forceAbsFrac);
     if (l.track() == defaults.track()) {
@@ -178,8 +128,7 @@ void ReadContext::fillLocation(Location& l, bool forceAbsFrac) const
 //    type (absolute or relative).
 //---------------------------------------------------------
 
-void ReadContext::setLocation(const Location& l)
-{
+void ReadContext::setLocation(const Location &l) {
     if (l.isRelative()) {
         Location newLoc = l;
         newLoc.toAbsolute(location());
@@ -200,13 +149,12 @@ void ReadContext::setLocation(const Location& l)
     }
 }
 
-void ReadContext::removeConnector(const ConnectorInfoReader* c)
-{
+void ReadContext::removeConnector(const ConnectorInfoReader *c) {
     while (c->prev()) {
         c = c->prev();
     }
     while (c) {
-        ConnectorInfoReader* next = c->next();
+        ConnectorInfoReader *next = c->next();
         for (auto it = _connectors.begin(); it != _connectors.end(); ++it) {
             if (it->get() == c) {
                 _connectors.erase(it);
@@ -217,25 +165,20 @@ void ReadContext::removeConnector(const ConnectorInfoReader* c)
     }
 }
 
-void ReadContext::addConnectorInfoLater(std::shared_ptr<ConnectorInfoReader> c)
-{
-    _pendingConnectors.push_back(c);
-}
+void ReadContext::addConnectorInfoLater(std::shared_ptr<ConnectorInfoReader> c) { _pendingConnectors.push_back(c); }
 
-void ReadContext::checkConnectors()
-{
-    for (std::shared_ptr<ConnectorInfoReader>& c : _pendingConnectors) {
+void ReadContext::checkConnectors() {
+    for (std::shared_ptr<ConnectorInfoReader> &c : _pendingConnectors) {
         addConnectorInfo(c);
     }
     _pendingConnectors.clear();
 }
 
-void ReadContext::addConnectorInfo(std::shared_ptr<ConnectorInfoReader> c)
-{
+void ReadContext::addConnectorInfo(std::shared_ptr<ConnectorInfoReader> c) {
     _connectors.push_back(std::move(c));
-    ConnectorInfoReader* c1 = _connectors.back().get();
+    ConnectorInfoReader *c1 = _connectors.back().get();
     c1->update();
-    for (std::shared_ptr<ConnectorInfoReader>& c2 : _connectors) {
+    for (std::shared_ptr<ConnectorInfoReader> &c2 : _connectors) {
         if (c2->connect(c1)) {
             if (c2->finished()) {
                 c2->addToScore(pasteMode());
@@ -246,9 +189,8 @@ void ReadContext::addConnectorInfo(std::shared_ptr<ConnectorInfoReader> c)
     }
 }
 
-static bool distanceSort(const std::pair<int, std::pair<ConnectorInfoReader*, ConnectorInfoReader*> >& p1,
-                         const std::pair<int, std::pair<ConnectorInfoReader*, ConnectorInfoReader*> >& p2)
-{
+static bool distanceSort(const std::pair<int, std::pair<ConnectorInfoReader *, ConnectorInfoReader *>> &p1,
+                         const std::pair<int, std::pair<ConnectorInfoReader *, ConnectorInfoReader *>> &p2) {
     return p1.first < p2.first;
 }
 
@@ -256,17 +198,16 @@ static bool distanceSort(const std::pair<int, std::pair<ConnectorInfoReader*, Co
 //   reconnectBrokenConnectors
 //---------------------------------------------------------
 
-void ReadContext::reconnectBrokenConnectors()
-{
+void ReadContext::reconnectBrokenConnectors() {
     if (_connectors.empty()) {
         return;
     }
     LOGD("Reconnecting broken connectors (%d nodes)", int(_connectors.size()));
-    std::vector<std::pair<int, std::pair<ConnectorInfoReader*, ConnectorInfoReader*> > > brokenPairs;
+    std::vector<std::pair<int, std::pair<ConnectorInfoReader *, ConnectorInfoReader *>>> brokenPairs;
     for (size_t i = 1; i < _connectors.size(); ++i) {
         for (size_t j = 0; j < i; ++j) {
-            ConnectorInfoReader* c1 = _connectors[i].get();
-            ConnectorInfoReader* c2 = _connectors[j].get();
+            ConnectorInfoReader *c1 = _connectors[i].get();
+            ConnectorInfoReader *c2 = _connectors[j].get();
             int d = c1->connectionDistance(*c2);
             if (d >= 0) {
                 brokenPairs.push_back(std::make_pair(d, std::make_pair(c1, c2)));
@@ -276,12 +217,12 @@ void ReadContext::reconnectBrokenConnectors()
         }
     }
     std::sort(brokenPairs.begin(), brokenPairs.end(), distanceSort);
-    std::set<ConnectorInfoReader*> processed;
-    for (auto& distPair : brokenPairs) {
+    std::set<ConnectorInfoReader *> processed;
+    for (auto &distPair : brokenPairs) {
         if (distPair.first == INT_MAX) {
             continue;
         }
-        auto& pair = distPair.second;
+        auto &pair = distPair.second;
         if (processed.count(pair.first) || processed.count(pair.second)) {
             continue;
         }
@@ -289,44 +230,43 @@ void ReadContext::reconnectBrokenConnectors()
         processed.insert(pair.first);
         processed.insert(pair.second);
     }
-    std::set<ConnectorInfoReader*> reconnected;
-    for (auto& conn : _connectors) {
-        ConnectorInfoReader* c = conn.get();
+    std::set<ConnectorInfoReader *> reconnected;
+    for (auto &conn : _connectors) {
+        ConnectorInfoReader *c = conn.get();
         if (c->finished()) {
-            reconnected.insert(static_cast<ConnectorInfoReader*>(c->start()));
+            reconnected.insert(static_cast<ConnectorInfoReader *>(c->start()));
         }
     }
-    for (ConnectorInfoReader* cptr : reconnected) {
+    for (ConnectorInfoReader *cptr : reconnected) {
         cptr->addToScore(pasteMode());
         removeConnector(cptr);
     }
     LOGD() << "reconnected broken connectors: " << reconnected.size();
 }
 
-void ReadContext::clearOrphanedConnectors()
-{
+void ReadContext::clearOrphanedConnectors() {
     if (_connectors.empty() && _pendingConnectors.empty()) {
         return;
     }
 
     LOGD("XmlReader::~XmlReader: there are unpaired connectors left");
 
-    std::set<LinkedObjects*> deletedLinks;
+    std::set<LinkedObjects *> deletedLinks;
 
     auto deleteConnectors = [&deletedLinks](std::shared_ptr<ConnectorInfoReader> c) {
-        EngravingItem* conn = c ? c->releaseConnector() : nullptr;
+        EngravingItem *conn = c ? c->releaseConnector() : nullptr;
         if (!conn) {
             return;
         }
 
-        LinkedObjects* links = conn->links();
+        LinkedObjects *links = conn->links();
         bool linksWillBeDeleted = links && links->size() == 1;
 
-        if (!conn->isTuplet()) {     // tuplets are added to score even when not finished
+        if (!conn->isTuplet()) { // tuplets are added to score even when not finished
             if (linksWillBeDeleted) {
                 deletedLinks.insert(links);
                 if (conn->isTrill()) {
-                    EngravingItem* ornament = (EngravingItem*)toTrill(conn)->ornament();
+                    EngravingItem *ornament = (EngravingItem *) toTrill(conn)->ornament();
                     if (ornament && ornament->links()) {
                         deletedLinks.insert(ornament->links());
                     }
@@ -342,23 +282,22 @@ void ReadContext::clearOrphanedConnectors()
     };
 
     if (!_connectors.empty()) {
-        for (auto& c : _connectors) {
+        for (auto &c : _connectors) {
             deleteConnectors(c);
         }
         _connectors.clear();
     }
 
     if (!_pendingConnectors.empty()) {
-        for (auto& c : _pendingConnectors) {
+        for (auto &c : _pendingConnectors) {
             deleteConnectors(c);
         }
         _pendingConnectors.clear();
     }
 }
 
-void ReadContext::addPartAudioSettingCompat(PartAudioSettingsCompat partAudioSetting)
-{
+void ReadContext::addPartAudioSettingCompat(PartAudioSettingsCompat partAudioSetting) {
     if (_settingsCompat.audioSettings.count(partAudioSetting.instrumentId.partId) == 0) {
-        _settingsCompat.audioSettings.insert({ partAudioSetting.instrumentId.partId, partAudioSetting });
+        _settingsCompat.audioSettings.insert({partAudioSetting.instrumentId.partId, partAudioSetting});
     }
 }

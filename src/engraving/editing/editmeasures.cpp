@@ -53,16 +53,15 @@ using namespace mu::engraving;
 //    remember clefs at the end of previous measure
 //---------------------------------------------------------
 
-std::vector<Clef*> InsertRemoveMeasures::getCourtesyClefs(Measure* m)
-{
-    Score* score = m->score();
-    std::vector<Clef*> startClefs;
+std::vector<Clef *> InsertRemoveMeasures::getCourtesyClefs(Measure *m) {
+    Score *score = m->score();
+    std::vector<Clef *> startClefs;
     if (m->prev() && m->prev()->isMeasure()) {
-        Measure* prevMeasure = toMeasure(m->prev());
-        const Segment* clefSeg = prevMeasure->findSegmentR(SegmentType::Clef | SegmentType::HeaderClef, prevMeasure->ticks());
+        Measure *prevMeasure = toMeasure(m->prev());
+        const Segment *clefSeg = prevMeasure->findSegmentR(SegmentType::Clef | SegmentType::HeaderClef, prevMeasure->ticks());
         if (clefSeg) {
             for (size_t st = 0; st < score->nstaves(); ++st) {
-                EngravingItem* clef = clefSeg->element(staff2track(static_cast<int>(st)));
+                EngravingItem *clef = clefSeg->element(staff2track(static_cast<int>(st)));
                 if (clef && clef->isClef()) {
                     startClefs.push_back(toClef(clef));
                 }
@@ -76,15 +75,14 @@ std::vector<Clef*> InsertRemoveMeasures::getCourtesyClefs(Measure* m)
 //   insertMeasures
 //---------------------------------------------------------
 
-void InsertRemoveMeasures::insertMeasures()
-{
-    Score* score = fm->score();
+void InsertRemoveMeasures::insertMeasures() {
+    Score *score = fm->score();
 
-    std::vector<Clef*> clefs;
-    std::vector<Clef*> prevMeasureClefs;
-    std::vector<KeySig*> keys;
-    Segment* fs = nullptr;
-    Segment* ls = nullptr;
+    std::vector<Clef *> clefs;
+    std::vector<Clef *> prevMeasureClefs;
+    std::vector<KeySig *> keys;
+    Segment *fs = nullptr;
+    Segment *ls = nullptr;
     std::vector<RepeatSegmentInfo> oldSegments;
     if (fm->isMeasure()) {
         // Snapshot before the structural edit below invalidates it
@@ -93,12 +91,12 @@ void InsertRemoveMeasures::insertMeasures()
         score->invalidateRepeatList();
         fs = toMeasure(fm)->first();
         ls = toMeasure(lm)->last();
-        for (Segment* s = fs; s && s != ls; s = s->next1()) {
+        for (Segment *s = fs; s && s != ls; s = s->next1()) {
             if (!s->enabled() || !(s->segmentType() & (SegmentType::Clef | SegmentType::HeaderClef | SegmentType::KeySig))) {
                 continue;
             }
             for (track_idx_t track = 0; track < score->ntracks(); track += VOICES) {
-                EngravingItem* e = s->element(track);
+                EngravingItem *e = s->element(track);
                 if (!e || e->generated()) {
                     continue;
                 }
@@ -118,20 +116,20 @@ void InsertRemoveMeasures::insertMeasures()
         score->insertTime(fm->tick(), lm->endTick() - fm->tick(), oldSegments);
 
         // move ownership of Instrument back to part
-        for (Segment* s = fs; s && s != ls; s = s->next1()) {
-            for (EngravingItem* e : s->annotations()) {
+        for (Segment *s = fs; s && s != ls; s = s->next1()) {
+            for (EngravingItem *e : s->annotations()) {
                 if (e->isInstrumentChange()) {
                     e->part()->setInstrument(toInstrumentChange(e)->instrument(), s->tick());
                 }
             }
         }
-        for (Clef* clef : prevMeasureClefs) {
+        for (Clef *clef : prevMeasureClefs) {
             clef->staff()->setClef(clef);
         }
-        for (Clef* clef : clefs) {
+        for (Clef *clef : clefs) {
             clef->staff()->setClef(clef);
         }
-        for (KeySig* key : keys) {
+        for (KeySig *key : keys) {
             key->staff()->setKey(key->segment()->tick(), key->keySigEvent());
         }
     }
@@ -142,7 +140,7 @@ void InsertRemoveMeasures::insertMeasures()
     Fraction tickStart = fm->tick();
     Fraction tickEnd = lm->endTick();
     if (moveStc && tickEnd > tickStart) {
-        for (Staff* staff : score->staves()) {
+        for (Staff *staff : score->staves()) {
             // loop backwards until the insert point
             auto stRange = staff->staffTypeRange(score->lastMeasure()->tick());
             int moveTick = stRange.first;
@@ -152,14 +150,14 @@ void InsertRemoveMeasures::insertMeasures()
                 Fraction tickNew = tick + tickEnd - tickStart;
 
                 // measures were inserted already so icon is at differnt place, as staffTypeChange itslef
-                Measure* measure = score->tick2measure(tickNew);
+                Measure *measure = score->tick2measure(tickNew);
                 bool stIcon = false;
 
                 staff->moveStaffType(tick, tickNew);
 
-                for (EngravingItem* el : measure->el()) {
+                for (EngravingItem *el : measure->el()) {
                     if (el && el->isStaffTypeChange() && el->track() == staff->idx() * VOICES) {
-                        StaffTypeChange* stc = toStaffTypeChange(el);
+                        StaffTypeChange *stc = toStaffTypeChange(el);
                         stc->setStaffType(staff->staffType(tickNew), false);
                         stIcon = true;
                         break;
@@ -183,21 +181,21 @@ void InsertRemoveMeasures::insertMeasures()
     if (!fm->isMeasure() || !fm->prevMeasure()) {
         return;
     }
-    Measure* m = fm->prevMeasure();
-    for (Segment* seg = m->first(); seg; seg = seg->next()) {
+    Measure *m = fm->prevMeasure();
+    for (Segment *seg = m->first(); seg; seg = seg->next()) {
         for (track_idx_t track = 0; track < score->ntracks(); ++track) {
-            EngravingItem* e = seg->element(track);
+            EngravingItem *e = seg->element(track);
             if (!e || !e->isChord()) {
                 continue;
             }
-            Chord* chord = toChord(e);
-            for (Note* n : chord->notes()) {
-                Tie* tie = n->tieForNonPartial();
+            Chord *chord = toChord(e);
+            for (Note *n : chord->notes()) {
+                Tie *tie = n->tieForNonPartial();
                 if (!tie) {
                     continue;
                 }
                 if (!tie->endNote() || tie->endNote()->chord()->segment()->measure() != m) {
-                    Note* nn = searchTieNote(n);
+                    Note *nn = searchTieNote(n);
                     if (nn) {
                         tie->setEndNote(nn);
                         nn->setTieBack(tie);
@@ -212,9 +210,8 @@ void InsertRemoveMeasures::insertMeasures()
 //   removeMeasures
 //---------------------------------------------------------
 
-void InsertRemoveMeasures::removeMeasures()
-{
-    Score* score = fm->score();
+void InsertRemoveMeasures::removeMeasures() {
+    Score *score = fm->score();
 
     Fraction tick1 = fm->tick();
     Fraction tick2 = lm->endTick();
@@ -230,9 +227,9 @@ void InsertRemoveMeasures::removeMeasures()
         // to avoid situations where notes from deleted measures remain in beams
         // when undoing, we need to check the previous measure as well as there could be notes in there
         // that need to have their beams recalculated (esp. when adding time signature)
-        MeasureBase* prev = fm->prev();
-        Segment* first = toMeasure(prev && prev->isMeasure() ? prev : fm)->first();
-        for (Segment* s = first; s && s != toMeasure(lm)->last(); s = s->next1()) {
+        MeasureBase *prev = fm->prev();
+        Segment *first = toMeasure(prev && prev->isMeasure() ? prev : fm)->first();
+        for (Segment *s = first; s && s != toMeasure(lm)->last(); s = s->next1()) {
             if (!s) {
                 break;
             }
@@ -241,7 +238,7 @@ void InsertRemoveMeasures::removeMeasures()
             }
 
             for (track_idx_t track = 0; track < score->ntracks(); ++track) {
-                EngravingItem* e = s->element(track);
+                EngravingItem *e = s->element(track);
                 if (e && e->isChordRest()) {
                     toChordRest(e)->removeDeleteBeam(false);
                 }
@@ -249,9 +246,9 @@ void InsertRemoveMeasures::removeMeasures()
         }
     }
 
-    std::vector<System*> systemList;
-    for (MeasureBase* mb = lm;; mb = mb->prev()) {
-        System* system = mb->system();
+    std::vector<System *> systemList;
+    for (MeasureBase *mb = lm;; mb = mb->prev()) {
+        System *system = mb->system();
         if (system) {
             if (!muse::contains(systemList, system)) {
                 systemList.push_back(system);
@@ -265,7 +262,7 @@ void InsertRemoveMeasures::removeMeasures()
 
     // move subsequent StaffTypeChanges
     if (moveStc) {
-        for (Staff* staff : score->staves()) {
+        for (Staff *staff : score->staves()) {
             Fraction tickStart = tick1;
             Fraction tickEnd = tick2;
 
@@ -277,14 +274,14 @@ void InsertRemoveMeasures::removeMeasures()
                 Fraction tick = Fraction::fromTicks(moveTick);
                 Fraction newTick = tick + tickStart - tickEnd;
 
-                Measure* measure = score->tick2measure(tick);
+                Measure *measure = score->tick2measure(tick);
                 bool stIcon = false;
 
                 staff->moveStaffType(tick, newTick);
 
-                for (EngravingItem* el : measure->el()) {
+                for (EngravingItem *el : measure->el()) {
                     if (el && el->isStaffTypeChange() && el->track() == staff->idx() * VOICES) {
-                        StaffTypeChange* stc = toStaffTypeChange(el);
+                        StaffTypeChange *stc = toStaffTypeChange(el);
                         stc->setStaffType(staff->staffType(newTick), false);
                         stIcon = true;
                         break;
@@ -311,11 +308,11 @@ void InsertRemoveMeasures::removeMeasures()
         // remove clef from staff cleflist
 
         if (lm->isMeasure()) {
-            Measure* m = toMeasure(lm);
-            Segment* s = m->findSegment(SegmentType::Clef, tick2);
+            Measure *m = toMeasure(lm);
+            Segment *s = m->findSegment(SegmentType::Clef, tick2);
             if (s) {
-                for (EngravingItem* e : s->elist()) {
-                    Clef* clef = toClef(e);
+                for (EngravingItem *e : s->elist()) {
+                    Clef *clef = toClef(e);
                     if (clef) {
                         score->staff(clef->staffIdx())->removeClef(clef);
                     }
@@ -330,12 +327,12 @@ void InsertRemoveMeasures::removeMeasures()
 
         // Restore clefs that were backed up. Events for them could be lost
         // as a result of the recent insertTime() call.
-        for (Clef* clef : clefs) {
+        for (Clef *clef : clefs) {
             clef->staff()->setClef(clef);
         }
 
-        std::set<Spanner*> spannersCopy = score->unmanagedSpanners();
-        for (Spanner* sp : spannersCopy) {
+        std::set<Spanner *> spannersCopy = score->unmanagedSpanners();
+        for (Spanner *sp : spannersCopy) {
             if ((sp->tick() >= tick1 && sp->tick() < tick2) || (sp->tick2() >= tick1 && sp->tick2() < tick2)) {
                 sp->removeUnmanaged();
             }
@@ -344,9 +341,9 @@ void InsertRemoveMeasures::removeMeasures()
 
     // remove empty systems
 
-    for (System* s : systemList) {
+    for (System *s : systemList) {
         if (s->measures().empty()) {
-            Page* page = s->page();
+            Page *page = s->page();
             if (page) {
                 // erase system from page
                 muse::remove(page->systems(), s);
@@ -372,14 +369,12 @@ void InsertRemoveMeasures::removeMeasures()
 //   ChangeMeasureLen
 //---------------------------------------------------------
 
-ChangeMeasureLen::ChangeMeasureLen(Measure* m, Fraction l)
-{
-    measure     = m;
-    len         = l;
+ChangeMeasureLen::ChangeMeasureLen(Measure *m, Fraction l) {
+    measure = m;
+    len = l;
 }
 
-void ChangeMeasureLen::flip()
-{
+void ChangeMeasureLen::flip() {
     Fraction oLen = measure->ticks();
 
     //
@@ -387,7 +382,7 @@ void ChangeMeasureLen::flip()
     // to end of measure:
     //
 
-    for (Segment* s = measure->first(); s; s = s->next()) {
+    for (Segment *s = measure->first(); s; s = s->next()) {
         if (!s->isEndBarLineType() && !s->isTimeSigAnnounceType()) {
             continue;
         }
@@ -404,9 +399,8 @@ void ChangeMeasureLen::flip()
 //   ChangeMMRest
 //---------------------------------------------------------
 
-void ChangeMMRest::flip()
-{
-    Measure* mmr = m->mmRest();
+void ChangeMMRest::flip() {
+    Measure *mmr = m->mmRest();
     m->setMMRest(mmrest);
     mmrest = mmr;
 }
@@ -415,26 +409,23 @@ void ChangeMMRest::flip()
 //   ChangeMeasureRepeatCount
 //---------------------------------------------------------
 
-void ChangeMeasureRepeatCount::flip()
-{
+void ChangeMeasureRepeatCount::flip() {
     int oldCount = m->measureRepeatCount(staffIdx);
     m->setMeasureRepeatCount(count, staffIdx);
     count = oldCount;
 }
 
-void ChangeMMRestNext::flip()
-{
+void ChangeMMRestNext::flip() {
     assert(m_mmrest->isMMRest());
-    MeasureBase* oldNext = m_mmrest->next();
+    MeasureBase *oldNext = m_mmrest->next();
 
     m_mmrest->setNext(m_next);
     m_next = oldNext;
 }
 
-void ChangeMMRestPrev::flip()
-{
+void ChangeMMRestPrev::flip() {
     assert(m_mmrest->isMMRest());
-    MeasureBase* oldPrev = m_mmrest->prev();
+    MeasureBase *oldPrev = m_mmrest->prev();
 
     m_mmrest->setPrev(m_prev);
     m_prev = oldPrev;

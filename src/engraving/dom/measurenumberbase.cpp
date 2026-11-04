@@ -36,19 +36,13 @@ namespace mu::engraving {
 //   MeasureNumberBase
 //---------------------------------------------------------
 
-MeasureNumberBase::MeasureNumberBase(const ElementType& type, DummyParentOr<Measure> parent, TextStyleType tid)
-    : TextBase(type, parent, tid, ElementFlag::ON_STAFF)
-{
-}
+MeasureNumberBase::MeasureNumberBase(const ElementType &type, DummyParentOr<Measure> parent, TextStyleType tid)
+    : TextBase(type, parent, tid, ElementFlag::ON_STAFF) {}
 
 //---------------------------------------------------------
 //   MeasureNumberBase
 //     Copy constructor
 //---------------------------------------------------------
 
-MeasureNumberBase::MeasureNumberBase(const MeasureNumberBase& other)
-    : TextBase(other)
-{
-    setFlag(ElementFlag::ON_STAFF, true);
-}
-} // namespace MS
+MeasureNumberBase::MeasureNumberBase(const MeasureNumberBase &other) : TextBase(other) { setFlag(ElementFlag::ON_STAFF, true); }
+} // namespace mu::engraving

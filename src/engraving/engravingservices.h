@@ -7,15 +7,16 @@
 
 namespace muse::draw {
 class IImageProvider;
-}
+} // namespace muse::draw
 
 namespace mu::engraving {
 class IEngravingConfiguration;
 class IEngravingContextConfiguration;
 class IEngravingFontsProvider;
+
 namespace rendering {
 class IScoreRenderer;
-}
+} // namespace rendering
 
 // The engine services a score uses. The engine context owns the only instance
 // and outlives every score built with it; scores keep a reference.
@@ -30,4 +31,4 @@ struct EngravingServices {
     std::shared_ptr<muse::draw::IImageProvider> imageProvider;
     // Null until the palette score exists (it is built with these services).
 };
-}
+} // namespace mu::engraving

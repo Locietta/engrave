@@ -39,8 +39,7 @@ namespace mu::engraving {
 //   @P playUntil   string
 //---------------------------------------------------------
 
-class Jump final : public TextBase
-{
+class Jump final : public TextBase {
     OBJECT_ALLOCATOR(engraving, Jump)
     DECLARE_CLASSOF(ElementType::JUMP)
 
@@ -52,29 +51,36 @@ public:
     JumpType jumpType() const;
     String jumpTypeUserName() const;
 
-    Jump* clone() const override { return new Jump(*this); }
+    Jump *clone() const override { return new Jump(*this); }
 
     int subtype() const override { return int(jumpType()); }
+
     TranslatableString subtypeUserName() const override;
 
-    Measure* measure() const { return toMeasure(ownershipParent()); }
+    Measure *measure() const { return toMeasure(ownershipParent()); }
 
     String jumpTo() const { return m_jumpTo; }
+
     String playUntil() const { return m_playUntil; }
+
     String continueAt() const { return m_continueAt; }
-    void setJumpTo(const String& s) { m_jumpTo = s; }
-    void setPlayUntil(const String& s) { m_playUntil = s; }
-    void setContinueAt(const String& s) { m_continueAt = s; }
+
+    void setJumpTo(const String &s) { m_jumpTo = s; }
+
+    void setPlayUntil(const String &s) { m_playUntil = s; }
+
+    void setContinueAt(const String &s) { m_continueAt = s; }
+
     bool playRepeats() const { return m_playRepeats; }
+
     void setPlayRepeats(bool val) { m_playRepeats = val; }
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid) const override;
 
-    EngravingItem* nextSegmentElement() override;
-    EngravingItem* prevSegmentElement() override;
-
+    EngravingItem *nextSegmentElement() override;
+    EngravingItem *prevSegmentElement() override;
 
     bool positionRelativeToNoteheadRest() const override { return false; }
 

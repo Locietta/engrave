@@ -28,29 +28,28 @@ class GuitarBend;
 class GuitarBendSegment;
 class LineSegment;
 class Note;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class GuitarDiveLayout
-{
+class GuitarDiveLayout {
 public:
     friend class GuitarBendLayout;
 
-    static void updateDiveSequences(const std::vector<mu::engraving::GuitarBend*>& bends, const LayoutContext& ctx);
-    static void layoutDiveTabStaff(GuitarBendSegment* item, LayoutContext&);
+    static void updateDiveSequences(const std::vector<mu::engraving::GuitarBend *> &bends, const LayoutContext &ctx);
+    static void layoutDiveTabStaff(GuitarBendSegment *item, LayoutContext &);
 
 private:
-    static PointF computeStartPosOnStaff(GuitarBendSegment* item, LayoutContext& ctx);
-    static PointF computeEndPosOnStaff(GuitarBendSegment* item, LayoutContext& ctx);
+    static PointF computeStartPosOnStaff(GuitarBendSegment *item, LayoutContext &ctx);
+    static PointF computeEndPosOnStaff(GuitarBendSegment *item, LayoutContext &ctx);
 
-    static PointF computeStartPosAboveStaff(GuitarBendSegment* item, LayoutContext& ctx);
-    static PointF computeEndPosAboveStaff(GuitarBendSegment* item, LayoutContext&);
+    static PointF computeStartPosAboveStaff(GuitarBendSegment *item, LayoutContext &ctx);
+    static PointF computeEndPosAboveStaff(GuitarBendSegment *item, LayoutContext &);
 
-    static LineSegment* findPrevHoldOrBendSegment(GuitarBendSegment* item, bool excludeFullReleaseDive = false);
+    static LineSegment *findPrevHoldOrBendSegment(GuitarBendSegment *item, bool excludeFullReleaseDive = false);
 
-    static void layoutDip(GuitarBendSegment* item, LayoutContext& ctx);
-    static void layoutScoop(GuitarBendSegment* item);
+    static void layoutDip(GuitarBendSegment *item, LayoutContext &ctx);
+    static void layoutScoop(GuitarBendSegment *item);
 
-    static RectF getNoteAndParenthesesShape(const Note* note);
+    static RectF getNoteAndParenthesesShape(const Note *note);
 };
-}
+} // namespace mu::engraving::rendering::score

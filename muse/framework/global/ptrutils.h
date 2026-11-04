@@ -27,52 +27,47 @@
 #include <sstream>
 
 namespace muse::ptr {
-template<typename T, typename E> T* checked_cast(E* source)
-{
+template <typename T, typename E>
+T *checked_cast(E *source) {
 #ifndef NDEBUG
-    T* casted = dynamic_cast<T*>(source);
+    T *casted = dynamic_cast<T *>(source);
     if (source && !casted) {
         assert(false && "checked_cast: bad cast");
     }
     return casted;
 #else
-    return static_cast<T*>(source);
+    return static_cast<T *>(source);
 #endif
 }
 
-template<typename T, typename E> const T* checked_cast(const E* source)
-{
+template <typename T, typename E>
+const T *checked_cast(const E *source) {
 #ifndef NDEBUG
-    T* casted = dynamic_cast<T*>(source);
+    T *casted = dynamic_cast<T *>(source);
     if (source && !casted) {
         assert(false && "checked_cast: bad cast");
     }
     return casted;
 #else
-    return static_cast<T*>(source);
+    return static_cast<T *>(source);
 #endif
 }
 
-inline bool string_is_hex(const std::string& str)
-{
-    return strings::startsWith(str, "0x");
-}
+inline bool string_is_hex(const std::string &str) { return strings::startsWith(str, "0x"); }
 
-inline std::string ptr_to_string(void* p)
-{
+inline std::string ptr_to_string(void *p) {
     std::stringstream ss;
     ss << p;
     return ss.str();
 }
 
-inline void* ptr_from_string(const std::string& str)
-{
+inline void *ptr_from_string(const std::string &str) {
     uintptr_t num = 0;
     std::stringstream ss;
     ss << std::hex << str;
     ss >> num;
-    return reinterpret_cast<void*>(num);
+    return reinterpret_cast<void *>(num);
 }
-}
+} // namespace muse::ptr
 
 #endif // MUSE_GLOBAL_PTRUTILS_H

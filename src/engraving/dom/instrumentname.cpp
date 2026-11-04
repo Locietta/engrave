@@ -39,41 +39,37 @@ namespace mu::engraving {
 //   longInstrumentStyle
 //---------------------------------------------------------
 
-static const ElementStyle longInstrumentStyle {
-};
+static const ElementStyle longInstrumentStyle{};
 
 //---------------------------------------------------------
 //   shortInstrumentStyle
 //---------------------------------------------------------
 
-static const ElementStyle shortInstrumentStyle {
-};
+static const ElementStyle shortInstrumentStyle{};
 
 //---------------------------------------------------------
 //   InstrumentName
 //---------------------------------------------------------
 
 InstrumentName::InstrumentName(DummyParentOr<System> s)
-    : TextBase(ElementType::INSTRUMENT_NAME, s, TextStyleType::INSTRUMENT_LONG, ElementFlag::NOTHING)
-{
+    : TextBase(ElementType::INSTRUMENT_NAME, s, TextStyleType::INSTRUMENT_LONG, ElementFlag::NOTHING) {
     setFlag(ElementFlag::MOVABLE, false);
     setInstrumentNameType(InstrumentNameType::LONG);
 }
 
-double InstrumentName::largestStaffSpatium() const
-{
+double InstrumentName::largestStaffSpatium() const {
     if (systemFlag() || (layoutParent() && layoutParent()->systemFlag())) {
         return style().spatium();
     }
 
     // Get spatium for instrument names from largest staff of part,
     // instead of staff it is attached to
-    Part* p = part();
+    Part *p = part();
     if (!part()) {
         return style().spatium();
     }
     double largestSpatium = 0;
-    for (Staff* s: p->staves()) {
+    for (Staff *s : p->staves()) {
         double sp = s->spatium(tick());
         if (sp > largestSpatium) {
             largestSpatium = sp;
@@ -86,8 +82,7 @@ double InstrumentName::largestStaffSpatium() const
 //   setInstrumentNameType
 //---------------------------------------------------------
 
-void InstrumentName::setInstrumentNameType(InstrumentNameType st)
-{
+void InstrumentName::setInstrumentNameType(InstrumentNameType st) {
     m_instrumentNameType = st;
     if (st == InstrumentNameType::SHORT) {
         setTextStyleType(TextStyleType::INSTRUMENT_SHORT);
@@ -98,30 +93,26 @@ void InstrumentName::setInstrumentNameType(InstrumentNameType st)
     }
 }
 
-bool InstrumentName::setProperty(Pid id, const PropertyValue& v)
-{
+bool InstrumentName::setProperty(Pid id, const PropertyValue &v) {
     bool rv = true;
     switch (id) {
-    case Pid::VISIBLE:
-        // not supported
-        break;
-    default:
-        rv = TextBase::setProperty(id, v);
-        break;
+        case Pid::VISIBLE:
+            // not supported
+            break;
+        default: rv = TextBase::setProperty(id, v); break;
     }
     return rv;
 }
 
-mu::engraving::staff_idx_t mu::engraving::InstrumentName::effectiveStaffIdx() const
-{
+mu::engraving::staff_idx_t mu::engraving::InstrumentName::effectiveStaffIdx() const {
     if (m_sysStaff->show() || m_instrumentNameRole == InstrumentNameRole::STAFF) {
         return staffIdx();
     } else if (m_instrumentNameRole == InstrumentNameRole::PART) {
         return system()->firstVisibleSysStaffOfPart(score()->staff(staffIdx())->part());
     } else {
         staff_idx_t curIdx = staffIdx();
-        Instrument* instr = score()->staff(curIdx)->part()->instrument(system()->first()->tick());
+        Instrument *instr = score()->staff(curIdx)->part()->instrument(system()->first()->tick());
         return system()->firstVisibleSysStaffWithInstrument(instr->id(), curIdx);
     }
 }
-}
+} // namespace mu::engraving

@@ -38,10 +38,8 @@
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-AccidentalsLayout::AccidentalsLayoutContext::AccidentalsLayoutContext(std::vector<Accidental*> acc,
-                                                                      std::vector<Chord*> ch)
-    : allAccidentals(std::move(acc)), chords(std::move(ch))
-{
+AccidentalsLayout::AccidentalsLayoutContext::AccidentalsLayoutContext(std::vector<Accidental *> acc, std::vector<Chord *> ch)
+    : allAccidentals(std::move(acc)), chords(std::move(ch)) {
     sortTopDown(allAccidentals);
     stackedAccidentals.reserve(allAccidentals.size());
     stackedAccidentalsShape.elements().reserve(4 * allAccidentals.size());
@@ -49,8 +47,7 @@ AccidentalsLayout::AccidentalsLayoutContext::AccidentalsLayoutContext(std::vecto
     initConstants();
 }
 
-void AccidentalsLayout::AccidentalsLayoutContext::initConstants()
-{
+void AccidentalsLayout::AccidentalsLayoutContext::initConstants() {
     m_spatium = allAccidentals.front()->spatium();
 
     // Hardcoded engraving parameters that don't have a style (some of these may get a style in future)
@@ -65,7 +62,7 @@ void AccidentalsLayout::AccidentalsLayoutContext::initConstants()
     m_flatKerningOfFourth = -0.15 * m_spatium;
     m_naturalKerningOfFourth = -0.05 * m_spatium;
 
-    const MStyle& style = allAccidentals.front()->style();
+    const MStyle &style = allAccidentals.front()->style();
     m_accidentalAccidentalDistance = style.styleAbsolute(Sid::accidentalDistance);
     m_orderFollowNoteDisplacement = style.styleB(Sid::accidentalOrderFollowsNoteDisplacement);
     m_alignOctavesAcrossSubChords = style.styleB(Sid::alignAccidentalOctavesAcrossSubChords);
@@ -73,15 +70,14 @@ void AccidentalsLayout::AccidentalsLayoutContext::initConstants()
     m_alignOffsetOctaves = style.styleB(Sid::alignOffsetOctaveAccidentals);
 }
 
-void AccidentalsLayout::layoutAccidentals(const std::vector<Chord*>& chords, LayoutContext& ctx)
-{
-    std::vector<Accidental*> allAccidentals;
-    std::vector<Accidental*> redundantAccidentals;
-    std::vector<Accidental*> invisibleAccidentals;
+void AccidentalsLayout::layoutAccidentals(const std::vector<Chord *> &chords, LayoutContext &ctx) {
+    std::vector<Accidental *> allAccidentals;
+    std::vector<Accidental *> redundantAccidentals;
+    std::vector<Accidental *> invisibleAccidentals;
 
     collectAccidentals(chords, allAccidentals, redundantAccidentals, invisibleAccidentals);
 
-    for (Accidental* acc : invisibleAccidentals) {
+    for (Accidental *acc : invisibleAccidentals) {
         acc->computeMag();
         TLayout::layoutAccidental(acc, acc->mutldata(), ctx.conf());
         double x = -acc->ldata()->bbox().width();
@@ -93,12 +89,12 @@ void AccidentalsLayout::layoutAccidentals(const std::vector<Chord*>& chords, Lay
         return;
     }
 
-    for (Accidental* acc : redundantAccidentals) {
+    for (Accidental *acc : redundantAccidentals) {
         acc->setPos(0.0, 0.0);
         acc->setbbox(RectF());
     }
 
-    for (Accidental* acc : allAccidentals) {
+    for (Accidental *acc : allAccidentals) {
         acc->setPos(0.0, 0.0);
         acc->computeMag();
         TLayout::layoutAccidental(acc, acc->mutldata(), ctx.conf());
@@ -108,12 +104,12 @@ void AccidentalsLayout::layoutAccidentals(const std::vector<Chord*>& chords, Lay
     doAccidentalPlacement(accidentalsLayoutContext);
 }
 
-void AccidentalsLayout::collectAccidentals(const std::vector<Chord*> chords, std::vector<Accidental*>& allAccidentals,
-                                           std::vector<Accidental*>& redundantAccidentals, std::vector<Accidental*>& invisibleAccidentals)
-{
-    for (const Chord* chord : chords) {
-        for (const Note* note : chord->notes()) {
-            Accidental* acc = note->accidental();
+void AccidentalsLayout::collectAccidentals(const std::vector<Chord *> chords, std::vector<Accidental *> &allAccidentals,
+                                           std::vector<Accidental *> &redundantAccidentals,
+                                           std::vector<Accidental *> &invisibleAccidentals) {
+    for (const Chord *chord : chords) {
+        for (const Note *note : chord->notes()) {
+            Accidental *acc = note->accidental();
             if (!acc) {
                 continue;
             }
@@ -128,9 +124,8 @@ void AccidentalsLayout::collectAccidentals(const std::vector<Chord*> chords, std
     }
 }
 
-bool AccidentalsLayout::accidentalIsRedundant(const Accidental* acc, const std::vector<Accidental*>& allAccidentals)
-{
-    for (const Accidental* otherAcc : allAccidentals) {
+bool AccidentalsLayout::accidentalIsRedundant(const Accidental *acc, const std::vector<Accidental *> &allAccidentals) {
+    for (const Accidental *otherAcc : allAccidentals) {
         if (otherAcc->accidentalType() == acc->accidentalType() && otherAcc->line() == acc->line()) {
             return true;
         }
@@ -139,28 +134,26 @@ bool AccidentalsLayout::accidentalIsRedundant(const Accidental* acc, const std::
     return false;
 }
 
-void AccidentalsLayout::doAccidentalPlacement(AccidentalsLayoutContext& ctx)
-{
+void AccidentalsLayout::doAccidentalPlacement(AccidentalsLayoutContext &ctx) {
     createChordsShape(ctx);
 
     findOctavesAndSeconds(ctx);
     splitIntoSubChords(ctx);
 
-    for (std::vector<Accidental*>& accidentalSubChord : ctx.accidentalSubChords) {
+    for (std::vector<Accidental *> &accidentalSubChord : ctx.accidentalSubChords) {
         layoutSubChord(accidentalSubChord, ctx);
     }
 
     verticallyAlignAccidentals(ctx);
 }
 
-void AccidentalsLayout::findOctavesAndSeconds(const AccidentalsLayoutContext& ctx)
-{
-    for (Accidental* acc1 : ctx.allAccidentals) {
-        std::vector<Accidental*>& octaves = acc1->mutldata()->octaves.mut_value();
+void AccidentalsLayout::findOctavesAndSeconds(const AccidentalsLayoutContext &ctx) {
+    for (Accidental *acc1 : ctx.allAccidentals) {
+        std::vector<Accidental *> &octaves = acc1->mutldata()->octaves.mut_value();
         octaves.clear();
-        std::vector<Accidental*>& seconds = acc1->mutldata()->seconds.mut_value();
+        std::vector<Accidental *> &seconds = acc1->mutldata()->seconds.mut_value();
         seconds.clear();
-        for (Accidental* acc2 : ctx.allAccidentals) {
+        for (Accidental *acc2 : ctx.allAccidentals) {
             if (acc2 == acc1) {
                 continue;
             }
@@ -173,11 +166,10 @@ void AccidentalsLayout::findOctavesAndSeconds(const AccidentalsLayoutContext& ct
     }
 }
 
-void AccidentalsLayout::splitIntoSubChords(AccidentalsLayoutContext& ctx)
-{
+void AccidentalsLayout::splitIntoSubChords(AccidentalsLayoutContext &ctx) {
     ctx.accidentalSubChords.reserve(2);
 
-    std::vector<Accidental*> firstGroup;
+    std::vector<Accidental *> firstGroup;
     firstGroup.reserve(ctx.allAccidentals.size());
     firstGroup.push_back(ctx.allAccidentals.front());
     ctx.accidentalSubChords.push_back(firstGroup);
@@ -185,11 +177,11 @@ void AccidentalsLayout::splitIntoSubChords(AccidentalsLayoutContext& ctx)
     static constexpr int LINE_DIFF_OF_SEVENTH = 6;
 
     for (size_t i = 1; i < ctx.allAccidentals.size(); ++i) {
-        Accidental* prevAcc = ctx.allAccidentals[i - 1];
-        Accidental* curAcc = ctx.allAccidentals[i];
+        Accidental *prevAcc = ctx.allAccidentals[i - 1];
+        Accidental *curAcc = ctx.allAccidentals[i];
         bool startNewGroup = curAcc->line() - prevAcc->line() >= LINE_DIFF_OF_SEVENTH;
         if (startNewGroup) {
-            ctx.accidentalSubChords.push_back(std::vector<Accidental*> { curAcc });
+            ctx.accidentalSubChords.push_back(std::vector<Accidental *>{curAcc});
         } else {
             ctx.accidentalSubChords.back().push_back(curAcc);
         }
@@ -203,15 +195,14 @@ void AccidentalsLayout::splitIntoSubChords(AccidentalsLayoutContext& ctx)
     }
 }
 
-void AccidentalsLayout::mergeAdjacentSubGroupsIfTooSmall(AccidentalsLayoutContext& ctx)
-{
+void AccidentalsLayout::mergeAdjacentSubGroupsIfTooSmall(AccidentalsLayoutContext &ctx) {
     const double approxOffsetNoteThreshold = 0.5 * ctx.spatium();
     bool groupingChanged = false;
     do {
         groupingChanged = false;
         for (size_t i = 0; i < ctx.accidentalSubChords.size() - 1; ++i) {
-            std::vector<Accidental*>& thisGroup = ctx.accidentalSubChords[i];
-            std::vector<Accidental*>& nextGroup = ctx.accidentalSubChords[i + 1];
+            std::vector<Accidental *> &thisGroup = ctx.accidentalSubChords[i];
+            std::vector<Accidental *> &nextGroup = ctx.accidentalSubChords[i + 1];
             bool groupIsSmall = thisGroup.size() + nextGroup.size() <= ctx.smallGroupLimit();
             bool nextStartsWithOffsetNote = nextGroup.front()->note()->x() > approxOffsetNoteThreshold;
             if (groupIsSmall && !nextStartsWithOffsetNote) {
@@ -223,11 +214,10 @@ void AccidentalsLayout::mergeAdjacentSubGroupsIfTooSmall(AccidentalsLayoutContex
     } while (groupingChanged);
 }
 
-void AccidentalsLayout::mergeSubGroupsWithOctavesAcross(AccidentalsLayoutContext& ctx)
-{
-    auto isOctaveAcrossGroups = [](const std::vector<Accidental*>& group1, const std::vector<Accidental*>& group2) {
-        for (const Accidental* acc1 : group1) {
-            for (Accidental* octaveAcc : acc1->ldata()->octaves.value()) {
+void AccidentalsLayout::mergeSubGroupsWithOctavesAcross(AccidentalsLayoutContext &ctx) {
+    auto isOctaveAcrossGroups = [](const std::vector<Accidental *> &group1, const std::vector<Accidental *> &group2) {
+        for (const Accidental *acc1 : group1) {
+            for (Accidental *octaveAcc : acc1->ldata()->octaves.value()) {
                 if (muse::contains(group2, octaveAcc)) {
                     return true;
                 }
@@ -240,9 +230,9 @@ void AccidentalsLayout::mergeSubGroupsWithOctavesAcross(AccidentalsLayoutContext
     do {
         foundOctave = false;
         for (size_t i = 0; i < ctx.accidentalSubChords.size() - 1; ++i) {
-            std::vector<Accidental*>& thisGroup = ctx.accidentalSubChords[i];
+            std::vector<Accidental *> &thisGroup = ctx.accidentalSubChords[i];
             for (size_t j = i + 1; j < ctx.accidentalSubChords.size(); ++j) {
-                std::vector<Accidental*>& nextGroup = ctx.accidentalSubChords[j];
+                std::vector<Accidental *> &nextGroup = ctx.accidentalSubChords[j];
                 foundOctave = isOctaveAcrossGroups(thisGroup, nextGroup);
                 if (foundOctave) {
                     thisGroup.insert(thisGroup.end(), nextGroup.begin(), nextGroup.end());
@@ -257,40 +247,37 @@ void AccidentalsLayout::mergeSubGroupsWithOctavesAcross(AccidentalsLayoutContext
     } while (foundOctave);
 }
 
-void AccidentalsLayout::createChordsShape(AccidentalsLayoutContext& ctx)
-{
+void AccidentalsLayout::createChordsShape(AccidentalsLayoutContext &ctx) {
     ctx.chordsShape.clear();
 
-    for (const Chord* chord : ctx.chords) {
+    for (const Chord *chord : ctx.chords) {
         PointF chordPos = keepAccidentalsCloseToChord(chord) ? PointF() : chord->pos();
-        for (const LedgerLine* ledger : chord->ledgerLines()) {
+        for (const LedgerLine *ledger : chord->ledgerLines()) {
             ctx.chordsShape.add(ledger->shape().translate(ledger->pos() + chordPos));
         }
-        for (const Note* note : chord->notes()) {
+        for (const Note *note : chord->notes()) {
             SymId noteSym = note->ldata()->cachedNoteheadSym;
             if (noteSym == SymId::noSym) {
                 noteSym = note->noteHead();
             }
             ctx.chordsShape.add(note->symShapeWithCutouts(noteSym).translate(note->pos() + chordPos));
         }
-        const Stem* stem = chord->stem();
+        const Stem *stem = chord->stem();
         if (stem && stem->addToSkyline()) {
             ctx.chordsShape.add(stem->shape().translate(stem->pos() + chordPos));
         }
     }
 }
 
-void AccidentalsLayout::layoutSubChord(std::vector<Accidental*>& accidentals, AccidentalsLayoutContext& ctx)
-{
+void AccidentalsLayout::layoutSubChord(std::vector<Accidental *> &accidentals, AccidentalsLayoutContext &ctx) {
     computeOrdering(accidentals, ctx);
 
-    for (Accidental* acc : accidentals) {
+    for (Accidental *acc : accidentals) {
         stackAccidental(acc, ctx);
     }
 }
 
-void AccidentalsLayout::stackAccidental(Accidental* acc, AccidentalsLayoutContext& ctx)
-{
+void AccidentalsLayout::stackAccidental(Accidental *acc, AccidentalsLayoutContext &ctx) {
     Shape accShape = acc->shape();
     accShape.translateY(acc->note()->y());
 
@@ -308,15 +295,14 @@ void AccidentalsLayout::stackAccidental(Accidental* acc, AccidentalsLayoutContex
     ctx.stackedAccidentals.push_back(acc);
 }
 
-void AccidentalsLayout::checkZeroColumn(Accidental* acc, const AccidentalsLayoutContext& ctx)
-{
+void AccidentalsLayout::checkZeroColumn(Accidental *acc, const AccidentalsLayoutContext &ctx) {
     int column = acc->ldata()->column;
     if (column != 0) {
         return;
     }
 
     RectF thisBBox = acc->ldata()->bbox().translated(xPosRelativeToSegment(acc), 0.0);
-    for (Accidental* stackedAcc : ctx.stackedAccidentals) {
+    for (Accidental *stackedAcc : ctx.stackedAccidentals) {
         RectF placedBBox = stackedAcc->ldata()->bbox().translated(xPosRelativeToSegment(stackedAcc), 0.0);
         if (thisBBox.right() < placedBBox.left()) {
             column = std::max(column, stackedAcc->ldata()->column.value() + 1);
@@ -325,12 +311,11 @@ void AccidentalsLayout::checkZeroColumn(Accidental* acc, const AccidentalsLayout
     acc->mutldata()->column = column;
 }
 
-void AccidentalsLayout::computeOrdering(std::vector<Accidental*>& accidentals, AccidentalsLayoutContext& ctx)
-{
+void AccidentalsLayout::computeOrdering(std::vector<Accidental *> &accidentals, AccidentalsLayoutContext &ctx) {
     AccidentalGroups priorityGroups = splitIntoPriorityGroups(accidentals, ctx);
 
     accidentals.clear();
-    for (std::vector<Accidental*>& group : priorityGroups) {
+    for (std::vector<Accidental *> &group : priorityGroups) {
         determineStackingOrder(group, ctx);
         accidentals.insert(accidentals.end(), group.begin(), group.end());
     }
@@ -338,8 +323,7 @@ void AccidentalsLayout::computeOrdering(std::vector<Accidental*>& accidentals, A
     applyOrderingOffsets(accidentals);
 }
 
-AccidentalGroups AccidentalsLayout::splitIntoPriorityGroups(std::vector<Accidental*>& accidentals, AccidentalsLayoutContext& ctx)
-{
+AccidentalGroups AccidentalsLayout::splitIntoPriorityGroups(std::vector<Accidental *> &accidentals, AccidentalsLayoutContext &ctx) {
     AccidentalGroups groups;
 
     if (ctx.orderFollowNoteDisplacement()) {
@@ -356,7 +340,7 @@ AccidentalGroups AccidentalsLayout::splitIntoPriorityGroups(std::vector<Accident
     if (ctx.alignOctavesAcrossSubChords()) {
         mergeSubGroupsWithOctavesAcross(ctx);
         if (groups.size() != curGroupsCount) {
-            for (auto& subGroup : groups) {
+            for (auto &subGroup : groups) {
                 sortTopDown(subGroup);
             }
         }
@@ -365,31 +349,27 @@ AccidentalGroups AccidentalsLayout::splitIntoPriorityGroups(std::vector<Accident
     return groups;
 }
 
-AccidentalGroups AccidentalsLayout::splitAccordingToAccidDisplacement(std::vector<Accidental*>& accidentals,
-                                                                      const AccidentalsLayoutContext& ctx)
-{
+AccidentalGroups AccidentalsLayout::splitAccordingToAccidDisplacement(std::vector<Accidental *> &accidentals,
+                                                                      const AccidentalsLayoutContext &ctx) {
     AccidentalGroups subGroups = groupAccidentalsByXPos(accidentals, ctx);
 
-    muse::remove_if(subGroups, [](auto& subGroup) {
-        return subGroup.size() == 0;
-    });
+    muse::remove_if(subGroups, [](auto &subGroup) { return subGroup.size() == 0; });
 
     if (subGroups.size() > 1 && subGroups[0].size() > 1) {
         moveOctavesToSecondGroup(subGroups);
     }
 
-    for (std::vector<Accidental*>& subGroup : subGroups) {
+    for (std::vector<Accidental *> &subGroup : subGroups) {
         sortTopDown(subGroup);
     }
 
     return subGroups;
 }
 
-AccidentalGroups AccidentalsLayout::groupAccidentalsByXPos(std::vector<Accidental*>& accidentals, const AccidentalsLayoutContext& ctx)
-{
-    std::map<double, std::vector<Accidental*> > groupsOfEqualX;
+AccidentalGroups AccidentalsLayout::groupAccidentalsByXPos(std::vector<Accidental *> &accidentals, const AccidentalsLayoutContext &ctx) {
+    std::map<double, std::vector<Accidental *>> groupsOfEqualX;
 
-    for (Accidental* acc : accidentals) {
+    for (Accidental *acc : accidentals) {
         Shape accRoughShape = Shape(acc->symBbox(acc->symId()), acc);
         accRoughShape.translateY(acc->note()->y());
         double x = -minAccidentalToChordDistance(acc, accRoughShape, ctx) + acc->symWidth(acc->symId());
@@ -398,7 +378,7 @@ AccidentalGroups AccidentalsLayout::groupAccidentalsByXPos(std::vector<Accidenta
 
     double splitPoint = DBL_MAX;
     double prevX = (*groupsOfEqualX.begin()).first;
-    for (auto& pair : groupsOfEqualX) {
+    for (auto &pair : groupsOfEqualX) {
         double curX = pair.first;
         if (curX - prevX > ctx.xPosSplitThreshold()) {
             splitPoint = curX;
@@ -408,14 +388,14 @@ AccidentalGroups AccidentalsLayout::groupAccidentalsByXPos(std::vector<Accidenta
     }
 
     AccidentalGroups subGroups(2);
-    for (auto& pair : groupsOfEqualX) {
+    for (auto &pair : groupsOfEqualX) {
         if (pair.first >= splitPoint) {
-            for (Accidental* acc : pair.second) {
+            for (Accidental *acc : pair.second) {
                 subGroups[0].push_back(acc);
                 acc->mutldata()->verticalSubgroup = 0;
             }
         } else {
-            for (Accidental* acc : pair.second) {
+            for (Accidental *acc : pair.second) {
                 subGroups[1].push_back(acc);
                 acc->mutldata()->verticalSubgroup = 1;
             }
@@ -425,19 +405,16 @@ AccidentalGroups AccidentalsLayout::groupAccidentalsByXPos(std::vector<Accidenta
     return subGroups;
 }
 
-void AccidentalsLayout::moveOctavesToSecondGroup(AccidentalGroups& subGroups)
-{
-    IF_ASSERT_FAILED(subGroups.size() == 2) {
-        return;
-    }
+void AccidentalsLayout::moveOctavesToSecondGroup(AccidentalGroups &subGroups) {
+    IF_ASSERT_FAILED(subGroups.size() == 2) { return; }
 
-    std::vector<Accidental*>& firstGroup = subGroups[0];
-    std::vector<Accidental*>& secondGroup = subGroups[1];
+    std::vector<Accidental *> &firstGroup = subGroups[0];
+    std::vector<Accidental *> &secondGroup = subGroups[1];
     auto iter = firstGroup.begin();
     while (iter != firstGroup.end()) {
-        Accidental* acc = *iter;
+        Accidental *acc = *iter;
         bool removeOne = false;
-        for (Accidental* octaveAcc : acc->ldata()->octaves.value()) {
+        for (Accidental *octaveAcc : acc->ldata()->octaves.value()) {
             if (muse::contains(secondGroup, octaveAcc)) {
                 removeOne = true;
                 secondGroup.push_back(acc);
@@ -453,9 +430,8 @@ void AccidentalsLayout::moveOctavesToSecondGroup(AccidentalGroups& subGroups)
     }
 }
 
-AccidentalGroups AccidentalsLayout::splitAccordingToNoteDisplacement(std::vector<Accidental*>& accidentals,
-                                                                     const AccidentalsLayoutContext& ctx)
-{
+AccidentalGroups AccidentalsLayout::splitAccordingToNoteDisplacement(std::vector<Accidental *> &accidentals,
+                                                                     const AccidentalsLayoutContext &ctx) {
     AccidentalGroups subGroups = groupAccidentalsByNoteXPos(accidentals);
 
     if (ctx.keepSecondsTogether()) {
@@ -463,7 +439,7 @@ AccidentalGroups AccidentalsLayout::splitAccordingToNoteDisplacement(std::vector
     }
 
     for (size_t i = 0; i < subGroups.size(); ++i) {
-        for (Accidental* acc : subGroups[i]) {
+        for (Accidental *acc : subGroups[i]) {
             acc->mutldata()->verticalSubgroup = static_cast<int>(i);
         }
     }
@@ -471,13 +447,12 @@ AccidentalGroups AccidentalsLayout::splitAccordingToNoteDisplacement(std::vector
     return subGroups;
 }
 
-AccidentalGroups AccidentalsLayout::groupAccidentalsByNoteXPos(const std::vector<Accidental*>& accidentals)
-{
+AccidentalGroups AccidentalsLayout::groupAccidentalsByNoteXPos(const std::vector<Accidental *> &accidentals) {
     AccidentalGroups subGroups;
 
-    std::map<double, std::vector<Accidental*> > groupsOfEqualNoteX;
-    for (Accidental* accidental : accidentals) {
-        Note* note = accidental->note();
+    std::map<double, std::vector<Accidental *>> groupsOfEqualNoteX;
+    for (Accidental *accidental : accidentals) {
+        Note *note = accidental->note();
         double x = std::round(note->pos().x() + note->chord()->pos().x());
         groupsOfEqualNoteX[x].push_back(accidental);
     }
@@ -489,17 +464,16 @@ AccidentalGroups AccidentalsLayout::groupAccidentalsByNoteXPos(const std::vector
     return subGroups;
 }
 
-void AccidentalsLayout::moveSecondsInSameGroup(AccidentalGroups& subGroups)
-{
+void AccidentalsLayout::moveSecondsInSameGroup(AccidentalGroups &subGroups) {
     bool secondMoved = false;
     do {
         secondMoved = false;
         for (size_t i = 0; i < subGroups.size() - 1; ++i) {
-            std::vector<Accidental*>& thisGroup = subGroups[i];
-            std::vector<Accidental*>& nextGroup = subGroups[i + 1];
+            std::vector<Accidental *> &thisGroup = subGroups[i];
+            std::vector<Accidental *> &nextGroup = subGroups[i + 1];
             for (size_t j = 0; j < thisGroup.size(); ++j) {
-                Accidental* acc1 = thisGroup[j];
-                for (Accidental* secondAcc : acc1->ldata()->seconds.value()) {
+                Accidental *acc1 = thisGroup[j];
+                for (Accidental *secondAcc : acc1->ldata()->seconds.value()) {
                     if (muse::remove(nextGroup, secondAcc)) {
                         secondMoved = true;
                         auto position = thisGroup.begin() + j;
@@ -525,37 +499,34 @@ void AccidentalsLayout::moveSecondsInSameGroup(AccidentalGroups& subGroups)
     } while (secondMoved);
 }
 
-void AccidentalsLayout::determineStackingOrder(std::vector<Accidental*>& accidentals, AccidentalsLayoutContext& ctx)
-{
+void AccidentalsLayout::determineStackingOrder(std::vector<Accidental *> &accidentals, AccidentalsLayoutContext &ctx) {
     size_t groupSize = accidentals.size();
 
     if (groupSize <= ctx.smallGroupLimit()) {
         computeStandardOrdering(accidentals, ctx);
-    } else if (groupSize > ctx.largeGroupLimit()
-               || (ctx.alignOctavesAcrossSubChords() && ctx.subChordsCountBeforeOctaveMerge > 1)) {
+    } else if (groupSize > ctx.largeGroupLimit() || (ctx.alignOctavesAcrossSubChords() && ctx.subChordsCountBeforeOctaveMerge > 1)) {
         computeCompactOrdering(accidentals, ctx);
     } else {
         computeOrderingWithLeastColumns(accidentals, ctx);
     }
 }
 
-void AccidentalsLayout::computeOrderingWithLeastColumns(std::vector<Accidental*>& accidentals, AccidentalsLayoutContext& ctx)
-{
-    std::vector<Accidental*> standardOrdered = accidentals;
+void AccidentalsLayout::computeOrderingWithLeastColumns(std::vector<Accidental *> &accidentals, AccidentalsLayoutContext &ctx) {
+    std::vector<Accidental *> standardOrdered = accidentals;
     computeStandardOrdering(standardOrdered, ctx);
 
-    std::vector<Accidental*> compactOrdered = accidentals;
+    std::vector<Accidental *> compactOrdered = accidentals;
     computeCompactOrdering(compactOrdered, ctx);
 
-    auto totalColumns = [&](std::vector<Accidental*>& accGroup) {
-        std::map<Accidental*, int> accidentalColumn;
+    auto totalColumns = [&](std::vector<Accidental *> &accGroup) {
+        std::map<Accidental *, int> accidentalColumn;
         accidentalColumn[accGroup.front()] = 0;
         int maxColumn = 0;
         for (size_t i = 1; i < accGroup.size(); ++i) {
-            Accidental* acc1 = accGroup[i];
+            Accidental *acc1 = accGroup[i];
             accidentalColumn[acc1] = maxColumn;
             for (int j = static_cast<int>(i - 1); j >= 0; --j) {
-                Accidental* acc2 = accGroup[j];
+                Accidental *acc2 = accGroup[j];
                 if (accidentalColumn[acc2] < maxColumn) {
                     continue;
                 }
@@ -571,16 +542,15 @@ void AccidentalsLayout::computeOrderingWithLeastColumns(std::vector<Accidental*>
     accidentals = totalColumns(compactOrdered) < totalColumns(standardOrdered) ? compactOrdered : standardOrdered;
 }
 
-void AccidentalsLayout::computeStandardOrdering(std::vector<Accidental*>& accidentals, AccidentalsLayoutContext& ctx)
-{
-    std::vector<Accidental*> accidentalsPlaced;
+void AccidentalsLayout::computeStandardOrdering(std::vector<Accidental *> &accidentals, AccidentalsLayoutContext &ctx) {
+    std::vector<Accidental *> accidentalsPlaced;
     accidentalsPlaced.reserve(accidentals.size());
 
-    AccidentalsVectorView accidentalsToPlace { accidentals };
+    AccidentalsVectorView accidentalsToPlace{accidentals};
 
     bool pickFromTop = true;
     while (!accidentalsToPlace.empty()) {
-        Accidental* acc = pickFromTop ? accidentalsToPlace.pop_front() : accidentalsToPlace.pop_back();
+        Accidental *acc = pickFromTop ? accidentalsToPlace.pop_front() : accidentalsToPlace.pop_back();
         accidentalsPlaced.push_back(acc);
 
         if (ctx.keepSecondsTogether()) {
@@ -598,19 +568,18 @@ void AccidentalsLayout::computeStandardOrdering(std::vector<Accidental*>& accide
     accidentals = accidentalsPlaced;
 }
 
-void AccidentalsLayout::computeCompactOrdering(std::vector<Accidental*>& accidentals, AccidentalsLayoutContext& ctx)
-{
+void AccidentalsLayout::computeCompactOrdering(std::vector<Accidental *> &accidentals, AccidentalsLayoutContext &ctx) {
     const size_t totAccidNumber = accidentals.size();
-    Accidental* const bottomAcc = accidentals.back();
+    Accidental *const bottomAcc = accidentals.back();
 
-    std::vector<Accidental*> accidentalsPlaced;
+    std::vector<Accidental *> accidentalsPlaced;
     accidentalsPlaced.reserve(totAccidNumber);
 
-    AccidentalsVectorView accidentalsToPlace { accidentals };
+    AccidentalsVectorView accidentalsToPlace{accidentals};
 
     bool pickFromTop = true;
     while (!accidentalsToPlace.empty()) {
-        Accidental* acc = pickFromTop ? accidentalsToPlace.pop_front() : accidentalsToPlace.pop_back();
+        Accidental *acc = pickFromTop ? accidentalsToPlace.pop_front() : accidentalsToPlace.pop_back();
         accidentalsPlaced.push_back(acc);
 
         bool foundOneThatFits = false;
@@ -625,7 +594,7 @@ void AccidentalsLayout::computeCompactOrdering(std::vector<Accidental*>& acciden
         }
 
         // fit others into same column
-        const auto pred = [&](Accidental* acc2) {
+        const auto pred = [&](Accidental *acc2) {
             if ((pickFromTop && acc2->line() < acc->line()) || (!pickFromTop && acc2->line() > acc->line())) {
                 return false;
             }
@@ -651,7 +620,7 @@ void AccidentalsLayout::computeCompactOrdering(std::vector<Accidental*>& acciden
         }
 
         if (ctx.keepSecondsTogether()) {
-            for (Accidental* alreadyPlacedAcc : accidentalsPlaced) {
+            for (Accidental *alreadyPlacedAcc : accidentalsPlaced) {
                 findAndInsertSecond(alreadyPlacedAcc, accidentalsPlaced, accidentalsToPlace, ctx);
             }
         }
@@ -666,11 +635,10 @@ void AccidentalsLayout::computeCompactOrdering(std::vector<Accidental*>& acciden
     accidentals = accidentalsPlaced;
 }
 
-void AccidentalsLayout::findAndInsertSecond(Accidental* acc, std::vector<Accidental*>& accidentalsPlaced,
-                                            AccidentalsVectorView& accidentalsToPlace, AccidentalsLayoutContext& ctx)
-{
-    const std::vector<Accidental*>& seconds = acc->ldata()->seconds.value();
-    for (Accidental* secondAcc : seconds) {
+void AccidentalsLayout::findAndInsertSecond(Accidental *acc, std::vector<Accidental *> &accidentalsPlaced,
+                                            AccidentalsVectorView &accidentalsToPlace, AccidentalsLayoutContext &ctx) {
+    const std::vector<Accidental *> &seconds = acc->ldata()->seconds.value();
+    for (Accidental *secondAcc : seconds) {
         const bool removed = accidentalsToPlace.remove(secondAcc);
         if (removed) {
             if (ctx.orderFollowNoteDisplacement() && secondAcc->note()->x() > acc->note()->x()) {
@@ -683,15 +651,14 @@ void AccidentalsLayout::findAndInsertSecond(Accidental* acc, std::vector<Acciden
     }
 }
 
-bool AccidentalsLayout::findAndInsertOctave(Accidental* acc, std::vector<Accidental*>& accidentalsPlaced,
-                                            AccidentalsVectorView& accidentalsToPlace, AccidentalsLayoutContext& ctx, bool acceptAbove,
-                                            bool acceptBelow)
-{
+bool AccidentalsLayout::findAndInsertOctave(Accidental *acc, std::vector<Accidental *> &accidentalsPlaced,
+                                            AccidentalsVectorView &accidentalsToPlace, AccidentalsLayoutContext &ctx, bool acceptAbove,
+                                            bool acceptBelow) {
     bool foundOctave = false;
     int thisLine = acc->line();
-    const std::vector<Accidental*>& octaves = acc->ldata()->octaves.value();
-    for (Accidental* octaveAcc : octaves) {
-        const bool removed = accidentalsToPlace.remove_if([&](Accidental* a) {
+    const std::vector<Accidental *> &octaves = acc->ldata()->octaves.value();
+    for (Accidental *octaveAcc : octaves) {
+        const bool removed = accidentalsToPlace.remove_if([&](Accidental *a) {
             if (a == octaveAcc) {
                 int octaveLine = octaveAcc->line();
                 bool acceptOctave = (octaveLine < thisLine && acceptAbove) || (octaveLine > thisLine && acceptBelow);
@@ -715,17 +682,16 @@ bool AccidentalsLayout::findAndInsertOctave(Accidental* acc, std::vector<Acciden
     return foundOctave;
 }
 
-void AccidentalsLayout::applyOrderingOffsets(std::vector<Accidental*>& accidentals)
-{
+void AccidentalsLayout::applyOrderingOffsets(std::vector<Accidental *> &accidentals) {
     // Set default stacking number
     int stackingNumber = 0;
-    for (Accidental* acc : accidentals) {
+    for (Accidental *acc : accidentals) {
         acc->mutldata()->stackingNumber = stackingNumber;
         ++stackingNumber;
     }
 
     // Limit stacking offsets within boundaries
-    for (Accidental* acc : accidentals) {
+    for (Accidental *acc : accidentals) {
         int actualStackingOrder = acc->stackingOrder();
         if (actualStackingOrder < 0) {
             acc->setStackingOrderOffset(acc->stackingOrderOffset() - actualStackingOrder);
@@ -736,20 +702,20 @@ void AccidentalsLayout::applyOrderingOffsets(std::vector<Accidental*>& accidenta
     }
 
     // Sort vector
-    std::sort(accidentals.begin(), accidentals.end(), [](const Accidental* acc1, const Accidental* acc2) {
+    std::sort(accidentals.begin(), accidentals.end(), [](const Accidental *acc1, const Accidental *acc2) {
         int stackingOrder1 = acc1->stackingOrder();
         int stackingOrder2 = acc2->stackingOrder();
-        return stackingOrder1 == stackingOrder2 ? acc1->stackingOrderOffset() < acc2->stackingOrderOffset() : stackingOrder1 < stackingOrder2;
+        return stackingOrder1 == stackingOrder2 ? acc1->stackingOrderOffset() < acc2->stackingOrderOffset() :
+                                                  stackingOrder1 < stackingOrder2;
     });
 }
 
-double AccidentalsLayout::minAccidentalToChordDistance(Accidental* acc, const Shape& accShape, const AccidentalsLayoutContext& ctx)
-{
+double AccidentalsLayout::minAccidentalToChordDistance(Accidental *acc, const Shape &accShape, const AccidentalsLayoutContext &ctx) {
     double dist = -DBL_MAX;
-    for (const ShapeElement& accidentalElement : accShape.elements()) {
+    for (const ShapeElement &accidentalElement : accShape.elements()) {
         double accTop = accidentalElement.top();
         double accBottom = accidentalElement.bottom();
-        for (const ShapeElement& chordElement : ctx.chordsShape.elements()) {
+        for (const ShapeElement &chordElement : ctx.chordsShape.elements()) {
             double chordElementTop = chordElement.top();
             double chordElementBottom = chordElement.bottom();
             if (mu::engraving::intersects(accTop, accBottom, chordElementTop, chordElementBottom,
@@ -765,10 +731,9 @@ double AccidentalsLayout::minAccidentalToChordDistance(Accidental* acc, const Sh
     return dist;
 }
 
-double AccidentalsLayout::kerningLimitationsIntoChord(Accidental* acc, const Shape& accShape, const ShapeElement& chordElement,
-                                                      const AccidentalsLayoutContext& ctx)
-{
-    const EngravingItem* chordItem = chordElement.item();
+double AccidentalsLayout::kerningLimitationsIntoChord(Accidental *acc, const Shape &accShape, const ShapeElement &chordElement,
+                                                      const AccidentalsLayoutContext &ctx) {
+    const EngravingItem *chordItem = chordElement.item();
     if (!chordItem) {
         return 0.0;
     }
@@ -783,8 +748,7 @@ double AccidentalsLayout::kerningLimitationsIntoChord(Accidental* acc, const Sha
     return 0.0;
 }
 
-double AccidentalsLayout::computePadding(Accidental* acc, const EngravingItem* chordElement, const AccidentalsLayoutContext& ctx)
-{
+double AccidentalsLayout::computePadding(Accidental *acc, const EngravingItem *chordElement, const AccidentalsLayoutContext &ctx) {
     AccidentalType accType = acc->accidentalType();
     bool isFlat = accType == AccidentalType::FLAT || accType == AccidentalType::FLAT2;
 
@@ -794,8 +758,8 @@ double AccidentalsLayout::computePadding(Accidental* acc, const EngravingItem* c
     }
 
     const double yApproxThresholdForSharpLedgerKerning = 1.1 * ctx.spatium();
-    bool kernSharpIntoLedger = accType == AccidentalType::SHARP && chordElement->isLedgerLine()
-                               && chordElement->y() > acc->note()->y() + yApproxThresholdForSharpLedgerKerning;
+    bool kernSharpIntoLedger = accType == AccidentalType::SHARP && chordElement->isLedgerLine() &&
+                               chordElement->y() > acc->note()->y() + yApproxThresholdForSharpLedgerKerning;
     if (kernSharpIntoLedger) {
         return 0.0;
     }
@@ -805,14 +769,13 @@ double AccidentalsLayout::computePadding(Accidental* acc, const EngravingItem* c
         return ctx.reducedFlatToNotePadding();
     }
 
-    const PaddingTable& paddingTable = acc->score()->paddingTables().horizontalPaddingTable();
+    const PaddingTable &paddingTable = acc->score()->paddingTables().horizontalPaddingTable();
 
     return paddingTable.at(ElementType::ACCIDENTAL).at(chordElement->type()) * 0.5 * (acc->mag() + chordElement->mag());
 }
 
-double AccidentalsLayout::minAccidentalToAccidentalGroupDistance(Accidental* acc, Shape accShape, const Shape& accidentalsShape,
-                                                                 const AccidentalsLayoutContext& ctx)
-{
+double AccidentalsLayout::minAccidentalToAccidentalGroupDistance(Accidental *acc, Shape accShape, const Shape &accidentalsShape,
+                                                                 const AccidentalsLayoutContext &ctx) {
     double dist = 0.0;
     int column = acc->ldata()->column;
 
@@ -823,8 +786,8 @@ double AccidentalsLayout::minAccidentalToAccidentalGroupDistance(Accidental* acc
         ++iter;
         double curDist = 0.0;
         collisionFound = false;
-        for (const ShapeElement& groupElement : accidentalsShape.elements()) {
-            const Accidental* acc2 = toAccidental(groupElement.item());
+        for (const ShapeElement &groupElement : accidentalsShape.elements()) {
+            const Accidental *acc2 = toAccidental(groupElement.item());
 
             if (isExceptionOfFourth(acc, acc2)) {
                 double distFourth = kerningOfFourth(accShape, groupElement, ctx);
@@ -853,7 +816,7 @@ double AccidentalsLayout::minAccidentalToAccidentalGroupDistance(Accidental* acc
 
             double groupTop = groupElement.top();
             double groupBottom = groupElement.bottom();
-            for (ShapeElement& accElement : accShape.elements()) {
+            for (ShapeElement &accElement : accShape.elements()) {
                 if (mu::engraving::intersects(accElement.top(), accElement.bottom(), groupTop, groupBottom, vertPadding)) {
                     double minDist = accElement.right() - groupElement.left() + horPadding;
                     minDist += additionalPaddingForVerticals(acc, acc2, ctx);
@@ -866,43 +829,37 @@ double AccidentalsLayout::minAccidentalToAccidentalGroupDistance(Accidental* acc
         dist += curDist;
     } while (collisionFound && iter < safetyNet);
 
-    IF_ASSERT_FAILED(iter < safetyNet) {
-        LOGE() << "Accidental layout error.";
-    }
+    IF_ASSERT_FAILED(iter < safetyNet) { LOGE() << "Accidental layout error."; }
 
     acc->mutldata()->column = column;
 
     return dist;
 }
 
-bool AccidentalsLayout::isExceptionOfFourth(const Accidental* acc1, const Accidental* acc2)
-{
+bool AccidentalsLayout::isExceptionOfFourth(const Accidental *acc1, const Accidental *acc2) {
     if (!acc1 || !acc2) {
         return false;
     }
 
-    if ((acc1->bracket() == AccidentalBracket::BRACKET || acc2->bracket() == AccidentalBracket::BRACKET)
-        && acc1->mag() == 1 && acc2->mag() == 1) {
+    if ((acc1->bracket() == AccidentalBracket::BRACKET || acc2->bracket() == AccidentalBracket::BRACKET) && acc1->mag() == 1 &&
+        acc2->mag() == 1) {
         return false;
     }
 
     AccidentalType accType1 = acc1->accidentalType();
     AccidentalType accType2 = acc2->accidentalType();
 
-    return (accType1 == AccidentalType::FLAT || accType1 == AccidentalType::FLAT2)
-           && (accType2 == AccidentalType::FLAT || accType2 == AccidentalType::FLAT2 || accType2 == AccidentalType::NATURAL)
-           && acc1->line() - acc2->line() == 3;
+    return (accType1 == AccidentalType::FLAT || accType1 == AccidentalType::FLAT2) &&
+           (accType2 == AccidentalType::FLAT || accType2 == AccidentalType::FLAT2 || accType2 == AccidentalType::NATURAL) &&
+           acc1->line() - acc2->line() == 3;
 }
 
-bool AccidentalsLayout::isExceptionOfNaturalsSixth(const Accidental* acc1, const Accidental* acc2)
-{
-    return acc1->accidentalType() == AccidentalType::NATURAL
-           && acc2->accidentalType() == AccidentalType::NATURAL
-           && abs(acc2->line() - acc1->line()) == 5;
+bool AccidentalsLayout::isExceptionOfNaturalsSixth(const Accidental *acc1, const Accidental *acc2) {
+    return acc1->accidentalType() == AccidentalType::NATURAL && acc2->accidentalType() == AccidentalType::NATURAL &&
+           abs(acc2->line() - acc1->line()) == 5;
 }
 
-bool AccidentalsLayout::canFitInSameColumn(const Accidental* acc1, const Accidental* acc2, AccidentalsLayoutContext& ctx)
-{
+bool AccidentalsLayout::canFitInSameColumn(const Accidental *acc1, const Accidental *acc2, AccidentalsLayoutContext &ctx) {
     if (isExceptionOfNaturalsSixth(acc1, acc2)) {
         return true;
     }
@@ -910,34 +867,30 @@ bool AccidentalsLayout::canFitInSameColumn(const Accidental* acc1, const Acciden
     RectF acc1Box = acc1->ldata()->bbox().translated(PointF(0.0, acc1->note()->y()));
     RectF acc2Box = acc2->ldata()->bbox().translated(PointF(0.0, acc2->note()->y()));
 
-    return !mu::engraving::intersects(acc1Box.top(), acc1Box.bottom(), acc2Box.top(), acc2Box.bottom(),
-                                      verticalPadding(acc1, acc2, ctx));
+    return !mu::engraving::intersects(acc1Box.top(), acc1Box.bottom(), acc2Box.top(), acc2Box.bottom(), verticalPadding(acc1, acc2, ctx));
 }
 
-bool AccidentalsLayout::isOctave(const Accidental* acc1, const Accidental* acc2)
-{
+bool AccidentalsLayout::isOctave(const Accidental *acc1, const Accidental *acc2) {
     return acc1->accidentalType() == acc2->accidentalType() && std::abs(acc2->line() - acc1->line()) % 7 == 0;
 }
 
-double AccidentalsLayout::kerningOfFourth(const Shape& accShape, const ShapeElement& accGroupShapeElement,
-                                          const AccidentalsLayoutContext& ctx)
-{
+double AccidentalsLayout::kerningOfFourth(const Shape &accShape, const ShapeElement &accGroupShapeElement,
+                                          const AccidentalsLayoutContext &ctx) {
     AccidentalType accType2 = toAccidental(accGroupShapeElement.item())->accidentalType();
 
-    return accShape.right() - accGroupShapeElement.left()
-           + (accType2 == AccidentalType::NATURAL ? ctx.naturalKerningOfFourth() : ctx.flatKerningOfFourth());
+    return accShape.right() - accGroupShapeElement.left() +
+           (accType2 == AccidentalType::NATURAL ? ctx.naturalKerningOfFourth() : ctx.flatKerningOfFourth());
 }
 
-double AccidentalsLayout::additionalPaddingForVerticals(const Accidental* acc, const EngravingItem* item,
-                                                        const AccidentalsLayoutContext& ctx)
-{
-    if (acc->accidentalType() != AccidentalType::NATURAL || acc->bracket() != AccidentalBracket::NONE
-        || (!item->isAccidental() && !item->isStem())) {
+double AccidentalsLayout::additionalPaddingForVerticals(const Accidental *acc, const EngravingItem *item,
+                                                        const AccidentalsLayoutContext &ctx) {
+    if (acc->accidentalType() != AccidentalType::NATURAL || acc->bracket() != AccidentalBracket::NONE ||
+        (!item->isAccidental() && !item->isStem())) {
         return 0.0;
     }
 
     if (item->isAccidental()) {
-        const Accidental* acc2 = toAccidental(item);
+        const Accidental *acc2 = toAccidental(item);
         AccidentalType accType2 = acc2->accidentalType();
         if (accType2 != AccidentalType::NATURAL && accType2 != AccidentalType::FLAT && accType2 != AccidentalType::FLAT2) {
             return 0.0;
@@ -951,10 +904,9 @@ double AccidentalsLayout::additionalPaddingForVerticals(const Accidental* acc, c
     return ctx.additionalPaddingForVerticals();
 }
 
-void AccidentalsLayout::verticallyAlignAccidentals(AccidentalsLayoutContext& ctx)
-{
-    std::set<Accidental*> accidentalsAlreadyGrouped;
-    std::map<Accidental*, std::vector<Accidental*> > verticalSets;
+void AccidentalsLayout::verticallyAlignAccidentals(AccidentalsLayoutContext &ctx) {
+    std::set<Accidental *> accidentalsAlreadyGrouped;
+    std::map<Accidental *, std::vector<Accidental *>> verticalSets;
 
     if (ctx.alignOffsetOctaves()) {
         collectVerticalSetsOfOffsetOctaves(accidentalsAlreadyGrouped, verticalSets, ctx);
@@ -969,32 +921,30 @@ void AccidentalsLayout::verticallyAlignAccidentals(AccidentalsLayoutContext& ctx
     // Turn map into vector
     AccidentalGroups vertSets;
     vertSets.reserve(verticalSets.size());
-    for (auto& pair : verticalSets) {
+    for (auto &pair : verticalSets) {
         vertSets.push_back(pair.second);
     }
 
     // Sort vertical sets by column
-    std::sort(vertSets.begin(), vertSets.end(), [&](auto& set1, auto& set2) {
-        return set1.front()->ldata()->column < set2.front()->ldata()->column;
-    });
+    std::sort(vertSets.begin(), vertSets.end(),
+              [&](auto &set1, auto &set2) { return set1.front()->ldata()->column < set2.front()->ldata()->column; });
 
     alignVerticalSets(vertSets, ctx);
 }
 
-void AccidentalsLayout::collectVerticalSetsOfOffsetOctaves
-    (std::set<Accidental*>& accidentalsAlreadyGrouped, std::map<Accidental*, std::vector<Accidental*> >& verticalSets,
-    AccidentalsLayoutContext& ctx)
-{
-    for (std::vector<Accidental*>& accidentalGroup : ctx.accidentalSubChords) {
+void AccidentalsLayout::collectVerticalSetsOfOffsetOctaves(std::set<Accidental *> &accidentalsAlreadyGrouped,
+                                                           std::map<Accidental *, std::vector<Accidental *>> &verticalSets,
+                                                           AccidentalsLayoutContext &ctx) {
+    for (std::vector<Accidental *> &accidentalGroup : ctx.accidentalSubChords) {
         for (size_t i = 0; i < accidentalGroup.size(); ++i) {
-            Accidental* acc1 = accidentalGroup[i];
+            Accidental *acc1 = accidentalGroup[i];
             acc1->ldata()->column.value();
             if (muse::contains(accidentalsAlreadyGrouped, acc1)) {
                 continue;
             }
             double x1 = xPosRelativeToSegment(acc1);
             for (size_t j = i + 1; j < accidentalGroup.size(); ++j) {
-                Accidental* acc2 = accidentalGroup[j];
+                Accidental *acc2 = accidentalGroup[j];
                 if (!isOctave(acc1, acc2) || muse::contains(accidentalsAlreadyGrouped, acc2)) {
                     continue;
                 }
@@ -1002,7 +952,7 @@ void AccidentalsLayout::collectVerticalSetsOfOffsetOctaves
                 bool alignOctave = abs(x1 - x2) < 2.0 * ctx.spatium();
                 acc2->ldata()->column.value();
                 if (alignOctave) {
-                    std::vector<Accidental*>& verticalSet = verticalSets[acc1];
+                    std::vector<Accidental *> &verticalSet = verticalSets[acc1];
                     if (verticalSet.empty()) {
                         verticalSet.push_back(acc1);
                     }
@@ -1010,10 +960,10 @@ void AccidentalsLayout::collectVerticalSetsOfOffsetOctaves
                     accidentalsAlreadyGrouped.insert(acc1);
                     accidentalsAlreadyGrouped.insert(acc2);
                     int maxColumn = 0;
-                    for (Accidental* acc : verticalSet) {
+                    for (Accidental *acc : verticalSet) {
                         maxColumn = std::max(maxColumn, acc->ldata()->column.value());
                     }
-                    for (Accidental* acc : verticalSet) {
+                    for (Accidental *acc : verticalSet) {
                         acc->mutldata()->column = maxColumn;
                     }
                 }
@@ -1022,12 +972,11 @@ void AccidentalsLayout::collectVerticalSetsOfOffsetOctaves
     }
 }
 
-void AccidentalsLayout::collectVerticalSets(
-    std::set<Accidental*>& accidentalsAlreadyGrouped, std::map<Accidental*, std::vector<Accidental*> >& verticalSets,
-    AccidentalsLayoutContext& ctx)
-{
+void AccidentalsLayout::collectVerticalSets(std::set<Accidental *> &accidentalsAlreadyGrouped,
+                                            std::map<Accidental *, std::vector<Accidental *>> &verticalSets,
+                                            AccidentalsLayoutContext &ctx) {
     for (size_t i = 0; i < ctx.allAccidentals.size(); ++i) {
-        Accidental* acc1 = ctx.allAccidentals[i];
+        Accidental *acc1 = ctx.allAccidentals[i];
         if (muse::contains(accidentalsAlreadyGrouped, acc1)) {
             continue;
         }
@@ -1035,9 +984,9 @@ void AccidentalsLayout::collectVerticalSets(
         int verticalSub1 = acc1->ldata()->verticalSubgroup;
         double x1 = xPosRelativeToSegment(acc1);
         for (size_t j = i + 1; j < ctx.allAccidentals.size(); ++j) {
-            Accidental* acc2 = ctx.allAccidentals[j];
-            if (acc2->accidentalType() != acc1->accidentalType() || muse::contains(accidentalsAlreadyGrouped, acc2)
-                || !muse::RealIsEqual(acc1->mag(), acc2->mag())) {
+            Accidental *acc2 = ctx.allAccidentals[j];
+            if (acc2->accidentalType() != acc1->accidentalType() || muse::contains(accidentalsAlreadyGrouped, acc2) ||
+                !muse::RealIsEqual(acc1->mag(), acc2->mag())) {
                 continue;
             }
             int column2 = acc2->ldata()->column;
@@ -1045,7 +994,7 @@ void AccidentalsLayout::collectVerticalSets(
             double x2 = xPosRelativeToSegment(acc2);
             bool alignAccidentals = column1 == column2 && verticalSub1 == verticalSub2 && abs(x1 - x2) < ctx.xVerticalAlignmentThreshold();
             if (alignAccidentals) {
-                std::vector<Accidental*>& verticalSet = verticalSets[acc1];
+                std::vector<Accidental *> &verticalSet = verticalSets[acc1];
                 if (verticalSet.empty()) {
                     verticalSet.push_back(acc1);
                 }
@@ -1057,27 +1006,26 @@ void AccidentalsLayout::collectVerticalSets(
     }
 }
 
-void AccidentalsLayout::alignVerticalSets(AccidentalGroups& vertSets, AccidentalsLayoutContext& ctx)
-{
+void AccidentalsLayout::alignVerticalSets(AccidentalGroups &vertSets, AccidentalsLayoutContext &ctx) {
     AccidentalGroups accidentalColumns;
-    for (std::vector<Accidental*>& group : ctx.accidentalSubChords) {
-        for (Accidental* acc : group) {
+    for (std::vector<Accidental *> &group : ctx.accidentalSubChords) {
+        for (Accidental *acc : group) {
             size_t column = acc->ldata()->column;
             while (accidentalColumns.size() <= column) {
-                accidentalColumns.push_back(std::vector<Accidental*>());
+                accidentalColumns.push_back(std::vector<Accidental *>());
             }
             accidentalColumns[column].push_back(acc);
         }
     }
 
-    for (std::vector<Accidental*>& vertSet : vertSets) {
+    for (std::vector<Accidental *> &vertSet : vertSets) {
         // Align the set
         double x = DBL_MAX;
-        for (Accidental* acc : vertSet) {
+        for (Accidental *acc : vertSet) {
             double rightEdge = acc->ldata()->bbox().right() + xPosRelativeToSegment(acc);
             x = std::min(x, rightEdge);
         }
-        for (Accidental* acc : vertSet) {
+        for (Accidental *acc : vertSet) {
             double bboxRight = acc->ldata()->bbox().right();
             setXposRelativeToSegment(acc, x - bboxRight);
         }
@@ -1089,7 +1037,7 @@ void AccidentalsLayout::alignVerticalSets(AccidentalGroups& vertSets, Accidental
             if (column < curColumn) {
                 continue;
             }
-            for (Accidental* acc : accidentalColumns[column]) {
+            for (Accidental *acc : accidentalColumns[column]) {
                 double curXPos = xPosRelativeToSegment(acc);
                 Shape accShape = acc->shape().translate(PointF(curXPos, acc->note()->y()));
                 if (!muse::contains(vertSet, acc)) {
@@ -1103,10 +1051,9 @@ void AccidentalsLayout::alignVerticalSets(AccidentalGroups& vertSets, Accidental
     }
 }
 
-void AccidentalsLayout::setXposRelativeToSegment(Accidental* accidental, double x)
-{
-    Note* note = accidental->note();
-    Chord* chord = note ? note->chord() : nullptr;
+void AccidentalsLayout::setXposRelativeToSegment(Accidental *accidental, double x) {
+    Note *note = accidental->note();
+    Chord *chord = note ? note->chord() : nullptr;
     if (note) {
         x -= note->pos().x();
     }
@@ -1116,10 +1063,9 @@ void AccidentalsLayout::setXposRelativeToSegment(Accidental* accidental, double 
     accidental->mutldata()->setPosX(x);
 }
 
-double AccidentalsLayout::xPosRelativeToSegment(const Accidental* accidental)
-{
-    Note* note = accidental->note();
-    Chord* chord = note ? note->chord() : nullptr;
+double AccidentalsLayout::xPosRelativeToSegment(const Accidental *accidental) {
+    Note *note = accidental->note();
+    Chord *chord = note ? note->chord() : nullptr;
     double x = accidental->ldata()->pos().x();
     if (note) {
         x += note->pos().x();
@@ -1130,33 +1076,28 @@ double AccidentalsLayout::xPosRelativeToSegment(const Accidental* accidental)
     return x;
 }
 
-void AccidentalsLayout::sortTopDown(std::vector<Accidental*>& accidentals)
-{
-    std::sort(accidentals.begin(), accidentals.end(), [](const Accidental* acc1, const Accidental* acc2){
+void AccidentalsLayout::sortTopDown(std::vector<Accidental *> &accidentals) {
+    std::sort(accidentals.begin(), accidentals.end(), [](const Accidental *acc1, const Accidental *acc2) {
         int line1 = acc1->line();
         int line2 = acc2->line();
         if (line1 == line2) {
-            Note* note1 = acc1->note();
-            Note* note2 = acc2->note();
+            Note *note1 = acc1->note();
+            Note *note2 = acc2->note();
             return note1->x() + note1->chord()->x() > note2->x() + note2->chord()->x();
         }
         return line1 < line2;
     });
 }
 
-bool AccidentalsLayout::keepAccidentalsCloseToChord(const Chord* chord)
-{
-    return chord->isTrillCueNote() || chord->isGraceAfter();
-}
+bool AccidentalsLayout::keepAccidentalsCloseToChord(const Chord *chord) { return chord->isTrillCueNote() || chord->isGraceAfter(); }
 
-double AccidentalsLayout::verticalPadding(const Accidental* acc1, const Accidental* acc2, const AccidentalsLayoutContext& ctx)
-{
-    double verticalClearance = acc1->accidentalType() == AccidentalType::SHARP && acc2->accidentalType() == AccidentalType::SHARP
-                               ? ctx.verticalSharpToSharpClearance() : ctx.verticalAccidentalToAccidentalClearance();
+double AccidentalsLayout::verticalPadding(const Accidental *acc1, const Accidental *acc2, const AccidentalsLayoutContext &ctx) {
+    double verticalClearance = acc1->accidentalType() == AccidentalType::SHARP && acc2->accidentalType() == AccidentalType::SHARP ?
+                                   ctx.verticalSharpToSharpClearance() :
+                                   ctx.verticalAccidentalToAccidentalClearance();
     return verticalClearance *= 0.5 * (acc1->mag() + acc2->mag());
 }
 
-double AccidentalsLayout::horizontalPadding(const Accidental* acc1, const Accidental* acc2, const AccidentalsLayoutContext& ctx)
-{
+double AccidentalsLayout::horizontalPadding(const Accidental *acc1, const Accidental *acc2, const AccidentalsLayoutContext &ctx) {
     return ctx.accidentalAccidentalDistance() * (0.5 * (acc1->mag() + acc2->mag()));
 }

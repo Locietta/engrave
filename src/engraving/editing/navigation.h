@@ -38,25 +38,24 @@ struct ChordRestNavigateOptions {
     bool disableOverRepeats = false;
 };
 
-class Navigation
-{
+class Navigation {
 public:
-    static ChordRest* nextChordRest(const ChordRest* cr, const ChordRestNavigateOptions& options = {});
-    static ChordRest* prevChordRest(const ChordRest* cr, const ChordRestNavigateOptions& options = {});
-    static Lyrics* lastLyricsInMeasure(const Segment* seg, const staff_idx_t staffIdx, const int no, const PlacementV& placement);
-    static Lyrics* prevLyrics(const Lyrics* lyrics);
-    static Lyrics* nextLyrics(const Lyrics* lyrics);
+    static ChordRest *nextChordRest(const ChordRest *cr, const ChordRestNavigateOptions &options = {});
+    static ChordRest *prevChordRest(const ChordRest *cr, const ChordRestNavigateOptions &options = {});
+    static Lyrics *lastLyricsInMeasure(const Segment *seg, const staff_idx_t staffIdx, const int no, const PlacementV &placement);
+    static Lyrics *prevLyrics(const Lyrics *lyrics);
+    static Lyrics *nextLyrics(const Lyrics *lyrics);
 
-    static EngravingItem* chordNoteAbove(Score* score, EngravingItem* element);
-    static EngravingItem* chordNoteBelow(Score* score, EngravingItem* element);
-    static Note* topNoteInChord(Note* note);
-    static Note* bottomNoteInChord(Note* note);
-    static EngravingItem* firstElement(Score* score, bool frame = true);
-    static EngravingItem* lastElement(Score* score, bool frame = true);
-    static ChordRest* nextMeasure(Score* score, ChordRest* element, bool selectBehavior = false, bool mmRest = false);
-    static ChordRest* prevMeasure(Score* score, ChordRest* element, bool mmRest = false);
-    static ChordRest* upStaff(ChordRest* cr);
-    static ChordRest* downStaff(Score* score, ChordRest* cr);
-    static ChordRest* topStaff(Score* score, ChordRest* cr = nullptr);
+    static EngravingItem *chordNoteAbove(Score *score, EngravingItem *element);
+    static EngravingItem *chordNoteBelow(Score *score, EngravingItem *element);
+    static Note *topNoteInChord(Note *note);
+    static Note *bottomNoteInChord(Note *note);
+    static EngravingItem *firstElement(Score *score, bool frame = true);
+    static EngravingItem *lastElement(Score *score, bool frame = true);
+    static ChordRest *nextMeasure(Score *score, ChordRest *element, bool selectBehavior = false, bool mmRest = false);
+    static ChordRest *prevMeasure(Score *score, ChordRest *element, bool mmRest = false);
+    static ChordRest *upStaff(ChordRest *cr);
+    static ChordRest *downStaff(Score *score, ChordRest *cr);
+    static ChordRest *topStaff(Score *score, ChordRest *cr = nullptr);
 };
-}
+} // namespace mu::engraving

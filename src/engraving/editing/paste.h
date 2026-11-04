@@ -27,7 +27,7 @@
 
 namespace muse {
 class ByteArray;
-}
+} // namespace muse
 
 namespace mu::engraving {
 class ChordRest;
@@ -37,19 +37,18 @@ class Segment;
 class Transaction;
 class XmlReader;
 
-class Paste
-{
+class Paste {
 public:
 
-    static bool pasteStaffList(Transaction& tx, Score* score, muse::ByteArray& data, Fraction scale = Fraction(1, 1));
-    static bool pasteSymbolList(Transaction& tx, Score* score, muse::ByteArray& data);
+    static bool pasteStaffList(Transaction &tx, Score *score, muse::ByteArray &data, Fraction scale = Fraction(1, 1));
+    static bool pasteSymbolList(Transaction &tx, Score *score, muse::ByteArray &data);
 
-    static bool pasteStaff(Transaction& tx, Score* score, XmlReader& e, Segment* dst, staff_idx_t staffIdx, Fraction scale = Fraction(1,
-                                                                                                                                      1));
-    static void pasteSymbols(Transaction& tx, XmlReader& e, ChordRest* dst);
+    static bool pasteStaff(Transaction &tx, Score *score, XmlReader &e, Segment *dst, staff_idx_t staffIdx,
+                           Fraction scale = Fraction(1, 1));
+    static void pasteSymbols(Transaction &tx, XmlReader &e, ChordRest *dst);
 
-    static void pasteChordRest(Transaction& tx, Score* score, ChordRest* cr, const Fraction& tick);
+    static void pasteChordRest(Transaction &tx, Score *score, ChordRest *cr, const Fraction &tick);
 
-    static bool repeatListSelection(Transaction& tx, Score* score);
+    static bool repeatListSelection(Transaction &tx, Score *score);
 };
-}
+} // namespace mu::engraving

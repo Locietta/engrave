@@ -30,19 +30,19 @@
 
 namespace mu::engraving {
 class GradualTempoChangeSegment;
-class GradualTempoChange : public TextLineBase
-{
+
+class GradualTempoChange : public TextLineBase {
     OBJECT_ALLOCATOR(engraving, GradualTempoChange)
     DECLARE_CLASSOF(ElementType::GRADUAL_TEMPO_CHANGE)
 
 public:
     GradualTempoChange(DummyParentOr<EngravingItem> parent);
 
-    GradualTempoChange* clone() const override;
+    GradualTempoChange *clone() const override;
 
     Anchor anchor() const override { return Anchor::SEGMENT; }
 
-    LineSegment* createLineSegment() override;
+    LineSegment *createLineSegment() override;
 
     GradualTempoChangeType tempoChangeType() const;
     ChangeMethod easingMethod() const;
@@ -51,17 +51,18 @@ public:
     double tempoChangeFactor() const;
 
     PropertyValue getProperty(Pid id) const override;
-    bool setProperty(Pid id, const PropertyValue& val) override;
+    bool setProperty(Pid id, const PropertyValue &val) override;
     PropertyValue propertyDefault(Pid propertyId) const override;
     Sid getPropertyStyle(Pid id) const override;
 
     TranslatableString subtypeUserName() const override;
 
     bool snapToItemAfter() const { return m_snapToItemAfter; }
+
     void setSnapToItemAfter(bool v) { m_snapToItemAfter = v; }
 
     bool adjustForRehearsalMark(bool start) const;
-    PointF linePos(Grip grip, System** system) const override;
+    PointF linePos(Grip grip, System **system) const override;
 
 protected:
     Sid defaultPosSid() const override;
@@ -78,23 +79,22 @@ private:
     friend class GradualTempoChangeSegment;
 };
 
-class GradualTempoChangeSegment : public TextLineBaseSegment
-{
+class GradualTempoChangeSegment : public TextLineBaseSegment {
     OBJECT_ALLOCATOR(engraving, GradualTempoChangeSegment)
     DECLARE_CLASSOF(ElementType::GRADUAL_TEMPO_CHANGE_SEGMENT)
 
 public:
-    GradualTempoChangeSegment(GradualTempoChange* annotation);
+    GradualTempoChangeSegment(GradualTempoChange *annotation);
 
-    GradualTempoChangeSegment* clone() const override;
+    GradualTempoChangeSegment *clone() const override;
 
-    GradualTempoChange* tempoChange() const;
+    GradualTempoChange *tempoChange() const;
 
-    GradualTempoChangeSegment* findElementToSnapBefore() const;
-    TempoText* findElementToSnapAfter() const;
+    GradualTempoChangeSegment *findElementToSnapBefore() const;
+    TempoText *findElementToSnapAfter() const;
 
     friend class GradualTempoChange;
 };
-}
+} // namespace mu::engraving
 
 #endif // MU_ENGRAVING_GRADUALTEMPOCHANGE_H

@@ -25,52 +25,45 @@
 #include "ret.h"
 
 namespace muse {
-template<typename T>
+template <typename T>
 struct RetVal {
     Ret ret;
     T val;
 
     RetVal() = default;
-    RetVal(const Ret& r)
-        : ret(r) {}
 
-    static RetVal<T> make_ok(const T& v)
-    {
+    RetVal(const Ret &r) : ret(r) {}
+
+    static RetVal<T> make_ok(const T &v) {
         RetVal<T> rv;
         rv.ret = muse::make_ret(Ret::Code::Ok);
         rv.val = v;
         return rv;
     }
 
-    static RetVal<T> make_ret(const Ret& ret)
-    {
+    static RetVal<T> make_ret(const Ret &ret) {
         RetVal<T> rv;
         rv.ret = ret;
         return rv;
     }
 
-    static RetVal<T> make_ret(const Ret::Code& code, const std::string& text = "")
-    {
-        return make_ret(static_cast<int>(code), text);
-    }
+    static RetVal<T> make_ret(const Ret::Code &code, const std::string &text = "") { return make_ret(static_cast<int>(code), text); }
 
-    template<typename C>
-    static RetVal<T> make_ret(C code, const std::string& text = "")
-    {
+    template <typename C>
+    static RetVal<T> make_ret(C code, const std::string &text = "") {
         RetVal<T> rv;
         rv.ret = Ret(static_cast<int>(code), text);
         return rv;
     }
 };
 
-template<typename T1, typename T2>
+template <typename T1, typename T2>
 struct RetVal2 {
     Ret ret;
     T1 val1;
     T2 val2;
 
-    static RetVal2<T1, T2> make_ok(const T1& v1, const T2& v2)
-    {
+    static RetVal2<T1, T2> make_ok(const T1 &v1, const T2 &v2) {
         RetVal2<T1, T2> rv;
         rv.ret = muse::make_ret(Ret::Code::Ok);
         rv.val1 = v1;
@@ -78,22 +71,20 @@ struct RetVal2 {
         return rv;
     }
 
-    static RetVal2<T1, T2> make_ret(const Ret& ret)
-    {
+    static RetVal2<T1, T2> make_ret(const Ret &ret) {
         RetVal2<T1, T2> rv;
         rv.ret = ret;
         return rv;
     }
 
-    template<typename C>
-    static RetVal2<T1, T2> make_ret(C code, const std::string& text = "")
-    {
+    template <typename C>
+    static RetVal2<T1, T2> make_ret(C code, const std::string &text = "") {
         RetVal2<T1, T2> rv;
         rv.ret = Ret(static_cast<int>(code), text);
         return rv;
     }
 };
 
-}
+} // namespace muse
 
 #endif // MUSE_GLOBAL_RETVAL_H

@@ -27,11 +27,10 @@
 #include "engraving/dom/score.h"
 
 namespace mu::engraving {
-class ScoreComp
-{
+class ScoreComp {
 public:
-    static bool saveCompareScore(Score*, const String& saveName, const String& compareWithLocalPath);
-    static bool saveCompareMimeData(muse::ByteArray mimeData, const String& saveName, const String& compareWithLocalPath);
-    static bool compareFiles(const String& fullPath1, const String& fullPath2);
+    static bool saveCompareScore(Score *, const String &saveName, const String &compareWithLocalPath);
+    static bool saveCompareMimeData(muse::ByteArray mimeData, const String &saveName, const String &compareWithLocalPath);
+    static bool compareFiles(const String &fullPath1, const String &fullPath2);
 };
-}
+} // namespace mu::engraving

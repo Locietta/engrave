@@ -30,63 +30,60 @@
 #include "ioenums.h"
 
 namespace muse::io {
-class IFileSystem
-{
+class IFileSystem {
 public:
     virtual ~IFileSystem() = default;
 
-    virtual Ret exists(const io::path_t& path) const = 0;
-    virtual Ret remove(const io::path_t& path, bool onlyIfEmpty = false) = 0; // remove file or dir
-    virtual Ret clear(const io::path_t& path) = 0; // clear dir
-    virtual Ret copy(const io::path_t& src, const io::path_t& dst, bool replace = false) = 0;
-    virtual Ret move(const io::path_t& src, const io::path_t& dst, bool replace = false) = 0;
+    virtual Ret exists(const io::path_t &path) const = 0;
+    virtual Ret remove(const io::path_t &path, bool onlyIfEmpty = false) = 0; // remove file or dir
+    virtual Ret clear(const io::path_t &path) = 0;                            // clear dir
+    virtual Ret copy(const io::path_t &src, const io::path_t &dst, bool replace = false) = 0;
+    virtual Ret move(const io::path_t &src, const io::path_t &dst, bool replace = false) = 0;
 
-    virtual Ret makePath(const io::path_t& path) const = 0;
-    virtual Ret makeLink(const io::path_t& targetPath, const io::path_t& linkPath) const = 0;
+    virtual Ret makePath(const io::path_t &path) const = 0;
+    virtual Ret makeLink(const io::path_t &targetPath, const io::path_t &linkPath) const = 0;
 
-    virtual EntryType entryType(const io::path_t& path) const = 0;
+    virtual EntryType entryType(const io::path_t &path) const = 0;
 
     //! NOTE In bytes
-    virtual RetVal<uint64_t> fileSize(const io::path_t& path) const = 0;
-    virtual RetVal<uint64_t> availableSpace(const io::path_t& path) const = 0;
+    virtual RetVal<uint64_t> fileSize(const io::path_t &path) const = 0;
+    virtual RetVal<uint64_t> availableSpace(const io::path_t &path) const = 0;
 
-    virtual RetVal<io::paths_t> scanFiles(const io::path_t& rootDir, const std::vector<std::string>& filters,
+    virtual RetVal<io::paths_t> scanFiles(const io::path_t &rootDir, const std::vector<std::string> &filters,
                                           ScanMode mode = ScanMode::FilesInCurrentDirAndSubdirs) const = 0;
 
-    enum class Attribute {
-        Hidden
-    };
+    enum class Attribute { Hidden };
 
-    virtual void setAttribute(const io::path_t& path, Attribute attribute) const = 0;
-    virtual bool setPermissionsAllowedForAll(const io::path_t& path) const = 0;
+    virtual void setAttribute(const io::path_t &path, Attribute attribute) const = 0;
+    virtual bool setPermissionsAllowedForAll(const io::path_t &path) const = 0;
 
-    virtual RetVal<ByteArray> readFile(const io::path_t& filePath) const = 0;
-    virtual Ret readFile(const io::path_t& filePath, ByteArray& data) const = 0;
-    virtual Ret writeFile(const io::path_t& filePath, const ByteArray& data) = 0;
+    virtual RetVal<ByteArray> readFile(const io::path_t &filePath) const = 0;
+    virtual Ret readFile(const io::path_t &filePath, ByteArray &data) const = 0;
+    virtual Ret writeFile(const io::path_t &filePath, const ByteArray &data) = 0;
 
     //! Streaming write
-    virtual RetVal<StreamId> openStream(const io::path_t& filePath, OpenMode mode) = 0;
-    virtual Ret writeToStream(StreamId fileId, const ByteArray& data, uint64_t offset = STREAM_POS_CURRENT) = 0;
+    virtual RetVal<StreamId> openStream(const io::path_t &filePath, OpenMode mode) = 0;
+    virtual Ret writeToStream(StreamId fileId, const ByteArray &data, uint64_t offset = STREAM_POS_CURRENT) = 0;
     virtual Ret closeStream(StreamId fileId) = 0;
 
     //! NOTE File info
     virtual io::path_t temporaryDirectoryPath() const = 0;
-    virtual io::path_t canonicalFilePath(const io::path_t& filePath) const = 0;
-    virtual io::path_t absolutePath(const io::path_t& filePath) const = 0;
-    virtual io::path_t absoluteFilePath(const io::path_t& filePath) const = 0;
-    virtual io::path_t cleanPath(const io::path_t& filePath) const = 0;
-    virtual bool isSymLink(const io::path_t& filePath) const = 0;
-    virtual io::path_t symLinkTarget(const io::path_t& filePath) const = 0;
-    virtual DateTime birthTime(const io::path_t& filePath) const = 0;
-    virtual DateTime lastModified(const io::path_t& filePath) const = 0;
-    virtual Ret isWritable(const io::path_t& filePath) const = 0;
+    virtual io::path_t canonicalFilePath(const io::path_t &filePath) const = 0;
+    virtual io::path_t absolutePath(const io::path_t &filePath) const = 0;
+    virtual io::path_t absoluteFilePath(const io::path_t &filePath) const = 0;
+    virtual io::path_t cleanPath(const io::path_t &filePath) const = 0;
+    virtual bool isSymLink(const io::path_t &filePath) const = 0;
+    virtual io::path_t symLinkTarget(const io::path_t &filePath) const = 0;
+    virtual DateTime birthTime(const io::path_t &filePath) const = 0;
+    virtual DateTime lastModified(const io::path_t &filePath) const = 0;
+    virtual Ret isWritable(const io::path_t &filePath) const = 0;
 };
 
 // The engine's file system behind File, Dir, FileInfo and FileStream. These are
 // value types used throughout the engine without an owner to carry a reference,
 // so EngineContext binds its file system here for its lifetime; null outside it.
-IFileSystem* fileSystem();
-void setFileSystem(IFileSystem* fileSystem);
-}
+IFileSystem *fileSystem();
+void setFileSystem(IFileSystem *fileSystem);
+} // namespace muse::io
 
 #endif // MUSE_IO_IFILESYSTEM_H

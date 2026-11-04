@@ -27,16 +27,16 @@ namespace muse::draw {
 struct FData;
 struct GlyphMetrics;
 struct SymbolMetrics;
-class FontFaceFT : public IFontFace
-{
+
+class FontFaceFT : public IFontFace {
 public:
 
     FontFaceFT();
     ~FontFaceFT();
 
-    bool load(const FaceKey& key, const FontData& fontData, bool isSymbolMode) override;
+    bool load(const FaceKey &key, const FontData &fontData, bool isSymbolMode) override;
 
-    const FaceKey& key() const override;
+    const FaceKey &key() const override;
     bool isSymbolMode() const override;
 
     f26dot6_t leading() const override;
@@ -48,24 +48,24 @@ public:
     f26dot6_t underlinePos() const override;
     f26dot6_t lineWidth() const override;
 
-    std::vector<ShapedGlyph> glyphs(const char32_t* text, int text_length) const override;
+    std::vector<ShapedGlyph> glyphs(const char32_t *text, int text_length) const override;
     glyph_idx_t glyphIndex(char32_t ucs4) const override;
-    glyph_idx_t glyphIndex(const std::string& glyphName) const override;
+    glyph_idx_t glyphIndex(const std::string &glyphName) const override;
     char32_t findCharCode(glyph_idx_t idx) const override;
 
     FBBox glyphBbox(glyph_idx_t idx) const override;
     f26dot6_t glyphAdvance(glyph_idx_t idx) const override;
 
-    const GlyphImage& glyphImage(glyph_idx_t idx) const override;
+    const GlyphImage &glyphImage(glyph_idx_t idx) const override;
 
 private:
 
-    GlyphMetrics* glyphMetrics(glyph_idx_t idx) const;
-    SymbolMetrics* symbolMetrics(glyph_idx_t idx) const;
+    GlyphMetrics *glyphMetrics(glyph_idx_t idx) const;
+    SymbolMetrics *symbolMetrics(glyph_idx_t idx) const;
 
     FaceKey m_key;
     bool m_isSymbolMode = false;
-    FData* m_data = nullptr;
+    FData *m_data = nullptr;
     mutable std::unordered_map<glyph_idx_t, GlyphImage> m_cache;
 };
-}
+} // namespace muse::draw

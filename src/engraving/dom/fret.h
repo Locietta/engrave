@@ -30,7 +30,7 @@
 
 namespace muse::io {
 struct path_t;
-}
+} // namespace muse::io
 
 namespace mu::engraving {
 class Chord;
@@ -41,29 +41,19 @@ class Transaction;
 
 // Keep this in order - not used directly for comparisons, but the dots will appear in
 // this order in fret multidot mode. See fretproperties.cpp.
-enum class FretDotType : signed char {
-    NORMAL = 0,
-    CROSS,
-    SQUARE,
-    TRIANGLE = 3
-};
+enum class FretDotType : signed char { NORMAL = 0, CROSS, SQUARE, TRIANGLE = 3 };
 
-enum class FretMarkerType : signed char {
-    NONE,
-    CIRCLE,
-    CROSS
-};
+enum class FretMarkerType : signed char { NONE, CIRCLE, CROSS };
 
-class FretItem
-{
+class FretItem {
 public:
     struct Barre {
         int startString = -1;
         int endString = -1;
 
         Barre() = default;
-        Barre(int s, int e)
-            : startString(s), endString(e) {}
+
+        Barre(int s, int e) : startString(s), endString(e) {}
 
         bool exists() const { return startString > -1; }
     };
@@ -71,13 +61,15 @@ public:
     struct Dot {
         int fret = 0;
         FretDotType dtype = FretDotType::NORMAL;
-        int fingering = 0;     // NOTE:JT - possible future feature?
+        int fingering = 0; // NOTE:JT - possible future feature?
 
         Dot() = default;
+
         Dot(int f, FretDotType t = FretDotType::NORMAL, bool isPartOfSlurBarre = false)
             : fret(f), dtype(t), isPartOfSlurBarre(isPartOfSlurBarre) {}
 
         bool exists() const { return fret > 0; }
+
         bool isPartOfSlurBarre = false;
     };
 
@@ -85,20 +77,20 @@ public:
         FretMarkerType mtype = FretMarkerType::NONE;
 
         Marker() = default;
-        Marker(FretMarkerType t)
-            : mtype(t) {}
+
+        Marker(FretMarkerType t) : mtype(t) {}
 
         bool exists() const { return mtype != FretMarkerType::NONE; }
     };
 
     struct MarkerTypeNameItem {
         FretMarkerType mtype = FretMarkerType::NONE;
-        const char* name = nullptr;
+        const char *name = nullptr;
     };
 
     struct DotTypeNameItem {
         FretDotType dtype = FretDotType::NORMAL;
-        const char* name = nullptr;
+        const char *name = nullptr;
     };
 
     static const std::vector<FretItem::MarkerTypeNameItem> markerTypeNameMap;
@@ -114,7 +106,7 @@ public:
 // The three main storage containers used by fret diagrams
 typedef std::map<int, FretItem::Barre> BarreMap;
 typedef std::map<int, FretItem::Marker> MarkerMap;
-typedef std::map<int, std::vector<FretItem::Dot> > DotMap;
+typedef std::map<int, std::vector<FretItem::Dot>> DotMap;
 
 struct DiagramInfo {
     String harmonyName;
@@ -134,8 +126,7 @@ struct DiagramInfo {
 //   Note that, while strings are zero-indexed, frets are one-indexed
 //---------------------------------------------------------
 
-class FretDiagram final : public EngravingItem
-{
+class FretDiagram final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, FretDiagram)
     DECLARE_CLASSOF(ElementType::FRET_DIAGRAM)
 
@@ -143,22 +134,26 @@ public:
 
     ~FretDiagram();
 
-    EngravingItem* linkedClone() override;
-    FretDiagram* clone() const override { return new FretDiagram(*this); }
+    EngravingItem *linkedClone() override;
 
-    Segment* segment() const;
+    FretDiagram *clone() const override { return new FretDiagram(*this); }
+
+    Segment *segment() const;
 
     String patternFromDiagram() const;
-    std::vector<String> harmoniesFromPattern(const String& pattern) const;
-    std::vector<DiagramInfo> patternsFromHarmony(const String& harmonyName);
+    std::vector<String> harmoniesFromPattern(const String &pattern) const;
+    std::vector<DiagramInfo> patternsFromHarmony(const String &harmonyName);
 
-    void updateDiagram(const String& harmonyName);
+    void updateDiagram(const String &harmonyName);
 
     double mainWidth() const;
 
-    int  strings() const { return m_strings; }
-    int  frets()   const { return m_frets; }
+    int strings() const { return m_strings; }
+
+    int frets() const { return m_frets; }
+
     void setStrings(int n);
+
     void setFrets(int n) { m_frets = n; }
 
     void setDot(int string, int fret, bool add = false, FretDotType dtype = FretDotType::NORMAL);
@@ -176,60 +171,76 @@ public:
     void undoSetFretMarker(int _string, FretMarkerType _mtype);
     void undoSetFretBarre(int _string, int _fret, bool _add = false);
     void undoFretClear();
-    int  fretOffset() const { return m_fretOffset; }
+
+    int fretOffset() const { return m_fretOffset; }
+
     void setFretOffset(int val) { m_fretOffset = val; }
-    int  maxFrets() const { return m_maxFrets; }
+
+    int maxFrets() const { return m_maxFrets; }
+
     void setMaxFrets(int val) { m_maxFrets = val; }
+
     bool showNut() const { return m_showNut; }
+
     void setShowNut(bool val) { m_showNut = val; }
+
     double userMag() const { return m_userMag; }
+
     void setUserMag(double m) { m_userMag = m; }
+
     int numPos() const;
 
     Orientation orientation() const { return m_orientation; }
 
     String harmonyPlainText() const;
     String harmonyDisplayText() const;
-    Harmony* harmony() const { return m_harmony; }
+
+    Harmony *harmony() const { return m_harmony; }
+
     void setHarmony(String harmonyText);
 
     std::vector<FretItem::Dot> dot(int s, int f = 0) const;
     FretItem::Marker marker(int s) const;
     FretItem::Barre barre(int fret) const;
 
-    const BarreMap& barres() const { return m_barres; }
-    const DotMap& dots() const { return m_dots; }
-    const MarkerMap& markers() const { return m_markers; }
+    const BarreMap &barres() const { return m_barres; }
+
+    const DotMap &dots() const { return m_dots; }
+
+    const MarkerMap &markers() const { return m_markers; }
 
     muse::draw::Font fretNumFont() const;
     muse::draw::Font fingeringFont() const;
 
-    void init(StringData*, Chord*);
-    void add(EngravingItem*) override;
-    void remove(EngravingItem*) override;
+    void init(StringData *, Chord *);
+    void add(EngravingItem *) override;
+    void remove(EngravingItem *) override;
 
-    bool acceptDrop(EditData&) const override;
-    EngravingItem* drop(Transaction& tx, EditData&) override;
+    bool acceptDrop(EditData &) const override;
+    EngravingItem *drop(Transaction &tx, EditData &) override;
 
-    void scanElements(std::function<void(EngravingItem*)> func) override;
+    void scanElements(std::function<void(EngravingItem *)> func) override;
 
-    void undoChangeProperty(Pid id, const PropertyValue& v, PropertyFlags ps) override;
+    void undoChangeProperty(Pid id, const PropertyValue &v, PropertyFlags ps) override;
     using EngravingObject::undoChangeProperty;
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid) const override;
 
     void setTrack(track_idx_t val) override;
 
     bool showFingering() const { return m_showFingering; }
+
     void setShowFingering(bool v) { m_showFingering = v; }
-    const std::vector<int>& fingering() const { return m_fingering; }
+
+    const std::vector<int> &fingering() const { return m_fingering; }
+
     void setFingering(std::vector<int> v);
 
-    static FretDiagram* makeFromHarmonyOrFretDiagram(const EngravingItem* harmonyOrFretDiagram);
+    static FretDiagram *makeFromHarmonyOrFretDiagram(const EngravingItem *harmonyOrFretDiagram);
 
     bool isInFretBox() const;
-    bool isCustom(const String& harmonyNameForCompare) const;
+    bool isCustom(const String &harmonyNameForCompare) const;
 
     bool allowTimeAnchor() const override { return ownershipParent() && parent()->isSegment(); }
 
@@ -238,8 +249,8 @@ public:
     struct FingeringItem {
         String fingerNumber;
         PointF pos;
-        FingeringItem(String s, PointF p)
-            : fingerNumber(s), pos(p) {}
+
+        FingeringItem(String s, PointF p) : fingerNumber(s), pos(p) {}
     };
 
     struct LayoutData : public EngravingItem::LayoutData {
@@ -265,9 +276,9 @@ private:
     friend class Factory;
 
     FretDiagram(DummyParentOr<Segment> parent);
-    FretDiagram(const FretDiagram&);
+    FretDiagram(const FretDiagram &);
 
-    void readHarmonyToDiagramFile(const muse::io::path_t& filePath) const;
+    void readHarmonyToDiagramFile(const muse::io::path_t &filePath) const;
 
     void initDefaultValues();
 
@@ -277,7 +288,7 @@ private:
     void removeMarker(int s);
     void removeDotsMarkers(int ss, int es, int fret);
 
-    static void applyDiagramPattern(FretDiagram* diagram, const String& pattern);
+    static void applyDiagramPattern(FretDiagram *diagram, const String &pattern);
 
     int m_strings = 0;
     int m_frets = 0;
@@ -295,9 +306,9 @@ private:
     // Markers stored as K: string, V: marker struct
     MarkerMap m_markers;
 
-    Harmony* m_harmony = nullptr;
+    Harmony *m_harmony = nullptr;
 
-    double m_userMag = 1.0;                 // allowed 0.1 - 10.0
+    double m_userMag = 1.0; // allowed 0.1 - 10.0
 
     bool m_showFingering = false;
     std::vector<int> m_fingering = std::vector<int>(m_strings, 0);

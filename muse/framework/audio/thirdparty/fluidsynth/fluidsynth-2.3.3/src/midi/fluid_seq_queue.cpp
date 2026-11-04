@@ -40,17 +40,13 @@
 // copying of the existing elements to a new memory location."
 typedef std::deque<fluid_event_t> seq_queue_t;
 
-static bool event_compare(const fluid_event_t& left, const fluid_event_t& right)
-{
+static bool event_compare(const fluid_event_t &left, const fluid_event_t &right) {
     bool leftIsBeforeRight;
 
     unsigned int ltime = left.time, rtime = right.time;
-    if(ltime < rtime)
-    {
+    if (ltime < rtime) {
         leftIsBeforeRight = true;
-    }
-    else if (ltime == rtime)
-    {
+    } else if (ltime == rtime) {
         fluid_seq_event_type ltype = static_cast<fluid_seq_event_type>(left.type);
         fluid_seq_event_type rtype = static_cast<fluid_seq_event_type>(right.type);
 
@@ -88,22 +84,23 @@ static bool event_compare(const fluid_event_t& left, const fluid_event_t& right)
         // function in order to satisfy the irreflexive requirement, i.e. assert(!(a < a))
 
         leftIsBeforeRight =
-           // first row in table
-           (ltype == FLUID_SEQ_SYSTEMRESET)
-           // the rtype NOTEON column
-        || (rtype == FLUID_SEQ_NOTEON || rtype == FLUID_SEQ_NOTE)
-           // the second row in table
-        || (rtype != FLUID_SEQ_SYSTEMRESET && ltype == FLUID_SEQ_UNREGISTERING)
-           // the third row in table
-        || (rtype != FLUID_SEQ_SYSTEMRESET && rtype != FLUID_SEQ_UNREGISTERING && ltype == FLUID_SEQ_BANKSELECT)
-           // the fourth row in table
-        || (rtype != FLUID_SEQ_SYSTEMRESET && rtype != FLUID_SEQ_UNREGISTERING && rtype != FLUID_SEQ_BANKSELECT && ltype == FLUID_SEQ_PROGRAMCHANGE)
-           // the bottom right value, i.e. any other type compared to any other type
-        || (ltype != FLUID_SEQ_SYSTEMRESET && ltype != FLUID_SEQ_UNREGISTERING && ltype != FLUID_SEQ_BANKSELECT && ltype != FLUID_SEQ_PROGRAMCHANGE && ltype != FLUID_SEQ_NOTEON && ltype != FLUID_SEQ_NOTE &&
-            rtype != FLUID_SEQ_SYSTEMRESET && rtype != FLUID_SEQ_UNREGISTERING && rtype != FLUID_SEQ_BANKSELECT && rtype != FLUID_SEQ_PROGRAMCHANGE && rtype != FLUID_SEQ_NOTEON && rtype != FLUID_SEQ_NOTE);
-    }
-    else
-    {
+            // first row in table
+            (ltype == FLUID_SEQ_SYSTEMRESET)
+            // the rtype NOTEON column
+            || (rtype == FLUID_SEQ_NOTEON || rtype == FLUID_SEQ_NOTE)
+            // the second row in table
+            || (rtype != FLUID_SEQ_SYSTEMRESET && ltype == FLUID_SEQ_UNREGISTERING)
+            // the third row in table
+            || (rtype != FLUID_SEQ_SYSTEMRESET && rtype != FLUID_SEQ_UNREGISTERING && ltype == FLUID_SEQ_BANKSELECT)
+            // the fourth row in table
+            || (rtype != FLUID_SEQ_SYSTEMRESET && rtype != FLUID_SEQ_UNREGISTERING && rtype != FLUID_SEQ_BANKSELECT &&
+                ltype == FLUID_SEQ_PROGRAMCHANGE)
+            // the bottom right value, i.e. any other type compared to any other type
+            || (ltype != FLUID_SEQ_SYSTEMRESET && ltype != FLUID_SEQ_UNREGISTERING && ltype != FLUID_SEQ_BANKSELECT &&
+                ltype != FLUID_SEQ_PROGRAMCHANGE && ltype != FLUID_SEQ_NOTEON && ltype != FLUID_SEQ_NOTE &&
+                rtype != FLUID_SEQ_SYSTEMRESET && rtype != FLUID_SEQ_UNREGISTERING && rtype != FLUID_SEQ_BANKSELECT &&
+                rtype != FLUID_SEQ_PROGRAMCHANGE && rtype != FLUID_SEQ_NOTEON && rtype != FLUID_SEQ_NOTE);
+    } else {
         leftIsBeforeRight = false;
     }
 
@@ -112,73 +109,49 @@ static bool event_compare(const fluid_event_t& left, const fluid_event_t& right)
     return !leftIsBeforeRight;
 }
 
-int event_compare_for_test(const fluid_event_t* left, const fluid_event_t* right)
-{
-    return event_compare(*left, *right);
-}
+int event_compare_for_test(const fluid_event_t *left, const fluid_event_t *right) { return event_compare(*left, *right); }
 
-void* new_fluid_seq_queue(int nb_events)
-{
-    try
-    {
+void *new_fluid_seq_queue(int nb_events) {
+    try {
         // As workaround for a missing deque::reserve(), allocate a deque with a size of nb_events
-        seq_queue_t* queue = new seq_queue_t(nb_events);
+        seq_queue_t *queue = new seq_queue_t(nb_events);
         // and clear the queue again
         queue->clear();
         // C++11 introduced a deque::shrink_to_fit(), so hopefully not calling shrink_to_fit() will
         // leave the previously used memory allocated, avoiding reallocation for subsequent insertions.
 
         return queue;
-    }
-    catch(...)
-    {
+    } catch (...) {
         return 0;
     }
 }
 
-void delete_fluid_seq_queue(void *que)
-{
-    delete static_cast<seq_queue_t*>(que);
-}
+void delete_fluid_seq_queue(void *que) { delete static_cast<seq_queue_t *>(que); }
 
-int fluid_seq_queue_push(void *que, const fluid_event_t *evt)
-{
-    try
-    {
-        seq_queue_t& queue = *static_cast<seq_queue_t*>(que);
+int fluid_seq_queue_push(void *que, const fluid_event_t *evt) {
+    try {
+        seq_queue_t &queue = *static_cast<seq_queue_t *>(que);
 
         queue.push_back(*evt);
         std::push_heap(queue.begin(), queue.end(), event_compare);
 
         return FLUID_OK;
-    }
-    catch(...)
-    {
+    } catch (...) {
         return FLUID_FAILED;
     }
 }
 
-void fluid_seq_queue_remove(void *que, fluid_seq_id_t src, fluid_seq_id_t dest, int type)
-{
-    seq_queue_t& queue = *static_cast<seq_queue_t*>(que);
+void fluid_seq_queue_remove(void *que, fluid_seq_id_t src, fluid_seq_id_t dest, int type) {
+    seq_queue_t &queue = *static_cast<seq_queue_t *>(que);
 
-    if(src == -1 && dest == -1 && type == -1)
-    {
+    if (src == -1 && dest == -1 && type == -1) {
         // shortcut for deleting everything
         queue.clear();
-    }
-    else
-    {
-        for (seq_queue_t::iterator it = queue.begin(); it != queue.end();)
-        {
-            if((src == -1 || it->src == src) &&
-            (dest == -1 || it->dest == dest) &&
-            (type == -1 || it->type == type))
-            {
+    } else {
+        for (seq_queue_t::iterator it = queue.begin(); it != queue.end();) {
+            if ((src == -1 || it->src == src) && (dest == -1 || it->dest == dest) && (type == -1 || it->type == type)) {
                 it = queue.erase(it);
-            }
-            else
-            {
+            } else {
                 ++it;
             }
         }
@@ -187,27 +160,20 @@ void fluid_seq_queue_remove(void *que, fluid_seq_id_t src, fluid_seq_id_t dest, 
     }
 }
 
-void fluid_seq_queue_invalidate_note_private(void *que, fluid_seq_id_t dest, fluid_note_id_t id)
-{
-    seq_queue_t& queue = *static_cast<seq_queue_t*>(que);
+void fluid_seq_queue_invalidate_note_private(void *que, fluid_seq_id_t dest, fluid_note_id_t id) {
+    seq_queue_t &queue = *static_cast<seq_queue_t *>(que);
 
     seq_queue_t::iterator event_to_invalidate = queue.end();
     unsigned int earliest_noteoff_tick = std::numeric_limits<unsigned int>::max();
 
-    for (seq_queue_t::iterator it = queue.begin(); it != queue.end(); it++)
-    {
-        if((it->dest == dest) &&
-        (it->type == FLUID_SEQ_NOTEOFF) &&
-        (it->id == id) &&
-        (it->time < earliest_noteoff_tick))
-        {
+    for (seq_queue_t::iterator it = queue.begin(); it != queue.end(); it++) {
+        if ((it->dest == dest) && (it->type == FLUID_SEQ_NOTEOFF) && (it->id == id) && (it->time < earliest_noteoff_tick)) {
             earliest_noteoff_tick = it->time;
             event_to_invalidate = it;
         }
     }
 
-    if(event_to_invalidate != queue.end())
-    {
+    if (event_to_invalidate != queue.end()) {
         // Invalidate the event, by setting invalidating its destination.
         // Instead, removing the event from the queue would mess up the heap structure. We would need to
         // make_heap again, which costs time, etc...
@@ -215,22 +181,18 @@ void fluid_seq_queue_invalidate_note_private(void *que, fluid_seq_id_t dest, flu
     }
 }
 
-static void fluid_seq_queue_pop(seq_queue_t &queue)
-{
+static void fluid_seq_queue_pop(seq_queue_t &queue) {
     std::pop_heap(queue.begin(), queue.end(), event_compare);
     queue.pop_back();
 }
 
-void fluid_seq_queue_process(void *que, fluid_sequencer_t *seq, unsigned int cur_ticks)
-{
-    seq_queue_t& queue = *static_cast<seq_queue_t*>(que);
+void fluid_seq_queue_process(void *que, fluid_sequencer_t *seq, unsigned int cur_ticks) {
+    seq_queue_t &queue = *static_cast<seq_queue_t *>(que);
 
-    while(!queue.empty())
-    {
+    while (!queue.empty()) {
         // Get the top most event.
-        const fluid_event_t& top = queue.front();
-        if(top.time <= cur_ticks)
-        {
+        const fluid_event_t &top = queue.front();
+        if (top.time <= cur_ticks) {
             // First, copy it to a local buffer.
             // This is required because the content of the queue should be read-only to the client,
             // however, most client function receive a non-const fluid_event_t pointer
@@ -240,11 +202,8 @@ void fluid_seq_queue_process(void *que, fluid_sequencer_t *seq, unsigned int cur
             // messing up the heap structure while we are still processing
             fluid_seq_queue_pop(queue);
             fluid_sequencer_send_now(seq, &local_evt);
-        }
-        else
-        {
+        } else {
             break;
         }
     }
 }
-

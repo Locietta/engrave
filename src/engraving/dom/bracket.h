@@ -36,8 +36,7 @@ enum class InstrumentNameType : char;
 //   @@ Bracket
 //---------------------------------------------------------
 
-class Bracket final : public EngravingItem
-{
+class Bracket final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, Bracket)
     DECLARE_CLASSOF(ElementType::BRACKET)
 
@@ -45,67 +44,77 @@ public:
 
     ~Bracket();
 
-    Bracket* clone() const override { return new Bracket(*this); }
+    Bracket *clone() const override { return new Bracket(*this); }
 
-    void scanElements(std::function<void(EngravingItem*)> func) override;
+    void scanElements(std::function<void(EngravingItem *)> func) override;
 
-    void setBracketItem(BracketItem* i) { m_bi = i; }
-    BracketItem* bracketItem() const { return m_bi; }
+    void setBracketItem(BracketItem *i) { m_bi = i; }
+
+    BracketItem *bracketItem() const { return m_bi; }
 
     BracketType bracketType() const { return m_bi->bracketType(); }
 
     int subtype() const override { return int(bracketType()); }
+
     TranslatableString subtypeUserName() const override;
 
     size_t firstStaff() const { return m_firstStaff; }
+
     size_t lastStaff() const { return m_lastStaff; }
+
     void setStaffSpan(size_t a, size_t b);
 
     InstrumentNameType labelType() const { return m_labelType; }
+
     void setLabelType(InstrumentNameType t) { m_labelType = t; }
 
     SymId braceSymbol() const { return m_braceSymbol; }
-    void setBraceSymbol(const SymId& sym) { m_braceSymbol = sym; }
+
+    void setBraceSymbol(const SymId &sym) { m_braceSymbol = sym; }
+
     size_t column() const { return m_bi->column(); }
+
     size_t span() const { return m_bi->bracketSpan(); }
+
     double magx() const { return m_magx; }
 
-    System* system() const { return (System*)ownershipParent(); }
+    System *system() const { return (System *) ownershipParent(); }
 
-    Measure* measure() const { return m_measure; }
-    void setMeasure(Measure* measure) { m_measure = measure; }
+    Measure *measure() const { return m_measure; }
 
-    const BracketItem* bi() const { return m_bi; }
+    void setMeasure(Measure *measure) { m_measure = measure; }
 
+    const BracketItem *bi() const { return m_bi; }
 
     Color color() const override { return m_bi->color(); }
 
-    bool acceptDrop(EditData&) const override;
-    EngravingItem* drop(Transaction& tx, EditData&) override;
+    bool acceptDrop(EditData &) const override;
+    EngravingItem *drop(Transaction &tx, EditData &) override;
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid) const override;
 
-    void undoChangeProperty(Pid id, const PropertyValue& v, PropertyFlags ps) override;
+    void undoChangeProperty(Pid id, const PropertyValue &v, PropertyFlags ps) override;
     using EngravingObject::undoChangeProperty;
 
     Fraction tick() const override;
 
     void setSelected(bool f) override;
 
-    Text* text() const { return m_text; }
-    void setText(Text* t) { m_text = t; }
+    Text *text() const { return m_text; }
 
-    bool intersects(const Bracket* other) const;
+    void setText(Text *t) { m_text = t; }
+
+    bool intersects(const Bracket *other) const;
     bool contains(staff_idx_t staffIdx) const;
 
     struct LayoutData : public EngravingItem::LayoutData {
         SymId braceSymbol = SymId::noSym;
         PainterPath path;
         Shape shape;
-        ld_field<double> bracketHeight = { "[Bracket] bracketHeight", 0.0 };
-        ld_field<double> bracketWidth = { "[Bracket] bracketWidth", 0.0 };
+        ld_field<double> bracketHeight = {"[Bracket] bracketHeight", 0.0};
+        ld_field<double> bracketWidth = {"[Bracket] bracketWidth", 0.0};
 
         double h2(LD_ACCESS mode = LD_ACCESS::CHECK) const { return bracketHeight.value(mode) * 0.5; }
     };
@@ -116,7 +125,7 @@ private:
 
     Bracket(DummyParentOr<EngravingItem> parent);
 
-    BracketItem* m_bi = nullptr;
+    BracketItem *m_bi = nullptr;
     double m_ay1 = 0.0;
 
     size_t m_firstStaff = 0;
@@ -129,8 +138,8 @@ private:
     // horizontal scaling factor for brace symbol. Cannot be equal to magY or depend on h
     // because layout needs width of brace before knowing height of system...
     double m_magx = 0.0;
-    Measure* m_measure = nullptr;
+    Measure *m_measure = nullptr;
 
-    Text* m_text = nullptr;
+    Text *m_text = nullptr;
 };
-}
+} // namespace mu::engraving

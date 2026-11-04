@@ -27,38 +27,37 @@
 #include "measurebase.h"
 
 namespace mu::engraving {
-class RangeLock
-{
+class RangeLock {
 public:
-    RangeLock(MeasureBase* start, MeasureBase* end)
-        : m_startMB(start), m_endMB(end)
-    {
+    RangeLock(MeasureBase *start, MeasureBase *end) : m_startMB(start), m_endMB(end) {
         assert(m_startMB->isBefore(m_endMB) || m_startMB == m_endMB);
     }
 
-    MeasureBase* startMB() const { return m_startMB; }
-    MeasureBase* endMB() const { return m_endMB; }
+    MeasureBase *startMB() const { return m_startMB; }
 
-    bool contains(const MeasureBase* mb) const;
+    MeasureBase *endMB() const { return m_endMB; }
+
+    bool contains(const MeasureBase *mb) const;
 
 private:
-    MeasureBase* m_startMB;
-    MeasureBase* m_endMB;
+    MeasureBase *m_startMB;
+    MeasureBase *m_endMB;
 };
 
-class RangeLocks
-{
+class RangeLocks {
 public:
-    void add(const RangeLock* lock);
-    void remove(const RangeLock* lock);
-    void removeLockStartingAt(const MeasureBase* mb) { m_rangeLocks.erase(mb); }
+    void add(const RangeLock *lock);
+    void remove(const RangeLock *lock);
+
+    void removeLockStartingAt(const MeasureBase *mb) { m_rangeLocks.erase(mb); }
+
     void clear() { m_rangeLocks.clear(); }
 
-    const RangeLock* lockStartingAt(const MeasureBase* mb) const;
-    const RangeLock* lockContaining(const MeasureBase* mb) const;
-    std::vector<const RangeLock*> locksContainedInRange(const MeasureBase* start, const MeasureBase* end) const;
+    const RangeLock *lockStartingAt(const MeasureBase *mb) const;
+    const RangeLock *lockContaining(const MeasureBase *mb) const;
+    std::vector<const RangeLock *> locksContainedInRange(const MeasureBase *start, const MeasureBase *end) const;
 
-    std::vector<const RangeLock*> allLocks() const;
+    std::vector<const RangeLock *> allLocks() const;
 
 private:
 #ifndef NDEBUG
@@ -66,14 +65,10 @@ private:
     void dump() const;
 #endif
 
-    struct Ordering
-    {
-        bool operator()(const MeasureBase* a, const MeasureBase* b) const
-        {
-            return a->isBefore(b);
-        }
+    struct Ordering {
+        bool operator()(const MeasureBase *a, const MeasureBase *b) const { return a->isBefore(b); }
     };
 
-    std::map<const MeasureBase*, const RangeLock*, Ordering> m_rangeLocks;
+    std::map<const MeasureBase *, const RangeLock *, Ordering> m_rangeLocks;
 };
 } // namespace mu::engraving

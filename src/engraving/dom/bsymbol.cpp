@@ -42,18 +42,14 @@ namespace mu::engraving {
 //   BSymbol
 //---------------------------------------------------------
 
-BSymbol::BSymbol(const ElementType& type, EngravingObject* parent, ElementFlags f)
-    : EngravingItem(type, parent, f)
-{
-    m_align = { AlignH::LEFT, AlignV::BASELINE };
+BSymbol::BSymbol(const ElementType &type, EngravingObject *parent, ElementFlags f) : EngravingItem(type, parent, f) {
+    m_align = {AlignH::LEFT, AlignV::BASELINE};
 }
 
-BSymbol::BSymbol(const BSymbol& s)
-    : EngravingItem(s)
-{
+BSymbol::BSymbol(const BSymbol &s) : EngravingItem(s) {
     m_align = s.m_align;
-    for (EngravingItem* e : s.m_leafs) {
-        EngravingItem* ee = e->clone();
+    for (EngravingItem *e : s.m_leafs) {
+        EngravingItem *ee = e->clone();
         ee->setOwnershipParent(this);
         m_leafs.push_back(ee);
     }
@@ -63,13 +59,12 @@ BSymbol::BSymbol(const BSymbol& s)
 //   add
 //---------------------------------------------------------
 
-void BSymbol::add(EngravingItem* e)
-{
+void BSymbol::add(EngravingItem *e) {
     if (e->isSymbol() || e->isImage()) {
         e->setOwnershipParent(this);
         e->setTrack(track());
         m_leafs.push_back(e);
-        toBSymbol(e)->setZ(z() - 1);        // draw on top of parent
+        toBSymbol(e)->setZ(z() - 1); // draw on top of parent
         e->added();
     } else {
         LOGD("BSymbol::add: unsupported type %s", e->typeName());
@@ -80,10 +75,9 @@ void BSymbol::add(EngravingItem* e)
 //   scanElements
 //---------------------------------------------------------
 
-void BSymbol::scanElements(std::function<void(EngravingItem*)> func)
-{
+void BSymbol::scanElements(std::function<void(EngravingItem *)> func) {
     func(this);
-    for (EngravingItem* e : m_leafs) {
+    for (EngravingItem *e : m_leafs) {
         e->scanElements(func);
     }
 }
@@ -92,8 +86,7 @@ void BSymbol::scanElements(std::function<void(EngravingItem*)> func)
 //   remove
 //---------------------------------------------------------
 
-void BSymbol::remove(EngravingItem* e)
-{
+void BSymbol::remove(EngravingItem *e) {
     if (e->isSymbol() || e->isImage()) {
         if (muse::remove(m_leafs, e)) {
             e->removed();
@@ -109,18 +102,14 @@ void BSymbol::remove(EngravingItem* e)
 //   acceptDrop
 //---------------------------------------------------------
 
-bool BSymbol::acceptDrop(EditData& data) const
-{
-    return data.dropElement->isSymbol() || data.dropElement->isImage();
-}
+bool BSymbol::acceptDrop(EditData &data) const { return data.dropElement->isSymbol() || data.dropElement->isImage(); }
 
 //---------------------------------------------------------
 //   drop
 //---------------------------------------------------------
 
-EngravingItem* BSymbol::drop(Transaction&, EditData& data)
-{
-    EngravingItem* el = data.dropElement;
+EngravingItem *BSymbol::drop(Transaction &, EditData &data) {
+    EngravingItem *el = data.dropElement;
     if (el->isSymbol() || el->isImage()) {
         el->setOwnershipParent(this);
         PointF p = data.pos - pageBoundingRect().topLeft() - data.dragOffset;
@@ -141,11 +130,10 @@ EngravingItem* BSymbol::drop(Transaction&, EditData& data)
 //   pagePos
 //---------------------------------------------------------
 
-PointF BSymbol::pagePos() const
-{
+PointF BSymbol::pagePos() const {
     if (ownershipParent() && (ownershipParent()->isSegment())) {
         PointF p(pos());
-        System* system = segment()->measure()->system();
+        System *system = segment()->measure()->system();
         if (system) {
             p.ry() += system->staff(staffIdx())->y() + system->y();
         }
@@ -160,17 +148,16 @@ PointF BSymbol::pagePos() const
 //   canvasPos
 //---------------------------------------------------------
 
-PointF BSymbol::canvasPos() const
-{
+PointF BSymbol::canvasPos() const {
     if (ownershipParent() && (ownershipParent()->isSegment())) {
         PointF p(pos());
-        Segment* s = toSegment(ownershipParent());
+        Segment *s = toSegment(ownershipParent());
 
-        System* system = s->measure()->system();
+        System *system = s->measure()->system();
         if (system) {
             staff_idx_t si = staffIdx();
             p.ry() += system->staff(si)->y() + system->y();
-            Page* page = system->page();
+            Page *page = system->page();
             if (page) {
                 p.ry() += page->y();
             }
@@ -181,4 +168,4 @@ PointF BSymbol::canvasPos() const
         return EngravingItem::canvasPos();
     }
 }
-}
+} // namespace mu::engraving

@@ -30,26 +30,26 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class XmlReader : public muse::XmlStreamReader
-{
+class XmlReader : public muse::XmlStreamReader {
 public:
 
     XmlReader() = default;
-    XmlReader(const muse::ByteArray& d)
-        : XmlStreamReader(d) {}
-    XmlReader(muse::io::IODevice* d)
-        : XmlStreamReader(d) {}
 
+    XmlReader(const muse::ByteArray &d) : XmlStreamReader(d) {}
 
-    XmlReader(const XmlReader&) = delete;
-    XmlReader& operator=(const XmlReader&) = delete;
+    XmlReader(muse::io::IODevice *d) : XmlStreamReader(d) {}
+
+    XmlReader(const XmlReader &) = delete;
+    XmlReader &operator=(const XmlReader &) = delete;
 
     ~XmlReader();
 
     void unknown();
 
     bool readBool() { return XmlStreamReader::readInt(); }
-    double readDouble(bool* ok = nullptr) { return XmlStreamReader::readDouble(ok); }
+
+    double readDouble(bool *ok = nullptr) { return XmlStreamReader::readDouble(ok); }
+
     double readDouble(double min, double max);
 
     PointF readPoint();
@@ -60,7 +60,8 @@ public:
     Fraction readFraction();
     String readXml();
 
-    void setDocName(const String& s) { m_docName = s; }
+    void setDocName(const String &s) { m_docName = s; }
+
     String docName() const { return m_docName; }
 
     // for reading old files (< 3.01)
@@ -68,9 +69,9 @@ public:
 
 private:
 
-    void htmlToString(int level, String*);
+    void htmlToString(int level, String *);
 
-    String m_docName;    // used for error reporting
+    String m_docName; // used for error reporting
     int64_t m_byteOffsetAdjustment = 0;
 };
-}
+} // namespace mu::engraving

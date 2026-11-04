@@ -9,23 +9,23 @@ namespace muse::audio::engine {
 // The former offline ContextPlayer stayed stopped: control/FX time is zero.
 class OfflineRenderSession {
 public:
-    OfflineRenderSession(IAudioFactory& factory, const OutputSpec& spec);
+    OfflineRenderSession(IAudioFactory &factory, const OutputSpec &spec);
     ~OfflineRenderSession();
-    OfflineRenderSession(const OfflineRenderSession&) = delete;
-    OfflineRenderSession& operator=(const OfflineRenderSession&) = delete;
-    RetVal2<TrackId, TrackParams> addTrack(const std::string& name,
-        const mpe::PlaybackData& data, const TrackParams& params);
-    RetVal2<TrackId, TrackParams> addAuxTrack(const std::string& name, const TrackParams& params);
+    OfflineRenderSession(const OfflineRenderSession &) = delete;
+    OfflineRenderSession &operator=(const OfflineRenderSession &) = delete;
+    RetVal2<TrackId, TrackParams> addTrack(const std::string &name, const mpe::PlaybackData &data, const TrackParams &params);
+    RetVal2<TrackId, TrackParams> addAuxTrack(const std::string &name, const TrackParams &params);
+
     IAudioNodePtr output() const { return m_master; }
+
     void resetSources();
 private:
-    RetVal2<TrackId, TrackParams> add(const std::string& name,
-        const mpe::PlaybackData* data, const TrackParams& params);
-    IAudioFactory& m_factory;
+    RetVal2<TrackId, TrackParams> add(const std::string &name, const mpe::PlaybackData *data, const TrackParams &params);
+    IAudioFactory &m_factory;
     OutputSpec m_spec;
     std::shared_ptr<Mixer> m_mixer;
     TrackChainPtr m_master;
     std::vector<TrackChainPtr> m_tracks;
     TrackId m_lastId = MASTER_TRACK_ID;
 };
-}
+} // namespace muse::audio::engine

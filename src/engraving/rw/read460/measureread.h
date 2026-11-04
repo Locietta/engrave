@@ -26,16 +26,15 @@
 
 namespace mu::engraving {
 class Measure;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::read460 {
-class MeasureRead
-{
+class MeasureRead {
 public:
 
-    static void readMeasure(Measure* measure, XmlReader& xml, ReadContext& ctx, int staffIdx);
+    static void readMeasure(Measure *measure, XmlReader &xml, ReadContext &ctx, int staffIdx);
 
 private:
-    static void readVoice(Measure* measure, XmlReader& e, ReadContext& ctx, int staffIdx, bool irregular);
+    static void readVoice(Measure *measure, XmlReader &e, ReadContext &ctx, int staffIdx, bool irregular);
 };
-}
+} // namespace mu::engraving::read460

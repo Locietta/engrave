@@ -27,13 +27,10 @@
 using namespace mu::engraving;
 using namespace muse;
 
-void ArpeggioMetaParser::doParse(const EngravingItem* item, const RenderingContext& ctx, mpe::ArticulationMap& result)
-{
-    IF_ASSERT_FAILED(item->isArpeggio()) {
-        return;
-    }
+void ArpeggioMetaParser::doParse(const EngravingItem *item, const RenderingContext &ctx, mpe::ArticulationMap &result) {
+    IF_ASSERT_FAILED(item->isArpeggio()) { return; }
 
-    const Arpeggio* arpeggio = toArpeggio(item);
+    const Arpeggio *arpeggio = toArpeggio(item);
 
     if (!arpeggio->playArpeggio()) {
         return;
@@ -42,30 +39,19 @@ void ArpeggioMetaParser::doParse(const EngravingItem* item, const RenderingConte
     mpe::ArticulationType type = mpe::ArticulationType::Undefined;
 
     switch (arpeggio->arpeggioType()) {
-    case ArpeggioType::NORMAL:
-        type = mpe::ArticulationType::Arpeggio;
-        break;
-    case ArpeggioType::UP:
-        type = mpe::ArticulationType::ArpeggioUp;
-        break;
-    case ArpeggioType::DOWN:
-        type = mpe::ArticulationType::ArpeggioDown;
-        break;
-    case ArpeggioType::DOWN_STRAIGHT:
-        type = mpe::ArticulationType::ArpeggioStraightDown;
-        break;
-    case ArpeggioType::UP_STRAIGHT:
-        type = mpe::ArticulationType::ArpeggioStraightUp;
-        break;
-    default:
-        break;
+        case ArpeggioType::NORMAL: type = mpe::ArticulationType::Arpeggio; break;
+        case ArpeggioType::UP: type = mpe::ArticulationType::ArpeggioUp; break;
+        case ArpeggioType::DOWN: type = mpe::ArticulationType::ArpeggioDown; break;
+        case ArpeggioType::DOWN_STRAIGHT: type = mpe::ArticulationType::ArpeggioStraightDown; break;
+        case ArpeggioType::UP_STRAIGHT: type = mpe::ArticulationType::ArpeggioStraightUp; break;
+        default: break;
     }
 
     if (type == mpe::ArticulationType::Undefined) {
         return;
     }
 
-    const mpe::ArticulationPattern& pattern = ctx.profile->pattern(type);
+    const mpe::ArticulationPattern &pattern = ctx.profile->pattern(type);
     if (pattern.empty()) {
         return;
     }

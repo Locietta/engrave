@@ -27,69 +27,41 @@
 
 using namespace mu::engraving;
 
-Parenthesis::Parenthesis(DummyParentOr<EngravingItem> parent)
-    : EngravingItem(ElementType::PARENTHESIS, parent, ElementFlag::MOVABLE)
-{
-}
+Parenthesis::Parenthesis(DummyParentOr<EngravingItem> parent) : EngravingItem(ElementType::PARENTHESIS, parent, ElementFlag::MOVABLE) {}
 
-Parenthesis::Parenthesis(const Parenthesis& p)
-    : EngravingItem(p)
-{
-    _direction = p._direction;
-}
+Parenthesis::Parenthesis(const Parenthesis &p) : EngravingItem(p) { _direction = p._direction; }
 
-PropertyValue Parenthesis::getProperty(Pid pid) const
-{
+PropertyValue Parenthesis::getProperty(Pid pid) const {
     switch (pid) {
-    case Pid::HORIZONTAL_DIRECTION:
-        return direction();
-    default:
-        return EngravingItem::getProperty(pid);
+        case Pid::HORIZONTAL_DIRECTION: return direction();
+        default: return EngravingItem::getProperty(pid);
     }
 }
 
-bool Parenthesis::setProperty(Pid pid, const PropertyValue& v)
-{
+bool Parenthesis::setProperty(Pid pid, const PropertyValue &v) {
     switch (pid) {
-    case Pid::HORIZONTAL_DIRECTION:
-        setDirection(v.value<DirectionH>());
-        break;
-    default:
-        return EngravingItem::setProperty(pid, v);
+        case Pid::HORIZONTAL_DIRECTION: setDirection(v.value<DirectionH>()); break;
+        default: return EngravingItem::setProperty(pid, v);
     }
 
     return true;
 }
 
-PropertyValue Parenthesis::propertyDefault(Pid pid) const
-{
+PropertyValue Parenthesis::propertyDefault(Pid pid) const {
     switch (pid) {
-    case Pid::HORIZONTAL_DIRECTION:
-        return DirectionH::LEFT;
-    default:
-        return EngravingItem::propertyDefault(pid);
+        case Pid::HORIZONTAL_DIRECTION: return DirectionH::LEFT;
+        default: return EngravingItem::propertyDefault(pid);
     }
 }
 
+bool Parenthesis::followParentCurColor() const { return m_followParentColor; }
 
+void Parenthesis::setFollowParentColor(bool val) { m_followParentColor = val; }
 
-bool Parenthesis::followParentCurColor() const
-{
-    return m_followParentColor;
-}
-
-void Parenthesis::setFollowParentColor(bool val)
-{
-    m_followParentColor = val;
-}
-
-Color Parenthesis::curColor(const rendering::PaintOptions& opt) const
-{
+Color Parenthesis::curColor(const rendering::PaintOptions &opt) const {
     if (m_followParentColor) {
         return layoutParent()->curColor(opt);
     }
 
-    return EngravingItem::curColor(getProperty(Pid::VISIBLE).toBool(),
-                                   getProperty(Pid::COLOR).value<Color>(),
-                                   opt);
+    return EngravingItem::curColor(getProperty(Pid::VISIBLE).toBool(), getProperty(Pid::COLOR).value<Color>(), opt);
 }

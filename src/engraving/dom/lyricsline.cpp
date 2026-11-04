@@ -41,39 +41,28 @@ namespace mu::engraving {
 //   LyricsLine
 //---------------------------------------------------------
 
-static const ElementStyle lyricsLineElementStyle {
-    { Sid::lyricsDashLineThickness, Pid::LINE_WIDTH }
-};
+static const ElementStyle lyricsLineElementStyle{{Sid::lyricsDashLineThickness, Pid::LINE_WIDTH}};
 
-LyricsLine::LyricsLine(DummyParentOr<EngravingItem> parent)
-    : SLine(ElementType::LYRICSLINE, parent)
-{
+LyricsLine::LyricsLine(DummyParentOr<EngravingItem> parent) : SLine(ElementType::LYRICSLINE, parent) {
     setDiagonal(false);
     initElementStyle(&lyricsLineElementStyle);
     m_nextLyrics = 0;
 }
 
-LyricsLine::LyricsLine(const ElementType& type, DummyParentOr<EngravingItem> parent, ElementFlags f)
-    : SLine(type, parent, f)
-{
+LyricsLine::LyricsLine(const ElementType &type, DummyParentOr<EngravingItem> parent, ElementFlags f) : SLine(type, parent, f) {
     setDiagonal(false);
     initElementStyle(&lyricsLineElementStyle);
     m_nextLyrics = 0;
 }
 
-LyricsLine::LyricsLine(const LyricsLine& g)
-    : SLine(g)
-{
-    m_nextLyrics = 0;
-}
+LyricsLine::LyricsLine(const LyricsLine &g) : SLine(g) { m_nextLyrics = 0; }
 
 //---------------------------------------------------------
 //   createLineSegment
 //---------------------------------------------------------
 
-LineSegment* LyricsLine::createLineSegment()
-{
-    LyricsLineSegment* seg = new LyricsLineSegment(this);
+LineSegment *LyricsLine::createLineSegment() {
+    LyricsLineSegment *seg = new LyricsLineSegment(this);
     seg->setTrack(track());
     seg->setColor(color());
     return seg;
@@ -84,8 +73,7 @@ LineSegment* LyricsLine::createLineSegment()
 //    same as Spanner::removeUnmanaged(), but in addition, remove from hosting Lyrics
 //---------------------------------------------------------
 
-void LyricsLine::removeUnmanaged()
-{
+void LyricsLine::removeUnmanaged() {
     Spanner::removeUnmanaged();
     if (lyrics()) {
         lyrics()->remove(this);
@@ -96,42 +84,34 @@ void LyricsLine::removeUnmanaged()
 //   setProperty
 //---------------------------------------------------------
 
-bool LyricsLine::setProperty(Pid propertyId, const engraving::PropertyValue& v)
-{
+bool LyricsLine::setProperty(Pid propertyId, const engraving::PropertyValue &v) {
     switch (propertyId) {
-    case Pid::SPANNER_TICKS:
-    {
-        // if parent lyrics has a melisma, change its length too
-        if (ownershipParent() && ownershipParent()->isLyrics()
-            && isEndMelisma()) {
-            Fraction newTicks   = toLyrics(ownershipParent())->ticks() + v.value<Fraction>() - ticks();
-            ownershipParent()->undoChangeProperty(Pid::LYRIC_TICKS, newTicks);
-        }
-        setTicks(v.value<Fraction>());
-    }
-    break;
-    default:
-        if (!SLine::setProperty(propertyId, v)) {
-            return false;
-        }
-        break;
+        case Pid::SPANNER_TICKS: {
+            // if parent lyrics has a melisma, change its length too
+            if (ownershipParent() && ownershipParent()->isLyrics() && isEndMelisma()) {
+                Fraction newTicks = toLyrics(ownershipParent())->ticks() + v.value<Fraction>() - ticks();
+                ownershipParent()->undoChangeProperty(Pid::LYRIC_TICKS, newTicks);
+            }
+            setTicks(v.value<Fraction>());
+        } break;
+        default:
+            if (!SLine::setProperty(propertyId, v)) {
+                return false;
+            }
+            break;
     }
     triggerLayout();
     return true;
 }
 
-PropertyValue LyricsLine::propertyDefault(Pid id) const
-{
+PropertyValue LyricsLine::propertyDefault(Pid id) const {
     switch (id) {
-    case Pid::LINE_WIDTH:
-        return styleValue(Pid::LINE_WIDTH, getPropertyStyle(Pid::LINE_WIDTH));
-    default:
-        return SLine::propertyDefault(id);
+        case Pid::LINE_WIDTH: return styleValue(Pid::LINE_WIDTH, getPropertyStyle(Pid::LINE_WIDTH));
+        default: return SLine::propertyDefault(id);
     }
 }
 
-Sid LyricsLine::getPropertyStyle(Pid propertyId) const
-{
+Sid LyricsLine::getPropertyStyle(Pid propertyId) const {
     if (propertyId == Pid::LINE_WIDTH) {
         return isEndMelisma() ? Sid::lyricsLineThickness : Sid::lyricsDashLineThickness;
     }
@@ -139,8 +119,7 @@ Sid LyricsLine::getPropertyStyle(Pid propertyId) const
     return SLine::getPropertyStyle(propertyId);
 }
 
-void LyricsLine::doComputeEndElement()
-{
+void LyricsLine::doComputeEndElement() {
     if (!isEndMelisma()) {
         Spanner::doComputeEndElement();
         return;
@@ -157,55 +136,44 @@ void LyricsLine::doComputeEndElement()
 //   LyricsLineSegment
 //=========================================================
 
-LyricsLineSegment::LyricsLineSegment(LyricsLine* sp)
-    : LineSegment(ElementType::LYRICSLINE_SEGMENT, sp, ElementFlag::ON_STAFF)
-{
-}
+LyricsLineSegment::LyricsLineSegment(LyricsLine *sp) : LineSegment(ElementType::LYRICSLINE_SEGMENT, sp, ElementFlag::ON_STAFF) {}
 
-LyricsLineSegment::LyricsLineSegment(const ElementType& type, LyricsLine* sp, ElementFlags f)
-    : LineSegment(type, sp, f)
-{
-}
+LyricsLineSegment::LyricsLineSegment(const ElementType &type, LyricsLine *sp, ElementFlags f) : LineSegment(type, sp, f) {}
 
-double LyricsLineSegment::baseLineShift() const
-{
+double LyricsLineSegment::baseLineShift() const {
     if (lyricsLine()->isEndMelisma()) {
         return -0.5 * absoluteFromSpatium(lineWidth());
     }
 
-    Lyrics* segLyrics = lyrics();
+    Lyrics *segLyrics = lyrics();
     return -style().styleD(Sid::lyricsDashYposRatio) * segLyrics->fontMetrics().xHeight();
 }
 
-PropertyValue LyricsLineSegment::getProperty(Pid propertyId) const
-{
-    if (EngravingObject* delegate = propertyDelegate(propertyId)) {
+PropertyValue LyricsLineSegment::getProperty(Pid propertyId) const {
+    if (EngravingObject *delegate = propertyDelegate(propertyId)) {
         return delegate->getProperty(propertyId);
     }
 
     return LineSegment::getProperty(propertyId);
 }
 
-bool LyricsLineSegment::setProperty(Pid propertyId, const PropertyValue& val)
-{
-    if (EngravingObject* delegate = propertyDelegate(propertyId)) {
+bool LyricsLineSegment::setProperty(Pid propertyId, const PropertyValue &val) {
+    if (EngravingObject *delegate = propertyDelegate(propertyId)) {
         return delegate->setProperty(propertyId, val);
     }
 
     return LineSegment::setProperty(propertyId, val);
 }
 
-PropertyValue LyricsLineSegment::propertyDefault(Pid propertyId) const
-{
-    if (EngravingObject* delegate = propertyDelegate(propertyId)) {
+PropertyValue LyricsLineSegment::propertyDefault(Pid propertyId) const {
+    if (EngravingObject *delegate = propertyDelegate(propertyId)) {
         return delegate->propertyDefault(propertyId);
     }
 
     return LineSegment::propertyDefault(propertyId);
 }
 
-EngravingObject* LyricsLineSegment::propertyDelegate(Pid propertyId) const
-{
+EngravingObject *LyricsLineSegment::propertyDelegate(Pid propertyId) const {
     if (propertyId == Pid::GENERATED) {
         return lyricsLine();
     }
@@ -217,56 +185,41 @@ EngravingObject* LyricsLineSegment::propertyDelegate(Pid propertyId) const
 //   PartialLyricsLine
 //=========================================================
 
-static const ElementStyle partialLyricsLineElementStyle {
-    { Sid::lyricsDashLineThickness, Pid::LINE_WIDTH },
-    { Sid::lyricsPlacement,         Pid::PLACEMENT },
+static const ElementStyle partialLyricsLineElementStyle{
+    {Sid::lyricsDashLineThickness, Pid::LINE_WIDTH},
+    {Sid::lyricsPlacement, Pid::PLACEMENT},
 };
 
-PartialLyricsLine::PartialLyricsLine(DummyParentOr<EngravingItem> parent)
-    : LyricsLine(ElementType::PARTIAL_LYRICSLINE, parent)
-{
+PartialLyricsLine::PartialLyricsLine(DummyParentOr<EngravingItem> parent) : LyricsLine(ElementType::PARTIAL_LYRICSLINE, parent) {
     setGenerated(false);
     initElementStyle(&partialLyricsLineElementStyle);
 }
 
-PartialLyricsLine::PartialLyricsLine(const PartialLyricsLine& other)
-    : LyricsLine(other)
-{
+PartialLyricsLine::PartialLyricsLine(const PartialLyricsLine &other) : LyricsLine(other) {
     m_isEndMelisma = other.m_isEndMelisma;
     m_centerBetweenStaves = other.m_centerBetweenStaves;
 }
 
-LineSegment* PartialLyricsLine::createLineSegment()
-{
-    PartialLyricsLineSegment* seg = new PartialLyricsLineSegment(this);
+LineSegment *PartialLyricsLine::createLineSegment() {
+    PartialLyricsLineSegment *seg = new PartialLyricsLineSegment(this);
     seg->setTrack(track());
     seg->setColor(color());
     return seg;
 }
 
-PropertyValue PartialLyricsLine::getProperty(Pid propertyId) const
-{
+PropertyValue PartialLyricsLine::getProperty(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::VERSE:
-        return m_verse;
-    case Pid::CENTER_BETWEEN_STAVES:
-        return centerBetweenStaves();
-    default:
-        return LyricsLine::getProperty(propertyId);
+        case Pid::VERSE: return m_verse;
+        case Pid::CENTER_BETWEEN_STAVES: return centerBetweenStaves();
+        default: return LyricsLine::getProperty(propertyId);
     }
 }
 
-bool PartialLyricsLine::setProperty(Pid propertyId, const PropertyValue& val)
-{
+bool PartialLyricsLine::setProperty(Pid propertyId, const PropertyValue &val) {
     switch (propertyId) {
-    case Pid::VERSE:
-        setVerse(val.toInt());
-        break;
-    case Pid::CENTER_BETWEEN_STAVES:
-        setCenterBetweenStaves(val.value<AutoOnOff>());
-        break;
-    default:
-        return LyricsLine::setProperty(propertyId, val);
+        case Pid::VERSE: setVerse(val.toInt()); break;
+        case Pid::CENTER_BETWEEN_STAVES: setCenterBetweenStaves(val.value<AutoOnOff>()); break;
+        default: return LyricsLine::setProperty(propertyId, val);
     }
 
     triggerLayout();
@@ -274,42 +227,32 @@ bool PartialLyricsLine::setProperty(Pid propertyId, const PropertyValue& val)
     return true;
 }
 
-PropertyValue PartialLyricsLine::propertyDefault(Pid propertyId) const
-{
+PropertyValue PartialLyricsLine::propertyDefault(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::VERSE:
-        return 0;
-    case Pid::CENTER_BETWEEN_STAVES:
-        return AutoOnOff::AUTO;
-    default:
-        return LyricsLine::propertyDefault(propertyId);
+        case Pid::VERSE: return 0;
+        case Pid::CENTER_BETWEEN_STAVES: return AutoOnOff::AUTO;
+        default: return LyricsLine::propertyDefault(propertyId);
     }
 }
 
-void PartialLyricsLine::reset()
-{
+void PartialLyricsLine::reset() {
     undoResetProperty(Pid::CENTER_BETWEEN_STAVES);
     LyricsLine::reset();
 }
 
-Sid PartialLyricsLine::getPropertyStyle(Pid propertyId) const
-{
+Sid PartialLyricsLine::getPropertyStyle(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::PLACEMENT:
-        return Sid::lyricsPlacement;
-    default:
-        return LyricsLine::getPropertyStyle(propertyId);
+        case Pid::PLACEMENT: return Sid::lyricsPlacement;
+        default: return LyricsLine::getPropertyStyle(propertyId);
     }
 }
 
-void PartialLyricsLine::undoChangeProperty(Pid id, const PropertyValue& v, PropertyFlags ps)
-{
+void PartialLyricsLine::undoChangeProperty(Pid id, const PropertyValue &v, PropertyFlags ps) {
     if (id == Pid::VERSE && verse() != v.toInt()) {
-        ChordRest* endCR = endElement()
-                           && endElement()->isChordRest() ? toChordRest(endElement()) : nullptr;
-        Lyrics* endLyrics = nullptr;
+        ChordRest *endCR = endElement() && endElement()->isChordRest() ? toChordRest(endElement()) : nullptr;
+        Lyrics *endLyrics = nullptr;
         if (endCR) {
-            for (Lyrics* lyr : endCR->lyrics()) {
+            for (Lyrics *lyr : endCR->lyrics()) {
                 if (lyr->verse() == verse()) {
                     endLyrics = lyr;
                     break;
@@ -327,8 +270,7 @@ void PartialLyricsLine::undoChangeProperty(Pid id, const PropertyValue& v, Prope
     LyricsLine::undoChangeProperty(id, v, ps);
 }
 
-void PartialLyricsLine::doComputeEndElement()
-{
+void PartialLyricsLine::doComputeEndElement() {
     LyricsLine::doComputeEndElement();
 
     if (startElement() && endElement() && startElement()->tick() > endElement()->tick()) {
@@ -340,20 +282,18 @@ void PartialLyricsLine::doComputeEndElement()
 //   PartialLyricsLineSegment
 //=========================================================
 
-static const ElementStyle partialLyricsLineSegmentElementStyle {
-    { Sid::lyricsMinTopDistance, Pid::MIN_DISTANCE },
+static const ElementStyle partialLyricsLineSegmentElementStyle{
+    {Sid::lyricsMinTopDistance, Pid::MIN_DISTANCE},
 };
 
-PartialLyricsLineSegment::PartialLyricsLineSegment(PartialLyricsLine* line)
-    : LyricsLineSegment(ElementType::PARTIAL_LYRICSLINE_SEGMENT, line, ElementFlag::ON_STAFF)
-{
+PartialLyricsLineSegment::PartialLyricsLineSegment(PartialLyricsLine *line)
+    : LyricsLineSegment(ElementType::PARTIAL_LYRICSLINE_SEGMENT, line, ElementFlag::ON_STAFF) {
     setGenerated(false);
     initElementStyle(&partialLyricsLineSegmentElementStyle);
 }
 
-double PartialLyricsLineSegment::lineSpacing() const
-{
-    const Lyrics* lyrics = lyricsLine()->findAdjacentLyricsOrDefault();
+double PartialLyricsLineSegment::lineSpacing() const {
+    const Lyrics *lyrics = lyricsLine()->findAdjacentLyricsOrDefault();
 
     if (!lyrics) {
         return 0.0;
@@ -362,13 +302,12 @@ double PartialLyricsLineSegment::lineSpacing() const
     return lyrics->lineSpacing();
 }
 
-double PartialLyricsLineSegment::baseLineShift() const
-{
+double PartialLyricsLineSegment::baseLineShift() const {
     if (lyricsLine()->isEndMelisma()) {
         return -0.5 * absoluteFromSpatium(lineWidth());
     }
 
-    const Lyrics* lyrics = lyricsLine()->findAdjacentLyricsOrDefault();
+    const Lyrics *lyrics = lyricsLine()->findAdjacentLyricsOrDefault();
     if (!lyrics) {
         return 0.0;
     }
@@ -376,23 +315,19 @@ double PartialLyricsLineSegment::baseLineShift() const
     return -style().styleD(Sid::lyricsDashYposRatio) * lyrics->fontMetrics().xHeight();
 }
 
-EngravingObject* PartialLyricsLineSegment::propertyDelegate(Pid pid) const
-{
+EngravingObject *PartialLyricsLineSegment::propertyDelegate(Pid pid) const {
     switch (pid) {
-    case Pid::VERSE:
-    case Pid::CENTER_BETWEEN_STAVES:
-        return lyricsLine();
-    default:
-        return LyricsLineSegment::propertyDelegate(pid);
+        case Pid::VERSE:
+        case Pid::CENTER_BETWEEN_STAVES: return lyricsLine();
+        default: return LyricsLineSegment::propertyDelegate(pid);
     }
 }
 
-Lyrics* PartialLyricsLine::findLyricsInPreviousRepeatSeg() const
-{
-    const std::vector<Measure*> measures = findPreviousRepeatMeasures(findStartMeasure());
+Lyrics *PartialLyricsLine::findLyricsInPreviousRepeatSeg() const {
+    const std::vector<Measure *> measures = findPreviousRepeatMeasures(findStartMeasure());
 
-    for (const Measure* measure : measures) {
-        Lyrics* prev = Navigation::lastLyricsInMeasure(measure->last(SegmentType::ChordRest), staffIdx(), verse(), placement());
+    for (const Measure *measure : measures) {
+        Lyrics *prev = Navigation::lastLyricsInMeasure(measure->last(SegmentType::ChordRest), staffIdx(), verse(), placement());
 
         if (!prev) {
             continue;
@@ -404,21 +339,20 @@ Lyrics* PartialLyricsLine::findLyricsInPreviousRepeatSeg() const
     return nullptr;
 }
 
-Lyrics* PartialLyricsLine::findAdjacentLyricsOrDefault() const
-{
-    Lyrics* prev = findLyricsInPreviousRepeatSeg();
+Lyrics *PartialLyricsLine::findAdjacentLyricsOrDefault() const {
+    Lyrics *prev = findLyricsInPreviousRepeatSeg();
     if (prev) {
         return prev;
     }
 
-    Lyrics* next = nextLyrics();
+    Lyrics *next = nextLyrics();
     if (next) {
         return next;
     }
 
     // If there are no adjacent lyrics, create dummy lyrics using the odd lyrics text style to get font information
-    Lyrics* dummyLyr = Factory::createLyrics(score()->dummy());
+    Lyrics *dummyLyr = Factory::createLyrics(score()->dummy());
     dummyLyr->setTextStyleType(TextStyleType::LYRICS_ODD);
     return dummyLyr;
 }
-}
+} // namespace mu::engraving

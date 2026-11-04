@@ -25,12 +25,11 @@
 #include "../../ifxprocessor.h"
 
 namespace muse::audio::fx {
-class Equaliser : public IFxProcessor
-{
+class Equaliser : public IFxProcessor {
 public:
     Equaliser();
 
-    void setOutputSpec(const OutputSpec& spec) override;
+    void setOutputSpec(const OutputSpec &spec) override;
 
     bool active() const override;
     void setActive(bool active) override;
@@ -42,7 +41,7 @@ public:
     void setMode(const ProcessMode mode) override;
     bool shouldProcessDuringSilence() const override;
 
-    void process(float* buffer, samples_t sampleCount, samples_t playbackPositionSamples = 0) override;
+    void process(float *buffer, samples_t sampleCount, samples_t playbackPositionSamples = 0) override;
 
 private:
     void calculate();
@@ -51,11 +50,11 @@ private:
     bool m_active = true;
 
     float m_gain = 0, m_frequency = 1000.f, m_q = 1.f;
-    float m_a[3] = { 0, 0, 0 };
-    float m_b[3] = { 0, 0, 0 };
-    float m_x[3] = { 0, 0, 0 };
-    float m_y[3] = { 0, 0, 0 };
+    float m_a[3] = {0, 0, 0};
+    float m_b[3] = {0, 0, 0};
+    float m_x[3] = {0, 0, 0};
+    float m_y[3] = {0, 0, 0};
 };
-}
+} // namespace muse::audio::fx
 
 #endif // MUSE_AUDIO_EQUALISER_H

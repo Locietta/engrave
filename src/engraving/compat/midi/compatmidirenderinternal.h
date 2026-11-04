@@ -39,6 +39,7 @@ class MasterScore;
 class Staff;
 class Instrument;
 class Chord;
+
 // This struct specifies how to render an articulation.
 //   atype - the articulation type to implement, such as SymId::ornamentTurn
 //   ostyles - the actual ornament has a property called ornamentStyle whose value is
@@ -75,9 +76,10 @@ struct OrnamentExcursion {
     bool sustainp;
     std::vector<int> suffix;
 };
-static const std::set<OrnamentStyle> baroque  = { OrnamentStyle::BAROQUE };
-static const std::set<OrnamentStyle> defstyle = { OrnamentStyle::DEFAULT };
-static const std::set<OrnamentStyle> any;             // empty set has the special meaning of any-style, rather than no-styles.
+
+static const std::set<OrnamentStyle> baroque = {OrnamentStyle::BAROQUE};
+static const std::set<OrnamentStyle> defstyle = {OrnamentStyle::DEFAULT};
+static const std::set<OrnamentStyle> any; // empty set has the special meaning of any-style, rather than no-styles.
 static constexpr int _16th = Constants::DIVISION / 4;
 static constexpr int _32nd = _16th / 2;
 constexpr int SLIDE_DURATION = _32nd;
@@ -85,26 +87,26 @@ constexpr int GRACE_BEND_DURATION = _16th;
 static const std::vector<OrnamentExcursion> excursions = {
     //  articulation type            set of  duration       body         repeatp      suffix
     //                               styles          prefix                    sustainp
-    { SymId::ornamentTurn,                any, _32nd, {},    { 1, 0, -1, 0 },   false, true, {} },
-    { SymId::ornamentTurnInverted,        any, _32nd, {},    { -1, 0, 1, 0 },   false, true, {} },
-    { SymId::ornamentTurnSlash,           any, _32nd, {},    { -1, 0, 1, 0 },   false, true, {} },
-    { SymId::ornamentTrill,           baroque, _32nd, { 1, 0 }, { 1, 0 },        true,  true, {} },
-    { SymId::ornamentTrill,          defstyle, _32nd, { 0, 1 }, { 0, 1 },        true,  true, {} },
-    { SymId::brassMuteClosed,         baroque, _32nd, { 0, -1 }, { 0, -1 },      true,  true, {} },
-    { SymId::ornamentMordent,             any, _32nd, {},    { 0, -1, 0 },     false, true, {} },
-    { SymId::ornamentShortTrill,     defstyle, _32nd, {},    { 0, 1, 0 },      false, true, {} },                        // inverted mordent
-    { SymId::ornamentShortTrill,      baroque, _32nd, { 1, 0, 1 }, { 0 },         false, true, {} },                        // short trill
-    { SymId::ornamentTremblement,         any, _32nd, { 1, 0 }, { 1, 0 },        false, true, {} },
-    { SymId::brassMuteClosed,        defstyle, _32nd, {},    { 0 },             false, true, {} },                        // regular hand-stopped brass
-    { SymId::ornamentPrallMordent,        any, _32nd, {},    { 1, 0, -1, 0 },   false, true, {} },
-    { SymId::ornamentLinePrall,           any, _32nd, { 2, 2, 2 }, { 1, 0 },       true,  true, {} },
-    { SymId::ornamentUpPrall,             any, _16th, { -1, 0 }, { 1, 0 },        true,  true, { 1, 0 } },                        // p 144 Ex 152 [1]
-    { SymId::ornamentUpMordent,           any, _16th, { -1, 0 }, { 1, 0 },        true,  true, { -1, 0 } },                        // p 144 Ex 152 [1]
-    { SymId::ornamentPrecompMordentUpperPrefix, any, _16th, { 1, 1, 1, 0 }, { 1, 0 },    true,  true, {} },                        // p136 Cadence Appuyee [1] [2]
-    { SymId::ornamentDownMordent,         any, _16th, { 1, 1, 1, 0 }, { 1, 0 },    true,  true, { -1, 0 } },                        // p136 Cadence Appuyee + mordent [1] [2]
-    { SymId::ornamentPrallUp,             any, _16th, { 1, 0 }, { 1, 0 },        true,  true, { -1, 0 } },                        // p136 Double Cadence [1]
-    { SymId::ornamentPrallDown,           any, _16th, { 1, 0 }, { 1, 0 },        true,  true, { -1, 0, 0, 0 } },                        // p144 ex 153 [1]
-    { SymId::ornamentPrecompSlide,        any, _32nd, {},    { 0 },          false, true, {} }
+    {SymId::ornamentTurn, any, _32nd, {}, {1, 0, -1, 0}, false, true, {}},
+    {SymId::ornamentTurnInverted, any, _32nd, {}, {-1, 0, 1, 0}, false, true, {}},
+    {SymId::ornamentTurnSlash, any, _32nd, {}, {-1, 0, 1, 0}, false, true, {}},
+    {SymId::ornamentTrill, baroque, _32nd, {1, 0}, {1, 0}, true, true, {}},
+    {SymId::ornamentTrill, defstyle, _32nd, {0, 1}, {0, 1}, true, true, {}},
+    {SymId::brassMuteClosed, baroque, _32nd, {0, -1}, {0, -1}, true, true, {}},
+    {SymId::ornamentMordent, any, _32nd, {}, {0, -1, 0}, false, true, {}},
+    {SymId::ornamentShortTrill, defstyle, _32nd, {}, {0, 1, 0}, false, true, {}}, // inverted mordent
+    {SymId::ornamentShortTrill, baroque, _32nd, {1, 0, 1}, {0}, false, true, {}}, // short trill
+    {SymId::ornamentTremblement, any, _32nd, {1, 0}, {1, 0}, false, true, {}},
+    {SymId::brassMuteClosed, defstyle, _32nd, {}, {0}, false, true, {}}, // regular hand-stopped brass
+    {SymId::ornamentPrallMordent, any, _32nd, {}, {1, 0, -1, 0}, false, true, {}},
+    {SymId::ornamentLinePrall, any, _32nd, {2, 2, 2}, {1, 0}, true, true, {}},
+    {SymId::ornamentUpPrall, any, _16th, {-1, 0}, {1, 0}, true, true, {1, 0}},                    // p 144 Ex 152 [1]
+    {SymId::ornamentUpMordent, any, _16th, {-1, 0}, {1, 0}, true, true, {-1, 0}},                 // p 144 Ex 152 [1]
+    {SymId::ornamentPrecompMordentUpperPrefix, any, _16th, {1, 1, 1, 0}, {1, 0}, true, true, {}}, // p136 Cadence Appuyee [1] [2]
+    {SymId::ornamentDownMordent, any, _16th, {1, 1, 1, 0}, {1, 0}, true, true, {-1, 0}},          // p136 Cadence Appuyee + mordent [1] [2]
+    {SymId::ornamentPrallUp, any, _16th, {1, 0}, {1, 0}, true, true, {-1, 0}},                    // p136 Double Cadence [1]
+    {SymId::ornamentPrallDown, any, _16th, {1, 0}, {1, 0}, true, true, {-1, 0, 0, 0}},            // p144 ex 153 [1]
+    {SymId::ornamentPrecompSlide, any, _32nd, {}, {0}, false, true, {}}
 
     // [1] Some of the articulations/ornaments in the excursions table above come from
     // Baroque Music, Style and Performance A Handbook, by Robert Donington,(c) 1982
@@ -119,8 +121,7 @@ static const std::vector<OrnamentExcursion> excursions = {
 ///   MIDI renderer for a score
 //---------------------------------------------------------
 
-class CompatMidiRendererInternal
-{
+class CompatMidiRendererInternal {
 public:
 
     //! @brief helper structure to find channel
@@ -133,13 +134,13 @@ public:
             MidiInstrumentEffect effect = MidiInstrumentEffect::NONE;
             bool harmony = false;
 
-            bool operator<(const LookupData& other) const;
+            bool operator<(const LookupData &other) const;
         };
 
-        std::map<int, std::map<LookupData, int> > channelsMap;
+        std::map<int, std::map<LookupData, int>> channelsMap;
         uint32_t maxChannel = 0;
 
-        uint32_t getChannel(uint32_t instrumentChannel, const LookupData& lookupData);
+        uint32_t getChannel(uint32_t instrumentChannel, const LookupData &lookupData);
     };
 
     enum HarmonyChannelSetting {
@@ -148,8 +149,7 @@ public:
         LOOKUP         // harmony chords' channels are setup in specific way
     };
 
-    struct Context
-    {
+    struct Context {
         struct BuiltInArticulation {
             double velocityMultiplier = 1.0;
             int gateTime = 100;
@@ -157,10 +157,10 @@ public:
 
         static std::unordered_map<String, BuiltInArticulation> s_builtInArticulationsValues;
 
-        bool eachStringHasChannel = false; //!to better display the guitar instrument, each string has its own channel
-        bool instrumentsHaveEffects = false; //!when effect is applied, new channel should be used
+        bool eachStringHasChannel = false;    //!to better display the guitar instrument, each string has its own channel
+        bool instrumentsHaveEffects = false;  //!when effect is applied, new channel should be used
         bool useDefaultArticulations = false; //!using default articulations means ignoring the ones stored for each instrument
-        bool applyCaesuras = false; //! to add pauses (caesura) between midi events
+        bool applyCaesuras = false;           //! to add pauses (caesura) between midi events
         HarmonyChannelSetting harmonyChannelSetting = HarmonyChannelSetting::DEFAULT;
         std::unordered_set<std::string> partsWithMutedHarmony;
 
@@ -168,31 +168,31 @@ public:
 
         std::unordered_map<track_idx_t, VelocityMap> velocitiesByTrack;
         std::unordered_map<track_idx_t, VelocityMap> velocityMultiplicationsByTrack;
-        std::unordered_map<String, std::unordered_set<String> > articulationsWithoutValuesByInstrument;
+        std::unordered_map<String, std::unordered_set<String>> articulationsWithoutValuesByInstrument;
 
         std::shared_ptr<ChannelLookup> channels = std::make_shared<ChannelLookup>();
         std::shared_ptr<PauseMap> pauseMap = std::make_shared<PauseMap>();
     };
 
-    explicit CompatMidiRendererInternal(Score* s);
+    explicit CompatMidiRendererInternal(Score *s);
 
-    void renderScore(EventsHolder& events, const Context& ctx, bool expandRepeats);
+    void renderScore(EventsHolder &events, const Context &ctx, bool expandRepeats);
 
-    static const int ARTICULATION_CONV_FACTOR { 100000 };
-    static bool graceNotesMerged(Chord* chord);
+    static const int ARTICULATION_CONV_FACTOR{100000};
+    static bool graceNotesMerged(Chord *chord);
 
 private:
 
-    void renderStaff(EventsHolder& events, const Staff* sctx, PitchWheelRenderer& pitchWheelRenderer);
+    void renderStaff(EventsHolder &events, const Staff *sctx, PitchWheelRenderer &pitchWheelRenderer);
 
-    void renderSpanners(EventsHolder& events, PitchWheelRenderer& pitchWheelRenderer);
-    void doRenderSpanners(EventsHolder& events, Spanner* s, uint32_t channel, PitchWheelRenderer& pitchWheelRenderer,
+    void renderSpanners(EventsHolder &events, PitchWheelRenderer &pitchWheelRenderer);
+    void doRenderSpanners(EventsHolder &events, Spanner *s, uint32_t channel, PitchWheelRenderer &pitchWheelRenderer,
                           MidiInstrumentEffect effect);
 
-    void collectMeasureEvents(EventsHolder& events, Measure const* m, const Staff* sctx, int tickOffset,
-                              PitchWheelRenderer& pitchWheelRenderer, std::array<Chord*, VOICES>& prevChords);
-    void doCollectMeasureEvents(EventsHolder& events, Measure const* m, const Staff* sctx, int tickOffset,
-                                PitchWheelRenderer& pitchWheelRenderer, std::array<Chord*, VOICES>& prevChords);
+    void collectMeasureEvents(EventsHolder &events, Measure const *m, const Staff *sctx, int tickOffset,
+                              PitchWheelRenderer &pitchWheelRenderer, std::array<Chord *, VOICES> &prevChords);
+    void doCollectMeasureEvents(EventsHolder &events, Measure const *m, const Staff *sctx, int tickOffset,
+                                PitchWheelRenderer &pitchWheelRenderer, std::array<Chord *, VOICES> &prevChords);
 
     struct ChordParams {
         bool letRing = false;
@@ -201,12 +201,12 @@ private:
         int endLetRingTick = 0;
     };
 
-    ChordParams collectChordParams(const Chord* chord, int tickOffset) const;
-    void collectGraceBeforeChordEvents(Chord* chord, Chord* prevChord, EventsHolder& events, double veloMultiplier, Staff* st,
-                                       int tickOffset, PitchWheelRenderer& pitchWheelRenderer, MidiInstrumentEffect effect);
+    ChordParams collectChordParams(const Chord *chord, int tickOffset) const;
+    void collectGraceBeforeChordEvents(Chord *chord, Chord *prevChord, EventsHolder &events, double veloMultiplier, Staff *st,
+                                       int tickOffset, PitchWheelRenderer &pitchWheelRenderer, MidiInstrumentEffect effect);
     void fillArticulationsInfo();
 
-    Score* score = nullptr;
+    Score *score = nullptr;
     Context m_context;
 };
 } // namespace mu::engraving

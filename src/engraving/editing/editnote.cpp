@@ -51,20 +51,18 @@ using namespace mu::engraving;
 //   ChangePitch
 //---------------------------------------------------------
 
-class ChangePitch : public UndoableCommand
-{
+class ChangePitch : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangePitch)
 
-    Note* note = nullptr;
+    Note *note = nullptr;
     int pitch = 0;
     int tpc1 = 0;
     int tpc2 = 0;
 
-    void flip() override
-    {
+    void flip() override {
         int f_pitch = note->pitch();
-        int f_tpc1  = note->tpc1();
-        int f_tpc2  = note->tpc2();
+        int f_tpc1 = note->tpc1();
+        int f_tpc2 = note->tpc2();
         // do not change unless necessary
         if (f_pitch == pitch && f_tpc1 == tpc1 && f_tpc2 == tpc2) {
             return;
@@ -72,24 +70,23 @@ class ChangePitch : public UndoableCommand
 
         note->setPitch(pitch, tpc1, tpc2);
         pitch = f_pitch;
-        tpc1  = f_tpc1;
-        tpc2  = f_tpc2;
+        tpc1 = f_tpc1;
+        tpc2 = f_tpc2;
 
         note->triggerLayout();
     }
 
 public:
-    ChangePitch(Note* _note, int _pitch, int _tpc1, int _tpc2)
-    {
-        note  = _note;
+    ChangePitch(Note *_note, int _pitch, int _tpc1, int _tpc2) {
+        note = _note;
         pitch = _pitch;
-        tpc1  = _tpc1;
-        tpc2  = _tpc2;
+        tpc1 = _tpc1;
+        tpc2 = _tpc2;
     }
 
     UNDO_TYPE(CommandType::ChangePitch)
     UNDO_NAME("ChangePitch")
-    UNDO_CHANGED_OBJECTS({ note })
+    UNDO_CHANGED_OBJECTS({note})
 };
 
 //---------------------------------------------------------
@@ -101,24 +98,22 @@ public:
 //    fret and string numbers for (potentially) all the notes of all the chords of a segment.
 //---------------------------------------------------------
 
-class ChangeFretting : public UndoableCommand
-{
+class ChangeFretting : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeFretting)
 
-    Note* note = nullptr;
+    Note *note = nullptr;
     int pitch = 0;
     int string = 0;
     int fret = 0;
     int tpc1 = 0;
     int tpc2 = 0;
 
-    void flip() override
-    {
+    void flip() override {
         int f_pitch = note->pitch();
-        int f_string= note->string();
-        int f_fret  = note->fret();
-        int f_tpc1  = note->tpc1();
-        int f_tpc2  = note->tpc2();
+        int f_string = note->string();
+        int f_fret = note->fret();
+        int f_tpc1 = note->tpc1();
+        int f_tpc2 = note->tpc2();
         // do not change unless necessary
         if (f_pitch == pitch && f_string == string && f_fret == fret && f_tpc1 == tpc1 && f_tpc2 == tpc2) {
             return;
@@ -128,39 +123,37 @@ class ChangeFretting : public UndoableCommand
         note->setString(string);
         note->setFret(fret);
         pitch = f_pitch;
-        string= f_string;
-        fret  = f_fret;
-        tpc1  = f_tpc1;
-        tpc2  = f_tpc2;
+        string = f_string;
+        fret = f_fret;
+        tpc1 = f_tpc1;
+        tpc2 = f_tpc2;
         note->triggerLayout();
     }
 
 public:
-    ChangeFretting(Note* _note, int _pitch, int _string, int _fret, int _tpc1, int _tpc2)
-    {
-        note  = _note;
+    ChangeFretting(Note *_note, int _pitch, int _string, int _fret, int _tpc1, int _tpc2) {
+        note = _note;
         pitch = _pitch;
-        string= _string;
-        fret  = _fret;
-        tpc1  = _tpc1;
-        tpc2  = _tpc2;
+        string = _string;
+        fret = _fret;
+        tpc1 = _tpc1;
+        tpc2 = _tpc2;
     }
 
     UNDO_TYPE(CommandType::ChangeFretting)
     UNDO_NAME("ChangeFretting")
-    UNDO_CHANGED_OBJECTS({ note })
+    UNDO_CHANGED_OBJECTS({note})
 };
 
 //---------------------------------------------------------
 //   toggleOrnament
 //---------------------------------------------------------
 
-void EditNote::toggleOrnament(Score* score, SymId attr)
-{
-    std::set<Chord*> set;
-    for (EngravingItem* el : score->selection().elements()) {
+void EditNote::toggleOrnament(Score *score, SymId attr) {
+    std::set<Chord *> set;
+    for (EngravingItem *el : score->selection().elements()) {
         if (el->isNote() || el->isChord()) {
-            Chord* cr = 0;
+            Chord *cr = 0;
             // apply articulation on a given chord only once
             if (el->isNote()) {
                 cr = toNote(el)->chord();
@@ -168,7 +161,7 @@ void EditNote::toggleOrnament(Score* score, SymId attr)
                     continue;
                 }
             }
-            Ornament* na = Factory::createOrnament(score->dummy());
+            Ornament *na = Factory::createOrnament(score->dummy());
             na->setSymId(attr);
             if (!EditChord::toggleArticulation(score, el, na)) {
                 delete na;
@@ -185,8 +178,7 @@ void EditNote::toggleOrnament(Score* score, SymId attr)
 //   toggleAccidental
 //---------------------------------------------------------
 
-void EditNote::toggleAccidental(Score* score, AccidentalType at)
-{
+void EditNote::toggleAccidental(Score *score, AccidentalType at) {
     bool applyNaturalToInputNotes = false;
     if (score->inputState().accidentalType() == at && at != AccidentalType::NONE) {
         at = AccidentalType::NONE; // NONE also means "search for previous accidental and use it if found"
@@ -198,8 +190,7 @@ void EditNote::toggleAccidental(Score* score, AccidentalType at)
         score->inputState().setRest(false);
 
         if (!score->inputState().notes().empty()) {
-            EditNote::applyAccidentalToInputNotes(score,
-                                                  applyNaturalToInputNotes ? AccidentalType::NATURAL : at);
+            EditNote::applyAccidentalToInputNotes(score, applyNaturalToInputNotes ? AccidentalType::NATURAL : at);
         }
     } else {
         if (score->selection().isNone()) {
@@ -216,8 +207,7 @@ void EditNote::toggleAccidental(Score* score, AccidentalType at)
 //   applyAccidentalToInputNotes
 //---------------------------------------------------------
 
-void EditNote::applyAccidentalToInputNotes(Score* score, AccidentalType accidentalType)
-{
+void EditNote::applyAccidentalToInputNotes(Score *score, AccidentalType accidentalType) {
     NoteValList notes;
     notes.reserve(score->inputState().notes().size());
 
@@ -225,7 +215,7 @@ void EditNote::applyAccidentalToInputNotes(Score* score, AccidentalType accident
     pos.segment = score->inputState().segment();
     pos.staffIdx = score->inputState().staffIdx();
 
-    for (const NoteVal& oldVal : score->inputState().notes()) {
+    for (const NoteVal &oldVal : score->inputState().notes()) {
         pos.line = noteValToLine(oldVal, score->inputState().staff(), score->inputState().tick());
 
         bool error = false;
@@ -247,24 +237,20 @@ void EditNote::applyAccidentalToInputNotes(Score* score, AccidentalType accident
 ///   notes.
 //---------------------------------------------------------
 
-void EditNote::changeAccidental(Score* score, AccidentalType idx)
-{
-    for (EngravingItem* item : score->selection().elements()) {
+void EditNote::changeAccidental(Score *score, AccidentalType idx) {
+    for (EngravingItem *item : score->selection().elements()) {
         switch (item->type()) {
-        case ElementType::ACCIDENTAL: {
-            Accidental* accidental = toAccidental(item);
-            if (accidental->accidentalType() == idx) {
-                EditNote::changeAccidental(score, accidental->note(), AccidentalType::NONE);
-            } else {
-                EditNote::changeAccidental(score, accidental->note(), idx);
+            case ElementType::ACCIDENTAL: {
+                Accidental *accidental = toAccidental(item);
+                if (accidental->accidentalType() == idx) {
+                    EditNote::changeAccidental(score, accidental->note(), AccidentalType::NONE);
+                } else {
+                    EditNote::changeAccidental(score, accidental->note(), idx);
+                }
+                break;
             }
-            break;
-        }
-        case ElementType::NOTE:
-            EditNote::changeAccidental(score, toNote(item), idx);
-            break;
-        default:
-            break;
+            case ElementType::NOTE: EditNote::changeAccidental(score, toNote(item), idx); break;
+            default: break;
         }
     }
 }
@@ -273,13 +259,12 @@ void EditNote::changeAccidental(Score* score, AccidentalType idx)
 //   changeAccidental2
 //---------------------------------------------------------
 
-void EditNote::changeAccidental2(Note* n, int pitch, int tpc)
-{
-    Score* score  = n->score();
-    Chord* chord  = n->chord();
-    Staff* st     = chord->staff();
-    int fret      = n->fret();
-    int string    = n->string();
+void EditNote::changeAccidental2(Note *n, int pitch, int tpc) {
+    Score *score = n->score();
+    Chord *chord = n->chord();
+    Staff *st = chord->staff();
+    int fret = n->fret();
+    int string = n->string();
 
     if (st->isTabStaff(chord->tick())) {
         if (pitch != n->pitch()) {
@@ -287,7 +272,7 @@ void EditNote::changeAccidental2(Note* n, int pitch, int tpc)
             // as pitch has changed, calculate new
             // string & fret
             //
-            const StringData* stringData = n->originPart()->stringData(n->tick(), st->idx());
+            const StringData *stringData = n->originPart()->stringData(n->tick(), st->idx());
             if (stringData) {
                 stringData->convertPitch(pitch, st, &string, &fret);
             }
@@ -314,7 +299,7 @@ void EditNote::changeAccidental2(Note* n, int pitch, int tpc)
                 }
             }
         } else {
-            Note* nn = n;
+            Note *nn = n;
             while (nn && nn->tieFor()) {
                 nn = nn->tieFor()->endNote();
                 if (nn) {
@@ -332,33 +317,29 @@ void EditNote::changeAccidental2(Note* n, int pitch, int tpc)
 ///   note \a note.
 //---------------------------------------------------------
 
-void EditNote::changeAccidental(Score* score, Note* note, AccidentalType accidental)
-{
-    Chord* chord = note ? note->chord() : nullptr;
+void EditNote::changeAccidental(Score *score, Note *note, AccidentalType accidental) {
+    Chord *chord = note ? note->chord() : nullptr;
     if (!chord) {
         return;
     }
-    Segment* segment = chord->segment();
+    Segment *segment = chord->segment();
     if (!segment) {
         return;
     }
-    Measure* measure = segment->measure();
+    Measure *measure = segment->measure();
     if (!measure) {
         return;
     }
     Fraction tick = segment->tick();
-    Staff* estaff = score->staff(chord->vStaffIdx());
+    Staff *estaff = score->staff(chord->vStaffIdx());
     if (!estaff) {
         return;
     }
     ClefType clef = estaff->clef(tick);
-    if (clef == ClefType::TAB
-        || clef == ClefType::TAB4
-        || clef == ClefType::TAB_SERIF
-        || clef == ClefType::TAB4_SERIF) {
+    if (clef == ClefType::TAB || clef == ClefType::TAB4 || clef == ClefType::TAB_SERIF || clef == ClefType::TAB4_SERIF) {
         return;
     }
-    int step      = ClefInfo::pitchOffset(clef) - note->line();
+    int step = ClefInfo::pitchOffset(clef) - note->line();
     while (step < 0) {
         step += 7;
     }
@@ -387,18 +368,18 @@ void EditNote::changeAccidental(Score* score, Note* note, AccidentalType acciden
     // precautionary or microtonal accidental
     // either way, we display it unconditionally
     // both for this note and for any linked notes
-    else if (acc == acc2 || (pitch == note->pitch() && !Accidental::isMicrotonal(note->accidentalType()))
-             || Accidental::isMicrotonal(accidental)) {
+    else if (acc == acc2 || (pitch == note->pitch() && !Accidental::isMicrotonal(note->accidentalType())) ||
+             Accidental::isMicrotonal(accidental)) {
         forceAdd = true;
     }
 
-    for (EngravingObject* se : note->linkList()) {
-        Note* ln = toNote(se);
+    for (EngravingObject *se : note->linkList()) {
+        Note *ln = toNote(se);
         if (ln->concertPitch() != note->concertPitch()) {
             continue;
         }
-        Score* lns    = ln->score();
-        Accidental* a = ln->accidental();
+        Score *lns = ln->score();
+        Accidental *a = ln->accidental();
         if (forceRemove) {
             if (a) {
                 lns->undoRemoveElement(a);
@@ -410,7 +391,7 @@ void EditNote::changeAccidental(Score* score, Note* note, AccidentalType acciden
             if (a) {
                 score->undoRemoveElement(a);
             }
-            Accidental* a1 = Factory::createAccidental(ln);
+            Accidental *a1 = Factory::createAccidental(ln);
             a1->setAccidentalType(accidental);
             a1->setRole(AccidentalRole::USER);
             lns->undoAddElement(a1);
@@ -427,29 +408,27 @@ void EditNote::changeAccidental(Score* score, Note* note, AccidentalType acciden
 //   upDownChromatic
 //---------------------------------------------------------
 
-void EditNote::upDownChromatic(bool up, int pitch, Note* n, Key key, int tpc1, int tpc2,
-                               int& newPitch, int& newTpc1, int& newTpc2)
-{
+void EditNote::upDownChromatic(bool up, int pitch, Note *n, Key key, int tpc1, int tpc2, int &newPitch, int &newTpc1, int &newTpc2) {
     bool concertPitch = n->concertPitch();
     AccidentalVal noteAccVal = tpc2alter(concertPitch ? tpc1 : tpc2);
     AccidentalVal accState = AccidentalVal::NATURAL;
-    if (Measure* m = n->findMeasure()) {
+    if (Measure *m = n->findMeasure()) {
         accState = m->findAccidental(n);
     }
     if (up && pitch < 127) {
         newPitch = pitch + 1;
         if (concertPitch) {
             if (tpc1 > Tpc::TPC_A + int(key) && noteAccVal >= accState) {
-                newTpc1 = tpc1 - 5;           // up semitone diatonic
+                newTpc1 = tpc1 - 5; // up semitone diatonic
             } else {
-                newTpc1 = tpc1 + 7;           // up semitone chromatic
+                newTpc1 = tpc1 + 7; // up semitone chromatic
             }
             newTpc2 = n->transposeTpc(newTpc1);
         } else {
             if (tpc2 > Tpc::TPC_A + int(key) && noteAccVal >= accState) {
-                newTpc2 = tpc2 - 5;           // up semitone diatonic
+                newTpc2 = tpc2 - 5; // up semitone diatonic
             } else {
-                newTpc2 = tpc2 + 7;           // up semitone chromatic
+                newTpc2 = tpc2 + 7; // up semitone chromatic
             }
             newTpc1 = n->transposeTpc(newTpc2);
         }
@@ -457,16 +436,16 @@ void EditNote::upDownChromatic(bool up, int pitch, Note* n, Key key, int tpc1, i
         newPitch = pitch - 1;
         if (concertPitch) {
             if (tpc1 > Tpc::TPC_C + int(key) || noteAccVal > accState) {
-                newTpc1 = tpc1 - 7;           // down semitone chromatic
+                newTpc1 = tpc1 - 7; // down semitone chromatic
             } else {
-                newTpc1 = tpc1 + 5;           // down semitone diatonic
+                newTpc1 = tpc1 + 5; // down semitone diatonic
             }
             newTpc2 = n->transposeTpc(newTpc1);
         } else {
             if (tpc2 > Tpc::TPC_C + int(key) || noteAccVal > accState) {
-                newTpc2 = tpc2 - 7;           // down semitone chromatic
+                newTpc2 = tpc2 - 7; // down semitone chromatic
             } else {
-                newTpc2 = tpc2 + 5;           // down semitone diatonic
+                newTpc2 = tpc2 + 5; // down semitone diatonic
             }
             newTpc1 = n->transposeTpc(newTpc2);
         }
@@ -477,11 +456,10 @@ void EditNote::upDownChromatic(bool up, int pitch, Note* n, Key key, int tpc1, i
 //   upDown
 //---------------------------------------------------------
 
-void EditNote::upDown(Score* score, bool up, UpDownMode mode)
-{
-    std::vector<Note*> el = score->selection().uniqueNotes();
+void EditNote::upDown(Score *score, bool up, UpDownMode mode) {
+    std::vector<Note *> el = score->selection().uniqueNotes();
 
-    std::sort(el.begin(), el.end(), [up](Note* a, Note* b) {
+    std::sort(el.begin(), el.end(), [up](Note *a, Note *b) {
         if (up) {
             return a->string() < b->string();
         } else {
@@ -489,20 +467,20 @@ void EditNote::upDown(Score* score, bool up, UpDownMode mode)
         }
     });
 
-    for (Note* oNote : el) {
-        Fraction tick     = oNote->chord()->tick();
-        Staff* staff = oNote->staff();
-        Part* part   = oNote->originPart();
-        Key key      = staff->key(tick);
-        int tpc1     = oNote->tpc1();
-        int tpc2     = oNote->tpc2();
-        int pitch    = oNote->pitch();
+    for (Note *oNote : el) {
+        Fraction tick = oNote->chord()->tick();
+        Staff *staff = oNote->staff();
+        Part *part = oNote->originPart();
+        Key key = staff->key(tick);
+        int tpc1 = oNote->tpc1();
+        int tpc2 = oNote->tpc2();
+        int pitch = oNote->pitch();
         int pitchOffset = staff->pitchOffset(tick);
-        int newTpc1  = tpc1;          // default to unchanged
-        int newTpc2  = tpc2;          // default to unchanged
-        int newPitch = pitch;         // default to unchanged
-        int string   = oNote->string();
-        int fret     = oNote->fret();
+        int newTpc1 = tpc1;   // default to unchanged
+        int newTpc2 = tpc2;   // default to unchanged
+        int newPitch = pitch; // default to unchanged
+        int string = oNote->string();
+        int fret = oNote->fret();
 
         StaffGroup staffGroup = staff->staffType(oNote->chord()->tick())->group();
         // if not tab, check for instrument instead of staffType (for pitched to unpitched instrument changes)
@@ -511,117 +489,103 @@ void EditNote::upDown(Score* score, bool up, UpDownMode mode)
         }
 
         switch (staffGroup) {
-        case StaffGroup::PERCUSSION:
-        {
-            const Drumset* ds = part->instrument(tick)->drumset();
-            if (ds) {
-                newPitch = up ? ds->nextPitch(pitch) : ds->prevPitch(pitch);
-                newTpc1 = pitch2tpc(newPitch, Key::C, Prefer::NEAREST);
-                newTpc2 = newTpc1;
-            }
-        }
-        break;
-        case StaffGroup::TAB:
-        {
-            const StringData* stringData = part->stringData(tick, staff->idx());
-            switch (mode) {
-            case UpDownMode::OCTAVE:
-            {
-                const StaffType* stt = staff->staffType(tick);
-                string = stt->physStringToVisual(string);
-                string += (up ? -1 : 1);
-                if (string < 0 || string >= static_cast<int>(stringData->strings())) {
-                    return;                                 // no next string to move to
+            case StaffGroup::PERCUSSION: {
+                const Drumset *ds = part->instrument(tick)->drumset();
+                if (ds) {
+                    newPitch = up ? ds->nextPitch(pitch) : ds->prevPitch(pitch);
+                    newTpc1 = pitch2tpc(newPitch, Key::C, Prefer::NEAREST);
+                    newTpc2 = newTpc1;
                 }
-                string = stt->visualStringToPhys(string);
-                fret = stringData->fret(pitch, string, staff, tick);
-                if (fret == -1) {
-                    return;
-                }
-            }
-            break;
+            } break;
+            case StaffGroup::TAB: {
+                const StringData *stringData = part->stringData(tick, staff->idx());
+                switch (mode) {
+                    case UpDownMode::OCTAVE: {
+                        const StaffType *stt = staff->staffType(tick);
+                        string = stt->physStringToVisual(string);
+                        string += (up ? -1 : 1);
+                        if (string < 0 || string >= static_cast<int>(stringData->strings())) {
+                            return; // no next string to move to
+                        }
+                        string = stt->visualStringToPhys(string);
+                        fret = stringData->fret(pitch, string, staff, tick);
+                        if (fret == -1) {
+                            return;
+                        }
+                    } break;
 
-            case UpDownMode::DIATONIC:
-                upDownChromatic(up, pitch, oNote, key, tpc1, tpc2, newPitch, newTpc1, newTpc2);
+                    case UpDownMode::DIATONIC: upDownChromatic(up, pitch, oNote, key, tpc1, tpc2, newPitch, newTpc1, newTpc2); break;
+
+                    case UpDownMode::CHROMATIC: {
+                        if (!stringData->frets()) {
+                            LOGD("upDown tab chromatic: no frets?");
+                            return;
+                        }
+                        fret += (up ? 1 : -1);
+                        if (fret < 0 || fret > stringData->frets()) {
+                            LOGD("upDown tab in-string: out of fret range");
+                            return;
+                        }
+                        upDownChromatic(up, pitch, oNote, key, tpc1, tpc2, newPitch, newTpc1, newTpc2);
+                        if (newPitch + pitchOffset != stringData->getPitch(string, fret, staff, oNote->tick()) && !oNote->bendBack()) {
+                            LOGD("upDown tab in-string: pitch mismatch");
+                            return;
+                        }
+                        oNote->undoChangeProperty(Pid::FRET, fret);
+                    } break;
+                }
+            } break;
+            case StaffGroup::STANDARD:
+                switch (mode) {
+                    case UpDownMode::OCTAVE:
+                        if (up) {
+                            if (pitch < 116) {
+                                newPitch = pitch + 12;
+                            }
+                        } else {
+                            if (pitch > 11) {
+                                newPitch = pitch - 12;
+                            }
+                        }
+                        break;
+
+                    case UpDownMode::CHROMATIC: upDownChromatic(up, pitch, oNote, key, tpc1, tpc2, newPitch, newTpc1, newTpc2); break;
+
+                    case UpDownMode::DIATONIC: {
+                        Note *firstTiedNote = oNote->firstTiedNote();
+                        int newLine = firstTiedNote->line() + (up ? -1 : 1);
+                        Staff *vStaff = score->staff(firstTiedNote->chord()->vStaffIdx());
+
+                        bool error = false;
+                        AccidentalVal accOffs = firstTiedNote->chord()->measure()->findAccidental(
+                            firstTiedNote->chord()->segment(), firstTiedNote->chord()->vStaffIdx(), newLine, error);
+                        if (error) {
+                            accOffs = Accidental::subtype2value(AccidentalType::NONE);
+                        }
+                        int nStep = absStep(newLine, vStaff->clef(tick));
+                        int octave = nStep / 7;
+                        int testPitch = step2pitch(nStep) + octave * 12 + int(accOffs);
+
+                        if (testPitch <= 127 && testPitch > 0) {
+                            newPitch = testPitch;
+                            newTpc1 = newTpc2 = step2tpc(nStep % 7, accOffs);
+                            if (firstTiedNote->concertPitch()) {
+                                newTpc2 = firstTiedNote->transposeTpc(newTpc1);
+                            } else {
+                                newPitch += vStaff->transpose(tick).chromatic;
+                                newTpc1 = firstTiedNote->transposeTpc(newTpc2);
+                            }
+                        }
+                    } break;
+                }
                 break;
-
-            case UpDownMode::CHROMATIC:
-            {
-                if (!stringData->frets()) {
-                    LOGD("upDown tab chromatic: no frets?");
-                    return;
-                }
-                fret += (up ? 1 : -1);
-                if (fret < 0 || fret > stringData->frets()) {
-                    LOGD("upDown tab in-string: out of fret range");
-                    return;
-                }
-                upDownChromatic(up, pitch, oNote, key, tpc1, tpc2, newPitch, newTpc1, newTpc2);
-                if (newPitch + pitchOffset != stringData->getPitch(string, fret, staff, oNote->tick()) && !oNote->bendBack()) {
-                    LOGD("upDown tab in-string: pitch mismatch");
-                    return;
-                }
-                oNote->undoChangeProperty(Pid::FRET, fret);
-            }
-            break;
-            }
-        }
-        break;
-        case StaffGroup::STANDARD:
-            switch (mode) {
-            case UpDownMode::OCTAVE:
-                if (up) {
-                    if (pitch < 116) {
-                        newPitch = pitch + 12;
-                    }
-                } else {
-                    if (pitch > 11) {
-                        newPitch = pitch - 12;
-                    }
-                }
-                break;
-
-            case UpDownMode::CHROMATIC:
-                upDownChromatic(up, pitch, oNote, key, tpc1, tpc2, newPitch, newTpc1, newTpc2);
-                break;
-
-            case UpDownMode::DIATONIC:
-            {
-                Note* firstTiedNote = oNote->firstTiedNote();
-                int newLine = firstTiedNote->line() + (up ? -1 : 1);
-                Staff* vStaff = score->staff(firstTiedNote->chord()->vStaffIdx());
-
-                bool error = false;
-                AccidentalVal accOffs = firstTiedNote->chord()->measure()->findAccidental(
-                    firstTiedNote->chord()->segment(), firstTiedNote->chord()->vStaffIdx(), newLine, error);
-                if (error) {
-                    accOffs = Accidental::subtype2value(AccidentalType::NONE);
-                }
-                int nStep = absStep(newLine, vStaff->clef(tick));
-                int octave = nStep / 7;
-                int testPitch = step2pitch(nStep) + octave * 12 + int(accOffs);
-
-                if (testPitch <= 127 && testPitch > 0) {
-                    newPitch = testPitch;
-                    newTpc1 = newTpc2 = step2tpc(nStep % 7, accOffs);
-                    if (firstTiedNote->concertPitch()) {
-                        newTpc2 = firstTiedNote->transposeTpc(newTpc1);
-                    } else {
-                        newPitch += vStaff->transpose(tick).chromatic;
-                        newTpc1 = firstTiedNote->transposeTpc(newTpc2);
-                    }
-                }
-            }
-            break;
-            }
-            break;
         }
 
         if ((oNote->pitch() != newPitch) || (oNote->tpc1() != newTpc1) || oNote->tpc2() != newTpc2) {
             if (mode != UpDownMode::OCTAVE) {
                 auto l = oNote->linkList();
-                for (EngravingObject* e : l) {
-                    Note* ln = toNote(e);
+                for (EngravingObject *e : l) {
+                    Note *ln = toNote(e);
                     if (ln->accidental()) {
                         score->doUndoRemoveElement(ln->accidental());
                     }
@@ -643,7 +607,7 @@ void EditNote::upDown(Score* score, bool up, UpDownMode mode)
                 refret = true;
             }
             if (refret) {
-                const StringData* stringData = part->stringData(tick, staff->idx());
+                const StringData *stringData = part->stringData(tick, staff->idx());
                 stringData->fretChords(oNote->chord());
             }
         }
@@ -657,12 +621,11 @@ void EditNote::upDown(Score* score, bool up, UpDownMode mode)
 //   undoChangePitch
 //---------------------------------------------------------
 
-void EditNote::undoChangePitch(Score* score, Note* note, int pitch, int tpc1, int tpc2)
-{
-    Transaction& tx = score->transactionManager()->currentOrDummyTransaction();
+void EditNote::undoChangePitch(Score *score, Note *note, int pitch, int tpc1, int tpc2) {
+    Transaction &tx = score->transactionManager()->currentOrDummyTransaction();
 
-    for (EngravingObject* e : note->linkList()) {
-        Note* n = toNote(e);
+    for (EngravingObject *e : note->linkList()) {
+        Note *n = toNote(e);
         tx.push(new ChangePitch(n, pitch, tpc1, tpc2));
     }
 }
@@ -671,12 +634,11 @@ void EditNote::undoChangePitch(Score* score, Note* note, int pitch, int tpc1, in
 //   undoChangeFretting
 //---------------------------------------------------------
 
-void EditNote::undoChangeFretting(Score* score, Note* note, int pitch, int string, int fret, int tpc1, int tpc2)
-{
-    Transaction& tx = score->transactionManager()->currentOrDummyTransaction();
+void EditNote::undoChangeFretting(Score *score, Note *note, int pitch, int string, int fret, int tpc1, int tpc2) {
+    Transaction &tx = score->transactionManager()->currentOrDummyTransaction();
 
-    for (EngravingObject* e : note->linkList()) {
-        Note* n = toNote(e);
+    for (EngravingObject *e : note->linkList()) {
+        Note *n = toNote(e);
         tx.push(new ChangeFretting(n, pitch, string, fret, tpc1, tpc2));
     }
 }
@@ -685,13 +647,9 @@ void EditNote::undoChangeFretting(Score* score, Note* note, int pitch, int strin
 //   ChangeVelocity
 //---------------------------------------------------------
 
-ChangeVelocity::ChangeVelocity(Note* n, int o)
-    : note(n), userVelocity(o)
-{
-}
+ChangeVelocity::ChangeVelocity(Note *n, int o) : note(n), userVelocity(o) {}
 
-void ChangeVelocity::flip()
-{
+void ChangeVelocity::flip() {
     int v = note->userVelocity();
     note->setUserVelocity(userVelocity);
     userVelocity = v;
@@ -701,8 +659,7 @@ void ChangeVelocity::flip()
 //   ChangeNoteEventList::flip
 //---------------------------------------------------------
 
-void ChangeNoteEventList::flip()
-{
+void ChangeNoteEventList::flip() {
     // Get copy of current list.
     NoteEventList nel = note->playEvents();
     // Replace current copy with new list.
@@ -721,11 +678,10 @@ void ChangeNoteEventList::flip()
 //   ChangeNoteEvent::flip
 //---------------------------------------------------------
 
-void ChangeNoteEvent::flip()
-{
+void ChangeNoteEvent::flip() {
     NoteEvent e = *oldEvent;
-    *oldEvent   = newEvent;
-    newEvent    = e;
+    *oldEvent = newEvent;
+    newEvent = e;
     // Get a copy of the current playEventType.
     PlayEventType petval = note->chord()->playEventType();
     // Replace current setting with new setting.
@@ -738,12 +694,11 @@ void ChangeNoteEvent::flip()
 //   ChangeChordPlayEventType::flip
 //---------------------------------------------------------
 
-void ChangeChordPlayEventType::flip()
-{
+void ChangeChordPlayEventType::flip() {
     // Flips data between NoteEventList's.
     size_t n = chord->notes().size();
     for (size_t i = 0; i < n; ++i) {
-        Note* note = chord->notes()[i];
+        Note *note = chord->notes()[i];
         note->playEvents().swap(events[int(i)]);
     }
     // Flips PlayEventType between chord and undo.

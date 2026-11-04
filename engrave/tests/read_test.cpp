@@ -93,55 +93,52 @@ std::unique_ptr<engrave::Engine> g_engine;
 
 // --- text, bytes and documents -------------------------------------------
 
-std::string read_text(const std::filesystem::path& path) {
+std::string read_text(const std::filesystem::path &path) {
     std::ifstream in(path, std::ios::binary);
     return {std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
 }
 
 std::vector<std::byte> as_bytes(std::string_view text) {
-    const auto* data = reinterpret_cast<const std::byte*>(text.data());
+    const auto *data = reinterpret_cast<const std::byte *>(text.data());
     return {data, data + text.size()};
 }
 
-std::unique_ptr<engrave::Document> open_path(const std::filesystem::path& path) {
+std::unique_ptr<engrave::Document> open_path(const std::filesystem::path &path) {
     auto document = g_engine->open(path);
     EXPECT_TRUE(document) << path.string() << ": " << document.error().message;
     return document ? std::move(*document) : nullptr;
 }
 
-MasterScore& master_of(engrave::Document& document) {
-    MasterScore* master = engrave::DocumentAccess::master_score(document);
+MasterScore &master_of(engrave::Document &document) {
+    MasterScore *master = engrave::DocumentAccess::master_score(document);
     EXPECT_NE(master, nullptr);
     return *master;
 }
 
-std::int64_t ticks_of(const engrave::Fraction& value) {
-    return value.num * whole_note_ticks / value.den;
-}
+std::int64_t ticks_of(const engrave::Fraction &value) { return value.num * whole_note_ticks / value.den; }
 
 std::filesystem::path write470_fixture() {
     return std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests/data/write470/minimal.mscx";
 }
 
 TEST(Read, InstrumentLabelNumberFlags500) {
-    const auto path = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT)
-        / "engrave/tests/data/upstream-label/show-number-short-500.mscx";
+    const auto path = std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests/data/upstream-label/show-number-short-500.mscx";
     const std::string fixture = read_text(path);
     constexpr std::string_view short_tag = "<showNumberShort>0</showNumberShort>";
     const auto position = fixture.find(short_tag);
     ASSERT_NE(position, std::string::npos);
 
-    const auto check_flags = [](engrave::Document& document, bool long_flag, bool short_flag) {
-        const auto& parts = master_of(document).parts();
+    const auto check_flags = [](engrave::Document &document, bool long_flag, bool short_flag) {
+        const auto &parts = master_of(document).parts();
         ASSERT_EQ(parts.size(), 1u);
-        const auto* instrument = parts.front()->instrument();
+        const auto *instrument = parts.front()->instrument();
         ASSERT_NE(instrument, nullptr);
-        const auto& label = instrument->instrumentLabel();
+        const auto &label = instrument->instrumentLabel();
         EXPECT_EQ(label.number(), 1);
         EXPECT_EQ(label.showNumberLong(), long_flag);
         EXPECT_EQ(label.showNumberShort(), short_flag);
     };
-    const auto check_roundtrip = [&](const std::string& xml, bool long_flag, bool short_flag) {
+    const auto check_roundtrip = [&](const std::string &xml, bool long_flag, bool short_flag) {
         auto document = g_engine->open(as_bytes(xml), {.format = engrave::Format::Mscx});
         ASSERT_TRUE(document) << document.error().message;
         check_flags(**document, long_flag, short_flag);
@@ -163,15 +160,13 @@ TEST(Read, InstrumentLabelNumberFlags500) {
     for (bool long_false : {false, true}) {
         SCOPED_TRACE(long_false ? "short omitted; long false" : "both flags omitted");
         std::string xml = fixture;
-        xml.replace(position, short_tag.size(),
-                    long_false ? "<showNumberLong>0</showNumberLong>" : "");
+        xml.replace(position, short_tag.size(), long_false ? "<showNumberLong>0</showNumberLong>" : "");
         check_roundtrip(xml, !long_false, true);
     }
     for (bool long_flag : {false, true}) {
         for (bool short_flag : {false, true}) {
             for (bool short_first : {false, true}) {
-                SCOPED_TRACE(std::format("long={}, short={}, short_first={}",
-                                         long_flag, short_flag, short_first));
+                SCOPED_TRACE(std::format("long={}, short={}, short_first={}", long_flag, short_flag, short_first));
                 const auto long_xml = std::format("<showNumberLong>{}</showNumberLong>", int(long_flag));
                 const auto short_xml = std::format("<showNumberShort>{}</showNumberShort>", int(short_flag));
                 std::string xml = fixture;
@@ -205,7 +200,7 @@ TEST(Export470, SelectedExcerptIsStandaloneAndBounded) {
         auto reopened = g_engine->open(result->bytes, {.format = format});
         ASSERT_TRUE(reopened) << reopened.error().message;
         auto actual = music::semantic_dump(&master_of(**reopened));
-        for (const char* key : {"parts", "measures", "events"}) EXPECT_EQ(actual[key], expected[key]) << key;
+        for (const char *key : {"parts", "measures", "events"}) EXPECT_EQ(actual[key], expected[key]) << key;
         EXPECT_TRUE(actual["excerpts"].empty());
         options.capture.max_bytes = result->bytes.size() - 1;
         const auto limited = document->export_score_with_warnings(options);
@@ -223,11 +218,17 @@ TEST(Export470, SelectedExcerptIsStandaloneAndBounded) {
 
 TEST(Export470, WarningIdentifiersAreStableAndDistinct) {
     using namespace engrave::export_warning_code;
-    const std::array<std::string_view, 8> actual{shared_part, stave_sharing_label, page_lock,
-        group_bracket, instrument_group_name, invalid_tie, unsupported_construct, unsupported_target};
-    const std::array<std::string_view, 8> expected{"B470_SHARED_PART_DROPPED", "B470_STAVE_SHARING_LABEL_DROPPED",
-        "B470_PAGE_LOCK_DROPPED", "B470_GROUP_BRACKET_DROPPED", "B470_INSTRUMENT_GROUP_NAME_DROPPED",
-        "B470_INVALID_TIE", "B470_UNSUPPORTED_FEATURE", "B470_UNSUPPORTED_TARGET"};
+    const std::array<std::string_view, 8> actual{shared_part,           stave_sharing_label,   page_lock,
+                                                 group_bracket,         instrument_group_name, invalid_tie,
+                                                 unsupported_construct, unsupported_target};
+    const std::array<std::string_view, 8> expected{"B470_SHARED_PART_DROPPED",
+                                                   "B470_STAVE_SHARING_LABEL_DROPPED",
+                                                   "B470_PAGE_LOCK_DROPPED",
+                                                   "B470_GROUP_BRACKET_DROPPED",
+                                                   "B470_INSTRUMENT_GROUP_NAME_DROPPED",
+                                                   "B470_INVALID_TIE",
+                                                   "B470_UNSUPPORTED_FEATURE",
+                                                   "B470_UNSUPPORTED_TARGET"};
     EXPECT_EQ(actual, expected);
 }
 
@@ -239,8 +240,7 @@ TEST(Export470, SelectsVersionsAndPreservesTheDefaultWriter) {
         auto original = document->export_score({.format = format});
         auto explicit_500 = document->export_score_with_warnings({.format = format, .native_version = "5.00"});
         // ZIP timestamps have two-second precision, as in the existing capture tests.
-        for (int attempt = 0; attempt < 2 && format == engrave::Format::Mscz
-                              && tick != std::time(nullptr) / 2; ++attempt) {
+        for (int attempt = 0; attempt < 2 && format == engrave::Format::Mscz && tick != std::time(nullptr) / 2; ++attempt) {
             tick = std::time(nullptr) / 2;
             original = document->export_score({.format = format});
             explicit_500 = document->export_score_with_warnings({.format = format, .native_version = "5.00"});
@@ -254,8 +254,7 @@ TEST(Export470, SelectsVersionsAndPreservesTheDefaultWriter) {
         EXPECT_EQ(invalid.error().code, ErrorCode::Unsupported);
         EXPECT_NE(invalid.error().message.find("4.71"), std::string::npos);
     }
-    const auto non_native = document->export_score_with_warnings({.format = engrave::Format::MusicXml,
-                                                                  .native_version = "4.70"});
+    const auto non_native = document->export_score_with_warnings({.format = engrave::Format::MusicXml, .native_version = "4.70"});
     ASSERT_FALSE(non_native);
     EXPECT_EQ(non_native.error().code, ErrorCode::Unsupported);
 }
@@ -266,11 +265,11 @@ TEST(Export470, ConvertsInstrumentNamesWithoutWarnings) {
     const auto revision = document->revision();
     const auto xml = document->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
     if (!xml) {
-        for (const auto& w : xml.error().export_warnings) ADD_FAILURE() << w.code << ": " << w.message;
+        for (const auto &w : xml.error().export_warnings) ADD_FAILURE() << w.code << ": " << w.message;
         FAIL() << xml.error().message;
     }
     EXPECT_TRUE(xml->warnings.empty());
-    const std::string text(reinterpret_cast<const char*>(xml->bytes.data()), xml->bytes.size());
+    const std::string text(reinterpret_cast<const char *>(xml->bytes.data()), xml->bytes.size());
     EXPECT_NE(text.find("version=\"4.70\""), std::string::npos);
     EXPECT_EQ(text.find("<InstrumentLabel>"), std::string::npos);
     EXPECT_NE(text.find("<longName>Piano</longName>"), std::string::npos);
@@ -283,18 +282,19 @@ TEST(Export470, ConvertsInstrumentNamesWithoutWarnings) {
     EXPECT_EQ(document->revision(), revision);
     const auto legacy = document->export_score({.format = engrave::Format::Mscx, .native_version = "4.70"});
     ASSERT_TRUE(legacy);
-    const auto bounded = document->export_score_with_warnings({.format = engrave::Format::Mscx,
-        .capture = {.max_bytes = xml->bytes.size() + 1, .max_working_bytes = 16 * 1024 * 1024},
-        .native_version = "4.70"});
+    const auto bounded =
+        document->export_score_with_warnings({.format = engrave::Format::Mscx,
+                                              .capture = {.max_bytes = xml->bytes.size() + 1, .max_working_bytes = 16 * 1024 * 1024},
+                                              .native_version = "4.70"});
     ASSERT_TRUE(bounded);
     EXPECT_EQ(bounded->bytes, xml->bytes);
     EXPECT_TRUE(bounded->warnings.empty());
-    const auto too_small = document->export_score_with_warnings({.format = engrave::Format::Mscx,
-        .capture = {.max_bytes = 1024, .max_working_bytes = 16 * 1024 * 1024}, .native_version = "4.70"});
+    const auto too_small = document->export_score_with_warnings(
+        {.format = engrave::Format::Mscx, .capture = {.max_bytes = 1024, .max_working_bytes = 16 * 1024 * 1024}, .native_version = "4.70"});
     ASSERT_FALSE(too_small);
     EXPECT_EQ(too_small.error().code, ErrorCode::ResourceLimit);
-    const auto stopped = document->export_score_with_warnings({.format = engrave::Format::Mscz,
-        .capture = {.cancelled = [] { return true; }}, .native_version = "4.70"});
+    const auto stopped = document->export_score_with_warnings(
+        {.format = engrave::Format::Mscz, .capture = {.cancelled = [] { return true; }}, .native_version = "4.70"});
     ASSERT_FALSE(stopped);
     EXPECT_EQ(stopped.error().code, ErrorCode::Cancelled);
 }
@@ -308,12 +308,18 @@ TEST(Export470, InterruptsConversionAndSerializationAndRecovers) {
     for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
         for (auto stage : {Progress::Stage::Converting, Progress::Stage::Serializing}) {
             Progress observed;
-            const auto result = document->export_score_with_warnings({.format = format,
-                .capture = {.cancelled = [&] {
-                    const auto progress = engrave::testing::write470_progress();
-                    if (progress.stage == stage && progress.units >= 2) { observed = progress; return true; }
-                    return false;
-                }}, .native_version = "4.70"});
+            const auto result =
+                document->export_score_with_warnings({.format = format,
+                                                      .capture = {.cancelled =
+                                                                      [&] {
+                                                                          const auto progress = engrave::testing::write470_progress();
+                                                                          if (progress.stage == stage && progress.units >= 2) {
+                                                                              observed = progress;
+                                                                              return true;
+                                                                          }
+                                                                          return false;
+                                                                      }},
+                                                      .native_version = "4.70"});
             ASSERT_FALSE(result);
             EXPECT_EQ(result.error().code, ErrorCode::Cancelled);
             EXPECT_EQ(observed.stage, stage);
@@ -323,18 +329,27 @@ TEST(Export470, InterruptsConversionAndSerializationAndRecovers) {
         // Determine a working allowance reached *inside* serialization, then
         // replay with that allowance. Earlier phases fit; the next growth fails.
         std::uint64_t allowance = 0;
-        const auto measured = document->export_score_with_warnings({.format = format,
-            .capture = {.cancelled = [&] {
-                const auto p = engrave::testing::write470_progress();
-                if (!allowance && p.stage == Progress::Stage::Serializing && p.units >= 2) allowance = p.working_bytes;
-                return false;
-            }, .max_working_bytes = 128 * 1024 * 1024}, .native_version = "4.70"});
+        const auto measured = document->export_score_with_warnings(
+            {.format = format,
+             .capture = {.cancelled =
+                             [&] {
+                                 const auto p = engrave::testing::write470_progress();
+                                 if (!allowance && p.stage == Progress::Stage::Serializing && p.units >= 2) allowance = p.working_bytes;
+                                 return false;
+                             },
+                         .max_working_bytes = 128 * 1024 * 1024},
+             .native_version = "4.70"});
         ASSERT_TRUE(measured);
         ASSERT_GT(allowance, 0u);
         Progress last;
         const auto limited = document->export_score_with_warnings({.format = format,
-            .capture = {.cancelled = [&] { last = engrave::testing::write470_progress(); return false; },
-                        .max_working_bytes = allowance}, .native_version = "4.70"});
+                                                                   .capture = {.cancelled =
+                                                                                   [&] {
+                                                                                       last = engrave::testing::write470_progress();
+                                                                                       return false;
+                                                                                   },
+                                                                               .max_working_bytes = allowance},
+                                                                   .native_version = "4.70"});
         ASSERT_FALSE(limited);
         EXPECT_EQ(limited.error().code, ErrorCode::ResourceLimit);
         EXPECT_EQ(last.stage, Progress::Stage::Serializing);
@@ -352,8 +367,7 @@ TEST(Export470, ConvertsPageLocksWithStableObjectWarnings) {
     ASSERT_NE(start, std::string::npos);
     ASSERT_NE(end, std::string::npos);
     std::string second = source.substr(start, end + std::string_view("</Measure>").size() - start);
-    for (const auto& [from, to] : {std::pair{"C_C", "H_H"}, {"D_D", "I_I"}, {"E_E", "J_J"},
-                                  {"F_F", "K_K"}, {"G_G", "L_L"}}) {
+    for (const auto &[from, to] : {std::pair{"C_C", "H_H"}, {"D_D", "I_I"}, {"E_E", "J_J"}, {"F_F", "K_K"}, {"G_G", "L_L"}}) {
         const auto pos = second.find(from);
         ASSERT_NE(pos, std::string::npos);
         second.replace(pos, std::char_traits<char>::length(from), to);
@@ -362,10 +376,10 @@ TEST(Export470, ConvertsPageLocksWithStableObjectWarnings) {
     auto opened = g_engine->open(as_bytes(source), {.format = engrave::Format::Mscx});
     ASSERT_TRUE(opened);
     auto document = std::move(*opened);
-    auto& master = master_of(*document);
-    auto* measure = master.firstMeasure();
+    auto &master = master_of(*document);
+    auto *measure = master.firstMeasure();
     ASSERT_NE(measure, nullptr);
-    auto* next = measure->nextMeasure();
+    auto *next = measure->nextMeasure();
     ASSERT_NE(next, nullptr);
     const auto id = engrave::from_engine(measure->eid());
     const auto next_id = engrave::from_engine(next->eid());
@@ -373,12 +387,18 @@ TEST(Export470, ConvertsPageLocksWithStableObjectWarnings) {
     mu::engraving::RangeLock next_lock(next, next);
     master.addPageLock(&lock);
     master.addPageLock(&next_lock);
+
     struct RemoveLock {
-        MasterScore& score;
-        const mu::engraving::RangeLock* first;
-        const mu::engraving::RangeLock* second;
-        ~RemoveLock() { score.removePageLock(first); score.removePageLock(second); }
+        MasterScore &score;
+        const mu::engraving::RangeLock *first;
+        const mu::engraving::RangeLock *second;
+
+        ~RemoveLock() {
+            score.removePageLock(first);
+            score.removePageLock(second);
+        }
     } remove_lock{master, &lock, &next_lock};
+
     for (int repeat = 0; repeat != 2; ++repeat) {
         const auto result = document->export_score_with_warnings({.format = engrave::Format::Mscz, .native_version = "4.70"});
         ASSERT_TRUE(result);
@@ -396,14 +416,14 @@ TEST(Export470, ConvertsPageLocksWithStableObjectWarnings) {
 TEST(Export470, RefusesANonNeutralFiveOnlyStyle) {
     auto document = open_path(write470_fixture());
     ASSERT_TRUE(document);
-    auto& master = master_of(*document);
+    auto &master = master_of(*document);
     const auto score_id = engrave::from_engine(master.eid());
     master.style().set(mu::engraving::Sid::minSystemDistance, mu::engraving::Spatium(99.0));
     const auto result = document->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
     ASSERT_FALSE(result);
     EXPECT_EQ(result.error().code, ErrorCode::Unsupported);
     ASSERT_EQ(result.error().export_warnings.size(), 1u);
-    const auto& warning = result.error().export_warnings.front();
+    const auto &warning = result.error().export_warnings.front();
     EXPECT_EQ(warning.code, "B470_UNSUPPORTED_FEATURE");
     EXPECT_NE(result.error().message.find("minSystemDistance"), std::string::npos);
     ASSERT_TRUE(warning.object);
@@ -414,7 +434,7 @@ TEST(Export470, RefusesANonNeutralFiveOnlyStyle) {
 TEST(Export470, DeduplicatesUnmappedStylesWithoutPublishing) {
     auto document = open_path(write470_fixture());
     ASSERT_TRUE(document);
-    auto& master = master_of(*document);
+    auto &master = master_of(*document);
     master.style().set(mu::engraving::Sid::minSystemDistance, mu::engraving::Spatium(99.0));
     master.style().set(mu::engraving::Sid::maxSystemDistance, mu::engraving::Spatium(100.0));
     const auto result = document->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
@@ -432,14 +452,14 @@ TEST(Export470, StaveLabelsSurviveDefaultExportAndReopen) {
     for (int pass = 0; pass < 2; ++pass) {
         auto saved = document->export_score({.format = engrave::Format::Mscx});
         ASSERT_TRUE(saved);
-        const std::string text(reinterpret_cast<const char*>(saved->data()), saved->size());
+        const std::string text(reinterpret_cast<const char *>(saved->data()), saved->size());
         for (auto value : {"<StaveSharingLabel>", "<eid>H_H</eid>", "<eid>I_I</eid>", "Players 1", "Players 2"})
             EXPECT_NE(text.find(value), std::string::npos) << value;
         const auto downgraded = document->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
         ASSERT_TRUE(downgraded);
-        const auto& warnings = downgraded->warnings;
+        const auto &warnings = downgraded->warnings;
         ASSERT_EQ(warnings.size(), 2u);
-        const std::string legacy(reinterpret_cast<const char*>(downgraded->bytes.data()), downgraded->bytes.size());
+        const std::string legacy(reinterpret_cast<const char *>(downgraded->bytes.data()), downgraded->bytes.size());
         EXPECT_EQ(legacy.find("StaveSharingLabel"), std::string::npos);
         EXPECT_EQ(warnings[0].code, "B470_STAVE_SHARING_LABEL_DROPPED");
         EXPECT_EQ(warnings[1].code, "B470_STAVE_SHARING_LABEL_DROPPED");
@@ -474,7 +494,8 @@ TEST(Export470, ConvertsConnectionsAndRefusesUnequalPitches) {
         auto document = open_path(write470_fixture().parent_path() / (std::string(name) + ".mscx"));
         ASSERT_TRUE(document);
         const auto result = document->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
-        if (!result) for (const auto& warning : result.error().export_warnings) ADD_FAILURE() << warning.message;
+        if (!result)
+            for (const auto &warning : result.error().export_warnings) ADD_FAILURE() << warning.message;
         ASSERT_TRUE(result) << result.error().message;
         EXPECT_TRUE(result->warnings.empty());
     }
@@ -519,19 +540,16 @@ TEST_P(WarningIdentity, InvalidArgumentWithoutArtifact) {
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(Malformed, WarningIdentity, testing::Values(
-    std::nullopt,
-    engrave::ExportWarningObject{"", "H_H"},
-    engrave::ExportWarningObject{"tie", ""},
-    engrave::ExportWarningObject{"tie", engrave::to_string(engrave::ElementId{UINT64_MAX, UINT64_MAX})},
-    engrave::ExportWarningObject{"page_lock", "A.."},
-    engrave::ExportWarningObject{"group_bracket", "B:"},
-    engrave::ExportWarningObject{"group_bracket", ":1"},
-    engrave::ExportWarningObject{"tie", "not-an-identity"},
-    engrave::ExportWarningObject{"tie", "locator:score:0/measure:0/tick:0/track:0/tieFor"},
-    engrave::ExportWarningObject{"tie", "locator:garbage"},
-    engrave::ExportWarningObject{"tie", "locator:score:0/measure:0/tick:0/track:0/note:/tieFor"},
-    engrave::ExportWarningObject{"tie", "locator:score:0/measure:0/tick:0/track:0/note:0/tieFor/extra"}));
+INSTANTIATE_TEST_SUITE_P(
+    Malformed, WarningIdentity,
+    testing::Values(std::nullopt, engrave::ExportWarningObject{"", "H_H"}, engrave::ExportWarningObject{"tie", ""},
+                    engrave::ExportWarningObject{"tie", engrave::to_string(engrave::ElementId{UINT64_MAX, UINT64_MAX})},
+                    engrave::ExportWarningObject{"page_lock", "A.."}, engrave::ExportWarningObject{"group_bracket", "B:"},
+                    engrave::ExportWarningObject{"group_bracket", ":1"}, engrave::ExportWarningObject{"tie", "not-an-identity"},
+                    engrave::ExportWarningObject{"tie", "locator:score:0/measure:0/tick:0/track:0/tieFor"},
+                    engrave::ExportWarningObject{"tie", "locator:garbage"},
+                    engrave::ExportWarningObject{"tie", "locator:score:0/measure:0/tick:0/track:0/note:/tieFor"},
+                    engrave::ExportWarningObject{"tie", "locator:score:0/measure:0/tick:0/track:0/note:0/tieFor/extra"}));
 
 TEST(Export470, MissingTieIdNamesTheStartNote) {
     auto source = read_text(write470_fixture().parent_path() / "ties_mismatched.mscx");
@@ -543,8 +561,8 @@ TEST(Export470, MissingTieIdNamesTheStartNote) {
     ASSERT_EQ(result.error().export_warnings.size(), 1u);
     EXPECT_EQ(result.error().export_warnings[0].object, (engrave::ExportWarningObject{"note", "G_G"}));
     // Exercise the explicit non-EID locator when no owner is addressable.
-    auto& master = master_of(**document);
-    for (auto* object : engrave::document_objects(master))
+    auto &master = master_of(**document);
+    for (auto *object : engrave::document_objects(master))
         if (object->eid().isValid()) master.eidRegister()->removeItem(object);
     auto first = (*document)->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
     auto second = (*document)->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
@@ -557,11 +575,11 @@ TEST(Export470, MissingTieIdNamesTheStartNote) {
 TEST(Export470, HiddenExcerptAndMasterStavesAreBothChecked) {
     auto document = open_path(write470_fixture().parent_path() / "excerpts.mscx");
     ASSERT_TRUE(document);
-    auto& master = master_of(*document);
+    auto &master = master_of(*document);
     std::size_t ties = 0;
-    for (auto* object : engrave::document_objects(master)) {
+    for (auto *object : engrave::document_objects(master)) {
         if (!object->isNote()) continue;
-        auto* tie = static_cast<mu::engraving::Note*>(object)->tieFor();
+        auto *tie = static_cast<mu::engraving::Note *>(object)->tieFor();
         if (!tie || !tie->endNote()) continue;
         ++ties;
         tie->endNote()->setPitch(tie->startNote()->pitch() + 2);
@@ -572,7 +590,7 @@ TEST(Export470, HiddenExcerptAndMasterStavesAreBothChecked) {
         auto result = document->export_score_with_warnings({.format = format, .native_version = "4.70"});
         ASSERT_FALSE(result);
         ASSERT_EQ(result.error().export_warnings.size(), ties);
-        for (const auto& warning : result.error().export_warnings) EXPECT_EQ(warning.code, "B470_INVALID_TIE");
+        for (const auto &warning : result.error().export_warnings) EXPECT_EQ(warning.code, "B470_INVALID_TIE");
     }
 }
 
@@ -584,7 +602,7 @@ TEST(Export470, EnabledFluteGroupingIsWarnedAndReopensDisabled) {
         auto result = document->export_score_with_warnings({.format = format, .native_version = "4.70"});
         ASSERT_TRUE(result) << result.error().message;
         ASSERT_EQ(result->warnings.size(), 4u);
-        for (const auto& warning : result->warnings) EXPECT_EQ(warning.code, "B470_INSTRUMENT_GROUP_NAME_DROPPED");
+        for (const auto &warning : result->warnings) EXPECT_EQ(warning.code, "B470_INSTRUMENT_GROUP_NAME_DROPPED");
         auto reopened = g_engine->open(result->bytes, {.format = format});
         ASSERT_TRUE(reopened);
         EXPECT_FALSE(master_of(**reopened).style().styleB(mu::engraving::Sid::windsNameByGroup));
@@ -598,9 +616,9 @@ TEST(Export470, PartNumericIdsSurviveButPartEidsHaveNoLegacyField) {
     ASSERT_TRUE(document);
     auto result = document->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
     ASSERT_TRUE(result);
-    const std::string xml(reinterpret_cast<const char*>(result->bytes.data()), result->bytes.size());
-    for (const auto* id : {"1", "2", "3", "4"}) EXPECT_NE(xml.find(std::string("<Part id=\"") + id + "\">"), std::string::npos);
-    for (const auto* id : {"P_P", "Q_Q", "R_R", "S_S"}) EXPECT_EQ(xml.find(std::string("<eid>") + id + "</eid>"), std::string::npos);
+    const std::string xml(reinterpret_cast<const char *>(result->bytes.data()), result->bytes.size());
+    for (const auto *id : {"1", "2", "3", "4"}) EXPECT_NE(xml.find(std::string("<Part id=\"") + id + "\">"), std::string::npos);
+    for (const auto *id : {"P_P", "Q_Q", "R_R", "S_S"}) EXPECT_EQ(xml.find(std::string("<eid>") + id + "</eid>"), std::string::npos);
     auto reopened = g_engine->open(result->bytes, {.format = engrave::Format::Mscx});
     ASSERT_TRUE(reopened);
     EXPECT_EQ(master_of(**reopened).parts().size(), 4u);
@@ -608,7 +626,7 @@ TEST(Export470, PartNumericIdsSurviveButPartEidsHaveNoLegacyField) {
 
 /// Checks the error a call must fail with, without reading .error() of a success.
 template <typename T>
-void expect_code(const engrave::Result<T>& result, ErrorCode expected, std::string_view what) {
+void expect_code(const engrave::Result<T> &result, ErrorCode expected, std::string_view what) {
     if (result) {
         ADD_FAILURE() << what << ": the call succeeded";
         return;
@@ -622,15 +640,17 @@ void expect_code(const engrave::Result<T>& result, ErrorCode expected, std::stri
 /// S6's; a read test drives the primitive the same way the handle tests do).
 class Command {
 public:
-    explicit Command(MasterScore& score) : m_score(score) {
+    explicit Command(MasterScore &score) : m_score(score) {
         mu::engraving::MScore::setError(mu::engraving::MsError::MS_NO_ERROR);
         m_score.startCmd(muse::TranslatableString::untranslatable("engrave read test"));
     }
+
     ~Command() {
         if (m_open) m_score.endCmd(false, true);
     }
-    Command(const Command&) = delete;
-    Command& operator=(const Command&) = delete;
+
+    Command(const Command &) = delete;
+    Command &operator=(const Command &) = delete;
 
     void commit() {
         m_score.endCmd(false, true);
@@ -640,7 +660,7 @@ public:
     }
 
 private:
-    MasterScore& m_score;
+    MasterScore &m_score;
     bool m_open = true;
 };
 
@@ -649,7 +669,7 @@ private:
 // One element of the comparison, as a line so that a difference prints readably.
 using Row = std::string;
 
-const char* type_name(const nlohmann::json& kind) {
+const char *type_name(const nlohmann::json &kind) {
     const std::string value = kind.get<std::string>();
     if (value == "chord") return "Chord";
     if (value == "rest") return "Rest";
@@ -665,27 +685,25 @@ Row note_row(int tick, std::size_t staff, std::size_t voice, int pitch) {
     return std::format("Note tick={} staff={} voice={} pitch={}", tick, staff, voice, pitch);
 }
 
-std::string value_text(const nlohmann::json& value) {
-    return value.is_string() ? value.get<std::string>() : value.dump();
-}
+std::string value_text(const nlohmann::json &value) { return value.is_string() ? value.get<std::string>() : value.dump(); }
 
 // The rows the semantic dump reports for one score body.
-void oracle_rows(const nlohmann::json& body, std::multiset<Row>& rows) {
-    const nlohmann::json& events = body.at("events");
+void oracle_rows(const nlohmann::json &body, std::multiset<Row> &rows) {
+    const nlohmann::json &events = body.at("events");
     for (std::size_t staff = 0; staff < events.size(); ++staff) {
         for (std::size_t voice = 0; voice < events[staff].size(); ++voice) {
-            for (const nlohmann::json& item : events[staff][voice]) {
+            for (const nlohmann::json &item : events[staff][voice]) {
                 const int tick = item.at("tick").get<int>();
                 const int ticks = item.at("ticks").get<int>();
                 rows.insert(event_row(type_name(item.at("kind")), tick, staff, voice, ticks));
                 if (!item.contains("notes")) continue;
-                for (const nlohmann::json& note : item.at("notes")) {
+                for (const nlohmann::json &note : item.at("notes")) {
                     rows.insert(note_row(tick, staff, voice, note.at("pitch").get<int>()));
                 }
             }
         }
     }
-    for (const nlohmann::json& signature : body.at("signatures")) {
+    for (const nlohmann::json &signature : body.at("signatures")) {
         const std::string type = signature.at("type").get<std::string>();
         const int tick = signature.at("tick").get<int>();
         const std::size_t staff = signature.at("staff").get<std::size_t>();
@@ -699,23 +717,23 @@ void oracle_rows(const nlohmann::json& body, std::multiset<Row>& rows) {
     }
 }
 
-const PropertyRead* property(const engrave::ElementInfo& element, std::string_view name) {
-    for (const PropertyRead& read : element.props) {
+const PropertyRead *property(const engrave::ElementInfo &element, std::string_view name) {
+    for (const PropertyRead &read : element.props) {
         if (read.name == name) return &read;
     }
     return nullptr;
 }
 
-std::int64_t int_property(const engrave::ElementInfo& element, std::string_view name) {
-    const PropertyRead* read = property(element, name);
+std::int64_t int_property(const engrave::ElementInfo &element, std::string_view name) {
+    const PropertyRead *read = property(element, name);
     EXPECT_NE(read, nullptr) << element.type << " " << engrave::to_string(element.id) << " has no " << name;
     if (!read || !std::holds_alternative<std::int64_t>(read->value)) return -1;
     return std::get<std::int64_t>(read->value);
 }
 
 // The rows a query reports, in the same form as oracle_rows.
-void query_rows(const std::vector<engrave::ElementInfo>& elements, std::multiset<Row>& rows) {
-    for (const engrave::ElementInfo& element : elements) {
+void query_rows(const std::vector<engrave::ElementInfo> &elements, std::multiset<Row> &rows) {
+    for (const engrave::ElementInfo &element : elements) {
         const auto tick = static_cast<int>(ticks_of(element.tick));
         const auto staff = static_cast<std::size_t>(element.staff);
         const auto voice = static_cast<std::size_t>(element.voice);
@@ -726,12 +744,11 @@ void query_rows(const std::vector<engrave::ElementInfo>& elements, std::multiset
         } else if (element.type == "Clef") {
             rows.insert(std::format("Clef tick={} staff={}", tick, staff));
         } else if (element.type == "KeySig") {
-            rows.insert(std::format("KeySig tick={} staff={} value={}", tick, staff,
-                                    int_property(element, "concertKey")));
+            rows.insert(std::format("KeySig tick={} staff={} value={}", tick, staff, int_property(element, "concertKey")));
         } else if (element.type == "TimeSig") {
-            const PropertyRead* read = property(element, "timesig");
+            const PropertyRead *read = property(element, "timesig");
             EXPECT_NE(read, nullptr) << "a TimeSig has no timesig";
-            const auto& sig = std::get<engrave::Fraction>(read->value);
+            const auto &sig = std::get<engrave::Fraction>(read->value);
             rows.insert(std::format("TimeSig tick={} staff={} value={}/{}", tick, staff, sig.num, sig.den));
         } else if (element.type == "Clef") {
             rows.insert(std::format("Clef tick={} staff={}", tick, staff));
@@ -743,22 +760,21 @@ void query_rows(const std::vector<engrave::ElementInfo>& elements, std::multiset
 
 /// Compares two row sets, reporting the rows whose counts differ rather than the whole
 /// set.
-void expect_same_rows(const std::multiset<Row>& expected, const std::multiset<Row>& actual, std::string_view what) {
+void expect_same_rows(const std::multiset<Row> &expected, const std::multiset<Row> &actual, std::string_view what) {
     std::map<Row, int> wanted;
-    for (const Row& row : expected) ++wanted[row];
+    for (const Row &row : expected) ++wanted[row];
     std::map<Row, int> got;
-    for (const Row& row : actual) ++got[row];
+    for (const Row &row : actual) ++got[row];
     int reported = 0;
-    for (const auto& [row, count] : wanted) {
+    for (const auto &[row, count] : wanted) {
         const auto found = got.find(row);
         const int mine = found == got.end() ? 0 : found->second;
         if (mine == count) continue;
         if (reported++ < 20) {
-            ADD_FAILURE() << what << ": " << row << " appears " << mine << " time(s) in the query, " << count
-                          << " in the oracle";
+            ADD_FAILURE() << what << ": " << row << " appears " << mine << " time(s) in the query, " << count << " in the oracle";
         }
     }
-    for (const auto& [row, count] : got) {
+    for (const auto &[row, count] : got) {
         if (wanted.contains(row)) continue;
         if (reported++ < 20) ADD_FAILURE() << what << ": the query has " << row << " " << count << " time(s), the oracle none";
     }
@@ -779,8 +795,7 @@ std::vector<std::string> names(std::span<const std::string_view> values) {
 /// Every element of the comparison's types in one score, asked for measure window by
 /// measure window so that a large score stays under the result cap, and page by page
 /// so that paging is part of every corpus run.
-std::vector<engrave::ElementInfo> read_all(engrave::Document& document, const engrave::ScoreSel& score,
-                                           std::size_t measures) {
+std::vector<engrave::ElementInfo> read_all(engrave::Document &document, const engrave::ScoreSel &score, std::size_t measures) {
     std::vector<engrave::ElementInfo> elements;
     for (std::size_t first = 0; first < measures; first += engrave::max_query_measures) {
         engrave::Query request;
@@ -796,8 +811,7 @@ std::vector<engrave::ElementInfo> read_all(engrave::Document& document, const en
                 ADD_FAILURE() << "query: " << page.error().message;
                 return elements;
             }
-            elements.insert(elements.end(), std::make_move_iterator(page->elements.begin()),
-                            std::make_move_iterator(page->elements.end()));
+            elements.insert(elements.end(), std::make_move_iterator(page->elements.begin()), std::make_move_iterator(page->elements.end()));
             if (!page->next_cursor) break;
             cursor = *page->next_cursor;
         }
@@ -808,7 +822,7 @@ std::vector<engrave::ElementInfo> read_all(engrave::Document& document, const en
 // --- corpus choice -------------------------------------------------------
 
 std::filesystem::path corpus_file(std::initializer_list<std::string_view> extensions) {
-    for (const auto& path : g_corpus) {
+    for (const auto &path : g_corpus) {
         if (extensions.size() == 0) return path;
         for (std::string_view extension : extensions) {
             if (path.extension() == extension) return path;
@@ -819,7 +833,7 @@ std::filesystem::path corpus_file(std::initializer_list<std::string_view> extens
 
 /// The first corpus score that has an element of a type.
 std::unique_ptr<engrave::Document> open_with(std::string_view type) {
-    for (const auto& path : g_corpus) {
+    for (const auto &path : g_corpus) {
         auto document = g_engine->open(path);
         if (!document) continue;
         engrave::Query request;
@@ -833,7 +847,7 @@ std::unique_ptr<engrave::Document> open_with(std::string_view type) {
 // --- the tests -----------------------------------------------------------
 
 TEST(Read, EditRefreshesLayoutAfterAFontIsAdded) {
-    const auto it = std::ranges::find_if(g_corpus, [](const auto& path) { return path.filename() == "linked_parts.mscx"; });
+    const auto it = std::ranges::find_if(g_corpus, [](const auto &path) { return path.filename() == "linked_parts.mscx"; });
     ASSERT_NE(it, g_corpus.end());
     std::string xml = read_text(*it);
     const auto frame = xml.find("<height>10</height>");
@@ -841,8 +855,8 @@ TEST(Read, EditRefreshesLayoutAfterAFontIsAdded) {
     xml.insert(frame, "<Text><style>title</style><text><font face=\"Petaluma Script\"/>MMMWWWiii012345</text></Text>");
     auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::Mscx});
     ASSERT_TRUE(opened);
-    auto& document = **opened;
-    auto* title = master_of(document).getText(mu::engraving::TextStyleType::TITLE);
+    auto &document = **opened;
+    auto *title = master_of(document).getText(mu::engraving::TextStyleType::TITLE);
     ASSERT_NE(title, nullptr);
     const double before = title->ldata()->bbox().width();
     ASSERT_GT(before, 0.0);
@@ -865,7 +879,7 @@ TEST(Read, PositionsExpandRepeatsInRawPageUnitsWithoutEditing) {
 </score-partwise>)";
     auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::MusicXml});
     ASSERT_TRUE(opened);
-    auto& document = **opened;
+    auto &document = **opened;
     const auto revision = document.revision();
     for (const auto kind : {engrave::PositionKind::Measure, engrave::PositionKind::Segment}) {
         const auto positions = document.positions(kind);
@@ -891,7 +905,7 @@ TEST(Read, PositionsExpandRepeatsInRawPageUnitsWithoutEditing) {
 }
 
 TEST(Read, PositionsUsePageLocalCoordinatesOnLaterPages) {
-    const auto it = std::ranges::find_if(g_corpus, [](const auto& path) { return path.filename() == "slurs.mscz"; });
+    const auto it = std::ranges::find_if(g_corpus, [](const auto &path) { return path.filename() == "slurs.mscz"; });
     ASSERT_NE(it, g_corpus.end());
     auto document = open_path(*it);
     ASSERT_TRUE(document);
@@ -902,12 +916,12 @@ TEST(Read, PositionsUsePageLocalCoordinatesOnLaterPages) {
     ASSERT_TRUE(positions);
     EXPECT_NEAR(positions->page_width, 9921.264, 1.0);
     EXPECT_NEAR(positions->page_height, 1417.32, 1.0);
-    const auto second_page = std::ranges::find_if(positions->elements, [](const auto& e) { return e.page == 1; });
+    const auto second_page = std::ranges::find_if(positions->elements, [](const auto &e) { return e.page == 1; });
     ASSERT_NE(second_page, positions->elements.end());
     EXPECT_NEAR(second_page->x, 708.6612, 1.0);
     EXPECT_NEAR(second_page->y, 578.6674, 1.0);
     EXPECT_LT(second_page->y, positions->page_height);
-    for (const auto& element : positions->elements) {
+    for (const auto &element : positions->elements) {
         EXPECT_GE(element.page, 0);
         EXPECT_LT(element.page, *pages);
     }
@@ -932,11 +946,14 @@ TEST(Read, PositionCaptureLimitsAndCancellation) {
         ASSERT_EQ(bounded->elements.size(), original->elements.size());
         ASSERT_EQ(bounded->events.size(), original->events.size());
         for (std::size_t i = 0; i < bounded->elements.size(); ++i) {
-            const auto& a = bounded->elements[i];
-            const auto& b = original->elements[i];
-            EXPECT_EQ(a.id, b.id); EXPECT_EQ(a.page, b.page);
-            EXPECT_DOUBLE_EQ(a.x, b.x); EXPECT_DOUBLE_EQ(a.y, b.y);
-            EXPECT_DOUBLE_EQ(a.sx, b.sx); EXPECT_DOUBLE_EQ(a.sy, b.sy);
+            const auto &a = bounded->elements[i];
+            const auto &b = original->elements[i];
+            EXPECT_EQ(a.id, b.id);
+            EXPECT_EQ(a.page, b.page);
+            EXPECT_DOUBLE_EQ(a.x, b.x);
+            EXPECT_DOUBLE_EQ(a.y, b.y);
+            EXPECT_DOUBLE_EQ(a.sx, b.sx);
+            EXPECT_DOUBLE_EQ(a.sy, b.sy);
         }
         for (std::size_t i = 0; i < bounded->events.size(); ++i) {
             EXPECT_EQ(bounded->events[i].elid, original->events[i].elid);
@@ -950,7 +967,7 @@ TEST(Read, PositionCaptureLimitsAndCancellation) {
 }
 
 TEST(Read, ExcerptPositionsMatchTheLegacyWriterAndSelectionErrors) {
-    const auto it = std::ranges::find_if(g_corpus, [](const auto& path) { return path.filename() == "linked_parts.mscx"; });
+    const auto it = std::ranges::find_if(g_corpus, [](const auto &path) { return path.filename() == "linked_parts.mscx"; });
     ASSERT_NE(it, g_corpus.end());
     auto document = open_path(*it);
     ASSERT_TRUE(document);
@@ -975,8 +992,8 @@ TEST(Read, ExcerptPositionsMatchTheLegacyWriterAndSelectionErrors) {
         ASSERT_EQ(positions->elements.size(), legacy.at("elements").size());
         ASSERT_EQ(positions->events.size(), legacy.at("events").size());
         for (std::size_t i = 0; i < positions->elements.size(); ++i) {
-            const auto& element = positions->elements[i];
-            const auto& expected = legacy.at("elements")[i];
+            const auto &element = positions->elements[i];
+            const auto &expected = legacy.at("elements")[i];
             EXPECT_EQ(element.id, static_cast<int>(i));
             EXPECT_GE(element.page, 0);
             EXPECT_LT(element.page, *pages);
@@ -1001,14 +1018,14 @@ TEST(Read, ExcerptPositionsMatchTheLegacyWriterAndSelectionErrors) {
     const auto notes = document->query({.types = {"Note"}, .limit = 1});
     ASSERT_TRUE(notes);
     ASSERT_FALSE(notes->elements.empty());
-    expect_code(document->positions(engrave::PositionKind::Measure, {notes->elements.front().id}),
-                ErrorCode::InvalidArgument, "note is not a score");
+    expect_code(document->positions(engrave::PositionKind::Measure, {notes->elements.front().id}), ErrorCode::InvalidArgument,
+                "note is not a score");
     expect_code(document->positions(static_cast<engrave::PositionKind>(99)), ErrorCode::InvalidArgument, "unknown kind");
 
     // Keep the removed score alive in the engine's id registry while checking
     // that it is no longer reachable from the document, then restore ownership.
-    MasterScore& master = master_of(*document);
-    auto* removed = master.excerpts().front();
+    MasterScore &master = master_of(*document);
+    auto *removed = master.excerpts().front();
     master.removeExcerpt(removed);
     expect_code(document->outline(excerpt), ErrorCode::StaleHandle, "stale outline");
     expect_code(document->positions(engrave::PositionKind::Measure, excerpt), ErrorCode::StaleHandle, "stale score");
@@ -1018,17 +1035,17 @@ TEST(Read, ExcerptPositionsMatchTheLegacyWriterAndSelectionErrors) {
 TEST(Read, PositionsRefuseAPoisonedDocument) {
     auto document = open_path(corpus_file({".mscx"}));
     ASSERT_TRUE(document);
-    auto& hooks = engrave::DocumentAccess::edit_hooks(*document);
+    auto &hooks = engrave::DocumentAccess::edit_hooks(*document);
     hooks.policy = engrave::api::Policy::Snapshot;
     hooks.fail_restore = true;
     hooks.before_step = [](std::size_t) { throw std::runtime_error("injected"); };
-    EXPECT_ANY_THROW((void)document->edit({{engrave::SetStyle{{}, "staffDistance", 9.0}}}));
+    EXPECT_ANY_THROW((void) document->edit({{engrave::SetStyle{{}, "staffDistance", 9.0}}}));
     hooks = {};
     expect_code(document->positions(engrave::PositionKind::Measure), ErrorCode::Poisoned, "poisoned document");
 }
 
 TEST(Read, ExcerptExportsReopenAsIndependentScores) {
-    const auto it = std::ranges::find_if(g_corpus, [](const auto& path) { return path.filename() == "chordline_path.mscx"; });
+    const auto it = std::ranges::find_if(g_corpus, [](const auto &path) { return path.filename() == "chordline_path.mscx"; });
     ASSERT_NE(it, g_corpus.end());
     auto document = open_path(*it);
     ASSERT_TRUE(document);
@@ -1048,31 +1065,29 @@ TEST(Read, ExcerptExportsReopenAsIndependentScores) {
     const auto source_notes = document->query({.score = selection, .types = {"Note"}, .props = {"pitch"}});
     ASSERT_TRUE(source_notes);
     ASSERT_FALSE(source_notes->elements.empty());
-    const auto pitches = [](const engrave::QueryResult& notes) {
+    const auto pitches = [](const engrave::QueryResult &notes) {
         std::vector<std::int64_t> result;
-        for (const auto& note : notes.elements) {
+        for (const auto &note : notes.elements) {
             if (!note.props.empty()) result.push_back(std::get<std::int64_t>(note.props.front().value));
         }
         std::ranges::sort(result);
         return result;
     };
     const auto revision = document->revision();
-    for (const auto format : {engrave::Format::Mscx, engrave::Format::Mscz, engrave::Format::MusicXml,
-                              engrave::Format::Mxl, engrave::Format::Midi}) {
+    for (const auto format :
+         {engrave::Format::Mscx, engrave::Format::Mscz, engrave::Format::MusicXml, engrave::Format::Mxl, engrave::Format::Midi}) {
         SCOPED_TRACE(engrave::to_string(format));
         const auto exported = document->export_score({.format = format, .score = selection});
         ASSERT_TRUE(exported);
         if (format == engrave::Format::Mscx) {
-            const std::string xml(reinterpret_cast<const char*>(exported->data()), exported->size());
-            EXPECT_EQ(xml.find("<linkedTo>"), std::string::npos)
-                << "this one-staff excerpt must not refer to master-score elements";
-            const auto bounded = document->export_score({.format = format, .score = selection,
-                .capture = {.max_bytes = exported->size() + 1}});
+            const std::string xml(reinterpret_cast<const char *>(exported->data()), exported->size());
+            EXPECT_EQ(xml.find("<linkedTo>"), std::string::npos) << "this one-staff excerpt must not refer to master-score elements";
+            const auto bounded =
+                document->export_score({.format = format, .score = selection, .capture = {.max_bytes = exported->size() + 1}});
             ASSERT_TRUE(bounded);
             EXPECT_EQ(*bounded, *exported);
-            expect_code(document->export_score({.format = format, .score = selection,
-                .capture = {.max_bytes = exported->size() - 1}}), ErrorCode::ResourceLimit,
-                "standalone excerpt output limit");
+            expect_code(document->export_score({.format = format, .score = selection, .capture = {.max_bytes = exported->size() - 1}}),
+                        ErrorCode::ResourceLimit, "standalone excerpt output limit");
         }
         const auto reopened = g_engine->open(*exported, {.format = format});
         ASSERT_TRUE(reopened) << reopened.error().message;
@@ -1096,23 +1111,22 @@ TEST(Read, ExcerptExportsReopenAsIndependentScores) {
     }
     EXPECT_EQ(document->revision(), revision);
     const ElementId missing{0x1234, 0x5678};
-    expect_code(document->export_score({.format = engrave::Format::Mscz, .score = {missing}}),
-                ErrorCode::NotFound, "missing excerpt export");
+    expect_code(document->export_score({.format = engrave::Format::Mscz, .score = {missing}}), ErrorCode::NotFound,
+                "missing excerpt export");
     const auto master_notes = document->query({.types = {"Note"}, .limit = 1});
     ASSERT_TRUE(master_notes);
     ASSERT_FALSE(master_notes->elements.empty());
-    expect_code(document->export_score({.format = engrave::Format::MusicXml,
-                                        .score = {master_notes->elements.front().id}}),
+    expect_code(document->export_score({.format = engrave::Format::MusicXml, .score = {master_notes->elements.front().id}}),
                 ErrorCode::InvalidArgument, "note is not an excerpt");
-    auto* removed = master_of(*document).excerpts().front();
+    auto *removed = master_of(*document).excerpts().front();
     master_of(*document).removeExcerpt(removed);
-    expect_code(document->export_score({.format = engrave::Format::Mscz, .score = selection}),
-                ErrorCode::StaleHandle, "stale excerpt export");
+    expect_code(document->export_score({.format = engrave::Format::Mscz, .score = selection}), ErrorCode::StaleHandle,
+                "stale excerpt export");
     master_of(*document).addExcerpt(removed);
 }
 
 TEST(Read, MscxMasterExportRetainsStyle) {
-    const auto it = std::ranges::find_if(g_corpus, [](const auto& path) { return path.filename() == "linked_parts.mscx"; });
+    const auto it = std::ranges::find_if(g_corpus, [](const auto &path) { return path.filename() == "linked_parts.mscx"; });
     ASSERT_NE(it, g_corpus.end());
     auto document = open_path(*it);
     ASSERT_TRUE(document);
@@ -1134,8 +1148,7 @@ TEST(Read, MscxMasterExportRetainsStyle) {
 TEST(Read, ScoreCaptureLimitsAndCancellation) {
     auto document = open_path(corpus_file({".mscx"}));
     ASSERT_TRUE(document);
-    for (const auto format : {engrave::Format::Mscx, engrave::Format::Mscz,
-                              engrave::Format::MusicXml, engrave::Format::Mxl}) {
+    for (const auto format : {engrave::Format::Mscx, engrave::Format::Mscz, engrave::Format::MusicXml, engrave::Format::Mxl}) {
         SCOPED_TRACE(engrave::to_string(format));
         auto tick = std::time(nullptr) / 2;
         auto original = document->export_score({.format = format});
@@ -1145,8 +1158,9 @@ TEST(Read, ScoreCaptureLimitsAndCancellation) {
         // ZIP stores the current time in two-second units. Retry a pair that
         // happened to straddle that boundary, so identical writers compare
         // exactly without masking any archive bytes.
-        for (int attempt = 0; attempt < 2 && (format == engrave::Format::Mscz || format == engrave::Format::Mxl)
-                              && tick != std::time(nullptr) / 2; ++attempt) {
+        for (int attempt = 0;
+             attempt < 2 && (format == engrave::Format::Mscz || format == engrave::Format::Mxl) && tick != std::time(nullptr) / 2;
+             ++attempt) {
             tick = std::time(nullptr) / 2;
             original = document->export_score({.format = format});
             ASSERT_TRUE(original);
@@ -1159,19 +1173,20 @@ TEST(Read, ScoreCaptureLimitsAndCancellation) {
         const auto workspace = document->export_score({.format = format, .capture = {.max_working_bytes = 64}});
         expect_code(workspace, ErrorCode::ResourceLimit, "score workspace limit");
         int checks = 0;
-        const auto cancelled = document->export_score({.format = format,
-            .capture = {.cancelled = [&] { return ++checks == 20; }}});
+        const auto cancelled = document->export_score({.format = format, .capture = {.cancelled = [&] { return ++checks == 20; }}});
         expect_code(cancelled, ErrorCode::Cancelled, "cancelled score capture");
         EXPECT_EQ(checks, 20);
     }
-    expect_code(document->export_score({.format = engrave::Format::Midi, .capture = {.max_bytes = 64}}),
-                ErrorCode::Unsupported, "bounded MIDI capture");
+    expect_code(document->export_score({.format = engrave::Format::Midi, .capture = {.max_bytes = 64}}), ErrorCode::Unsupported,
+                "bounded MIDI capture");
     int checks = 0;
-    EXPECT_THROW((void)document->export_score({.format = engrave::Format::Mscz,
-        .capture = {.cancelled = [&]() -> bool {
-            if (++checks == 20) throw std::runtime_error("capture callback failure");
-            return false;
-        }}}), std::runtime_error);
+    EXPECT_THROW((void) document->export_score({.format = engrave::Format::Mscz, .capture = {.cancelled = [&]() -> bool {
+                                                                                     if (++checks == 20)
+                                                                                         throw std::runtime_error(
+                                                                                             "capture callback failure");
+                                                                                     return false;
+                                                                                 }}}),
+                 std::runtime_error);
     EXPECT_EQ(checks, 20);
     EXPECT_TRUE(document->export_score({.format = engrave::Format::Mscz}));
 }
@@ -1180,34 +1195,32 @@ TEST(Read, LargeScoreCaptureStopsBeforeMaterializingTheOutput) {
     auto document = open_path(corpus_file({".mscx"}));
     ASSERT_TRUE(document);
     master_of(*document).setMetaTag(u"workTitle", muse::String::fromStdString(std::string(512 * 1024, 'x')));
-    const auto rejected = document->export_score({.format = engrave::Format::Mscx,
-                                                   .capture = {.max_bytes = 1024}});
+    const auto rejected = document->export_score({.format = engrave::Format::Mscx, .capture = {.max_bytes = 1024}});
     expect_code(rejected, ErrorCode::ResourceLimit, "large score output limit");
     const auto success = document->export_score({.format = engrave::Format::Mscx});
     ASSERT_TRUE(success);
     ASSERT_GT(success->size(), 512u * 1024u);
-    const auto bounded = document->export_score({.format = engrave::Format::Mscx,
-                                                 .capture = {.max_bytes = success->size() + 1}});
+    const auto bounded = document->export_score({.format = engrave::Format::Mscx, .capture = {.max_bytes = success->size() + 1}});
     ASSERT_TRUE(bounded);
     EXPECT_EQ(*bounded, *success);
     auto tick = std::time(nullptr) / 2;
     auto archive = document->export_score({.format = engrave::Format::Mscz});
     ASSERT_TRUE(archive);
-    auto bounded_archive = document->export_score({.format = engrave::Format::Mscz,
-        .capture = {.max_bytes = archive->size() + 1, .max_working_bytes = 16 * 1024 * 1024}});
+    auto bounded_archive = document->export_score(
+        {.format = engrave::Format::Mscz, .capture = {.max_bytes = archive->size() + 1, .max_working_bytes = 16 * 1024 * 1024}});
     for (int attempt = 0; attempt < 2 && tick != std::time(nullptr) / 2; ++attempt) {
         tick = std::time(nullptr) / 2;
         archive = document->export_score({.format = engrave::Format::Mscz});
         ASSERT_TRUE(archive);
-        bounded_archive = document->export_score({.format = engrave::Format::Mscz,
-            .capture = {.max_bytes = archive->size() + 1, .max_working_bytes = 16 * 1024 * 1024}});
+        bounded_archive = document->export_score(
+            {.format = engrave::Format::Mscz, .capture = {.max_bytes = archive->size() + 1, .max_working_bytes = 16 * 1024 * 1024}});
     }
     ASSERT_TRUE(bounded_archive);
     EXPECT_EQ(*bounded_archive, *archive);
 }
 
 TEST(Read, StandaloneExcerptKeepsLinksBetweenItsOwnStaves) {
-    const auto it = std::ranges::find_if(g_corpus, [](const auto& path) { return path.filename() == "linked_parts.mscx"; });
+    const auto it = std::ranges::find_if(g_corpus, [](const auto &path) { return path.filename() == "linked_parts.mscx"; });
     ASSERT_NE(it, g_corpus.end());
     auto document = open_path(*it);
     ASSERT_TRUE(document);
@@ -1217,7 +1230,7 @@ TEST(Read, StandaloneExcerptKeepsLinksBetweenItsOwnStaves) {
     const engrave::ScoreSel selection{full->excerpts.front().id};
     const auto exported = document->export_score({.format = engrave::Format::Mscx, .score = selection});
     ASSERT_TRUE(exported);
-    const std::string xml(reinterpret_cast<const char*>(exported->data()), exported->size());
+    const std::string xml(reinterpret_cast<const char *>(exported->data()), exported->size());
     std::set<std::string> seen;
     std::size_t cursor = 0, links = 0;
     while (cursor < xml.size()) {
@@ -1232,8 +1245,7 @@ TEST(Read, StandaloneExcerptKeepsLinksBetweenItsOwnStaves) {
         } else {
             const auto end = xml.find("</linkedTo>", link);
             ASSERT_NE(end, std::string::npos);
-            EXPECT_TRUE(seen.contains(xml.substr(link + 10, end - link - 10)))
-                << "a standalone link points outside the score or forward";
+            EXPECT_TRUE(seen.contains(xml.substr(link + 10, end - link - 10))) << "a standalone link points outside the score or forward";
             ++links;
             cursor = end + 11;
         }
@@ -1247,14 +1259,14 @@ TEST(Read, StandaloneExcerptKeepsLinksBetweenItsOwnStaves) {
     EXPECT_EQ(outline->parts.front().staves.size(), 2u);
     const auto notes = (*reopened)->query({.types = {"Note"}});
     ASSERT_TRUE(notes);
-    EXPECT_TRUE(std::ranges::any_of(notes->elements, [](const auto& note) { return note.links.size() >= 2; }));
+    EXPECT_TRUE(std::ranges::any_of(notes->elements, [](const auto &note) { return note.links.size() >= 2; }));
 }
 
 TEST(Read, MatchesTheSemanticOracle) {
     ASSERT_FALSE(g_corpus.empty());
     int scores = 0;
     std::size_t rows = 0;
-    for (const auto& path : g_corpus) {
+    for (const auto &path : g_corpus) {
         auto document = open_path(path);
         if (!document) continue;
         SCOPED_TRACE(path.string());
@@ -1276,7 +1288,7 @@ TEST(Read, MatchesTheSemanticOracle) {
         // one's body under its name, in master order.  Two excerpts of one part name are
         // told apart by their order, which both lists keep.
         std::size_t next = 0;
-        for (const nlohmann::json& listed : dump.at("excerpts")) {
+        for (const nlohmann::json &listed : dump.at("excerpts")) {
             if (!listed.contains("score")) continue;
             const std::string name = listed.at("name").get<std::string>();
             while (next < outline->excerpts.size() && outline->excerpts[next].name != name) ++next;
@@ -1284,14 +1296,13 @@ TEST(Read, MatchesTheSemanticOracle) {
                 ADD_FAILURE() << "the outline has no excerpt named '" << name << "'";
                 continue;
             }
-            const engrave::ExcerptInfo& excerpt = outline->excerpts[next++];
+            const engrave::ExcerptInfo &excerpt = outline->excerpts[next++];
             const auto excerpt_outline = document->outline(engrave::ScoreSel{excerpt.id});
             ASSERT_TRUE(excerpt_outline) << excerpt_outline.error().message;
             std::multiset<Row> excerpt_expected;
             oracle_rows(listed.at("score"), excerpt_expected);
             std::multiset<Row> excerpt_actual;
-            query_rows(read_all(*document, engrave::ScoreSel{excerpt.id}, excerpt_outline->measures.size()),
-                       excerpt_actual);
+            query_rows(read_all(*document, engrave::ScoreSel{excerpt.id}, excerpt_outline->measures.size()), excerpt_actual);
             expect_same_rows(excerpt_expected, excerpt_actual, "the excerpt '" + excerpt.name + "'");
             rows += excerpt_expected.size();
         }
@@ -1303,11 +1314,11 @@ TEST(Read, MatchesTheSemanticOracle) {
 
 TEST(Read, OutlineDescribesTheScore) {
     ASSERT_FALSE(g_corpus.empty());
-    for (const auto& path : g_corpus) {
+    for (const auto &path : g_corpus) {
         auto document = open_path(path);
         if (!document) continue;
         SCOPED_TRACE(path.string());
-        MasterScore& master = master_of(*document);
+        MasterScore &master = master_of(*document);
         const nlohmann::json metadata = music::score_metadata(&master, std::vector<music::ScoreMetadataTrack>{});
         const auto outline = document->outline();
         ASSERT_TRUE(outline) << outline.error().message;
@@ -1327,15 +1338,15 @@ TEST(Read, OutlineDescribesTheScore) {
 
         // Parts and staves are named as the metadata names them, and every id it hands
         // out resolves.
-        const nlohmann::json& parts = metadata.at("parts");
+        const nlohmann::json &parts = metadata.at("parts");
         ASSERT_EQ(outline->parts.size(), parts.size());
         for (std::size_t i = 0; i < outline->parts.size(); ++i) {
-            const engrave::PartInfo& part = outline->parts[i];
+            const engrave::PartInfo &part = outline->parts[i];
             EXPECT_EQ(part.name, parts[i].at("name").get<std::string>());
             EXPECT_EQ(part.instrument_id, parts[i].at("instrumentId").get<std::string>());
             EXPECT_TRUE(document->get(part.id).has_value()) << "the part id does not resolve";
             ASSERT_FALSE(part.staves.empty());
-            for (const engrave::StaffInfo& staff : part.staves) {
+            for (const engrave::StaffInfo &staff : part.staves) {
                 EXPECT_TRUE(document->get(staff.id).has_value()) << "the staff id does not resolve";
                 EXPECT_EQ(staff.part, static_cast<std::int32_t>(i));
                 EXPECT_GE(staff.lines, 0);
@@ -1346,7 +1357,7 @@ TEST(Read, OutlineDescribesTheScore) {
         // measure at that index.
         ASSERT_EQ(outline->measures.size(), master.nmeasures());
         for (std::size_t i = 0; i < outline->measures.size(); ++i) {
-            const engrave::MeasureInfo& measure = outline->measures[i];
+            const engrave::MeasureInfo &measure = outline->measures[i];
             EXPECT_EQ(measure.index, static_cast<std::int32_t>(i));
             EXPECT_GT(measure.duration.num, 0);
             if (i > 0) EXPECT_LE(ticks_of(outline->measures[i - 1].tick), ticks_of(measure.tick));
@@ -1358,33 +1369,31 @@ TEST(Read, OutlineDescribesTheScore) {
         // tick and staff.  The dump's clefs are left out: a clef change is an element
         // of its own that a query reports, and the outline covers time, key and tempo.
         std::multiset<std::string> expected;
-        for (const nlohmann::json& signature : music::semantic_dump(&master).at("signatures")) {
+        for (const nlohmann::json &signature : music::semantic_dump(&master).at("signatures")) {
             const std::string type = signature.at("type").get<std::string>();
             if (type == "Clef") continue;
-            expected.insert(std::format("{} tick={} staff={}", type, signature.at("tick").get<int>(),
-                                        signature.at("staff").get<std::size_t>()));
+            expected.insert(
+                std::format("{} tick={} staff={}", type, signature.at("tick").get<int>(), signature.at("staff").get<std::size_t>()));
         }
         std::multiset<std::string> actual;
-        for (const engrave::SignatureInfo& signature : outline->signatures) {
+        for (const engrave::SignatureInfo &signature : outline->signatures) {
             if (signature.type == "Tempo") continue;
-            actual.insert(std::format("{} tick={} staff={}", signature.type, static_cast<int>(ticks_of(signature.tick)),
-                                      signature.staff));
+            actual.insert(std::format("{} tick={} staff={}", signature.type, static_cast<int>(ticks_of(signature.tick)), signature.staff));
         }
         EXPECT_EQ(expected, actual) << "the outline's signatures are not the dump's";
 
         // The tempo markings are the dump's annotations of that type.
         std::multiset<std::string> expected_tempi;
-        for (const nlohmann::json& annotation : music::semantic_dump(&master).at("annotations")) {
+        for (const nlohmann::json &annotation : music::semantic_dump(&master).at("annotations")) {
             if (annotation.at("type").get<std::string>() != "Tempo") continue;
             expected_tempi.insert(std::format("tick={} bpm={} text={}", annotation.at("tick").get<int>(),
-                                              annotation.at("bpm").get<double>(),
-                                              annotation.at("text").get<std::string>()));
+                                              annotation.at("bpm").get<double>(), annotation.at("text").get<std::string>()));
         }
         std::multiset<std::string> actual_tempi;
-        for (const engrave::SignatureInfo& signature : outline->signatures) {
+        for (const engrave::SignatureInfo &signature : outline->signatures) {
             if (signature.type != "Tempo") continue;
-            actual_tempi.insert(std::format("tick={} bpm={} text={}", static_cast<int>(ticks_of(signature.tick)),
-                                            signature.bpm, signature.text));
+            actual_tempi.insert(
+                std::format("tick={} bpm={} text={}", static_cast<int>(ticks_of(signature.tick)), signature.bpm, signature.text));
         }
         EXPECT_EQ(expected_tempi, actual_tempi) << "the outline's tempo markings are not the dump's";
     }
@@ -1407,9 +1416,9 @@ TEST(Read, FiltersAndPagingAgree) {
     ASSERT_GT(full->total, 20u) << "the corpus score is too small to page";
     EXPECT_FALSE(full->next_cursor);
 
-    const auto ids = [](const std::vector<engrave::ElementInfo>& elements) {
+    const auto ids = [](const std::vector<engrave::ElementInfo> &elements) {
         std::vector<std::string> result;
-        for (const auto& element : elements) result.push_back(engrave::to_string(element.id));
+        for (const auto &element : elements) result.push_back(engrave::to_string(element.id));
         return result;
     };
     const std::vector<std::string> order = ids(full->elements);
@@ -1444,9 +1453,9 @@ TEST(Read, FiltersAndPagingAgree) {
     const auto notes = document->query(typed);
     ASSERT_TRUE(notes) << notes.error().message;
     std::size_t notes_in_full = 0;
-    for (const auto& element : full->elements) notes_in_full += element.type == "Note";
+    for (const auto &element : full->elements) notes_in_full += element.type == "Note";
     EXPECT_EQ(notes->total, notes_in_full);
-    for (const auto& element : notes->elements) EXPECT_EQ(element.type, "Note");
+    for (const auto &element : notes->elements) EXPECT_EQ(element.type, "Note");
 
     // Adjacent measure windows tile the score.
     std::vector<std::string> tiled;
@@ -1457,7 +1466,7 @@ TEST(Read, FiltersAndPagingAgree) {
         window.limit = engrave::max_query_results;
         const auto part = document->query(window);
         ASSERT_TRUE(part) << part.error().message;
-        for (const auto& element : part->elements) {
+        for (const auto &element : part->elements) {
             EXPECT_EQ(element.measure_index, static_cast<std::int32_t>(first));
             tiled.push_back(engrave::to_string(element.id));
         }
@@ -1465,7 +1474,7 @@ TEST(Read, FiltersAndPagingAgree) {
     // Every element the whole-score query reported for a measure is in exactly one
     // window; the score and its parts and staves are in none.
     std::vector<std::string> in_measures;
-    for (const auto& element : full->elements) {
+    for (const auto &element : full->elements) {
         if (element.measure_index >= 0) in_measures.push_back(engrave::to_string(element.id));
     }
     std::ranges::sort(in_measures);
@@ -1481,16 +1490,16 @@ TEST(Read, FiltersAndPagingAgree) {
         const auto on_staff = document->query(staff);
         ASSERT_TRUE(on_staff) << on_staff.error().message;
         std::size_t expected = 0;
-        for (const auto& element : full->elements) expected += element.staff == 1;
+        for (const auto &element : full->elements) expected += element.staff == 1;
         EXPECT_EQ(on_staff->total, expected);
-        for (const auto& element : on_staff->elements) EXPECT_EQ(element.staff, 1);
+        for (const auto &element : on_staff->elements) EXPECT_EQ(element.staff, 1);
     }
     engrave::Query voice;
     voice.voices = {2};
     voice.limit = engrave::max_query_results;
     const auto in_voice = document->query(voice);
     ASSERT_TRUE(in_voice) << in_voice.error().message;
-    for (const auto& element : in_voice->elements) EXPECT_EQ(element.voice, 2);
+    for (const auto &element : in_voice->elements) EXPECT_EQ(element.voice, 2);
 
     // A tick range keeps the elements that start inside it.
     engrave::Query ticks;
@@ -1500,7 +1509,7 @@ TEST(Read, FiltersAndPagingAgree) {
     const auto in_ticks = document->query(ticks);
     ASSERT_TRUE(in_ticks) << in_ticks.error().message;
     std::size_t expected = 0;
-    for (const auto& element : full->elements) {
+    for (const auto &element : full->elements) {
         const double start = static_cast<double>(element.tick.num) / static_cast<double>(element.tick.den);
         expected += start >= 0.25 && start < 0.5;
     }
@@ -1508,9 +1517,7 @@ TEST(Read, FiltersAndPagingAgree) {
 }
 
 TEST(Read, ExtremeTickRangesAndMeasureWindows) {
-    const auto fixture = std::ranges::find_if(g_corpus, [](const auto& path) {
-        return path.filename() == "linked_parts.mscx";
-    });
+    const auto fixture = std::ranges::find_if(g_corpus, [](const auto &path) { return path.filename() == "linked_parts.mscx"; });
     ASSERT_NE(fixture, g_corpus.end());
     auto document = open_path(*fixture);
     ASSERT_TRUE(document);
@@ -1545,9 +1552,7 @@ TEST(Read, ExtremeTickRangesAndMeasureWindows) {
     request.to_tick = engrave::Fraction{max, max - 1};
     const auto narrow = document->query(request);
     ASSERT_TRUE(narrow);
-    const auto at_one = std::ranges::count_if(all->elements, [](const auto& element) {
-        return element.tick.num == element.tick.den;
-    });
+    const auto at_one = std::ranges::count_if(all->elements, [](const auto &element) { return element.tick.num == element.tick.den; });
     ASSERT_GT(at_one, 0);
     EXPECT_EQ(narrow->total, static_cast<std::size_t>(at_one));
     std::swap(request.from_tick, request.to_tick);
@@ -1572,8 +1577,8 @@ TEST(Read, ExtremeTickRangesAndMeasureWindows) {
     }
     const auto max32 = std::numeric_limits<std::int32_t>::max();
     const auto min32 = std::numeric_limits<std::int32_t>::min();
-    for (const auto [first, count] : {std::pair{max32, std::int32_t{1}}, std::pair{max32, max32},
-                                      std::pair{min32, min32}, std::pair{std::int32_t{0}, min32}}) {
+    for (const auto [first, count] :
+         {std::pair{max32, std::int32_t{1}}, std::pair{max32, max32}, std::pair{min32, min32}, std::pair{std::int32_t{0}, min32}}) {
         request.first_measure = first;
         request.measure_count = count;
         expect_code(document->query(request), ErrorCode::InvalidArgument, "out-of-range measure window");
@@ -1581,9 +1586,7 @@ TEST(Read, ExtremeTickRangesAndMeasureWindows) {
 }
 
 TEST(Read, FractionPropertyDefaultsKeepWrittenTerms) {
-    const auto fixture = std::ranges::find_if(g_corpus, [](const auto& path) {
-        return path.filename() == "linked_parts.mscx";
-    });
+    const auto fixture = std::ranges::find_if(g_corpus, [](const auto &path) { return path.filename() == "linked_parts.mscx"; });
     ASSERT_NE(fixture, g_corpus.end());
     auto document = open_path(*fixture);
     ASSERT_TRUE(document);
@@ -1595,7 +1598,7 @@ TEST(Read, FractionPropertyDefaultsKeepWrittenTerms) {
     const auto id = signatures->elements.front().id;
     const auto found = engrave::resolve(master_of(*document), id);
     ASSERT_TRUE(found);
-    auto* signature = static_cast<mu::engraving::TimeSig*>(found->object);
+    auto *signature = static_cast<mu::engraving::TimeSig *>(found->object);
     signature->setSig(mu::engraving::Fraction(2, 2));
     const auto written = document->get(id, {"timesig"});
     ASSERT_TRUE(written);
@@ -1615,7 +1618,7 @@ TEST(Read, FractionPropertyDefaultsKeepWrittenTerms) {
 TEST(Read, LimitsAreEnforced) {
     auto document = open_path(corpus_file({".mscx"}));
     ASSERT_TRUE(document);
-    MasterScore& master = master_of(*document);
+    MasterScore &master = master_of(*document);
     const auto outline = document->outline();
     ASSERT_TRUE(outline) << outline.error().message;
     const auto measures = static_cast<std::int32_t>(outline->measures.size());
@@ -1686,7 +1689,7 @@ TEST(Read, LimitsAreEnforced) {
 TEST(Read, GetReadsProperties) {
     auto document = open_with("Dynamic");
     ASSERT_TRUE(document) << "no corpus score has a dynamic";
-    MasterScore& master = master_of(*document);
+    MasterScore &master = master_of(*document);
 
     // A note: the properties the catalogue lists for its type, and pitch among them.
     engrave::Query notes;
@@ -1699,7 +1702,7 @@ TEST(Read, GetReadsProperties) {
     const auto all = document->get(note_id);
     ASSERT_TRUE(all) << all.error().message;
     std::set<std::string> names;
-    for (const PropertyRead& read : *all) names.insert(read.name);
+    for (const PropertyRead &read : *all) names.insert(read.name);
     EXPECT_EQ(names.size(), all->size()) << "a property is reported twice";
     EXPECT_TRUE(names.contains("pitch"));
     const auto pitch = document->get(note_id, {"pitch"});
@@ -1735,8 +1738,7 @@ TEST(Read, GetReadsProperties) {
         Command command(master);
         const auto dynamic = engrave::resolve(master, dynamic_id);
         ASSERT_TRUE(dynamic) << dynamic.error().message;
-        dynamic->object->undoChangeProperty(mu::engraving::Pid::MIN_DISTANCE,
-                                            mu::engraving::PropertyValue::fromValue(2.5),
+        dynamic->object->undoChangeProperty(mu::engraving::Pid::MIN_DISTANCE, mu::engraving::PropertyValue::fromValue(2.5),
                                             mu::engraving::PropertyFlags::UNSTYLED);
         command.commit();
     }
@@ -1782,7 +1784,7 @@ TEST(Read, LayoutBoxesComeFromTheLayout) {
     ASSERT_EQ(measures->total, outline->measures.size());
 
     std::int32_t page = 0;
-    for (const auto& measure : measures->elements) {
+    for (const auto &measure : measures->elements) {
         ASSERT_TRUE(measure.box) << "a laid-out measure has no box";
         EXPECT_GE(measure.box->page, page) << "the pages of the measures go backwards";
         page = measure.box->page;
@@ -1798,7 +1800,7 @@ TEST(Read, LayoutBoxesComeFromTheLayout) {
     plain.types = {"Measure"};
     const auto bare = document->query(plain);
     ASSERT_TRUE(bare) << bare.error().message;
-    for (const auto& measure : bare->elements) EXPECT_FALSE(measure.box);
+    for (const auto &measure : bare->elements) EXPECT_FALSE(measure.box);
 }
 
 TEST(Read, ErrorsForStaleAndMissingReferences) {
@@ -1840,10 +1842,10 @@ TEST(Read, ErrorsForStaleAndMissingReferences) {
     expect_code(document->query(both_forms), ErrorCode::InvalidArgument, "a window named twice");
 
     // A page, a system and a segment that the layout does not have are stale.
-    expect_code(document->get(engrave::Address{engrave::PageAddress{.score = {}, .index = 9999}}),
-                ErrorCode::StaleHandle, "a page past the end");
-    expect_code(document->get(engrave::Address{engrave::SystemAddress{.score = {}, .page = 9999, .index = 0}}),
-                ErrorCode::StaleHandle, "a system on no page");
+    expect_code(document->get(engrave::Address{engrave::PageAddress{.score = {}, .index = 9999}}), ErrorCode::StaleHandle,
+                "a page past the end");
+    expect_code(document->get(engrave::Address{engrave::SystemAddress{.score = {}, .page = 9999, .index = 0}}), ErrorCode::StaleHandle,
+                "a system on no page");
     expect_code(document->get(engrave::Address{engrave::SegmentAddress{
                     .measure = outline->measures.front().id, .tick = engrave::Fraction{1000, 1}, .kind = "ChordRest"}}),
                 ErrorCode::StaleHandle, "a segment at no tick");
@@ -1851,8 +1853,8 @@ TEST(Read, ErrorsForStaleAndMissingReferences) {
     const auto first_page = document->get(engrave::Address{engrave::PageAddress{.score = {}, .index = 0}});
     ASSERT_TRUE(first_page) << first_page.error().message;
     EXPECT_FALSE(first_page->empty());
-    const auto first_segment = document->get(engrave::Address{engrave::SegmentAddress{
-        .measure = outline->measures.front().id, .tick = engrave::Fraction{0, 1}, .kind = "ChordRest"}});
+    const auto first_segment = document->get(engrave::Address{
+        engrave::SegmentAddress{.measure = outline->measures.front().id, .tick = engrave::Fraction{0, 1}, .kind = "ChordRest"}});
     ASSERT_TRUE(first_segment) << first_segment.error().message;
 
     // An id of a document that is gone names nothing in another one.
@@ -1897,16 +1899,14 @@ TEST(Read, HiddenLeadingTupletRestPreservesFollowingNotes) {
         ASSERT_TRUE(notes);
         std::multiset<Row> actual;
         query_rows(notes->elements, actual);
-        const std::multiset<Row> expected = {
-            note_row(320, 0, 0, 74), note_row(640, 0, 0, 72),
-            note_row(960, 0, 0, 72), note_row(1280, 0, 0, 69), note_row(1600, 0, 0, 67)
-        };
+        const std::multiset<Row> expected = {note_row(320, 0, 0, 74), note_row(640, 0, 0, 72), note_row(960, 0, 0, 72),
+                                             note_row(1280, 0, 0, 69), note_row(1600, 0, 0, 67)};
         EXPECT_EQ(actual, expected);
         query.types = {"Chord"};
         const auto chords = (*document)->query(query);
         ASSERT_TRUE(chords);
         ASSERT_EQ(chords->elements.size(), 5u);
-        for (const auto& chord : chords->elements) EXPECT_EQ(ticks_of(chord.duration), 320);
+        for (const auto &chord : chords->elements) EXPECT_EQ(ticks_of(chord.duration), 320);
         query.types = {"Rest"};
         const auto rests = (*document)->query(query);
         ASSERT_TRUE(rests);
@@ -1926,8 +1926,7 @@ TEST(Read, HiddenLeadingTupletRestPreservesFollowingNotes) {
     }
 }
 
-std::string dynamics_musicxml(std::string_view direction, std::string_view notations,
-                             std::string_view note_attributes = "") {
+std::string dynamics_musicxml(std::string_view direction, std::string_view notations, std::string_view note_attributes = "") {
     return std::format(R"xml(<score-partwise version="4.0">
 <part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list>
 <part id="P1"><measure number="1"><attributes><divisions>1</divisions>
@@ -1937,35 +1936,34 @@ std::string dynamics_musicxml(std::string_view direction, std::string_view notat
                        direction, note_attributes, notations);
 }
 
-std::vector<mu::engraving::Dynamic*> imported_dynamics(engrave::Document& document) {
+std::vector<mu::engraving::Dynamic *> imported_dynamics(engrave::Document &document) {
     engrave::Query query;
     query.types = {"Dynamic"};
     const auto result = document.query(query);
     EXPECT_TRUE(result);
-    std::vector<mu::engraving::Dynamic*> dynamics;
+    std::vector<mu::engraving::Dynamic *> dynamics;
     if (!result) return dynamics;
-    for (const auto& row : result->elements) {
+    for (const auto &row : result->elements) {
         const auto element = engrave::resolve(master_of(document), row.id);
         EXPECT_TRUE(element);
-        if (element) dynamics.push_back(static_cast<mu::engraving::Dynamic*>(element->object));
+        if (element) dynamics.push_back(static_cast<mu::engraving::Dynamic *>(element->object));
     }
     return dynamics;
 }
 
 // Parse the exported document before reopening it: successful import alone does
 // not establish that literal text was serialized as well-formed XML.
-std::unique_ptr<engrave::Document> dynamics_native_roundtrip(engrave::Document& document,
-                                                        std::string_view expected_text = "",
-                                                        engrave::Format format = engrave::Format::Mscx) {
+std::unique_ptr<engrave::Document> dynamics_native_roundtrip(engrave::Document &document, std::string_view expected_text = "",
+                                                             engrave::Format format = engrave::Format::Mscx) {
     const auto saved = document.export_score({.format = format});
     EXPECT_TRUE(saved);
     if (!saved) return nullptr;
     if (format == engrave::Format::Mscx && !expected_text.empty()) {
-        const std::string xml(reinterpret_cast<const char*>(saved->data()), saved->size());
+        const std::string xml(reinterpret_cast<const char *>(saved->data()), saved->size());
         EXPECT_NE(xml.find(std::format("<text>{}</text>", expected_text)), std::string::npos);
     }
     if (format == engrave::Format::Mscx) {
-        const muse::ByteArray bytes(reinterpret_cast<const char*>(saved->data()), saved->size());
+        const muse::ByteArray bytes(reinterpret_cast<const char *>(saved->data()), saved->size());
         muse::XmlStreamReader reader(bytes);
         while (!reader.atEnd()) reader.readNext();
         EXPECT_FALSE(reader.isError()) << reader.errorString().toStdString();
@@ -1976,21 +1974,54 @@ std::unique_ptr<engrave::Document> dynamics_native_roundtrip(engrave::Document& 
 }
 
 TEST(Read, MusicXmlDynamicsVelocityIsBoundedBeforeConversion) {
-    struct Case { const char* value; int direction; int note; };
+    struct Case {
+        const char *value;
+        int direction;
+        int note;
+    };
+
     const std::string canceled = "0." + std::string(1000, '0') + "5e1001";
     const Case cases[] = {
-        {"0", 96, 1}, {"-10", 96, 1}, {"5", 5, 5}, {"50", 45, 45}, {"100", 90, 90}, {"110", 99, 99},
-        {"+5e1", 45, 45}, {" 50 ", 45, 45}, {".5", 96, 1}, {"0.6", 1, 1}, {"50.6", 46, 46}, {"200", 127, 127},
-        {"10000000000", 127, 127}, {"1e308", 127, 127}, {"-1e308", 96, 1},
-        {"garbage", 96, 1}, {"50garbage", 96, 1}, {"", 96, 1}, {"NaN", 96, 1}, {"INF", 96, 1}, {"-INF", 96, 1}, {"1e999", 127, 127}, {"-1e999", 96, 1}, {"1e-999", 96, 1}, {"1e9999999999999999999", 127, 127}, {"1e-9999999999999999999", 96, 1}, {"1e+", 96, 1}, {"+-1", 96, 1}, {"5 0", 96, 1}, {"&#x9;50&#xA;", 45, 45}, {canceled.c_str(), 5, 5},
+        {"0", 96, 1},
+        {"-10", 96, 1},
+        {"5", 5, 5},
+        {"50", 45, 45},
+        {"100", 90, 90},
+        {"110", 99, 99},
+        {"+5e1", 45, 45},
+        {" 50 ", 45, 45},
+        {".5", 96, 1},
+        {"0.6", 1, 1},
+        {"50.6", 46, 46},
+        {"200", 127, 127},
+        {"10000000000", 127, 127},
+        {"1e308", 127, 127},
+        {"-1e308", 96, 1},
+        {"garbage", 96, 1},
+        {"50garbage", 96, 1},
+        {"", 96, 1},
+        {"NaN", 96, 1},
+        {"INF", 96, 1},
+        {"-INF", 96, 1},
+        {"1e999", 127, 127},
+        {"-1e999", 96, 1},
+        {"1e-999", 96, 1},
+        {"1e9999999999999999999", 127, 127},
+        {"1e-9999999999999999999", 96, 1},
+        {"1e+", 96, 1},
+        {"+-1", 96, 1},
+        {"5 0", 96, 1},
+        {"&#x9;50&#xA;", 45, 45},
+        {canceled.c_str(), 5, 5},
     };
-    for (const auto& c : cases) {
+    for (const auto &c : cases) {
         SCOPED_TRACE(c.value);
-        const auto direction = std::format(R"(<direction><direction-type><dynamics><f/></dynamics></direction-type><sound dynamics="{}"/></direction>)", c.value);
+        const auto direction = std::format(
+            R"(<direction><direction-type><dynamics><f/></dynamics></direction-type><sound dynamics="{}"/></direction>)", c.value);
         auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "", std::format("dynamics=\"{}\"", c.value))),
                                      {.format = engrave::Format::MusicXml});
         ASSERT_TRUE(opened);
-        const auto check = [&](engrave::Document& document) {
+        const auto check = [&](engrave::Document &document) {
             const auto dynamics = imported_dynamics(document);
             ASSERT_EQ(dynamics.size(), 1u);
             EXPECT_EQ(dynamics.front()->getProperty(mu::engraving::Pid::VELOCITY).toInt(), c.direction);
@@ -2001,7 +2032,7 @@ TEST(Read, MusicXmlDynamicsVelocityIsBoundedBeforeConversion) {
             ASSERT_EQ(notes->elements.size(), 1u);
             const auto note = engrave::resolve(master_of(document), notes->elements.front().id);
             ASSERT_TRUE(note);
-            EXPECT_EQ(static_cast<mu::engraving::Note*>(note->object)->userVelocity(), c.note);
+            EXPECT_EQ(static_cast<mu::engraving::Note *>(note->object)->userVelocity(), c.note);
         };
         check(**opened);
         for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
@@ -2019,36 +2050,47 @@ TEST(Read, MusicXmlDynamicsVelocityIsBoundedBeforeConversion) {
     ASSERT_EQ(notes->elements.size(), 1u);
     const auto note = engrave::resolve(master_of(**plain), notes->elements.front().id);
     ASSERT_TRUE(note);
-    EXPECT_EQ(static_cast<mu::engraving::Note*>(note->object)->userVelocity(), 0);
+    EXPECT_EQ(static_cast<mu::engraving::Note *>(note->object)->userVelocity(), 0);
 
     const std::string longNumber(100000, '9');
-    const auto direction = std::format(R"(<direction><direction-type><dynamics><f/></dynamics></direction-type><sound dynamics="{}"/></direction>)", longNumber);
+    const auto direction = std::format(
+        R"(<direction><direction-type><dynamics><f/></dynamics></direction-type><sound dynamics="{}"/></direction>)", longNumber);
     auto large = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
     ASSERT_TRUE(large);
     const auto dynamics = imported_dynamics(**large);
     ASSERT_EQ(dynamics.size(), 1u);
     EXPECT_EQ(dynamics.front()->velocity(), 127);
-
 }
 
 TEST(Read, MusicXmlDynamicsContainersAndLiteralSafety) {
     using mu::engraving::DynamicType;
-    struct Case { const char* children; const char* xml; DynamicType type; };
+
+    struct Case {
+        const char *children;
+        const char *xml;
+        DynamicType type;
+    };
+
     const Case cases[] = {
         {"<ff/><pp/>", "<sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicPiano</sym><sym>dynamicPiano</sym>", DynamicType::OTHER},
         {"<f/><p/>", "<sym>dynamicForte</sym><sym>dynamicPiano</sym>", DynamicType::FP},
         {"<other-dynamics>A &amp; <![CDATA[B < C]]><!--split--> tail</other-dynamics>", "A &amp; B &lt; C tail", DynamicType::OTHER},
         {"<other-dynamics> f </other-dynamics>", " <sym>dynamicForte</sym> ", DynamicType::F},
-        {"<other-dynamics>s<![CDATA[f]]>z</other-dynamics>", "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicZ</sym>", DynamicType::SFZ},
+        {"<other-dynamics>s<![CDATA[f]]>z</other-dynamics>", "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicZ</sym>",
+         DynamicType::SFZ},
         {"<other-dynamics>sempre f</other-dynamics>", "sempre <sym>dynamicForte</sym>", DynamicType::F},
         {"<other-dynamics>sempre f &lt;subito&gt;</other-dynamics>", "sempre <sym>dynamicForte</sym> &lt;subito&gt;", DynamicType::F},
         {"<other-dynamics>&lt;subito&gt; f</other-dynamics>", "&lt;subito&gt; <sym>dynamicForte</sym>", DynamicType::F},
         {"<other-dynamics>p&lt;sym&gt;f&lt;/sym&gt;</other-dynamics>", "<sym>dynamicPiano</sym>&lt;sym&gt;f&lt;/sym&gt;", DynamicType::P},
-        {"<other-dynamics>&lt;subito&gt; f &lt;dolce&gt;</other-dynamics>", "&lt;subito&gt; <sym>dynamicForte</sym> &lt;dolce&gt;", DynamicType::F},
+        {"<other-dynamics>&lt;subito&gt; f &lt;dolce&gt;</other-dynamics>", "&lt;subito&gt; <sym>dynamicForte</sym> &lt;dolce&gt;",
+         DynamicType::F},
         {"<other-dynamics>dolce &lt; f</other-dynamics>", "dolce &lt; <sym>dynamicForte</sym>", DynamicType::F},
-        {"<other-dynamics>&lt;b&gt;&lt;b&gt;x&lt;/b&gt; f &lt;/b&gt; p</other-dynamics>", "&lt;b&gt;&lt;b&gt;x&lt;/b&gt; f &lt;/b&gt; <sym>dynamicPiano</sym>", DynamicType::P},
-        {"<other-dynamics>~LITERAL_0_0~ &lt;x/&gt; ~LITERAL_1_0~ &lt;y/&gt; f</other-dynamics>", "~LITERAL_0_0~ &lt;x/&gt; ~LITERAL_1_0~ &lt;y/&gt; <sym>dynamicForte</sym>", DynamicType::F},
-        {"<sf/><mp/>", "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicMezzo</sym><sym>dynamicPiano</sym>", DynamicType::OTHER},
+        {"<other-dynamics>&lt;b&gt;&lt;b&gt;x&lt;/b&gt; f &lt;/b&gt; p</other-dynamics>",
+         "&lt;b&gt;&lt;b&gt;x&lt;/b&gt; f &lt;/b&gt; <sym>dynamicPiano</sym>", DynamicType::P},
+        {"<other-dynamics>~LITERAL_0_0~ &lt;x/&gt; ~LITERAL_1_0~ &lt;y/&gt; f</other-dynamics>",
+         "~LITERAL_0_0~ &lt;x/&gt; ~LITERAL_1_0~ &lt;y/&gt; <sym>dynamicForte</sym>", DynamicType::F},
+        {"<sf/><mp/>", "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicMezzo</sym><sym>dynamicPiano</sym>",
+         DynamicType::OTHER},
         {"<sfz/>", "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicZ</sym>", DynamicType::SFZ},
         {"<sf/><p/>", "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicPiano</sym>", DynamicType::SFP},
         {"<f/>", "<sym>dynamicForte</sym>", DynamicType::F},
@@ -2064,28 +2106,27 @@ TEST(Read, MusicXmlDynamicsContainersAndLiteralSafety) {
         {"<mystery/>", "mystery", DynamicType::OTHER},
         {"<other-dynamics>&lt;sym&gt;dynamicForte&lt;/sym&gt;</other-dynamics>", "&lt;sym&gt;dynamicForte&lt;/sym&gt;", DynamicType::OTHER},
         {"<other-dynamics>&lt;sym&gt;f&lt;/sym&gt;</other-dynamics>", "&lt;sym&gt;f&lt;/sym&gt;", DynamicType::OTHER},
-        {"<p/><other-dynamics>&lt;sym&gt;f&lt;/sym&gt;</other-dynamics>", "<sym>dynamicPiano</sym>&lt;sym&gt;f&lt;/sym&gt;", DynamicType::P},
+        {"<p/><other-dynamics>&lt;sym&gt;f&lt;/sym&gt;</other-dynamics>", "<sym>dynamicPiano</sym>&lt;sym&gt;f&lt;/sym&gt;",
+         DynamicType::P},
         {"<other-dynamics>&lt;b&gt;loud&lt;/b&gt; &amp; prose</other-dynamics>", "&lt;b&gt;loud&lt;/b&gt; &amp; prose", DynamicType::OTHER},
         {"<p/><other-dynamics> prose</other-dynamics>", "<sym>dynamicPiano</sym> prose", DynamicType::P},
         {"<other-dynamics smufl=\"bad&lt;/sym&gt;&lt;b&gt;\">A &amp; B</other-dynamics>", "A &amp; B", DynamicType::OTHER},
     };
     for (bool notation : {false, true}) {
-        for (const auto& c : cases) {
+        for (const auto &c : cases) {
             SCOPED_TRACE(std::format("notation={}, {}", notation, c.children));
             const auto container = std::format("<dynamics>{}</dynamics>", c.children);
             const auto direction = std::format("<direction><direction-type>{}</direction-type></direction>", container);
             const auto xml = dynamics_musicxml(notation ? "" : direction, notation ? container : "");
             auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::MusicXml});
             ASSERT_TRUE(opened);
-            const auto check = [&](engrave::Document& document, bool reopened) {
+            const auto check = [&](engrave::Document &document, bool reopened) {
                 const auto dynamics = imported_dynamics(document);
                 ASSERT_EQ(dynamics.size(), 1u);
                 // The native XML reader discards whitespace-only nodes around
                 // embedded symbols; import itself preserves the source text.
-                const bool nativeWhitespace = reopened
-                    && std::string_view(c.children) == "<other-dynamics> f </other-dynamics>";
-                EXPECT_EQ(dynamics.front()->xmlText().toStdString(),
-                          nativeWhitespace ? "<sym>dynamicForte</sym>" : c.xml);
+                const bool nativeWhitespace = reopened && std::string_view(c.children) == "<other-dynamics> f </other-dynamics>";
+                EXPECT_EQ(dynamics.front()->xmlText().toStdString(), nativeWhitespace ? "<sym>dynamicForte</sym>" : c.xml);
                 EXPECT_EQ(dynamics.front()->dynamicType(), c.type);
                 if (c.type == DynamicType::OTHER) EXPECT_EQ(dynamics.front()->velocity(), -1);
                 EXPECT_TRUE(dynamics.front()->visible());
@@ -2105,8 +2146,8 @@ TEST(Read, MusicXmlManyLiteralSpansPreserveText) {
     for (int i = 0; i < 2000; ++i) {
         literal += "&lt;b/&gt; x ";
     }
-    const auto direction = "<direction><direction-type><dynamics><other-dynamics>" + literal
-                           + "f</other-dynamics></dynamics></direction-type></direction>";
+    const auto direction =
+        "<direction><direction-type><dynamics><other-dynamics>" + literal + "f</other-dynamics></dynamics></direction-type></direction>";
     auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
     ASSERT_TRUE(opened);
     const auto dynamics = imported_dynamics(**opened);
@@ -2121,16 +2162,16 @@ TEST(Read, MusicXmlDynamicsSeparateContainersKeepStyleAndTiming) {
         SCOPED_TRACE(notation);
         const std::string containers = R"(<dynamics color="#FF0000" placement="above" enclosure="circle" print-object="no"><p/></dynamics>
 <dynamics color="#0000FF" placement="below" enclosure="rectangle"><f/></dynamics><dynamics/>)";
-        const auto direction = std::format(R"(<direction placement="below"><direction-type>{}</direction-type><offset>1</offset></direction>)", containers);
-        auto opened = g_engine->open(as_bytes(dynamics_musicxml(notation ? "" : direction,
-                                                               notation ? containers : "")),
+        const auto direction =
+            std::format(R"(<direction placement="below"><direction-type>{}</direction-type><offset>1</offset></direction>)", containers);
+        auto opened = g_engine->open(as_bytes(dynamics_musicxml(notation ? "" : direction, notation ? containers : "")),
                                      {.format = engrave::Format::MusicXml});
         ASSERT_TRUE(opened);
-        const auto check = [&](engrave::Document& document) {
+        const auto check = [&](engrave::Document &document) {
             const auto dynamics = imported_dynamics(document);
             ASSERT_EQ(dynamics.size(), 2u);
             std::set<DynamicType> types;
-            for (const auto* dynamic : dynamics) {
+            for (const auto *dynamic : dynamics) {
                 types.insert(dynamic->dynamicType());
                 const bool piano = dynamic->dynamicType() == DynamicType::P;
                 EXPECT_TRUE(dynamic->visible());
@@ -2153,45 +2194,52 @@ TEST(Read, MusicXmlDynamicsSeparateContainersKeepStyleAndTiming) {
 TEST(Read, MusicXmlDynamicsKeepPerContainerInferredPlacement) {
     const auto xml = dynamics_musicxml(R"(<direction><direction-type>
 <dynamics default-y="30"><p/></dynamics><dynamics default-y="-30"><f/></dynamics>
-<dynamics/></direction-type></direction>)", "");
+<dynamics/></direction-type></direction>)",
+                                       "");
     auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::MusicXml});
     ASSERT_TRUE(opened);
     const auto dynamics = imported_dynamics(**opened);
     ASSERT_EQ(dynamics.size(), 2u);
-    for (const auto* dynamic : dynamics) {
-        EXPECT_EQ(dynamic->placement(), dynamic->dynamicType() == mu::engraving::DynamicType::P
-            ? mu::engraving::PlacementV::ABOVE : mu::engraving::PlacementV::BELOW);
+    for (const auto *dynamic : dynamics) {
+        EXPECT_EQ(dynamic->placement(), dynamic->dynamicType() == mu::engraving::DynamicType::P ? mu::engraving::PlacementV::ABOVE :
+                                                                                                  mu::engraving::PlacementV::BELOW);
     }
 }
 
 TEST(Read, MusicXmlSingleDynamicsKeepNativeBehavior) {
     using mu::engraving::DynamicType;
-    struct Case { const char* tag; DynamicType type; int velocity; int change; };
+
+    struct Case {
+        const char *tag;
+        DynamicType type;
+        int velocity;
+        int change;
+    };
+
     const Case cases[] = {
         {"pppppp", DynamicType::PPPPPP, 1, 0}, {"ppppp", DynamicType::PPPPP, 5, 0},
-        {"pppp", DynamicType::PPPP, 10, 0}, {"ppp", DynamicType::PPP, 16, 0},
-        {"pp", DynamicType::PP, 33, 0}, {"p", DynamicType::P, 49, 0},
-        {"mp", DynamicType::MP, 64, 0}, {"mf", DynamicType::MF, 80, 0},
-        {"f", DynamicType::F, 96, 0}, {"ff", DynamicType::FF, 112, 0},
-        {"fff", DynamicType::FFF, 126, 0}, {"ffff", DynamicType::FFFF, 127, 0},
+        {"pppp", DynamicType::PPPP, 10, 0},    {"ppp", DynamicType::PPP, 16, 0},
+        {"pp", DynamicType::PP, 33, 0},        {"p", DynamicType::P, 49, 0},
+        {"mp", DynamicType::MP, 64, 0},        {"mf", DynamicType::MF, 80, 0},
+        {"f", DynamicType::F, 96, 0},          {"ff", DynamicType::FF, 112, 0},
+        {"fff", DynamicType::FFF, 126, 0},     {"ffff", DynamicType::FFFF, 127, 0},
         {"fffff", DynamicType::FFFFF, 127, 0}, {"ffffff", DynamicType::FFFFFF, 127, 0},
-        {"fp", DynamicType::FP, 96, -47}, {"pf", DynamicType::PF, 49, 47},
-        {"sf", DynamicType::SF, 112, -18}, {"sfz", DynamicType::SFZ, 112, -18},
-        {"sff", DynamicType::SFF, 126, -18}, {"sffz", DynamicType::SFFZ, 126, -18},
+        {"fp", DynamicType::FP, 96, -47},      {"pf", DynamicType::PF, 49, 47},
+        {"sf", DynamicType::SF, 112, -18},     {"sfz", DynamicType::SFZ, 112, -18},
+        {"sff", DynamicType::SFF, 126, -18},   {"sffz", DynamicType::SFFZ, 126, -18},
         {"sfff", DynamicType::SFFF, 127, -18}, {"sfffz", DynamicType::SFFFZ, 127, -18},
-        {"sfp", DynamicType::SFP, 112, -47}, {"sfpp", DynamicType::SFPP, 112, -79},
-        {"rfz", DynamicType::RFZ, 112, -18}, {"rf", DynamicType::RF, 112, -18},
-        {"fz", DynamicType::FZ, 112, -18}, {"m", DynamicType::M, 96, -16},
-        {"r", DynamicType::R, 112, -18}, {"s", DynamicType::S, 112, -18},
-        {"z", DynamicType::Z, 80, 0}, {"n", DynamicType::N, 49, -48},
+        {"sfp", DynamicType::SFP, 112, -47},   {"sfpp", DynamicType::SFPP, 112, -79},
+        {"rfz", DynamicType::RFZ, 112, -18},   {"rf", DynamicType::RF, 112, -18},
+        {"fz", DynamicType::FZ, 112, -18},     {"m", DynamicType::M, 96, -16},
+        {"r", DynamicType::R, 112, -18},       {"s", DynamicType::S, 112, -18},
+        {"z", DynamicType::Z, 80, 0},          {"n", DynamicType::N, 49, -48},
     };
     for (bool notation : {false, true}) {
-        for (const auto& c : cases) {
+        for (const auto &c : cases) {
             SCOPED_TRACE(std::format("notation={}, tag={}", notation, c.tag));
             const auto container = std::format("<dynamics><{}/></dynamics>", c.tag);
             const auto direction = std::format("<direction><direction-type>{}</direction-type></direction>", container);
-            auto opened = g_engine->open(as_bytes(dynamics_musicxml(notation ? "" : direction,
-                                                                    notation ? container : "")),
+            auto opened = g_engine->open(as_bytes(dynamics_musicxml(notation ? "" : direction, notation ? container : "")),
                                          {.format = engrave::Format::MusicXml});
             ASSERT_TRUE(opened);
             const auto dynamics = imported_dynamics(**opened);
@@ -2206,16 +2254,19 @@ TEST(Read, MusicXmlSingleDynamicsKeepNativeBehavior) {
 TEST(Read, MusicXmlDynamicsHyphenRangeKeepsExistingBehavior) {
     auto seed = g_engine->open(as_bytes(dynamics_musicxml("", "")), {.format = engrave::Format::MusicXml});
     ASSERT_TRUE(seed);
-    auto& config = const_cast<mu::iex::musicxml::IMusicXmlConfiguration&>(
-        engrave::DocumentAccess::context(**seed).musicXml());
+    auto &config = const_cast<mu::iex::musicxml::IMusicXmlConfiguration &>(engrave::DocumentAccess::context(**seed).musicXml());
+
     struct RestoreInference {
-        mu::iex::musicxml::IMusicXmlConfiguration& config;
+        mu::iex::musicxml::IMusicXmlConfiguration &config;
         bool previous;
+
         ~RestoreInference() { config.setInferTextTypeOverride(previous); }
-    } restore {config, config.inferTextType()};
+    } restore{config, config.inferTextType()};
+
     config.setInferTextTypeOverride(true);
     const auto xml = dynamics_musicxml(R"(<direction><direction-type><dynamics><mp/></dynamics>
-<words>-</words><dynamics><f/></dynamics></direction-type></direction>)", "");
+<words>-</words><dynamics><f/></dynamics></direction-type></direction>)",
+                                       "");
     auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::MusicXml});
     ASSERT_TRUE(opened);
     const auto dynamics = imported_dynamics(**opened);
@@ -2231,18 +2282,15 @@ TEST(Read, MusicXmlDynamicsHyphenRangeKeepsExistingBehavior) {
     EXPECT_EQ(wordDynamics.front()->velocity(), 80);
 }
 
-
 TEST(Read, MusicXmlGroupedDynamicsSoundOverrideAndReimport) {
     using mu::engraving::DynamicType;
     for (const std::string children : {"<ff/><pp/>", "<f/><p/>"}) {
         for (bool sound : {false, true}) {
-            const auto direction = std::format(
-                "<direction><direction-type><dynamics>{}</dynamics></direction-type>{}</direction>",
-                children, sound ? "<sound dynamics=\"50\"/>" : "");
-            auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")),
-                                         {.format = engrave::Format::MusicXml});
+            const auto direction = std::format("<direction><direction-type><dynamics>{}</dynamics></direction-type>{}</direction>",
+                                               children, sound ? "<sound dynamics=\"50\"/>" : "");
+            auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
             ASSERT_TRUE(opened);
-            const auto check = [&](engrave::Document& doc) {
+            const auto check = [&](engrave::Document &doc) {
                 const auto dynamics = imported_dynamics(doc);
                 ASSERT_EQ(dynamics.size(), 1u);
                 const bool other = children == "<ff/><pp/>";
@@ -2266,15 +2314,14 @@ TEST(Read, MusicXmlGroupedDynamicsSoundOverrideAndReimport) {
 
 TEST(Read, MusicXmlLiteralDynamicsExportReimport) {
     for (const std::string literal : {"A &amp; B &lt; C", "&lt;sym&gt;dynamicForte&lt;/sym&gt;", "&lt;sym&gt;f&lt;/sym&gt;"}) {
-        const auto direction = std::format(
-            "<direction><direction-type><dynamics><other-dynamics>{}</other-dynamics></dynamics>"
-            "</direction-type></direction>", literal);
-        auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")),
-                                     {.format = engrave::Format::MusicXml});
+        const auto direction = std::format("<direction><direction-type><dynamics><other-dynamics>{}</other-dynamics></dynamics>"
+                                           "</direction-type></direction>",
+                                           literal);
+        auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
         ASSERT_TRUE(opened);
         const auto saved = (*opened)->export_score({.format = engrave::Format::MusicXml});
         ASSERT_TRUE(saved);
-        const muse::ByteArray bytes(reinterpret_cast<const char*>(saved->data()), saved->size());
+        const muse::ByteArray bytes(reinterpret_cast<const char *>(saved->data()), saved->size());
         muse::XmlStreamReader reader(bytes);
         while (!reader.atEnd()) reader.readNext();
         EXPECT_FALSE(reader.isError());
@@ -2292,11 +2339,10 @@ TEST(Read, MusicXmlOrdinarySingleDynamicsSerializeAsStandardTags) {
         for (const std::string tag : {"f", "fp"}) {
             const auto container = std::format("<dynamics><{}/></dynamics>", tag);
             const auto direction = std::format("<direction><direction-type>{}</direction-type></direction>", container);
-            auto opened = g_engine->open(as_bytes(dynamics_musicxml(notation ? "" : direction,
-                                                                    notation ? container : "")),
+            auto opened = g_engine->open(as_bytes(dynamics_musicxml(notation ? "" : direction, notation ? container : "")),
                                          {.format = engrave::Format::MusicXml});
             ASSERT_TRUE(opened);
-            const auto check = [&](engrave::Document& doc) {
+            const auto check = [&](engrave::Document &doc) {
                 const auto dynamics = imported_dynamics(doc);
                 ASSERT_EQ(dynamics.size(), 1u);
                 EXPECT_EQ(dynamics.front()->dynamicType(), tag == "f" ? DynamicType::F : DynamicType::FP);
@@ -2310,7 +2356,7 @@ TEST(Read, MusicXmlOrdinarySingleDynamicsSerializeAsStandardTags) {
             }
             const auto saved = (*opened)->export_score({.format = engrave::Format::MusicXml});
             ASSERT_TRUE(saved);
-            const std::string xml(reinterpret_cast<const char*>(saved->data()), saved->size());
+            const std::string xml(reinterpret_cast<const char *>(saved->data()), saved->size());
             EXPECT_NE(xml.find(std::format("<{}/>", tag)), std::string::npos);
         }
     }
@@ -2318,11 +2364,10 @@ TEST(Read, MusicXmlOrdinarySingleDynamicsSerializeAsStandardTags) {
 
 TEST(Read, MusicXmlSingleSmuflDynamicsExportReimport) {
     for (const std::string name : {"dynamicSforzato", "noteheadBlack", "dynamicForte"}) {
-        const auto direction = std::format(
-            "<direction><direction-type><dynamics><other-dynamics smufl=\"{}\"/>"
-            "</dynamics></direction-type></direction>", name);
-        auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")),
-                                     {.format = engrave::Format::MusicXml});
+        const auto direction = std::format("<direction><direction-type><dynamics><other-dynamics smufl=\"{}\"/>"
+                                           "</dynamics></direction-type></direction>",
+                                           name);
+        auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
         ASSERT_TRUE(opened);
         const auto saved = (*opened)->export_score({.format = engrave::Format::MusicXml});
         ASSERT_TRUE(saved);
@@ -2335,18 +2380,18 @@ TEST(Read, MusicXmlSingleSmuflDynamicsExportReimport) {
 }
 
 TEST(Read, MusicXmlGroupedSmuflDynamicsExportReimport) {
-    for (const std::string children : {
-             "<f/><other-dynamics smufl=\"dynamicSforzato\"/><p/>",
-             "<other-dynamics>sempre </other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/><p/>",
-             "<other-dynamics>sempre f</other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>",
-             "<other-dynamics>sempre f</other-dynamics><p/><other-dynamics smufl=\"dynamicSforzato\"/>",
-             "<other-dynamics>sempre </other-dynamics><f/><other-dynamics smufl=\"dynamicSforzato\"/>",
-             "<p/><other-dynamics> subito </other-dynamics><f/><other-dynamics smufl=\"dynamicSforzato\"/>",
-             "<other-dynamics>f </other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>",
-             "<other-dynamics>f &#x9;</other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>",
-             "<other-dynamics>f &#13;</other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>",
-             "<other-dynamics>sempre &#13; f</other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>",
-             "<other-dynamics>&lt;sym&gt;f&lt;/sym&gt; &amp; </other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>"}) {
+    for (const std::string children :
+         {"<f/><other-dynamics smufl=\"dynamicSforzato\"/><p/>",
+          "<other-dynamics>sempre </other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/><p/>",
+          "<other-dynamics>sempre f</other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>",
+          "<other-dynamics>sempre f</other-dynamics><p/><other-dynamics smufl=\"dynamicSforzato\"/>",
+          "<other-dynamics>sempre </other-dynamics><f/><other-dynamics smufl=\"dynamicSforzato\"/>",
+          "<p/><other-dynamics> subito </other-dynamics><f/><other-dynamics smufl=\"dynamicSforzato\"/>",
+          "<other-dynamics>f </other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>",
+          "<other-dynamics>f &#x9;</other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>",
+          "<other-dynamics>f &#13;</other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>",
+          "<other-dynamics>sempre &#13; f</other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>",
+          "<other-dynamics>&lt;sym&gt;f&lt;/sym&gt; &amp; </other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>"}) {
         SCOPED_TRACE(children);
         const auto direction = std::format("<direction><direction-type><dynamics>{}</dynamics></direction-type></direction>", children);
         auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
@@ -2366,7 +2411,7 @@ TEST(Read, MusicXmlGroupedSmuflDynamicsExportReimport) {
         }
         const auto saved = (*opened)->export_score({.format = engrave::Format::MusicXml});
         ASSERT_TRUE(saved);
-        const std::string xml(reinterpret_cast<const char*>(saved->data()), saved->size());
+        const std::string xml(reinterpret_cast<const char *>(saved->data()), saved->size());
         EXPECT_NE(xml.find("smufl=\"dynamicSforzato\""), std::string::npos);
         if (children.starts_with("<f/>")) {
             EXPECT_NE(xml.find("<f/>"), std::string::npos);
@@ -2386,7 +2431,8 @@ TEST(Read, MusicXmlGroupedSmuflDynamicsExportReimport) {
 }
 
 TEST(Read, MusicXmlGroupedProseRetainsTypeWithoutNamedSymbol) {
-    const auto direction = R"(<direction><direction-type><dynamics><other-dynamics>sempre f</other-dynamics><p/></dynamics></direction-type></direction>)";
+    const auto direction =
+        R"(<direction><direction-type><dynamics><other-dynamics>sempre f</other-dynamics><p/></dynamics></direction-type></direction>)";
     auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
     ASSERT_TRUE(opened);
     const auto original = imported_dynamics(**opened);
@@ -2405,10 +2451,9 @@ TEST(Read, MusicXmlGroupedProseRetainsTypeWithoutNamedSymbol) {
 }
 
 TEST(Read, MusicXmlGroupedWhitespaceRetainsType) {
-    for (const std::string children : {
-             "<other-dynamics> sf</other-dynamics><p/>",
-             "<other-dynamics> sf</other-dynamics><p/><other-dynamics smufl=\"dynamicSforzato\"/>",
-             "<f/><other-dynamics>&#32;</other-dynamics><p/>"}) {
+    for (const std::string children :
+         {"<other-dynamics> sf</other-dynamics><p/>", "<other-dynamics> sf</other-dynamics><p/><other-dynamics smufl=\"dynamicSforzato\"/>",
+          "<f/><other-dynamics>&#32;</other-dynamics><p/>"}) {
         SCOPED_TRACE(children);
         const auto direction = std::format("<direction><direction-type><dynamics>{}</dynamics></direction-type></direction>", children);
         auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
@@ -2432,7 +2477,8 @@ TEST(Read, MusicXmlGroupedWhitespaceRetainsType) {
 
 TEST(Read, MusicXmlSingleOtherDynamicLettersExportText) {
     for (const std::string letter : {"m", "r", "s", "z"}) {
-        const auto direction = std::format("<direction><direction-type><dynamics><other-dynamics>{}</other-dynamics></dynamics></direction-type></direction>", letter);
+        const auto direction = std::format(
+            "<direction><direction-type><dynamics><other-dynamics>{}</other-dynamics></dynamics></direction-type></direction>", letter);
         auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
         ASSERT_TRUE(opened);
         const auto original = imported_dynamics(**opened);
@@ -2440,7 +2486,7 @@ TEST(Read, MusicXmlSingleOtherDynamicLettersExportText) {
         const auto type = original.front()->dynamicType();
         const auto saved = (*opened)->export_score({.format = engrave::Format::MusicXml});
         ASSERT_TRUE(saved);
-        const std::string xml(reinterpret_cast<const char*>(saved->data()), saved->size());
+        const std::string xml(reinterpret_cast<const char *>(saved->data()), saved->size());
         EXPECT_NE(xml.find(std::format("<other-dynamics>{}</other-dynamics>", letter)), std::string::npos);
         auto reopened = g_engine->open(*saved, {.format = engrave::Format::MusicXml});
         ASSERT_TRUE(reopened);
@@ -2461,7 +2507,7 @@ TEST(Read, MusicXmlEngineLocalSymbolIsNotExportedAsSmufl) {
     dynamics.front()->setXmlText(u"<sym>ornamentPrallMordent</sym>");
     const auto saved = (*opened)->export_score({.format = engrave::Format::MusicXml});
     ASSERT_TRUE(saved);
-    const std::string xml(reinterpret_cast<const char*>(saved->data()), saved->size());
+    const std::string xml(reinterpret_cast<const char *>(saved->data()), saved->size());
     EXPECT_EQ(xml.find("smufl=\"ornamentPrallMordent\""), std::string::npos);
 }
 
@@ -2476,22 +2522,21 @@ TEST(Read, MusicXmlNotationDynamicsKeepExistingVisibility) {
     EXPECT_EQ(dynamics.front()->dynamicType(), mu::engraving::DynamicType::FP);
 }
 
-
 // --- corpus discovery ----------------------------------------------------
 
-bool looks_like_score(const std::filesystem::path& path) {
+bool looks_like_score(const std::filesystem::path &path) {
     static const std::set<std::string> extensions = {".mscx", ".mscz", ".musicxml", ".mxl", ".mid", ".midi",
-                                                     ".gp", ".gpx", ".gp3", ".gp4", ".gp5", ".ptb"};
+                                                     ".gp",   ".gpx",  ".gp3",      ".gp4", ".gp5", ".ptb"};
     return extensions.contains(path.extension().string());
 }
 
-void collect(const std::filesystem::path& path) {
+void collect(const std::filesystem::path &path) {
     std::error_code ec;
     if (std::filesystem::is_directory(path, ec)) {
         std::vector<std::filesystem::path> files;
-        for (const auto& entry : std::filesystem::directory_iterator(path, ec)) files.push_back(entry.path());
+        for (const auto &entry : std::filesystem::directory_iterator(path, ec)) files.push_back(entry.path());
         std::ranges::sort(files);
-        for (const auto& file : files) collect(file);
+        for (const auto &file : files) collect(file);
         return;
     }
     if (std::filesystem::is_regular_file(path, ec) && looks_like_score(path)) g_corpus.push_back(path);
@@ -2501,19 +2546,18 @@ void collect(const std::filesystem::path& path) {
 
 namespace {
 std::string chordline_offset_fixture() {
-    return read_text(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT)
-                     / "engrave/tests/data/chordline-offsets/offsets-500.mscx");
+    return read_text(std::filesystem::path(ENGRAVE_TEST_SOURCE_ROOT) / "engrave/tests/data/chordline-offsets/offsets-500.mscx");
 }
 
-std::vector<mu::engraving::ChordLine*> offset_test_lines(mu::engraving::Score& score) {
-    std::vector<mu::engraving::ChordLine*> lines;
-    score.scanElements([&](mu::engraving::EngravingItem* item) {
+std::vector<mu::engraving::ChordLine *> offset_test_lines(mu::engraving::Score &score) {
+    std::vector<mu::engraving::ChordLine *> lines;
+    score.scanElements([&](mu::engraving::EngravingItem *item) {
         if (item->isChordLine()) lines.push_back(mu::engraving::toChordLine(item));
     });
     return lines;
 }
 
-std::string offset_test_write(const mu::engraving::ChordLine* line) {
+std::string offset_test_write(const mu::engraving::ChordLine *line) {
     muse::ByteArray bytes;
     muse::io::Buffer buffer(&bytes);
     buffer.open(muse::io::IODevice::WriteOnly);
@@ -2522,7 +2566,7 @@ std::string offset_test_write(const mu::engraving::ChordLine* line) {
         mu::engraving::write::WriteContext ctx(line->score());
         mu::engraving::write::TWrite::write(line, xml, ctx);
     }
-    return {reinterpret_cast<const char*>(bytes.constData()), bytes.size()};
+    return {reinterpret_cast<const char *>(bytes.constData()), bytes.size()};
 }
 
 TEST(Read, ChordLineOffsetsEachAndCombined500) {
@@ -2532,9 +2576,8 @@ TEST(Read, ChordLineOffsetsEachAndCombined500) {
     const auto end = fixture.find("<subtype>", begin);
     ASSERT_NE(begin, std::string::npos);
     ASSERT_NE(end, std::string::npos);
-    const std::array<muse::PointF, 4> input = {
-        muse::PointF(0.25, -0.5), muse::PointF(0.5, 0.25),
-        muse::PointF(-0.25, 0.75), muse::PointF(1.0, 0.5)};
+    const std::array<muse::PointF, 4> input = {muse::PointF(0.25, -0.5), muse::PointF(0.5, 0.25), muse::PointF(-0.25, 0.75),
+                                               muse::PointF(1.0, 0.5)};
     // Zero, each independently, and all together. Exercise every orientation,
     // subtype ordering, and normal/small chord scaling.
     for (int mask : {0, 1, 2, 4, 8, 15}) {
@@ -2554,25 +2597,27 @@ TEST(Read, ChordLineOffsetsEachAndCombined500) {
                     if (small) xml.insert(xml.find("<durationType>"), "<small>1</small>");
                     auto document = g_engine->open(as_bytes(xml));
                     ASSERT_TRUE(document) << document.error().message;
-                    auto& master = master_of(**document);
+                    auto &master = master_of(**document);
                     auto lines = offset_test_lines(master);
                     ASSERT_EQ(lines.size(), 1u);
-                    auto* line = lines[0];
+                    auto *line = lines[0];
                     EXPECT_EQ(line->hasSourceOffsets(), mask != 0);
                     const double unit = line->offsetIsSpatiumDependent() ? master.style().spatium() : mu::engraving::DPMM;
                     const double sp = line->spatium(), mag = line->chord()->intrinsicMag();
                     if (small) EXPECT_LT(mag, 1.0);
                     const double x = (type == "3" || type == "4") ? -1.2 : 1.2;
                     const double y = (type == "1" || type == "4") ? 1.0 : -1.0;
-                    const std::array<muse::PointF, 4> defaults = x < 0
-                        ? std::array<muse::PointF, 4>{muse::PointF(), muse::PointF(0, y/2), muse::PointF(x/2, y), muse::PointF(x,y)}
-                        : std::array<muse::PointF, 4>{muse::PointF(), muse::PointF(x/2, 0), muse::PointF(x, y/2), muse::PointF(x,y)};
+                    const std::array<muse::PointF, 4> defaults =
+                        x < 0 ?
+                            std::array<muse::PointF, 4>{muse::PointF(), muse::PointF(0, y / 2), muse::PointF(x / 2, y),
+                                                        muse::PointF(x, y)} :
+                            std::array<muse::PointF, 4>{muse::PointF(), muse::PointF(x / 2, 0), muse::PointF(x, y / 2), muse::PointF(x, y)};
                     ASSERT_EQ(line->ldata()->path.elementCount(), 4u);
                     for (size_t i = 0; i < 4; ++i) {
                         const auto offset = (mask & (1 << i)) ? input[i] : muse::PointF();
                         EXPECT_NEAR(line->sourceOffsets()[i].x(), offset.x() * unit, 1e-6);
                         EXPECT_NEAR(line->sourceOffsets()[i].y(), offset.y() * unit, 1e-6);
-                        const auto& p = line->ldata()->path.elementAt(i);
+                        const auto &p = line->ldata()->path.elementAt(i);
                         EXPECT_NEAR(p.x, (defaults[i].x() * sp + offset.x() * unit) * mag, 1e-6);
                         EXPECT_NEAR(p.y, (defaults[i].y() * sp + offset.y() * unit) * mag, 1e-6);
                     }
@@ -2606,7 +2651,7 @@ TEST(Read, ChordLineOffsetsDormantControlsWriteWithoutLayout) {
         ASSERT_TRUE(document);
         auto lines = offset_test_lines(master_of(**document));
         ASSERT_EQ(lines.size(), 1u);
-        auto* line = lines[0];
+        auto *line = lines[0];
         const auto source = line->sourceOffsets();
         if (line->isStraight()) {
             ASSERT_EQ(line->ldata()->path.elementCount(), 2u);
@@ -2622,7 +2667,7 @@ TEST(Read, ChordLineOffsetsDormantControlsWriteWithoutLayout) {
         copy->mutldata()->path = muse::draw::PainterPath();
         const auto written = offset_test_write(copy.get());
         EXPECT_EQ(written.find("<Path"), std::string::npos);
-        for (const char* tag : {"<o1", "<o2", "<o3", "<o4"}) EXPECT_NE(written.find(tag), std::string::npos);
+        for (const char *tag : {"<o1", "<o2", "<o3", "<o4"}) EXPECT_NE(written.find(tag), std::string::npos);
         auto reload_xml = chordline_offset_fixture();
         const auto start = reload_xml.find("<ChordLine>");
         reload_xml.replace(start, reload_xml.find("</ChordLine>", start) + 12 - start, written);
@@ -2642,8 +2687,7 @@ TEST(Read, ChordLineOffsetsDormantControlsWriteWithoutLayout) {
 TEST(Read, ChordLineOffsetMillimetreUnitsSurvivePropertyOrderingAndReopen) {
     for (bool before : {false, true}) {
         auto xml = chordline_offset_fixture();
-        xml.insert(before ? xml.find("<o1") : xml.find("</ChordLine>"),
-                   "<sizeIsSpatiumDependent>0</sizeIsSpatiumDependent>");
+        xml.insert(before ? xml.find("<o1") : xml.find("</ChordLine>"), "<sizeIsSpatiumDependent>0</sizeIsSpatiumDependent>");
         auto document = g_engine->open(as_bytes(xml));
         ASSERT_TRUE(document);
         auto lines = offset_test_lines(master_of(**document));
@@ -2668,7 +2712,8 @@ TEST(Read, ChordLineOffsetMillimetreUnitsSurvivePropertyOrderingAndReopen) {
 }
 
 TEST(Read, ChordLineMixedSourcesRejectInBothOrders) {
-    const std::string path = "<Path><Element type=\"0\" x=\"0\" y=\"0\"/><Element type=\"1\" x=\"1.5\" y=\"2.5\"/><Element type=\"1\" x=\"3\" y=\"2.5\"/></Path>";
+    const std::string path = "<Path><Element type=\"0\" x=\"0\" y=\"0\"/><Element type=\"1\" x=\"1.5\" y=\"2.5\"/><Element type=\"1\" "
+                             "x=\"3\" y=\"2.5\"/></Path>";
     for (bool first : {false, true}) {
         auto xml = chordline_offset_fixture();
         xml.insert(first ? xml.find("<o1") : xml.find("</ChordLine>"), path);
@@ -2682,13 +2727,12 @@ TEST(Read, ChordLineMixedSourcesRejectInBothOrders) {
 TEST(Read, ChordLinePhysicalOffsetsFollowBothSpatiumCallbacks) {
     for (bool independent : {false, true}) {
         auto xml = chordline_offset_fixture();
-        if (independent) xml.insert(xml.find("</ChordLine>"),
-            "<sizeIsSpatiumDependent>0</sizeIsSpatiumDependent>");
+        if (independent) xml.insert(xml.find("</ChordLine>"), "<sizeIsSpatiumDependent>0</sizeIsSpatiumDependent>");
         auto document = g_engine->open(as_bytes(xml));
         ASSERT_TRUE(document);
         auto lines = offset_test_lines(master_of(**document));
         ASSERT_EQ(lines.size(), 1u);
-        auto* line = lines[0];
+        auto *line = lines[0];
         const auto original = line->sourceOffsets();
         master_of(**document).spatiumChanged(1.0, 1.25);
         line->staff()->setLocalSpatium(1.0, 0.8, mu::engraving::Fraction(0, 1));
@@ -2733,10 +2777,8 @@ TEST(Read, ChordLineZeroMissingAndMalformedOffsets) {
         ASSERT_EQ(again.size(), 1u);
         EXPECT_EQ(again[0]->hasSourceOffsets(), !tags.empty());
     }
-    for (const std::string tags : {"<o1 x=\"nan\"/>", "<o1 x=\"1junk\"/>",
-         "<o1 x=\"1e999\"/>", "<o1/><o1/>", "<o1><unexpected/></o1>",
-         "<Path><Element type=\"2\" x=\"1\" y=\"1\"/></Path>",
-         "<Path/><o1/>", "<o1/><Path/>"}) {
+    for (const std::string tags : {"<o1 x=\"nan\"/>", "<o1 x=\"1junk\"/>", "<o1 x=\"1e999\"/>", "<o1/><o1/>", "<o1><unexpected/></o1>",
+                                   "<Path><Element type=\"2\" x=\"1\" y=\"1\"/></Path>", "<Path/><o1/>", "<o1/><Path/>"}) {
         SCOPED_TRACE(tags);
         auto xml = chordline_offset_fixture();
         const auto begin = xml.find("<o1");
@@ -2745,17 +2787,18 @@ TEST(Read, ChordLineZeroMissingAndMalformedOffsets) {
         EXPECT_FALSE(document);
     }
 }
+
 TEST(Read, ChordLineActualGoldenTypedGeometry) {
     // Run with --corpus=<host>/fixtures/golden/chordline_path.mscx.
-    const auto it = std::ranges::find_if(g_corpus, [](const auto& p) { return p.filename() == "chordline_path.mscx"; });
+    const auto it = std::ranges::find_if(g_corpus, [](const auto &p) { return p.filename() == "chordline_path.mscx"; });
     ASSERT_NE(it, g_corpus.end()) << "actual golden fixture must be supplied with --corpus";
     auto doc = open_path(*it);
     ASSERT_TRUE(doc);
     auto lines = offset_test_lines(master_of(*doc));
     ASSERT_FALSE(lines.empty());
-    auto edited = std::ranges::find_if(lines, [](const auto* l) { return l->modified(); });
+    auto edited = std::ranges::find_if(lines, [](const auto *l) { return l->modified(); });
     ASSERT_NE(edited, lines.end());
-    auto* line = *edited;
+    auto *line = *edited;
     EXPECT_FALSE(line->hasSourceOffsets());
     const auto path = line->ldata()->path;
     ASSERT_EQ(path.elementCount(), 3u);
@@ -2771,11 +2814,11 @@ TEST(Read, ChordLineActualGoldenTypedGeometry) {
         auto reopened = g_engine->open(*saved, {.format = format});
         ASSERT_TRUE(reopened);
         auto again = offset_test_lines(master_of(**reopened));
-        auto found = std::ranges::find_if(again, [](const auto* l) { return l->modified(); });
+        auto found = std::ranges::find_if(again, [](const auto *l) { return l->modified(); });
         ASSERT_NE(found, again.end());
         ASSERT_EQ((*found)->ldata()->path.elementCount(), path.elementCount());
         for (size_t i = 0; i < path.elementCount(); ++i) {
-            const auto& p = (*found)->ldata()->path.elementAt(i);
+            const auto &p = (*found)->ldata()->path.elementAt(i);
             EXPECT_EQ(p.type, path.elementAt(i).type);
             EXPECT_NEAR(p.x, path.elementAt(i).x, 1e-6);
             EXPECT_NEAR(p.y, path.elementAt(i).y, 1e-6);
@@ -2783,12 +2826,9 @@ TEST(Read, ChordLineActualGoldenTypedGeometry) {
     }
 }
 
+} // namespace
 
-
-
-}
-
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);
     for (int i = 1; i < argc; ++i) {
         const std::string_view argument = argv[i];
@@ -2799,7 +2839,7 @@ int main(int argc, char** argv) {
         }
     }
     if (g_corpus.empty()) {
-        for (const auto& candidate : {std::filesystem::path("fixtures/golden"), std::filesystem::path("../fixtures/golden"),
+        for (const auto &candidate : {std::filesystem::path("fixtures/golden"), std::filesystem::path("../fixtures/golden"),
                                       std::filesystem::path("../../fixtures/golden")}) {
             if (std::filesystem::is_directory(candidate)) {
                 collect(candidate);

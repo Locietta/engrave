@@ -43,33 +43,35 @@ struct BreathType {
 //!    breathType() is index in symList
 //---------------------------------------------------------
 
-class Breath final : public EngravingItem
-{
+class Breath final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, Breath)
     DECLARE_CLASSOF(ElementType::BREATH)
 
 public:
 
-    Breath* clone() const override { return new Breath(*this); }
+    Breath *clone() const override { return new Breath(*this); }
 
     double mag() const override;
 
     void setSymId(SymId id) { m_symId = id; }
+
     SymId symId() const { return m_symId; }
+
     double pause() const { return m_pause; }
+
     void setPause(double v) { m_pause = v; }
 
-    Segment* segment() const { return (Segment*)ownershipParent(); }
+    Segment *segment() const { return (Segment *) ownershipParent(); }
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid) const override;
 
-    EngravingItem* nextSegmentElement() override;
-    EngravingItem* prevSegmentElement() override;
-
+    EngravingItem *nextSegmentElement() override;
+    EngravingItem *prevSegmentElement() override;
 
     int subtype() const override { return int(m_symId); }
+
     TranslatableString subtypeUserName() const override;
 
     bool isCaesura() const;

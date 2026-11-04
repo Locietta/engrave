@@ -25,63 +25,61 @@
 #include "draw/ipaintprovider.h"
 
 namespace mu::engraving::rendering::score {
-class PaintDebugger : public muse::draw::IPaintProvider
-{
+class PaintDebugger : public muse::draw::IPaintProvider {
 public:
     PaintDebugger(muse::draw::IPaintProviderPtr real);
 
     muse::draw::IPaintProviderPtr realProvider() const;
-    void setDebugPenColor(const muse::draw::Color& c);
+    void setDebugPenColor(const muse::draw::Color &c);
     void restorePenColor();
 
     bool isActive() const override;
-    void beginTarget(const std::string& name) override;
-    void beforeEndTargetHook(muse::draw::Painter* painter) override;
+    void beginTarget(const std::string &name) override;
+    void beforeEndTargetHook(muse::draw::Painter *painter) override;
     bool endTarget(bool endDraw = false) override;
 
-    void beginObject(const std::string& name) override;
+    void beginObject(const std::string &name) override;
     void endObject() override;
 
     void setAntialiasing(bool arg) override;
     void setCompositionMode(muse::draw::CompositionMode mode) override;
-    void setWindow(const muse::RectF& window) override;
-    void setViewport(const muse::RectF& viewport) override;
+    void setWindow(const muse::RectF &window) override;
+    void setViewport(const muse::RectF &viewport) override;
 
-    void setFont(const muse::draw::Font& font) override;
-    const muse::draw::Font& font() const override;
+    void setFont(const muse::draw::Font &font) override;
+    const muse::draw::Font &font() const override;
 
-    void setPen(const muse::draw::Pen& pen) override;
+    void setPen(const muse::draw::Pen &pen) override;
     void setNoPen() override;
-    const muse::draw::Pen& pen() const override;
+    const muse::draw::Pen &pen() const override;
 
-    void setBrush(const muse::draw::Brush& brush) override;
-    const muse::draw::Brush& brush() const override;
+    void setBrush(const muse::draw::Brush &brush) override;
+    const muse::draw::Brush &brush() const override;
 
     void save() override;
     void restore() override;
 
     double deviceLogicalDpi() const override;
 
-    void setTransform(const muse::draw::Transform& transform) override;
-    const muse::draw::Transform& transform() const override;
+    void setTransform(const muse::draw::Transform &transform) override;
+    const muse::draw::Transform &transform() const override;
 
-    void drawPath(const muse::draw::PainterPath& path) override;
-    void drawPolygon(const muse::PointF* points, size_t pointCount, muse::draw::PolygonMode mode) override;
+    void drawPath(const muse::draw::PainterPath &path) override;
+    void drawPolygon(const muse::PointF *points, size_t pointCount, muse::draw::PolygonMode mode) override;
 
-    void drawText(const muse::PointF& point, const muse::String& text) override;
-    void drawText(const muse::RectF& rect, muse::draw::Alignment alignment, muse::draw::TextFlags textFlags,
-                  const muse::String& text) override;
+    void drawText(const muse::PointF &point, const muse::String &text) override;
+    void drawText(const muse::RectF &rect, muse::draw::Alignment alignment, muse::draw::TextFlags textFlags,
+                  const muse::String &text) override;
 
-    void drawSymbol(const muse::PointF& point, char32_t ucs4Code) override;
+    void drawSymbol(const muse::PointF &point, char32_t ucs4Code) override;
 
-    void drawPixmap(const muse::PointF& p, const muse::draw::Pixmap& pm) override;
-    void drawTiledPixmap(const muse::RectF& rect, const muse::draw::Pixmap& pm, const muse::PointF& offset = muse::PointF()) override;
-
+    void drawPixmap(const muse::PointF &p, const muse::draw::Pixmap &pm) override;
+    void drawTiledPixmap(const muse::RectF &rect, const muse::draw::Pixmap &pm, const muse::PointF &offset = muse::PointF()) override;
 
     bool hasClipping() const override;
 
-    void setClipRect(const muse::RectF& rect) override;
-    void setMask(const muse::RectF& background, const std::vector<muse::RectF>& maskRects) override;
+    void setClipRect(const muse::RectF &rect) override;
+    void setMask(const muse::RectF &background, const std::vector<muse::RectF> &maskRects) override;
     void setClipping(bool enable) override;
 
 private:
@@ -90,4 +88,4 @@ private:
     muse::draw::Color m_originalPenColor;
     muse::draw::Color m_debugPenColor;
 };
-}
+} // namespace mu::engraving::rendering::score

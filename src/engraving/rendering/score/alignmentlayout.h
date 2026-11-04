@@ -28,20 +28,19 @@ namespace mu::engraving {
 class EngravingItem;
 class HammerOnPullOff;
 class System;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class AlignmentLayout
-{
+class AlignmentLayout {
 public:
-    static void alignItemsWithTheirSnappingChain(const std::vector<EngravingItem*>& elements, const System* system);
-    static void alignItemsForSystem(const std::vector<EngravingItem*>& elements, const System* system);
-    static void alignItemsGroup(const std::vector<EngravingItem*>& elements, const System* system);
-    static void alignHopoLetters(const HammerOnPullOff* hopo, const System* system);
+    static void alignItemsWithTheirSnappingChain(const std::vector<EngravingItem *> &elements, const System *system);
+    static void alignItemsForSystem(const std::vector<EngravingItem *> &elements, const System *system);
+    static void alignItemsGroup(const std::vector<EngravingItem *> &elements, const System *system);
+    static void alignHopoLetters(const HammerOnPullOff *hopo, const System *system);
 
 private:
-    static void moveItemToY(EngravingItem* item, double y, const System* system);
-    static double yOpticalCenter(const EngravingItem* item);
-    static bool isAbove(const EngravingItem* item);
+    static void moveItemToY(EngravingItem *item, double y, const System *system);
+    static double yOpticalCenter(const EngravingItem *item);
+    static bool isAbove(const EngravingItem *item);
 };
 } // namespace mu::engraving::rendering::score

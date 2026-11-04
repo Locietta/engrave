@@ -30,19 +30,18 @@
 class QSvgRenderer;
 
 namespace muse::draw {
-class SvgRenderer
-{
+class SvgRenderer {
 public:
-    SvgRenderer(const ByteArray& data);
+    SvgRenderer(const ByteArray &data);
     ~SvgRenderer();
 
     SizeF defaultSize() const;
 
-    void render(Painter* painter, const RectF& rect);
+    void render(Painter *painter, const RectF &rect);
 
 private:
-    QSvgRenderer* m_qSvgRenderer = nullptr;
+    QSvgRenderer *m_qSvgRenderer = nullptr;
 };
-}
+} // namespace muse::draw
 
 #endif // MUSE_DRAW_SVGRENDERER_H

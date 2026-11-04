@@ -35,8 +35,7 @@ namespace mu::engraving {
 //   dots
 //---------------------------------------------------------
 
-static int getDots(int base, int rest, int* dots)
-{
+static int getDots(int base, int rest, int *dots) {
     if (base < 16) {
         return rest;
     }
@@ -67,8 +66,7 @@ static int getDots(int base, int rest, int* dots)
 //   setDots
 //---------------------------------------------------------
 
-void TDuration::setDots(int v)
-{
+void TDuration::setDots(int v) {
     if (v > MAX_DOTS) {
         v = MAX_DOTS;
     }
@@ -82,8 +80,7 @@ void TDuration::setDots(int v)
 //   setVal
 //---------------------------------------------------------
 
-void TDuration::setVal(int ticks)
-{
+void TDuration::setVal(int ticks) {
     if (ticks == 0) {
         m_val = DurationType::V_MEASURE;
     } else {
@@ -104,7 +101,7 @@ void TDuration::setVal(int ticks)
             }
         }
         LOGD("2: no duration type for ticks %d", ticks);
-        m_val = DurationType::V_QUARTER;           // fallback default value
+        m_val = DurationType::V_QUARTER; // fallback default value
     }
 }
 
@@ -112,42 +109,26 @@ void TDuration::setVal(int ticks)
 //   ticks
 //---------------------------------------------------------
 
-Fraction TDuration::ticks() const
-{
+Fraction TDuration::ticks() const {
     Fraction t;
     switch (m_val) {
-    case DurationType::V_QUARTER: t = Fraction(1, 4);
-        break;
-    case DurationType::V_1024TH:  t = Fraction(1, 1024);
-        break;
-    case DurationType::V_512TH:   t = Fraction(1, 512);
-        break;
-    case DurationType::V_256TH:   t = Fraction(1, 256);
-        break;
-    case DurationType::V_128TH:   t = Fraction(1, 128);
-        break;
-    case DurationType::V_64TH:    t = Fraction(1, 64);
-        break;
-    case DurationType::V_32ND:    t = Fraction(1, 32);
-        break;
-    case DurationType::V_16TH:    t = Fraction(1, 16);
-        break;
-    case DurationType::V_EIGHTH:  t = Fraction(1, 8);
-        break;
-    case DurationType::V_HALF:    t = Fraction(1, 2);
-        break;
-    case DurationType::V_WHOLE:   t = Fraction(1, 1);
-        break;
-    case DurationType::V_BREVE:   t = Fraction(2, 1);
-        break;
-    case DurationType::V_LONG:    t = Fraction(4, 1);
-        break;
-    case DurationType::V_ZERO:
-    case DurationType::V_MEASURE:
-        return Fraction(0, 1);
-    default:
-    case DurationType::V_INVALID:
-        return Fraction(-1, 1);
+        case DurationType::V_QUARTER: t = Fraction(1, 4); break;
+        case DurationType::V_1024TH: t = Fraction(1, 1024); break;
+        case DurationType::V_512TH: t = Fraction(1, 512); break;
+        case DurationType::V_256TH: t = Fraction(1, 256); break;
+        case DurationType::V_128TH: t = Fraction(1, 128); break;
+        case DurationType::V_64TH: t = Fraction(1, 64); break;
+        case DurationType::V_32ND: t = Fraction(1, 32); break;
+        case DurationType::V_16TH: t = Fraction(1, 16); break;
+        case DurationType::V_EIGHTH: t = Fraction(1, 8); break;
+        case DurationType::V_HALF: t = Fraction(1, 2); break;
+        case DurationType::V_WHOLE: t = Fraction(1, 1); break;
+        case DurationType::V_BREVE: t = Fraction(2, 1); break;
+        case DurationType::V_LONG: t = Fraction(4, 1); break;
+        case DurationType::V_ZERO:
+        case DurationType::V_MEASURE: return Fraction(0, 1);
+        default:
+        case DurationType::V_INVALID: return Fraction(-1, 1);
     }
     Fraction tmp = t;
     for (int i = 0; i < m_dots; ++i) {
@@ -161,39 +142,26 @@ Fraction TDuration::ticks() const
 //   headType
 //---------------------------------------------------------
 
-NoteHeadType TDuration::headType() const
-{
+NoteHeadType TDuration::headType() const {
     NoteHeadType headType = NoteHeadType::HEAD_WHOLE;
     switch (m_val) {
-    case DurationType::V_1024TH:
-    case DurationType::V_512TH:
-    case DurationType::V_256TH:
-    case DurationType::V_128TH:
-    case DurationType::V_64TH:
-    case DurationType::V_32ND:
-    case DurationType::V_16TH:
-    case DurationType::V_EIGHTH:
-    case DurationType::V_QUARTER:
-        headType = NoteHeadType::HEAD_QUARTER;
-        break;
-    case DurationType::V_HALF:
-        headType = NoteHeadType::HEAD_HALF;
-        break;
-    case DurationType::V_MEASURE:
-    case DurationType::V_WHOLE:
-        headType = NoteHeadType::HEAD_WHOLE;
-        break;
-    case DurationType::V_BREVE:
-        headType = NoteHeadType::HEAD_BREVIS;
-        break;
-    case DurationType::V_LONG:
-        headType = NoteHeadType::HEAD_BREVIS;
-        break;
-    default:
-    case DurationType::V_INVALID:
-    case DurationType::V_ZERO:
-        headType = NoteHeadType::HEAD_QUARTER;
-        break;
+        case DurationType::V_1024TH:
+        case DurationType::V_512TH:
+        case DurationType::V_256TH:
+        case DurationType::V_128TH:
+        case DurationType::V_64TH:
+        case DurationType::V_32ND:
+        case DurationType::V_16TH:
+        case DurationType::V_EIGHTH:
+        case DurationType::V_QUARTER: headType = NoteHeadType::HEAD_QUARTER; break;
+        case DurationType::V_HALF: headType = NoteHeadType::HEAD_HALF; break;
+        case DurationType::V_MEASURE:
+        case DurationType::V_WHOLE: headType = NoteHeadType::HEAD_WHOLE; break;
+        case DurationType::V_BREVE: headType = NoteHeadType::HEAD_BREVIS; break;
+        case DurationType::V_LONG: headType = NoteHeadType::HEAD_BREVIS; break;
+        default:
+        case DurationType::V_INVALID:
+        case DurationType::V_ZERO: headType = NoteHeadType::HEAD_QUARTER; break;
     }
     return headType;
 }
@@ -202,16 +170,13 @@ NoteHeadType TDuration::headType() const
 //   hooks
 //---------------------------------------------------------
 
-int TDuration::hooks() const
-{
-    static constexpr int table[] = {
-        // V_LONG, V_BREVE, V_WHOLE, V_HALF, V_QUARTER, V_EIGHTH, V_16TH,
-        0,      0,       0,       0,      0,         1,        2,
-        // V_32ND, V_64TH, V_128TH, V_256TH, V_512TH, V_1024TH,
-        3,      4,       5,       6,      7,       8,
-        // V_ZERO, V_MEASURE, V_INVALID
-        0,      0,       0
-    };
+int TDuration::hooks() const {
+    static constexpr int table[] = {// V_LONG, V_BREVE, V_WHOLE, V_HALF, V_QUARTER, V_EIGHTH, V_16TH,
+                                    0, 0, 0, 0, 0, 1, 2,
+                                    // V_32ND, V_64TH, V_128TH, V_256TH, V_512TH, V_1024TH,
+                                    3, 4, 5, 6, 7, 8,
+                                    // V_ZERO, V_MEASURE, V_INVALID
+                                    0, 0, 0};
     return table[int(m_val)];
 }
 
@@ -219,23 +184,20 @@ int TDuration::hooks() const
 //   hasStem
 //---------------------------------------------------------
 
-bool TDuration::hasStem() const
-{
+bool TDuration::hasStem() const {
     switch (m_val) {
-    case DurationType::V_1024TH:
-    case DurationType::V_512TH:
-    case DurationType::V_256TH:
-    case DurationType::V_128TH:
-    case DurationType::V_64TH:
-    case DurationType::V_32ND:
-    case DurationType::V_16TH:
-    case DurationType::V_EIGHTH:
-    case DurationType::V_QUARTER:
-    case DurationType::V_HALF:
-    case DurationType::V_LONG:
-        return true;
-    default:
-        return false;
+        case DurationType::V_1024TH:
+        case DurationType::V_512TH:
+        case DurationType::V_256TH:
+        case DurationType::V_128TH:
+        case DurationType::V_64TH:
+        case DurationType::V_32ND:
+        case DurationType::V_16TH:
+        case DurationType::V_EIGHTH:
+        case DurationType::V_QUARTER:
+        case DurationType::V_HALF:
+        case DurationType::V_LONG: return true;
+        default: return false;
     }
 }
 
@@ -249,8 +211,7 @@ bool TDuration::hasStem() const
 //    will included dotted durations when stepping
 //---------------------------------------------------------
 
-void TDuration::shiftType(int nSteps, bool stepDotted)
-{
+void TDuration::shiftType(int nSteps, bool stepDotted) {
     if (m_val == DurationType::V_MEASURE || m_val == DurationType::V_INVALID || m_val == DurationType::V_ZERO) {
         setType(DurationType::V_INVALID);
     } else {
@@ -262,18 +223,16 @@ void TDuration::shiftType(int nSteps, bool stepDotted)
             int newValAsNumSingleDotSteps = int(m_val) * 2 + roundDownSingleDots + nSteps;
 
             // convert that new duration back into terms of DurationType integer value and number of dots
-            newDots  = newValAsNumSingleDotSteps % 2;       // odd means there is a dot
-            newValue = newValAsNumSingleDotSteps / 2 + newDots;       // if new duration has a dot, then that
+            newDots = newValAsNumSingleDotSteps % 2;            // odd means there is a dot
+            newValue = newValAsNumSingleDotSteps / 2 + newDots; // if new duration has a dot, then that
         } else {
             newDots = m_dots;
             newValue = int(m_val) + nSteps;
         }
 
-        if ((newValue < int(DurationType::V_LONG)) || (newValue > int(DurationType::V_1024TH))
-            || ((newValue >= int(DurationType::V_1024TH)) && (newDots >= 1))
-            || ((newValue >= int(DurationType::V_512TH)) && (newDots >= 2))
-            || ((newValue >= int(DurationType::V_256TH)) && (newDots >= 3))
-            || ((newValue >= int(DurationType::V_128TH)) && (newDots >= 4))) {
+        if ((newValue < int(DurationType::V_LONG)) || (newValue > int(DurationType::V_1024TH)) ||
+            ((newValue >= int(DurationType::V_1024TH)) && (newDots >= 1)) || ((newValue >= int(DurationType::V_512TH)) && (newDots >= 2)) ||
+            ((newValue >= int(DurationType::V_256TH)) && (newDots >= 3)) || ((newValue >= int(DurationType::V_128TH)) && (newDots >= 4))) {
             setType(DurationType::V_INVALID);
         } else {
             setType(DurationType(newValue));
@@ -286,8 +245,7 @@ void TDuration::shiftType(int nSteps, bool stepDotted)
 //   operator<
 //---------------------------------------------------------
 
-bool TDuration::operator<(const TDuration& t) const
-{
+bool TDuration::operator<(const TDuration &t) const {
     if (t.m_val < m_val) {
         return true;
     }
@@ -303,8 +261,7 @@ bool TDuration::operator<(const TDuration& t) const
 //   operator>=
 //---------------------------------------------------------
 
-bool TDuration::operator>=(const TDuration& t) const
-{
+bool TDuration::operator>=(const TDuration &t) const {
     if (t.m_val > m_val) {
         return true;
     }
@@ -320,8 +277,7 @@ bool TDuration::operator>=(const TDuration& t) const
 //   operator<=
 //---------------------------------------------------------
 
-bool TDuration::operator<=(const TDuration& t) const
-{
+bool TDuration::operator<=(const TDuration &t) const {
     if (t.m_val < m_val) {
         return true;
     }
@@ -337,8 +293,7 @@ bool TDuration::operator<=(const TDuration& t) const
 //   operator>
 //---------------------------------------------------------
 
-bool TDuration::operator>(const TDuration& t) const
-{
+bool TDuration::operator>(const TDuration &t) const {
     if (t.m_val > m_val) {
         return true;
     }
@@ -354,45 +309,37 @@ bool TDuration::operator>(const TDuration& t) const
 //   fraction
 //---------------------------------------------------------
 
-Fraction TDuration::fraction() const
-{
+Fraction TDuration::fraction() const {
     int z = 1;
     unsigned n;
     switch (m_val) {
-    case DurationType::V_1024TH:    n = 1024;
-        break;
-    case DurationType::V_512TH:     n = 512;
-        break;
-    case DurationType::V_256TH:     n = 256;
-        break;
-    case DurationType::V_128TH:     n = 128;
-        break;
-    case DurationType::V_64TH:      n = 64;
-        break;
-    case DurationType::V_32ND:      n = 32;
-        break;
-    case DurationType::V_16TH:      n = 16;
-        break;
-    case DurationType::V_EIGHTH:    n = 8;
-        break;
-    case DurationType::V_QUARTER:   n = 4;
-        break;
-    case DurationType::V_HALF:      n = 2;
-        break;
-    case DurationType::V_WHOLE:     n = 1;
-        break;
-    case DurationType::V_BREVE:     z = 2;
-        n = 1;
-        break;
-    case DurationType::V_LONG:      z = 4;
-        n = 1;
-        break;
-    case DurationType::V_ZERO:      z = 0;
-        n = 1;
-        break;
-    default:          z = 0;
-        n = 0;
-        break;                                        // zero+invalid fraction
+        case DurationType::V_1024TH: n = 1024; break;
+        case DurationType::V_512TH: n = 512; break;
+        case DurationType::V_256TH: n = 256; break;
+        case DurationType::V_128TH: n = 128; break;
+        case DurationType::V_64TH: n = 64; break;
+        case DurationType::V_32ND: n = 32; break;
+        case DurationType::V_16TH: n = 16; break;
+        case DurationType::V_EIGHTH: n = 8; break;
+        case DurationType::V_QUARTER: n = 4; break;
+        case DurationType::V_HALF: n = 2; break;
+        case DurationType::V_WHOLE: n = 1; break;
+        case DurationType::V_BREVE:
+            z = 2;
+            n = 1;
+            break;
+        case DurationType::V_LONG:
+            z = 4;
+            n = 1;
+            break;
+        case DurationType::V_ZERO:
+            z = 0;
+            n = 1;
+            break;
+        default:
+            z = 0;
+            n = 0;
+            break; // zero+invalid fraction
     }
 
     //dots multiplier is (2^(n + 1) - 1)/(2^n) where n is the number of dots
@@ -403,23 +350,21 @@ Fraction TDuration::fraction() const
 }
 
 // Longest TDuration that fits into Fraction. Must fit exactly if truncate = false.
-TDuration::TDuration(const Fraction& l, bool truncate, int maxDots, DurationType maxType)
-{
+TDuration::TDuration(const Fraction &l, bool truncate, int maxDots, DurationType maxType) {
 #ifdef NDEBUG
     UNUSED(truncate);
 #endif
-    setType(maxType);   // use maxType to avoid testing all types if you know that l is smaller than a certain DurationType
+    setType(maxType); // use maxType to avoid testing all types if you know that l is smaller than a certain DurationType
     setDots(maxDots);
     truncateToFraction(l, maxDots);
-    assert(truncate || (fraction() - l).numerator() == 0);   // check for exact fit
+    assert(truncate || (fraction() - l).numerator() == 0); // check for exact fit
 }
 
 //---------------------------------------------------------
 //   truncateToFraction
 //---------------------------------------------------------
 
-void TDuration::truncateToFraction(const Fraction& l, int maxDots)
-{
+void TDuration::truncateToFraction(const Fraction &l, int maxDots) {
     // try to fit in l by reducing number of duration dots
     if (setDotsToFitFraction(l, m_dots)) {
         return;
@@ -428,7 +373,7 @@ void TDuration::truncateToFraction(const Fraction& l, int maxDots)
     // that wasn't enough so now change type too
     for (shiftType(1); isValid(); shiftType(1)) {
         if (setDotsToFitFraction(l, maxDots)) {
-            return;       // duration fits in l
+            return; // duration fits in l
         }
     }
 }
@@ -437,27 +382,25 @@ void TDuration::truncateToFraction(const Fraction& l, int maxDots)
 //   setDotsToFitFraction
 //---------------------------------------------------------
 
-bool TDuration::setDotsToFitFraction(const Fraction& l, int maxDots)
-{
+bool TDuration::setDotsToFitFraction(const Fraction &l, int maxDots) {
     for (; maxDots >= 0; maxDots--) {
-        m_dots = maxDots;     // ensures _dots >= 0 if function returns false.
+        m_dots = maxDots; // ensures _dots >= 0 if function returns false.
         if ((fraction() - l).numerator() <= 0) {
-            return true;       // duration fits in l
+            return true; // duration fits in l
         }
     }
 
-    return false;   // doesn't fit by changing dots alone (type needs to be changed too)
+    return false; // doesn't fit by changing dots alone (type needs to be changed too)
 }
 
 //---------------------------------------------------------
 //   operator -=
 //---------------------------------------------------------
 
-TDuration& TDuration::operator-=(const TDuration& t)
-{
+TDuration &TDuration::operator-=(const TDuration &t) {
     Fraction f1 = fraction() - t.fraction();
     TDuration d(f1);
-    m_val  = d.m_val;
+    m_val = d.m_val;
     m_dots = d.m_dots;
     return *this;
 }
@@ -466,11 +409,10 @@ TDuration& TDuration::operator-=(const TDuration& t)
 //   operator +=
 //---------------------------------------------------------
 
-TDuration& TDuration::operator+=(const TDuration& t)
-{
+TDuration &TDuration::operator+=(const TDuration &t) {
     Fraction f1 = fraction() + t.fraction();
     TDuration d(f1);
-    m_val  = d.m_val;
+    m_val = d.m_val;
     m_dots = d.m_dots;
     return *this;
 }
@@ -481,8 +423,7 @@ TDuration& TDuration::operator+=(const TDuration& t)
 //    - returned durations are in local time
 //---------------------------------------------------------
 
-std::vector<TDuration> toDurationList(Fraction l, bool useDots, int maxDots, bool printRestRemains)
-{
+std::vector<TDuration> toDurationList(Fraction l, bool useDots, int maxDots, bool printRestRemains) {
     std::vector<TDuration> dList;
     dList.reserve(8);
 
@@ -508,13 +449,9 @@ std::vector<TDuration> toDurationList(Fraction l, bool useDots, int maxDots, boo
 //    - returned durations are in local time
 //---------------------------------------------------------
 
-std::vector<TDuration> toRhythmicDurationList(const Fraction& l, bool isRest, Fraction rtickStart,
-                                              const TimeSigFrac& nominal, Measure* msr, int maxDots,
-                                              const Fraction& timeStretch)
-{
-    IF_ASSERT_FAILED(l > Fraction(0, 1)) {
-        return {};
-    }
+std::vector<TDuration> toRhythmicDurationList(const Fraction &l, bool isRest, Fraction rtickStart, const TimeSigFrac &nominal, Measure *msr,
+                                              int maxDots, const Fraction &timeStretch) {
+    IF_ASSERT_FAILED(l > Fraction(0, 1)) { return {}; }
 
     std::vector<TDuration> dList;
     dList.reserve(8);
@@ -540,19 +477,18 @@ std::vector<TDuration> toRhythmicDurationList(const Fraction& l, bool isRest, Fr
 //   populateRhythmicList
 //---------------------------------------------------------
 
-void populateRhythmicList(std::vector<TDuration>* dList, const Fraction& l, bool isRest, const Fraction& rtickStart,
-                          const TimeSigFrac& nominal, int maxDots)
-{
+void populateRhythmicList(std::vector<TDuration> *dList, const Fraction &l, bool isRest, const Fraction &rtickStart,
+                          const TimeSigFrac &nominal, int maxDots) {
     Fraction rtickEnd = rtickStart + l;
 
-    bool needToSplit = false;   // do we need to split?
-    int rtickSplit = 0;   // tick to split on if we need to
+    bool needToSplit = false; // do we need to split?
+    int rtickSplit = 0;       // tick to split on if we need to
 
     // CHECK AT SUBBEAT LEVEL
 
-    int startLevel            = nominal.rtick2subbeatLevel(rtickStart.ticks());
-    int endLevel              = nominal.rtick2subbeatLevel(rtickEnd.ticks());
-    int strongestLevelCrossed = nominal.strongestSubbeatLevelInRange(rtickStart.ticks(), rtickEnd.ticks(), &rtickSplit);   // sets rtickSplit
+    int startLevel = nominal.rtick2subbeatLevel(rtickStart.ticks());
+    int endLevel = nominal.rtick2subbeatLevel(rtickEnd.ticks());
+    int strongestLevelCrossed = nominal.strongestSubbeatLevelInRange(rtickStart.ticks(), rtickEnd.ticks(), &rtickSplit); // sets rtickSplit
 
     if ((startLevel < 0) || (endLevel < 0) || (strongestLevelCrossed < 0)) {
         // Beyond maximum subbeat level so just split into largest possible durations.
@@ -580,14 +516,14 @@ void populateRhythmicList(std::vector<TDuration>* dList, const Fraction& l, bool
     if (!needToSplit && strongestLevelCrossed == 0) {
         // NOW CHECK AT DENOMINATOR UNIT LEVEL AND BEAT LEVEL
         BeatType startBeat = nominal.rtick2beatType(rtickStart.ticks());
-        BeatType endBeat   = nominal.rtick2beatType(rtickEnd.ticks());
+        BeatType endBeat = nominal.rtick2beatType(rtickEnd.ticks());
 
-        int dUnitsCrossed = 0;     // number of timeSig denominator units the note/rest crosses
+        int dUnitsCrossed = 0; // number of timeSig denominator units the note/rest crosses
         // if there is a choice of which beat to split on, should we use the first or last?
-        bool useLast = startBeat <= BeatType::SIMPLE_UNSTRESSED;     // split on the later beat if starting on a beat
+        bool useLast = startBeat <= BeatType::SIMPLE_UNSTRESSED; // split on the later beat if starting on a beat
 
-        BeatType strongestBeatCrossed = nominal.strongestBeatInRange(rtickStart.ticks(),
-                                                                     rtickEnd.ticks(), &dUnitsCrossed, &rtickSplit, useLast);
+        BeatType strongestBeatCrossed =
+            nominal.strongestBeatInRange(rtickStart.ticks(), rtickEnd.ticks(), &dUnitsCrossed, &rtickSplit, useLast);
 
         needToSplit = forceRhythmicSplit(isRest, startBeat, endBeat, dUnitsCrossed, strongestBeatCrossed, nominal);
     }
@@ -625,9 +561,8 @@ void populateRhythmicList(std::vector<TDuration>* dList, const Fraction& l, bool
 //    Split compound notes/rests where they enter a compound beat.
 //---------------------------------------------------------
 
-void splitCompoundBeatsForList(std::vector<TDuration>* dList, const Fraction& l, bool isRest,
-                               const Fraction& rtickStart, const TimeSigFrac& nominal, int maxDots)
-{
+void splitCompoundBeatsForList(std::vector<TDuration> *dList, const Fraction &l, bool isRest, const Fraction &rtickStart,
+                               const TimeSigFrac &nominal, int maxDots) {
     Fraction rtickEnd = rtickStart + l;
 
     BeatType startBeat = nominal.rtick2beatType(rtickStart.ticks());
@@ -641,8 +576,9 @@ void splitCompoundBeatsForList(std::vector<TDuration>* dList, const Fraction& l,
             // Duration extends into next beat so must split
             Fraction leftSplit = Fraction::fromTicks(splitTicks);
             Fraction rightSplit = l - leftSplit;
-            populateRhythmicList(dList, leftSplit, isRest, rtickStart, nominal, maxDots);       // this side is ok to proceed
-            splitCompoundBeatsForList(dList, rightSplit, isRest, rtickStart + Fraction::fromTicks(splitTicks), nominal, maxDots);       // not checked yet
+            populateRhythmicList(dList, leftSplit, isRest, rtickStart, nominal, maxDots); // this side is ok to proceed
+            splitCompoundBeatsForList(dList, rightSplit, isRest, rtickStart + Fraction::fromTicks(splitTicks), nominal,
+                                      maxDots); // not checked yet
             return;
         }
     }
@@ -655,7 +591,7 @@ void splitCompoundBeatsForList(std::vector<TDuration>* dList, const Fraction& l,
             // Duration extends into previous beat so must split
             Fraction rightSplit = Fraction::fromTicks(splitTicks);
             Fraction leftSplit = l - rightSplit;
-            populateRhythmicList(dList, leftSplit, isRest, rtickStart, nominal, maxDots);       // must add leftSplit to list first
+            populateRhythmicList(dList, leftSplit, isRest, rtickStart, nominal, maxDots); // must add leftSplit to list first
             populateRhythmicList(dList, rightSplit, isRest, rtickEnd - Fraction::fromTicks(splitTicks), nominal, maxDots);
             return;
         }
@@ -688,16 +624,15 @@ void splitCompoundBeatsForList(std::vector<TDuration>* dList, const Fraction& l,
 //    all compound and simple full beats, and not any subbeats.
 //---------------------------------------------------------
 
-bool forceRhythmicSplit(bool isRest, BeatType startBeat, BeatType endBeat,
-                        int dUnitsCrossed, BeatType strongestBeatCrossed, const TimeSigFrac& nominal)
-{
+bool forceRhythmicSplit(bool isRest, BeatType startBeat, BeatType endBeat, int dUnitsCrossed, BeatType strongestBeatCrossed,
+                        const TimeSigFrac &nominal) {
     // Assumption: Notes were split at measure boundary before this function was
     // called. (Necessary because timeSig might be different in next measure.)
     assert(strongestBeatCrossed != BeatType::DOWNBEAT);
     // Assumption: compound notes have already been split where they enter a compound beat.
     // (Necessary because the split beat is not always the strongest beat in this case.)
-    assert(!nominal.isCompound() || strongestBeatCrossed >= BeatType::COMPOUND_SUBBEAT
-           || (startBeat <= BeatType::COMPOUND_UNSTRESSED && endBeat <= BeatType::COMPOUND_UNSTRESSED));
+    assert(!nominal.isCompound() || strongestBeatCrossed >= BeatType::COMPOUND_SUBBEAT ||
+           (startBeat <= BeatType::COMPOUND_UNSTRESSED && endBeat <= BeatType::COMPOUND_UNSTRESSED));
 
     // SPECIAL CASES
 
@@ -729,32 +664,31 @@ bool forceRhythmicSplit(bool isRest, BeatType startBeat, BeatType endBeat,
 //   forceRhythmicSplitCompound
 //---------------------------------------------------------
 
-bool forceRhythmicSplitCompound(bool isRest, BeatType startBeat, BeatType endBeat, int dUnitsCrossed, BeatType strongestBeatCrossed)
-{
+bool forceRhythmicSplitCompound(bool isRest, BeatType startBeat, BeatType endBeat, int dUnitsCrossed, BeatType strongestBeatCrossed) {
     switch (strongestBeatCrossed) {
-    case BeatType::COMPOUND_STRESSED:
-        // Assumption: compound notes have already been split where they enter a compound beat.
-        assert(startBeat <= BeatType::COMPOUND_UNSTRESSED && endBeat <= BeatType::COMPOUND_UNSTRESSED);
-        // Notes are guaranteed to and start on a compound beat so we can pretend we have a simple measure.
-        return forceRhythmicSplitSimple(isRest, startBeat, endBeat, dUnitsCrossed / 3, BeatType::SIMPLE_STRESSED);
-    case BeatType::COMPOUND_UNSTRESSED:
-        // Same assumption as before
-        assert(startBeat <= BeatType::COMPOUND_UNSTRESSED && endBeat <= BeatType::COMPOUND_UNSTRESSED);
-        // No further conditions since note are guaranteed to start and end on a compound beat.
-        return false;
-    case BeatType::COMPOUND_SUBBEAT:
-        // don't split anything that takes up a full compound beat
-        if (startBeat <= BeatType::COMPOUND_UNSTRESSED && endBeat <= BeatType::COMPOUND_UNSTRESSED) {
+        case BeatType::COMPOUND_STRESSED:
+            // Assumption: compound notes have already been split where they enter a compound beat.
+            assert(startBeat <= BeatType::COMPOUND_UNSTRESSED && endBeat <= BeatType::COMPOUND_UNSTRESSED);
+            // Notes are guaranteed to and start on a compound beat so we can pretend we have a simple measure.
+            return forceRhythmicSplitSimple(isRest, startBeat, endBeat, dUnitsCrossed / 3, BeatType::SIMPLE_STRESSED);
+        case BeatType::COMPOUND_UNSTRESSED:
+            // Same assumption as before
+            assert(startBeat <= BeatType::COMPOUND_UNSTRESSED && endBeat <= BeatType::COMPOUND_UNSTRESSED);
+            // No further conditions since note are guaranteed to start and end on a compound beat.
             return false;
-        }
-        // split rests that don't start on a compound beat
-        if (isRest && startBeat > BeatType::COMPOUND_UNSTRESSED) {
-            return true;
-        }
-        // Remaining groupings within compound triplets are the same as for simple triple (3/4, 3/8, etc.)
-        return forceRhythmicSplitSimple(isRest, startBeat, endBeat, dUnitsCrossed, BeatType::SIMPLE_UNSTRESSED);
-    default:         // BeatType::SUBBEAT
-        return forceRhythmicSplitSimple(isRest, startBeat, endBeat, dUnitsCrossed, strongestBeatCrossed);
+        case BeatType::COMPOUND_SUBBEAT:
+            // don't split anything that takes up a full compound beat
+            if (startBeat <= BeatType::COMPOUND_UNSTRESSED && endBeat <= BeatType::COMPOUND_UNSTRESSED) {
+                return false;
+            }
+            // split rests that don't start on a compound beat
+            if (isRest && startBeat > BeatType::COMPOUND_UNSTRESSED) {
+                return true;
+            }
+            // Remaining groupings within compound triplets are the same as for simple triple (3/4, 3/8, etc.)
+            return forceRhythmicSplitSimple(isRest, startBeat, endBeat, dUnitsCrossed, BeatType::SIMPLE_UNSTRESSED);
+        default: // BeatType::SUBBEAT
+            return forceRhythmicSplitSimple(isRest, startBeat, endBeat, dUnitsCrossed, strongestBeatCrossed);
     }
 }
 
@@ -765,37 +699,36 @@ bool forceRhythmicSplitCompound(bool isRest, BeatType startBeat, BeatType endBea
 //    >, >= instead of == and != when appropriate. (See sig.h)
 //---------------------------------------------------------
 
-bool forceRhythmicSplitSimple(bool isRest, BeatType startBeat, BeatType endBeat, int beatsCrossed, BeatType strongestBeatCrossed)
-{
+bool forceRhythmicSplitSimple(bool isRest, BeatType startBeat, BeatType endBeat, int beatsCrossed, BeatType strongestBeatCrossed) {
     switch (strongestBeatCrossed) {
-    case BeatType::SIMPLE_STRESSED:
-        // Must split rests on a stressed beat.
-        if (isRest) {
+        case BeatType::SIMPLE_STRESSED:
+            // Must split rests on a stressed beat.
+            if (isRest) {
+                return true;
+            }
+            // Don't split notes that start or end on a stressed beat. Enables double-dotting in 4/4.
+            // (Don't remove this to disable double-dotting, instead set maxDots = 1 elsewhere.)
+            if (startBeat <= BeatType::SIMPLE_STRESSED || endBeat <= BeatType::SIMPLE_STRESSED) {
+                return false;
+            }
+            // Don't split notes that both start and end on unstressed beats or stronger.
+            if (startBeat <= BeatType::SIMPLE_UNSTRESSED && endBeat <= BeatType::SIMPLE_UNSTRESSED) {
+                return false;
+            }
+            // anything else must split on stressed beat.
             return true;
-        }
-        // Don't split notes that start or end on a stressed beat. Enables double-dotting in 4/4.
-        // (Don't remove this to disable double-dotting, instead set maxDots = 1 elsewhere.)
-        if (startBeat <= BeatType::SIMPLE_STRESSED || endBeat <= BeatType::SIMPLE_STRESSED) {
+        case BeatType::SIMPLE_UNSTRESSED:
+            // Don't split notes or rests if starting and ending on stressed beat.
+            if (startBeat <= BeatType::SIMPLE_STRESSED && endBeat <= BeatType::SIMPLE_STRESSED) {
+                return false;
+            }
+            // Split rests that don't start or end on a beat. Notes may cross 1 unstressed beat.
+            if (startBeat == BeatType::SUBBEAT || endBeat == BeatType::SUBBEAT) {
+                return isRest || (beatsCrossed > 1);
+            }
             return false;
-        }
-        // Don't split notes that both start and end on unstressed beats or stronger.
-        if (startBeat <= BeatType::SIMPLE_UNSTRESSED && endBeat <= BeatType::SIMPLE_UNSTRESSED) {
+        default: // BeatType::SUBBEAT
             return false;
-        }
-        // anything else must split on stressed beat.
-        return true;
-    case BeatType::SIMPLE_UNSTRESSED:
-        // Don't split notes or rests if starting and ending on stressed beat.
-        if (startBeat <= BeatType::SIMPLE_STRESSED && endBeat <= BeatType::SIMPLE_STRESSED) {
-            return false;
-        }
-        // Split rests that don't start or end on a beat. Notes may cross 1 unstressed beat.
-        if (startBeat == BeatType::SUBBEAT || endBeat == BeatType::SUBBEAT) {
-            return isRest || (beatsCrossed > 1);
-        }
-        return false;
-    default:         // BeatType::SUBBEAT
-        return false;
     }
 }
 
@@ -803,8 +736,7 @@ bool forceRhythmicSplitSimple(bool isRest, BeatType startBeat, BeatType endBeat,
 //   setType
 //---------------------------------------------------------
 
-void TDuration::setType(DurationType t)
-{
+void TDuration::setType(DurationType t) {
     m_val = t;
     if (m_val == DurationType::V_MEASURE) {
         m_dots = 0;
@@ -815,12 +747,11 @@ void TDuration::setType(DurationType t)
 //   isValid
 //---------------------------------------------------------
 
-bool TDuration::isValid(Fraction f)
-{
+bool TDuration::isValid(Fraction f) {
     TDuration t;
     t.setType(DurationType::V_LONG);
     t.setDots(4);
     t.truncateToFraction(f, 4);
     return t.isValid() && (t.fraction() - f).numerator() == 0;
 }
-}
+} // namespace mu::engraving

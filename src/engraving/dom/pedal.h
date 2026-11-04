@@ -32,16 +32,16 @@ class Pedal;
 //   @@ PedalSegment
 //---------------------------------------------------------
 
-class PedalSegment final : public TextLineBaseSegment
-{
+class PedalSegment final : public TextLineBaseSegment {
     OBJECT_ALLOCATOR(engraving, PedalSegment)
     DECLARE_CLASSOF(ElementType::PEDAL_SEGMENT)
 
 public:
-    PedalSegment(Pedal* sp);
+    PedalSegment(Pedal *sp);
 
-    PedalSegment* clone() const override { return new PedalSegment(*this); }
-    Pedal* pedal() const { return toPedal(spanner()); }
+    PedalSegment *clone() const override { return new PedalSegment(*this); }
+
+    Pedal *pedal() const { return toPedal(spanner()); }
 
     friend class Pedal;
 };
@@ -50,8 +50,7 @@ public:
 //   @@ Pedal
 //---------------------------------------------------------
 
-class Pedal final : public TextLineBase
-{
+class Pedal final : public TextLineBase {
     OBJECT_ALLOCATOR(engraving, Pedal)
     DECLARE_CLASSOF(ElementType::PEDAL)
 
@@ -59,7 +58,7 @@ class Pedal final : public TextLineBase
 
 protected:
     Sid defaultPosSid() const override;
-    PointF linePos(Grip, System**) const override;
+    PointF linePos(Grip, System **) const override;
 
 public:
     static const String PEDAL_SYMBOL;
@@ -67,15 +66,15 @@ public:
 
     Pedal(DummyParentOr<EngravingItem> parent);
 
-    Pedal* clone() const override { return new Pedal(*this); }
+    Pedal *clone() const override { return new Pedal(*this); }
 
     Anchor anchor() const override { return Anchor::SEGMENT; }
 
-    LineSegment* createLineSegment() override;
+    LineSegment *createLineSegment() override;
     PropertyValue propertyDefault(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue& v) override;
+    bool setProperty(Pid propertyId, const PropertyValue &v) override;
 
-    Pedal* findNextInStaff() const;
+    Pedal *findNextInStaff() const;
     bool connect45HookToNext() const;
 
     friend class PedalLine;

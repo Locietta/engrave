@@ -21,11 +21,9 @@
 #ifndef _FLUIDSYNTH_LOG_H
 #define _FLUIDSYNTH_LOG_H
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
-
 
 /**
  * @defgroup logging Logging
@@ -58,8 +56,7 @@ extern "C" {
 /**
  * FluidSynth log levels.
  */
-enum fluid_log_level
-{
+enum fluid_log_level {
     FLUID_PANIC,   /**< The synth can't function correctly any more */
     FLUID_ERR,     /**< Serious error occurred */
     FLUID_WARN,    /**< Warning */
@@ -85,9 +82,9 @@ FLUIDSYNTH_API void fluid_default_log_function(int level, const char *message, v
 
 FLUIDSYNTH_API int fluid_log(int level, const char *fmt, ...)
 #if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
-__attribute__ ((format (printf, 2, 3)))
+    __attribute__((format(printf, 2, 3)))
 #endif
-;
+    ;
 /** @} */
 
 #ifdef __cplusplus

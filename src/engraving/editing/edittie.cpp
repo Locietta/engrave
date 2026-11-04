@@ -42,9 +42,8 @@
 
 using namespace mu::engraving;
 
-void ChangeTieJumpPointActive::flip()
-{
-    TieJumpPoint* jumpPoint = m_jumpPointList->findJumpPoint(m_id);
+void ChangeTieJumpPointActive::flip() {
+    TieJumpPoint *jumpPoint = m_jumpPointList->findJumpPoint(m_id);
     if (!jumpPoint) {
         return;
     }
@@ -58,17 +57,16 @@ void ChangeTieJumpPointActive::flip()
     m_active = oldActive;
 }
 
-std::vector<Note*> EditTie::cmdTieNoteList(const Selection& selection, bool noteEntryMode)
-{
-    EngravingItem* el = selection.element();
-    if (Note* n = InputState::note(el)) {
+std::vector<Note *> EditTie::cmdTieNoteList(const Selection &selection, bool noteEntryMode) {
+    EngravingItem *el = selection.element();
+    if (Note *n = InputState::note(el)) {
         if (noteEntryMode) {
             return n->chord()->notes();
         } else {
-            return { n };
+            return {n};
         }
     } else {
-        ChordRest* cr = InputState::chordRest(el);
+        ChordRest *cr = InputState::chordRest(el);
         if (cr && cr->isChord()) {
             return toChord(cr)->notes();
         }
@@ -76,10 +74,9 @@ std::vector<Note*> EditTie::cmdTieNoteList(const Selection& selection, bool note
     return selection.noteList();
 }
 
-static Tie* createAndAddTie(Note* startNote, Note* endNote)
-{
-    Score* score = startNote->score();
-    Tie* tie = endNote ? Factory::createTie(startNote) : Factory::createPartialTie(startNote);
+static Tie *createAndAddTie(Note *startNote, Note *endNote) {
+    Score *score = startNote->score();
+    Tie *tie = endNote ? Factory::createTie(startNote) : Factory::createPartialTie(startNote);
     tie->setStartNote(startNote);
     tie->setTrack(startNote->track());
     tie->setTick(startNote->chord()->segment()->tick());
@@ -101,27 +98,26 @@ static Tie* createAndAddTie(Note* startNote, Note* endNote)
     return tie;
 }
 
-void EditTie::cmdAddTie(Score* score, bool addToChord)
-{
-    std::vector<Note*> noteList = cmdTieNoteList(score->selection(), score->noteEntryMode());
+void EditTie::cmdAddTie(Score *score, bool addToChord) {
+    std::vector<Note *> noteList = cmdTieNoteList(score->selection(), score->noteEntryMode());
     if (noteList.empty()) {
         LOGD("no notes selected");
         return;
     }
 
-    std::sort(noteList.begin(), noteList.end(), [](const Note* a, const Note* b) { return a->track() < b->track(); });
+    std::sort(noteList.begin(), noteList.end(), [](const Note *a, const Note *b) { return a->track() < b->track(); });
     track_idx_t track = noteList.at(0)->track();
 
-    std::vector<EngravingItem*> toSelect;
+    std::vector<EngravingItem *> toSelect;
 
     score->startCmd(TranslatableString("undoableAction", "Add tie"));
-    Chord* lastAddedChord = nullptr;
+    Chord *lastAddedChord = nullptr;
 
-    Transaction& tx = score->transactionManager()->currentOrDummyTransaction();
+    Transaction &tx = score->transactionManager()->currentOrDummyTransaction();
 
-    InputState& is = score->inputState();
+    InputState &is = score->inputState();
 
-    for (Note* note : noteList) {
+    for (Note *note : noteList) {
         if (note->tieFor()) {
             LOGD("cmdAddTie: note %p has already tie? noteFor: %p", note, note->tieFor());
             if (addToChord) {
@@ -131,8 +127,8 @@ void EditTie::cmdAddTie(Score* score, bool addToChord)
             }
         }
 
-        ChordRest* cr = nullptr;
-        Chord* c = note->chord();
+        ChordRest *cr = nullptr;
+        Chord *c = note->chord();
         int staffMove = c->staffMove();
 
         // set cursor at position after note
@@ -165,14 +161,14 @@ void EditTie::cmdAddTie(Score* score, bool addToChord)
             track = c->track();
         }
         // try to re-use existing note or chord
-        Note* n = nullptr;
+        Note *n = nullptr;
         if (addToChord && cr->isChord()) {
-            Chord* chord = toChord(cr);
-            Note* nn = chord->findNote(note->pitch());
+            Chord *chord = toChord(cr);
+            Note *nn = chord->findNote(note->pitch());
             if (nn && nn->tpc() == note->tpc()) {
-                n = nn;                     // re-use note
+                n = nn; // re-use note
             } else {
-                addFlag = true;             // re-use chord
+                addFlag = true; // re-use chord
             }
         }
 
@@ -192,7 +188,7 @@ void EditTie::cmdAddTie(Score* score, bool addToChord)
                 lastAddedChord = n->chord();
             }
             // n is not necessarily next note if duration span over measure
-            Note* nnote = searchTieNote(note);
+            Note *nnote = searchTieNote(note);
             while (nnote) {
                 // DEBUG: if duration spans over measure
                 // this does not set line for intermediate notes
@@ -210,7 +206,7 @@ void EditTie::cmdAddTie(Score* score, bool addToChord)
                 }
             }
             if (staffMove != 0) {
-                for (Note* tiedNote : n->tiedNotes()) {
+                for (Note *tiedNote : n->tiedNotes()) {
                     score->undo(new ChangeChordStaffMove(tiedNote->chord(), staffMove));
                 }
             }
@@ -220,7 +216,7 @@ void EditTie::cmdAddTie(Score* score, bool addToChord)
     if (lastAddedChord) {
         NoteInput::nextInputPos(tx, score, lastAddedChord, false);
     }
-    for (EngravingItem* e : toSelect) {
+    for (EngravingItem *e : toSelect) {
         if (score->canReselectItem(e)) {
             score->select(e, SelectType::ADD);
         }
@@ -228,28 +224,27 @@ void EditTie::cmdAddTie(Score* score, bool addToChord)
     score->endCmd();
 }
 
-Tie* EditTie::cmdToggleTie(Score* score)
-{
-    std::vector<Note*> noteList = cmdTieNoteList(score->selection(), score->noteEntryMode());
+Tie *EditTie::cmdToggleTie(Score *score) {
+    std::vector<Note *> noteList = cmdTieNoteList(score->selection(), score->noteEntryMode());
 
     if (noteList.empty()) {
         LOGD("no notes selected");
         return nullptr;
     }
 
-    std::vector<Note*> tieNoteList(noteList.size());
+    std::vector<Note *> tieNoteList(noteList.size());
     bool singleTick = true;
     bool someHaveExistingNextNoteToTieTo = false;
     bool allHaveExistingNextNoteToTieTo = true;
     for (size_t i = 0; i < noteList.size(); ++i) {
-        Note* n = noteList[i];
+        Note *n = noteList[i];
         if (n->chord()->tick() != noteList.front()->tick()) {
             singleTick = false;
         }
         if (n->tieFor()) {
             tieNoteList[i] = nullptr;
         } else {
-            Note* tieNote = searchTieNote(n);
+            Note *tieNote = searchTieNote(n);
             tieNoteList[i] = tieNote;
             if (tieNote || n->chord()->hasFollowingJumpItem()) {
                 someHaveExistingNextNoteToTieTo = true;
@@ -266,17 +261,16 @@ Tie* EditTie::cmdToggleTie(Score* score)
         return nullptr;
     }
 
-    const TranslatableString actionName = someHaveExistingNextNoteToTieTo
-                                          ? TranslatableString("undoableAction", "Add tie")
-                                          : TranslatableString("undoableAction", "Remove tie");
+    const TranslatableString actionName = someHaveExistingNextNoteToTieTo ? TranslatableString("undoableAction", "Add tie") :
+                                                                            TranslatableString("undoableAction", "Remove tie");
 
     score->startCmd(actionName);
 
-    Tie* tie = nullptr;
+    Tie *tie = nullptr;
 
     for (size_t i = 0; i < noteList.size(); ++i) {
-        Note* note = noteList[i];
-        Note* tieToNote = tieNoteList[i];
+        Note *note = noteList[i];
+        Note *tieToNote = tieNoteList[i];
 
         if (!note) {
             continue;
@@ -284,14 +278,14 @@ Tie* EditTie::cmdToggleTie(Score* score)
 
         // Tie to adjacent unselected note
         if (someHaveExistingNextNoteToTieTo && tieToNote) {
-            Note* startNote = note->tick() <= tieToNote->tick() ? note : tieToNote;
-            Note* endNote = startNote == tieToNote ? note : tieToNote;
+            Note *startNote = note->tick() <= tieToNote->tick() ? note : tieToNote;
+            Note *endNote = startNote == tieToNote ? note : tieToNote;
             tie = createAndAddTie(startNote, endNote);
             continue;
         }
 
-        Tie* oldTie = note->tieFor();
-        Chord* chord = note->chord();
+        Tie *oldTie = note->tieFor();
+        Chord *chord = note->chord();
         if (oldTie) {
             // Toggle existing tie off
             if (oldTie->tieJumpPoints()) {
@@ -312,10 +306,10 @@ Tie* EditTie::cmdToggleTie(Score* score)
         }
 
         // Tie to next appropriate note in selection
-        Note* note2 = nullptr;
+        Note *note2 = nullptr;
 
         for (size_t j = i + 1; j < noteList.size(); ++j) {
-            Note* candidateNote = noteList[j];
+            Note *candidateNote = noteList[j];
             if (!candidateNote) {
                 continue;
             }
@@ -334,8 +328,8 @@ Tie* EditTie::cmdToggleTie(Score* score)
             continue;
         }
 
-        Note* startNote = note->tick() <= note2->tick() ? note : note2;
-        Note* endNote = startNote == note2 ? note : note2;
+        Note *startNote = note->tick() <= note2->tick() ? note : note2;
+        Note *endNote = startNote == note2 ? note : note2;
 
         tie = createAndAddTie(startNote, endNote);
     }
@@ -345,9 +339,8 @@ Tie* EditTie::cmdToggleTie(Score* score)
     return tie;
 }
 
-void EditTie::cmdToggleLaissezVib(Score* score)
-{
-    const std::vector<Note*> noteList = score->selection().noteList();
+void EditTie::cmdToggleLaissezVib(Score *score) {
+    const std::vector<Note *> noteList = score->selection().noteList();
 
     if (noteList.empty()) {
         LOGD("no notes selected");
@@ -356,13 +349,13 @@ void EditTie::cmdToggleLaissezVib(Score* score)
 
     score->startCmd(TranslatableString("undoableAction", "Toggle laissez vibrer"));
 
-    for (Note* note: noteList) {
-        if (LaissezVib* lv = note->laissezVib()) {
+    for (Note *note : noteList) {
+        if (LaissezVib *lv = note->laissezVib()) {
             score->undoRemoveElement(lv);
         } else if (note->tieFor()) {
             continue;
         } else {
-            LaissezVib* lvTie = Factory::createLaissezVib(note);
+            LaissezVib *lvTie = Factory::createLaissezVib(note);
             score->undoAddElement(lvTie);
         }
     }

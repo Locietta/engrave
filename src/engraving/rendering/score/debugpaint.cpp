@@ -47,25 +47,23 @@ static const Color DEBUG_ELTREE_SELECTED_COLOR(164, 0, 0);
 /// If we would use really random colors, they would change on every redraw.
 /// Additional advantage: being able to see when an element is replaced with
 /// a different element during layout.
-static Color colorForPointer(const void* ptr)
-{
+static Color colorForPointer(const void *ptr) {
     static constexpr uint32_t rgbTotalMax = 600;
     static constexpr uint32_t mask = 0xFFFF;
     static constexpr double max = mask + 1.0;
 
-    auto hash = std::hash<const void*> {}(ptr);
+    auto hash = std::hash<const void *>{}(ptr);
     uint32_t cmpnt1 = hash & mask;
     uint32_t cmpnt2 = (hash >> 16) & mask;
 
     uint32_t r = std::clamp(uint32_t(cmpnt1 / max * 255), 30u, 255u);
     uint32_t g = std::clamp(uint32_t(cmpnt2 / max * 255), 30u, 255u);
-    uint32_t b = std::clamp(rgbTotalMax - r - g,          30u, 255u);
+    uint32_t b = std::clamp(rgbTotalMax - r - g, 30u, 255u);
 
     return Color(r, g, b, 128);
 }
 
-void DebugPaint::paintElementDebug(Painter& painter, const EngravingItem* item)
-{
+void DebugPaint::paintElementDebug(Painter &painter, const EngravingItem *item) {
     // Elements tree (its diagnostic selection is a desktop tool)
     const bool isDiagnosticSelected = false;
 
@@ -83,13 +81,13 @@ void DebugPaint::paintElementDebug(Painter& painter, const EngravingItem* item)
 
     if (!bbox.isEmpty()) {
         // Draw shape
-        if (item->configuration()->debuggingOptions().colorElementShapes
-            && !item->isPage() && !item->isSystem() && !item->isStaffLines() && !item->isBox()) {
+        if (item->configuration()->debuggingOptions().colorElementShapes && !item->isPage() && !item->isSystem() && !item->isStaffLines() &&
+            !item->isBox()) {
             PainterPath path;
             path.setFillRule(PainterPath::FillRule::WindingFill);
 
             Shape shape = item->shape();
-            for (const RectF& rect : shape.elements()) {
+            for (const RectF &rect : shape.elements()) {
                 path.addRect(rect);
             }
 
@@ -101,7 +99,7 @@ void DebugPaint::paintElementDebug(Painter& painter, const EngravingItem* item)
         if (item->configuration()->debuggingOptions().showElementMasks) {
             PainterPath path;
             path.setFillRule(PainterPath::FillRule::WindingFill);
-            for (const ShapeElement& el : item->ldata()->mask().elements()) {
+            for (const ShapeElement &el : item->ldata()->mask().elements()) {
                 path.addRect(el);
             }
 
@@ -117,7 +115,7 @@ void DebugPaint::paintElementDebug(Painter& painter, const EngravingItem* item)
             Brush brush(Color::RED);
             painter.setBrush(brush);
             double radius = 0.1 * item->spatium();
-            for (const LineAttachPoint& lap : toNote(item)->lineAttachPoints()) {
+            for (const LineAttachPoint &lap : toNote(item)->lineAttachPoints()) {
                 PointF point = lap.pos();
                 painter.drawEllipse(RectF(point.x() - radius, point.y() - radius, 2 * radius, 2 * radius));
             }
@@ -137,8 +135,7 @@ void DebugPaint::paintElementDebug(Painter& painter, const EngravingItem* item)
     painter.translate(-pos);
 }
 
-void DebugPaint::paintPageDebug(Painter& painter, const Page* page, const std::vector<EngravingItem*>& items)
-{
+void DebugPaint::paintPageDebug(Painter &painter, const Page *page, const std::vector<EngravingItem *> &items) {
     if (items.empty()) {
         return;
     }
@@ -148,21 +145,17 @@ void DebugPaint::paintPageDebug(Painter& painter, const Page* page, const std::v
         return;
     }
 
-    IF_ASSERT_FAILED(page) {
-        return;
-    }
+    IF_ASSERT_FAILED(page) { return; }
 
-    Score* score = page->score();
+    Score *score = page->score();
 
-    IF_ASSERT_FAILED(score) {
-        return;
-    }
+    IF_ASSERT_FAILED(score) { return; }
 
     double scaling = painter.worldTransform().m11() / items.front()->contextConfiguration()->guiScaling();
 
     painter.save();
 
-    for (const EngravingItem* item : items) {
+    for (const EngravingItem *item : items) {
         paintElementDebug(painter, item);
     }
 
@@ -170,7 +163,7 @@ void DebugPaint::paintPageDebug(Painter& painter, const Page* page, const std::v
         painter.setBrush(BrushStyle::NoBrush);
         painter.setPen(Pen(Color::BLACK, 3.0 / scaling));
 
-        for (const System* system : page->systems()) {
+        for (const System *system : page->systems()) {
             PointF pt(system->ldata()->pos());
             double h = system->height() + system->minBottom() + system->minTop();
             painter.translate(pt);
@@ -181,8 +174,8 @@ void DebugPaint::paintPageDebug(Painter& painter, const Page* page, const std::v
     }
 
     if (options.showSkylines) {
-        for (const System* system : page->systems()) {
-            for (const SysStaff* ss : system->staves()) {
+        for (const System *system : page->systems()) {
+            for (const SysStaff *ss : system->staves()) {
                 if (!ss->show()) {
                     continue;
                 }
@@ -198,15 +191,15 @@ void DebugPaint::paintPageDebug(Painter& painter, const Page* page, const std::v
     if (options.colorSegmentShapes) {
         painter.setPen(PenStyle::NoPen);
 
-        for (const System* system : page->systems()) {
-            for (const MeasureBase* mb : system->measures()) {
+        for (const System *system : page->systems()) {
+            for (const MeasureBase *mb : system->measures()) {
                 if (!mb->isMeasure()) {
                     continue;
                 }
 
-                const Measure* m = toMeasure(mb);
+                const Measure *m = toMeasure(mb);
 
-                for (const Segment* s = m->first(); s; s = s->next()) {
+                for (const Segment *s = m->first(); s; s = s->next()) {
                     if (!s->enabled()) {
                         continue;
                     }
@@ -218,12 +211,11 @@ void DebugPaint::paintPageDebug(Painter& painter, const Page* page, const std::v
                         path.setFillRule(PainterPath::FillRule::WindingFill);
 
                         Shape shape = s->shapes().at(i);
-                        for (const RectF& rect : shape.elements()) {
+                        for (const RectF &rect : shape.elements()) {
                             path.addRect(rect);
                         }
 
-                        PointF pt(s->pos().x() + m->pos().x() + system->pos().x(),
-                                  system->staffYpage(i));
+                        PointF pt(s->pos().x() + m->pos().x() + system->pos().x(), system->staffYpage(i));
                         painter.translate(pt);
                         painter.drawPath(path);
                         painter.translate(-pt);
@@ -237,21 +229,20 @@ void DebugPaint::paintPageDebug(Painter& painter, const Page* page, const std::v
         painter.setBrush(BrushStyle::NoBrush);
         Pen pen(Color(238, 238, 144), 2.0 / scaling);
 
-        for (const System* system : page->systems()) {
-            for (const MeasureBase* mb : system->measures()) {
+        for (const System *system : page->systems()) {
+            for (const MeasureBase *mb : system->measures()) {
                 if (!mb->isMeasure()) {
                     continue;
                 }
 
-                const Measure* m = toMeasure(mb);
+                const Measure *m = toMeasure(mb);
 
-                for (const Segment* s = m->first(); s; s = s->next()) {
+                for (const Segment *s = m->first(); s; s = s->next()) {
                     pen.setStyle(s->enabled() ? PenStyle::SolidLine : PenStyle::DotLine);
                     painter.setPen(pen);
 
                     for (staff_idx_t i = 0; i < score->nstaves(); ++i) {
-                        PointF pt(s->pos().x() + m->pos().x() + system->pos().x(),
-                                  system->staffYpage(i));
+                        PointF pt(s->pos().x() + m->pos().x() + system->pos().x(), system->staffYpage(i));
                         painter.translate(pt);
                         s->shapes().at(i).paint(painter);
                         painter.translate(-pt);
@@ -264,27 +255,22 @@ void DebugPaint::paintPageDebug(Painter& painter, const Page* page, const std::v
     if (options.markEmptyStaffVisibilityOverrides) {
         double _spatium = score->style().spatium();
 
-        for (const System* system : page->systems()) {
-            for (const MeasureBase* mb : system->measures()) {
+        for (const System *system : page->systems()) {
+            for (const MeasureBase *mb : system->measures()) {
                 if (!mb->isMeasure()) {
                     continue;
                 }
 
-                const Measure* m = toMeasure(mb);
+                const Measure *m = toMeasure(mb);
 
                 for (staff_idx_t staffIdx = 0; staffIdx < score->nstaves(); ++staffIdx) {
                     AutoOnOff hideIfEmpty = m->hideStaffIfEmpty(staffIdx);
 
                     Color fillColor;
                     switch (hideIfEmpty) {
-                    case AutoOnOff::ON:
-                        fillColor = Color(255, 0, 0, 128);
-                        break;
-                    case AutoOnOff::OFF:
-                        fillColor = Color(0, 0, 255, 128);
-                        break;
-                    default:
-                        continue;
+                        case AutoOnOff::ON: fillColor = Color(255, 0, 0, 128); break;
+                        case AutoOnOff::OFF: fillColor = Color(0, 0, 255, 128); break;
+                        default: continue;
                     }
 
                     painter.setBrush(fillColor);
@@ -302,13 +288,13 @@ void DebugPaint::paintPageDebug(Painter& painter, const Page* page, const std::v
 
         double _spatium = score->style().spatium();
 
-        for (const System* system : page->systems()) {
-            for (const MeasureBase* mb : system->measures()) {
+        for (const System *system : page->systems()) {
+            for (const MeasureBase *mb : system->measures()) {
                 if (!mb->isMeasure()) {
                     continue;
                 }
 
-                const Measure* m = toMeasure(mb);
+                const Measure *m = toMeasure(mb);
                 for (size_t staffIdx = 0; staffIdx < score->nstaves(); staffIdx++) {
                     if (m->corrupted(staffIdx)) {
                         painter.drawRect(m->staffPageBoundingRect(staffIdx).adjusted(0, -_spatium, 0, _spatium));

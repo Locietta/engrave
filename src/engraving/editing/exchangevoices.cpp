@@ -37,40 +37,32 @@
 using namespace mu::engraving;
 
 namespace {
-class ExchangeVoicesInMeasure : public UndoableCommand
-{
+class ExchangeVoicesInMeasure : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ExchangeVoicesInMeasure)
 
 public:
-    ExchangeVoicesInMeasure(Measure* measure, track_idx_t srcTrack, track_idx_t dstTrack, staff_idx_t staff)
+    ExchangeVoicesInMeasure(Measure *measure, track_idx_t srcTrack, track_idx_t dstTrack, staff_idx_t staff)
         : m_measure(measure), m_srcTrack(srcTrack), m_dstTrack(dstTrack), m_staff(staff) {}
 
-    void undo() override
-    {
-        doExchange(m_dstTrack, m_srcTrack);
-    }
+    void undo() override { doExchange(m_dstTrack, m_srcTrack); }
 
-    void redo() override
-    {
-        doExchange(m_srcTrack, m_dstTrack);
-    }
+    void redo() override { doExchange(m_srcTrack, m_dstTrack); }
 
     UNDO_TYPE(CommandType::ExchangeVoice)
     UNDO_NAME("ExchangeVoice")
-    UNDO_CHANGED_OBJECTS({ m_measure })
+    UNDO_CHANGED_OBJECTS({m_measure})
 
 private:
     void doExchange(track_idx_t srcTrack, track_idx_t dstTrack);
 
-    Measure* m_measure = nullptr;
+    Measure *m_measure = nullptr;
     track_idx_t m_srcTrack = muse::nidx;
     track_idx_t m_dstTrack = muse::nidx;
     staff_idx_t m_staff = muse::nidx;
 };
 
-void ExchangeVoicesInMeasure::doExchange(track_idx_t srcTrack, track_idx_t dstTrack)
-{
-    for (Segment* s = m_measure->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
+void ExchangeVoicesInMeasure::doExchange(track_idx_t srcTrack, track_idx_t dstTrack) {
+    for (Segment *s = m_measure->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
         s->swapElements(srcTrack, dstTrack);
     }
 
@@ -78,11 +70,11 @@ void ExchangeVoicesInMeasure::doExchange(track_idx_t srcTrack, track_idx_t dstTr
     Fraction end = start + m_measure->ticks();
     auto spanners = m_measure->score()->spannerMap().findOverlapping(start.ticks(), end.ticks() - 1);
     for (auto i = spanners.begin(); i < spanners.end(); i++) {
-        Spanner* sp = i->value;
+        Spanner *sp = i->value;
         Fraction spStart = sp->tick();
         Fraction spEnd = spStart + sp->ticks();
-        LOGD("Start %d End %d Diff %d \n Measure Start %d End %d", spStart.ticks(), spEnd.ticks(), (spEnd - spStart).ticks(),
-             start.ticks(), end.ticks());
+        LOGD("Start %d End %d Diff %d \n Measure Start %d End %d", spStart.ticks(), spEnd.ticks(), (spEnd - spStart).ticks(), start.ticks(),
+             end.ticks());
         if (sp->isSlur() && (spStart >= start || spEnd < end)) {
             if (sp->track() == srcTrack && spStart >= start) {
                 sp->setTrack(dstTrack);
@@ -98,10 +90,9 @@ void ExchangeVoicesInMeasure::doExchange(track_idx_t srcTrack, track_idx_t dstTr
     }
     m_measure->checkMultiVoices(m_staff); // probably true, but check for invisible notes & rests
 }
-}
+} // namespace
 
-void ExchangeVoices::exchangeVoicesInSelection(Score* score, voice_idx_t srcVoice, voice_idx_t dstVoice)
-{
+void ExchangeVoices::exchangeVoicesInSelection(Score *score, voice_idx_t srcVoice, voice_idx_t dstVoice) {
     if (!score->selection().isRange()) {
         MScore::setError(MsError::NO_STAFF_SELECTED);
         return;
@@ -109,8 +100,8 @@ void ExchangeVoices::exchangeVoicesInSelection(Score* score, voice_idx_t srcVoic
     Fraction t1 = score->selection().tickStart();
     Fraction t2 = score->selection().tickEnd();
 
-    Measure* m1 = score->tick2measure(t1);
-    Measure* m2 = score->tick2measure(t2);
+    Measure *m1 = score->tick2measure(t1);
+    Measure *m2 = score->tick2measure(t2);
 
     if (score->excerpt()) {
         return;
@@ -129,9 +120,8 @@ void ExchangeVoices::exchangeVoicesInSelection(Score* score, voice_idx_t srcVoic
     }
 }
 
-void ExchangeVoices::exchangeVoices(Score* score, Measure* measure, voice_idx_t srcVoice, voice_idx_t dstVoice, staff_idx_t srcStaff,
-                                    staff_idx_t dstStaff)
-{
+void ExchangeVoices::exchangeVoices(Score *score, Measure *measure, voice_idx_t srcVoice, voice_idx_t dstVoice, staff_idx_t srcStaff,
+                                    staff_idx_t dstStaff) {
     Fraction tick = measure->tick();
 
     for (staff_idx_t staffIdx = srcStaff; staffIdx < dstStaff; ++staffIdx) {
@@ -143,13 +133,13 @@ void ExchangeVoices::exchangeVoices(Score* score, Measure* measure, voice_idx_t 
         //handle score and complete measures first
         score->undo(new ExchangeVoicesInMeasure(measure, srcTrack, dstTrack, staffIdx));
 
-        for (Staff* st : score->staff(staffIdx)->staffList()) {
+        for (Staff *st : score->staff(staffIdx)->staffList()) {
             track_idx_t staffTrack = st->idx() * VOICES;
-            Measure* measure2 = st->score()->tick2measure(tick);
-            Excerpt* ex = st->score()->excerpt();
+            Measure *measure2 = st->score()->tick2measure(tick);
+            Excerpt *ex = st->score()->excerpt();
 
             if (ex) {
-                const TracksMap& tracks = ex->tracksMapping();
+                const TracksMap &tracks = ex->tracksMapping();
                 std::vector<track_idx_t> srcTrackList = muse::values(tracks, srcTrack);
                 std::vector<track_idx_t> dstTrackList = muse::values(tracks, dstTrack);
 
@@ -210,15 +200,15 @@ void ExchangeVoices::exchangeVoices(Score* score, Measure* measure, voice_idx_t 
     if (srcVoice == 0 || dstVoice == 0) {
         for (staff_idx_t staffIdx = srcStaff; staffIdx < dstStaff; ++staffIdx) {
             // check for complete timeline of voice 0
-            Fraction ctick  = measure->tick();
+            Fraction ctick = measure->tick();
             track_idx_t track = staffIdx * VOICES;
-            for (Segment* s = measure->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
-                ChordRest* cr = toChordRest(s->element(track));
+            for (Segment *s = measure->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
+                ChordRest *cr = toChordRest(s->element(track));
                 if (!cr) {
                     continue;
                 }
                 if (cr->isRest()) {
-                    Rest* r = toRest(cr);
+                    Rest *r = toRest(cr);
                     if (r->isGap()) {
                         r->undoChangeProperty(Pid::GAP, false);
                     }

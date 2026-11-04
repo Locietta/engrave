@@ -35,27 +35,19 @@ using namespace muse;
 using namespace muse::io;
 using namespace mu::engraving;
 
-std::array<Smufl::Code, size_t(SymId::lastSym) + 1> Smufl::s_symIdCodes { {  } };
+std::array<Smufl::Code, size_t(SymId::lastSym) + 1> Smufl::s_symIdCodes{{}};
 
-const Smufl::Code Smufl::code(SymId id)
-{
-    return s_symIdCodes.at(static_cast<size_t>(id));
-}
+const Smufl::Code Smufl::code(SymId id) { return s_symIdCodes.at(static_cast<size_t>(id)); }
 
-char32_t Smufl::smuflCode(SymId id)
-{
-    return s_symIdCodes.at(static_cast<size_t>(id)).smuflCode;
-}
+char32_t Smufl::smuflCode(SymId id) { return s_symIdCodes.at(static_cast<size_t>(id)).smuflCode; }
 
-bool Smufl::init()
-{
+bool Smufl::init() {
     bool ok = loadGlyphNamesJson();
 
     return ok;
 }
 
-bool Smufl::loadGlyphNamesJson()
-{
+bool Smufl::loadGlyphNamesJson() {
     File file(":/fonts/smufl/glyphnames.json");
     if (!file.open(IODevice::ReadOnly)) {
         LOGE() << "could not open glyph names JSON file.";
@@ -106,15 +98,13 @@ bool Smufl::loadGlyphNamesJson()
     return true;
 }
 
-const std::map<String, std::vector<SymId> >& Smufl::smuflRanges()
-{
-    static std::map<String, std::vector<SymId> > ranges = readSmuflRangesJson();
+const std::map<String, std::vector<SymId>> &Smufl::smuflRanges() {
+    static std::map<String, std::vector<SymId>> ranges = readSmuflRangesJson();
     return ranges;
 }
 
-std::map<String, std::vector<SymId> > Smufl::readSmuflRangesJson()
-{
-    std::map<String, std::vector<SymId> > ranges;
+std::map<String, std::vector<SymId>> Smufl::readSmuflRangesJson() {
+    std::map<String, std::vector<SymId>> ranges;
     std::vector<SymId> allSymbols;
 
     File fi(":/fonts/smufl/ranges.json");
@@ -130,9 +120,9 @@ std::map<String, std::vector<SymId> > Smufl::readSmuflRangesJson()
         return ranges;
     }
 
-    for (const std::string& s : o.keys()) {
+    for (const std::string &s : o.keys()) {
         const JsonObject range = o.value(s).toObject();
-        const String desc      = range.value("description").toString();
+        const String desc = range.value("description").toString();
         const JsonArray glyphs = range.value("glyphs").toArray();
 
         if (glyphs.empty()) {
@@ -147,10 +137,10 @@ std::map<String, std::vector<SymId> > Smufl::readSmuflRangesJson()
                 allSymbols.push_back(symId);
             }
         }
-        ranges.insert({ desc, rangeSymbols });
+        ranges.insert({desc, rangeSymbols});
     }
 
-    ranges.insert({ String::fromAscii(SMUFL_ALL_SYMBOLS), allSymbols }); // TODO: make translatable as well as ranges.json
+    ranges.insert({String::fromAscii(SMUFL_ALL_SYMBOLS), allSymbols}); // TODO: make translatable as well as ranges.json
 
     return ranges;
 }

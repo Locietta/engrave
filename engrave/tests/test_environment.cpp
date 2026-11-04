@@ -26,27 +26,23 @@ namespace {
 std::unique_ptr<music::EngineContext> s_context;
 #endif
 
-bool is_valid_assets_dir(const std::filesystem::path& p)
-{
+bool is_valid_assets_dir(const std::filesystem::path &p) {
     std::error_code ec;
     return std::filesystem::is_regular_file(p / "engraving" / "instruments" / "instruments.xml", ec);
 }
 
-bool is_valid_engraving_data_dir(const std::filesystem::path& p)
-{
+bool is_valid_engraving_data_dir(const std::filesystem::path &p) {
     std::error_code ec;
-    return std::filesystem::is_directory(p / "playback" / "playbackeventsrenderer_data", ec)
-        || std::filesystem::is_directory(p / "playback" / "playbackmodel_data", ec);
+    return std::filesystem::is_directory(p / "playback" / "playbackeventsrenderer_data", ec) ||
+           std::filesystem::is_directory(p / "playback" / "playbackmodel_data", ec);
 }
 
-std::string utf8(const std::filesystem::path& p)
-{
+std::string utf8(const std::filesystem::path &p) {
     const auto value = p.generic_u8string();
     return std::string(value.begin(), value.end());
 }
 
-std::string normalize_path(const std::filesystem::path& p)
-{
+std::string normalize_path(const std::filesystem::path &p) {
     std::error_code ec;
     auto canonical = std::filesystem::canonical(p, ec);
     if (!ec) {
@@ -65,8 +61,7 @@ static const mu::engraving::IEngravingConfiguration::DebuggingOptions s_debugOpt
 
 } // namespace
 
-std::string find_assets_dir(const std::string& hint)
-{
+std::string find_assets_dir(const std::string &hint) {
     namespace fs = std::filesystem;
 
     // 1. Explicit hint from command line (--assets=...)
@@ -78,13 +73,13 @@ std::string find_assets_dir(const std::string& hint)
     }
 
     // 2. Standard project environment variables
-    if (const char* env = std::getenv("MUSIC_MCP_RESOURCES")) {
+    if (const char *env = std::getenv("MUSIC_MCP_RESOURCES")) {
         fs::path p = fs::u8path(env);
         if (is_valid_assets_dir(p)) {
             return normalize_path(p);
         }
     }
-    if (const char* env = std::getenv("MUSESCORE_ASSETS")) {
+    if (const char *env = std::getenv("MUSESCORE_ASSETS")) {
         fs::path p = fs::u8path(env);
         if (is_valid_assets_dir(p)) {
             return normalize_path(p);
@@ -107,7 +102,7 @@ std::string find_assets_dir(const std::string& hint)
         fs::u8path("../.runtime/assets"),
         fs::u8path("../../.runtime/assets"),
     };
-    for (const auto& candidate : candidates) {
+    for (const auto &candidate : candidates) {
         if (is_valid_assets_dir(candidate)) {
             return normalize_path(candidate);
         }
@@ -116,8 +111,7 @@ std::string find_assets_dir(const std::string& hint)
     return "";
 }
 
-std::string find_engraving_data_dir(const std::string& hint)
-{
+std::string find_engraving_data_dir(const std::string &hint) {
     namespace fs = std::filesystem;
 
     // 1. Explicit hint from command line (--engraving-data=... or --data-root=...)
@@ -129,13 +123,13 @@ std::string find_engraving_data_dir(const std::string& hint)
     }
 
     // 2. Environment variables
-    if (const char* env = std::getenv("ENGRAVING_TESTS_DATA_ROOT")) {
+    if (const char *env = std::getenv("ENGRAVING_TESTS_DATA_ROOT")) {
         fs::path p = fs::u8path(env);
         if (is_valid_engraving_data_dir(p)) {
             return normalize_path(p);
         }
     }
-    if (const char* env = std::getenv("MUSE_TEST_DATA_ROOT")) {
+    if (const char *env = std::getenv("MUSE_TEST_DATA_ROOT")) {
         fs::path p = fs::u8path(env);
         if (is_valid_engraving_data_dir(p)) {
             return normalize_path(p);
@@ -158,7 +152,7 @@ std::string find_engraving_data_dir(const std::string& hint)
         fs::u8path("../vendor/musescore/src/engraving/tests"),
         fs::u8path("../../vendor/musescore/src/engraving/tests"),
     };
-    for (const auto& candidate : candidates) {
+    for (const auto &candidate : candidates) {
         if (is_valid_engraving_data_dir(candidate)) {
             return normalize_path(candidate);
         }
@@ -167,8 +161,7 @@ std::string find_engraving_data_dir(const std::string& hint)
     return "";
 }
 
-void setup_test_environment(int* argc, char** argv)
-{
+void setup_test_environment(int *argc, char **argv) {
     std::string assets_hint;
     std::string engraving_hint;
 
@@ -176,7 +169,7 @@ void setup_test_environment(int* argc, char** argv)
     static std::vector<std::string> s_retained_strings;
 
     if (argc && argv && *argc > 0) {
-        std::vector<char*> remaining;
+        std::vector<char *> remaining;
         remaining.reserve(static_cast<size_t>(*argc) + 1);
         remaining.push_back(argv[0]);
 
@@ -195,7 +188,7 @@ void setup_test_environment(int* argc, char** argv)
                         std::string val = arg.substr(eq + 1);
                         if (val.size() >= 2 && val.front() == '"' && val.back() == '"') {
                             s_retained_strings.push_back(arg.substr(0, eq + 1) + val.substr(1, val.size() - 2));
-                            remaining.push_back(const_cast<char*>(s_retained_strings.back().c_str()));
+                            remaining.push_back(const_cast<char *>(s_retained_strings.back().c_str()));
                             continue;
                         }
                     }
@@ -219,8 +212,7 @@ void setup_test_environment(int* argc, char** argv)
     setup_test_environment(config);
 }
 
-void setup_test_environment(const TestEnvironmentConfig& config)
-{
+void setup_test_environment(const TestEnvironmentConfig &config) {
     muse::runtime::mainThreadId();
     muse::runtime::setThreadName("main");
 
@@ -247,7 +239,7 @@ void setup_test_environment(const TestEnvironmentConfig& config)
 
     // 4. Register mock engraving configuration matching upstream engraving/tests/environment.cpp
     using ECMock = ::testing::NiceMock<mu::engraving::EngravingConfigurationMock>;
-    auto configurator = std::shared_ptr<ECMock>(new ECMock(), [](ECMock*) {});
+    auto configurator = std::shared_ptr<ECMock>(new ECMock(), [](ECMock *) {});
     // Lives for the whole process like upstream's test environment; never deleted on purpose.
     ::testing::Mock::AllowLeak(configurator.get());
     ON_CALL(*configurator, displayedDefaultColor(::testing::_)).WillByDefault(::testing::Return(muse::draw::Color::BLACK));
@@ -258,12 +250,11 @@ void setup_test_environment(const TestEnvironmentConfig& config)
     s_context->engraving().configuration = configurator;
     mu::engraving::ScoreRW::setServices(&s_context->engraving());
 #else
-    (void)config;
+    (void) config;
 #endif
 }
 
-void teardown_test_environment()
-{
+void teardown_test_environment() {
 #if defined(TEST_HAS_ENGRAVING)
     mu::engraving::ScoreRW::setServices(nullptr);
     s_context.reset();

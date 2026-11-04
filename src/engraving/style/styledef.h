@@ -37,7 +37,6 @@ namespace mu::engraving {
 //   Keep in sync with styleTypes[] in styledef.cpp
 //---------------------------------------------------------
 
-
 /** APIDOC
  * Enumerates the list of score style settings
  * @memberof Engraving
@@ -114,9 +113,9 @@ enum class Sid : short {
     lyricsPlacement,
     lyricsPosAbove,
     lyricsPosBelow,
-    lyricsMinTopDistance, // actual meaning: distance to elements on same staff
+    lyricsMinTopDistance,    // actual meaning: distance to elements on same staff
     lyricsMinBottomDistance, // actual meaning: distance to elements on other staff
-    lyricsMinDistance, // actual meaning: min horizontal spacing of lyrics-to-lyrics
+    lyricsMinDistance,       // actual meaning: min horizontal spacing of lyrics-to-lyrics
     lyricsLineHeight,
     lyricsDashMinLength,
     lyricsDashMaxLength,
@@ -630,8 +629,8 @@ enum class Sid : short {
     maskSlurs,
     maskTies,
     laissezVibMinDistance,
-    headerToLineStartDistance,   // determines start point of "dangling" lines (ties, gliss, lyrics...) when preceded by header clefs/timesigs/keysigs
-    lineEndToBarlineDistance,  // determines end point of "dangling" lines (ties, gliss, lyrics...) in relation to barlines
+    headerToLineStartDistance, // determines start point of "dangling" lines (ties, gliss, lyrics...) when preceded by header clefs/timesigs/keysigs
+    lineEndToBarlineDistance,   // determines end point of "dangling" lines (ties, gliss, lyrics...) in relation to barlines
     barlineToLineStartDistance, // determines start point of incoming partial ties and slurs in relation to the preceding barline
 
     tiePlacementSingleNote,
@@ -2276,7 +2275,6 @@ enum class Sid : short {
     STYLES
 };
 
-
 using StyleId = Sid;
 using StyleIdSet = std::unordered_set<Sid>;
 
@@ -2295,12 +2293,10 @@ typedef std::vector<StyledProperty> ElementStyle;
 //   StyleDef
 ///   \cond PLUGIN_API \private \endcond
 //---------------------------------------------------------
-struct StyleDef
-{
+struct StyleDef {
 public:
-    struct StyleValue
-    {
-        Sid sid { Sid::NOSTYLE };
+    struct StyleValue {
+        Sid sid{Sid::NOSTYLE};
         muse::AsciiStringView xmlName;
         PropertyValue defaultValue;
 
@@ -2311,8 +2307,7 @@ public:
 
     static const std::array<StyleValue, size_t(Sid::STYLES)> styleValues;
 
-    static double DEFAULT_SMUFL_POINT_SIZE()
-    {
+    static double DEFAULT_SMUFL_POINT_SIZE() {
         const double DEFAULT_SPATIUM = styleValues[static_cast<size_t>(Sid::spatium)].defaultValue.toDouble();
         const double DEFAULT_SPATIUM_IN_POINT_UNITS = DEFAULT_SPATIUM / mu::engraving::DPI * mu::engraving::PPI;
         const double DEFAULT_SMUFL_POINT_SIZE = 4 * DEFAULT_SPATIUM_IN_POINT_UNITS; // By Smufl spec the spatium is 1/4 of the em
@@ -2320,4 +2315,4 @@ public:
         return DEFAULT_SMUFL_POINT_SIZE;
     }
 };
-}
+} // namespace mu::engraving

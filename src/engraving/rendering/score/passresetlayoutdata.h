@@ -25,14 +25,13 @@
 #include "passbase.h"
 
 namespace mu::engraving::rendering::score {
-class PassResetLayoutData : public PassBase
-{
+class PassResetLayoutData : public PassBase {
 public:
     PassResetLayoutData() = default;
 
 private:
-    void doRun(Score* score, LayoutContext& ctx) override;
+    void doRun(Score *score, LayoutContext &ctx) override;
 };
-}
+} // namespace mu::engraving::rendering::score
 
 #endif // MU_ENGRAVING_PASSRESETLAYOUTDATA_DEV_H

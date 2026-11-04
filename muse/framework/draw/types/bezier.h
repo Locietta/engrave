@@ -26,30 +26,32 @@
 #include "geometry.h"
 
 namespace muse::draw {
-class Bezier
-{
+class Bezier {
 public:
     Bezier() = default;
     Bezier(double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4);
 
-    static Bezier fromPoints(const PointF& p1, const PointF& p2, const PointF& p3, const PointF& p4);
-    static void coefficients(double t, double& a, double& b, double& c, double& d);
+    static Bezier fromPoints(const PointF &p1, const PointF &p2, const PointF &p3, const PointF &p4);
+    static void coefficients(double t, double &a, double &b, double &c, double &d);
     Bezier bezierOnInterval(double t0, double t1) const;
 
     PointF pt1() const { return PointF(m_x1, m_y1); }
+
     PointF pt2() const { return PointF(m_x2, m_y2); }
+
     PointF pt3() const { return PointF(m_x3, m_y3); }
+
     PointF pt4() const { return PointF(m_x4, m_y4); }
 
     PointF pointAt(double t) const;
 
 private:
-    void parameterSplitLeft(double t, Bezier* left);
+    void parameterSplitLeft(double t, Bezier *left);
 
     friend class PainterPath;
 
     double m_x1, m_y1, m_x2, m_y2, m_x3, m_y3, m_x4, m_y4;
 };
-}
+} // namespace muse::draw
 
 #endif // MUSE_DRAW_BEZIER_H

@@ -27,12 +27,11 @@
 #include "dom/stavesharinglabel.h"
 
 namespace mu::engraving::rendering::score {
-class StaveSharingLayout
-{
+class StaveSharingLayout {
 public:
-    static void updateStaveSharingForFullSystem(MeasureBase* firstMB, MeasureBase* lastMB, LayoutContext& ctx);
-    static bool updateStaveSharingForLastAddedMeasure(System* system, LayoutContext& ctx);
-    static void updateNotationWithoutRecomputingTrackMap(Measure* measure, LayoutContext& ctx);
+    static void updateStaveSharingForFullSystem(MeasureBase *firstMB, MeasureBase *lastMB, LayoutContext &ctx);
+    static bool updateStaveSharingForLastAddedMeasure(System *system, LayoutContext &ctx);
+    static void updateNotationWithoutRecomputingTrackMap(Measure *measure, LayoutContext &ctx);
 
 private:
     using TrackGroup = std::vector<track_idx_t>;
@@ -42,77 +41,77 @@ private:
         bool trackMapChanged = false;
         Fraction sTick = Fraction(0, 1);
         Fraction eTick = Fraction(0, 1);
-        std::vector<Segment*> allSegments;
-        std::vector<Segment*> crSegments;
-        std::vector<Segment*> segmentsToUpdate;
-        std::vector<Segment*> crSegmentsToUpdate;
-        std::vector<Spanner*> overlappingSpanners;
+        std::vector<Segment *> allSegments;
+        std::vector<Segment *> crSegments;
+        std::vector<Segment *> segmentsToUpdate;
+        std::vector<Segment *> crSegmentsToUpdate;
+        std::vector<Spanner *> overlappingSpanners;
 
-        SharedPart* curSharedPart = nullptr;
+        SharedPart *curSharedPart = nullptr;
         SharedTrackMap curTrackMap;
-        std::unordered_set<Note*> sharedUnisonNotes;
-        std::vector<StaveSharingLabel*> oldStaveSharingLabels;
-        std::vector<StaveSharingLabel*> updatedStaveSharingLabels;
+        std::unordered_set<Note *> sharedUnisonNotes;
+        std::vector<StaveSharingLabel *> oldStaveSharingLabels;
+        std::vector<StaveSharingLabel *> updatedStaveSharingLabels;
 
-        Score* score = nullptr;
-        LayoutContext& layoutCtx;
-        const MStyle& style;
+        Score *score = nullptr;
+        LayoutContext &layoutCtx;
+        const MStyle &style;
 
-        StaveSharingContext(MeasureBase* first, MeasureBase* last, LayoutContext& ctx);
+        StaveSharingContext(MeasureBase *first, MeasureBase *last, LayoutContext &ctx);
     };
 
-    static void updateStaveSharing(StaveSharingContext& ctx);
+    static void updateStaveSharing(StaveSharingContext &ctx);
 
-    static void updateTrackMaps(StaveSharingContext& ctx);
-    static SharedTrackMap computeTrackMap(StaveSharingContext& ctx);
+    static void updateTrackMaps(StaveSharingContext &ctx);
+    static SharedTrackMap computeTrackMap(StaveSharingContext &ctx);
 
-    static bool isEmpty(track_idx_t track, StaveSharingContext& ctx);
+    static bool isEmpty(track_idx_t track, StaveSharingContext &ctx);
 
-    static bool sameInstrument(track_idx_t prevTrack, track_idx_t nextTrack, const Fraction& tick, StaveSharingContext& ctx);
+    static bool sameInstrument(track_idx_t prevTrack, track_idx_t nextTrack, const Fraction &tick, StaveSharingContext &ctx);
 
-    static bool isUnison(track_idx_t prevTrack, track_idx_t nextTrack, StaveSharingContext& ctx);
-    static bool canGoToSameVoice(track_idx_t prevTrack, track_idx_t nextTrack, StaveSharingContext& ctx, const TrackGroup& curTrackGroup,
-                                 std::unordered_set<Note*>& localUnisonNotes);
+    static bool isUnison(track_idx_t prevTrack, track_idx_t nextTrack, StaveSharingContext &ctx);
+    static bool canGoToSameVoice(track_idx_t prevTrack, track_idx_t nextTrack, StaveSharingContext &ctx, const TrackGroup &curTrackGroup,
+                                 std::unordered_set<Note *> &localUnisonNotes);
 
-    static bool checkSegmentForSameVoice(Segment* segment, track_idx_t prevTrack, track_idx_t nextTrack);
-    static bool checkClefKeyTimeSigForSameVoice(Segment* segment, track_idx_t prevTrack, track_idx_t nextTrack);
-    static bool segHasLocalKeySig(const Segment* segment, const SharedPart* sharedPart);
-    static bool checkSegmentAnnotationsForSameVoice(Segment* segment, track_idx_t prevTrack, track_idx_t nextTrack);
-    static bool checkItemsForSameVoice(Segment* segment, track_idx_t prevTrack, track_idx_t nextTrack,
-                                       const std::function<bool(const EngravingItem*, const EngravingItem*)>& isEqual);
-    static bool checkNoteSpannersForUnison(const Note* note1, const Note* note2);
-    static bool checkSpannersForSameVoice(track_idx_t prevTrack, track_idx_t nextTrack, StaveSharingContext& ctx);
-    static bool checkArticulationsForSameVoice(Chord* chord1, Chord* chord2);
+    static bool checkSegmentForSameVoice(Segment *segment, track_idx_t prevTrack, track_idx_t nextTrack);
+    static bool checkClefKeyTimeSigForSameVoice(Segment *segment, track_idx_t prevTrack, track_idx_t nextTrack);
+    static bool segHasLocalKeySig(const Segment *segment, const SharedPart *sharedPart);
+    static bool checkSegmentAnnotationsForSameVoice(Segment *segment, track_idx_t prevTrack, track_idx_t nextTrack);
+    static bool checkItemsForSameVoice(Segment *segment, track_idx_t prevTrack, track_idx_t nextTrack,
+                                       const std::function<bool(const EngravingItem *, const EngravingItem *)> &isEqual);
+    static bool checkNoteSpannersForUnison(const Note *note1, const Note *note2);
+    static bool checkSpannersForSameVoice(track_idx_t prevTrack, track_idx_t nextTrack, StaveSharingContext &ctx);
+    static bool checkArticulationsForSameVoice(Chord *chord1, Chord *chord2);
 
-    static bool canGoToSameStave(track_idx_t prevTrack, track_idx_t nextTrack, StaveSharingContext& ctx);
+    static bool canGoToSameStave(track_idx_t prevTrack, track_idx_t nextTrack, StaveSharingContext &ctx);
 
-    static void updateNotation(StaveSharingContext& ctx);
-    static void computeSegmentsToUpdate(StaveSharingContext& ctx);
-    static void disconnectAll(StaveSharingContext& ctx);
+    static void updateNotation(StaveSharingContext &ctx);
+    static void computeSegmentsToUpdate(StaveSharingContext &ctx);
+    static void disconnectAll(StaveSharingContext &ctx);
 
-    static EngravingItem* makeSharedItem(EngravingItem* originItem, EngravingItem* possibleSharedItem, track_idx_t sharedTrack,
-                                         EngravingObject* sharedParent, const std::function<bool(const EngravingItem*,
-                                                                                                 const EngravingItem*)>& isEqual);
+    static EngravingItem *makeSharedItem(EngravingItem *originItem, EngravingItem *possibleSharedItem, track_idx_t sharedTrack,
+                                         EngravingObject *sharedParent,
+                                         const std::function<bool(const EngravingItem *, const EngravingItem *)> &isEqual);
 
-    static void makeSharedNotation(StaveSharingContext& ctx);
-    static void makeSharedClefKeyTimeSigs(StaveSharingContext& ctx);
-    static void makeSharedChordRests(StaveSharingContext& ctx);
-    static void makeSharedBreaths(StaveSharingContext& ctx);
-    static void makeSharedArticulations(Chord* originChord, Chord* sharedChord);
-    static void makeSharedTiesAndNoteSpanners(Note* originNote, Note* sharedNote);
-    static void makeSharedAnnotations(StaveSharingContext& ctx);
-    static void makeSharedSpanners(StaveSharingContext& ctx);
+    static void makeSharedNotation(StaveSharingContext &ctx);
+    static void makeSharedClefKeyTimeSigs(StaveSharingContext &ctx);
+    static void makeSharedChordRests(StaveSharingContext &ctx);
+    static void makeSharedBreaths(StaveSharingContext &ctx);
+    static void makeSharedArticulations(Chord *originChord, Chord *sharedChord);
+    static void makeSharedTiesAndNoteSpanners(Note *originNote, Note *sharedNote);
+    static void makeSharedAnnotations(StaveSharingContext &ctx);
+    static void makeSharedSpanners(StaveSharingContext &ctx);
 
-    static void makeStaveSharingLabels(StaveSharingContext& ctx);
-    static bool unisonNoteNeedsLabel(Note* unisonNote, bool& isForNewSystem, StaveSharingContext& ctx);
-    static String formatUnisonLabel(Note* unisonNote, const SharedTrackMap& trackMap, bool isForNewSystem, const StaveSharingContext& ctx);
-    static String formatInstrumentChangeLable(const InstrumentChange* originChange, const InstrumentChange* sharedChange,
-                                              const StaveSharingContext& ctx);
+    static void makeStaveSharingLabels(StaveSharingContext &ctx);
+    static bool unisonNoteNeedsLabel(Note *unisonNote, bool &isForNewSystem, StaveSharingContext &ctx);
+    static String formatUnisonLabel(Note *unisonNote, const SharedTrackMap &trackMap, bool isForNewSystem, const StaveSharingContext &ctx);
+    static String formatInstrumentChangeLable(const InstrumentChange *originChange, const InstrumentChange *sharedChange,
+                                              const StaveSharingContext &ctx);
 
-    static void manageVoicePropertyAndTrackForSharedItems(const std::vector<EngravingItem*>& sharedItems, track_idx_t startOriginTrack,
-                                                          track_idx_t endOriginTrack, const SharedTrackMap& trackMap);
+    static void manageVoicePropertyAndTrackForSharedItems(const std::vector<EngravingItem *> &sharedItems, track_idx_t startOriginTrack,
+                                                          track_idx_t endOriginTrack, const SharedTrackMap &trackMap);
 
-    static void cleanup(StaveSharingContext& ctx);
-    static void addMeasureRestsIfNeed(StaveSharingContext& ctx);
+    static void cleanup(StaveSharingContext &ctx);
+    static void addMeasureRestsIfNeed(StaveSharingContext &ctx);
 };
-}
+} // namespace mu::engraving::rendering::score

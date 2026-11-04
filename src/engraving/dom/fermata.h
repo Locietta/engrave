@@ -39,41 +39,45 @@ class System;
 //    Fermata
 //---------------------------------------------------------
 
-class Fermata final : public EngravingItem
-{
+class Fermata final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, Fermata)
     DECLARE_CLASSOF(ElementType::FERMATA)
 
 public:
 
-    Fermata(const Fermata&) = default;
-    Fermata& operator=(const Fermata&) = delete;
+    Fermata(const Fermata &) = default;
+    Fermata &operator=(const Fermata &) = delete;
 
-    Fermata* clone() const override { return new Fermata(*this); }
+    Fermata *clone() const override { return new Fermata(*this); }
 
     double mag() const override;
 
     SymId symId() const { return m_symId; }
+
     void setSymId(SymId id) { m_symId = id; }
+
     void setSymIdAndTimeStretch(SymId id);
     FermataType fermataType() const;
     int subtype() const override;
     TranslatableString subtypeUserName() const override;
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid) const override;
     void resetProperty(Pid id) override;
 
-    Segment* segment() const { return toSegment(ownershipParent()); }
-    Measure* measure() const;
-    System* system() const;
-    Page* page() const;
+    Segment *segment() const { return toSegment(ownershipParent()); }
+
+    Measure *measure() const;
+    System *system() const;
+    Page *page() const;
 
     double timeStretch() const { return m_timeStretch; }
+
     void setTimeStretch(double val) { m_timeStretch = val; }
 
     bool play() const { return m_play; }
+
     void setPlay(bool val) { m_play = val; }
 
     Sid defaultPosSid() const override;
@@ -81,7 +85,7 @@ public:
 private:
 
     friend class Factory;
-    Fermata(EngravingObject* parent);
+    Fermata(EngravingObject *parent);
 
     SymId m_symId = SymId::noSym;
     double m_timeStretch = -1.0;

@@ -35,4 +35,4 @@ struct MidiPatch {
     int bank, prog, sfid;
     muse::String name;
 };
-}
+} // namespace mu::engraving

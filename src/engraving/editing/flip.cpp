@@ -52,29 +52,28 @@ using namespace mu::engraving;
 //   flip
 //---------------------------------------------------------
 
-void Flip::flip(Transaction&, Score* score)
-{
-    const std::vector<EngravingItem*>& el = score->selection().elements();
+void Flip::flip(Transaction &, Score *score) {
+    const std::vector<EngravingItem *> &el = score->selection().elements();
     if (el.empty()) {
         MScore::setError(MsError::NO_FLIPPABLE_SELECTED);
         return;
     }
 
-    std::set<const EngravingItem*> alreadyFlippedElements;
-    auto flipOnce = [&alreadyFlippedElements](const EngravingItem* element, std::function<void()> flipFunction) -> void {
+    std::set<const EngravingItem *> alreadyFlippedElements;
+    auto flipOnce = [&alreadyFlippedElements](const EngravingItem *element, std::function<void()> flipFunction) -> void {
         if (alreadyFlippedElements.insert(element).second) {
             flipFunction();
         }
     };
 
-    for (EngravingItem* e : el) {
+    for (EngravingItem *e : el) {
         if (e->hasVoiceAssignmentProperties()) {
             flipOnce(e, [e]() {
                 PlacementV curPlacement = e->getProperty(Pid::PLACEMENT).value<PlacementV>();
                 e->undoChangeProperty(Pid::DIRECTION, curPlacement == PlacementV::ABOVE ? DirectionV::DOWN : DirectionV::UP);
             });
         } else if (e->isNote() || e->isStem() || e->isHook()) {
-            Chord* chord = nullptr;
+            Chord *chord = nullptr;
             if (e->isNote()) {
                 chord = toNote(e)->chord();
             } else if (e->isStem()) {
@@ -83,9 +82,7 @@ void Flip::flip(Transaction&, Score* score)
                 chord = toHook(e)->chord();
             }
 
-            IF_ASSERT_FAILED(chord) {
-                continue;
-            }
+            IF_ASSERT_FAILED(chord) { continue; }
 
             if (chord->beam()) {
                 if (!score->selection().isRange()) {
@@ -108,15 +105,14 @@ void Flip::flip(Transaction&, Score* score)
         }
 
         if (e->isBeam()) {
-            Beam* beam = toBeam(e);
+            Beam *beam = toBeam(e);
             flipOnce(beam, [beam]() {
                 if (beam->cross()) {
                     int newCrossStaffMove = beam->crossStaffMove() + 1;
                     if (beam->acceptCrossStaffMove(newCrossStaffMove)) {
                         beam->undoChangeProperty(Pid::BEAM_CROSS_STAFF_MOVE, newCrossStaffMove);
                     } else {
-                        beam->undoChangeProperty(Pid::BEAM_CROSS_STAFF_MOVE,
-                                                 beam->minCRMove() - beam->defaultCrossStaffIdx());
+                        beam->undoChangeProperty(Pid::BEAM_CROSS_STAFF_MOVE, beam->minCRMove() - beam->defaultCrossStaffIdx());
                     }
                 } else {
                     DirectionV dir = beam->up() ? DirectionV::DOWN : DirectionV::UP;
@@ -124,7 +120,7 @@ void Flip::flip(Transaction&, Score* score)
                 }
             });
         } else if (e->isType(ElementType::TREMOLO_TWOCHORD)) {
-            TremoloTwoChord* tremolo = item_cast<TremoloTwoChord*>(e);
+            TremoloTwoChord *tremolo = item_cast<TremoloTwoChord *>(e);
             flipOnce(tremolo, [tremolo]() {
                 DirectionV dir = tremolo->up() ? DirectionV::DOWN : DirectionV::UP;
                 tremolo->undoChangeProperty(Pid::STEM_DIRECTION, dir);
@@ -140,15 +136,9 @@ void Flip::flip(Transaction&, Score* score)
             flipOnce(artic, [artic]() {
                 ArticulationAnchor articAnchor = artic->anchor();
                 switch (articAnchor) {
-                    case ArticulationAnchor::TOP:
-                        articAnchor = ArticulationAnchor::BOTTOM;
-                        break;
-                    case ArticulationAnchor::BOTTOM:
-                        articAnchor = ArticulationAnchor::TOP;
-                        break;
-                    case ArticulationAnchor::AUTO:
-                        articAnchor = artic->up() ? ArticulationAnchor::BOTTOM : ArticulationAnchor::TOP;
-                        break;
+                    case ArticulationAnchor::TOP: articAnchor = ArticulationAnchor::BOTTOM; break;
+                    case ArticulationAnchor::BOTTOM: articAnchor = ArticulationAnchor::TOP; break;
+                    case ArticulationAnchor::AUTO: articAnchor = artic->up() ? ArticulationAnchor::BOTTOM : ArticulationAnchor::TOP; break;
                 }
                 PropertyFlags pf = artic->propertyFlags(Pid::ARTICULATION_ANCHOR);
                 if (pf == PropertyFlags::STYLED) {
@@ -163,36 +153,32 @@ void Flip::flip(Transaction&, Score* score)
                 tuplet->undoChangeProperty(Pid::DIRECTION, PropertyValue::fromValue<DirectionV>(dir), PropertyFlags::UNSTYLED);
             });
         } else if (e->isNoteDot() && e->ownershipParent()->isNote()) {
-            Note* note = toNote(e->ownershipParent());
+            Note *note = toNote(e->ownershipParent());
             DirectionV d = note->dotIsUp() ? DirectionV::DOWN : DirectionV::UP;
             note->undoChangeProperty(Pid::DOT_POSITION, PropertyValue::fromValue<DirectionV>(d));
         } else if (e->isChordBracket()) {
-            ChordBracket* cb = toChordBracket(e);
+            ChordBracket *cb = toChordBracket(e);
             flipOnce(cb, [cb]() {
                 DirectionV d = cb->hookPos() == DirectionV::UP ? DirectionV::DOWN : DirectionV::UP;
                 cb->undoChangeProperty(Pid::BRACKET_HOOK_POS, PropertyValue::fromValue<DirectionV>(d));
             });
         } else if (e->isGuitarBendSegment()) {
-            GuitarBend* bend = toGuitarBendSegment(e)->guitarBend();
+            GuitarBend *bend = toGuitarBendSegment(e)->guitarBend();
             flipOnce(bend, [bend] {
                 DirectionV direction = bend->ldata()->up() ? DirectionV::DOWN : DirectionV::UP;
                 bend->undoChangeProperty(Pid::DIRECTION, PropertyValue::fromValue<DirectionV>(direction));
             });
         } else if (e->isTrillSegment()) {
-            TrillSegment* trillSegment = toTrillSegment(e);
-            Trill* trill = trillSegment->trill();
-            Ornament* ornament = trill->ornament();
+            TrillSegment *trillSegment = toTrillSegment(e);
+            Trill *trill = trillSegment->trill();
+            Ornament *ornament = trill->ornament();
 
             flipOnce(ornament, [ornament]() {
                 ArticulationAnchor articAnchor = ArticulationAnchor(ornament->getProperty(Pid::ARTICULATION_ANCHOR).toInt());
 
                 switch (articAnchor) {
-                    case ArticulationAnchor::TOP:
-                        articAnchor = ArticulationAnchor::BOTTOM;
-                        break;
-                    case ArticulationAnchor::BOTTOM:
-                        articAnchor = ArticulationAnchor::TOP;
-                        break;
+                    case ArticulationAnchor::TOP: articAnchor = ArticulationAnchor::BOTTOM; break;
+                    case ArticulationAnchor::BOTTOM: articAnchor = ArticulationAnchor::TOP; break;
                     case ArticulationAnchor::AUTO:
                         articAnchor = ornament->up() ? ArticulationAnchor::BOTTOM : ArticulationAnchor::TOP;
                         break;
@@ -203,51 +189,18 @@ void Flip::flip(Transaction&, Score* score)
                 }
                 ornament->undoChangeProperty(Pid::ARTICULATION_ANCHOR, int(articAnchor), pf);
             });
-        } else if (e->isStaffText()
-                   || e->isSystemText()
-                   || e->isTempoText()
-                   || e->isTripletFeel()
-                   || e->isJump()
-                   || e->isMarker()
-                   || e->isRehearsalMark()
-                   || e->isMeasureNumber()
-                   || e->isInstrumentChange()
-                   || e->isPlayTechAnnotation()
-                   || e->isCapo()
-                   || e->isStringTunings()
-                   || e->isSticking()
-                   || e->isFingering()
-                   || e->isHarmony()
-                   || e->isFretDiagram()
-                   || e->isHarpPedalDiagram()
-                   || e->isOttava()
-                   || e->isOttavaSegment()
-                   || e->isTextLine()
-                   || e->isTextLineSegment()
-                   || e->isLetRing()
-                   || e->isLetRingSegment()
-                   || e->isVibrato()
-                   || e->isVibratoSegment()
-                   || e->isPalmMute()
-                   || e->isPalmMuteSegment()
-                   || e->isWhammyBar()
-                   || e->isWhammyBarSegment()
-                   || e->isRasgueado()
-                   || e->isRasgueadoSegment()
-                   || e->isHarmonicMark()
-                   || e->isHarmonicMarkSegment()
-                   || e->isGradualTempoChange()
-                   || e->isGradualTempoChangeSegment()
-                   || e->isPedal()
-                   || e->isPedalSegment()
-                   || e->isLyrics()
-                   || e->isBreath()
-                   || e->isFermata()
-                   || e->isHammerOnPullOffText()) {
+        } else if (e->isStaffText() || e->isSystemText() || e->isTempoText() || e->isTripletFeel() || e->isJump() || e->isMarker() ||
+                   e->isRehearsalMark() || e->isMeasureNumber() || e->isInstrumentChange() || e->isPlayTechAnnotation() || e->isCapo() ||
+                   e->isStringTunings() || e->isSticking() || e->isFingering() || e->isHarmony() || e->isFretDiagram() ||
+                   e->isHarpPedalDiagram() || e->isOttava() || e->isOttavaSegment() || e->isTextLine() || e->isTextLineSegment() ||
+                   e->isLetRing() || e->isLetRingSegment() || e->isVibrato() || e->isVibratoSegment() || e->isPalmMute() ||
+                   e->isPalmMuteSegment() || e->isWhammyBar() || e->isWhammyBarSegment() || e->isRasgueado() || e->isRasgueadoSegment() ||
+                   e->isHarmonicMark() || e->isHarmonicMarkSegment() || e->isGradualTempoChange() || e->isGradualTempoChangeSegment() ||
+                   e->isPedal() || e->isPedalSegment() || e->isLyrics() || e->isBreath() || e->isFermata() || e->isHammerOnPullOffText()) {
             e->undoChangeProperty(Pid::AUTOPLACE, true);
             // TODO: undoChangeProperty() should probably do this directly
             // see https://musescore.org/en/node/281432
-            EngravingItem* ee = toEngravingItem(e->propertyDelegate(Pid::PLACEMENT));
+            EngravingItem *ee = toEngravingItem(e->propertyDelegate(Pid::PLACEMENT));
             if (!ee) {
                 ee = e;
             }
@@ -265,8 +218,8 @@ void Flip::flip(Transaction&, Score* score)
                 // flip and rebase user offset to new default now that placement has changed
                 double newDefaultY = ee->propertyDefault(Pid::OFFSET).value<PointF>().y();
                 if (ee->isSpanner()) {
-                    Spanner* spanner = toSpanner(ee);
-                    for (SpannerSegment* ss : spanner->spannerSegments()) {
+                    Spanner *spanner = toSpanner(ee);
+                    for (SpannerSegment *ss : spanner->spannerSegments()) {
                         if (!ss->offset().isNull()) {
                             PointF off = ss->getProperty(Pid::OFFSET).value<PointF>();
                             double oldY = off.y() - oldDefaultY;
@@ -289,24 +242,23 @@ void Flip::flip(Transaction&, Score* score)
 //   flipHorizontally
 //---------------------------------------------------------
 
-void Flip::flipHorizontally(Transaction&, Score* score)
-{
-    const std::vector<EngravingItem*>& el = score->selection().elements();
+void Flip::flipHorizontally(Transaction &, Score *score) {
+    const std::vector<EngravingItem *> &el = score->selection().elements();
     if (el.empty()) {
         MScore::setError(MsError::NO_FLIPPABLE_SELECTED);
         return;
     }
 
-    std::set<const EngravingItem*> alreadyFlippedElements;
-    auto flipOnce = [&alreadyFlippedElements](const EngravingItem* element, std::function<void()> flipFunction) -> void {
+    std::set<const EngravingItem *> alreadyFlippedElements;
+    auto flipOnce = [&alreadyFlippedElements](const EngravingItem *element, std::function<void()> flipFunction) -> void {
         if (alreadyFlippedElements.insert(element).second) {
             flipFunction();
         }
     };
 
-    for (EngravingItem* e : el) {
+    for (EngravingItem *e : el) {
         if (e->isHairpinSegment() || e->isHairpin()) {
-            Hairpin* h = e->isHairpin() ? toHairpin(e) : toHairpinSegment(e)->hairpin();
+            Hairpin *h = e->isHairpin() ? toHairpin(e) : toHairpinSegment(e)->hairpin();
             flipOnce(h, [h] {
                 if (h->hairpinType() == HairpinType::CRESC_HAIRPIN) {
                     h->undoChangeProperty(Pid::HAIRPIN_TYPE, int(HairpinType::DIM_HAIRPIN));
@@ -319,10 +271,8 @@ void Flip::flipHorizontally(Transaction&, Score* score)
                 }
             });
         } else if (e->isChordBracket()) {
-            ChordBracket* cb = toChordBracket(e);
-            flipOnce(cb, [cb] {
-                cb->undoChangeProperty(Pid::BRACKET_RIGHT_SIDE, !cb->rightSide());
-            });
+            ChordBracket *cb = toChordBracket(e);
+            flipOnce(cb, [cb] { cb->undoChangeProperty(Pid::BRACKET_RIGHT_SIDE, !cb->rightSide()); });
         }
     }
 }
@@ -331,12 +281,11 @@ void Flip::flipHorizontally(Transaction&, Score* score)
 //   mirrorNoteHead
 //---------------------------------------------------------
 
-void Flip::mirrorNoteHead(Transaction&, Score* score)
-{
-    const std::vector<EngravingItem*>& el = score->selection().elements();
-    for (EngravingItem* e : el) {
+void Flip::mirrorNoteHead(Transaction &, Score *score) {
+    const std::vector<EngravingItem *> &el = score->selection().elements();
+    for (EngravingItem *e : el) {
         if (e->isNote()) {
-            Note* note = toNote(e);
+            Note *note = toNote(e);
             if (note->staff() && note->staff()->isTabStaff(note->chord()->tick())) {
                 e->undoChangeProperty(Pid::DEAD, !note->deadNote());
             } else {

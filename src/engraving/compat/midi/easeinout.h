@@ -38,28 +38,34 @@ namespace mu::engraving {
 ///   shaped curve.
 //---------------------------------------------------------
 
-class EaseInOut final
-{
+class EaseInOut final {
 public:
-    EaseInOut()
-        : m_easeIn(0.0), m_easeOut(1.0) {}
-    EaseInOut(double easeIn, double easeOut)
-        : m_easeIn(easeIn), m_easeOut(easeOut) {}
+    EaseInOut() : m_easeIn(0.0), m_easeOut(1.0) {}
 
-    void SetEases(double easeIn, double easeOut) { m_easeIn = easeIn; m_easeOut = easeOut; }
-    double EvalX(const double t) const
-    {
+    EaseInOut(double easeIn, double easeOut) : m_easeIn(easeIn), m_easeOut(easeOut) {}
+
+    void SetEases(double easeIn, double easeOut) {
+        m_easeIn = easeIn;
+        m_easeOut = easeOut;
+    }
+
+    double EvalX(const double t) const {
         double tCompl = 1.0 - t;
         return (3.0 * m_easeIn * tCompl * tCompl + (3.0 - 3.0 * m_easeOut * tCompl - 2.0 * t) * t) * t;
     }
 
     double EvalY(const double t) const { return -(t * t) * (2.0 * t - 3.0); }
-    muse::PointF Eval(const double t) const { return { EvalX(t), EvalY(t) }; }
+
+    muse::PointF Eval(const double t) const { return {EvalX(t), EvalY(t)}; }
+
     double tFromX(const double x) const;
     double tFromY(const double y) const;
+
     double YfromX(const double x) const { return EvalY(tFromX(x)); }
+
     double XfromY(const double y) const { return EvalX(tFromY(y)); }
-    void timeList(const int nbNotes, const int duration, std::vector<int>* times) const;
+
+    void timeList(const int nbNotes, const int duration, std::vector<int> *times) const;
 
 private:
     double m_easeIn = 0.0;

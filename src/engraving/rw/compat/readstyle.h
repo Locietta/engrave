@@ -30,28 +30,27 @@ namespace mu::engraving {
 class Score;
 class XmlReader;
 class MStyle;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::compat {
-class ReadStyleHook
-{
+class ReadStyleHook {
 public:
-    ReadStyleHook(Score* score, const muse::ByteArray& scoreData, const muse::String& completeBaseName);
+    ReadStyleHook(Score *score, const muse::ByteArray &scoreData, const muse::String &completeBaseName);
 
     void setupDefaultStyle();
 
-    void readStyleTag(XmlReader& e);
+    void readStyleTag(XmlReader &e);
 
     static int styleDefaultByMscVersion(const int mscVer);
-    static void setupDefaultStyle(Score* score);
-    static void readStyleTag(Score* score, XmlReader& e);
-    static bool readStyleProperties(MStyle* style, XmlReader& e);
+    static void setupDefaultStyle(Score *score);
+    static void readStyleTag(Score *score, XmlReader &e);
+    static bool readStyleProperties(MStyle *style, XmlReader &e);
 
 private:
-    Score* m_score = nullptr;
-    const muse::ByteArray& m_scoreData;
-    const muse::String& m_completeBaseName;
+    Score *m_score = nullptr;
+    const muse::ByteArray &m_scoreData;
+    const muse::String &m_completeBaseName;
 };
-}
+} // namespace mu::engraving::compat
 
 #endif // MU_ENGRAVING_READSTYLE_H

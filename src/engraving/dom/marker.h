@@ -32,8 +32,7 @@ namespace mu::engraving {
 //   @P markerType  enum (Marker.CODA, .CODETTA, .FINE, .SEGNO, .TOCODA, .USER, .VARCODA, .VARSEGNO)
 //---------------------------------------------------------
 
-class Marker final : public TextBase
-{
+class Marker final : public TextBase {
     OBJECT_ALLOCATOR(engraving, Marker)
     DECLARE_CLASSOF(ElementType::MARKER)
 
@@ -42,58 +41,58 @@ public:
     Marker(DummyParentOr<EngravingItem> parent, TextStyleType);
 
     void setMarkerType(MarkerType t);
+
     MarkerType markerType() const { return m_markerType; }
+
     String markerTypeUserName() const;
 
     inline bool isSegno() const { return m_markerType == MarkerType::SEGNO || m_markerType == MarkerType::VARSEGNO; }
-    inline bool isCoda() const
-    {
+
+    inline bool isCoda() const {
         return m_markerType == MarkerType::CODA || m_markerType == MarkerType::VARCODA || m_markerType == MarkerType::CODETTA;
     }
 
-    inline bool isToCoda() const
-    {
-        return m_markerType == MarkerType::TOCODA || m_markerType == MarkerType::TOCODASYM || m_markerType == MarkerType::DA_CODA
-               || m_markerType == MarkerType::DA_DBLCODA;
+    inline bool isToCoda() const {
+        return m_markerType == MarkerType::TOCODA || m_markerType == MarkerType::TOCODASYM || m_markerType == MarkerType::DA_CODA ||
+               m_markerType == MarkerType::DA_DBLCODA;
     }
 
     inline bool isRightMarker() const { return muse::contains(Marker::RIGHT_MARKERS, m_markerType); }
 
-    Marker* clone() const override { return new Marker(*this); }
+    Marker *clone() const override { return new Marker(*this); }
 
     int subtype() const override { return int(m_markerType); }
+
     TranslatableString subtypeUserName() const override;
 
-    Measure* measure() const { return (Measure*)ownershipParent(); }
+    Measure *measure() const { return (Measure *) ownershipParent(); }
 
     String label() const { return m_label; }
-    void setLabel(const String& s) { m_label = s; }
+
+    void setLabel(const String &s) { m_label = s; }
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid) const override;
 
-    EngravingItem* nextSegmentElement() override;
-    EngravingItem* prevSegmentElement() override;
+    EngravingItem *nextSegmentElement() override;
+    EngravingItem *prevSegmentElement() override;
 
     bool positionRelativeToNoteheadRest() const override { return false; }
 
     bool centerOnSymbol() const { return m_centerOnSymbol; }
+
     void setCenterOnSymbol(bool val) { m_centerOnSymbol = val; }
 
-    static constexpr std::array<MarkerType, 5> RIGHT_MARKERS {
-        MarkerType::FINE,
-        MarkerType::TOCODA,
-        MarkerType::TOCODASYM,
-        MarkerType::DA_CODA,
-        MarkerType::DA_DBLCODA,
+    static constexpr std::array<MarkerType, 5> RIGHT_MARKERS{
+        MarkerType::FINE, MarkerType::TOCODA, MarkerType::TOCODASYM, MarkerType::DA_CODA, MarkerType::DA_DBLCODA,
     };
 
     String symbolString() const;
 
 private:
     MarkerType m_markerType = MarkerType::FINE;
-    String m_label = u"fine";                 ///< referenced from Jump() element
+    String m_label = u"fine"; ///< referenced from Jump() element
 
     bool m_centerOnSymbol = true;
 };

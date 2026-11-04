@@ -28,10 +28,9 @@ namespace mu::engraving {
 class Score;
 class Segment;
 
-class CloneVoice
-{
+class CloneVoice {
 public:
-    static void cloneVoice(Segment* sourceSeg, const Fraction& lTick, Segment* destSeg, track_idx_t strack, track_idx_t dtrack,
+    static void cloneVoice(Segment *sourceSeg, const Fraction &lTick, Segment *destSeg, track_idx_t strack, track_idx_t dtrack,
                            bool deleteSource, bool link);
 };
-}
+} // namespace mu::engraving

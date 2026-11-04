@@ -27,11 +27,10 @@
 #include "../dom/score.h"
 
 namespace mu::engraving {
-class InsertTime : public UndoableCommand
-{
+class InsertTime : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, InsertTime)
 
-    Score* score = nullptr;
+    Score *score = nullptr;
     Fraction tick;
     Fraction len;
 
@@ -39,30 +38,27 @@ class InsertTime : public UndoableCommand
     void undo() override;
 
 public:
-    InsertTime(Score* _score, const Fraction& _tick, const Fraction& _len)
-        : score(_score), tick(_tick), len(_len) {}
+    InsertTime(Score *_score, const Fraction &_tick, const Fraction &_len) : score(_score), tick(_tick), len(_len) {}
 
     UNDO_TYPE(CommandType::InsertTime)
     UNDO_NAME("InsertTime")
-    UNDO_CHANGED_OBJECTS({ score })
+    UNDO_CHANGED_OBJECTS({score})
 };
 
-class InsertTimeUnmanagedSpanner : public UndoableCommand
-{
+class InsertTimeUnmanagedSpanner : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, InsertTimeUnmanagedSpanner)
 
-    Score* score = nullptr;
+    Score *score = nullptr;
     Fraction tick;
     Fraction len;
 
     void flip() override;
 
 public:
-    InsertTimeUnmanagedSpanner(Score* s, const Fraction& _tick, const Fraction& _len)
-        : score(s), tick(_tick), len(_len) {}
+    InsertTimeUnmanagedSpanner(Score *s, const Fraction &_tick, const Fraction &_len) : score(s), tick(_tick), len(_len) {}
 
     UNDO_TYPE(CommandType::InsertTimeUnmanagedSpanner)
     UNDO_NAME("InsertTimeUnmanagedSpanner")
-    UNDO_CHANGED_OBJECTS({ score })
+    UNDO_CHANGED_OBJECTS({score})
 };
-}
+} // namespace mu::engraving

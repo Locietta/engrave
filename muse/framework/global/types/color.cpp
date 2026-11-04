@@ -5,103 +5,57 @@
 
 namespace muse {
 static constexpr int fromHex(char c);
-static int hex2int(const char* s, int n);
-static bool getHexRgb(const char* name, size_t len, Rgba* rgba);
+static int hex2int(const char *s, int n);
+static bool getHexRgb(const char *name, size_t len, Rgba *rgba);
 static std::string rgb2hex(int r, int g, int b, int a = Color::DEFAULT_ALPHA);
 static std::string rgb2hex(Rgba rgba);
-static void insertHexComponent(int num, std::stringstream& ss);
+static void insertHexComponent(int num, std::stringstream &ss);
 
-Color::Color()
-{
-    m_isValid = false;
-}
+Color::Color() { m_isValid = false; }
 
-Color::Color(const Color& other)
-    : m_rgba(other.m_rgba), m_isValid(other.m_isValid)
-{
-}
+Color::Color(const Color &other) : m_rgba(other.m_rgba), m_isValid(other.m_isValid) {}
 
-Color::Color(const char* color)
-{
-    setNamedColor(color);
-}
+Color::Color(const char *color) { setNamedColor(color); }
 
-
-Color& Color::operator=(const Color& other)
-{
+Color &Color::operator=(const Color &other) {
     m_rgba = other.m_rgba;
     m_isValid = other.m_isValid;
     return *this;
 }
 
+bool Color::operator==(const Color &other) const { return m_rgba == other.m_rgba && m_isValid == other.m_isValid; }
 
-bool Color::operator==(const Color& other) const
-{
-    return m_rgba == other.m_rgba && m_isValid == other.m_isValid;
-}
+bool Color::operator!=(const Color &other) const { return !operator==(other); }
 
-bool Color::operator!=(const Color& other) const
-{
-    return !operator==(other);
-}
+bool Color::operator<(const Color &other) const { return m_rgba < other.m_rgba; }
 
-bool Color::operator<(const Color& other) const
-{
-    return m_rgba < other.m_rgba;
-}
+std::string Color::toString() const { return rgb2hex(m_rgba); }
 
-std::string Color::toString() const
-{
-    return rgb2hex(m_rgba);
-}
-
-Color Color::fromString(const std::string& str)
-{
+Color Color::fromString(const std::string &str) {
     Color c;
     c.setNamedColor(str);
     return c;
 }
 
-Color Color::fromString(const char* str)
-{
+Color Color::fromString(const char *str) {
     Color c;
     c.setNamedColor(str);
     return c;
 }
 
-Color Color::fromString(const String& str)
-{
-    return fromString(str.toStdString());
-}
+Color Color::fromString(const String &str) { return fromString(str.toStdString()); }
 
-bool Color::isValid() const
-{
-    return m_isValid;
-}
+bool Color::isValid() const { return m_isValid; }
 
-int Color::red() const
-{
-    return getRed(m_rgba);
-}
+int Color::red() const { return getRed(m_rgba); }
 
-int Color::green() const
-{
-    return getGreen(m_rgba);
-}
+int Color::green() const { return getGreen(m_rgba); }
 
-int Color::blue() const
-{
-    return getBlue(m_rgba);
-}
+int Color::blue() const { return getBlue(m_rgba); }
 
-int Color::alpha() const
-{
-    return getAlpha(m_rgba);
-}
+int Color::alpha() const { return getAlpha(m_rgba); }
 
-
-void Color::setNamedColor(const std::string& color)
-{
+void Color::setNamedColor(const std::string &color) {
     if (color.empty()) {
         m_isValid = false;
         return;
@@ -119,41 +73,26 @@ void Color::setNamedColor(const std::string& color)
     m_isValid = false;
 }
 
-void Color::setNamedColor(const char* color)
-{
+void Color::setNamedColor(const char *color) {
     if (!color) {
         return;
     }
     setNamedColor(std::string(color));
 }
 
-void Color::setRed(int value)
-{
-    setRgba(value, green(), blue(), alpha());
-}
+void Color::setRed(int value) { setRgba(value, green(), blue(), alpha()); }
 
-void Color::setGreen(int value)
-{
-    setRgba(red(), value, blue(), alpha());
-}
+void Color::setGreen(int value) { setRgba(red(), value, blue(), alpha()); }
 
-void Color::setBlue(int value)
-{
-    setRgba(red(), green(), value, alpha());
-}
+void Color::setBlue(int value) { setRgba(red(), green(), value, alpha()); }
 
-void Color::setAlpha(int value)
-{
-    setRgba(red(), green(), blue(), value);
-}
+void Color::setAlpha(int value) { setRgba(red(), green(), blue(), value); }
 
-void Color::applyTint(double tint)
-{
+void Color::applyTint(double tint) {
     setRgba(red() + (255 - red()) * tint, green() + (255 - green()) * tint, blue() + (255 - blue()) * tint, alpha());
 }
 
-void Color::setRgba(int r, int g, int b, int a)
-{
+void Color::setRgba(int r, int g, int b, int a) {
     if (!isRgbaValid(r, g, b, a)) {
         m_isValid = false;
         return;
@@ -163,8 +102,7 @@ void Color::setRgba(int r, int g, int b, int a)
     m_isValid = true;
 }
 
-void Color::setRgba(Rgba rgba)
-{
+void Color::setRgba(Rgba rgba) {
     if (!isRgbaValid(getRed(rgba), getGreen(rgba), getBlue(rgba), getAlpha(rgba))) {
         m_isValid = false;
         return;
@@ -174,24 +112,21 @@ void Color::setRgba(Rgba rgba)
     m_isValid = true;
 }
 
-Color Color::inverted() const
-{
+Color Color::inverted() const {
     int m = std::min(red() < green() ? red() : green(), blue());
     int M = std::max(red() > green() ? red() : green(), blue());
     int x = 255 - m - M;
     return Color(red() + x, green() + x, blue() + x, alpha());
 }
 
-static constexpr int fromHex(char c)
-{
-    return ((c >= '0') && (c <= '9')) ? int(c - '0')
-           : ((c >= 'A') && (c <= 'F')) ? int(c - 'A' + 10)
-           : ((c >= 'a') && (c <= 'f')) ? int(c - 'a' + 10)
-           : -1;
+static constexpr int fromHex(char c) {
+    return ((c >= '0') && (c <= '9')) ? int(c - '0') :
+           ((c >= 'A') && (c <= 'F')) ? int(c - 'A' + 10) :
+           ((c >= 'a') && (c <= 'f')) ? int(c - 'a' + 10) :
+                                        -1;
 }
 
-static int hex2int(const char* s, int n)
-{
+static int hex2int(const char *s, int n) {
     if (n < 0) {
         return -1;
     }
@@ -207,8 +142,7 @@ static int hex2int(const char* s, int n)
     return result;
 }
 
-static bool getHexRgb(const char* name, size_t len, Rgba* rgba)
-{
+static bool getHexRgb(const char *name, size_t len, Rgba *rgba) {
     if (name[0] != '#') {
         return false;
     }
@@ -242,13 +176,11 @@ static bool getHexRgb(const char* name, size_t len, Rgba* rgba)
     return true;
 }
 
-static void insertHexComponent(int num, std::stringstream& ss)
-{
+static void insertHexComponent(int num, std::stringstream &ss) {
     ss << std::uppercase << std::setw(2) << std::setfill('0') << std::hex << num;
 }
 
-static std::string rgb2hex(int r, int g, int b, int a)
-{
+static std::string rgb2hex(int r, int g, int b, int a) {
     std::stringstream ss;
 
     ss << "#";
@@ -261,8 +193,5 @@ static std::string rgb2hex(int r, int g, int b, int a)
     return ss.str();
 }
 
-static std::string rgb2hex(Rgba rgba)
-{
-    return rgb2hex(getRed(rgba), getGreen(rgba), getBlue(rgba), getAlpha(rgba));
-}
-}
+static std::string rgb2hex(Rgba rgba) { return rgb2hex(getRed(rgba), getGreen(rgba), getBlue(rgba), getAlpha(rgba)); }
+} // namespace muse

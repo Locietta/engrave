@@ -19,13 +19,14 @@
 
 namespace mu::engraving {
 class MasterScore;
-}
+} // namespace mu::engraving
 
 namespace engrave {
 
 // Contract checks stay on in release builds: they guard process-global engine
 // state that a violation would corrupt.
 void check(bool condition, std::string_view message) noexcept;
+
 struct EngineState {
     std::thread::id owner = std::this_thread::get_id();
     std::filesystem::path resources;
@@ -49,7 +50,7 @@ struct Engine::Impl {
 };
 
 struct Document::Impl {
-    EngineState* engine = nullptr;
+    EngineState *engine = nullptr;
     music::ScoreProject project;
     // The source MSCZ's audiosettings.json, read before the DOM exists; a
     // document from any other format, or from a template, has neutral values.
@@ -62,8 +63,7 @@ struct Document::Impl {
     void refresh_fonts();
     api::EditHooks edit_hooks;
 
-    static std::unique_ptr<Document> make(EngineState& engine, music::ScoreProject project,
-                                          music::ScoreAudioMixDefaults audio_defaults,
+    static std::unique_ptr<Document> make(EngineState &engine, music::ScoreProject project, music::ScoreAudioMixDefaults audio_defaults,
                                           std::vector<Diagnostic> diagnostics);
 };
 
@@ -71,20 +71,21 @@ struct Document::Impl {
 // and the engine's MSCX export through it until the read and edit API exist (see
 // engrave/tests/handles_test.cpp).
 struct DocumentAccess {
-    static Document::Impl& impl(Document& document) { return *document.impl_; }
-    static mu::engraving::MasterScore* master_score(Document& document);
-    static music::ScoreProject& project(Document& document);
-    static api::EditHooks& edit_hooks(Document& document);
-    static music::EngineContext& context(Document& document);
+    static Document::Impl &impl(Document &document) { return *document.impl_; }
+
+    static mu::engraving::MasterScore *master_score(Document &document);
+    static music::ScoreProject &project(Document &document);
+    static api::EditHooks &edit_hooks(Document &document);
+    static music::EngineContext &context(Document &document);
 };
 
 // The path as UTF-8 with '/' separators: the engine's path type reads
 // "E:\a" as a relative path.
-std::string utf8(const std::filesystem::path& path);
+std::string utf8(const std::filesystem::path &path);
 
 // The index of the excerpt the selection names, or -1 for the master score, as
 // the audio driver names it. NotFound, StaleHandle and InvalidArgument as
 // select_score reports them.
-Result<int> excerpt_id_of(mu::engraving::MasterScore& master, const ScoreSel& selection);
+Result<int> excerpt_id_of(mu::engraving::MasterScore &master, const ScoreSel &selection);
 
 } // namespace engrave

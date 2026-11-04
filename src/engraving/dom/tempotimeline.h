@@ -30,8 +30,8 @@
 #include "engraving/types/bps.h"
 
 namespace mu::engraving {
-using PausesMap = std::map<int, double>; // utick -> held seconds
-using TempoValues = std::vector<std::pair<int, double> >; // utick -> bps, sorted by utick, no duplicate uticks
+using PausesMap = std::map<int, double>;                 // utick -> held seconds
+using TempoValues = std::vector<std::pair<int, double>>; // utick -> bps, sorted by utick, no duplicate uticks
 
 struct TempoTimePoint {
     int utick = 0;
@@ -40,21 +40,22 @@ struct TempoTimePoint {
     double pause = 0.0; // seconds held at utick before "time" was reached, if this point is a pause
 };
 
-class TempoTimeline
-{
+class TempoTimeline {
 public:
-    void rebuild(const AutomationCurve& tempoCurve, const PausesMap& pauses);
-    void rebuild(const TempoValues& tempoValues, const PausesMap& pauses);
+    void rebuild(const AutomationCurve &tempoCurve, const PausesMap &pauses);
+    void rebuild(const TempoValues &tempoValues, const PausesMap &pauses);
 
     double utick2utime(int utick) const;
     int utime2utick(double time) const;
     BeatsPerSecond tempo(int utick) const;
 
-    const PausesMap& pauses() const { return m_pauses; }
-    const std::vector<TempoTimePoint>& points() const { return m_points; }
+    const PausesMap &pauses() const { return m_pauses; }
 
-    const BeatsPerSecond& tempoMultiplier() const { return m_tempoMultiplier; }
-    void setTempoMultiplier(const BeatsPerSecond& bps);
+    const std::vector<TempoTimePoint> &points() const { return m_points; }
+
+    const BeatsPerSecond &tempoMultiplier() const { return m_tempoMultiplier; }
+
+    void setTempoMultiplier(const BeatsPerSecond &bps);
 
 private:
     std::vector<TempoTimePoint> m_points; // sorted by utick for O(logN) lookup
@@ -63,6 +64,6 @@ private:
 
     mutable size_t m_utick2utimeHint = 0; // cached m_points index for utick2utime()
     mutable size_t m_utime2utickHint = 0; // cached m_points index for utime2utick()
-    mutable size_t m_tempoHint = 0; // cached m_points index for tempo()
+    mutable size_t m_tempoHint = 0;       // cached m_points index for tempo()
 };
-}
+} // namespace mu::engraving

@@ -28,27 +28,18 @@ using namespace mu::engraving;
 using namespace muse;
 using namespace muse::mpe;
 
-void AnnotationsMetaParser::doParse(const EngravingItem* item, const RenderingContext& ctx, mpe::ArticulationMap& result)
-{
-    IF_ASSERT_FAILED(item) {
-        return;
-    }
+void AnnotationsMetaParser::doParse(const EngravingItem *item, const RenderingContext &ctx, mpe::ArticulationMap &result) {
+    IF_ASSERT_FAILED(item) { return; }
 
     mpe::ArticulationType type = mpe::ArticulationType::Undefined;
 
     if (item->isDynamic()) {
-        const Dynamic* dynamic = toDynamic(item);
+        const Dynamic *dynamic = toDynamic(item);
         const DynamicType dynamicType = dynamic->dynamicType();
 
-        if (dynamicType == DynamicType::S
-            || dynamicType == DynamicType::SF
-            || dynamicType == DynamicType::SFF
-            || dynamicType == DynamicType::SFFF
-            || dynamicType == DynamicType::SFZ
-            || dynamicType == DynamicType::SFFZ
-            || dynamicType == DynamicType::SFFFZ
-            || dynamicType == DynamicType::SFP
-            || dynamicType == DynamicType::SFPP) {
+        if (dynamicType == DynamicType::S || dynamicType == DynamicType::SF || dynamicType == DynamicType::SFF ||
+            dynamicType == DynamicType::SFFF || dynamicType == DynamicType::SFZ || dynamicType == DynamicType::SFFZ ||
+            dynamicType == DynamicType::SFFFZ || dynamicType == DynamicType::SFP || dynamicType == DynamicType::SFPP) {
             type = mpe::ArticulationType::Subito;
         }
     }
@@ -57,7 +48,7 @@ void AnnotationsMetaParser::doParse(const EngravingItem* item, const RenderingCo
         return;
     }
 
-    const mpe::ArticulationPattern& pattern = ctx.profile->pattern(type);
+    const mpe::ArticulationPattern &pattern = ctx.profile->pattern(type);
     if (pattern.empty()) {
         return;
     }

@@ -24,23 +24,17 @@
 using namespace mu::engraving;
 
 namespace mu::iex::guitarpro {
-GuitarBendImporter::GuitarBendImporter(Score* score)
-    : m_bendCollector(score), m_score(score)
-{
-}
+GuitarBendImporter::GuitarBendImporter(Score *score) : m_bendCollector(score), m_score(score) {}
 
-void GuitarBendImporter::collectBend(Note* note, const mu::engraving::PitchValues& pitchValues)
-{
+void GuitarBendImporter::collectBend(Note *note, const mu::engraving::PitchValues &pitchValues) {
     m_bendCollector.storeBendData(note, pitchValues);
 }
 
-void GuitarBendImporter::collectDive(const mu::engraving::Chord* chord, const mu::engraving::PitchValues& pitchValues)
-{
+void GuitarBendImporter::collectDive(const mu::engraving::Chord *chord, const mu::engraving::PitchValues &pitchValues) {
     m_diveCollector.collectDiveData(chord, pitchValues);
 }
 
-void GuitarBendImporter::addElementsToScore()
-{
+void GuitarBendImporter::addElementsToScore() {
     m_bendBuilder.addElementsToScore(m_score, m_bendCollector.collectBendDataContext(), m_diveCollector.context());
 }
 } // namespace mu::iex::guitarpro

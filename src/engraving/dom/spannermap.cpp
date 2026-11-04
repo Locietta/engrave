@@ -33,27 +33,22 @@ namespace mu::engraving {
 //   SpannerMap
 //---------------------------------------------------------
 
-SpannerMap::SpannerMap()
-    : std::multimap<int, Spanner*>()
-{
-    m_dirty = true;
-}
+SpannerMap::SpannerMap() : std::multimap<int, Spanner *>() { m_dirty = true; }
 
 //---------------------------------------------------------
 //   update
 //   updates the internal lookup tree, not the map itself
 //---------------------------------------------------------
 
-void SpannerMap::update() const
-{
+void SpannerMap::update() const {
     TRACEFUNC;
     IntervalList regularIntervals;
     IntervalList collisionFreeIntervals;
 
     collectIntervals(regularIntervals, collisionFreeIntervals);
 
-    m_tree = interval_tree::IntervalTree<Spanner*>(std::move(regularIntervals));
-    m_collisionFreeTree = interval_tree::IntervalTree<Spanner*>(std::move(collisionFreeIntervals));
+    m_tree = interval_tree::IntervalTree<Spanner *>(std::move(regularIntervals));
+    m_collisionFreeTree = interval_tree::IntervalTree<Spanner *>(std::move(collisionFreeIntervals));
     m_dirty = false;
 }
 
@@ -61,8 +56,7 @@ void SpannerMap::update() const
 //   findContained
 //---------------------------------------------------------
 
-const SpannerMap::IntervalList& SpannerMap::findContained(int start, int stop, bool excludeCollisions) const
-{
+const SpannerMap::IntervalList &SpannerMap::findContained(int start, int stop, bool excludeCollisions) const {
     if (m_dirty) {
         update();
     }
@@ -82,8 +76,7 @@ const SpannerMap::IntervalList& SpannerMap::findContained(int start, int stop, b
 //   findOverlapping
 //---------------------------------------------------------
 
-const SpannerMap::IntervalList& SpannerMap::findOverlapping(int start, int stop, bool excludeCollisions) const
-{
+const SpannerMap::IntervalList &SpannerMap::findOverlapping(int start, int stop, bool excludeCollisions) const {
     if (m_dirty) {
         update();
     }
@@ -99,8 +92,7 @@ const SpannerMap::IntervalList& SpannerMap::findOverlapping(int start, int stop,
     return m_results;
 }
 
-void SpannerMap::collectIntervals(IntervalList& regularIntervals, IntervalList& collisionFreeIntervals) const
-{
+void SpannerMap::collectIntervals(IntervalList &regularIntervals, IntervalList &collisionFreeIntervals) const {
     using IntervalsByType = std::map<ElementType, IntervalList>;
     using IntervalsByPart = std::map<ID, IntervalsByType>;
 
@@ -111,14 +103,14 @@ void SpannerMap::collectIntervals(IntervalList& regularIntervals, IntervalList& 
     //!     with each other.
     constexpr int collidingSpannersPadding = 1;
 
-    for (const auto& pair : *this) {
-        Spanner* spanner = pair.second;
+    for (const auto &pair : *this) {
+        Spanner *spanner = pair.second;
 
         int newSpannerStartTick = spanner->tick().ticks();
         int newSpannerEndTick = spanner->tick2().ticks();
 
-        IntervalsByType& intervalsByType = intervalsByPart[spanner->part()->id()];
-        IntervalList& intervalList = intervalsByType[spanner->type()];
+        IntervalsByType &intervalsByType = intervalsByPart[spanner->part()->id()];
+        IntervalList &intervalList = intervalsByType[spanner->type()];
 
         if (!intervalList.empty()) {
             auto lastIntervalIt = intervalList.rbegin();
@@ -129,20 +121,14 @@ void SpannerMap::collectIntervals(IntervalList& regularIntervals, IntervalList& 
             }
         }
 
-        intervalList.emplace_back(interval_tree::Interval<Spanner*>(newSpannerStartTick,
-                                                                    newSpannerEndTick,
-                                                                    spanner));
+        intervalList.emplace_back(interval_tree::Interval<Spanner *>(newSpannerStartTick, newSpannerEndTick, spanner));
 
-        regularIntervals.push_back(interval_tree::Interval(newSpannerStartTick,
-                                                           newSpannerEndTick,
-                                                           spanner));
+        regularIntervals.push_back(interval_tree::Interval(newSpannerStartTick, newSpannerEndTick, spanner));
     }
 
-    for (const auto& pair : intervalsByPart) {
-        for (const auto& intervals : pair.second) {
-            collisionFreeIntervals.insert(collisionFreeIntervals.end(),
-                                          intervals.second.begin(),
-                                          intervals.second.end());
+    for (const auto &pair : intervalsByPart) {
+        for (const auto &intervals : pair.second) {
+            collisionFreeIntervals.insert(collisionFreeIntervals.end(), intervals.second.begin(), intervals.second.end());
         }
     }
 }
@@ -151,9 +137,8 @@ void SpannerMap::collectIntervals(IntervalList& regularIntervals, IntervalList& 
 //   addSpanner
 //---------------------------------------------------------
 
-void SpannerMap::addSpanner(Spanner* s)
-{
-    insert(std::pair<int, Spanner*>(s->tick().ticks(), s));
+void SpannerMap::addSpanner(Spanner *s) {
+    insert(std::pair<int, Spanner *>(s->tick().ticks(), s));
     m_dirty = true;
 }
 
@@ -161,8 +146,7 @@ void SpannerMap::addSpanner(Spanner* s)
 //   removeSpanner
 //---------------------------------------------------------
 
-bool SpannerMap::removeSpanner(Spanner* s)
-{
+bool SpannerMap::removeSpanner(Spanner *s) {
     for (auto i = begin(); i != end(); ++i) {
         if (i->second == s) {
             erase(i);
@@ -179,8 +163,7 @@ bool SpannerMap::removeSpanner(Spanner* s)
 //   dump
 //---------------------------------------------------------
 
-void SpannerMap::dump() const
-{
+void SpannerMap::dump() const {
     LOGD("SpannerMap::dump");
     for (auto i = begin(); i != end(); ++i) {
         LOGD("   %5d: %s %p", i->first, i->second->typeName(), i->second);

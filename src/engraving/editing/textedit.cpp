@@ -46,10 +46,9 @@ using namespace mu::engraving;
 //   ~TextEditData
 //---------------------------------------------------------
 
-TextEditData::~TextEditData()
-{
+TextEditData::~TextEditData() {
     if (deleteText) {
-        for (EngravingObject* se : m_textBase->linkList()) {
+        for (EngravingObject *se : m_textBase->linkList()) {
             toTextBase(se)->deleteLater();
         }
     }
@@ -59,12 +58,9 @@ TextEditData::~TextEditData()
 //   editInsertText
 //---------------------------------------------------------
 
-void TextBase::editInsertText(TextCursor* cursor, const String& s)
-{
-    const LayoutData* ldata = this->ldata();
-    IF_ASSERT_FAILED(ldata && !ldata->layoutInvalid) {
-        return;
-    }
+void TextBase::editInsertText(TextCursor *cursor, const String &s) {
+    const LayoutData *ldata = this->ldata();
+    IF_ASSERT_FAILED(ldata && !ldata->layoutInvalid) { return; }
 
     m_textInvalid = true;
 
@@ -75,8 +71,8 @@ void TextBase::editInsertText(TextCursor* cursor, const String& s)
         }
     }
 
-    const TextBlock& block = ldata->blocks.at(cursor->row());
-    const CharFormat* previousFormat = block.formatAt(std::max(int(cursor->column()) - 1, 0));
+    const TextBlock &block = ldata->blocks.at(cursor->row());
+    const CharFormat *previousFormat = block.formatAt(std::max(int(cursor->column()) - 1, 0));
     if (previousFormat && previousFormat->fontFamily() == "ScoreText" && s == " ") {
         // This space would be ignored by the xml parser (see #15629)
         // We must use the nonBreaking space character instead
@@ -96,17 +92,13 @@ void TextBase::editInsertText(TextCursor* cursor, const String& s)
 //   endEdit
 //---------------------------------------------------------
 
-void TextBase::commitText()
-{
-    score()->endCmd();
-}
+void TextBase::commitText() { score()->endCmd(); }
 
 //---------------------------------------------------------
 //   insertSym
 //---------------------------------------------------------
 
-void TextBase::insertSym(SymId id)
-{
+void TextBase::insertSym(SymId id) {
     deleteSelectedText();
     String s = score()->engravingFont()->toString(id);
     cursor()->format()->setFontFamily(u"ScoreText");
@@ -117,17 +109,13 @@ void TextBase::insertSym(SymId id)
 //   insertText
 //---------------------------------------------------------
 
-void TextBase::insertText(const String& s)
-{
-    score()->undo(new InsertText(cursor(), s));
-}
+void TextBase::insertText(const String &s) { score()->undo(new InsertText(cursor(), s)); }
 
 //---------------------------------------------------------
 //   movePosition
 //---------------------------------------------------------
 
-void TextBase::movePosition(TextCursor::MoveOperation op)
-{
+void TextBase::movePosition(TextCursor::MoveOperation op) {
     cursor()->movePosition(op);
     score()->addRefresh(canvasBoundingRect());
     score()->update();
@@ -137,10 +125,9 @@ void TextBase::movePosition(TextCursor::MoveOperation op)
 //  ChangeText::insertText
 //---------------------------------------------------------
 
-void ChangeText::insertText()
-{
+void ChangeText::insertText() {
     TextCursor tc = m_cursor;
-    tc.setFormat(m_format);                              // To undo TextCursor::updateCursorFormat()
+    tc.setFormat(m_format); // To undo TextCursor::updateCursorFormat()
     tc.text()->editInsertText(&tc, m_s);
     *tc.text()->cursor() = tc;
 }
@@ -149,10 +136,9 @@ void ChangeText::insertText()
 //  ChangeText::removeText
 //---------------------------------------------------------
 
-void ChangeText::removeText()
-{
+void ChangeText::removeText() {
     TextCursor tc = m_cursor;
-    TextBlock& l  = m_cursor.curLine();
+    TextBlock &l = m_cursor.curLine();
     size_t column = m_cursor.column();
     m_format = *l.formatAt(static_cast<int>(column + m_s.size()) - 1);
 
@@ -168,17 +154,16 @@ void ChangeText::removeText()
 //   SplitJoinText
 //---------------------------------------------------------
 
-void SplitJoinText::join()
-{
-    TextBase* t   = m_cursor.text();
-    size_t line   = m_cursor.row();
+void SplitJoinText::join() {
+    TextBase *t = m_cursor.text();
+    size_t line = m_cursor.row();
     t->setTextInvalid();
     t->triggerLayout();
 
-    TextBase::LayoutData* ldata = t->mutldata();
-    CharFormat* charFmt = m_cursor.format();         // take current format
-    size_t col          = ldata->textBlock(static_cast<int>(line) - 1).columns();
-    int eol             = ldata->textBlock(static_cast<int>(line)).eol();
+    TextBase::LayoutData *ldata = t->mutldata();
+    CharFormat *charFmt = m_cursor.format(); // take current format
+    size_t col = ldata->textBlock(static_cast<int>(line) - 1).columns();
+    int eol = ldata->textBlock(static_cast<int>(line)).eol();
     auto fragmentsList = ldata->textBlock(static_cast<int>(line)).fragmentsWithoutEmpty();
 
     if (fragmentsList.size() > 0) {
@@ -191,31 +176,29 @@ void SplitJoinText::join()
     m_cursor.setRow(line - 1);
     m_cursor.curLine().setEol(eol);
     m_cursor.setColumn(col);
-    m_cursor.setFormat(*charFmt);             // restore orig. format at new line
+    m_cursor.setFormat(*charFmt); // restore orig. format at new line
     m_cursor.clearSelection();
 
     *t->cursor() = m_cursor;
     t->setTextInvalid();
 }
 
-void SplitJoinText::split()
-{
-    TextBase* t   = m_cursor.text();
-    size_t line   = m_cursor.row();
-    bool eol      = m_cursor.curLine().eol();
+void SplitJoinText::split() {
+    TextBase *t = m_cursor.text();
+    size_t line = m_cursor.row();
+    bool eol = m_cursor.curLine().eol();
     t->setTextInvalid();
     t->triggerLayout();
 
-    TextBase::LayoutData* ldata = t->mutldata();
-    CharFormat* charFmt = m_cursor.format();           // take current format
-    ldata->blocks.insert(ldata->blocks.begin() + line + 1,
-                         m_cursor.curLine().split(static_cast<int>(m_cursor.column()), t->cursor()));
+    TextBase::LayoutData *ldata = t->mutldata();
+    CharFormat *charFmt = m_cursor.format(); // take current format
+    ldata->blocks.insert(ldata->blocks.begin() + line + 1, m_cursor.curLine().split(static_cast<int>(m_cursor.column()), t->cursor()));
     m_cursor.curLine().setEol(true);
 
     m_cursor.setRow(line + 1);
     m_cursor.curLine().setEol(eol);
     m_cursor.setColumn(0);
-    m_cursor.setFormat(*charFmt);               // restore orig. format at new line
+    m_cursor.setFormat(*charFmt); // restore orig. format at new line
     m_cursor.clearSelection();
 
     *t->cursor() = m_cursor;
@@ -226,40 +209,33 @@ void SplitJoinText::split()
 //   drop
 //---------------------------------------------------------
 
-EngravingItem* TextBase::drop(Transaction&, EditData& ed)
-{
-    TextCursor* cursor = this->cursor();
+EngravingItem *TextBase::drop(Transaction &, EditData &ed) {
+    TextCursor *cursor = this->cursor();
 
-    EngravingItem* e = ed.dropElement;
+    EngravingItem *e = ed.dropElement;
 
     switch (e->type()) {
-    case ElementType::SYMBOL:
-    {
-        SymId id = toSymbol(e)->sym();
-        delete e;
+        case ElementType::SYMBOL: {
+            SymId id = toSymbol(e)->sym();
+            delete e;
 
-        insertSym(id);
-    }
-    break;
+            insertSym(id);
+        } break;
 
-    case ElementType::FSYMBOL:
-    {
-        String s = toFSymbol(e)->toString();
-        delete e;
+        case ElementType::FSYMBOL: {
+            String s = toFSymbol(e)->toString();
+            delete e;
 
-        CharFormat* currentFormat = cursor->format();
-        if (currentFormat->fontFamily() == u"ScoreText") {
-            currentFormat->setFontFamily(propertyDefault(Pid::FONT_FACE).value<String>());
-        }
+            CharFormat *currentFormat = cursor->format();
+            if (currentFormat->fontFamily() == u"ScoreText") {
+                currentFormat->setFontFamily(propertyDefault(Pid::FONT_FACE).value<String>());
+            }
 
-        deleteSelectedText();
-        score()->undo(new InsertText(cursor, s));
-    }
-    break;
+            deleteSelectedText();
+            score()->undo(new InsertText(cursor, s));
+        } break;
 
-    default:
-        LOGD("drop <%s> not handled", e->typeName());
-        break;
+        default: LOGD("drop <%s> not handled", e->typeName()); break;
     }
     return 0;
 }
@@ -268,8 +244,7 @@ EngravingItem* TextBase::drop(Transaction&, EditData& ed)
 //   paste
 //---------------------------------------------------------
 
-void TextBase::paste(const String& txt)
-{
+void TextBase::paste(const String &txt) {
     if (MScore::debugMode) {
         LOGD("<%s>", muPrintable(txt));
     }
@@ -362,17 +337,16 @@ void TextBase::paste(const String& txt)
 //   endHexState
 //---------------------------------------------------------
 
-void TextBase::endHexState()
-{
-    TextCursor* cursor = this->cursor();
+void TextBase::endHexState() {
+    TextCursor *cursor = this->cursor();
 
     if (m_hexState >= 0) {
         if (m_hexState > 0) {
             size_t c2 = cursor->column();
             size_t c1 = c2 - (m_hexState + 1);
 
-            TextBlock& t = mutldata()->blocks[cursor->row()];
-            String ss   = t.remove(static_cast<int>(c1), m_hexState + 1, cursor);
+            TextBlock &t = mutldata()->blocks[cursor->row()];
+            String ss = t.remove(static_cast<int>(c1), m_hexState + 1, cursor);
             bool ok;
             char32_t code = ss.mid(1).toInt(&ok, 16);
             cursor->setColumn(c1);
@@ -380,8 +354,7 @@ void TextBase::endHexState()
             if (ok) {
                 editInsertText(cursor, String::fromUcs4(code));
             } else {
-                LOGD("cannot convert hex string <%s>, state %d (%zu-%zu)",
-                     muPrintable(ss.mid(1)), m_hexState, c1, c2);
+                LOGD("cannot convert hex string <%s>, state %d (%zu-%zu)", muPrintable(ss.mid(1)), m_hexState, c1, c2);
             }
         }
         m_hexState = -1;
@@ -392,9 +365,8 @@ void TextBase::endHexState()
 //   deleteSelectedText
 //---------------------------------------------------------
 
-bool TextBase::deleteSelectedText()
-{
-    TextCursor* cursor = this->cursor();
+bool TextBase::deleteSelectedText() {
+    TextCursor *cursor = this->cursor();
 
     if (!cursor->hasSelection()) {
         return false;
@@ -434,18 +406,16 @@ bool TextBase::deleteSelectedText()
 //   ChangeTextProperties
 //---------------------------------------------------------
 
-void ChangeTextProperties::restoreSelection()
-{
-    TextCursor& tc = cursor();
+void ChangeTextProperties::restoreSelection() {
+    TextCursor &tc = cursor();
     tc.text()->cursor()->setSelectLine(tc.selectLine());
     tc.text()->cursor()->setSelectColumn(tc.selectColumn());
     tc.text()->cursor()->setRow(tc.row());
     tc.text()->cursor()->setColumn(tc.column());
 }
 
-ChangeTextProperties::ChangeTextProperties(const TextCursor* tc, Pid propId, const PropertyValue& propVal, PropertyFlags flags_)
-    : TextEditUndoableCommand(*tc)
-{
+ChangeTextProperties::ChangeTextProperties(const TextCursor *tc, Pid propId, const PropertyValue &propVal, PropertyFlags flags_)
+    : TextEditUndoableCommand(*tc) {
     m_propertyId = propId;
     m_propertyVal = propVal;
     m_flags = flags_;
@@ -454,35 +424,33 @@ ChangeTextProperties::ChangeTextProperties(const TextCursor* tc, Pid propId, con
     }
 }
 
-void ChangeTextProperties::undo()
-{
+void ChangeTextProperties::undo() {
     cursor().text()->resetFormatting();
     cursor().text()->setXmlText(m_xmlText);
     restoreSelection();
     cursor().text()->renderer()->layoutText1(cursor().text());
 }
 
-void ChangeTextProperties::redo()
-{
+void ChangeTextProperties::redo() {
     m_xmlText = cursor().text()->xmlText();
     restoreSelection();
     cursor().text()->setPropertyFlags(m_propertyId, m_flags);
 
     if (m_propertyId == Pid::FONT_STYLE) {
         FontStyle setStyle = static_cast<FontStyle>(m_propertyVal.toInt());
-        TextCursor* tc = cursor().text()->cursor();
+        TextCursor *tc = cursor().text()->cursor();
         // user turned on bold/italic/underline/strike for text where it's not set, or turned it off for text where it is set,
         // note this logic only works because the user can only click one at a time
-        if ((setStyle& FontStyle::Bold) != (m_existingStyle & FontStyle::Bold)) {
+        if ((setStyle & FontStyle::Bold) != (m_existingStyle & FontStyle::Bold)) {
             tc->setFormat(FormatId::Bold, setStyle & FontStyle::Bold);
         }
-        if ((setStyle& FontStyle::Italic) != (m_existingStyle & FontStyle::Italic)) {
+        if ((setStyle & FontStyle::Italic) != (m_existingStyle & FontStyle::Italic)) {
             tc->setFormat(FormatId::Italic, setStyle & FontStyle::Italic);
         }
-        if ((setStyle& FontStyle::Underline) != (m_existingStyle & FontStyle::Underline)) {
+        if ((setStyle & FontStyle::Underline) != (m_existingStyle & FontStyle::Underline)) {
             tc->setFormat(FormatId::Underline, setStyle & FontStyle::Underline);
         }
-        if ((setStyle& FontStyle::Strike) != (m_existingStyle & FontStyle::Strike)) {
+        if ((setStyle & FontStyle::Strike) != (m_existingStyle & FontStyle::Strike)) {
             tc->setFormat(FormatId::Strike, setStyle & FontStyle::Strike);
         }
     } else {

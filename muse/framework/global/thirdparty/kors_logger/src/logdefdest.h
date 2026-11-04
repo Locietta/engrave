@@ -23,18 +23,19 @@ SOFTWARE.
 */
 #pragma once
 #include "logger.h"
+
 namespace kors::logger {
 class MemLogDest : public LogDest {
 public:
-    explicit MemLogDest(const LogLayout& layout)
-        : LogDest(layout)
-    {
-    }
+    explicit MemLogDest(const LogLayout &layout) : LogDest(layout) {}
+
     std::string name() const override { return "memory"; }
-    void write(const LogMsg& msg) override { m_content += m_layout.output(msg) + '\n'; }
+
+    void write(const LogMsg &msg) override { m_content += m_layout.output(msg) + '\n'; }
+
     std::string content() const { return m_content; }
 
 private:
     std::string m_content;
 };
-}
+} // namespace kors::logger

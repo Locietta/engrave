@@ -39,8 +39,7 @@ struct XmlStreamWriter::Impl {
     std::vector<std::string> stack;
     TextStream stream;
 
-    void putLevel()
-    {
+    void putLevel() {
         size_t level = stack.size();
         for (size_t i = 0; i < level * 2; ++i) {
             stream << ' ';
@@ -48,65 +47,42 @@ struct XmlStreamWriter::Impl {
     }
 };
 
-XmlStreamWriter::XmlStreamWriter()
-{
-    m_impl = new Impl();
-}
+XmlStreamWriter::XmlStreamWriter() { m_impl = new Impl(); }
 
-XmlStreamWriter::XmlStreamWriter(io::IODevice* dev)
-{
+XmlStreamWriter::XmlStreamWriter(io::IODevice *dev) {
     m_impl = new Impl();
     m_impl->stream.setDevice(dev);
 }
 
-XmlStreamWriter::~XmlStreamWriter()
-{
+XmlStreamWriter::~XmlStreamWriter() {
     flush();
     delete m_impl;
 }
 
-void XmlStreamWriter::setDevice(io::IODevice* dev)
-{
-    m_impl->stream.setDevice(dev);
-}
+void XmlStreamWriter::setDevice(io::IODevice *dev) { m_impl->stream.setDevice(dev); }
 
-void XmlStreamWriter::flush()
-{
-    m_impl->stream.flush();
-}
+void XmlStreamWriter::flush() { m_impl->stream.flush(); }
 
-void XmlStreamWriter::startDocument()
-{
-    m_impl->stream << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-}
+void XmlStreamWriter::startDocument() { m_impl->stream << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"; }
 
-void XmlStreamWriter::writeDoctype(const String& type)
-{
-    m_impl->stream << "<!DOCTYPE " << type << '>' << '\n';
-}
+void XmlStreamWriter::writeDoctype(const String &type) { m_impl->stream << "<!DOCTYPE " << type << '>' << '\n'; }
 
-std::string XmlStreamWriter::escapeCodePoint(const char32_t c)
-{
+std::string XmlStreamWriter::escapeCodePoint(const char32_t c) {
     switch (c) {
-    case U'<':
-        return "&lt;"s;
-    case U'>':
-        return "&gt;"s;
-    case U'&':
-        return "&amp;"s;
-    case U'\"':
-        return "&quot;"s;
-    default:
-        // ignore invalid characters in xml 1.0
-        if ((c < 0x20 && c != 0x09 && c != 0x0A && c != 0x0D)) {
-            return std::string();
-        }
-        return utf8::utf32to8(std::u32string_view(&c, 1));
+        case U'<': return "&lt;"s;
+        case U'>': return "&gt;"s;
+        case U'&': return "&amp;"s;
+        case U'\"': return "&quot;"s;
+        default:
+            // ignore invalid characters in xml 1.0
+            if ((c < 0x20 && c != 0x09 && c != 0x0A && c != 0x0D)) {
+                return std::string();
+            }
+            return utf8::utf32to8(std::u32string_view(&c, 1));
     }
 }
 
-std::string XmlStreamWriter::escapeString(const std::string_view str)
-{
+std::string XmlStreamWriter::escapeString(const std::string_view str) {
     // XML escaping can expand one input byte to six output bytes. Account for
     // that temporary before constructing it, and poll inside a large value.
     if (io::activeWriteBudget) {
@@ -118,8 +94,7 @@ std::string XmlStreamWriter::escapeString(const std::string_view str)
     auto it = str.begin();
     std::size_t checked = 0;
     while (it != str.end()) {
-        if ((checked++ & 4095u) == 0 && io::activeWriteBudget && !io::activeWriteBudget->poll())
-            throw io::WriteBudgetStop{};
+        if ((checked++ & 4095u) == 0 && io::activeWriteBudget && !io::activeWriteBudget->poll()) throw io::WriteBudgetStop{};
         const char32_t c = utf8::next(it, str.end());
         escaped += escapeCodePoint(c);
     }
@@ -127,48 +102,34 @@ std::string XmlStreamWriter::escapeString(const std::string_view str)
     return escaped;
 }
 
-void XmlStreamWriter::writeValue(const Value& v)
-{
+void XmlStreamWriter::writeValue(const Value &v) {
     // std::monostate, int, unsigned int, signed long int, unsigned long int, signed long long, unsigned long long,
     // double, const char*, std::string_view, String
     switch (v.index()) {
-    case 0:
-        break;
-    case 1: m_impl->stream << int32_t{ std::get<int>(v) };
-        break;
-    case 2: m_impl->stream << uint32_t{ std::get<unsigned int>(v) };
-        break;
-    case 3: m_impl->stream << int64_t{ std::get<signed long int>(v) };
-        break;
-    case 4: m_impl->stream << uint64_t{ std::get<unsigned long int>(v) };
-        break;
-    case 5: m_impl->stream << int64_t{ std::get<signed long long>(v) };
-        break;
-    case 6: m_impl->stream << uint64_t{ std::get<unsigned long long>(v) };
-        break;
-    case 7: m_impl->stream << std::get<double>(v);
-        break;
-    case 8: m_impl->stream << escapeString(AsciiStringView(std::get<const char*>(v)));
-        break;
-    case 9: m_impl->stream << escapeString(std::get<std::string_view>(v));
-        break;
-    case 10: m_impl->stream << escapeString(std::get<String>(v).toStdString());
-        break;
-    default:
-        LOGI() << "index: " << v.index();
-        UNREACHABLE;
-        break;
+        case 0: break;
+        case 1: m_impl->stream << int32_t{std::get<int>(v)}; break;
+        case 2: m_impl->stream << uint32_t{std::get<unsigned int>(v)}; break;
+        case 3: m_impl->stream << int64_t{std::get<signed long int>(v)}; break;
+        case 4: m_impl->stream << uint64_t{std::get<unsigned long int>(v)}; break;
+        case 5: m_impl->stream << int64_t{std::get<signed long long>(v)}; break;
+        case 6: m_impl->stream << uint64_t{std::get<unsigned long long>(v)}; break;
+        case 7: m_impl->stream << std::get<double>(v); break;
+        case 8: m_impl->stream << escapeString(AsciiStringView(std::get<const char *>(v))); break;
+        case 9: m_impl->stream << escapeString(std::get<std::string_view>(v)); break;
+        case 10: m_impl->stream << escapeString(std::get<String>(v).toStdString()); break;
+        default:
+            LOGI() << "index: " << v.index();
+            UNREACHABLE;
+            break;
     }
 }
 
-void XmlStreamWriter::startElement(const std::string_view& name, const Attributes& attrs)
-{
-    IF_ASSERT_FAILED(name.find(' ') == std::string_view::npos) {
-    }
+void XmlStreamWriter::startElement(const std::string_view &name, const Attributes &attrs) {
+    IF_ASSERT_FAILED(name.find(' ') == std::string_view::npos) {}
 
     m_impl->putLevel();
     m_impl->stream << '<' << name;
-    for (const Attribute& a : attrs) {
+    for (const Attribute &a : attrs) {
         m_impl->stream << ' ' << a.first << '=' << '\"';
         writeValue(a.second);
         m_impl->stream << '\"';
@@ -177,34 +138,29 @@ void XmlStreamWriter::startElement(const std::string_view& name, const Attribute
     m_impl->stack.emplace_back(name);
 }
 
-void XmlStreamWriter::startElement(const String& name, const Attributes& attrs)
-{
+void XmlStreamWriter::startElement(const String &name, const Attributes &attrs) {
     ByteArray ba = name.toAscii();
     startElement(AsciiStringView(ba.constChar(), ba.size()), attrs);
 }
 
-void XmlStreamWriter::startElementRaw(const String& name)
-{
+void XmlStreamWriter::startElementRaw(const String &name) {
     m_impl->putLevel();
     m_impl->stream << '<' << name << '>' << '\n';
     m_impl->stack.push_back(name.split(' ')[0].toStdString());
 }
 
-void XmlStreamWriter::endElement()
-{
+void XmlStreamWriter::endElement() {
     m_impl->putLevel();
     m_impl->stream << "</" << muse::takeLast(m_impl->stack) << '>' << '\n';
 }
 
 // <element attr="value" />
-void XmlStreamWriter::element(const std::string_view& name, const Attributes& attrs)
-{
-    IF_ASSERT_FAILED(name.find(' ') == std::string_view::npos) {
-    }
+void XmlStreamWriter::element(const std::string_view &name, const Attributes &attrs) {
+    IF_ASSERT_FAILED(name.find(' ') == std::string_view::npos) {}
 
     m_impl->putLevel();
     m_impl->stream << '<' << name;
-    for (const Attribute& a : attrs) {
+    for (const Attribute &a : attrs) {
         m_impl->stream << ' ' << a.first << '=' << '\"';
         writeValue(a.second);
         m_impl->stream << '\"';
@@ -212,10 +168,8 @@ void XmlStreamWriter::element(const std::string_view& name, const Attributes& at
     m_impl->stream << "/>\n";
 }
 
-void XmlStreamWriter::element(const std::string_view& name, const Value& body)
-{
-    IF_ASSERT_FAILED(name.find(' ') == std::string_view::npos) {
-    }
+void XmlStreamWriter::element(const std::string_view &name, const Value &body) {
+    IF_ASSERT_FAILED(name.find(' ') == std::string_view::npos) {}
 
     m_impl->putLevel();
     m_impl->stream << '<' << name << '>';
@@ -223,14 +177,12 @@ void XmlStreamWriter::element(const std::string_view& name, const Value& body)
     m_impl->stream << "</" << name << '>' << '\n';
 }
 
-void XmlStreamWriter::element(const std::string_view& name, const Attributes& attrs, const Value& body)
-{
-    IF_ASSERT_FAILED(name.find(' ') == std::string_view::npos) {
-    }
+void XmlStreamWriter::element(const std::string_view &name, const Attributes &attrs, const Value &body) {
+    IF_ASSERT_FAILED(name.find(' ') == std::string_view::npos) {}
 
     m_impl->putLevel();
     m_impl->stream << '<' << name;
-    for (const Attribute& a : attrs) {
+    for (const Attribute &a : attrs) {
         m_impl->stream << ' ' << a.first << '=' << '\"';
         writeValue(a.second);
         m_impl->stream << '\"';
@@ -240,8 +192,7 @@ void XmlStreamWriter::element(const std::string_view& name, const Attributes& at
     m_impl->stream << "</" << name << '>' << '\n';
 }
 
-void XmlStreamWriter::elementRaw(const String& nameWithAttributes, const Value& body)
-{
+void XmlStreamWriter::elementRaw(const String &nameWithAttributes, const Value &body) {
     m_impl->putLevel();
     if (body.index() == 0) {
         m_impl->stream << '<' << nameWithAttributes << "/>\n";
@@ -253,8 +204,7 @@ void XmlStreamWriter::elementRaw(const String& nameWithAttributes, const Value& 
     }
 }
 
-void XmlStreamWriter::elementStringRaw(const String& nameWithAttributes, const String& body)
-{
+void XmlStreamWriter::elementStringRaw(const String &nameWithAttributes, const String &body) {
     m_impl->putLevel();
     if (body.isEmpty()) {
         m_impl->stream << '<' << nameWithAttributes << "/>\n";
@@ -266,8 +216,7 @@ void XmlStreamWriter::elementStringRaw(const String& nameWithAttributes, const S
     }
 }
 
-void XmlStreamWriter::comment(const String& text)
-{
+void XmlStreamWriter::comment(const String &text) {
     m_impl->putLevel();
     m_impl->stream << "<!-- " << text << " -->\n";
 }

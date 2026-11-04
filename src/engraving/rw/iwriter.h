@@ -36,59 +36,55 @@ class EngravingItem;
 class Segment;
 class SelectionFilter;
 struct SelectedSymbol;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::write {
 class WriteContext;
-}
+} // namespace mu::engraving::write
 
 namespace mu::engraving::rw {
 struct WriteInOutData;
 
-class IWriter
-{
+class IWriter {
 public:
     virtual ~IWriter() = default;
 
-    virtual bool writeScore(Score* score, muse::io::IODevice* device, WriteInOutData* out = nullptr) = 0;
+    virtual bool writeScore(Score *score, muse::io::IODevice *device, WriteInOutData *out = nullptr) = 0;
 
-    virtual muse::ByteArray writeStaffSelection(Score* score, const SelectionFilter& filter, staff_idx_t staffStart, staff_idx_t staffEnd,
-                                                const Fraction& tickStart, const Fraction& tickEnd, Segment* startSegment,
-                                                Segment* endSegment) = 0;
+    virtual muse::ByteArray writeStaffSelection(Score *score, const SelectionFilter &filter, staff_idx_t staffStart, staff_idx_t staffEnd,
+                                                const Fraction &tickStart, const Fraction &tickEnd, Segment *startSegment,
+                                                Segment *endSegment) = 0;
 
     virtual muse::ByteArray writeSymbolListSelection(track_idx_t fromTrack, track_idx_t toTrack,
-                                                     const std::vector<SelectedSymbol>& symbols) = 0;
+                                                     const std::vector<SelectedSymbol> &symbols) = 0;
 
-    using Supported = std::variant<std::monostate
-                                   >;
+    using Supported = std::variant<std::monostate>;
 
-    template<typename T>
-    static void check_supported_static(T item)
-    {
-        if constexpr (std::is_same<T, const EngravingItem*>::value || std::is_same<T, EngravingItem*>::value) {
+    template <typename T>
+    static void check_supported_static(T item) {
+        if constexpr (std::is_same<T, const EngravingItem *>::value || std::is_same<T, EngravingItem *>::value) {
             // supported
         } else {
             Supported check(item);
-            (void)check;
+            (void) check;
         }
     }
 
-    template<typename T>
-    void writeItem(const T item, XmlWriter& xml)
-    {
+    template <typename T>
+    void writeItem(const T item, XmlWriter &xml) {
 #ifndef NDEBUG
         check_supported_static(item);
 #endif
-        doWriteItem(static_cast<const EngravingItem*>(item), xml);
+        doWriteItem(static_cast<const EngravingItem *>(item), xml);
     }
 
 private:
-    virtual void doWriteItem(const EngravingItem* item, XmlWriter& xml) = 0;
-    virtual void writeSegments(XmlWriter& xml, write::WriteContext& ctx, track_idx_t st, track_idx_t et, Segment* sseg, Segment* eseg, bool,
+    virtual void doWriteItem(const EngravingItem *item, XmlWriter &xml) = 0;
+    virtual void writeSegments(XmlWriter &xml, write::WriteContext &ctx, track_idx_t st, track_idx_t et, Segment *sseg, Segment *eseg, bool,
                                bool) = 0;
 };
 
 using IWriterPtr = std::shared_ptr<IWriter>;
-}
+} // namespace mu::engraving::rw
 
 #endif // MU_ENGRAVING_IWRITER_H

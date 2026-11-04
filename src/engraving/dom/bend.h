@@ -41,48 +41,52 @@ class Factory;
  *    replaced by the GuitarBend class.
  *********************************************************/
 
-enum class BendType : unsigned char {
-    BEND = 0,
-    BEND_RELEASE,
-    BEND_RELEASE_BEND,
-    PREBEND,
-    PREBEND_RELEASE,
-    CUSTOM
-};
+enum class BendType : unsigned char { BEND = 0, BEND_RELEASE, BEND_RELEASE_BEND, PREBEND, PREBEND_RELEASE, CUSTOM };
 
-class Bend final : public EngravingItem
-{
+class Bend final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, Bend)
     DECLARE_CLASSOF(ElementType::BEND)
 
 public:
-    Bend* clone() const override { return new Bend(*this); }
+    Bend *clone() const override { return new Bend(*this); }
 
-    Note* note() const { return toNote(ownershipParent()); }
+    Note *note() const { return toNote(ownershipParent()); }
 
-    static const char* label[13];
+    static const char *label[13];
 
-    PitchValues& points() { return m_points; }
-    const PitchValues& points() const { return m_points; }
-    void addPoint(const PitchValue& pv) { m_points.push_back(pv); }
-    void setPoints(const PitchValues& p) { m_points = p; }
+    PitchValues &points() { return m_points; }
+
+    const PitchValues &points() const { return m_points; }
+
+    void addPoint(const PitchValue &pv) { m_points.push_back(pv); }
+
+    void setPoints(const PitchValues &p) { m_points = p; }
+
     bool playBend() const { return m_playBend; }
+
     void setPlayBend(bool v) { m_playBend = v; }
 
     String fontFace() const { return m_fontFace; }
+
     void setFontFace(String f) { m_fontFace = f; }
+
     double fontSize() const { return m_fontSize; }
+
     void setFontSize(double s) { m_fontSize = s; }
+
     FontStyle fontStyle() const { return m_fontStyle; }
+
     void setFontStyle(FontStyle s) { m_fontStyle = s; }
+
     Spatium lineWidth() const { return m_lineWidth; }
+
     void setLineWidth(Spatium w) { m_lineWidth = w; }
 
     muse::draw::Font font(double) const;
 
     // property methods
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid) const override;
 
     struct LayoutData : public EngravingItem::LayoutData {
@@ -109,4 +113,4 @@ private:
     FontStyle m_fontStyle = FontStyle::Undefined;
     Spatium m_lineWidth;
 };
-}
+} // namespace mu::engraving

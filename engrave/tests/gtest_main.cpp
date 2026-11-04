@@ -4,11 +4,10 @@
 #include <gmock/gmock.h>
 #include <iostream>
 
-GTEST_API_ int main(int argc, char** argv)
-{
+GTEST_API_ int main(int argc, char **argv) {
     try {
         music::test::setup_test_environment(&argc, argv);
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
         std::cerr << "[test_environment] Initialization failed: " << e.what() << '\n';
         return 1;
     }

@@ -42,17 +42,13 @@ using namespace mu;
 namespace mu::engraving {
 class DrumSet;
 
-bool InputState::isValid() const
-{
-    return m_segment != nullptr && m_track != muse::nidx;
-}
+bool InputState::isValid() const { return m_segment != nullptr && m_track != muse::nidx; }
 
 //---------------------------------------------------------
 //   drumset
 //---------------------------------------------------------
 
-Staff* InputState::staff() const
-{
+Staff *InputState::staff() const {
     if (!m_segment || m_track == muse::nidx) {
         return nullptr;
     }
@@ -60,18 +56,14 @@ Staff* InputState::staff() const
     return m_segment->score()->staff(mu::engraving::track2staff(m_track));
 }
 
-staff_idx_t InputState::staffIdx() const
-{
-    return mu::engraving::track2staff(m_track);
-}
+staff_idx_t InputState::staffIdx() const { return mu::engraving::track2staff(m_track); }
 
-Drumset* InputState::drumset() const
-{
+Drumset *InputState::drumset() const {
     if (!m_segment || m_track == muse::nidx) {
         return nullptr;
     }
 
-    const Staff* staff = m_segment->score()->staff(m_track / VOICES);
+    const Staff *staff = m_segment->score()->staff(m_track / VOICES);
     if (!staff) {
         return nullptr;
     }
@@ -83,20 +75,19 @@ Drumset* InputState::drumset() const
 //   staffGroup
 //---------------------------------------------------------
 
-StaffGroup InputState::staffGroup() const
-{
+StaffGroup InputState::staffGroup() const {
     if (!m_segment || m_track == muse::nidx) {
         return StaffGroup::STANDARD;
     }
 
     Fraction tick = m_segment->tick();
-    const Staff* staff = m_segment->score()->staff(m_track / VOICES);
+    const Staff *staff = m_segment->score()->staff(m_track / VOICES);
     if (!staff) {
         return StaffGroup::STANDARD;
     }
 
     StaffGroup staffGroup = staff->staffType(tick)->group();
-    const Instrument* instrument = staff->part()->instrument(tick);
+    const Instrument *instrument = staff->part()->instrument(tick);
 
     // if not tab, pitched/unpitched input depends on instrument, not staff (override StaffGroup)
     if (staffGroup != StaffGroup::TAB) {
@@ -110,17 +101,13 @@ StaffGroup InputState::staffGroup() const
 //   tick
 //---------------------------------------------------------
 
-Fraction InputState::tick() const
-{
-    return m_segment ? m_segment->tick() : Fraction(0, 1);
-}
+Fraction InputState::tick() const { return m_segment ? m_segment->tick() : Fraction(0, 1); }
 
 //---------------------------------------------------------
 //   cr
 //---------------------------------------------------------
 
-ChordRest* InputState::cr() const
-{
+ChordRest *InputState::cr() const {
     // _track could potentially be invalid, for instance after navigation through a frame
     return m_segment && m_track != muse::nidx ? toChordRest(m_segment->element(m_track)) : 0;
 }
@@ -129,24 +116,22 @@ ChordRest* InputState::cr() const
 //   setDots
 //---------------------------------------------------------
 
-void InputState::setDots(int n)
-{
+void InputState::setDots(int n) {
     if (n && (!m_duration.isValid() || m_duration.isZero() || m_duration.isMeasure())) {
         m_duration = DurationType::V_QUARTER;
     }
     m_duration.setDots(n);
 }
 
-void InputState::setVoice(voice_idx_t v)
-{
-    const Score* score = m_segment ? m_segment->score() : nullptr;
+void InputState::setVoice(voice_idx_t v) {
+    const Score *score = m_segment ? m_segment->score() : nullptr;
 
     if (!score || v >= VOICES || v == voice() || m_track == muse::nidx) {
         return;
     }
 
     const track_idx_t newTrack = (m_track / VOICES) * VOICES + v;
-    Segment* currSeg = segment();
+    Segment *currSeg = segment();
     if (!currSeg || currSeg->cr(newTrack)) {
         setTrack(newTrack);
         return;
@@ -154,11 +139,11 @@ void InputState::setVoice(voice_idx_t v)
 
     // If we haven't returned early - it means that currSeg doesn't have a valid ChordRest for the desired voice. If
     // tuplets are involved, we may need to move the input position backwards to the last valid ChordRest...
-    Segment* candidateSeg = currSeg;
+    Segment *candidateSeg = currSeg;
 
     // First thing to check - is currSeg part of a tuplet? If so, move candidateSeg to the start of that tuplet...
-    const ChordRest* currCR = currSeg->cr(track());
-    const Tuplet* currTuplet = currCR ? currCR->topTuplet() : nullptr;
+    const ChordRest *currCR = currSeg->cr(track());
+    const Tuplet *currTuplet = currCR ? currCR->topTuplet() : nullptr;
     if (currTuplet) {
         candidateSeg = score->tick2segment(currTuplet->tick());
         IF_ASSERT_FAILED(candidateSeg) {
@@ -170,8 +155,8 @@ void InputState::setVoice(voice_idx_t v)
 
     // If candidateSeg still doesn't have a valid ChordRest for the desired voice, we'll now check whether it is
     // within the range of a tuplet at our desired voice. If so, move candidateSeg to the start of that tuplet...
-    const ChordRest* nextCR = candidateSeg->nextChordRest(newTrack, /*backwards*/ true, /*stopAtMeasureBoundary*/ true);
-    const Tuplet* nextTuplet = nextCR ? nextCR->topTuplet() : nullptr;
+    const ChordRest *nextCR = candidateSeg->nextChordRest(newTrack, /*backwards*/ true, /*stopAtMeasureBoundary*/ true);
+    const Tuplet *nextTuplet = nextCR ? nextCR->topTuplet() : nullptr;
     if (!candidateSeg->cr(newTrack) && nextTuplet) {
         candidateSeg = score->tick2segment(nextTuplet->tick());
         IF_ASSERT_FAILED(candidateSeg) {
@@ -192,17 +177,13 @@ void InputState::setVoice(voice_idx_t v)
 //   note
 //---------------------------------------------------------
 
-Note* InputState::note(EngravingItem* e)
-{
-    return e && e->isNote() ? toNote(e) : nullptr;
-}
+Note *InputState::note(EngravingItem *e) { return e && e->isNote() ? toNote(e) : nullptr; }
 
 //---------------------------------------------------------
 //   chordRest
 //---------------------------------------------------------
 
-ChordRest* InputState::chordRest(EngravingItem* e)
-{
+ChordRest *InputState::chordRest(EngravingItem *e) {
     if (!e) {
         return nullptr;
     }
@@ -225,23 +206,22 @@ ChordRest* InputState::chordRest(EngravingItem* e)
 //   update
 //---------------------------------------------------------
 
-void InputState::update(Selection& selection)
-{
+void InputState::update(Selection &selection) {
     setDuration(DurationType::V_INVALID);
     setRest(false);
     setAccidentalType(AccidentalType::NONE);
     setNotes({});
     setBeyondScore(false);
 
-    Note* n1 = nullptr;
-    ChordRest* cr1 = nullptr;
+    Note *n1 = nullptr;
+    ChordRest *cr1 = nullptr;
     bool differentAccidentals = false;
     bool differentDurations = false;
     bool chordsAndRests = false;
 
     std::set<SymId> articulationSymbolIds;
-    for (EngravingItem* e : selection.elements()) {
-        if (Note* n = note(e)) {
+    for (EngravingItem *e : selection.elements()) {
+        if (Note *n = note(e)) {
             if (n1) {
                 if (n->accidentalType() != n1->accidentalType()) {
                     setAccidentalType(AccidentalType::NONE);
@@ -249,15 +229,15 @@ void InputState::update(Selection& selection)
                 }
 
                 std::set<SymId> articulationsIds;
-                for (Articulation* artic: n->chord()->articulations()) {
+                for (Articulation *artic : n->chord()->articulations()) {
                     articulationsIds.insert(artic->symId());
                 }
 
                 articulationsIds = mu::engraving::splitArticulations(articulationsIds);
                 articulationsIds = mu::engraving::flipArticulations(articulationsIds, PlacementV::ABOVE);
-                for (const SymId& articulationSymbolId: articulationsIds) {
-                    if (std::find(articulationSymbolIds.begin(), articulationSymbolIds.end(),
-                                  articulationSymbolId) == articulationSymbolIds.end()) {
+                for (const SymId &articulationSymbolId : articulationsIds) {
+                    if (std::find(articulationSymbolIds.begin(), articulationSymbolIds.end(), articulationSymbolId) ==
+                        articulationSymbolIds.end()) {
                         articulationSymbolIds.erase(articulationSymbolId);
                     }
                 }
@@ -265,7 +245,7 @@ void InputState::update(Selection& selection)
                 setAccidentalType(n->accidentalType());
 
                 std::set<SymId> articulationsIds;
-                for (Articulation* artic: n->chord()->articulations()) {
+                for (Articulation *artic : n->chord()->articulations()) {
                     if (!artic->isOrnament()) {
                         articulationsIds.insert(artic->symId());
                     }
@@ -276,7 +256,7 @@ void InputState::update(Selection& selection)
             }
         }
 
-        if (ChordRest* cr = chordRest(e)) {
+        if (ChordRest *cr = chordRest(e)) {
             if (cr1) {
                 if (cr->durationType() != cr1->durationType()) {
                     setDuration(DurationType::V_INVALID);
@@ -300,7 +280,7 @@ void InputState::update(Selection& selection)
 
     setArticulationIds(joinArticulations(articulationSymbolIds));
 
-    EngravingItem* e = selection.element();
+    EngravingItem *e = selection.element();
     if (!e) {
         if (!selection.isNone()) {
             setTrack(selection.activeTrack());
@@ -309,8 +289,8 @@ void InputState::update(Selection& selection)
         return;
     }
 
-    ChordRest* cr = chordRest(e);
-    Note* n = note(e);
+    ChordRest *cr = chordRest(e);
+    Note *n = note(e);
     if (!n && cr && cr->isChord()) {
         n = toChord(cr)->upNote();
     }
@@ -323,7 +303,7 @@ void InputState::update(Selection& selection)
 
     setDrumNote(-1);
     if (n) {
-        const Instrument* instr = n->part()->instrument(n->tick());
+        const Instrument *instr = n->part()->instrument(n->tick());
         if (instr->useDrumset()) {
             setDrumNote(n->pitch());
         }
@@ -334,13 +314,12 @@ void InputState::update(Selection& selection)
 //   moveInputPos
 //---------------------------------------------------------
 
-void InputState::moveInputPos(EngravingItem* e)
-{
+void InputState::moveInputPos(EngravingItem *e) {
     if (e == 0) {
         return;
     }
 
-    Segment* s;
+    Segment *s;
     if (e->isChordRest()) {
         s = toChordRest(e)->segment();
     } else {
@@ -349,7 +328,7 @@ void InputState::moveInputPos(EngravingItem* e)
 
     if (s->isSegment()) {
         if (s->measure()->isMMRest()) {
-            Measure* m = s->measure()->mmRestFirst();
+            Measure *m = s->measure()->mmRestFirst();
             s = m->findSegment(SegmentType::ChordRest, m->tick());
         }
         m_lastSegment = m_segment;
@@ -361,10 +340,9 @@ void InputState::moveInputPos(EngravingItem* e)
 //   setSegment
 //---------------------------------------------------------
 
-void InputState::setSegment(Segment* s)
-{
+void InputState::setSegment(Segment *s) {
     if (s && s->measure()->isMMRest()) {
-        Measure* m = s->measure()->mmRestFirst();
+        Measure *m = s->measure()->mmRestFirst();
         s = m->findSegment(SegmentType::ChordRest, m->tick());
     }
     m_segment = s;
@@ -375,10 +353,9 @@ void InputState::setSegment(Segment* s)
 //   nextInputPos
 //---------------------------------------------------------
 
-Segment* InputState::nextInputPos() const
-{
-    Measure* m = m_segment->measure();
-    Segment* s = m_segment->next1(SegmentType::ChordRest);
+Segment *InputState::nextInputPos() const {
+    Measure *m = m_segment->measure();
+    Segment *s = m_segment->next1(SegmentType::ChordRest);
     while (s) {
         if (s->element(m_track) || s->measure() != m) {
             return s;
@@ -393,9 +370,8 @@ Segment* InputState::nextInputPos() const
 //   TODO: special case: note is first note of tie: goto to last note of tie
 //---------------------------------------------------------
 
-void InputState::moveToNextInputPos()
-{
-    Segment* s   = nextInputPos();
+void InputState::moveToNextInputPos() {
+    Segment *s = nextInputPos();
     m_lastSegment = m_segment;
     if (s) {
         m_segment = s;
@@ -404,4 +380,4 @@ void InputState::moveToNextInputPos()
         m_beyondScore = true;
     }
 }
-}
+} // namespace mu::engraving

@@ -63,15 +63,14 @@
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-void ScoreHorizontalViewLayout::layoutHorizontalView(Score* score, LayoutContext& ctx, const Fraction& stick, const Fraction& etick)
-{
+void ScoreHorizontalViewLayout::layoutHorizontalView(Score *score, LayoutContext &ctx, const Fraction &stick, const Fraction &etick) {
     ctx.mutState().setEndTick(etick);
 
     //---------------------------------------------------
     //    initialize layout context lc
     //---------------------------------------------------
 
-    MeasureBase* m = score->tick2measure(stick);
+    MeasureBase *m = score->tick2measure(stick);
     if (m == 0) {
         m = score->first();
     }
@@ -95,7 +94,7 @@ void ScoreHorizontalViewLayout::layoutHorizontalView(Score* score, LayoutContext
     }
 
     ctx.mutState().setPrevMeasure(nullptr);
-    ctx.mutState().setNextMeasure(m);             //_showVBox ? first() : firstMeasure();
+    ctx.mutState().setNextMeasure(m); //_showVBox ? first() : firstMeasure();
     ctx.mutState().setStartTick(m->tick());
 
     PassResetLayoutData resetPass;
@@ -104,8 +103,7 @@ void ScoreHorizontalViewLayout::layoutHorizontalView(Score* score, LayoutContext
     layoutLinear(ctx, ctx.state().isLayoutAll());
 }
 
-void ScoreHorizontalViewLayout::layoutLinear(LayoutContext& ctx, bool layoutAll)
-{
+void ScoreHorizontalViewLayout::layoutLinear(LayoutContext &ctx, bool layoutAll) {
     resetSystems(ctx, layoutAll);
 
     collectLinearSystem(ctx);
@@ -115,13 +113,12 @@ void ScoreHorizontalViewLayout::layoutLinear(LayoutContext& ctx, bool layoutAll)
 
 //  in linear mode there is only one page
 //  which contains one system
-void ScoreHorizontalViewLayout::resetSystems(LayoutContext& ctx, bool layoutAll)
-{
-    DomAccessor& mutDom = ctx.mutDom();
-    Page* page = 0;
+void ScoreHorizontalViewLayout::resetSystems(LayoutContext &ctx, bool layoutAll) {
+    DomAccessor &mutDom = ctx.mutDom();
+    Page *page = 0;
     if (layoutAll) {
-        for (System* s : mutDom.systems()) {
-            for (SpannerSegment* ss : s->spannerSegments()) {
+        for (System *s : mutDom.systems()) {
+            for (SpannerSegment *ss : s->spannerSegments()) {
                 ss->setSystem(nullptr);
             }
         }
@@ -134,7 +131,7 @@ void ScoreHorizontalViewLayout::resetSystems(LayoutContext& ctx, bool layoutAll)
             return;
         }
 
-        for (MeasureBase* mb = ctx.mutDom().first(); mb; mb = mb->next()) {
+        for (MeasureBase *mb = ctx.mutDom().first(); mb; mb = mb->next()) {
             mb->setSystem(nullptr);
         }
 
@@ -143,7 +140,7 @@ void ScoreHorizontalViewLayout::resetSystems(LayoutContext& ctx, bool layoutAll)
         page->mutldata()->setBbox(0.0, 0.0, ctx.conf().loWidth(), ctx.conf().loHeight());
         page->setPageNumber(0);
 
-        System* system = Factory::createSystem(page->score());
+        System *system = Factory::createSystem(page->score());
         ctx.mutDom().systems().push_back(system);
         page->appendSystem(system);
         system->adjustStavesNumber(ctx.dom().nstaves());
@@ -152,30 +149,29 @@ void ScoreHorizontalViewLayout::resetSystems(LayoutContext& ctx, bool layoutAll)
             return;
         }
         page = ctx.mutDom().pages().front();
-        System* system = ctx.mutDom().systems().front();
+        System *system = ctx.mutDom().systems().front();
         system->clear();
         system->adjustStavesNumber(ctx.dom().nstaves());
     }
     ctx.mutState().setPage(page);
 }
 
-void ScoreHorizontalViewLayout::layoutLinear(LayoutContext& ctx)
-{
-    System* system = ctx.mutDom().systems().front();
+void ScoreHorizontalViewLayout::layoutLinear(LayoutContext &ctx) {
+    System *system = ctx.mutDom().systems().front();
 
     SystemLayout::layoutSystemElements(system, ctx);
 
-    SystemLayout::layout2(system, ctx);     // compute staff distances
+    SystemLayout::layout2(system, ctx); // compute staff distances
 
-    for (MeasureBase* mb : system->measures()) {
+    for (MeasureBase *mb : system->measures()) {
         if (!mb->isMeasure()) {
             continue;
         }
-        Measure* m = toMeasure(mb);
+        Measure *m = toMeasure(mb);
 
         for (size_t track = 0; track < ctx.dom().ntracks(); ++track) {
-            for (Segment* segment = m->first(); segment; segment = segment->next()) {
-                EngravingItem* e = segment->element(track);
+            for (Segment *segment = m->first(); segment; segment = segment->next()) {
+                EngravingItem *e = segment->element(track);
                 if (!e) {
                     continue;
                 }
@@ -186,37 +182,37 @@ void ScoreHorizontalViewLayout::layoutLinear(LayoutContext& ctx)
                     if (!ctx.dom().staff(track2staff(track))->show()) {
                         continue;
                     }
-                    ChordRest* cr = toChordRest(e);
-                    if (BeamLayout::isStartOfCrossBeam(cr)) {                           // layout cross staff beams
+                    ChordRest *cr = toChordRest(e);
+                    if (BeamLayout::isStartOfCrossBeam(cr)) { // layout cross staff beams
                         TLayout::layoutBeam(cr->beam(), ctx);
                     }
                     if (TupletLayout::notTopTuplet(cr)) {
                         // fix layout of tuplets
-                        DurationElement* de = cr;
+                        DurationElement *de = cr;
                         while (de->tuplet() && de->tuplet()->elements().front() == de) {
-                            Tuplet* t = de->tuplet();
+                            Tuplet *t = de->tuplet();
                             TLayout::layoutTuplet(t, ctx);
                             de = de->tuplet();
                         }
                     }
 
                     if (cr->isChord()) {
-                        Chord* c = toChord(cr);
-                        for (Chord* cc : c->graceNotes()) {
+                        Chord *c = toChord(cr);
+                        for (Chord *cc : c->graceNotes()) {
                             if (cc->beam() && cc->beam()->elements().front() == cc) {
                                 TLayout::layoutBeam(cc->beam(), ctx);
                             }
                             ChordLayout::layoutSpanners(cc, ctx);
-                            for (EngravingItem* element : cc->el()) {
+                            for (EngravingItem *element : cc->el()) {
                                 if (element->isSlur()) {
                                     TLayout::layoutItem(element, ctx);
                                 }
                             }
                         }
                         ArpeggioLayout::layoutArpeggio2(c->arpeggio(), ctx);
-                        for (EngravingItem* element : c->el()) {
+                        for (EngravingItem *element : c->el()) {
                             if (element->isChordBracket()) {
-                                ChordBracket* bracket = toChordBracket(element);
+                                ChordBracket *bracket = toChordBracket(element);
                                 if (c->onTabStaff()) {
                                     TLayout::layoutItem(bracket, ctx);
                                 } else {
@@ -228,9 +224,9 @@ void ScoreHorizontalViewLayout::layoutLinear(LayoutContext& ctx)
                         if (c->tremoloSingleChord()) {
                             TremoloLayout::layout(c->tremoloSingleChord(), ctx);
                         } else if (c->tremoloTwoChord()) {
-                            TremoloTwoChord* t = c->tremoloTwoChord();
-                            Chord* c1 = t->chord1();
-                            Chord* c2 = t->chord2();
+                            TremoloTwoChord *t = c->tremoloTwoChord();
+                            Chord *c1 = t->chord1();
+                            Chord *c2 = t->chord2();
                             if (c1 && c2 && (c1->staffMove() || c2->staffMove())) {
                                 TremoloLayout::layout(t, ctx);
                             }
@@ -246,7 +242,7 @@ void ScoreHorizontalViewLayout::layoutLinear(LayoutContext& ctx)
 
     auto spanners = ctx.dom().spannerMap().findOverlapping(system->tick().ticks(), system->endTick().ticks());
     for (auto interval : spanners) {
-        Spanner* sp = interval.value;
+        Spanner *sp = interval.value;
         if (sp->isSlur() && (toSlur(sp)->isCrossStaff() || toSlur(sp)->hasCrossBeams())) {
             SlurTieLayout::layoutSystem(toSlur(sp), system, ctx);
         }
@@ -267,15 +263,14 @@ void ScoreHorizontalViewLayout::layoutLinear(LayoutContext& ctx)
     ctx.mutState().page()->invalidateBspTree();
 }
 
-void ScoreHorizontalViewLayout::layoutSystemLockIndicators(System* system)
-{
+void ScoreHorizontalViewLayout::layoutSystemLockIndicators(System *system) {
     // TODO: layout StaffVisibilityIndicator here
 
     system->deleteSystemLockIndicators();
 
-    std::vector<const RangeLock*> systemLocks = system->score()->systemLocks()->allLocks();
-    for (const RangeLock* lock : systemLocks) {
-        SystemLockIndicator* lockIndicator = Factory::createSystemLockIndicator(system, lock);
+    std::vector<const RangeLock *> systemLocks = system->score()->systemLocks()->allLocks();
+    for (const RangeLock *lock : systemLocks) {
+        SystemLockIndicator *lockIndicator = Factory::createSystemLockIndicator(system, lock);
         lockIndicator->setTrack(0);
         system->addSystemLockIndicator(lockIndicator);
         TLayout::layoutIndicatorIcon(lockIndicator, lockIndicator->mutldata());
@@ -283,8 +278,7 @@ void ScoreHorizontalViewLayout::layoutSystemLockIndicators(System* system)
 }
 
 // Append all measures to System. VBox is not included to System
-void ScoreHorizontalViewLayout::collectLinearSystem(LayoutContext& ctx)
-{
+void ScoreHorizontalViewLayout::collectLinearSystem(LayoutContext &ctx) {
     std::vector<int> visibleParts;
     visibleParts.reserve(ctx.dom().parts().size());
     for (size_t partIdx = 0; partIdx < ctx.dom().parts().size(); partIdx++) {
@@ -293,14 +287,14 @@ void ScoreHorizontalViewLayout::collectLinearSystem(LayoutContext& ctx)
         }
     }
 
-    System* system = ctx.mutDom().systems().front();
+    System *system = ctx.mutDom().systems().front();
     SystemHeaderLayout::setInstrumentNames(system, ctx);
 
     double targetSystemWidth = ctx.dom().nmeasures() * ctx.conf().styleAbsolute(Sid::minMeasureWidth);
     system->setWidth(targetSystemWidth);
 
     double curSystemWidth = 0.0;
-    bool firstMeasureInScore = true;       //lc.startTick.isZero();
+    bool firstMeasureInScore = true; //lc.startTick.isZero();
     bool firstMeasureInLayout = true;
 
     //set first measure to lc.nextMeasures for following
@@ -309,7 +303,7 @@ void ScoreHorizontalViewLayout::collectLinearSystem(LayoutContext& ctx)
     ctx.mutState().setTick(Fraction(0, 1));
     MeasureLayout::getNextMeasure(ctx);
 
-    std::set<Measure*> measuresToLayout;
+    std::set<Measure *> measuresToLayout;
 
     while (ctx.state().curMeasure()) {
         if (ctx.state().curMeasure()->isVBoxBase()) {
@@ -320,17 +314,17 @@ void ScoreHorizontalViewLayout::collectLinearSystem(LayoutContext& ctx)
         }
         system->appendMeasure(ctx.mutState().curMeasure());
         MeasureLayout::layoutMeasure(ctx.mutState().curMeasure(), ctx);
-        bool createHeader = ctx.state().prevMeasure() && ctx.state().prevMeasure()->isHBox()
-                            && toHBox(ctx.state().prevMeasure())->createSystemHeader();
+        bool createHeader =
+            ctx.state().prevMeasure() && ctx.state().prevMeasure()->isHBox() && toHBox(ctx.state().prevMeasure())->createSystemHeader();
         if (ctx.state().curMeasure()->isMeasure()) {
-            Measure* m = toMeasure(ctx.mutState().curMeasure());
+            Measure *m = toMeasure(ctx.mutState().curMeasure());
             if (m->mmRest()) {
                 m->mmRest()->setSystem(nullptr);
             }
             if (firstMeasureInScore) {
                 SystemLayout::layoutSystem(system, ctx, curSystemWidth);
                 if (m->repeatStart()) {
-                    Segment* s = m->findSegmentR(SegmentType::StartRepeatBarLine, Fraction(0, 1));
+                    Segment *s = m->findSegmentR(SegmentType::StartRepeatBarLine, Fraction(0, 1));
                     if (!s->enabled()) {
                         s->setEnabled(true);
                     }
@@ -375,16 +369,16 @@ void ScoreHorizontalViewLayout::collectLinearSystem(LayoutContext& ctx)
                     // other elements with system as parent are processed in layoutSystemElements()
                     // but full beam processing is expensive and not needed if we adjust position here
                     PointF p = PointF(curSystemWidth, 0.0) - m->pos();
-                    for (const Segment& s : m->segments()) {
+                    for (const Segment &s : m->segments()) {
                         if (!s.isChordRestType()) {
                             continue;
                         }
                         for (size_t track = 0; track < ctx.dom().ntracks(); ++track) {
-                            EngravingItem* e = s.element(static_cast<track_idx_t>(track));
+                            EngravingItem *e = s.element(static_cast<track_idx_t>(track));
                             if (!e) {
                                 continue;
                             }
-                            ChordRest* cr = toChordRest(e);
+                            ChordRest *cr = toChordRest(e);
                             if (cr->beam() && cr->beam()->elements().front() == cr) {
                                 cr->beam()->mutldata()->move(p);
                             }
@@ -401,11 +395,11 @@ void ScoreHorizontalViewLayout::collectLinearSystem(LayoutContext& ctx)
         MeasureLayout::getNextMeasure(ctx);
     }
 
-    for (Measure* m : measuresToLayout) {
+    for (Measure *m : measuresToLayout) {
         MeasureLayout::layoutMeasureElements(m, ctx);
     }
 
-    for (MeasureBase* m : system->measures()) {
+    for (MeasureBase *m : system->measures()) {
         if (!m->isMeasure()) {
             continue;
         }
@@ -417,9 +411,8 @@ void ScoreHorizontalViewLayout::collectLinearSystem(LayoutContext& ctx)
     system->setWidth(curSystemWidth);
 }
 
-static Segment* findFirstEnabledSegment(Measure* measure)
-{
-    Segment* current = measure->first();
+static Segment *findFirstEnabledSegment(Measure *measure) {
+    Segment *current = measure->first();
     while (current && !current->enabled()) {
         current = current->next();
     }
@@ -427,11 +420,10 @@ static Segment* findFirstEnabledSegment(Measure* measure)
     return current;
 }
 
-void ScoreHorizontalViewLayout::layoutSegmentsWithDuration(Measure* m, const std::vector<int>& visibleParts)
-{
+void ScoreHorizontalViewLayout::layoutSegmentsWithDuration(Measure *m, const std::vector<int> &visibleParts) {
     double currentXPos = 0;
 
-    Segment* current = findFirstEnabledSegment(m);
+    Segment *current = findFirstEnabledSegment(m);
 
     auto [spacing, width] = computeCellWidth(current, visibleParts);
     currentXPos = m->style().styleAbsolute(Sid::barNoteDistance);
@@ -442,10 +434,10 @@ void ScoreHorizontalViewLayout::layoutSegmentsWithDuration(Measure* m, const std
 
     current = current->next();
     while (current) {
-//        if (!current->enabled() || !current->visible()) {
-//            current = current->next();
-//            continue;
-//        }
+        //        if (!current->enabled() || !current->visible()) {
+        //            current = current->next();
+        //            continue;
+        //        }
 
         auto [spacing2, width2] = computeCellWidth(current, visibleParts);
         current->setWidth(width2 + spacing2);
@@ -459,28 +451,25 @@ void ScoreHorizontalViewLayout::layoutSegmentsWithDuration(Measure* m, const std
     m->setWidth(currentXPos);
 }
 
-std::pair<double, double> ScoreHorizontalViewLayout::computeCellWidth(const Segment* s, const std::vector<int>& visibleParts)
-{
+std::pair<double, double> ScoreHorizontalViewLayout::computeCellWidth(const Segment *s, const std::vector<int> &visibleParts) {
     if (!s->enabled()) {
-        return { 0, 0 };
+        return {0, 0};
     }
 
     Fraction quantum = calculateQuantumCell(s->measure(), visibleParts);
 
-    auto calculateWidth = [quantum, sc = s->score()->masterScore()](ChordRest* cr) {
+    auto calculateWidth = [quantum, sc = s->score()->masterScore()](ChordRest *cr) {
         //! width of a segment cell, in spatiums per quantum unit
         static constexpr double WIDTH_OF_SEGMENT_CELL = 3;
-        return WIDTH_OF_SEGMENT_CELL
-               * sc->style().spatium()
-               * cr->globalTicks().numerator() / cr->globalTicks().denominator()
-               * quantum.denominator() / quantum.numerator();
+        return WIDTH_OF_SEGMENT_CELL * sc->style().spatium() * cr->globalTicks().numerator() / cr->globalTicks().denominator() *
+               quantum.denominator() / quantum.numerator();
     };
 
     if (s->isChordRestType()) {
         float width = 0.0;
         float spacing = 0.0;
 
-        ChordRest* cr = nullptr;
+        ChordRest *cr = nullptr;
 
         cr = chordRestWithMinDuration(s, visibleParts);
 
@@ -490,18 +479,18 @@ std::pair<double, double> ScoreHorizontalViewLayout::computeCellWidth(const Segm
             if (cr->isRest()) {
                 //spacing = 0; //!not necessary. It is to more clearly understanding code
             } else if (cr->isChord()) {
-                Chord* ch = toChord(cr);
+                Chord *ch = toChord(cr);
 
                 //! check that gracenote exist. If exist add additional spacing
                 //! to avoid colliding between grace note and previous chord
                 if (!ch->graceNotes().empty()) {
-                    Segment* prevSeg = s->prev();
+                    Segment *prevSeg = s->prev();
                     if (prevSeg && prevSeg->segmentType() == SegmentType::ChordRest) {
-                        ChordRest* prevCR = chordRestWithMinDuration(prevSeg, visibleParts);
+                        ChordRest *prevCR = chordRestWithMinDuration(prevSeg, visibleParts);
 
                         if (prevCR && prevCR->globalTicks() < quantum) {
                             spacing = calculateWidth(prevCR);
-                            return { spacing, width };
+                            return {spacing, width};
                         }
                     }
                 }
@@ -510,13 +499,13 @@ std::pair<double, double> ScoreHorizontalViewLayout::computeCellWidth(const Segm
                 //! to avoid colliding between grace note and previous chord
                 for (auto note : ch->notes()) {
                     if (note->accidental()) {
-                        Segment* prevSeg = s->prev();
+                        Segment *prevSeg = s->prev();
                         if (prevSeg && prevSeg->segmentType() == SegmentType::ChordRest) {
-                            ChordRest* prevCR = chordRestWithMinDuration(prevSeg, visibleParts);
+                            ChordRest *prevCR = chordRestWithMinDuration(prevSeg, visibleParts);
 
                             if (prevCR && prevCR->globalTicks() < quantum) {
                                 spacing = calculateWidth(prevCR);
-                                return { spacing, width };
+                                return {spacing, width};
                             }
                         }
                     }
@@ -524,27 +513,26 @@ std::pair<double, double> ScoreHorizontalViewLayout::computeCellWidth(const Segm
             }
         }
 
-        return { spacing, width };
+        return {spacing, width};
     }
 
-    Segment* nextSeg = s->nextActive();
+    Segment *nextSeg = s->nextActive();
     if (!nextSeg) {
         nextSeg = s->next(SegmentType::BarLineTypes);
     }
 
     if (nextSeg) {
-        return { 0, HorizontalSpacing::minHorizontalDistance(s, nextSeg, 1.0) };
+        return {0, HorizontalSpacing::minHorizontalDistance(s, nextSeg, 1.0)};
     }
 
-    return { 0, s->minRight() };
+    return {0, s->minRight()};
 }
 
-ChordRest* ScoreHorizontalViewLayout::chordRestWithMinDuration(const Segment* seg, const std::vector<int>& visibleParts)
-{
-    ChordRest* chordRestWithMinDuration = nullptr;
+ChordRest *ScoreHorizontalViewLayout::chordRestWithMinDuration(const Segment *seg, const std::vector<int> &visibleParts) {
+    ChordRest *chordRestWithMinDuration = nullptr;
     int minTicks = std::numeric_limits<int>::max();
     for (int partIdx : visibleParts) {
-        for (const Staff* staff : seg->score()->parts().at(partIdx)->staves()) {
+        for (const Staff *staff : seg->score()->parts().at(partIdx)->staves()) {
             staff_idx_t staffIdx = staff->idx();
             for (voice_idx_t voice = 0; voice < VOICES; ++voice) {
                 if (auto element = seg->elist().at(staffIdx * VOICES + voice)) {
@@ -552,7 +540,7 @@ ChordRest* ScoreHorizontalViewLayout::chordRestWithMinDuration(const Segment* se
                         continue;
                     }
 
-                    ChordRest* cr = toChordRest(element);
+                    ChordRest *cr = toChordRest(element);
                     int chordTicks = cr->ticks().ticks();
                     if (chordTicks > minTicks) {
                         continue;
@@ -567,11 +555,10 @@ ChordRest* ScoreHorizontalViewLayout::chordRestWithMinDuration(const Segment* se
     return chordRestWithMinDuration;
 }
 
-Fraction ScoreHorizontalViewLayout::calculateQuantumCell(const Measure* m, const std::vector<int>& visibleParts)
-{
-    Fraction quantum = { 1, 16 };
-    for (const Segment& s : m->segments()) {
-        ChordRest* cr = chordRestWithMinDuration(&s, visibleParts);
+Fraction ScoreHorizontalViewLayout::calculateQuantumCell(const Measure *m, const std::vector<int> &visibleParts) {
+    Fraction quantum = {1, 16};
+    for (const Segment &s : m->segments()) {
+        ChordRest *cr = chordRestWithMinDuration(&s, visibleParts);
 
         if (cr && cr->actualTicks() < quantum) {
             quantum = cr->actualTicks();

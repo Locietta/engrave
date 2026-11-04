@@ -24,16 +24,14 @@
 #define MUSE_AUDIO_REVERBFILTERS_H
 
 namespace muse::audio::fx::reverbfilters {
-template<typename T>
-struct OneZeroCoeffs
-{
+template <typename T>
+struct OneZeroCoeffs {
     T b0 = T(1), b1 = T(0);
 };
 
 /// define the gain at nyquist. <1 = steep lowpass  >2 6dB/oct highfshelf
-template<typename T>
-auto oneZeroCoeffsFromNyquistGain(T gainFactNyq)
-{
+template <typename T>
+auto oneZeroCoeffsFromNyquistGain(T gainFactNyq) {
     OneZeroCoeffs<T> cf;
     auto r = gainFactNyq;
     auto alpha = (T(1) - r) / (T(1) + r);
@@ -42,21 +40,16 @@ auto oneZeroCoeffsFromNyquistGain(T gainFactNyq)
     return cf;
 }
 
-template<typename T>
-class OneZeroFilter
-{
+template <typename T>
+class OneZeroFilter {
 public:
-    T processSample(T x0)
-    {
+    T processSample(T x0) {
         auto res = cf.b0 * x0 + cf.b1 * _x1;
         _x1 = x0;
         return res;
     }
 
-    void reset()
-    {
-        _x1 = T(0);
-    }
+    void reset() { _x1 = T(0); }
 
     OneZeroCoeffs<T> cf;
 
@@ -64,18 +57,16 @@ private:
     T _x1 = T(0);
 };
 
-template<typename T>
-struct OnePoleCoeffs
-{
+template <typename T>
+struct OnePoleCoeffs {
     T b0 = T(1), b1 = T(0), a1 = T(0);
 };
 
 /// coeffs for a one-pole one zero lowpass filter using the bilinear transform.
 /// @param freq the -3dB point of the filter
 /// this leads to gain 0 at nyquist.
-template<typename T>
-auto onePoleCoeffsLowpassBlt(T freq, double sampleRate)
-{
+template <typename T>
+auto onePoleCoeffsLowpassBlt(T freq, double sampleRate) {
     auto alpha = std::tan(3.14159265358979323846 * freq / sampleRate); // prewarp
     OnePoleCoeffs<T> cf;
     auto n = 1 / (1 + alpha);
@@ -87,14 +78,13 @@ auto onePoleCoeffsLowpassBlt(T freq, double sampleRate)
 
 /// coeffs for a one-pole one zero lowpass filter using the bilinear transform.
 /// gain 1 at DC, gain 0 at nyquist, one defined point with gain < 1
-template<typename T>
-auto onePoleCoeffsLowpass1Point(T freq, T gainFact, double sampleRate)
-{
+template <typename T>
+auto onePoleCoeffsLowpass1Point(T freq, T gainFact, double sampleRate) {
     gainFact = std::min(T(0.9999), gainFact);
 
     auto cw = std::cos(6.28318530717958647692 * freq / sampleRate);
     T g2 = gainFact * gainFact;
-    T root = (T)std::sqrt((1 - cw * cw) * (1 - g2));
+    T root = (T) std::sqrt((1 - cw * cw) * (1 - g2));
 
     OnePoleCoeffs<T> cf;
     cf.b0 = -T((gainFact * root - (1 - cw) * g2) / (2 * g2 - 1 - cw));
@@ -103,20 +93,17 @@ auto onePoleCoeffsLowpass1Point(T freq, T gainFact, double sampleRate)
     return cf;
 }
 
-template<typename T>
-class OnePoleFilter
-{
+template <typename T>
+class OnePoleFilter {
 public:
-    T processSample(T x0)
-    {
+    T processSample(T x0) {
         auto res = cf.b0 * x0 + cf.b1 * _x1 - cf.a1 * m_y1;
         _x1 = x0;
         m_y1 = res;
         return res;
     }
 
-    void reset()
-    {
+    void reset() {
         m_y1 = T(0);
         _x1 = T(0);
     }
@@ -126,6 +113,6 @@ public:
 private:
     T m_y1 = T(0), _x1 = T(0);
 };
-} // namespace muse::audio::fx
+} // namespace muse::audio::fx::reverbfilters
 
 #endif // MUSE_AUDIO_REVERBFILTERS_H

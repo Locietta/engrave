@@ -32,7 +32,6 @@
 #include FT_TRUETYPE_TABLES_H
 #include <hb-ft.h>
 
-
 #include "global/types/bytearray.h"
 
 #include "log.h"
@@ -45,17 +44,15 @@ static const hb_tag_t CligTag = HB_TAG('c', 'l', 'i', 'g'); // contextual ligatu
 static const hb_tag_t DligTag = HB_TAG('d', 'l', 'i', 'g'); // contextual ligature substitution
 static const hb_tag_t HligTag = HB_TAG('h', 'l', 'i', 'g'); // contextual ligature substitution
 
-static const std::vector<hb_feature_t> HB_FEATURES = {
-    { KernTag, 1, HB_FEATURE_GLOBAL_START, HB_FEATURE_GLOBAL_END },
-    { LigaTag, 1, HB_FEATURE_GLOBAL_START, HB_FEATURE_GLOBAL_END },
-    { CligTag, 1, HB_FEATURE_GLOBAL_START, HB_FEATURE_GLOBAL_END },
-    { DligTag, 1, HB_FEATURE_GLOBAL_START, HB_FEATURE_GLOBAL_END },
-    { HligTag, 1, HB_FEATURE_GLOBAL_START, HB_FEATURE_GLOBAL_END }
-};
+static const std::vector<hb_feature_t> HB_FEATURES = {{KernTag, 1, HB_FEATURE_GLOBAL_START, HB_FEATURE_GLOBAL_END},
+                                                      {LigaTag, 1, HB_FEATURE_GLOBAL_START, HB_FEATURE_GLOBAL_END},
+                                                      {CligTag, 1, HB_FEATURE_GLOBAL_START, HB_FEATURE_GLOBAL_END},
+                                                      {DligTag, 1, HB_FEATURE_GLOBAL_START, HB_FEATURE_GLOBAL_END},
+                                                      {HligTag, 1, HB_FEATURE_GLOBAL_START, HB_FEATURE_GLOBAL_END}};
 
 static FT_Library ftlib = nullptr;
-static bool _init_ft()
-{
+
+static bool _init_ft() {
     int error = 0;
     if (!ftlib) {
         error = FT_Init_FreeType(&ftlib);
@@ -66,45 +63,39 @@ static bool _init_ft()
     return error == 0;
 }
 
-#define FLOOR(x)    ((x) & -64)
-#define CEIL(x)     (((x) + 63) & -64)
-#define TRUNC(x)    ((x) >> 6)
-#define ROUND(x)    (((x) + 32) & -64)
+#define FLOOR(x) ((x) & -64)
+#define CEIL(x) (((x) + 63) & -64)
+#define TRUNC(x) ((x) >> 6)
+#define ROUND(x) (((x) + 32) & -64)
 
-struct muse::draw::GlyphMetrics
-{
+struct muse::draw::GlyphMetrics {
     FBBox bbox;
     FT_Fixed linearAdvance = 0;
 };
 
-struct muse::draw::SymbolMetrics
-{
+struct muse::draw::SymbolMetrics {
     glyph_idx_t idx = 0;
     FT_BBox bbox;
     FT_Fixed linearAdvance = 0;
 };
 
-struct HeightMetrics
-{
+struct HeightMetrics {
     f26dot6_t ascent = 0;
     f26dot6_t descent = 0;
     f26dot6_t leading = 0;
 };
 
-struct muse::draw::FData
-{
+struct muse::draw::FData {
     ByteArray fontData;
     FT_Face face = nullptr;
-    hb_font_t* hb_font = nullptr;
+    hb_font_t *hb_font = nullptr;
     std::unordered_map<glyph_idx_t, GlyphMetrics> glyphsMetrics;
     std::unordered_map<glyph_idx_t, SymbolMetrics> symbolMetrics;
     FT_Size_Metrics metrics;
     HeightMetrics heightMetrics;
 };
 
-
-static f26dot6_t tableValueToF26Dot6(FT_Face face, long value, int pixelSize)
-{
+static f26dot6_t tableValueToF26Dot6(FT_Face face, long value, int pixelSize) {
     if (!face || face->units_per_EM == 0) {
         return 0;
     }
@@ -112,9 +103,8 @@ static f26dot6_t tableValueToF26Dot6(FT_Face face, long value, int pixelSize)
     return static_cast<f26dot6_t>(value * pixelSize * 64.0 / face->units_per_EM);
 }
 
-static bool processHheaTable(FT_Face face, int pixelSize, HeightMetrics& metrics)
-{
-    TT_HoriHeader* hhea = (TT_HoriHeader*)FT_Get_Sfnt_Table(face, ft_sfnt_hhea);
+static bool processHheaTable(FT_Face face, int pixelSize, HeightMetrics &metrics) {
+    TT_HoriHeader *hhea = (TT_HoriHeader *) FT_Get_Sfnt_Table(face, ft_sfnt_hhea);
     if (!hhea) {
         return false;
     }
@@ -129,16 +119,14 @@ static bool processHheaTable(FT_Face face, int pixelSize, HeightMetrics& metrics
     return true;
 }
 
-static bool processOS2Table(FT_Face face, int pixelSize, bool preferTypoLineMetrics, HeightMetrics& metrics)
-{
-    TT_OS2* os2 = (TT_OS2*)FT_Get_Sfnt_Table(face, ft_sfnt_os2);
+static bool processOS2Table(FT_Face face, int pixelSize, bool preferTypoLineMetrics, HeightMetrics &metrics) {
+    TT_OS2 *os2 = (TT_OS2 *) FT_Get_Sfnt_Table(face, ft_sfnt_os2);
     if (!os2) {
         return false;
     }
 
-    enum {
-        USE_TYPO_METRICS = 0x80
-    };
+    enum { USE_TYPO_METRICS = 0x80 };
+
     if (preferTypoLineMetrics || (os2->fsSelection & USE_TYPO_METRICS)) {
         if (os2->sTypoAscender == 0 && os2->sTypoDescender == 0) {
             return false;
@@ -160,9 +148,8 @@ static bool processOS2Table(FT_Face face, int pixelSize, bool preferTypoLineMetr
     return true;
 }
 
-static HeightMetrics calculateHeightMetrics(FData* data, int pixelSize)
-{
-    const FT_Size_Metrics& metrics = data->metrics;
+static HeightMetrics calculateHeightMetrics(FData *data, int pixelSize) {
+    const FT_Size_Metrics &metrics = data->metrics;
     const double scale = static_cast<double>(pixelSize) / metrics.y_ppem;
 
     HeightMetrics result;
@@ -175,18 +162,11 @@ static HeightMetrics calculateHeightMetrics(FData* data, int pixelSize)
     return result;
 }
 
-static void initializeHeightMetrics(FData* data, int pixelSize)
-{
-    data->heightMetrics = calculateHeightMetrics(data, pixelSize);
-}
+static void initializeHeightMetrics(FData *data, int pixelSize) { data->heightMetrics = calculateHeightMetrics(data, pixelSize); }
 
-FontFaceFT::FontFaceFT()
-{
-    m_data = new FData();
-}
+FontFaceFT::FontFaceFT() { m_data = new FData(); }
 
-FontFaceFT::~FontFaceFT()
-{
+FontFaceFT::~FontFaceFT() {
     if (m_data->hb_font) {
         hb_font_destroy(m_data->hb_font);
     }
@@ -194,8 +174,7 @@ FontFaceFT::~FontFaceFT()
     delete m_data;
 }
 
-bool FontFaceFT::load(const FaceKey& key, const FontData& fontData, bool isSymbolMode)
-{
+bool FontFaceFT::load(const FaceKey &key, const FontData &fontData, bool isSymbolMode) {
     if (!_init_ft()) {
         return false;
     }
@@ -210,8 +189,8 @@ bool FontFaceFT::load(const FaceKey& key, const FontData& fontData, bool isSymbo
 
     m_data->fontData = fontData.data;
 
-    int rval = newMatchingMemoryFace(ftlib, (FT_Byte*)m_data->fontData.constData(),
-                                     (FT_Long)m_data->fontData.size(), key.dataKey, &m_data->face);
+    int rval = newMatchingMemoryFace(ftlib, (FT_Byte *) m_data->fontData.constData(), (FT_Long) m_data->fontData.size(), key.dataKey,
+                                     &m_data->face);
     if (rval) {
         LOGE() << "freetype: cannot create face: " << m_key.dataKey.family().id() << ", rval: " << rval;
         return false;
@@ -238,18 +217,11 @@ bool FontFaceFT::load(const FaceKey& key, const FontData& fontData, bool isSymbo
     return true;
 }
 
-const FaceKey& FontFaceFT::key() const
-{
-    return m_key;
-}
+const FaceKey &FontFaceFT::key() const { return m_key; }
 
-bool FontFaceFT::isSymbolMode() const
-{
-    return m_isSymbolMode;
-}
+bool FontFaceFT::isSymbolMode() const { return m_isSymbolMode; }
 
-std::vector<ShapedGlyph> FontFaceFT::glyphs(const char32_t* text, int text_length) const
-{
+std::vector<ShapedGlyph> FontFaceFT::glyphs(const char32_t *text, int text_length) const {
     if (text_length < 1) {
         return std::vector<ShapedGlyph>();
     }
@@ -258,10 +230,8 @@ std::vector<ShapedGlyph> FontFaceFT::glyphs(const char32_t* text, int text_lengt
     if (m_isSymbolMode) {
         for (int i = 0; i < text_length; ++i) {
             glyph_idx_t idx = glyphIndex(text[i]);
-            SymbolMetrics* sm = symbolMetrics(idx);
-            IF_ASSERT_FAILED(sm) {
-                return std::vector<ShapedGlyph>();
-            }
+            SymbolMetrics *sm = symbolMetrics(idx);
+            IF_ASSERT_FAILED(sm) { return std::vector<ShapedGlyph>(); }
 
             ShapedGlyph p;
             p.idx = sm->idx;
@@ -271,10 +241,10 @@ std::vector<ShapedGlyph> FontFaceFT::glyphs(const char32_t* text, int text_lengt
             result.push_back(std::move(p));
         }
     } else {
-        hb_buffer_t* hb_buffer = hb_buffer_create();
+        hb_buffer_t *hb_buffer = hb_buffer_create();
         hb_segment_properties_t props = HB_SEGMENT_PROPERTIES_DEFAULT;
 
-        hb_buffer_add_utf32(hb_buffer, (uint32_t*)text, text_length, 0, -1);
+        hb_buffer_add_utf32(hb_buffer, (uint32_t *) text, text_length, 0, -1);
         hb_buffer_set_direction(hb_buffer, props.direction);
         hb_buffer_set_script(hb_buffer, props.script);
 
@@ -285,17 +255,17 @@ std::vector<ShapedGlyph> FontFaceFT::glyphs(const char32_t* text, int text_lengt
         unsigned int len = hb_buffer_get_length(hb_buffer);
         result.reserve(len);
 
-        hb_glyph_info_t* info = hb_buffer_get_glyph_infos(hb_buffer, NULL);
-        hb_glyph_position_t* pos = hb_buffer_get_glyph_positions(hb_buffer, NULL);
+        hb_glyph_info_t *info = hb_buffer_get_glyph_infos(hb_buffer, NULL);
+        hb_glyph_position_t *pos = hb_buffer_get_glyph_positions(hb_buffer, NULL);
 
         for (unsigned int i = 0; i < len; i++) {
             f26dot6_t xAdvance = static_cast<f26dot6_t>(pos[i].x_advance);
             hb_position_t hbAdvance = hb_font_get_glyph_h_advance(m_data->hb_font, info[i].codepoint);
-            if (GlyphMetrics* metrics = glyphMetrics(info[i].codepoint)) {
+            if (GlyphMetrics *metrics = glyphMetrics(info[i].codepoint)) {
                 xAdvance += metrics->linearAdvance - hbAdvance;
             }
 
-            result.push_back({ info[i].codepoint, xAdvance, info[i].cluster });
+            result.push_back({info[i].codepoint, xAdvance, info[i].cluster});
         }
 
         hb_buffer_destroy(hb_buffer);
@@ -304,8 +274,7 @@ std::vector<ShapedGlyph> FontFaceFT::glyphs(const char32_t* text, int text_lengt
     return result;
 }
 
-glyph_idx_t FontFaceFT::glyphIndex(char32_t ucs4) const
-{
+glyph_idx_t FontFaceFT::glyphIndex(char32_t ucs4) const {
     if (ucs4 == 0) {
         return 0;
     }
@@ -314,24 +283,20 @@ glyph_idx_t FontFaceFT::glyphIndex(char32_t ucs4) const
     return static_cast<glyph_idx_t>(index);
 }
 
-glyph_idx_t FontFaceFT::glyphIndex(const std::string& glyphName) const
-{
+glyph_idx_t FontFaceFT::glyphIndex(const std::string &glyphName) const {
     FT_UInt index = FT_Get_Name_Index(m_data->face, glyphName.c_str());
     return static_cast<glyph_idx_t>(index);
 }
 
-char32_t FontFaceFT::findCharCode(glyph_idx_t idx) const
-{
-    auto findC = [this](glyph_idx_t idx)
-    {
+char32_t FontFaceFT::findCharCode(glyph_idx_t idx) const {
+    auto findC = [this](glyph_idx_t idx) {
         FT_UInt gindex = 0;
         FT_ULong charcode = FT_Get_First_Char(m_data->face, &gindex);
         if (gindex == idx) {
             return charcode;
         }
 
-        while (gindex != 0)
-        {
+        while (gindex != 0) {
             charcode = FT_Get_Next_Char(m_data->face, charcode, &gindex);
             if (gindex == idx) {
                 return charcode;
@@ -349,8 +314,7 @@ char32_t FontFaceFT::findCharCode(glyph_idx_t idx) const
     return c;
 }
 
-FBBox FontFaceFT::glyphBbox(glyph_idx_t idx) const
-{
+FBBox FontFaceFT::glyphBbox(glyph_idx_t idx) const {
     if (isSymbolMode()) {
         FT_UInt index = static_cast<FT_UInt>(idx);
         if (index == 0) {
@@ -373,7 +337,7 @@ FBBox FontFaceFT::glyphBbox(glyph_idx_t idx) const
         bbox.setCoords(outlineBox.xMin, -outlineBox.yMax, outlineBox.xMax, -outlineBox.yMin);
         return bbox;
     } else {
-        GlyphMetrics* gm = glyphMetrics(idx);
+        GlyphMetrics *gm = glyphMetrics(idx);
         if (!gm) {
             return FBBox();
         }
@@ -381,16 +345,13 @@ FBBox FontFaceFT::glyphBbox(glyph_idx_t idx) const
     }
 }
 
-f26dot6_t FontFaceFT::glyphAdvance(glyph_idx_t idx) const
-{
+f26dot6_t FontFaceFT::glyphAdvance(glyph_idx_t idx) const {
     if (isSymbolMode()) {
-        SymbolMetrics* sm = symbolMetrics(idx);
-        IF_ASSERT_FAILED(sm) {
-            return 0.0;
-        }
+        SymbolMetrics *sm = symbolMetrics(idx);
+        IF_ASSERT_FAILED(sm) { return 0.0; }
         return sm->linearAdvance;
     } else {
-        GlyphMetrics* gm = glyphMetrics(idx);
+        GlyphMetrics *gm = glyphMetrics(idx);
         if (!gm) {
             return 0.0;
         }
@@ -398,34 +359,23 @@ f26dot6_t FontFaceFT::glyphAdvance(glyph_idx_t idx) const
     }
 }
 
-const GlyphImage& FontFaceFT::glyphImage(glyph_idx_t idx) const
-{
+const GlyphImage &FontFaceFT::glyphImage(glyph_idx_t idx) const {
     static GlyphImage null;
 
     UNUSED(idx);
     return null;
 }
 
-f26dot6_t FontFaceFT::leading() const
-{
-    return m_data->heightMetrics.leading;
-}
+f26dot6_t FontFaceFT::leading() const { return m_data->heightMetrics.leading; }
 
-f26dot6_t FontFaceFT::ascent() const
-{
-    return m_data->heightMetrics.ascent;
-}
+f26dot6_t FontFaceFT::ascent() const { return m_data->heightMetrics.ascent; }
 
-f26dot6_t FontFaceFT::descent() const
-{
-    return m_data->heightMetrics.descent;
-}
+f26dot6_t FontFaceFT::descent() const { return m_data->heightMetrics.descent; }
 
-f26dot6_t FontFaceFT::xHeight() const
-{
-    TT_OS2* os2 = (TT_OS2*)FT_Get_Sfnt_Table(m_data->face, ft_sfnt_os2);
+f26dot6_t FontFaceFT::xHeight() const {
+    TT_OS2 *os2 = (TT_OS2 *) FT_Get_Sfnt_Table(m_data->face, ft_sfnt_os2);
     if (os2 && os2->sxHeight) {
-        f26dot6_t result = std::round(os2->sxHeight * m_data->face->size->metrics.y_ppem * 64.0 / (double)m_data->face->units_per_EM);
+        f26dot6_t result = std::round(os2->sxHeight * m_data->face->size->metrics.y_ppem * 64.0 / (double) m_data->face->units_per_EM);
         return result;
     }
 
@@ -434,18 +384,15 @@ f26dot6_t FontFaceFT::xHeight() const
         return 0;
     }
 
-    GlyphMetrics* gm = glyphMetrics(glyph);
-    IF_ASSERT_FAILED(gm) {
-        return 0;
-    }
+    GlyphMetrics *gm = glyphMetrics(glyph);
+    IF_ASSERT_FAILED(gm) { return 0; }
     return gm->bbox.height();
 }
 
-f26dot6_t FontFaceFT::capHeight() const
-{
-    TT_OS2* os2 = (TT_OS2*)FT_Get_Sfnt_Table(m_data->face, ft_sfnt_os2);
+f26dot6_t FontFaceFT::capHeight() const {
+    TT_OS2 *os2 = (TT_OS2 *) FT_Get_Sfnt_Table(m_data->face, ft_sfnt_os2);
     if (os2 && os2->sCapHeight) {
-        f26dot6_t result = std::round(os2->sCapHeight * m_data->face->size->metrics.y_ppem * 64.0 / (double)m_data->face->units_per_EM);
+        f26dot6_t result = std::round(os2->sCapHeight * m_data->face->size->metrics.y_ppem * 64.0 / (double) m_data->face->units_per_EM);
         return result;
     }
 
@@ -454,27 +401,20 @@ f26dot6_t FontFaceFT::capHeight() const
         return 0;
     }
 
-    GlyphMetrics* gm = glyphMetrics(glyph);
-    IF_ASSERT_FAILED(gm) {
-        return 0;
-    }
+    GlyphMetrics *gm = glyphMetrics(glyph);
+    IF_ASSERT_FAILED(gm) { return 0; }
     return gm->bbox.height();
 }
 
-f26dot6_t FontFaceFT::underlinePos() const
-{
+f26dot6_t FontFaceFT::underlinePos() const {
     f26dot6_t thickness = FT_MulFix(m_data->face->underline_thickness, m_data->face->size->metrics.y_scale);
     f26dot6_t centerPos = -FT_MulFix(m_data->face->underline_position, m_data->face->size->metrics.y_scale);
     return centerPos - thickness / 2;
 }
 
-f26dot6_t FontFaceFT::lineWidth() const
-{
-    return FT_MulFix(m_data->face->underline_thickness, m_data->face->size->metrics.y_scale);
-}
+f26dot6_t FontFaceFT::lineWidth() const { return FT_MulFix(m_data->face->underline_thickness, m_data->face->size->metrics.y_scale); }
 
-GlyphMetrics* FontFaceFT::glyphMetrics(glyph_idx_t idx) const
-{
+GlyphMetrics *FontFaceFT::glyphMetrics(glyph_idx_t idx) const {
     if (m_data->glyphsMetrics.find(idx) != m_data->glyphsMetrics.end()) {
         return &m_data->glyphsMetrics.at(idx);
     }
@@ -490,15 +430,11 @@ GlyphMetrics* FontFaceFT::glyphMetrics(glyph_idx_t idx) const
 
     FT_GlyphSlot slot = m_data->face->glyph;
 
-    GlyphMetrics& gm = m_data->glyphsMetrics[idx];
+    GlyphMetrics &gm = m_data->glyphsMetrics[idx];
 
-    auto floorF26Dot6 = [](FT_Pos value) {
-        return value & -64;
-    };
+    auto floorF26Dot6 = [](FT_Pos value) { return value & -64; };
 
-    auto ceilF26Dot6 = [](FT_Pos value) {
-        return (value + 63) & -64;
-    };
+    auto ceilF26Dot6 = [](FT_Pos value) { return (value + 63) & -64; };
 
     FT_Pos left = floorF26Dot6(slot->metrics.horiBearingX);
     FT_Pos right = ceilF26Dot6(slot->metrics.horiBearingX + slot->metrics.width);
@@ -515,8 +451,7 @@ GlyphMetrics* FontFaceFT::glyphMetrics(glyph_idx_t idx) const
     return &gm;
 }
 
-SymbolMetrics* FontFaceFT::symbolMetrics(glyph_idx_t idx) const
-{
+SymbolMetrics *FontFaceFT::symbolMetrics(glyph_idx_t idx) const {
     if (m_data->symbolMetrics.find(idx) != m_data->symbolMetrics.end()) {
         return &m_data->symbolMetrics.at(idx);
     }
@@ -530,7 +465,7 @@ SymbolMetrics* FontFaceFT::symbolMetrics(glyph_idx_t idx) const
         return nullptr;
     }
 
-    SymbolMetrics& sm = m_data->symbolMetrics[idx];
+    SymbolMetrics &sm = m_data->symbolMetrics[idx];
 
     sm.idx = static_cast<glyph_idx_t>(index);
 

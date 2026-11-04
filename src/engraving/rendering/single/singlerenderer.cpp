@@ -26,12 +26,8 @@
 
 using namespace mu::engraving::rendering::single;
 
-void SingleRenderer::layoutItem(EngravingItem* item)
-{
-    SingleLayout::layoutItem(item);
-}
+void SingleRenderer::layoutItem(EngravingItem *item) { SingleLayout::layoutItem(item); }
 
-void SingleRenderer::drawItem(const EngravingItem* item, muse::draw::Painter* p, const PaintOptions& opt)
-{
+void SingleRenderer::drawItem(const EngravingItem *item, muse::draw::Painter *p, const PaintOptions &opt) {
     SingleDraw::drawItem(item, p, opt);
 }

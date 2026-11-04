@@ -35,8 +35,7 @@ using namespace mu::engraving;
 namespace {
 // The built-in text, music and tablature faces and their defaults (upstream's
 // EngravingModule::onInit).
-void register_builtin_fonts(IFontsDatabase& fdb, EngravingFontsProvider& engravingFonts)
-{
+void register_builtin_fonts(IFontsDatabase &fdb, EngravingFontsProvider &engravingFonts) {
     // Text
     fdb.addFont(FontDataKey(u"Edwin", false, false), ":/fonts/edwin/Edwin-Roman.otf");
     fdb.addFont(FontDataKey(u"Edwin", false, true), ":/fonts/edwin/Edwin-Italic.otf");
@@ -44,7 +43,7 @@ void register_builtin_fonts(IFontsDatabase& fdb, EngravingFontsProvider& engravi
     fdb.addFont(FontDataKey(u"Edwin", true, true), ":/fonts/edwin/Edwin-BdIta.otf");
 
     // MusicSymbol[Text]
-    auto addMusicFont = [&](const std::string& name, const FontDataKey& fontDataKey, const io::path_t& filePath) {
+    auto addMusicFont = [&](const std::string &name, const FontDataKey &fontDataKey, const io::path_t &filePath) {
         fdb.addFont(FontDataKey(fontDataKey), filePath);
         engravingFonts.addInternalFont(name, fontDataKey.family().id().toStdString(), filePath);
     };
@@ -59,7 +58,7 @@ void register_builtin_fonts(IFontsDatabase& fdb, EngravingFontsProvider& engravi
     fdb.addFont(FontDataKey(u"Gootville Text"), ":/fonts/gootville/GootvilleText.otf");
     addMusicFont("MuseJazz", FontDataKey(u"MuseJazz"), ":/fonts/musejazz/MuseJazz.otf");
     fdb.addFont(FontDataKey(u"MuseJazz Text"), ":/fonts/musejazz/MuseJazzText.otf");
-    addMusicFont("Petaluma", FontDataKey(u"Petaluma"),    ":/fonts/petaluma/Petaluma.otf");
+    addMusicFont("Petaluma", FontDataKey(u"Petaluma"), ":/fonts/petaluma/Petaluma.otf");
     fdb.addFont(FontDataKey(u"Petaluma Text"), ":/fonts/petaluma/PetalumaText.otf");
     addMusicFont("Finale Maestro", FontDataKey(u"Finale Maestro"), ":/fonts/finalemaestro/FinaleMaestro.otf");
     fdb.addFont(FontDataKey(u"Finale Maestro Text"), ":/fonts/finalemaestro/FinaleMaestroText.otf");
@@ -98,15 +97,15 @@ void register_builtin_fonts(IFontsDatabase& fdb, EngravingFontsProvider& engravi
     fdb.setDefaultFont(Font::Type::MusicSymbol, FontDataKey(u"Bravura"));
     engravingFonts.setFallbackFont("Bravura");
 
-    fdb.insertSubstitution(u"Leland Text",    u"Bravura Text");
-    fdb.insertSubstitution(u"Bravura Text",   u"Leland Text");
-    fdb.insertSubstitution(u"MScore Text",    u"Leland Text");
+    fdb.insertSubstitution(u"Leland Text", u"Bravura Text");
+    fdb.insertSubstitution(u"Bravura Text", u"Leland Text");
+    fdb.insertSubstitution(u"MScore Text", u"Leland Text");
     fdb.insertSubstitution(u"Gootville Text", u"Leland Text");
-    fdb.insertSubstitution(u"MuseJazz Text",  u"Leland Text");
-    fdb.insertSubstitution(u"Petaluma Text",  u"MuseJazz Text");
+    fdb.insertSubstitution(u"MuseJazz Text", u"Leland Text");
+    fdb.insertSubstitution(u"Petaluma Text", u"MuseJazz Text");
     fdb.insertSubstitution(u"Finale Maestro Text", u"Leland Text");
     fdb.insertSubstitution(u"Finale Broadway Text", u"MuseJazz Text");
-    fdb.insertSubstitution(u"ScoreFont",      u"Leland Text");// alias for current Musical Text Font
+    fdb.insertSubstitution(u"ScoreFont", u"Leland Text"); // alias for current Musical Text Font
 
     // Symbols
     Smufl::init();
@@ -115,7 +114,7 @@ void register_builtin_fonts(IFontsDatabase& fdb, EngravingFontsProvider& engravi
     // first; unloaded faces would be missing from the database and drawn wrong.
     engravingFonts.loadAllFonts();
 }
-}
+} // namespace
 
 struct EngineContext::Impl {
     std::unique_ptr<NativeFileSystem> fileSystem;
@@ -133,8 +132,7 @@ struct EngineContext::Impl {
 };
 
 // Reverse of the constructor; tolerates a partially built context.
-void EngineContext::Impl::teardown() noexcept
-{
+void EngineContext::Impl::teardown() noexcept {
     try {
         audio.reset();
         engraving = EngravingServices();
@@ -154,17 +152,15 @@ void EngineContext::Impl::teardown() noexcept
             io::setFileSystem(nullptr);
             fileSystem.reset();
         }
-    } catch (const std::exception& error) {
+    } catch (const std::exception &error) {
         std::fprintf(stderr, "engrave: engine teardown failed: %s\n", error.what());
     }
 }
 
-EngineContext::EngineContext(const std::string& assets, const std::string& cache_root)
-    : m_impl(std::make_unique<Impl>())
-{
+EngineContext::EngineContext(const std::string &assets, const std::string &cache_root) : m_impl(std::make_unique<Impl>()) {
     // Validates the resources and claims the process; diagnostics go to stderr.
     initialize_native_runtime(assets);
-    Impl& d = *m_impl;
+    Impl &d = *m_impl;
     try {
         d.fileSystem = std::make_unique<NativeFileSystem>(std::filesystem::u8path(assets));
         io::setFileSystem(d.fileSystem.get());
@@ -187,19 +183,18 @@ EngineContext::EngineContext(const std::string& assets, const std::string& cache
         register_builtin_fonts(d.assets->fontsDatabase(), *d.engravingFonts);
 
         d.configuration->init();
-        DefaultStyle::instance()->init(d.configuration->defaultStyleFilePath(),
-                                       d.configuration->partStyleFilePath(),
+        DefaultStyle::instance()->init(d.configuration->defaultStyleFilePath(), d.configuration->partStyleFilePath(),
                                        d.configuration->defaultPageSize());
         StaffType::initStaffTypes(d.configuration->defaultColor());
 
-        MScore::warnPitchRange      = true;
-        MScore::warnGuitarBends     = true;
+        MScore::warnPitchRange = true;
+        MScore::warnGuitarBends = true;
         MScore::pedalEventsMinTicks = 1;
         Drumset::initDrumset();
         FiguredBass::readConfigFile(String());
-        MScore::setNudgeStep(0.1);     // cursor key (default 0.1)
-        MScore::setNudgeStep10(1.0);     // Ctrl + cursor key (default 1.0)
-        MScore::setNudgeStep50(0.01);     // Alt  + cursor key (default 0.01)
+        MScore::setNudgeStep(0.1);    // cursor key (default 0.1)
+        MScore::setNudgeStep10(1.0);  // Ctrl + cursor key (default 1.0)
+        MScore::setNudgeStep50(0.01); // Alt  + cursor key (default 0.01)
 
         d.musicXml->init();
 
@@ -210,19 +205,19 @@ EngineContext::EngineContext(const std::string& assets, const std::string& cache
     }
 }
 
-EngineContext::~EngineContext()
-{
-    m_impl->teardown();
-}
+EngineContext::~EngineContext() { m_impl->teardown(); }
 
-io::IFileSystem& EngineContext::fileSystem() const { return *m_impl->fileSystem; }
-EngineAudio& EngineContext::audio() const { return *m_impl->audio; }
-RuntimeAssets& EngineContext::assets() const { return *m_impl->assets; }
-IFontsDatabase& EngineContext::fontsDatabase() const { return m_impl->assets->fontsDatabase(); }
-EngravingServices& EngineContext::engraving() const { return m_impl->engraving; }
-const mpe::IArticulationProfilesRepository& EngineContext::articulationProfiles() const
-{
-    return *m_impl->articulationProfiles;
-}
-const mu::iex::musicxml::IMusicXmlConfiguration& EngineContext::musicXml() const { return *m_impl->musicXml; }
-}
+io::IFileSystem &EngineContext::fileSystem() const { return *m_impl->fileSystem; }
+
+EngineAudio &EngineContext::audio() const { return *m_impl->audio; }
+
+RuntimeAssets &EngineContext::assets() const { return *m_impl->assets; }
+
+IFontsDatabase &EngineContext::fontsDatabase() const { return m_impl->assets->fontsDatabase(); }
+
+EngravingServices &EngineContext::engraving() const { return m_impl->engraving; }
+
+const mpe::IArticulationProfilesRepository &EngineContext::articulationProfiles() const { return *m_impl->articulationProfiles; }
+
+const mu::iex::musicxml::IMusicXmlConfiguration &EngineContext::musicXml() const { return *m_impl->musicXml; }
+} // namespace music

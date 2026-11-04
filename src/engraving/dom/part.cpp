@@ -56,22 +56,19 @@ const Fraction Part::MAIN_INSTRUMENT_TICK = Fraction(-1, 1);
 //   Part
 //---------------------------------------------------------
 
-Part::Part(Score* s, ElementType type)
-    : EngravingObject(type, s)
-{
-    m_show    = true;
+Part::Part(Score *s, ElementType type) : EngravingObject(type, s) {
+    m_show = true;
     m_soloist = false;
-    m_instruments.setInstrument(new Instrument, -1);     // default instrument
+    m_instruments.setInstrument(new Instrument, -1); // default instrument
     m_preferSharpFlat = PreferSharpFlat::AUTO;
 }
 
-Part::~Part()
-{
+Part::~Part() {
     // A part is not an item, so nothing else unregisters its id. The register lives
     // on the master score, which outlives the part unless the whole document is
     // going away; a leftover entry would hand the id to whatever is allocated at the
     // same address next.
-    MasterScore* master = score() ? score()->masterScore() : nullptr;
+    MasterScore *master = score() ? score()->masterScore() : nullptr;
     if (master && Score::isAlive(master)) {
         master->eidRegister()->onItemDestroyed(this);
     }
@@ -81,32 +78,19 @@ Part::~Part()
 //   initFromInstrTemplate
 //---------------------------------------------------------
 
-void Part::initFromInstrTemplate(const InstrumentTemplate* t)
-{
-    setInstrument(Instrument::fromTemplate(t));
-}
+void Part::initFromInstrTemplate(const InstrumentTemplate *t) { setInstrument(Instrument::fromTemplate(t)); }
 
-const ID& Part::id() const
-{
-    return m_id;
-}
+const ID &Part::id() const { return m_id; }
 
-void Part::setId(const ID& id)
-{
-    m_id = id;
-}
+void Part::setId(const ID &id) { m_id = id; }
 
-Part* Part::clone() const
-{
-    return new Part(*this);
-}
+Part *Part::clone() const { return new Part(*this); }
 
 //---------------------------------------------------------
 //   staff
 //---------------------------------------------------------
 
-Staff* Part::staff(staff_idx_t idx) const
-{
+Staff *Part::staff(staff_idx_t idx) const {
     if (idx >= m_staves.size()) {
         return nullptr;
     }
@@ -118,8 +102,7 @@ Staff* Part::staff(staff_idx_t idx) const
 //   family
 //---------------------------------------------------------
 
-String Part::familyId() const
-{
+String Part::familyId() const {
     if (m_instruments.empty()) {
         return String();
     }
@@ -132,8 +115,7 @@ String Part::familyId() const
 //   Part::masterPart
 //---------------------------------------------------------
 
-const Part* Part::masterPart() const
-{
+const Part *Part::masterPart() const {
     if (score()->isMaster()) {
         return this;
     }
@@ -141,15 +123,15 @@ const Part* Part::masterPart() const
         return this;
     }
 
-    Staff* st = m_staves[0];
-    LinkedObjects* links = st->links();
+    Staff *st = m_staves[0];
+    LinkedObjects *links = st->links();
     if (!links) {
         return this;
     }
 
-    for (EngravingObject* le : *links) {
+    for (EngravingObject *le : *links) {
         if (le->isStaff() && toStaff(le)->score()->isMaster()) {
-            if (Part* p = toStaff(le)->part()) {
+            if (Part *p = toStaff(le)->part()) {
                 return p;
             }
         }
@@ -161,30 +143,19 @@ const Part* Part::masterPart() const
 //   Part::masterPart
 //---------------------------------------------------------
 
-Part* Part::masterPart()
-{
-    return const_cast<Part*>(const_cast<const Part*>(this)->masterPart());
+Part *Part::masterPart() { return const_cast<Part *>(const_cast<const Part *>(this)->masterPart()); }
+
+const Part *Part::originPart(track_idx_t, const Fraction &) const { return this; }
+
+Part *Part::originPart(track_idx_t track, const Fraction &tick) {
+    return const_cast<Part *>(const_cast<const Part *>(this)->originPart(track, tick));
 }
 
-const Part* Part::originPart(track_idx_t, const Fraction&) const
-{
-    return this;
-}
+size_t Part::nstaves() const { return m_staves.size(); }
 
-Part* Part::originPart(track_idx_t track, const Fraction& tick)
-{
-    return const_cast<Part*>(const_cast<const Part*>(this)->originPart(track, tick));
-}
-
-size_t Part::nstaves() const
-{
-    return m_staves.size();
-}
-
-size_t Part::visibleStavesCount() const
-{
+size_t Part::visibleStavesCount() const {
     size_t result = 0;
-    for (const Staff* staff : m_staves) {
+    for (const Staff *staff : m_staves) {
         if (staff->show()) {
             ++result;
         }
@@ -193,16 +164,12 @@ size_t Part::visibleStavesCount() const
     return result;
 }
 
-const std::vector<Staff*>& Part::staves() const
-{
-    return m_staves;
-}
+const std::vector<Staff *> &Part::staves() const { return m_staves; }
 
-std::set<staff_idx_t> Part::staveIdxList() const
-{
+std::set<staff_idx_t> Part::staveIdxList() const {
     std::set<staff_idx_t> result;
 
-    for (const Staff* stave : m_staves) {
+    for (const Staff *stave : m_staves) {
         if (!stave) {
             continue;
         }
@@ -213,22 +180,15 @@ std::set<staff_idx_t> Part::staveIdxList() const
     return result;
 }
 
-void Part::appendStaff(Staff* staff)
-{
-    m_staves.push_back(staff);
-}
+void Part::appendStaff(Staff *staff) { m_staves.push_back(staff); }
 
-void Part::clearStaves()
-{
-    m_staves.clear();
-}
+void Part::clearStaves() { m_staves.clear(); }
 
 //---------------------------------------------------------
 //   setStaves
 //---------------------------------------------------------
 
-void Part::setStaves(int n)
-{
+void Part::setStaves(int n) {
     int ns = static_cast<int>(m_staves.size());
     if (n < ns) {
         LOGD("Part::setStaves(): remove staves not implemented!");
@@ -237,10 +197,10 @@ void Part::setStaves(int n)
 
     int staffIdx = static_cast<int>(score()->staffIdx(this)) + ns;
     for (int i = ns; i < n; ++i) {
-        Staff* staff = Factory::createStaff(this);
+        Staff *staff = Factory::createStaff(this);
         score()->insertStaff(staff, i);
 
-        for (Measure* m = score()->firstMeasure(); m; m = m->nextMeasure()) {
+        for (Measure *m = score()->firstMeasure(); m; m = m->nextMeasure()) {
             m->insertStaff(staff, staffIdx);
             if (m->hasMMRest()) {
                 m->mmRest()->insertStaff(staff, staffIdx);
@@ -254,8 +214,7 @@ void Part::setStaves(int n)
 //   insertStaff
 //---------------------------------------------------------
 
-void Part::insertStaff(Staff* staff, staff_idx_t idx)
-{
+void Part::insertStaff(Staff *staff, staff_idx_t idx) {
     if (idx >= m_staves.size()) {
         idx = m_staves.size();
     }
@@ -267,16 +226,14 @@ void Part::insertStaff(Staff* staff, staff_idx_t idx)
 //   removeStaff
 //---------------------------------------------------------
 
-void Part::removeStaff(Staff* staff)
-{
+void Part::removeStaff(Staff *staff) {
     if (!muse::remove(m_staves, staff)) {
         LOGD("Part::removeStaff: not found %p", staff);
         return;
     }
 }
 
-bool Part::show() const
-{
+bool Part::show() const {
     if (score()->configuration()->debuggingOptions().showOriginAndCombinedStaves) {
         return m_show;
     }
@@ -289,9 +246,8 @@ bool Part::show() const
 //   setMidiProgram
 //---------------------------------------------------------
 
-void Part::setMidiProgram(int program, int bank)
-{
-    InstrChannel* c = instrument()->channel(0);
+void Part::setMidiProgram(int program, int bank) {
+    InstrChannel *c = instrument()->channel(0);
     c->setProgram(program);
     c->setBank(bank);
 }
@@ -300,28 +256,19 @@ void Part::setMidiProgram(int program, int bank)
 //   midiProgram
 //---------------------------------------------------------
 
-int Part::midiProgram() const
-{
-    return instrument()->playbackChannel(0, masterScore())->program();
-}
+int Part::midiProgram() const { return instrument()->playbackChannel(0, masterScore())->program(); }
 
 //---------------------------------------------------------
 //   midiChannel
 //---------------------------------------------------------
 
-int Part::midiChannel() const
-{
-    return masterScore()->midiChannel(instrument()->channel(0)->channel());
-}
+int Part::midiChannel() const { return masterScore()->midiChannel(instrument()->channel(0)->channel()); }
 
 //---------------------------------------------------------
 //   midiPort
 //---------------------------------------------------------
 
-int Part::midiPort() const
-{
-    return masterScore()->midiPort(instrument()->channel(0)->channel());
-}
+int Part::midiPort() const { return masterScore()->midiPort(instrument()->channel(0)->channel()); }
 
 //---------------------------------------------------------
 //   setMidiChannel
@@ -333,9 +280,8 @@ int Part::midiPort() const
 //   setMidiChannel(channel, port) to set both
 //---------------------------------------------------------
 
-void Part::setMidiChannel(int ch, int port, const Fraction& tick)
-{
-    InstrChannel* channel = instrument(tick)->channel(0);
+void Part::setMidiChannel(int ch, int port, const Fraction &tick) {
+    InstrChannel *channel = instrument(tick)->channel(0);
     if (channel->channel() == -1) {
         masterScore()->addMidiMapping(channel, this, port, ch);
     } else {
@@ -347,28 +293,15 @@ void Part::setMidiChannel(int ch, int port, const Fraction& tick)
 //   setInstrument
 //---------------------------------------------------------
 
-void Part::setInstrument(Instrument* i, Fraction tick)
-{
-    m_instruments.setInstrument(i, tick.ticks());
-}
+void Part::setInstrument(Instrument *i, Fraction tick) { m_instruments.setInstrument(i, tick.ticks()); }
 
-void Part::setInstrument(Instrument* i, int tick)
-{
-    m_instruments.setInstrument(i, tick);
-}
+void Part::setInstrument(Instrument *i, int tick) { m_instruments.setInstrument(i, tick); }
 
-void Part::setInstrument(const Instrument&& i, Fraction tick)
-{
-    m_instruments.setInstrument(new Instrument(i), tick.ticks());
-}
+void Part::setInstrument(const Instrument &&i, Fraction tick) { m_instruments.setInstrument(new Instrument(i), tick.ticks()); }
 
-void Part::setInstrument(const Instrument& i, Fraction tick)
-{
-    m_instruments.setInstrument(new Instrument(i), tick.ticks());
-}
+void Part::setInstrument(const Instrument &i, Fraction tick) { m_instruments.setInstrument(new Instrument(i), tick.ticks()); }
 
-void Part::setInstruments(const InstrumentList& instruments)
-{
+void Part::setInstruments(const InstrumentList &instruments) {
     m_instruments.clear();
 
     for (auto it = instruments.begin(); it != instruments.end(); ++it) {
@@ -380,8 +313,7 @@ void Part::setInstruments(const InstrumentList& instruments)
 //   removeInstrument
 //---------------------------------------------------------
 
-void Part::removeInstrument(Instrument* instr, const Fraction& tick)
-{
+void Part::removeInstrument(Instrument *instr, const Fraction &tick) {
     auto i = m_instruments.find(tick.ticks());
     if (i == m_instruments.end()) {
         LOGD("Part::removeInstrument: not found at tick %d", tick.ticks());
@@ -398,8 +330,7 @@ void Part::removeInstrument(Instrument* instr, const Fraction& tick)
 //   removeNonPrimaryInstruments
 //---------------------------------------------------------
 
-void Part::removeNonPrimaryInstruments()
-{
+void Part::removeNonPrimaryInstruments() {
     auto it = m_instruments.begin();
     while (it != m_instruments.end()) {
         if (it->first != -1) {
@@ -414,23 +345,16 @@ void Part::removeNonPrimaryInstruments()
 //   instrument
 //---------------------------------------------------------
 
-Instrument* Part::instrument(Fraction tick)
-{
-    return m_instruments.instrument(tick.ticks());
-}
+Instrument *Part::instrument(Fraction tick) { return m_instruments.instrument(tick.ticks()); }
 
 //---------------------------------------------------------
 //   instrument
 //---------------------------------------------------------
 
-const Instrument* Part::instrument(Fraction tick) const
-{
-    return m_instruments.instrument(tick.ticks());
-}
+const Instrument *Part::instrument(Fraction tick) const { return m_instruments.instrument(tick.ticks()); }
 
-const Instrument* Part::instrumentById(const String& id) const
-{
-    for (const auto& pair: m_instruments) {
+const Instrument *Part::instrumentById(const String &id) const {
+    for (const auto &pair : m_instruments) {
         if (pair.second->id() == id) {
             return pair.second;
         }
@@ -443,32 +367,28 @@ const Instrument* Part::instrumentById(const String& id) const
 //   instruments
 //---------------------------------------------------------
 
-const InstrumentList& Part::instruments() const
-{
-    return m_instruments;
-}
+const InstrumentList &Part::instruments() const { return m_instruments; }
 
-const StringData* Part::stringData(const Fraction& tick, staff_idx_t staffIdx) const
-{
+const StringData *Part::stringData(const Fraction &tick, staff_idx_t staffIdx) const {
     if (!score()) {
         return nullptr;
     }
 
-    const Instrument* instrument = this->instrument(tick);
+    const Instrument *instrument = this->instrument(tick);
     if (!instrument) {
         return nullptr;
     }
 
     bool reflectTranspositionInLinkedTab = true;
 
-    const Staff* staff = staffIdx != muse::nidx ? score()->staff(staffIdx) : nullptr;
+    const Staff *staff = staffIdx != muse::nidx ? score()->staff(staffIdx) : nullptr;
     if (staff && staff->isTabStaff(tick)) {
-        if (const Staff* primaryStaff = staff->primaryStaff()) {
+        if (const Staff *primaryStaff = staff->primaryStaff()) {
             reflectTranspositionInLinkedTab = primaryStaff->reflectTranspositionInLinkedTab();
         }
     }
 
-    StringTunings* stringTunings = nullptr;
+    StringTunings *stringTunings = nullptr;
 
     if (reflectTranspositionInLinkedTab) {
         auto it = muse::findLessOrEqual(m_stringTunings, tick.ticks());
@@ -480,7 +400,7 @@ const StringData* Part::stringData(const Fraction& tick, staff_idx_t staffIdx) c
     if (stringTunings) {
         //!NOTE: if there is string tunings element between current instrument and current tick,
         //! then return string data from string tunings element
-        const Instrument* stringTuningsInstrument = this->instrument(stringTunings->tick());
+        const Instrument *stringTuningsInstrument = this->instrument(stringTunings->tick());
         if (instrument == stringTuningsInstrument) {
             return stringTunings->stringData();
         }
@@ -489,14 +409,12 @@ const StringData* Part::stringData(const Fraction& tick, staff_idx_t staffIdx) c
     return instrument->stringData();
 }
 
-void Part::addStringTunings(StringTunings* stringTunings)
-{
+void Part::addStringTunings(StringTunings *stringTunings) {
     DO_ASSERT(!isSharedPart());
     m_stringTunings[stringTunings->segment()->tick().ticks()] = stringTunings;
 }
 
-void Part::removeStringTunings(StringTunings* stringTunings)
-{
+void Part::removeStringTunings(StringTunings *stringTunings) {
     int tick = stringTunings->segment()->tick().ticks();
     auto it = m_stringTunings.find(tick);
 
@@ -505,8 +423,7 @@ void Part::removeStringTunings(StringTunings* stringTunings)
     }
 }
 
-StringTunings* Part::nextStringTuning(const Fraction& tick) const
-{
+StringTunings *Part::nextStringTuning(const Fraction &tick) const {
     auto i = m_stringTunings.upper_bound(tick.ticks());
     return (i == m_stringTunings.end()) ? nullptr : i->second;
 }
@@ -515,62 +432,43 @@ StringTunings* Part::nextStringTuning(const Fraction& tick) const
 //   instrumentId
 //---------------------------------------------------------
 
-String Part::instrumentId(const Fraction& tick) const
-{
-    return instrument(tick)->id();
-}
+String Part::instrumentId(const Fraction &tick) const { return instrument(tick)->id(); }
 
 //---------------------------------------------------------
 //   longName
 //---------------------------------------------------------
 
-String Part::longName(const Fraction& tick) const
-{
-    return instrument(tick)->longName();
-}
+String Part::longName(const Fraction &tick) const { return instrument(tick)->longName(); }
 
 //---------------------------------------------------------
 //   instrumentName
 //---------------------------------------------------------
 
-String Part::instrumentName(const Fraction& tick) const
-{
-    return instrument(tick)->trackName();
-}
+String Part::instrumentName(const Fraction &tick) const { return instrument(tick)->trackName(); }
 
 //---------------------------------------------------------
 //   shortName
 //---------------------------------------------------------
 
-String Part::shortName(const Fraction& tick) const
-{
-    return instrument(tick)->shortName();
-}
+String Part::shortName(const Fraction &tick) const { return instrument(tick)->shortName(); }
 
 //---------------------------------------------------------
 //   setLongName
 //---------------------------------------------------------
 
-void Part::setLongName(const String& s, const Fraction& tick)
-{
-    instrument(tick)->setLongName(s);
-}
+void Part::setLongName(const String &s, const Fraction &tick) { instrument(tick)->setLongName(s); }
 
 //---------------------------------------------------------
 //   setShortName
 //---------------------------------------------------------
 
-void Part::setShortName(const String& s, const Fraction& tick)
-{
-    instrument(tick)->setShortName(s);
-}
+void Part::setShortName(const String &s, const Fraction &tick) { instrument(tick)->setShortName(s); }
 
 //---------------------------------------------------------
 //   setLongNameAll
 //---------------------------------------------------------
 
-void Part::setLongNameAll(const String& s)
-{
+void Part::setLongNameAll(const String &s) {
     for (auto instrument : m_instruments) {
         instrument.second->setLongName(s);
     }
@@ -580,88 +478,56 @@ void Part::setLongNameAll(const String& s)
 //   setShortNameAll
 //---------------------------------------------------------
 
-void Part::setShortNameAll(const String& s)
-{
+void Part::setShortNameAll(const String &s) {
     for (auto instrument : m_instruments) {
         instrument.second->setShortName(s);
     }
 }
 
-int Part::number(const Fraction& tick) const
-{
-    return instrument(tick)->number();
-}
+int Part::number(const Fraction &tick) const { return instrument(tick)->number(); }
 
-void Part::setNumber(int v, const Fraction& tick)
-{
-    instrument(tick)->setNumber(v);
-}
+void Part::setNumber(int v, const Fraction &tick) { instrument(tick)->setNumber(v); }
 
-String Part::transposition(const Fraction& tick) const
-{
-    return instrument(tick)->transposition();
-}
+String Part::transposition(const Fraction &tick) const { return instrument(tick)->transposition(); }
 
-void Part::setTransposition(const String& s, const Fraction& tick)
-{
-    instrument(tick)->setTransposition(s);
-}
+void Part::setTransposition(const String &s, const Fraction &tick) { instrument(tick)->setTransposition(s); }
 
 //---------------------------------------------------------
 //   setPlainLongName
 //---------------------------------------------------------
 
-void Part::setPlainLongName(const String& s)
-{
-    setLongName(XmlWriter::xmlString(s));
-}
+void Part::setPlainLongName(const String &s) { setLongName(XmlWriter::xmlString(s)); }
 
 //---------------------------------------------------------
 //   setPlainShortName
 //---------------------------------------------------------
 
-void Part::setPlainShortName(const String& s)
-{
-    setShortName(XmlWriter::xmlString(s));
-}
+void Part::setPlainShortName(const String &s) { setShortName(XmlWriter::xmlString(s)); }
 
 //---------------------------------------------------------
 //   setPlainLongNameAll
 //---------------------------------------------------------
 
-void Part::setPlainLongNameAll(const String& s)
-{
-    setLongNameAll(XmlWriter::xmlString(s));
-}
+void Part::setPlainLongNameAll(const String &s) { setLongNameAll(XmlWriter::xmlString(s)); }
 
 //---------------------------------------------------------
 //   setPlainShortNameAll
 //---------------------------------------------------------
 
-void Part::setPlainShortNameAll(const String& s)
-{
-    setShortNameAll(XmlWriter::xmlString(s));
-}
+void Part::setPlainShortNameAll(const String &s) { setShortNameAll(XmlWriter::xmlString(s)); }
 
 //---------------------------------------------------------
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Part::getProperty(Pid id) const
-{
+PropertyValue Part::getProperty(Pid id) const {
     switch (id) {
-    case Pid::VISIBLE:
-        return PropertyValue(m_show);
-    case Pid::HIDE_WHEN_EMPTY:
-        return PropertyValue(m_hideWhenEmpty);
-    case Pid::HIDE_STAVES_WHEN_INDIVIDUALLY_EMPTY:
-        return PropertyValue(m_hideStavesWhenIndividuallyEmpty);
-    case Pid::USE_DRUMSET:
-        return instrument()->useDrumset();
-    case Pid::PREFER_SHARP_FLAT:
-        return int(preferSharpFlat());
-    default:
-        return PropertyValue();
+        case Pid::VISIBLE: return PropertyValue(m_show);
+        case Pid::HIDE_WHEN_EMPTY: return PropertyValue(m_hideWhenEmpty);
+        case Pid::HIDE_STAVES_WHEN_INDIVIDUALLY_EMPTY: return PropertyValue(m_hideStavesWhenIndividuallyEmpty);
+        case Pid::USE_DRUMSET: return instrument()->useDrumset();
+        case Pid::PREFER_SHARP_FLAT: return int(preferSharpFlat());
+        default: return PropertyValue();
     }
 }
 
@@ -669,63 +535,45 @@ PropertyValue Part::getProperty(Pid id) const
 //   setProperty
 //---------------------------------------------------------
 
-bool Part::setProperty(Pid id, const PropertyValue& property)
-{
+bool Part::setProperty(Pid id, const PropertyValue &property) {
     switch (id) {
-    case Pid::VISIBLE:
-        setShow(property.toBool());
-        break;
-    case Pid::HIDE_WHEN_EMPTY:
-        setHideWhenEmpty(property.value<AutoOnOff>());
-        break;
-    case Pid::HIDE_STAVES_WHEN_INDIVIDUALLY_EMPTY:
-        setHideStavesWhenIndividuallyEmpty(property.toBool());
-        break;
-    case Pid::USE_DRUMSET:
-        instrument()->setUseDrumset(property.toBool());
-        break;
-    case Pid::PREFER_SHARP_FLAT:
-        setPreferSharpFlat(PreferSharpFlat(property.toInt()));
-        break;
-    default:
-        LOGD("Part::setProperty: unknown id %d", int(id));
-        break;
+        case Pid::VISIBLE: setShow(property.toBool()); break;
+        case Pid::HIDE_WHEN_EMPTY: setHideWhenEmpty(property.value<AutoOnOff>()); break;
+        case Pid::HIDE_STAVES_WHEN_INDIVIDUALLY_EMPTY: setHideStavesWhenIndividuallyEmpty(property.toBool()); break;
+        case Pid::USE_DRUMSET: instrument()->setUseDrumset(property.toBool()); break;
+        case Pid::PREFER_SHARP_FLAT: setPreferSharpFlat(PreferSharpFlat(property.toInt())); break;
+        default: LOGD("Part::setProperty: unknown id %d", int(id)); break;
     }
     score()->setLayoutAll();
     return true;
 }
 
-TrackRange Part::trackRange() const
-{
-    IF_ASSERT_FAILED(!m_staves.empty()) {
-        return {};
-    }
+TrackRange Part::trackRange() const {
+    IF_ASSERT_FAILED(!m_staves.empty()) { return {}; }
 
     const track_idx_t startTrack = m_staves.front()->idx() * VOICES;
-    return { startTrack, startTrack + m_staves.size() * VOICES };
+    return {startTrack, startTrack + m_staves.size() * VOICES};
 }
 
-InstrumentTrackIdList Part::instrumentTrackIdList() const
-{
+InstrumentTrackIdList Part::instrumentTrackIdList() const {
     InstrumentTrackIdList result;
     std::set<String> seen;
 
-    for (const auto& pair : m_instruments) {
+    for (const auto &pair : m_instruments) {
         String instrId = pair.second->id();
         if (seen.insert(instrId).second) {
-            result.push_back({ m_id, instrId });
+            result.push_back({m_id, instrId});
         }
     }
 
     return result;
 }
 
-InstrumentTrackIdSet Part::instrumentTrackIdSet() const
-{
+InstrumentTrackIdSet Part::instrumentTrackIdSet() const {
     InstrumentTrackIdSet result;
 
-    for (const auto& pair : m_instruments) {
-        result.insert({ m_id, pair.second->id() });
+    for (const auto &pair : m_instruments) {
+        result.insert({m_id, pair.second->id()});
     }
 
     return result;
@@ -735,8 +583,7 @@ InstrumentTrackIdSet Part::instrumentTrackIdSet() const
 //   insertTime
 //---------------------------------------------------------
 
-void Part::insertTime(const Fraction& tick, const Fraction& len)
-{
+void Part::insertTime(const Fraction &tick, const Fraction &len) {
     if (len.isZero()) {
         return;
     }
@@ -758,16 +605,16 @@ void Part::insertTime(const Fraction& tick, const Fraction& len)
     InstrumentList il;
 
     for (auto i = m_instruments.lower_bound(tick.ticks()); i != m_instruments.end();) {
-        Instrument* instrument = i->second;
+        Instrument *instrument = i->second;
         int t = i->first;
         m_instruments.erase(i++);
         il[t + len.ticks()] = instrument;
     }
     m_instruments.insert(il.begin(), il.end());
 
-    std::map<int, HarpPedalDiagram*> hd2;
+    std::map<int, HarpPedalDiagram *> hd2;
     for (auto h = m_harpDiagrams.lower_bound(tick.ticks()); h != m_harpDiagrams.end();) {
-        HarpPedalDiagram* diagram = h->second;
+        HarpPedalDiagram *diagram = h->second;
         int t = h->first;
         m_harpDiagrams.erase(h++);
         hd2[t + len.ticks()] = diagram;
@@ -779,8 +626,7 @@ void Part::insertTime(const Fraction& tick, const Fraction& len)
 //   addHarpDiagram
 //---------------------------------------------------------
 
-void Part::addHarpDiagram(HarpPedalDiagram* harpDiagram)
-{
+void Part::addHarpDiagram(HarpPedalDiagram *harpDiagram) {
     DO_ASSERT(!isSharedPart());
     m_harpDiagrams[harpDiagram->segment()->tick().ticks()] = harpDiagram;
 }
@@ -789,8 +635,7 @@ void Part::addHarpDiagram(HarpPedalDiagram* harpDiagram)
 //   removeHarpDiagram
 //---------------------------------------------------------
 
-void Part::removeHarpDiagram(HarpPedalDiagram* harpDiagram)
-{
+void Part::removeHarpDiagram(HarpPedalDiagram *harpDiagram) {
     int tick = harpDiagram->segment()->tick().ticks();
     auto it = m_harpDiagrams.find(tick);
 
@@ -803,17 +648,13 @@ void Part::removeHarpDiagram(HarpPedalDiagram* harpDiagram)
 //   clearHarpDiagrams
 //---------------------------------------------------------
 
-void Part::clearHarpDiagrams()
-{
-    m_harpDiagrams.clear();
-}
+void Part::clearHarpDiagrams() { m_harpDiagrams.clear(); }
 
 //---------------------------------------------------------
 //   currentHarpDiagram
 //---------------------------------------------------------
 
-HarpPedalDiagram* Part::currentHarpDiagram(const Fraction& tick) const
-{
+HarpPedalDiagram *Part::currentHarpDiagram(const Fraction &tick) const {
     auto i = m_harpDiagrams.upper_bound(tick.ticks());
     if (i != m_harpDiagrams.begin()) {
         --i;
@@ -830,8 +671,7 @@ HarpPedalDiagram* Part::currentHarpDiagram(const Fraction& tick) const
 //   nextHarpDiagram
 //---------------------------------------------------------
 
-HarpPedalDiagram* Part::nextHarpDiagram(const Fraction& tick) const
-{
+HarpPedalDiagram *Part::nextHarpDiagram(const Fraction &tick) const {
     auto i = m_harpDiagrams.upper_bound(tick.ticks());
     return (i == m_harpDiagrams.end()) ? nullptr : i->second;
 }
@@ -840,8 +680,7 @@ HarpPedalDiagram* Part::nextHarpDiagram(const Fraction& tick) const
 //   prevHarpDiagram
 //---------------------------------------------------------
 
-HarpPedalDiagram* Part::prevHarpDiagram(const Fraction& tick) const
-{
+HarpPedalDiagram *Part::prevHarpDiagram(const Fraction &tick) const {
     auto i = m_harpDiagrams.lower_bound(tick.ticks());
     if (i == m_harpDiagrams.begin()) {
         return nullptr;
@@ -854,8 +693,7 @@ HarpPedalDiagram* Part::prevHarpDiagram(const Fraction& tick) const
 //   currentHarpDiagramTick
 //---------------------------------------------------------
 
-Fraction Part::currentHarpDiagramTick(const Fraction& tick) const
-{
+Fraction Part::currentHarpDiagramTick(const Fraction &tick) const {
     if (m_harpDiagrams.empty()) {
         return Fraction(0, 1);
     }
@@ -884,8 +722,7 @@ Fraction Part::currentHarpDiagramTick(const Fraction& tick) const
 //    keep 4.7's fallback semantics.
 //---------------------------------------------------------
 
-String Part::plainPartName(const Instrument* i)
-{
+String Part::plainPartName(const Instrument *i) {
     const String richName = i->longName();
     String name;
     bool inTag = false;
@@ -909,12 +746,11 @@ String Part::plainPartName(const Instrument* i)
     return name;
 }
 
-String Part::partName() const
-{
-    const Instrument* i = instrument();
+String Part::partName() const {
+    const Instrument *i = instrument();
     String fullName = plainPartName(i);
 
-    const String& transp = i->transposition();
+    const String &transp = i->transposition();
     if (!transp.empty()) {
         //: For instrument transposition, e.g. Horn in F
         fullName += u" " + muse::mtrc("notation", "in") + u" " + transp;
@@ -928,17 +764,13 @@ String Part::partName() const
     return fullName;
 }
 
-bool Part::isVisible() const
-{
-    return m_show;
-}
+bool Part::isVisible() const { return m_show; }
 
 //---------------------------------------------------------
 //   lyricCount
 //---------------------------------------------------------
 
-int Part::lyricCount() const
-{
+int Part::lyricCount() const {
     if (!score()) {
         return 0;
     }
@@ -950,9 +782,9 @@ int Part::lyricCount() const
     size_t count = 0;
     SegmentType st = SegmentType::ChordRest;
     const TrackRange range = trackRange();
-    for (Segment* seg = score()->firstMeasure()->first(st); seg; seg = seg->next1(st)) {
+    for (Segment *seg = score()->firstMeasure()->first(st); seg; seg = seg->next1(st)) {
         for (track_idx_t i = range.startTrack; i < range.endTrack; ++i) {
-            ChordRest* cr = toChordRest(seg->element(i));
+            ChordRest *cr = toChordRest(seg->element(i));
             if (cr) {
                 count += cr->lyrics().size();
             }
@@ -965,13 +797,12 @@ int Part::lyricCount() const
 //   harmonyCount
 //---------------------------------------------------------
 
-int Part::harmonyCount() const
-{
+int Part::harmonyCount() const {
     if (!score()) {
         return 0;
     }
 
-    Measure* firstM = score()->firstMeasure();
+    Measure *firstM = score()->firstMeasure();
     if (!firstM) {
         return 0;
     }
@@ -979,10 +810,10 @@ int Part::harmonyCount() const
     SegmentType st = SegmentType::ChordRest;
     int count = 0;
     const TrackRange range = trackRange();
-    for (const Segment* seg = firstM->first(st); seg; seg = seg->next1(st)) {
-        for (const EngravingItem* e : seg->annotations()) {
-            if ((e->isHarmony() || (e->isFretDiagram() && toFretDiagram(e)->harmony())) && e->track() >= range.startTrack
-                && e->track() < range.endTrack) {
+    for (const Segment *seg = firstM->first(st); seg; seg = seg->next1(st)) {
+        for (const EngravingItem *e : seg->annotations()) {
+            if ((e->isHarmony() || (e->isFretDiagram() && toFretDiagram(e)->harmony())) && e->track() >= range.startTrack &&
+                e->track() < range.endTrack) {
                 count++;
             }
         }
@@ -998,13 +829,12 @@ int Part::harmonyCount() const
 ///   checkRemoval can be set to true to check to see if we
 ///   can remove the harmony channel
 //---------------------------------------------------------
-void Part::updateHarmonyChannels(bool isDoOnInstrumentChanged, bool checkRemoval)
-{
+void Part::updateHarmonyChannels(bool isDoOnInstrumentChanged, bool checkRemoval) {
     auto onInstrumentChanged = [this]() {
         masterScore()->rebuildMidiMapping();
         masterScore()->updateChannel();
         score()->setInstrumentsChanged(true);
-        score()->setLayoutAll();     //do we need this?
+        score()->setLayoutAll(); //do we need this?
     };
 
     // usage of harmony count is okay even if expensive since checking harmony channel will shortcircuit if existent
@@ -1014,10 +844,10 @@ void Part::updateHarmonyChannels(bool isDoOnInstrumentChanged, bool checkRemoval
         //may be a bit expensive since it gets called after every single delete or undo, but it should be okay for now
         //~OPTIM~
         if (harmonyCount() == 0) {
-            Instrument* instr = instrument();
+            Instrument *instr = instrument();
             int hChIdx = instr->channelIdx(String::fromUtf8(InstrChannel::HARMONY_NAME));
             if (hChIdx != -1) {
-                InstrChannel* hChan = instr->channel(hChIdx);
+                InstrChannel *hChan = instr->channel(hChIdx);
                 instr->removeChannel(hChan);
                 delete hChan;
                 if (isDoOnInstrumentChanged) {
@@ -1029,8 +859,8 @@ void Part::updateHarmonyChannels(bool isDoOnInstrumentChanged, bool checkRemoval
     }
 
     if (!harmonyChannel() && harmonyCount() > 0) {
-        Instrument* instr = instrument();
-        InstrChannel* c = new InstrChannel(*instr->channel(0));
+        Instrument *instr = instrument();
+        InstrChannel *c = new InstrChannel(*instr->channel(0));
         // default to program 0, which is piano in General MIDI
         c->setProgram(0);
         if (c->bank() == 128) { // drumset?
@@ -1046,9 +876,8 @@ void Part::updateHarmonyChannels(bool isDoOnInstrumentChanged, bool checkRemoval
 //   harmonyChannel
 //---------------------------------------------------------
 
-const InstrChannel* Part::harmonyChannel() const
-{
-    const Instrument* instr = instrument();
+const InstrChannel *Part::harmonyChannel() const {
+    const Instrument *instr = instrument();
     if (!instr) {
         return nullptr;
     }
@@ -1058,23 +887,19 @@ const InstrChannel* Part::harmonyChannel() const
         return nullptr;
     }
 
-    const InstrChannel* chan = instr->channel(chanIdx);
+    const InstrChannel *chan = instr->channel(chanIdx);
     assert(chan);
     return chan;
 }
 
-bool Part::hasChordSymbol() const
-{
-    return harmonyChannel() != nullptr;
-}
+bool Part::hasChordSymbol() const { return harmonyChannel() != nullptr; }
 
 //---------------------------------------------------------
 //   hasPitchedStaff
 //---------------------------------------------------------
 
-bool Part::hasPitchedStaff() const
-{
-    for (Staff* s : staves()) {
+bool Part::hasPitchedStaff() const {
+    for (Staff *s : staves()) {
         if (s && s->isPitchedStaff(Fraction(0, 1))) {
             return true;
         }
@@ -1086,9 +911,8 @@ bool Part::hasPitchedStaff() const
 //   hasTabStaff
 //---------------------------------------------------------
 
-bool Part::hasTabStaff() const
-{
-    for (Staff* s : staves()) {
+bool Part::hasTabStaff() const {
+    for (Staff *s : staves()) {
         if (s && s->isTabStaff(Fraction(0, 1))) {
             return true;
         }
@@ -1100,13 +924,12 @@ bool Part::hasTabStaff() const
 //   hasDrumStaff
 //---------------------------------------------------------
 
-bool Part::hasDrumStaff() const
-{
-    for (Staff* s : staves()) {
+bool Part::hasDrumStaff() const {
+    for (Staff *s : staves()) {
         if (s && s->isDrumStaff(Fraction(0, 1))) {
             return true;
         }
     }
     return false;
 }
-}
+} // namespace mu::engraving

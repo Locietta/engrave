@@ -21,31 +21,25 @@
  */
 #include "svgrenderer.h"
 
-
 #include "log.h"
 
 using namespace muse::draw;
 
 //! NOTE Perhaps in the future we need to add something like ISvgRenderer
 
-SvgRenderer::SvgRenderer(const ByteArray& data)
-{
+SvgRenderer::SvgRenderer(const ByteArray &data) {
     NOT_SUPPORTED;
     UNUSED(data);
 }
 
-SvgRenderer::~SvgRenderer()
-{
-}
+SvgRenderer::~SvgRenderer() {}
 
-muse::SizeF SvgRenderer::defaultSize() const
-{
+muse::SizeF SvgRenderer::defaultSize() const {
     NOT_SUPPORTED;
     return SizeF();
 }
 
-void SvgRenderer::render(Painter* painter, const RectF& rect)
-{
+void SvgRenderer::render(Painter *painter, const RectF &rect) {
     NOT_SUPPORTED;
     UNUSED(painter);
     UNUSED(rect);

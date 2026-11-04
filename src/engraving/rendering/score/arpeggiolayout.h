@@ -28,25 +28,24 @@
 #include "dom/arpeggio.h"
 
 namespace mu::engraving::rendering::score {
-class ArpeggioLayout
-{
+class ArpeggioLayout {
     static constexpr int ARBITRARY_ARPEGGIO_LENGTH = INT_MAX;
 public:
 
-    static void layoutArpeggio2(Arpeggio* item, LayoutContext& ctx);
+    static void layoutArpeggio2(Arpeggio *item, LayoutContext &ctx);
 
-    static double insetDistance(const Arpeggio* item, const LayoutContext& ctx, double mag_, const Chord* _chord);
-    static double insetDistance(const Arpeggio* item, const LayoutContext& ctx, double mag_, const Chord* _chord,
-                                const std::vector<Accidental*>& accidentals);
-    static double insetTop(const Arpeggio* item, const Chord* c);
-    static double insetBottom(const Arpeggio* item, const Chord* c);
-    static double insetWidth(const Arpeggio* item);
-    static void clearAccidentals(Arpeggio* item, LayoutContext& ctx);
+    static double insetDistance(const Arpeggio *item, const LayoutContext &ctx, double mag_, const Chord *_chord);
+    static double insetDistance(const Arpeggio *item, const LayoutContext &ctx, double mag_, const Chord *_chord,
+                                const std::vector<Accidental *> &accidentals);
+    static double insetTop(const Arpeggio *item, const Chord *c);
+    static double insetBottom(const Arpeggio *item, const Chord *c);
+    static double insetWidth(const Arpeggio *item);
+    static void clearAccidentals(Arpeggio *item, LayoutContext &ctx);
 
-    static double computeHeight(const Arpeggio* item);
-    static double calcTop(const Arpeggio* item, const LayoutConfiguration& conf);
-    static double calcBottom(const Arpeggio* item, double arpeggioHeight, const LayoutConfiguration& conf);
+    static double computeHeight(const Arpeggio *item);
+    static double calcTop(const Arpeggio *item, const LayoutConfiguration &conf);
+    static double calcBottom(const Arpeggio *item, double arpeggioHeight, const LayoutConfiguration &conf);
 };
-}
+} // namespace mu::engraving::rendering::score
 
 #endif // MU_ENGRAVING_ARPEGGIOLAYOUT_DEV_H

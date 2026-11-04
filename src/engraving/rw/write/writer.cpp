@@ -44,12 +44,9 @@ using namespace muse;
 using namespace mu::engraving;
 using namespace mu::engraving::write;
 
-Writer::Writer()
-{
-}
+Writer::Writer() {}
 
-bool Writer::writeScore(Score* score, io::IODevice* device, rw::WriteInOutData* inout)
-{
+bool Writer::writeScore(Score *score, io::IODevice *device, rw::WriteInOutData *inout) {
     TRACEFUNC;
 
     XmlWriter xml(device);
@@ -60,7 +57,7 @@ bool Writer::writeScore(Score* score, io::IODevice* device, rw::WriteInOutData* 
 
     xml.startDocument();
 
-    xml.startElement("museScore", { { "version", Constants::MSC_VERSION_STR } });
+    xml.startElement("museScore", {{"version", Constants::MSC_VERSION_STR}});
 
     if (!MScore::testMode) {
         xml.tag("programVersion", muse::appinfo::version().toString());
@@ -87,24 +84,23 @@ bool Writer::writeScore(Score* score, io::IODevice* device, rw::WriteInOutData* 
     return true;
 }
 
-void Writer::write(Score* score, XmlWriter& xml, WriteContext& ctx, compat::WriteScoreHook& hook)
-{
+void Writer::write(Score *score, XmlWriter &xml, WriteContext &ctx, compat::WriteScoreHook &hook) {
     TRACEFUNC;
 
     xml.startElement(score);
 
     TWrite::writeItemEid(score, xml);
 
-    if (Excerpt* e = score->excerpt()) {
+    if (Excerpt *e = score->excerpt()) {
         if (!e->name().empty()) {
             xml.tag("name", e->name());
         }
 
         if (!ctx.standalone()) {
-            const TracksMap& tracks = e->tracksMapping();
+            const TracksMap &tracks = e->tracksMapping();
             if (!(tracks.size() == e->nstaves() * VOICES) && !tracks.empty()) {
                 for (auto it = tracks.begin(); it != tracks.end(); ++it) {
-                    xml.tag("Tracklist", { { "sTrack", it->first }, { "dstTrack", it->second } });
+                    xml.tag("Tracklist", {{"sTrack", it->first}, {"dstTrack", it->second}});
                 }
             }
 
@@ -147,10 +143,10 @@ void Writer::write(Score* score, XmlWriter& xml, WriteContext& ctx, compat::Writ
         xml.tag("open", score->m_isOpen);
     }
 
-    for (const auto& t : score->m_metaTags) {
+    for (const auto &t : score->m_metaTags) {
         // do not output "platform" and "creationDate" in test and save template mode
         if ((!MScore::testMode && !MScore::saveTemplateMode) || (t.first != "platform" && t.first != "creationDate")) {
-            xml.tag("metaTag", { { "name", t.first.toXmlEscaped() } }, t.second);
+            xml.tag("metaTag", {{"name", t.first.toXmlEscaped()}}, t.second);
         }
     }
 
@@ -162,37 +158,33 @@ void Writer::write(Score* score, XmlWriter& xml, WriteContext& ctx, compat::Writ
 
     staff_idx_t staffStart = 0;
     staff_idx_t staffEnd = 0;
-    MeasureBase* measureStart = nullptr;
-    MeasureBase* measureEnd = nullptr;
+    MeasureBase *measureStart = nullptr;
+    MeasureBase *measureEnd = nullptr;
 
     if (ctx.shouldWriteRange()) {
-        const WriteRange& r = ctx.range().value();
+        const WriteRange &r = ctx.range().value();
         staffStart = r.startStaffIdx;
         staffEnd = r.endStaffIdx;
         measureStart = r.startMeasure;
         measureEnd = r.endMeasure;
     } else {
-        staffEnd     = score->nstaves();
+        staffEnd = score->nstaves();
         measureStart = score->first();
     }
 
     if (!score->m_systemObjectStaves.empty()) {
         bool saveSysObjStaves = false;
-        for (const Staff* s : score->m_systemObjectStaves) {
-            IF_ASSERT_FAILED(s->idx() != muse::nidx) {
-                continue;
-            }
+        for (const Staff *s : score->m_systemObjectStaves) {
+            IF_ASSERT_FAILED(s->idx() != muse::nidx) { continue; }
             saveSysObjStaves = true;
             break;
         }
 
         if (saveSysObjStaves) {
             xml.startElement("SystemObjects");
-            for (const Staff* s : score->m_systemObjectStaves) {
+            for (const Staff *s : score->m_systemObjectStaves) {
                 const staff_idx_t idx = s->idx();
-                IF_ASSERT_FAILED(idx != muse::nidx) {
-                    continue;
-                }
+                IF_ASSERT_FAILED(idx != muse::nidx) { continue; }
 
                 if (ctx.shouldWriteRange()) {
                     if (idx < staffStart || idx >= staffEnd) {
@@ -200,7 +192,7 @@ void Writer::write(Score* score, XmlWriter& xml, WriteContext& ctx, compat::Writ
                     }
                 }
 
-                xml.tag("Instance", { { "staffId", idx + 1 } });
+                xml.tag("Instance", {{"staffId", idx + 1}});
             }
             xml.endElement();
         }
@@ -213,7 +205,7 @@ void Writer::write(Score* score, XmlWriter& xml, WriteContext& ctx, compat::Writ
         score->masterScore()->checkMidiMapping();
     }
 
-    auto shouldWritePart = [&ctx, score, staffStart, staffEnd](const Part* part) {
+    auto shouldWritePart = [&ctx, score, staffStart, staffEnd](const Part *part) {
         if (!ctx.shouldWriteRange()) {
             return true;
         }
@@ -221,11 +213,10 @@ void Writer::write(Score* score, XmlWriter& xml, WriteContext& ctx, compat::Writ
         const staff_idx_t firstStaffIdx = score->staffIdx(part);
         const staff_idx_t lastStaffIdx = firstStaffIdx + part->nstaves() - 1;
 
-        return (firstStaffIdx >= staffStart && firstStaffIdx < staffEnd)
-               || (lastStaffIdx >= staffStart && lastStaffIdx < staffEnd);
+        return (firstStaffIdx >= staffStart && firstStaffIdx < staffEnd) || (lastStaffIdx >= staffStart && lastStaffIdx < staffEnd);
     };
 
-    for (const Part* part : score->m_parts) {
+    for (const Part *part : score->m_parts) {
         if (shouldWritePart(part)) {
             TWrite::write(part, xml, ctx);
         }
@@ -235,7 +226,7 @@ void Writer::write(Score* score, XmlWriter& xml, WriteContext& ctx, compat::Writ
     ctx.setTrackDiff(-static_cast<int>(staffStart * VOICES));
     if (measureStart) {
         for (staff_idx_t staffIdx = staffStart; staffIdx < staffEnd; ++staffIdx) {
-            const Staff* st = score->staff(staffIdx);
+            const Staff *st = score->staff(staffIdx);
             StaffWrite::writeStaff(st, xml, ctx, measureStart, measureEnd, staffStart, staffIdx);
         }
     }
@@ -252,23 +243,20 @@ void Writer::write(Score* score, XmlWriter& xml, WriteContext& ctx, compat::Writ
     xml.endElement(); // score
 }
 
-void Writer::writeSegments(XmlWriter& xml, WriteContext& ctx, track_idx_t strack, track_idx_t etrack,
-                           Segment* sseg, Segment* eseg, bool writeSystemElements, bool forceTimeSig)
-{
+void Writer::writeSegments(XmlWriter &xml, WriteContext &ctx, track_idx_t strack, track_idx_t etrack, Segment *sseg, Segment *eseg,
+                           bool writeSystemElements, bool forceTimeSig) {
     ctx.setCurTrack(strack);
     TWrite::writeSegments(xml, ctx, strack, etrack, sseg, eseg, writeSystemElements, forceTimeSig);
 }
 
-void Writer::doWriteItem(const EngravingItem* item, XmlWriter& xml)
-{
+void Writer::doWriteItem(const EngravingItem *item, XmlWriter &xml) {
     WriteContext ctx(item->score(), /* clipboardMode = */ true);
     TWrite::writeItem(item, xml, ctx);
 }
 
-muse::ByteArray Writer::writeStaffSelection(Score* score, const SelectionFilter& filter, staff_idx_t staffStart, staff_idx_t staffEnd,
-                                            const Fraction& tickStart, const Fraction& tickEnd, Segment* startSegment,
-                                            Segment* endSegment)
-{
+muse::ByteArray Writer::writeStaffSelection(Score *score, const SelectionFilter &filter, staff_idx_t staffStart, staff_idx_t staffEnd,
+                                            const Fraction &tickStart, const Fraction &tickEnd, Segment *startSegment,
+                                            Segment *endSegment) {
     auto buffer = io::Buffer::opened(io::IODevice::WriteOnly);
     XmlWriter xml(&buffer);
 
@@ -278,17 +266,17 @@ muse::ByteArray Writer::writeStaffSelection(Score* score, const SelectionFilter&
     int staves = static_cast<int>(staffEnd - staffStart);
 
     XmlWriter::Attributes staffListAttributes = {
-        { "version", (MScore::testMode ? "2.00" : Constants::MSC_VERSION_STR) },
-        { "tick", tickStart.toString() },
-        { "len", ticks.toString() },
-        { "staff", staffStart },
-        { "staves", staves },
+        {"version", (MScore::testMode ? "2.00" : Constants::MSC_VERSION_STR)},
+        {"tick", tickStart.toString()},
+        {"len", ticks.toString()},
+        {"staff", staffStart},
+        {"staves", staves},
     };
 
     // Note: canCopy() ensures that the whole selection has a single time stretch ratio.
     Fraction timeStretch = score->staff(staffStart)->timeStretch(tickStart);
     if (timeStretch != Fraction(1, 1)) {
-        staffListAttributes.push_back({ "timeStretch", timeStretch.toString() });
+        staffListAttributes.push_back({"timeStretch", timeStretch.toString()});
     }
 
     xml.startElement("StaffList", staffListAttributes);
@@ -299,12 +287,12 @@ muse::ByteArray Writer::writeStaffSelection(Score* score, const SelectionFilter&
 
     for (staff_idx_t staffIdx = staffStart; staffIdx < staffEnd; ++staffIdx) {
         track_idx_t startTrack = staffIdx * VOICES;
-        track_idx_t endTrack   = startTrack + VOICES;
+        track_idx_t endTrack = startTrack + VOICES;
 
-        xml.startElement("Staff", { { "id", staffIdx } });
+        xml.startElement("Staff", {{"id", staffIdx}});
 
-        Staff* staff = score->staff(staffIdx);
-        Part* part = staff->part();
+        Staff *staff = score->staff(staffIdx);
+        Part *part = staff->part();
         Interval interval = part->instrument(startSegment->tick())->transpose();
         if (interval.chromatic) {
             xml.tag("transposeChromatic", interval.chromatic);
@@ -323,20 +311,16 @@ muse::ByteArray Writer::writeStaffSelection(Score* score, const SelectionFilter&
     return buffer.data();
 }
 
-muse::ByteArray Writer::writeSymbolListSelection(track_idx_t fromTrack, track_idx_t toTrack,
-                                                 const std::vector<SelectedSymbol>& symbols)
-{
+muse::ByteArray Writer::writeSymbolListSelection(track_idx_t fromTrack, track_idx_t toTrack, const std::vector<SelectedSymbol> &symbols) {
     auto buffer = io::Buffer::opened(io::IODevice::WriteOnly);
     XmlWriter xml(&buffer);
 
     xml.startDocument();
 
-    xml.startElement("SymbolList", { { "version", Constants::MSC_VERSION_STR },
-                         { "fromtrack", fromTrack },
-                         { "totrack", toTrack } });
+    xml.startElement("SymbolList", {{"version", Constants::MSC_VERSION_STR}, {"fromtrack", fromTrack}, {"totrack", toTrack}});
 
     track_idx_t currTrack = muse::nidx;
-    for (const SelectedSymbol& symbol : symbols) {
+    for (const SelectedSymbol &symbol : symbols) {
         if (currTrack != symbol.track) {
             xml.tag("trackOffset", static_cast<int>(symbol.track - fromTrack));
             currTrack = symbol.track;

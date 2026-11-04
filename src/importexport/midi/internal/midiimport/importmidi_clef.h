@@ -27,14 +27,12 @@
 namespace mu::engraving {
 class Staff;
 class InstrumentTemplate;
-}
+} // namespace mu::engraving
 
-namespace mu::iex::midi {
-namespace MidiClef {
-bool hasGFclefs(const engraving::InstrumentTemplate* templ);
-void createClefs(engraving::Staff* staff, int indexOfOperation, bool isDrumTrack);
+namespace mu::iex::midi { namespace MidiClef {
+bool hasGFclefs(const engraving::InstrumentTemplate *templ);
+void createClefs(engraving::Staff *staff, int indexOfOperation, bool isDrumTrack);
 engraving::ClefType clefTypeFromAveragePitch(int averagePitch);
-} // namespace MidiClef
-} // namespace mu::iex::midi
+}} // namespace mu::iex::midi::MidiClef
 
 #endif // IMPORTMIDI_CLEF_H

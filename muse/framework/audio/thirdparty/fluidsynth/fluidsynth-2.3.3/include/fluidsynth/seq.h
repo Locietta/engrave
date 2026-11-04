@@ -54,9 +54,7 @@ extern "C" {
  * a timing error, which causes your sequence to sound e.g. slower than it's supposed to be. If this is
  * your use-case, make sure to enqueue events with an absolute tick value.
  */
-typedef void (*fluid_event_callback_t)(unsigned int time, fluid_event_t *event,
-                                       fluid_sequencer_t *seq, void *data);
-
+typedef void (*fluid_event_callback_t)(unsigned int time, fluid_event_t *event, fluid_sequencer_t *seq, void *data);
 
 /** @startlifecycle{MIDI Sequencer} */
 FLUID_DEPRECATED FLUIDSYNTH_API fluid_sequencer_t *new_fluid_sequencer(void);
@@ -66,8 +64,7 @@ FLUIDSYNTH_API void delete_fluid_sequencer(fluid_sequencer_t *seq);
 
 FLUIDSYNTH_API int fluid_sequencer_get_use_system_timer(fluid_sequencer_t *seq);
 FLUIDSYNTH_API
-fluid_seq_id_t fluid_sequencer_register_client(fluid_sequencer_t *seq, const char *name,
-        fluid_event_callback_t callback, void *data);
+fluid_seq_id_t fluid_sequencer_register_client(fluid_sequencer_t *seq, const char *name, fluid_event_callback_t callback, void *data);
 FLUIDSYNTH_API void fluid_sequencer_unregister_client(fluid_sequencer_t *seq, fluid_seq_id_t id);
 FLUIDSYNTH_API int fluid_sequencer_count_clients(fluid_sequencer_t *seq);
 FLUIDSYNTH_API fluid_seq_id_t fluid_sequencer_get_client_id(fluid_sequencer_t *seq, int index);
@@ -76,8 +73,7 @@ FLUIDSYNTH_API int fluid_sequencer_client_is_dest(fluid_sequencer_t *seq, fluid_
 FLUIDSYNTH_API void fluid_sequencer_process(fluid_sequencer_t *seq, unsigned int msec);
 FLUIDSYNTH_API void fluid_sequencer_send_now(fluid_sequencer_t *seq, fluid_event_t *evt);
 FLUIDSYNTH_API
-int fluid_sequencer_send_at(fluid_sequencer_t *seq, fluid_event_t *evt,
-                            unsigned int time, int absolute);
+int fluid_sequencer_send_at(fluid_sequencer_t *seq, fluid_event_t *evt, unsigned int time, int absolute);
 FLUIDSYNTH_API
 void fluid_sequencer_remove_events(fluid_sequencer_t *seq, fluid_seq_id_t source, fluid_seq_id_t dest, int type);
 FLUIDSYNTH_API unsigned int fluid_sequencer_get_tick(fluid_sequencer_t *seq);

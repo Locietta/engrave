@@ -18,27 +18,18 @@ constexpr std::uint8_t SMF_META_TEMPO = 0x51;
 constexpr std::uint8_t SMF_META_TIME_SIGNATURE = 0x58;
 constexpr std::uint8_t SMF_META_KEY_SIGNATURE = 0x59;
 
-std::uint8_t to_byte(char c)
-{
-    return static_cast<std::uint8_t>(static_cast<unsigned char>(c));
+std::uint8_t to_byte(char c) { return static_cast<std::uint8_t>(static_cast<unsigned char>(c)); }
+
+std::uint16_t read_be16(std::string_view data, std::size_t pos) {
+    return static_cast<std::uint16_t>((static_cast<std::uint16_t>(to_byte(data[pos])) << 8) | to_byte(data[pos + 1]));
 }
 
-std::uint16_t read_be16(std::string_view data, std::size_t pos)
-{
-    return static_cast<std::uint16_t>((static_cast<std::uint16_t>(to_byte(data[pos])) << 8)
-                                      | to_byte(data[pos + 1]));
+std::uint32_t read_be32(std::string_view data, std::size_t pos) {
+    return (static_cast<std::uint32_t>(to_byte(data[pos])) << 24) | (static_cast<std::uint32_t>(to_byte(data[pos + 1])) << 16) |
+           (static_cast<std::uint32_t>(to_byte(data[pos + 2])) << 8) | static_cast<std::uint32_t>(to_byte(data[pos + 3]));
 }
 
-std::uint32_t read_be32(std::string_view data, std::size_t pos)
-{
-    return (static_cast<std::uint32_t>(to_byte(data[pos])) << 24)
-           | (static_cast<std::uint32_t>(to_byte(data[pos + 1])) << 16)
-           | (static_cast<std::uint32_t>(to_byte(data[pos + 2])) << 8)
-           | static_cast<std::uint32_t>(to_byte(data[pos + 3]));
-}
-
-bool read_byte(std::string_view data, std::size_t end, std::size_t& pos, std::uint8_t& byte)
-{
+bool read_byte(std::string_view data, std::size_t end, std::size_t &pos, std::uint8_t &byte) {
     if (pos >= end) {
         return false;
     }
@@ -50,8 +41,7 @@ bool read_byte(std::string_view data, std::size_t end, std::size_t& pos, std::ui
 // SMF variable-length quantities are limited to four bytes (28 payload bits).
 // MidiFile::getvl accepts up to sixteen, so reject longer encodings here before
 // they can overflow its signed int accumulator.
-bool read_vlq(std::string_view data, std::size_t end, std::size_t& pos, std::uint32_t& value)
-{
+bool read_vlq(std::string_view data, std::size_t end, std::size_t &pos, std::uint32_t &value) {
     std::uint32_t result = 0;
     for (int i = 0; i < 4; ++i) {
         std::uint8_t byte = 0;
@@ -67,15 +57,13 @@ bool read_vlq(std::string_view data, std::size_t end, std::size_t& pos, std::uin
     return false;
 }
 
-int channel_data_bytes(std::uint8_t status)
-{
+int channel_data_bytes(std::uint8_t status) {
     // Only channel messages (0x80..0xef) reach this function.
     const std::uint8_t kind = status & 0xf0;
     return (kind == 0xc0 || kind == 0xd0) ? 1 : 2;
 }
 
-bool read_channel_data(std::string_view data, std::size_t end, std::size_t& pos, int count)
-{
+bool read_channel_data(std::string_view data, std::size_t end, std::size_t &pos, int count) {
     for (int i = 0; i < count; ++i) {
         std::uint8_t byte = 0;
         if (!read_byte(data, end, pos, byte) || (byte & 0x80)) {
@@ -85,29 +73,22 @@ bool read_channel_data(std::string_view data, std::size_t end, std::size_t& pos,
     return true;
 }
 
-bool valid_meta_length(std::uint8_t meta_type, std::uint32_t length)
-{
+bool valid_meta_length(std::uint8_t meta_type, std::uint32_t length) {
     switch (meta_type) {
-    case SMF_META_END_OF_TRACK:
-        return length == 0;
-    case SMF_META_TEMPO:
-        return length == 3;
-    case SMF_META_TIME_SIGNATURE:
-        return length == 4;
-    case SMF_META_KEY_SIGNATURE:
-        return length == 2;
-    case 0x20: // MIDI channel prefix
-    case 0x21: // MIDI port
-        return length == 1;
-    default:
-        return true;
+        case SMF_META_END_OF_TRACK: return length == 0;
+        case SMF_META_TEMPO: return length == 3;
+        case SMF_META_TIME_SIGNATURE: return length == 4;
+        case SMF_META_KEY_SIGNATURE: return length == 2;
+        case 0x20: // MIDI channel prefix
+        case 0x21: // MIDI port
+            return length == 1;
+        default: return true;
     }
 }
 
 // Division is either ticks per quarter note (nonzero) or SMPTE (fps 24/25/29/30
 // with a nonzero ticks-per-frame).  The importer divides by the resulting value.
-bool valid_division(std::uint16_t division)
-{
+bool valid_division(std::uint16_t division) {
     if ((division & 0x8000u) == 0) {
         return division != 0;
     }
@@ -122,8 +103,7 @@ bool valid_division(std::uint16_t division)
 // events without an end boundary and stops only at End Of Track, so every byte
 // read here is confined to the declared chunk and EOT is mandatory.  Bytes after
 // EOT are left alone: MidiFile::readTrack also skips them.
-bool validate_track(std::string_view data, std::size_t begin, std::size_t end)
-{
+bool validate_track(std::string_view data, std::size_t begin, std::size_t end) {
     std::size_t pos = begin;
     int running_status = -1;
     std::int64_t ticks = 0;
@@ -150,8 +130,7 @@ bool validate_track(std::string_view data, std::size_t begin, std::size_t end)
             if (running_status < 0) {
                 return false;
             }
-            if (!read_channel_data(data, end, pos,
-                                   channel_data_bytes(static_cast<std::uint8_t>(running_status)) - 1)) {
+            if (!read_channel_data(data, end, pos, channel_data_bytes(static_cast<std::uint8_t>(running_status)) - 1)) {
                 return false;
             }
             continue;
@@ -168,20 +147,16 @@ bool validate_track(std::string_view data, std::size_t begin, std::size_t end)
         if (status == 0xff) {
             std::uint8_t meta_type = 0;
             std::uint32_t length = 0;
-            if (!read_byte(data, end, pos, meta_type)
-                || !read_vlq(data, end, pos, length)
-                || !valid_meta_length(meta_type, length)
-                || length > end - pos) {
+            if (!read_byte(data, end, pos, meta_type) || !read_vlq(data, end, pos, length) || !valid_meta_length(meta_type, length) ||
+                length > end - pos) {
                 return false;
             }
             // The importer divides by tempo and computes 2^denominator using
             // a signed int. Reject values that would make those operations invalid.
-            if (meta_type == SMF_META_TEMPO
-                && (to_byte(data[pos]) | to_byte(data[pos + 1]) | to_byte(data[pos + 2])) == 0) {
+            if (meta_type == SMF_META_TEMPO && (to_byte(data[pos]) | to_byte(data[pos + 1]) | to_byte(data[pos + 2])) == 0) {
                 return false;
             }
-            if (meta_type == SMF_META_TIME_SIGNATURE
-                && (to_byte(data[pos]) == 0 || to_byte(data[pos + 1]) > 30)) {
+            if (meta_type == SMF_META_TIME_SIGNATURE && (to_byte(data[pos]) == 0 || to_byte(data[pos + 1]) > 30)) {
                 return false;
             }
             pos += length;
@@ -214,8 +189,7 @@ bool validate_track(std::string_view data, std::size_t begin, std::size_t end)
 
 // Structural SMF framing validation only.  No smf events are mapped or retained
 // here and no allocation is made from an untrusted length.
-bool valid_smf(std::string_view data)
-{
+bool valid_smf(std::string_view data) {
     if (data.size() < 14 || data.compare(0, 4, "MThd") != 0) {
         return false;
     }
@@ -260,8 +234,7 @@ bool valid_smf(std::string_view data)
 }
 } // namespace
 
-mu::engraving::Err import_midi_score(mu::engraving::MasterScore* score, const std::string& bytes)
-{
+mu::engraving::Err import_midi_score(mu::engraving::MasterScore *score, const std::string &bytes) {
     if (!score || bytes.empty() || bytes.size() > MAX_IMPORT_BYTES) {
         return mu::engraving::Err::FileBadFormat;
     }
@@ -271,4 +244,4 @@ mu::engraving::Err import_midi_score(mu::engraving::MasterScore* score, const st
 
     return mu::iex::midi::importMidiFromBuffer(score, bytes);
 }
-}
+} // namespace music

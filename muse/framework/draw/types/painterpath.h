@@ -30,65 +30,57 @@
 #include "geometry.h"
 #include "bezier.h"
 
-
 namespace muse::draw {
-class PainterPath
-{
+class PainterPath {
 public:
-    enum class ElementType {
-        MoveToElement,
-        LineToElement,
-        CurveToElement,
-        CurveToDataElement
-    };
+    enum class ElementType { MoveToElement, LineToElement, CurveToElement, CurveToDataElement };
 
-    enum class FillRule {
-        OddEvenFill,
-        WindingFill
-    };
+    enum class FillRule { OddEvenFill, WindingFill };
 
-    class Element
-    {
+    class Element {
     public:
         double x = 0.0;
         double y = 0.0;
         ElementType type = ElementType::MoveToElement;
 
         Element() {}
-        Element(double x, double y, ElementType type)
-            : x(x), y(y), type(type) {}
-        bool isMoveTo() const { return type == ElementType::MoveToElement; }
-        bool isLineTo() const { return type == ElementType::LineToElement; }
-        bool isCurveTo() const { return type == ElementType::CurveToElement; }
-        operator PointF() const {
-            return PointF(x, y);
-        }
-        bool operator==(const Element& e) const
-        {
-            return RealIsEqual(x, e.x) && RealIsEqual(y, e.y) && type == e.type;
-        }
 
-        inline bool operator!=(const Element& e) const { return !operator==(e); }
+        Element(double x, double y, ElementType type) : x(x), y(y), type(type) {}
+
+        bool isMoveTo() const { return type == ElementType::MoveToElement; }
+
+        bool isLineTo() const { return type == ElementType::LineToElement; }
+
+        bool isCurveTo() const { return type == ElementType::CurveToElement; }
+
+        operator PointF() const { return PointF(x, y); }
+
+        bool operator==(const Element &e) const { return RealIsEqual(x, e.x) && RealIsEqual(y, e.y) && type == e.type; }
+
+        inline bool operator!=(const Element &e) const { return !operator==(e); }
     };
 
     PainterPath() = default;
 
-    bool operator ==(const PainterPath& other) const { return other.m_elements == m_elements; }
-    bool operator !=(const PainterPath& other) const { return !operator ==(other); }
+    bool operator==(const PainterPath &other) const { return other.m_elements == m_elements; }
 
-    void moveTo(const PointF& p);
+    bool operator!=(const PainterPath &other) const { return !operator==(other); }
+
+    void moveTo(const PointF &p);
+
     inline void moveTo(double x, double y) { moveTo(PointF(x, y)); }
-    void lineTo(const PointF& p);
+
+    void lineTo(const PointF &p);
+
     inline void lineTo(double x, double y) { lineTo(PointF(x, y)); }
 
-    void cubicTo(const PointF& ctrlPt1, const PointF& ctrlPt2, const PointF& endPt);
+    void cubicTo(const PointF &ctrlPt1, const PointF &ctrlPt2, const PointF &endPt);
 
-    inline void cubicTo(double ctrlPt1x, double ctrlPt1y, double ctrlPt2x, double ctrlPt2y, double endPtx, double endPty)
-    {
+    inline void cubicTo(double ctrlPt1x, double ctrlPt1y, double ctrlPt2x, double ctrlPt2y, double endPtx, double endPty) {
         cubicTo(PointF(ctrlPt1x, ctrlPt1y), PointF(ctrlPt2x, ctrlPt2y), PointF(endPtx, endPty));
     }
 
-    void translate(const PointF& offset);
+    void translate(const PointF &offset);
     void translate(double dx, double dy);
 
     RectF boundingRect() const;
@@ -96,27 +88,21 @@ public:
     bool isEmpty() const;
     size_t elementCount() const;
     PainterPath::Element elementAt(size_t i) const;
-    void addRect(const RectF& r);
-    inline void addRect(double x, double y, double w, double h)
-    {
-        addRect(RectF(x, y, w, h));
-    }
+    void addRect(const RectF &r);
 
-    void addEllipse(const RectF& boundingRect);
+    inline void addRect(double x, double y, double w, double h) { addRect(RectF(x, y, w, h)); }
 
-    void addRoundedRect(const RectF& rect, double xRadius, double yRadius);
+    void addEllipse(const RectF &boundingRect);
 
-    void arcMoveTo(const RectF& rect, double angle);
+    void addRoundedRect(const RectF &rect, double xRadius, double yRadius);
 
-    inline void arcMoveTo(double x, double y, double w, double h, double angle)
-    {
-        arcMoveTo(RectF(x, y, w, h), angle);
-    }
+    void arcMoveTo(const RectF &rect, double angle);
 
-    void arcTo(const RectF& rect, double startAngle, double sweepLength);
+    inline void arcMoveTo(double x, double y, double w, double h, double angle) { arcMoveTo(RectF(x, y, w, h), angle); }
 
-    inline void arcTo(double x, double y, double w, double h, double startAngle, double arcLength)
-    {
+    void arcTo(const RectF &rect, double startAngle, double sweepLength);
+
+    inline void arcTo(double x, double y, double w, double h, double startAngle, double arcLength) {
         arcTo(RectF(x, y, w, h), startAngle, arcLength);
     }
 
@@ -132,8 +118,7 @@ private:
 
     void computeBoundingRect() const;
 
-    inline void maybeMoveTo()
-    {
+    inline void maybeMoveTo() {
         if (m_requireMoveTo) {
             Element e = m_elements.back();
             e.type = ElementType::MoveToElement;
@@ -142,22 +127,18 @@ private:
         }
     }
 
-    inline bool isClosed() const
-    {
-        const PainterPath::Element& first = m_elements.at(m_cStart);
-        const PainterPath::Element& last = m_elements.back();
+    inline bool isClosed() const {
+        const PainterPath::Element &first = m_elements.at(m_cStart);
+        const PainterPath::Element &last = m_elements.back();
         return first.x == last.x && first.y == last.y;
     }
 
-    static inline bool isValidCoord(double c)
-    {
-        return std::isfinite(c) && std::fabs(c) < 1e128;
-    }
+    static inline bool isValidCoord(double c) { return std::isfinite(c) && std::fabs(c) < 1e128; }
 
-    static bool hasValidCoords(const PointF& p);
-    static bool hasValidCoords(const RectF& r);
+    static bool hasValidCoords(const PointF &p);
+    static bool hasValidCoords(const RectF &r);
 
-    static RectF painterpathBezierExtrema(const Bezier& b);
+    static RectF painterpathBezierExtrema(const Bezier &b);
 
     void setDirty();
 
@@ -173,8 +154,7 @@ private:
     friend class Transform;
 };
 
-inline void dump(const PainterPath& p, std::stringstream& ss)
-{
+inline void dump(const PainterPath &p, std::stringstream &ss) {
     ss << "bbox: " << muse::dump(p.boundingRect()) << "\n"
        << "fillRule: " << int(p.fillRule()) << "\n"
        << "elements: " << p.elementCount() << "\n";
@@ -184,12 +164,11 @@ inline void dump(const PainterPath& p, std::stringstream& ss)
     }
 }
 
-inline std::string dump(const PainterPath& p)
-{
+inline std::string dump(const PainterPath &p) {
     std::stringstream ss;
     muse::draw::dump(p, ss);
     return ss.str();
 }
-}
+} // namespace muse::draw
 
 #endif // MUSE_DRAW_PAINTERPATH_H

@@ -29,32 +29,29 @@
 
 #include "rgba.h"
 
-
 namespace muse {
-class Color
-{
+class Color {
 public:
     Color();
-    Color(const Color& other);
-    constexpr Color(int r, int g, int b, int a = DEFAULT_ALPHA)
-        :  m_rgba(rgba(r, g, b, a)), m_isValid(isRgbaValid(r, g, b, a)) {}
+    Color(const Color &other);
 
-    Color(const char* color);
+    constexpr Color(int r, int g, int b, int a = DEFAULT_ALPHA) : m_rgba(rgba(r, g, b, a)), m_isValid(isRgbaValid(r, g, b, a)) {}
 
+    Color(const char *color);
 
     ~Color() = default;
 
-    Color& operator=(const Color& other);
+    Color &operator=(const Color &other);
 
-    bool operator<(const Color& other) const;
+    bool operator<(const Color &other) const;
 
     std::string toString() const;
-    static Color fromString(const std::string& str);
-    static Color fromString(const char* str);
-    static Color fromString(const String& str);
+    static Color fromString(const std::string &str);
+    static Color fromString(const char *str);
+    static Color fromString(const String &str);
 
-    void setNamedColor(const std::string& color);
-    void setNamedColor(const char* color);
+    void setNamedColor(const std::string &color);
+    void setNamedColor(const char *color);
     void setRed(int value);
     void setGreen(int value);
     void setBlue(int value);
@@ -64,8 +61,8 @@ public:
 
     Color inverted() const;
 
-    bool operator==(const Color& other) const;
-    bool operator!=(const Color& other) const;
+    bool operator==(const Color &other) const;
+    bool operator!=(const Color &other) const;
 
     bool isValid() const;
 
@@ -73,7 +70,6 @@ public:
     int green() const;
     int blue() const;
     int alpha() const;
-
 
     static constexpr int DEFAULT_ALPHA = 255;
 
@@ -93,15 +89,14 @@ private:
     bool m_isValid = false;
 };
 
-inline const Color Color::transparent = { 255, 255, 255, 0 };
-inline const Color Color::BLACK = { 0, 0, 0, 255 };
-inline const Color Color::WHITE = { 255, 255, 255, 255 };
-inline const Color Color::RED = { 255, 0, 0, 255 };
-inline const Color Color::GREEN = { 0, 255, 0, 255 };
-inline const Color Color::BLUE { 0, 0, 255, 255 };
+inline const Color Color::transparent = {255, 255, 255, 0};
+inline const Color Color::BLACK = {0, 0, 0, 255};
+inline const Color Color::WHITE = {255, 255, 255, 255};
+inline const Color Color::RED = {255, 0, 0, 255};
+inline const Color Color::GREEN = {0, 255, 0, 255};
+inline const Color Color::BLUE{0, 0, 255, 255};
 
-inline Color blendColors(const Color& c1, const Color& c2)
-{
+inline Color blendColors(const Color &c1, const Color &c2) {
     float alpha1 = c1.alpha() / 255.f;
     float alpha2 = c2.alpha() / 255.f;
 
@@ -117,8 +112,7 @@ inline Color blendColors(const Color& c1, const Color& c2)
     return Color(r, g, b, alphaOut * 255);
 }
 
-inline Color blendColors(const Color& c1, const Color& c2, float alpha)
-{
+inline Color blendColors(const Color &c1, const Color &c2, float alpha) {
     float alpha1 = 1.0;
     float alpha2 = alpha;
 
@@ -129,4 +123,4 @@ inline Color blendColors(const Color& c1, const Color& c2, float alpha)
     return Color(r, g, b, 255);
 }
 
-}
+} // namespace muse

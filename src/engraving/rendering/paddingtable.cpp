@@ -27,19 +27,17 @@
 
 using namespace mu::engraving;
 
-void PaddingTable::init(double minPadUnit)
-{
-    PaddingTable& table = *this;
+void PaddingTable::init(double minPadUnit) {
+    PaddingTable &table = *this;
 
-    for (size_t i=0; i < TOT_ELEMENT_TYPES; ++i) {
-        for (size_t j=0; j < TOT_ELEMENT_TYPES; ++j) {
+    for (size_t i = 0; i < TOT_ELEMENT_TYPES; ++i) {
+        for (size_t j = 0; j < TOT_ELEMENT_TYPES; ++j) {
             table[i][j] = minPadUnit;
         }
     }
 }
 
-void PaddingTable::update(const MStyle& style)
-{
+void PaddingTable::update(const MStyle &style) {
     const double spatium = style.spatium();
     const double minPadUnit = 0.1 * spatium;
     init(minPadUnit);
@@ -47,15 +45,15 @@ void PaddingTable::update(const MStyle& style)
     const double ledgerPad = 0.25 * spatium;
     const double ledgerLength = style.styleAbsolute(Sid::ledgerLineLength);
 
-    PaddingTable& table = *this;
+    PaddingTable &table = *this;
 
     // NOTE: we don't set note-note padding to minNoteDistance
     // because there are cases when they should be allowed to get closer.
     // minNoteDistance is applied during the padding calculations.
     table[ElementType::NOTE][ElementType::NOTE] = minPadUnit;
     table[ElementType::NOTE][ElementType::LEDGER_LINE] = 0.35 * spatium;
-    table[ElementType::NOTE][ElementType::ACCIDENTAL]
-        = std::max(static_cast<double>(style.styleAbsolute(Sid::accidentalNoteDistance)), 0.35 * spatium);
+    table[ElementType::NOTE][ElementType::ACCIDENTAL] =
+        std::max(static_cast<double>(style.styleAbsolute(Sid::accidentalNoteDistance)), 0.35 * spatium);
     table[ElementType::NOTE][ElementType::REST] = 0.5 * spatium;
     table[ElementType::NOTE][ElementType::CLEF] = 0.8 * spatium;
     table[ElementType::NOTE][ElementType::ARPEGGIO] = 0.6 * spatium;
@@ -65,24 +63,22 @@ void PaddingTable::update(const MStyle& style)
 
     table[ElementType::LEDGER_LINE][ElementType::NOTE] = table[ElementType::NOTE][ElementType::LEDGER_LINE];
     table[ElementType::LEDGER_LINE][ElementType::LEDGER_LINE] = ledgerPad;
-    table[ElementType::LEDGER_LINE][ElementType::ACCIDENTAL]
-        = std::max(static_cast<double>(style.styleAbsolute(
-                                           Sid::accidentalNoteDistance)),
-                   table[ElementType::NOTE][ElementType::ACCIDENTAL] - ledgerLength / 2);
+    table[ElementType::LEDGER_LINE][ElementType::ACCIDENTAL] =
+        std::max(static_cast<double>(style.styleAbsolute(Sid::accidentalNoteDistance)),
+                 table[ElementType::NOTE][ElementType::ACCIDENTAL] - ledgerLength / 2);
     table[ElementType::LEDGER_LINE][ElementType::REST] = table[ElementType::LEDGER_LINE][ElementType::NOTE];
-    table[ElementType::LEDGER_LINE][ElementType::CLEF]
-        = std::max(table[ElementType::NOTE][ElementType::CLEF] - ledgerLength / 2, ledgerPad);
+    table[ElementType::LEDGER_LINE][ElementType::CLEF] =
+        std::max(table[ElementType::NOTE][ElementType::CLEF] - ledgerLength / 2, ledgerPad);
     table[ElementType::LEDGER_LINE][ElementType::ARPEGGIO] = 0.5 * spatium;
-    table[ElementType::LEDGER_LINE][ElementType::BAR_LINE]
-        = std::max(table[ElementType::NOTE][ElementType::BAR_LINE] - ledgerLength, ledgerPad);
-    table[ElementType::LEDGER_LINE][ElementType::KEYSIG]
-        = std::max(table[ElementType::NOTE][ElementType::KEYSIG] - ledgerLength / 2, ledgerPad);
-    table[ElementType::LEDGER_LINE][ElementType::TIMESIG]
-        = std::max(table[ElementType::NOTE][ElementType::TIMESIG] - ledgerLength / 2, ledgerPad);
+    table[ElementType::LEDGER_LINE][ElementType::BAR_LINE] =
+        std::max(table[ElementType::NOTE][ElementType::BAR_LINE] - ledgerLength, ledgerPad);
+    table[ElementType::LEDGER_LINE][ElementType::KEYSIG] =
+        std::max(table[ElementType::NOTE][ElementType::KEYSIG] - ledgerLength / 2, ledgerPad);
+    table[ElementType::LEDGER_LINE][ElementType::TIMESIG] =
+        std::max(table[ElementType::NOTE][ElementType::TIMESIG] - ledgerLength / 2, ledgerPad);
 
     table[ElementType::HOOK][ElementType::NOTE] = 0.35 * spatium;
-    table[ElementType::HOOK][ElementType::LEDGER_LINE]
-        = std::max(table[ElementType::HOOK][ElementType::NOTE] - ledgerLength, ledgerPad);
+    table[ElementType::HOOK][ElementType::LEDGER_LINE] = std::max(table[ElementType::HOOK][ElementType::NOTE] - ledgerLength, ledgerPad);
     table[ElementType::HOOK][ElementType::ACCIDENTAL] = 0.35 * spatium;
     table[ElementType::HOOK][ElementType::REST] = table[ElementType::HOOK][ElementType::NOTE];
     table[ElementType::HOOK][ElementType::CLEF] = 0.5 * spatium;
@@ -91,10 +87,10 @@ void PaddingTable::update(const MStyle& style)
     table[ElementType::HOOK][ElementType::KEYSIG] = 1.15 * spatium;
     table[ElementType::HOOK][ElementType::TIMESIG] = 1.15 * spatium;
 
-    table[ElementType::NOTEDOT][ElementType::NOTE] = std::max(style.styleAbsolute(Sid::dotNoteDistance), style.styleAbsolute(
-                                                                  Sid::dotDotDistance));
-    table[ElementType::NOTEDOT][ElementType::LEDGER_LINE]
-        = std::max(table[ElementType::NOTEDOT][ElementType::NOTE] - ledgerLength, ledgerPad);
+    table[ElementType::NOTEDOT][ElementType::NOTE] =
+        std::max(style.styleAbsolute(Sid::dotNoteDistance), style.styleAbsolute(Sid::dotDotDistance));
+    table[ElementType::NOTEDOT][ElementType::LEDGER_LINE] =
+        std::max(table[ElementType::NOTEDOT][ElementType::NOTE] - ledgerLength, ledgerPad);
     table[ElementType::NOTEDOT][ElementType::ACCIDENTAL] = 0.35 * spatium;
     table[ElementType::NOTEDOT][ElementType::REST] = table[ElementType::NOTEDOT][ElementType::NOTE];
     table[ElementType::NOTEDOT][ElementType::CLEF] = 1.0 * spatium;
@@ -104,8 +100,8 @@ void PaddingTable::update(const MStyle& style)
     table[ElementType::NOTEDOT][ElementType::TIMESIG] = 1.35 * spatium;
 
     table[ElementType::REST][ElementType::NOTE] = table[ElementType::NOTE][ElementType::REST];
-    table[ElementType::REST][ElementType::LEDGER_LINE]
-        = std::max(table[ElementType::REST][ElementType::NOTE] - ledgerLength / 2, ledgerPad);
+    table[ElementType::REST][ElementType::LEDGER_LINE] =
+        std::max(table[ElementType::REST][ElementType::NOTE] - ledgerLength / 2, ledgerPad);
     table[ElementType::REST][ElementType::ACCIDENTAL] = 0.45 * spatium;
     table[ElementType::REST][ElementType::REST] = table[ElementType::REST][ElementType::NOTE];
     table[ElementType::REST][ElementType::CLEF] = table[ElementType::NOTE][ElementType::CLEF];
@@ -114,8 +110,8 @@ void PaddingTable::update(const MStyle& style)
     table[ElementType::REST][ElementType::TIMESIG] = 1.5 * spatium;
 
     table[ElementType::CLEF][ElementType::NOTE] = style.styleAbsolute(Sid::clefKeyRightMargin);
-    table[ElementType::CLEF][ElementType::LEDGER_LINE]
-        = std::max(table[ElementType::CLEF][ElementType::NOTE] - ledgerLength / 2, ledgerPad);
+    table[ElementType::CLEF][ElementType::LEDGER_LINE] =
+        std::max(table[ElementType::CLEF][ElementType::NOTE] - ledgerLength / 2, ledgerPad);
     table[ElementType::CLEF][ElementType::ACCIDENTAL] = 0.6 * spatium;
     table[ElementType::CLEF][ElementType::REST] = table[ElementType::CLEF][ElementType::NOTE];
     table[ElementType::CLEF][ElementType::CLEF] = 0.75 * spatium;
@@ -125,8 +121,8 @@ void PaddingTable::update(const MStyle& style)
     table[ElementType::CLEF][ElementType::TIMESIG] = style.styleAbsolute(Sid::clefTimesigDistance);
 
     table[ElementType::BAR_LINE][ElementType::NOTE] = style.styleAbsolute(Sid::barNoteDistance);
-    table[ElementType::BAR_LINE][ElementType::LEDGER_LINE]
-        = std::max(table[ElementType::BAR_LINE][ElementType::NOTE] - ledgerLength, ledgerPad);
+    table[ElementType::BAR_LINE][ElementType::LEDGER_LINE] =
+        std::max(table[ElementType::BAR_LINE][ElementType::NOTE] - ledgerLength, ledgerPad);
     table[ElementType::BAR_LINE][ElementType::ACCIDENTAL] = style.styleAbsolute(Sid::barAccidentalDistance);
     table[ElementType::BAR_LINE][ElementType::REST] = style.styleAbsolute(Sid::barNoteDistance);
     table[ElementType::BAR_LINE][ElementType::CLEF] = style.styleAbsolute(Sid::clefLeftMargin);
@@ -136,8 +132,8 @@ void PaddingTable::update(const MStyle& style)
     table[ElementType::BAR_LINE][ElementType::TIMESIG] = style.styleAbsolute(Sid::timesigLeftMargin);
 
     table[ElementType::KEYSIG][ElementType::NOTE] = 1.75 * spatium;
-    table[ElementType::KEYSIG][ElementType::LEDGER_LINE]
-        = std::max(table[ElementType::KEYSIG][ElementType::NOTE] - ledgerLength, ledgerPad);
+    table[ElementType::KEYSIG][ElementType::LEDGER_LINE] =
+        std::max(table[ElementType::KEYSIG][ElementType::NOTE] - ledgerLength, ledgerPad);
     table[ElementType::KEYSIG][ElementType::ACCIDENTAL] = 1.6 * spatium;
     table[ElementType::KEYSIG][ElementType::REST] = table[ElementType::KEYSIG][ElementType::NOTE];
     table[ElementType::KEYSIG][ElementType::CLEF] = 1.0 * spatium;
@@ -147,8 +143,8 @@ void PaddingTable::update(const MStyle& style)
     table[ElementType::KEYSIG][ElementType::TIMESIG] = style.styleAbsolute(Sid::keyTimesigDistance);
 
     table[ElementType::TIMESIG][ElementType::NOTE] = 1.35 * spatium;
-    table[ElementType::TIMESIG][ElementType::LEDGER_LINE]
-        = std::max(table[ElementType::TIMESIG][ElementType::NOTE] - ledgerLength, ledgerPad);
+    table[ElementType::TIMESIG][ElementType::LEDGER_LINE] =
+        std::max(table[ElementType::TIMESIG][ElementType::NOTE] - ledgerLength, ledgerPad);
     table[ElementType::TIMESIG][ElementType::ACCIDENTAL] = 0.8 * spatium;
     table[ElementType::TIMESIG][ElementType::REST] = table[ElementType::TIMESIG][ElementType::NOTE];
     table[ElementType::TIMESIG][ElementType::CLEF] = 1.0 * spatium;
@@ -159,7 +155,7 @@ void PaddingTable::update(const MStyle& style)
 
     // Ambitus
     table[ElementType::AMBITUS].fill(style.styleAbsolute(Sid::ambitusMargin));
-    for (auto& elem: table) {
+    for (auto &elem : table) {
         elem[ElementType::AMBITUS] = style.styleAbsolute(Sid::ambitusMargin);
     }
 
@@ -169,13 +165,13 @@ void PaddingTable::update(const MStyle& style)
 
     double chordBracketDist = style.styleAbsolute(Sid::chordBracketNoteDistance);
     table[ElementType::CHORD_BRACKET].fill(chordBracketDist);
-    for (auto& elem: table) {
+    for (auto &elem : table) {
         elem[ElementType::CHORD_BRACKET] = elem[ElementType::ARPEGGIO];
     }
 
     // Breath
     table[ElementType::BREATH].fill(1.0 * spatium);
-    for (auto& elem: table) {
+    for (auto &elem : table) {
         elem[ElementType::BREATH] = 1.0 * spatium;
     }
 
@@ -188,14 +184,14 @@ void PaddingTable::update(const MStyle& style)
 
     // Chordlines
     table[ElementType::CHORDLINE].fill(0.35 * spatium);
-    for (auto& elem: table) {
+    for (auto &elem : table) {
         elem[ElementType::CHORDLINE] = 0.35 * spatium;
     }
     table[ElementType::BAR_LINE][ElementType::CHORDLINE] = 0.65 * spatium;
     table[ElementType::CHORDLINE][ElementType::BAR_LINE] = 0.65 * spatium;
 
     // For the x -> fingering padding use the same values as x -> accidental
-    for (auto& elem : table) {
+    for (auto &elem : table) {
         elem[ElementType::FINGERING] = elem[ElementType::ACCIDENTAL];
     }
 
@@ -206,7 +202,7 @@ void PaddingTable::update(const MStyle& style)
 
     double lyricsSpacing = style.styleAbsolute(Sid::lyricsMinDistance);
     table[ElementType::LYRICS].fill(lyricsSpacing);
-    for (auto& elem : table) {
+    for (auto &elem : table) {
         elem[ElementType::LYRICS] = lyricsSpacing;
     }
     table[ElementType::NOTE][ElementType::LYRICS] = style.styleAbsolute(Sid::lyricsMelismaPad);
@@ -226,13 +222,13 @@ void PaddingTable::update(const MStyle& style)
 
     // Measure repeat set same values as note
     table[ElementType::MEASURE_REPEAT] = table[ElementType::NOTE];
-    for (auto& elem : table) {
+    for (auto &elem : table) {
         elem[ElementType::MEASURE_REPEAT] = elem[ElementType::NOTE];
     }
 
     // Obtain the Stem -> * and * -> Stem values from the note equivalents
     table[ElementType::STEM] = table[ElementType::NOTE];
-    for (auto& elem: table) {
+    for (auto &elem : table) {
         elem[ElementType::STEM] = elem[ElementType::NOTE];
     }
 
@@ -249,61 +245,51 @@ void PaddingTable::update(const MStyle& style)
 
     const double articulationAndFermataPadding = 0.35 * spatium;
     table[ElementType::ARTICULATION].fill(articulationAndFermataPadding);
-    for (auto& elem : table) {
+    for (auto &elem : table) {
         elem[ElementType::ARTICULATION] = articulationAndFermataPadding;
     }
     table[ElementType::FERMATA].fill(articulationAndFermataPadding);
-    for (auto& elem : table) {
+    for (auto &elem : table) {
         elem[ElementType::FERMATA] = articulationAndFermataPadding;
     }
 
     table[ElementType::TAPPING] = table[ElementType::ARTICULATION];
-    for (auto& elem : table) {
+    for (auto &elem : table) {
         elem[ElementType::TAPPING] = elem[ElementType::ARTICULATION];
     }
     table[ElementType::TAPPING_HALF_SLUR_SEGMENT] = table[ElementType::ARTICULATION];
-    for (auto& elem : table) {
+    for (auto &elem : table) {
         elem[ElementType::TAPPING_HALF_SLUR_SEGMENT] = elem[ElementType::ARTICULATION];
     }
 }
 
-double ParenPaddingTable::padding(ElementType type1, ElementType type2) const
-{
+double ParenPaddingTable::padding(ElementType type1, ElementType type2) const {
     assert(type1 == ElementType::PARENTHESIS || type2 == ElementType::PARENTHESIS);
-    const PaddingVector<double>& row = type1 == ElementType::PARENTHESIS ? m_parenAfter : m_parenBefore;
-    const ElementType& otherType = type1 == ElementType::PARENTHESIS ? type2 : type1;
+    const PaddingVector<double> &row = type1 == ElementType::PARENTHESIS ? m_parenAfter : m_parenBefore;
+    const ElementType &otherType = type1 == ElementType::PARENTHESIS ? type2 : type1;
 
     return row.at(otherType);
 }
 
-const ParenPaddingTable& ParenPaddingTables::getTableFor(const EngravingItem* parent) const
-{
+const ParenPaddingTable &ParenPaddingTables::getTableFor(const EngravingItem *parent) const {
     switch (parent->type()) {
-    case ElementType::NOTE:
-    case ElementType::CHORD:
-        return noteParenPaddingTable;
-    case ElementType::KEYSIG:
-        return keySigParenPaddingTable;
-    case ElementType::TIMESIG:
-        return timeSigParenPaddingTable;
-    case ElementType::CLEF:
-        return clefParenPaddingTable;
-    default:
-        ASSERT_X("Not a valid parenthesised type")
-        return noteParenPaddingTable; // Just to return something
+        case ElementType::NOTE:
+        case ElementType::CHORD: return noteParenPaddingTable;
+        case ElementType::KEYSIG: return keySigParenPaddingTable;
+        case ElementType::TIMESIG: return timeSigParenPaddingTable;
+        case ElementType::CLEF: return clefParenPaddingTable;
+        default: ASSERT_X("Not a valid parenthesised type") return noteParenPaddingTable; // Just to return something
     }
 }
 
-void ParenPaddingTable::init(double minPadUnit)
-{
+void ParenPaddingTable::init(double minPadUnit) {
     for (size_t i = 0; i < TOT_ELEMENT_TYPES; ++i) {
         m_parenBefore[i] = minPadUnit;
-        m_parenAfter[i]  = minPadUnit;
+        m_parenAfter[i] = minPadUnit;
     }
 }
 
-void NoteParenPaddingTable::update(const MStyle& style)
-{
+void NoteParenPaddingTable::update(const MStyle &style) {
     const double spatium = style.spatium();
     const double minPadUnit = 0.1 * spatium;
     init(minPadUnit);
@@ -334,8 +320,7 @@ void NoteParenPaddingTable::update(const MStyle& style)
     m_parenAfter[ElementType::PARENTHESIS] = style.styleAbsolute(Sid::minNoteDistance) * 0.5;
 }
 
-void KeySigParenPaddingTable::update(const MStyle& style)
-{
+void KeySigParenPaddingTable::update(const MStyle &style) {
     const double spatium = style.spatium();
     const double minPadUnit = 0.1 * spatium;
     init(minPadUnit);
@@ -363,8 +348,7 @@ void KeySigParenPaddingTable::update(const MStyle& style)
     m_parenAfter[ElementType::PARENTHESIS] = 1.0 * spatium;
 }
 
-void TimeSigParenPaddingTable::update(const MStyle& style)
-{
+void TimeSigParenPaddingTable::update(const MStyle &style) {
     const double spatium = style.spatium();
     const double minPadUnit = 0.1 * spatium;
     init(minPadUnit);
@@ -392,8 +376,7 @@ void TimeSigParenPaddingTable::update(const MStyle& style)
     m_parenAfter[ElementType::PARENTHESIS] = 1.0 * spatium;
 }
 
-void ClefParenPaddingTable::update(const MStyle& style)
-{
+void ClefParenPaddingTable::update(const MStyle &style) {
     const double spatium = style.spatium();
     const double minPadUnit = 0.1 * spatium;
     init(minPadUnit);

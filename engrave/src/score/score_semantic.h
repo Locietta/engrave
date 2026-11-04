@@ -6,7 +6,7 @@
 
 namespace mu::engraving {
 class MasterScore;
-}
+} // namespace mu::engraving
 
 namespace music {
 
@@ -17,6 +17,6 @@ namespace music {
 // generated (layout-created header clefs, courtesy signatures) are skipped.
 // Requires the owner thread; the score is not modified, except that
 // repeatList() is rebuilt with repeats expanded.
-nlohmann::ordered_json semantic_dump(mu::engraving::MasterScore* score);
+nlohmann::ordered_json semantic_dump(mu::engraving::MasterScore *score);
 
 } // namespace music

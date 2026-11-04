@@ -32,8 +32,7 @@
 
 using namespace mu::engraving;
 
-bool Swing::ChordDurationAdjustment::isNull() const
-{
+bool Swing::ChordDurationAdjustment::isNull() const {
     return muse::RealIsNull(remainingDurationMultiplier) && muse::RealIsNull(durationMultiplier);
 }
 
@@ -42,13 +41,12 @@ bool Swing::ChordDurationAdjustment::isNull() const
 //   Check for subdivided beat
 //---------------------------------------------------------
 
-static bool isSubdivided(const ChordRest* chord, int swingUnit)
-{
+static bool isSubdivided(const ChordRest *chord, int swingUnit) {
     if (!chord) {
         return false;
     }
 
-    const ChordRest* prev = Navigation::prevChordRest(chord);
+    const ChordRest *prev = Navigation::prevChordRest(chord);
     if (chord->actualTicks().ticks() < swingUnit || (prev && prev->actualTicks().ticks() < swingUnit)) {
         return true;
     }
@@ -56,15 +54,14 @@ static bool isSubdivided(const ChordRest* chord, int swingUnit)
     return false;
 }
 
-void Swing::swingAdjustParams(const Chord* chord, const SwingParameters& params, int& onTime, int& gateTime)
-{
+void Swing::swingAdjustParams(const Chord *chord, const SwingParameters &params, int &onTime, int &gateTime) {
     Fraction tick = chord->rtick() + chord->measure()->anacrusisOffset();
 
-    int swingBeat            = params.swingUnit * 2;
-    double ticksDuration     = (double)chord->actualTicks().ticks();
-    double swingTickAdjust   = ((double)swingBeat) * (((double)(params.swingRatio - 50)) / 100.0);
+    int swingBeat = params.swingUnit * 2;
+    double ticksDuration = (double) chord->actualTicks().ticks();
+    double swingTickAdjust = ((double) swingBeat) * (((double) (params.swingRatio - 50)) / 100.0);
     double swingActualAdjust = (swingTickAdjust / ticksDuration) * 1000.0;
-    int startTick            = tick.ticks();
+    int startTick = tick.ticks();
 
     //Check the position of the chord to apply changes accordingly
     if (startTick % swingBeat == params.swingUnit) {
@@ -76,7 +73,7 @@ void Swing::swingAdjustParams(const Chord* chord, const SwingParameters& params,
 
     int endTick = startTick + ticksDuration;
     if (endTick % swingBeat == params.swingUnit) {
-        const ChordRest* ncr = Navigation::nextChordRest(chord);
+        const ChordRest *ncr = Navigation::nextChordRest(chord);
 
         if (!isSubdivided(ncr, params.swingUnit)) {
             gateTime = gateTime + (swingActualAdjust / 10);
@@ -84,8 +81,7 @@ void Swing::swingAdjustParams(const Chord* chord, const SwingParameters& params,
     }
 }
 
-Swing::ChordDurationAdjustment Swing::applySwing(const Chord* chord, const SwingParameters& params)
-{
+Swing::ChordDurationAdjustment Swing::applySwing(const Chord *chord, const SwingParameters &params) {
     int onTime = 0;
     int gateTime = 100;
 

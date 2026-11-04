@@ -28,21 +28,19 @@
 
 namespace mu::engraving {
 /// change instrument in an InstrumentChange element
-class ChangeInstrument : public UndoableCommand
-{
+class ChangeInstrument : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeInstrument)
 
-    InstrumentChange* is = nullptr;
-    Instrument* instrument = nullptr;
+    InstrumentChange *is = nullptr;
+    Instrument *instrument = nullptr;
 
     void flip() override;
 
 public:
-    ChangeInstrument(InstrumentChange* _is, Instrument* i)
-        : is(_is), instrument(i) {}
+    ChangeInstrument(InstrumentChange *_is, Instrument *i) : is(_is), instrument(i) {}
 
     UNDO_TYPE(CommandType::ChangeInstrument)
     UNDO_NAME("ChangeInstrument")
-    UNDO_CHANGED_OBJECTS({ is })
+    UNDO_CHANGED_OBJECTS({is})
 };
-}
+} // namespace mu::engraving

@@ -63,19 +63,18 @@ using namespace mu::engraving;
 //    timesig change.
 //---------------------------------------------------------
 
-bool EditTimeSig::rewriteMeasures(Transaction& tx, Score* score, Measure* startMeasure, Measure* endMeasure, const Fraction& newTimeSig,
-                                  staff_idx_t staffIdx)
-{
+bool EditTimeSig::rewriteMeasures(Transaction &tx, Score *score, Measure *startMeasure, Measure *endMeasure, const Fraction &newTimeSig,
+                                  staff_idx_t staffIdx) {
     if (staffIdx != muse::nidx) {
         // local timesig
         // don't actually rewrite, just update measure rest durations
         // abort if there is anything other than measure rests in range
         track_idx_t strack = staffIdx * VOICES;
         track_idx_t etrack = strack + VOICES;
-        for (Measure* m = startMeasure;; m = m->nextMeasure()) {
-            for (Segment* s = m->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
+        for (Measure *m = startMeasure;; m = m->nextMeasure()) {
+            for (Segment *s = m->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
                 for (track_idx_t track = strack; track < etrack; ++track) {
-                    ChordRest* cr = toChordRest(s->element(track));
+                    ChordRest *cr = toChordRest(s->element(track));
                     if (!cr) {
                         continue;
                     }
@@ -96,7 +95,7 @@ bool EditTimeSig::rewriteMeasures(Transaction& tx, Score* score, Measure* startM
     bool fmr = true;
 
     // Format: chord 1 tick, chord 2 tick, tremolo, track
-    std::vector<std::tuple<Fraction, Fraction, TremoloTwoChord*, track_idx_t> > tremoloChordTicks;
+    std::vector<std::tuple<Fraction, Fraction, TremoloTwoChord *, track_idx_t>> tremoloChordTicks;
 
     track_idx_t strack, etrack;
     if (staffIdx == muse::nidx) {
@@ -107,14 +106,14 @@ bool EditTimeSig::rewriteMeasures(Transaction& tx, Score* score, Measure* startM
         etrack = strack + VOICES;
     }
 
-    std::vector<Segment*> endOfMeasureTimeSigsToRemove;
+    std::vector<Segment *> endOfMeasureTimeSigsToRemove;
 
-    for (Measure* m = startMeasure; m; m = m->nextMeasure()) {
+    for (Measure *m = startMeasure; m; m = m->nextMeasure()) {
         if (!m->isFullMeasureRest()) {
             fmr = false;
         }
 
-        for (Segment* s = m->first(); s; s = s->next()) {
+        for (Segment *s = m->first(); s; s = s->next()) {
             if (!s->isChordRestType() && !(s->isTimeSigType() && s->endOfMeasureChange())) {
                 continue;
             }
@@ -125,19 +124,19 @@ bool EditTimeSig::rewriteMeasures(Transaction& tx, Score* score, Measure* startM
             }
 
             for (track_idx_t track = strack; track < etrack; ++track) {
-                ChordRest* cr = toChordRest(s->element(track));
+                ChordRest *cr = toChordRest(s->element(track));
                 if (cr && cr->isChord()) {
-                    Chord* chord = toChord(cr);
+                    Chord *chord = toChord(cr);
                     if (chord->tremoloTwoChord()) {
-                        TremoloTwoChord* trem = chord->tremoloTwoChord();
+                        TremoloTwoChord *trem = chord->tremoloTwoChord();
 
                         // Don't add same chord twice
                         if (trem->chord2() == chord) {
                             continue;
                         }
 
-                        std::tuple<Fraction, Fraction, TremoloTwoChord*, track_idx_t> newP
-                            = { cr->tick(), trem->chord2()->segment()->tick(), trem, track };
+                        std::tuple<Fraction, Fraction, TremoloTwoChord *, track_idx_t> newP = {
+                            cr->tick(), trem->chord2()->segment()->tick(), trem, track};
                         tremoloChordTicks.push_back(newP);
                     }
                 }
@@ -151,7 +150,7 @@ bool EditTimeSig::rewriteMeasures(Transaction& tx, Score* score, Measure* startM
 
     if (!fmr) {
         // check for local time signatures
-        for (Measure* m = startMeasure; m; m = m->nextMeasure()) {
+        for (Measure *m = startMeasure; m; m = m->nextMeasure()) {
             for (size_t si = 0; si < score->nstaves(); ++si) {
                 if (score->staff(si)->timeStretch(m->tick()) != Fraction(1, 1)) {
                     // we cannot change a staff with a local time signature
@@ -164,13 +163,13 @@ bool EditTimeSig::rewriteMeasures(Transaction& tx, Score* score, Measure* startM
         }
     }
 
-    for (Segment* seg : endOfMeasureTimeSigsToRemove) {
+    for (Segment *seg : endOfMeasureTimeSigsToRemove) {
         score->doUndoRemoveElement(seg);
     }
 
     ScoreRange range;
-    Measure* nextMeasure = endMeasure->nextMeasure();
-    Segment* finalSeg = endMeasure->last();
+    Measure *nextMeasure = endMeasure->nextMeasure();
+    Segment *finalSeg = endMeasure->last();
     if (nextMeasure) {
         finalSeg = nextMeasure->first();
     }
@@ -181,7 +180,7 @@ bool EditTimeSig::rewriteMeasures(Transaction& tx, Score* score, Measure* startM
     //
     Fraction ticks = range.ticks().isNotZero() ? range.ticks() : score->endTick() - startMeasure->first()->tick();
     Fraction k = ticks / newTimeSig;
-    int newMeasures     = (k.numerator() + k.denominator() - 1) / k.denominator();
+    int newMeasures = (k.numerator() + k.denominator() - 1) / k.denominator();
 
     Fraction newDuration = newTimeSig * Fraction(newMeasures, 1);
 
@@ -189,9 +188,9 @@ bool EditTimeSig::rewriteMeasures(Transaction& tx, Score* score, Measure* startM
     Fraction fill = newDuration - ticks;
     range.fill(fill);
 
-    for (Score* s : score->scoreList()) {
-        Measure* m1 = s->tick2measure(startMeasure->tick());
-        Measure* m2 = s->tick2measure(endMeasure->tick());
+    for (Score *s : score->scoreList()) {
+        Measure *m1 = s->tick2measure(startMeasure->tick());
+        Measure *m2 = s->tick2measure(endMeasure->tick());
 
         Fraction tick1 = m1->tick();
         Fraction tick2 = m2->endTick();
@@ -203,11 +202,11 @@ bool EditTimeSig::rewriteMeasures(Transaction& tx, Score* score, Measure* startM
         }
         s->undoRemoveMeasures(m1, m2, true);
 
-        Measure* newFirstMeasure = nullptr;
-        Measure* newLastMeasure = nullptr;
-        Fraction tick     = startMeasure->tick();
+        Measure *newFirstMeasure = nullptr;
+        Measure *newLastMeasure = nullptr;
+        Fraction tick = startMeasure->tick();
         for (int i = 0; i < newMeasures; ++i) {
-            Measure* m = Factory::createMeasure(s);
+            Measure *m = Factory::createMeasure(s);
             m->setPrev(newLastMeasure);
             if (newLastMeasure) {
                 newLastMeasure->setNext(m);
@@ -236,16 +235,16 @@ bool EditTimeSig::rewriteMeasures(Transaction& tx, Score* score, Measure* startM
         return false;
     }
 
-    for (Score* s : score->scoreList()) {
+    for (Score *s : score->scoreList()) {
         s->connectTies(true);
     }
 
     // reset start and end elements for slurs that overlap the rewritten measures
     for (auto spanner : score->spannerMap().findOverlapping(startMeasure->tick().ticks(), endMeasure->tick().ticks())) {
-        Slur* slur = (spanner.value->isSlur() ? toSlur(spanner.value) : nullptr);
+        Slur *slur = (spanner.value->isSlur() ? toSlur(spanner.value) : nullptr);
         if (slur) {
-            EngravingItem* startEl = slur->startElement();
-            EngravingItem* endEl = slur->endElement();
+            EngravingItem *startEl = slur->startElement();
+            EngravingItem *endEl = slur->endElement();
             if (!startEl || !endEl) {
                 continue;
             }
@@ -256,7 +255,7 @@ bool EditTimeSig::rewriteMeasures(Transaction& tx, Score* score, Measure* startM
     for (auto tremPair : tremoloChordTicks) {
         Fraction chord1Tick = std::get<0>(tremPair);
         Fraction chord2Tick = std::get<1>(tremPair);
-        TremoloTwoChord* trem = std::get<2>(tremPair);
+        TremoloTwoChord *trem = std::get<2>(tremPair);
         track_idx_t track = std::get<3>(tremPair);
 
         tx.push(new MoveTremolo(trem->score(), chord1Tick, chord2Tick, trem, track));
@@ -265,12 +264,12 @@ bool EditTimeSig::rewriteMeasures(Transaction& tx, Score* score, Measure* startM
     if (score->noteEntryMode()) {
         // set input cursor to possibly re-written segment
         Fraction icTick = score->inputState().tick();
-        Segment* icSegment = score->tick2segment(icTick, false, SegmentType::ChordRest);
+        Segment *icSegment = score->tick2segment(icTick, false, SegmentType::ChordRest);
         if (!icSegment) {
             // this can happen if cursor was on a rest
             // and in the rewriting it got subsumed into a full measure rest
-            Measure* icMeasure = score->tick2measure(icTick);
-            if (!icMeasure) {                         // shouldn't happen, but just in case
+            Measure *icMeasure = score->tick2measure(icTick);
+            if (!icMeasure) { // shouldn't happen, but just in case
                 icMeasure = score->firstMeasure();
             }
             icSegment = icMeasure->first(SegmentType::ChordRest);
@@ -286,25 +285,24 @@ bool EditTimeSig::rewriteMeasures(Transaction& tx, Score* score, Measure* startM
 //    rewrite all measures up to the next time signature or section break
 //---------------------------------------------------------
 
-bool EditTimeSig::rewriteMeasures(Transaction& tx, Score* score, Measure* fm, const Fraction& ns, staff_idx_t staffIdx)
-{
-    Measure* lm  = fm;
-    Measure* fm1 = fm;
-    Measure* nm  = nullptr;
-    LayoutBreak* sectionBreak = nullptr;
-    Segment* endOfMeasureTimeSigSeg = nullptr;
+bool EditTimeSig::rewriteMeasures(Transaction &tx, Score *score, Measure *fm, const Fraction &ns, staff_idx_t staffIdx) {
+    Measure *lm = fm;
+    Measure *fm1 = fm;
+    Measure *nm = nullptr;
+    LayoutBreak *sectionBreak = nullptr;
+    Segment *endOfMeasureTimeSigSeg = nullptr;
 
     //
     // split into Measure segments fm-lm
     //
-    auto foundLM = [fm, staffIdx, &endOfMeasureTimeSigSeg](MeasureBase* curMeas, Measure* curLM) {
+    auto foundLM = [fm, staffIdx, &endOfMeasureTimeSigSeg](MeasureBase *curMeas, Measure *curLM) {
         if (!curMeas || !curMeas->isMeasure() || curLM->sectionBreak()) {
             return true;
         }
-        Segment* timeSigSeg = toMeasure(curMeas)->findSegmentR(SegmentType::TimeSig, Fraction(0, 1));
+        Segment *timeSigSeg = toMeasure(curMeas)->findSegmentR(SegmentType::TimeSig, Fraction(0, 1));
         if (!timeSigSeg && curMeas->prevMeasure()) {
             // find time sig at end of previous measure
-            Measure* prevMeasure = curMeas->prevMeasure();
+            Measure *prevMeasure = curMeas->prevMeasure();
             timeSigSeg = prevMeasure->findSegmentR(SegmentType::TimeSig, prevMeasure->ticks());
             if (timeSigSeg) {
                 endOfMeasureTimeSigSeg = timeSigSeg;
@@ -315,10 +313,10 @@ bool EditTimeSig::rewriteMeasures(Transaction& tx, Score* score, Measure* fm, co
         }
         return false;
     };
-    for (MeasureBase* measure = fm;; measure = measure->next()) {
+    for (MeasureBase *measure = fm;; measure = measure->next()) {
         if (foundLM(measure, lm)) {
             // save section break to reinstate after rewrite
-            LayoutBreak* layoutBreak = lm->sectionBreakElement();
+            LayoutBreak *layoutBreak = lm->sectionBreakElement();
 
             if (lm && layoutBreak) {
                 sectionBreak = Factory::copyLayoutBreak(*layoutBreak);
@@ -329,8 +327,8 @@ bool EditTimeSig::rewriteMeasures(Transaction& tx, Score* score, Measure* fm, co
                     MScore::setError(MsError::CANNOT_CHANGE_LOCAL_TIMESIG_MEASURE_NOT_EMPTY);
                     // restore measure rests that were prematurely modified
                     Fraction fr(score->staff(staffIdx)->timeSig(fm->tick())->sig());
-                    for (Measure* m = fm1; m; m = m->nextMeasure()) {
-                        ChordRest* cr = m->findChordRest(m->tick(), staffIdx * VOICES);
+                    for (Measure *m = fm1; m; m = m->nextMeasure()) {
+                        ChordRest *cr = m->findChordRest(m->tick(), staffIdx * VOICES);
                         if (cr && cr->isRest() && cr->durationType() == DurationType::V_MEASURE) {
                             cr->undoChangeProperty(Pid::DURATION, fr);
                         } else {
@@ -338,7 +336,7 @@ bool EditTimeSig::rewriteMeasures(Transaction& tx, Score* score, Measure* fm, co
                         }
                     }
                 }
-                for (Measure* m = fm1; m; m = m->nextMeasure()) {
+                for (Measure *m = fm1; m; m = m->nextMeasure()) {
                     if (m->first(SegmentType::TimeSig)) {
                         break;
                     }
@@ -383,7 +381,7 @@ bool EditTimeSig::rewriteMeasures(Transaction& tx, Score* score, Measure* fm, co
 
             // skip frames
             while (!measure->isMeasure()) {
-                LayoutBreak* layoutBreak2 = measure->sectionBreakElement();
+                LayoutBreak *layoutBreak2 = measure->sectionBreakElement();
 
                 if (layoutBreak2) {
                     // frame has a section break; we can stop skipping ahead
@@ -419,17 +417,17 @@ bool EditTimeSig::rewriteMeasures(Transaction& tx, Score* score, Measure* fm, co
     if (!nm) {
         return true;
     }
-    Segment* timeSigSeg = nm->undoGetSegment(SegmentType::TimeSig, nm->tick());
+    Segment *timeSigSeg = nm->undoGetSegment(SegmentType::TimeSig, nm->tick());
 
     for (size_t i = 0; i < score->nstaves(); ++i) {
         if (staffIdx != muse::nidx && i != staffIdx) {
             continue;
         }
         if (!timeSigSeg->element(staff2track(i))) {
-            TimeSig* ots = endOfMeasureTimeSigSeg
-                           ? toTimeSig(endOfMeasureTimeSigSeg->element(staff2track(i))) : score->staff(i)->timeSig(nm->tick());
+            TimeSig *ots =
+                endOfMeasureTimeSigSeg ? toTimeSig(endOfMeasureTimeSigSeg->element(staff2track(i))) : score->staff(i)->timeSig(nm->tick());
             if (ots) {
-                TimeSig* nts = Factory::copyTimeSig(*ots);
+                TimeSig *nts = Factory::copyTimeSig(*ots);
                 nts->setOwnershipParent(timeSigSeg);
                 if (sectionBreak) {
                     nts->setGenerated(false);
@@ -450,15 +448,14 @@ bool EditTimeSig::rewriteMeasures(Transaction& tx, Score* score, Measure* fm, co
 //    to gui command (drop timesig on measure or timesig)
 //---------------------------------------------------------
 
-void EditTimeSig::addTimeSig(Transaction& tx, Score* score, Measure* fm, staff_idx_t staffIdx, TimeSig* ts, bool local)
-{
+void EditTimeSig::addTimeSig(Transaction &tx, Score *score, Measure *fm, staff_idx_t staffIdx, TimeSig *ts, bool local) {
     score->deselectAll();
 
     if (fm->isMMRest()) {
         fm = fm->mmRestFirst();
     }
 
-    Fraction ns   = ts->sig();
+    Fraction ns = ts->sig();
     Fraction tick = fm->tick();
     if (local) {
         Fraction stretch = (ns / fm->timesig()).reduced();
@@ -466,12 +463,12 @@ void EditTimeSig::addTimeSig(Transaction& tx, Score* score, Measure* fm, staff_i
     }
 
     track_idx_t track = staffIdx * VOICES;
-    Segment* seg = fm->findSegment(SegmentType::TimeSig, tick);
-    TimeSig* ots = seg ? toTimeSig(seg->element(track)) : nullptr;
+    Segment *seg = fm->findSegment(SegmentType::TimeSig, tick);
+    TimeSig *ots = seg ? toTimeSig(seg->element(track)) : nullptr;
 
     // Check same tick at end of previous measure
     if (!ots) {
-        Measure* prevMeasure = fm->prevMeasure();
+        Measure *prevMeasure = fm->prevMeasure();
         seg = prevMeasure ? prevMeasure->findSegmentR(SegmentType::TimeSig, prevMeasure->ticks()) : seg;
         ots = seg ? toTimeSig(seg->element(track)) : nullptr;
     }
@@ -487,15 +484,15 @@ void EditTimeSig::addTimeSig(Transaction& tx, Score* score, Measure* fm, staff_i
 
     seg = fm->undoGetSegment(SegmentType::TimeSig, tick);
 
-    auto getStaffIdxRange = [score, local, staffIdx](const Score* lscore) -> std::pair<staff_idx_t /*start*/, staff_idx_t /*end*/> {
+    auto getStaffIdxRange = [score, local, staffIdx](const Score *lscore) -> std::pair<staff_idx_t /*start*/, staff_idx_t /*end*/> {
         staff_idx_t startStaffIdx, endStaffIdx;
         if (local) {
             if (lscore == score) {
                 startStaffIdx = staffIdx;
                 endStaffIdx = startStaffIdx + 1;
             } else {
-                const Staff* thisStaff = score->staff(staffIdx);
-                const Staff* linkedStaff = thisStaff->findLinkedInScore(lscore);
+                const Staff *thisStaff = score->staff(staffIdx);
+                const Staff *linkedStaff = thisStaff->findLinkedInScore(lscore);
                 if (linkedStaff) {
                     startStaffIdx = linkedStaff->idx();
                     endStaffIdx = startStaffIdx + 1;
@@ -516,12 +513,12 @@ void EditTimeSig::addTimeSig(Transaction& tx, Score* score, Measure* fm, staff_i
         // the measure duration does not change,
         // so its ok to just update the time signatures
         //
-        TimeSig* nts = score->staff(staffIdx)->nextTimeSig(tick + Fraction::eps());
+        TimeSig *nts = score->staff(staffIdx)->nextTimeSig(tick + Fraction::eps());
         const Fraction lmTick = nts ? nts->segment()->tick() : Fraction(-1, 1);
-        for (Score* lscore : score->scoreList()) {
-            Measure* mf = lscore->tick2measure(tick);
-            Measure* lm = (lmTick != Fraction(-1, 1)) ? lscore->tick2measure(lmTick) : nullptr;
-            for (Measure* m = mf; m != lm; m = m->nextMeasure()) {
+        for (Score *lscore : score->scoreList()) {
+            Measure *mf = lscore->tick2measure(tick);
+            Measure *lm = (lmTick != Fraction(-1, 1)) ? lscore->tick2measure(lmTick) : nullptr;
+            for (Measure *m = mf; m != lm; m = m->nextMeasure()) {
                 bool changeActual = m->ticks() == m->timesig();
                 m->undoChangeProperty(Pid::TIMESIG_NOMINAL, ns);
                 if (changeActual) {
@@ -530,7 +527,7 @@ void EditTimeSig::addTimeSig(Transaction& tx, Score* score, Measure* fm, staff_i
             }
             std::pair<staff_idx_t, staff_idx_t> staffIdxRange = getStaffIdxRange(lscore);
             for (staff_idx_t si = staffIdxRange.first; si < staffIdxRange.second; ++si) {
-                TimeSig* nsig = toTimeSig(seg->element(si * VOICES));
+                TimeSig *nsig = toTimeSig(seg->element(si * VOICES));
                 if (!nsig) {
                     continue;
                 }
@@ -546,8 +543,8 @@ void EditTimeSig::addTimeSig(Transaction& tx, Score* score, Measure* fm, staff_i
             }
         }
     } else {
-        Score* mScore = score->masterScore();
-        Measure* mf  = mScore->tick2measure(tick);
+        Score *mScore = score->masterScore();
+        Measure *mf = mScore->tick2measure(tick);
 
         //
         // rewrite all measures up to the next time signature
@@ -555,8 +552,8 @@ void EditTimeSig::addTimeSig(Transaction& tx, Score* score, Measure* fm, staff_i
         if (mf == mScore->firstMeasure() && mf->nextMeasure() && (mf->ticks() != mf->timesig())) {
             // handle upbeat
             mf->undoChangeProperty(Pid::TIMESIG_NOMINAL, ns);
-            Measure* m = mf->nextMeasure();
-            Segment* s = m->findSegment(SegmentType::TimeSig, m->tick());
+            Measure *m = mf->nextMeasure();
+            Segment *s = m->findSegment(SegmentType::TimeSig, m->tick());
             mf = s ? 0 : mf->nextMeasure();
         } else {
             if (score->sigmap()->timesig(seg->tick().ticks()).nominal().identical(ns)) {
@@ -579,23 +576,23 @@ void EditTimeSig::addTimeSig(Transaction& tx, Score* score, Measure* fm, staff_i
         // this means, however, that the rewrite cannot depend on the time signatures being in place
         if (mf) {
             auto staffIdxRangeOnMaster = getStaffIdxRange(mScore);
-            if (staffIdxRangeOnMaster.second != staffIdxRangeOnMaster.first
-                && !rewriteMeasures(tx, mScore, mf, ns, local ? staffIdxRangeOnMaster.first : muse::nidx)) {
+            if (staffIdxRangeOnMaster.second != staffIdxRangeOnMaster.first &&
+                !rewriteMeasures(tx, mScore, mf, ns, local ? staffIdxRangeOnMaster.first : muse::nidx)) {
                 score->undoStack()->activeTransaction()->unwind();
                 return;
             }
         }
         // add the time signatures
-        std::map<track_idx_t, TimeSig*> masterTimeSigs;
-        for (Score* lscore : score->scoreList()) {
-            Measure* nfm = lscore->tick2measure(tick);
+        std::map<track_idx_t, TimeSig *> masterTimeSigs;
+        for (Score *lscore : score->scoreList()) {
+            Measure *nfm = lscore->tick2measure(tick);
             seg = nfm->undoGetSegment(SegmentType::TimeSig, nfm->tick());
             std::pair<staff_idx_t, staff_idx_t> staffIdxRange = getStaffIdxRange(lscore);
             for (staff_idx_t si = staffIdxRange.first; si < staffIdxRange.second; ++si) {
                 if (fm->isMeasureRepeatGroup(si)) {
                     score->deleteItem(fm->measureRepeatElement(si));
                 }
-                TimeSig* nsig = toTimeSig(seg->element(si * VOICES));
+                TimeSig *nsig = toTimeSig(seg->element(si * VOICES));
                 if (nsig == 0) {
                     nsig = Factory::copyTimeSig(*ts);
                     nsig->setScore(lscore);
@@ -605,7 +602,7 @@ void EditTimeSig::addTimeSig(Transaction& tx, Score* score, Measure* fm, staff_i
                     score->undoAddElement(nsig);
                     if (lscore->excerpt()) {
                         const track_idx_t masterTrack = muse::key(lscore->excerpt()->tracksMapping(), nsig->track());
-                        TimeSig* masterTimeSig = masterTimeSigs[masterTrack];
+                        TimeSig *masterTimeSig = masterTimeSigs[masterTrack];
                         if (masterTimeSig) {
                             tx.push(new Link(masterTimeSig, nsig));
                         }
@@ -622,7 +619,7 @@ void EditTimeSig::addTimeSig(Transaction& tx, Score* score, Measure* fm, staff_i
                     nsig->undoChangeProperty(Pid::TIMESIG_STRETCH, ts->stretch());
                     nsig->undoChangeProperty(Pid::GROUP_NODES, ts->groups().nodes());
                     nsig->setSelected(false);
-                    nsig->setDropTarget(false);                 // DEBUG
+                    nsig->setDropTarget(false); // DEBUG
                 }
 
                 if (lscore->isMaster()) {
@@ -638,10 +635,9 @@ void EditTimeSig::addTimeSig(Transaction& tx, Score* score, Measure* fm, staff_i
 //   removeTimeSig
 //---------------------------------------------------------
 
-void EditTimeSig::removeTimeSig(Transaction& tx, Score* score, TimeSig* ts)
-{
-    Measure* m = ts->measure();
-    Segment* s = ts->segment();
+void EditTimeSig::removeTimeSig(Transaction &tx, Score *score, TimeSig *ts) {
+    Measure *m = ts->measure();
+    Segment *s = ts->segment();
 
     //
     // we cannot remove a courtesy time signature
@@ -658,27 +654,27 @@ void EditTimeSig::removeTimeSig(Transaction& tx, Score* score, TimeSig* ts)
     // see http://musescore.org/en/node/51596
     // Delete the time sig segment from the root score, we will rewriteMeasures from it
     // since it contains all the music while the part doesn't
-    Score* rScore = score->masterScore();
-    Measure* rm = rScore->tick2measure(m->tick());
-    Segment* rs = rm->findSegment(SegmentType::TimeSig, s->tick());
+    Score *rScore = score->masterScore();
+    Measure *rm = rScore->tick2measure(m->tick());
+    Segment *rs = rm->findSegment(SegmentType::TimeSig, s->tick());
     if (rs) {
         rScore->undoRemoveElement(rs);
     }
     // Measure can contain mmRest that can have its own timesig. We need to delete it too
     if (rm->mmRest()) {
-        Segment* mmRestTimesig = rm->mmRest()->findSegment(SegmentType::TimeSig, s->tick());
+        Segment *mmRestTimesig = rm->mmRest()->findSegment(SegmentType::TimeSig, s->tick());
         if (mmRestTimesig) {
             rScore->undoRemoveElement(mmRestTimesig);
         }
     }
 
-    Measure* pm = m->prevMeasure();
+    Measure *pm = m->prevMeasure();
     Fraction ns(pm ? pm->timesig() : Fraction(4, 4));
 
     if (!rewriteMeasures(tx, rScore, rm, ns, muse::nidx)) {
         score->undoStack()->activeTransaction()->unwind();
     } else {
-        m = score->tick2measure(tick);           // old m may have been replaced
+        m = score->tick2measure(tick); // old m may have been replaced
         // hack: fix measure rest durations for staves with local time signatures
         // if a time signature was deleted to reveal a previous local one,
         // then rewriteMeasures() got the measure rest durations wrong
@@ -686,15 +682,15 @@ void EditTimeSig::removeTimeSig(Transaction& tx, Score* score, TimeSig* ts)
         // so we will fix measure rest durations here
         // TODO: fix rewriteMeasures() to get this right
         for (size_t i = 0; i < score->nstaves(); ++i) {
-            TimeSig* tsig = score->staff(i)->timeSig(tick);
+            TimeSig *tsig = score->staff(i)->timeSig(tick);
             if (tsig && tsig->isLocal()) {
-                for (Measure* nm = m; nm; nm = nm->nextMeasure()) {
+                for (Measure *nm = m; nm; nm = nm->nextMeasure()) {
                     // stop when time signature changes
                     if (score->staff(i)->timeSig(nm->tick()) != tsig) {
                         break;
                     }
                     // fix measure rest duration
-                    ChordRest* cr = nm->findChordRest(nm->tick(), i * VOICES);
+                    ChordRest *cr = nm->findChordRest(nm->tick(), i * VOICES);
                     if (cr && cr->isRest() && cr->durationType() == DurationType::V_MEASURE) {
                         cr->undoChangeProperty(Pid::DURATION, nm->stretchedLen(score->staff(i)));
                     }

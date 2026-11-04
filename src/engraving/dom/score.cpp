@@ -32,7 +32,7 @@
 
 #include "containers.h"
 
-#include "iengravingconfiguration.h" // IWYU pragma: keep
+#include "iengravingconfiguration.h"        // IWYU pragma: keep
 #include "iengravingcontextconfiguration.h" // IWYU pragma: keep
 
 #include "editing/addremoveelement.h"
@@ -118,33 +118,29 @@ using namespace muse;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-std::set<Score*> Score::validScores;
+std::set<Score *> Score::validScores;
 
-bool Score::isAlive(const Score* score)
-{
-    return validScores.find(const_cast<Score*>(score)) != validScores.end();
-}
+bool Score::isAlive(const Score *score) { return validScores.find(const_cast<Score *>(score)) != validScores.end(); }
 
-bool noSeq           = false;
-bool noMidi          = false;
-bool midiInputTrace  = false;
+bool noSeq = false;
+bool noMidi = false;
+bool midiInputTrace = false;
 bool midiOutputTrace = false;
 
-static void markInstrumentsAsPrimary(std::vector<Part*>& parts)
-{
+static void markInstrumentsAsPrimary(std::vector<Part *> &parts) {
     TRACEFUNC;
 
     std::unordered_map<String /*instrumentId*/, int /*count*/> instrumentCount;
 
-    for (Part* part : parts) {
-        Instrument* instrument = part->instrument();
+    for (Part *part : parts) {
+        Instrument *instrument = part->instrument();
         if (!instrument) {
             continue;
         }
 
         auto it = instrumentCount.find(instrument->id());
         if (it == instrumentCount.cend()) {
-            it = instrumentCount.insert(instrumentCount.begin(), { instrument->id(), 0 });
+            it = instrumentCount.insert(instrumentCount.begin(), {instrument->id(), 0});
         }
 
         it->second++;
@@ -158,11 +154,7 @@ static void markInstrumentsAsPrimary(std::vector<Part*>& parts)
 //   Score
 //---------------------------------------------------------
 
-Score::Score(const EngravingServices& services)
-    : EngravingObject(ElementType::SCORE, nullptr),
-    m_services(services),
-    m_selection(this)
-{
+Score::Score(const EngravingServices &services) : EngravingObject(ElementType::SCORE, nullptr), m_services(services), m_selection(this) {
     Score::validScores.insert(this);
     m_masterScore = nullptr;
 
@@ -183,9 +175,7 @@ Score::Score(const EngravingServices& services)
     m_shadowNote->setVisible(false);
 }
 
-Score::Score(MasterScore* parent, bool forcePartStyle /* = true */)
-    : Score{parent->services()}
-{
+Score::Score(MasterScore *parent, bool forcePartStyle /* = true */) : Score{parent->services()} {
     Score::validScores.insert(this);
     m_masterScore = parent;
 
@@ -195,19 +185,17 @@ Score::Score(MasterScore* parent, bool forcePartStyle /* = true */)
         // inherit most style settings from parent
         m_style = parent->style();
 
-        static const Sid styles[] = {
-            Sid::pageWidth,
-            Sid::pageHeight,
-            Sid::pagePrintableWidth,
-            Sid::pageEvenLeftMargin,
-            Sid::pageOddLeftMargin,
-            Sid::pageEvenTopMargin,
-            Sid::pageEvenBottomMargin,
-            Sid::pageOddTopMargin,
-            Sid::pageOddBottomMargin,
-            Sid::pageTwosided,
-            Sid::spatium
-        };
+        static const Sid styles[] = {Sid::pageWidth,
+                                     Sid::pageHeight,
+                                     Sid::pagePrintableWidth,
+                                     Sid::pageEvenLeftMargin,
+                                     Sid::pageOddLeftMargin,
+                                     Sid::pageEvenTopMargin,
+                                     Sid::pageEvenBottomMargin,
+                                     Sid::pageOddTopMargin,
+                                     Sid::pageOddBottomMargin,
+                                     Sid::pageTwosided,
+                                     Sid::spatium};
         // but borrow defaultStyle page layout settings
         for (auto i : styles) {
             m_style.set(i, DefaultStyle::defaultStyle().value(i));
@@ -228,11 +216,9 @@ Score::Score(MasterScore* parent, bool forcePartStyle /* = true */)
     updatePaddingTables();
 }
 
-Score::Score(MasterScore* parent, const MStyle& s)
-    : Score{parent}
-{
+Score::Score(MasterScore *parent, const MStyle &s) : Score{parent} {
     Score::validScores.insert(this);
-    m_style  = s;
+    m_style = s;
     updatePaddingTables();
 }
 
@@ -240,8 +226,7 @@ Score::Score(MasterScore* parent, const MStyle& s)
 //   ~Score
 //---------------------------------------------------------
 
-Score::~Score()
-{
+Score::~Score() {
     // The register lives on the master score, which outlives an excerpt unless the
     // whole document is going away. An excerpt removed from the document must not
     // leave its id behind: a later allocation at the same address would inherit it.
@@ -252,10 +237,10 @@ Score::~Score()
     Score::validScores.erase(this);
 
     // deselectAll();
-    muse::DeleteAll(m_systems);   // systems are layout-only objects so we delete
+    muse::DeleteAll(m_systems); // systems are layout-only objects so we delete
     // them prior to measures.
-    for (MeasureBase* m = m_measures.first(); m;) {
-        MeasureBase* nm = m->next();
+    for (MeasureBase *m = m_measures.first(); m;) {
+        MeasureBase *nm = m->next();
         if (m->isMeasure() && toMeasure(m)->mmRest()) {
             delete toMeasure(m)->mmRest();
         }
@@ -280,7 +265,7 @@ Score::~Score()
     muse::DeleteAll(m_pages);
     m_pages.clear();
 
-    for (auto& bracketList : m_brackets) {
+    for (auto &bracketList : m_brackets) {
         muse::DeleteAll(bracketList);
     }
 
@@ -305,21 +290,20 @@ Score::~Score()
 //         Use MasterScore::clone() instead
 //---------------------------------------------------------
 
-Score* Score::clone()
-{
+Score *Score::clone() {
     // TODO: see comments regarding setting version in corresponding code in 3.x branch
     // and also compare to MasterScore::clone()
-    Excerpt* excerpt = new Excerpt(masterScore());
+    Excerpt *excerpt = new Excerpt(masterScore());
     excerpt->setName(name());
 
     TracksMap tracks;
 
-    for (Part* part : m_parts) {
+    for (Part *part : m_parts) {
         excerpt->parts().push_back(part);
 
         const TrackRange range = part->trackRange();
         for (track_idx_t track = range.startTrack; track < range.endTrack; ++track) {
-            tracks.insert({ track, track });
+            tracks.insert({track, track});
         }
     }
 
@@ -333,12 +317,11 @@ Score* Score::clone()
 
 //! A bracket is a rendering of its bracket item, rebuilt from it on every layout, so
 //! one whose item is gone has nothing left to represent.
-static void onBracketItemDestruction(Score* score, const BracketItem* item)
-{
-    for (System* system : score->systems()) {
-        std::vector<Bracket*>& brackets = system->brackets();
+static void onBracketItemDestruction(Score *score, const BracketItem *item) {
+    for (System *system : score->systems()) {
+        std::vector<Bracket *> &brackets = system->brackets();
         for (auto it = brackets.begin(); it != brackets.end();) {
-            Bracket* bracket = *it;
+            Bracket *bracket = *it;
             if (bracket && bracket->bracketItem() == item) {
                 it = brackets.erase(it);
                 delete bracket;
@@ -355,9 +338,8 @@ static void onBracketItemDestruction(Score* score, const BracketItem* item)
 //    of the element (e.g. remove invalid pointers etc.).
 //---------------------------------------------------------
 
-void Score::onElementDestruction(EngravingItem* e)
-{
-    Score* score = e->EngravingObject::score();
+void Score::onElementDestruction(EngravingItem *e) {
+    Score *score = e->EngravingObject::score();
 
     if (!score) {
         return;
@@ -366,7 +348,7 @@ void Score::onElementDestruction(EngravingItem* e)
     // The EID register lives on the master score, so unregister the item even when
     // its own score is being deleted (e.g. when an excerpt is removed), as long as
     // the master score, and with it the register, is still alive
-    MasterScore* masterScore = score->masterScore();
+    MasterScore *masterScore = score->masterScore();
     if (masterScore && Score::validScores.find(masterScore) != Score::validScores.end()) {
         masterScore->eidRegister()->onItemDestroyed(e);
     }
@@ -388,8 +370,7 @@ void Score::onElementDestruction(EngravingItem* e)
 //   addMeasure
 //---------------------------------------------------------
 
-void Score::addMeasure(MeasureBase* m, MeasureBase* pos)
-{
+void Score::addMeasure(MeasureBase *m, MeasureBase *pos) {
     m->setNext(pos);
     m_measures.add(m);
 }
@@ -408,33 +389,32 @@ void Score::addMeasure(MeasureBase* m, MeasureBase* pos)
       - after inserting/deleting time (changes the sigmap)
 */
 
-void Score::updateTicksAndTimeSigMap()
-{
+void Score::updateTicksAndTimeSigMap() {
     TRACEFUNC;
 
     Fraction tick = Fraction(0, 1);
-    Measure* fm = firstMeasure();
+    Measure *fm = firstMeasure();
     if (!fm) {
         return;
     }
 
-    for (Staff* staff : m_staves) {
+    for (Staff *staff : m_staves) {
         staff->clearTimeSig();
     }
 
     if (isMaster()) {
         sigmap()->clear();
-        sigmap()->add(0, SigEvent(fm->ticks(),  fm->timesig(), 0));
+        sigmap()->add(0, SigEvent(fm->ticks(), fm->timesig(), 0));
     }
 
-    for (MeasureBase* mb = first(); mb; mb = mb->next()) {
+    for (MeasureBase *mb = first(); mb; mb = mb->next()) {
         if (!mb->isMeasure()) {
             mb->setTick(tick);
             continue;
         }
-        Measure* m            = toMeasure(mb);
-        Fraction mtick        = m->tick();
-        Fraction diff         = tick - mtick;
+        Measure *m = toMeasure(mb);
+        Fraction mtick = m->tick();
+        Fraction diff = tick - mtick;
         Fraction measureTicks = m->ticks();
         m->moveTicks(diff);
         if (m->mmRest()) {
@@ -455,14 +435,13 @@ void Score::updateTicksAndTimeSigMap()
 ///    updates the time signature map for a measure
 //---------------------------------------------------------
 
-void Score::rebuildTimeSigMap(Measure* measure)
-{
-    for (Segment& segment : measure->segments()) {
+void Score::rebuildTimeSigMap(Measure *measure) {
+    for (Segment &segment : measure->segments()) {
         if (!segment.isTimeSigType()) {
             continue;
         }
         for (size_t staffIdx = 0; staffIdx < m_staves.size(); ++staffIdx) {
-            TimeSig* ts = toTimeSig(segment.element(staffIdx * VOICES));
+            TimeSig *ts = toTimeSig(segment.element(staffIdx * VOICES));
             if (ts) {
                 staff(staffIdx)->addTimeSig(ts);
             }
@@ -477,9 +456,10 @@ void Score::rebuildTimeSigMap(Measure* measure)
     // even if they are equivalent 4/4 vs 2/2
     // also check if nominal time signature has changed
 
-    const Fraction mTicks = measure->isMMRest() ? measure->mmRestFirst()->ticks() : measure->ticks();     // for time signature the underlying measure length matters for MM rests
+    const Fraction mTicks = measure->isMMRest() ? measure->mmRestFirst()->ticks() :
+                                                  measure->ticks(); // for time signature the underlying measure length matters for MM rests
 
-    const Measure* pm = measure->prevMeasure();
+    const Measure *pm = measure->prevMeasure();
     // prevMeasure() doesn't return MM rest so we don't handle it here
 
     if (pm && (!mTicks.identical(pm->ticks()) || !measure->timesig().identical(pm->timesig()))) {
@@ -492,10 +472,9 @@ void Score::rebuildTimeSigMap(Measure* measure)
 //     Return measure base for canvas relative position \a p.
 //---------------------------------------------------------
 
-MeasureBase* Score::pos2measureBase(const PointF& p, bool scanMeasuresOnly, staff_idx_t* staffIdx, int* pitch, Segment** seg,
-                                    PointF* offset) const
-{
-    MeasureBase* mb = searchMeasureBase(p, scanMeasuresOnly);
+MeasureBase *Score::pos2measureBase(const PointF &p, bool scanMeasuresOnly, staff_idx_t *staffIdx, int *pitch, Segment **seg,
+                                    PointF *offset) const {
+    MeasureBase *mb = searchMeasureBase(p, scanMeasuresOnly);
     if (!mb) {
         return nullptr;
     }
@@ -516,12 +495,12 @@ MeasureBase* Score::pos2measureBase(const PointF& p, bool scanMeasuresOnly, staf
         return mb;
     }
 
-    Measure* m = toMeasure(mb);
+    Measure *m = toMeasure(mb);
     if (!m) {
         return nullptr;
     }
 
-    const System* system = m->system();
+    const System *system = m->system();
     const double y = p.y() - system->canvasPos().y();
 
     const staff_idx_t staffIdxResult = system->searchStaff(y);
@@ -537,18 +516,18 @@ MeasureBase* Score::pos2measureBase(const PointF& p, bool scanMeasuresOnly, staf
     track_idx_t etrack = VOICES + strack;
 
     constexpr SegmentType st = SegmentType::ChordRest;
-    Segment* segment = m->searchSegment(offsetResult.x(), st, strack, etrack);
+    Segment *segment = m->searchSegment(offsetResult.x(), st, strack, etrack);
     if (!segment) {
         return nullptr;
     }
 
-    const SysStaff* sysStaff = m->system()->staff(staffIdxResult);
+    const SysStaff *sysStaff = m->system()->staff(staffIdxResult);
     if (staffIdx) {
         *staffIdx = staffIdxResult;
     }
     if (pitch) {
-        const Staff* s1 = m_staves[staffIdxResult];
-        const Fraction tick  = segment->tick();
+        const Staff *s1 = m_staves[staffIdxResult];
+        const Fraction tick = segment->tick();
         const ClefType clef = s1->clef(tick);
         *pitch = y2pitch(offsetResult.y() - sysStaff->bbox().y(), clef, s1->spatium(tick));
     }
@@ -562,9 +541,8 @@ MeasureBase* Score::pos2measureBase(const PointF& p, bool scanMeasuresOnly, staf
     return m;
 }
 
-Measure* Score::pos2measure(const PointF& p, staff_idx_t* staffIdx, int* pitch, Segment** seg, PointF* offset) const
-{
-    MeasureBase* mb = pos2measureBase(p, /*scanMeasuresOnly*/ true, staffIdx, pitch, seg, offset);
+Measure *Score::pos2measure(const PointF &p, staff_idx_t *staffIdx, int *pitch, Segment **seg, PointF *offset) const {
+    MeasureBase *mb = pos2measureBase(p, /*scanMeasuresOnly*/ true, staffIdx, pitch, seg, offset);
     return mb && mb->isMeasure() ? toMeasure(mb) : nullptr;
 }
 
@@ -577,9 +555,8 @@ Measure* Score::pos2measure(const PointF& p, staff_idx_t* staffIdx, int* pitch, 
 ///              \b output: new segment for drag position
 //---------------------------------------------------------
 
-void Score::dragPosition(const PointF& pos, staff_idx_t* rst, Segment** seg, double spacingFactor, bool allowTimeAnchor) const
-{
-    Measure* m = nullptr;
+void Score::dragPosition(const PointF &pos, staff_idx_t *rst, Segment **seg, double spacingFactor, bool allowTimeAnchor) const {
+    Measure *m = nullptr;
 
     if (!dragPositionToMeasure(pos, this, &m, rst, spacingFactor)) {
         return;
@@ -592,8 +569,7 @@ void Score::dragPosition(const PointF& pos, staff_idx_t* rst, Segment** seg, dou
 //   setShowInvisible
 //---------------------------------------------------------
 
-void Score::setShowInvisible(bool v)
-{
+void Score::setShowInvisible(bool v) {
     m_showInvisible = v;
     // BSP tree does not include elements which are not
     // displayed, so we need to refresh it to get
@@ -605,31 +581,21 @@ void Score::setShowInvisible(bool v)
 //   setShowUnprintable
 //---------------------------------------------------------
 
-void Score::setShowUnprintable(bool v)
-{
-    m_showUnprintable = v;
-}
+void Score::setShowUnprintable(bool v) { m_showUnprintable = v; }
 
 //---------------------------------------------------------
 //   setShowFrames
 //---------------------------------------------------------
 
-void Score::setShowFrames(bool v)
-{
-    m_showFrames = v;
-}
+void Score::setShowFrames(bool v) { m_showFrames = v; }
 
 //---------------------------------------------------------
 //   setShowPageborders
 //---------------------------------------------------------
 
-void Score::setShowPageborders(bool v)
-{
-    m_showPageborders = v;
-}
+void Score::setShowPageborders(bool v) { m_showPageborders = v; }
 
-void Score::setShowSoundFlags(bool v)
-{
+void Score::setShowSoundFlags(bool v) {
     if (m_showSoundFlags == v) {
         return;
     }
@@ -642,61 +608,39 @@ void Score::setShowSoundFlags(bool v)
 //   setMarkIrregularMeasures
 //---------------------------------------------------------
 
-void Score::setMarkIrregularMeasures(bool v)
-{
-    m_markIrregularMeasures = v;
-}
+void Score::setMarkIrregularMeasures(bool v) { m_markIrregularMeasures = v; }
 
-void Score::setShowAnchors(const ShowAnchors& showAnchors)
-{
-    m_showAnchors = showAnchors;
-}
+void Score::setShowAnchors(const ShowAnchors &showAnchors) { m_showAnchors = showAnchors; }
 
 //---------------------------------------------------------
 //   readOnly
 //---------------------------------------------------------
 
-bool Score::readOnly() const
-{
-    return m_masterScore->readOnly();
-}
+bool Score::readOnly() const { return m_masterScore->readOnly(); }
 
 //---------------------------------------------------------
 //   dirty
 //---------------------------------------------------------
 
-bool Score::dirty() const
-{
-    return !undoStack()->isClean();
-}
+bool Score::dirty() const { return !undoStack()->isClean(); }
 
-void Score::invalidateRepeatList()
-{
-    masterScore()->invalidateRepeatList();
-}
+void Score::invalidateRepeatList() { masterScore()->invalidateRepeatList(); }
 
-bool Score::isOpen() const
-{
-    return m_isOpen;
-}
+bool Score::isOpen() const { return m_isOpen; }
 
-void Score::setIsOpen(bool open)
-{
-    m_isOpen = open;
-}
+void Score::setIsOpen(bool open) { m_isOpen = open; }
 
 //---------------------------------------------------------
 //   searchPage
 //    p is in canvas coordinates
 //---------------------------------------------------------
 
-Page* Score::searchPage(const PointF& p) const
-{
+Page *Score::searchPage(const PointF &p) const {
     if (layoutMode() == LayoutMode::LINE) {
         return m_pages.empty() ? nullptr : m_pages.front();
     }
 
-    for (Page* page : m_pages) {
+    for (Page *page : m_pages) {
         RectF r = page->ldata()->bbox().translated(page->pos());
         if (r.contains(p)) {
             return page;
@@ -717,24 +661,23 @@ Page* Score::searchPage(const PointF& p) const
 ///   \returns List of found systems.
 //---------------------------------------------------------
 
-std::vector<System*> Score::searchSystem(const PointF& pos, bool includeMeasurelessSystems, const System* preferredSystem,
-                                         double spacingFactor, double preferredSpacingFactor) const
-{
-    std::vector<System*> systems;
-    Page* page = searchPage(pos);
+std::vector<System *> Score::searchSystem(const PointF &pos, bool includeMeasurelessSystems, const System *preferredSystem,
+                                          double spacingFactor, double preferredSpacingFactor) const {
+    std::vector<System *> systems;
+    Page *page = searchPage(pos);
     if (!page) {
         return systems;
     }
-    double y = pos.y() - page->pos().y();    // transform to page relative
-    const std::vector<System*>& sl = page->systems();
+    double y = pos.y() - page->pos().y(); // transform to page relative
+    const std::vector<System *> &sl = page->systems();
     double y2;
     size_t n = sl.size();
     for (size_t i = 0; i < n; ++i) {
-        System* s = sl.at(i);
+        System *s = sl.at(i);
         if (!s->first() || (!includeMeasurelessSystems && !s->firstMeasure())) {
             continue;
         }
-        System* ns = 0;                   // next system row
+        System *ns = 0; // next system row
         size_t ii = i + 1;
         for (; ii < n; ++ii) {
             ns = sl.at(ii);
@@ -777,15 +720,14 @@ std::vector<System*> Score::searchSystem(const PointF& pos, bool includeMeasurel
 ///   space to measures in this system when searching.
 //---------------------------------------------------------
 
-MeasureBase* Score::searchMeasureBase(const PointF& p, bool scanMeasuresOnly, const System* preferredSystem, double spacingFactor,
-                                      double preferredSpacingFactor) const
-{
-    std::vector<System*> systems = searchSystem(p, /*includeMeasurelessSystems*/ !scanMeasuresOnly, preferredSystem,
-                                                spacingFactor, preferredSpacingFactor);
-    MeasureBase* lastMB = nullptr;
-    for (System* system : systems) {
+MeasureBase *Score::searchMeasureBase(const PointF &p, bool scanMeasuresOnly, const System *preferredSystem, double spacingFactor,
+                                      double preferredSpacingFactor) const {
+    std::vector<System *> systems =
+        searchSystem(p, /*includeMeasurelessSystems*/ !scanMeasuresOnly, preferredSystem, spacingFactor, preferredSpacingFactor);
+    MeasureBase *lastMB = nullptr;
+    for (System *system : systems) {
         const double x = p.x() - system->canvasPos().x();
-        for (MeasureBase* mb : system->measures()) {
+        for (MeasureBase *mb : system->measures()) {
             if (scanMeasuresOnly && !mb->isMeasure()) {
                 continue;
             }
@@ -803,8 +745,7 @@ MeasureBase* Score::searchMeasureBase(const PointF& p, bool scanMeasuresOnly, co
 //    - segment is of type SegmentType::ChordRest
 //---------------------------------------------------------
 
-static Segment* getNextValidInputSegment(Segment* segment, track_idx_t track, voice_idx_t voice)
-{
+static Segment *getNextValidInputSegment(Segment *segment, track_idx_t track, voice_idx_t voice) {
     if (!segment) {
         return nullptr;
     }
@@ -812,8 +753,8 @@ static Segment* getNextValidInputSegment(Segment* segment, track_idx_t track, vo
     assert(segment->segmentType() == SegmentType::ChordRest);
 
     Fraction nextTick = segment->measure()->tick();
-    for (Segment* s1 = segment; s1; s1 = s1->prev(SegmentType::ChordRest)) {
-        if (EngravingItem* element = s1->element(track + voice)) {
+    for (Segment *s1 = segment; s1; s1 = s1->prev(SegmentType::ChordRest)) {
+        if (EngravingItem *element = s1->element(track + voice)) {
             nextTick = toChordRest(element)->endTick();
             break;
         }
@@ -833,9 +774,8 @@ static Segment* getNextValidInputSegment(Segment* segment, track_idx_t track, vo
 //    return true if valid position found
 //---------------------------------------------------------
 
-bool Score::getPosition(Position* pos, const PointF& p, voice_idx_t voice) const
-{
-    System* preferredSystem = nullptr;
+bool Score::getPosition(Position *pos, const PointF &p, voice_idx_t voice) const {
+    System *preferredSystem = nullptr;
     staff_idx_t preferredStaffIdx = muse::nidx;
     const double spacingFactor = 0.5;
     const double preferredSpacingFactor = 0.75;
@@ -843,7 +783,7 @@ bool Score::getPosition(Position* pos, const PointF& p, voice_idx_t voice) const
         // for non-tab staves, prefer the current system & staff
         // this makes it easier to add notes far above or below the staff
         // not helpful for tab since notes are not entered above or below
-        Segment* seg = inputState().segment();
+        Segment *seg = inputState().segment();
         if (seg) {
             preferredSystem = seg->system();
         }
@@ -854,8 +794,8 @@ bool Score::getPosition(Position* pos, const PointF& p, voice_idx_t voice) const
     }
 
     //! NOTE: For Positions we only care about Measure types, we're not interested in all MeasureBases...
-    MeasureBase* mb = searchMeasureBase(p, /*scanMeasuresOnly*/ true, preferredSystem, spacingFactor, preferredSpacingFactor);
-    Measure* measure = mb && mb->isMeasure() ? toMeasure(mb) : nullptr;
+    MeasureBase *mb = searchMeasureBase(p, /*scanMeasuresOnly*/ true, preferredSystem, spacingFactor, preferredSpacingFactor);
+    Measure *measure = mb && mb->isMeasure() ? toMeasure(mb) : nullptr;
     if (!measure) {
         return false;
     }
@@ -864,26 +804,26 @@ bool Score::getPosition(Position* pos, const PointF& p, voice_idx_t voice) const
     //
     //    search staff
     //
-    pos->staffIdx      = 0;
-    SysStaff* sstaff   = 0;
-    System* system     = measure->system();
-    double y           = p.y() - system->pagePos().y();
+    pos->staffIdx = 0;
+    SysStaff *sstaff = 0;
+    System *system = measure->system();
+    double y = p.y() - system->pagePos().y();
     for (; pos->staffIdx < nstaves(); ++pos->staffIdx) {
-        Staff* st = staff(pos->staffIdx);
+        Staff *st = staff(pos->staffIdx);
         if (!st->part()->show()) {
             continue;
         }
         double sy2;
-        SysStaff* ss = system->staff(pos->staffIdx);
+        SysStaff *ss = system->staff(pos->staffIdx);
         if (!ss->show()) {
             continue;
         }
         staff_idx_t idx = muse::nidx;
-        SysStaff* nstaff = 0;
+        SysStaff *nstaff = 0;
 
         // find next visible staff
         for (staff_idx_t i = pos->staffIdx + 1; i < nstaves(); ++i) {
-            Staff* sti = staff(i);
+            Staff *sti = staff(i);
             if (!sti->part()->show()) {
                 continue;
             }
@@ -908,9 +848,9 @@ bool Score::getPosition(Position* pos, const PointF& p, voice_idx_t voice) const
                 currentSpacingFactor = spacingFactor;
             }
             double s1y2 = ss->bbox().bottom();
-            sy2        = system->page()->canvasPos().y() + s1y2 + (nstaff->bbox().y() - s1y2) * currentSpacingFactor;
+            sy2 = system->page()->canvasPos().y() + s1y2 + (nstaff->bbox().y() - s1y2) * currentSpacingFactor;
         } else {
-            sy2 = system->page()->canvasPos().y() + system->page()->height() - system->pagePos().y();         // system->height();
+            sy2 = system->page()->canvasPos().y() + system->page()->height() - system->pagePos().y(); // system->height();
         }
         if (y < sy2) {
             sstaff = ss;
@@ -925,9 +865,9 @@ bool Score::getPosition(Position* pos, const PointF& p, voice_idx_t voice) const
     //    search segment
     //
     PointF pppp(p - measure->canvasPos());
-    double x         = pppp.x();
-    Segment* segment = 0;
-    pos->segment     = 0;
+    double x = pppp.x();
+    Segment *segment = 0;
+    pos->segment = 0;
     pos->beyondScore = false;
 
     // int track = pos->staffIdx * VOICES + voice;
@@ -938,7 +878,7 @@ bool Score::getPosition(Position* pos, const PointF& p, voice_idx_t voice) const
         if (segment == 0) {
             break;
         }
-        Segment* ns = getNextValidInputSegment(segment->next(SegmentType::ChordRest), track, voice);
+        Segment *ns = getNextValidInputSegment(segment->next(SegmentType::ChordRest), track, voice);
 
         double x1 = segment->x();
         if (!ns) {
@@ -967,16 +907,13 @@ bool Score::getPosition(Position* pos, const PointF& p, voice_idx_t voice) const
     //
     // TODO: restrict to reasonable values (pitch 0-127)
     //
-    const Staff* s      = staff(pos->staffIdx);
+    const Staff *s = staff(pos->staffIdx);
     const Fraction tick = segment->tick();
-    const double mag     = s->staffMag(tick);
+    const double mag = s->staffMag(tick);
     // in TABs, step from one string to another; in other staves, step on and between lines
-    double lineDist = s->staffType(tick)->lineDistance().val()
-                      * (s->isTabStaff(measure->tick()) ? 1 : .5)
-                      * mag
-                      * style().spatium();
+    double lineDist = s->staffType(tick)->lineDistance().val() * (s->isTabStaff(measure->tick()) ? 1 : .5) * mag * style().spatium();
 
-    const double yOff = sstaff->yOffset();  // Get system staff vertical offset (usually for 1-line staves)
+    const double yOff = sstaff->yOffset(); // Get system staff vertical offset (usually for 1-line staves)
     pos->line = lrint((pppp.y() - sstaff->bbox().y() - yOff) / lineDist);
     if (s->isTabStaff(measure->tick())) {
         if (pos->line < -1 || pos->line > s->lines(tick) + 1) {
@@ -988,19 +925,19 @@ bool Score::getPosition(Position* pos, const PointF& p, voice_idx_t voice) const
             pos->line = s->lines(tick) - 1;
         }
     } else {
-        int minLine   = absStep(MIN_PITCH);
+        int minLine = absStep(MIN_PITCH);
         ClefType clef = s->clef(segment->tick());
-        minLine       = relStep(minLine, clef);
-        int maxLine   = absStep(MAX_PITCH);
-        maxLine       = relStep(maxLine, clef);
+        minLine = relStep(minLine, clef);
+        int maxLine = absStep(MAX_PITCH);
+        maxLine = relStep(maxLine, clef);
 
         if (pos->line > minLine || pos->line < maxLine) {
             return false;
         }
     }
 
-    y         = sstaff->y() + pos->line * lineDist;
-    pos->pos  = PointF(x, y) + measure->canvasPos();
+    y = sstaff->y() + pos->line * lineDist;
+    pos->pos = PointF(x, y) + measure->canvasPos();
     return true;
 }
 
@@ -1008,10 +945,9 @@ bool Score::getPosition(Position* pos, const PointF& p, voice_idx_t voice) const
 //   checkHasMeasures
 //---------------------------------------------------------
 
-bool Score::checkHasMeasures() const
-{
-    Page* page = pages().empty() ? 0 : pages().front();
-    const std::vector<System*>* sl = page ? &page->systems() : 0;
+bool Score::checkHasMeasures() const {
+    Page *page = pages().empty() ? 0 : pages().front();
+    const std::vector<System *> *sl = page ? &page->systems() : 0;
     if (sl == 0 || sl->empty() || sl->front()->measures().empty()) {
         LOGD("first create measure, then repeat operation");
         return false;
@@ -1023,10 +959,9 @@ bool Score::checkHasMeasures() const
 //   spatiumChanged
 //---------------------------------------------------------
 
-void Score::spatiumChanged(double oldValue, double newValue)
-{
-    scanElements([&](EngravingItem* e) { e->spatiumChanged(oldValue, newValue); });
-    for (Staff* staff : m_staves) {
+void Score::spatiumChanged(double oldValue, double newValue) {
+    scanElements([&](EngravingItem *e) { e->spatiumChanged(oldValue, newValue); });
+    for (Staff *staff : m_staves) {
         staff->spatiumChanged(oldValue, newValue);
     }
     m_layoutOptions.noteHeadWidth = m_engravingFont->width(SymId::noteheadBlack, newValue / style().defaultSpatium());
@@ -1037,8 +972,7 @@ void Score::spatiumChanged(double oldValue, double newValue)
 //   updateStyle
 //---------------------------------------------------------
 
-static void updateStyle(EngravingItem* e)
-{
+static void updateStyle(EngravingItem *e) {
     bool v = e->generated();
     e->styleChanged();
     e->setGenerated(v);
@@ -1049,12 +983,11 @@ static void updateStyle(EngravingItem* e)
 //    must be called after every style change
 //---------------------------------------------------------
 
-void Score::styleChanged()
-{
+void Score::styleChanged() {
     scanElements(updateStyle);
-    for (Staff* staff : staves()) {
+    for (Staff *staff : staves()) {
         for (int tick = 0; tick != -1; tick = staff->staffTypeRange(Fraction::fromTicks(tick + 1)).second) {
-            StaffType* st = staff->staffType(Fraction::fromTicks(tick));
+            StaffType *st = staff->staffType(Fraction::fromTicks(tick));
             if (!st) {
                 continue;
             }
@@ -1076,27 +1009,22 @@ void Score::styleChanged()
  changes throughout the score.
 */
 
-void Score::addElement(EngravingItem* element)
-{
-    EngravingItem* parent = element->ownershipParentItem();
+void Score::addElement(EngravingItem *element) {
+    EngravingItem *parent = element->ownershipParentItem();
     element->triggerLayout();
 
-//      LOGD("Score(%p) EngravingItem(%p)(%s) parent %p(%s)",
-//         this, element, element->typeName(), parent, parent ? parent->typeName() : "");
+    //      LOGD("Score(%p) EngravingItem(%p)(%s) parent %p(%s)",
+    //         this, element, element->typeName(), parent, parent ? parent->typeName() : "");
 
     ElementType et = element->type();
-    if (et == ElementType::MEASURE
-        || (et == ElementType::HBOX && !(parent && parent->isVBox()))
-        || et == ElementType::VBOX
-        || et == ElementType::TBOX
-        || et == ElementType::FBOX
-        ) {
+    if (et == ElementType::MEASURE || (et == ElementType::HBOX && !(parent && parent->isVBox())) || et == ElementType::VBOX ||
+        et == ElementType::TBOX || et == ElementType::FBOX) {
         measures()->add(toMeasureBase(element));
         element->triggerLayout();
         return;
     }
 
-    if (et == ElementType::BEAM) {            // a beam is not attached to its system
+    if (et == ElementType::BEAM) { // a beam is not attached to its system
         parent = nullptr;
     }
 
@@ -1105,119 +1033,107 @@ void Score::addElement(EngravingItem* element)
     }
 
     switch (et) {
-    case ElementType::BEAM:
-    {
-        Beam* b = toBeam(element);
-        size_t n = b->elements().size();
-        for (size_t i = 0; i < n; ++i) {
-            b->elements().at(i)->setBeam(b);
+        case ElementType::BEAM: {
+            Beam *b = toBeam(element);
+            size_t n = b->elements().size();
+            for (size_t i = 0; i < n; ++i) {
+                b->elements().at(i)->setBeam(b);
+            }
+        } break;
+
+        case ElementType::SLUR:
+        case ElementType::HAMMER_ON_PULL_OFF:
+            addLayoutFlags(LayoutFlag::PLAY_EVENTS);
+            // fall through
+
+        case ElementType::VOLTA:
+        case ElementType::TRILL:
+        case ElementType::VIBRATO:
+        case ElementType::PEDAL:
+        case ElementType::TEXTLINE:
+        case ElementType::HAIRPIN:
+        case ElementType::LET_RING:
+        case ElementType::GRADUAL_TEMPO_CHANGE:
+        case ElementType::PALM_MUTE:
+        case ElementType::WHAMMY_BAR:
+        case ElementType::RASGUEADO:
+        case ElementType::HARMONIC_MARK:
+        case ElementType::PICK_SCRAPE:
+        case ElementType::PARTIAL_LYRICSLINE: {
+            Spanner *spanner = toSpanner(element);
+            addSpanner(spanner);
+            for (SpannerSegment *ss : spanner->spannerSegments()) {
+                if (ss->system()) {
+                    ss->system()->add(ss);
+                }
+            }
+        } break;
+
+        case ElementType::OTTAVA: {
+            Ottava *o = toOttava(element);
+            addSpanner(o);
+            for (SpannerSegment *ss : o->spannerSegments()) {
+                if (ss->system()) {
+                    ss->system()->add(ss);
+                }
+            }
+            o->staff()->updateOttava();
+        } break;
+
+        case ElementType::INSTRUMENT_CHANGE: {
+            addLayoutFlags(LayoutFlag::REBUILD_MIDI_MAPPING);
+            cmdState().instrumentsChanged = true;
+        } break;
+
+        case ElementType::CHORD: {
+            // May need to reconnect slur when inserting new chord
+            SpannerMap &smap = spannerMap();
+            Fraction tick = element->tick();
+            auto spanners = smap.findOverlapping(tick.ticks(), tick.ticks());
+            for (auto interval : spanners) {
+                Spanner *s = interval.value;
+                if (s->track() != element->track() || !s->isSlur()) {
+                    continue;
+                }
+                if (!s->startElement() && s->tick() == tick) {
+                    s->setStartElement(element);
+                }
+                if (!s->endElement() && s->tick2() == tick) {
+                    s->setEndElement(element);
+                }
+            }
+            break;
         }
-    }
-    break;
-
-    case ElementType::SLUR:
-    case ElementType::HAMMER_ON_PULL_OFF:
-        addLayoutFlags(LayoutFlag::PLAY_EVENTS);
-    // fall through
-
-    case ElementType::VOLTA:
-    case ElementType::TRILL:
-    case ElementType::VIBRATO:
-    case ElementType::PEDAL:
-    case ElementType::TEXTLINE:
-    case ElementType::HAIRPIN:
-    case ElementType::LET_RING:
-    case ElementType::GRADUAL_TEMPO_CHANGE:
-    case ElementType::PALM_MUTE:
-    case ElementType::WHAMMY_BAR:
-    case ElementType::RASGUEADO:
-    case ElementType::HARMONIC_MARK:
-    case ElementType::PICK_SCRAPE:
-    case ElementType::PARTIAL_LYRICSLINE:
-    {
-        Spanner* spanner = toSpanner(element);
-        addSpanner(spanner);
-        for (SpannerSegment* ss : spanner->spannerSegments()) {
-            if (ss->system()) {
-                ss->system()->add(ss);
+        case ElementType::HARMONY:
+        case ElementType::FRET_DIAGRAM:
+            if (element->part()) {
+                element->part()->updateHarmonyChannels(true);
+            }
+            break;
+        case ElementType::GUITAR_BEND: {
+            GuitarBend *bend = toGuitarBend(element);
+            if (bend->bendType() == GuitarBendType::GRACE_NOTE_BEND || bend->bendType() == GuitarBendType::PRE_BEND ||
+                bend->bendType() == GuitarBendType::PRE_DIVE) {
+                Note *startNote = bend->startNote();
+                Chord *startChord = startNote ? startNote->chord() : nullptr;
+                if (startChord) {
+                    startChord->setNoStem(true);
+                    startChord->setBeamMode(BeamMode::NONE);
+                }
             }
         }
-    }
-    break;
 
-    case ElementType::OTTAVA:
-    {
-        Ottava* o = toOttava(element);
-        addSpanner(o);
-        for (SpannerSegment* ss : o->spannerSegments()) {
-            if (ss->system()) {
-                ss->system()->add(ss);
-            }
-        }
-        o->staff()->updateOttava();
-    }
-    break;
-
-    case ElementType::INSTRUMENT_CHANGE: {
-        addLayoutFlags(LayoutFlag::REBUILD_MIDI_MAPPING);
-        cmdState().instrumentsChanged = true;
-    }
-    break;
-
-    case ElementType::CHORD:
-    {
-        // May need to reconnect slur when inserting new chord
-        SpannerMap& smap = spannerMap();
-        Fraction tick = element->tick();
-        auto spanners = smap.findOverlapping(tick.ticks(), tick.ticks());
-        for (auto interval : spanners) {
-            Spanner* s = interval.value;
-            if (s->track() != element->track() || !s->isSlur()) {
-                continue;
-            }
-            if (!s->startElement() && s->tick() == tick) {
-                s->setStartElement(element);
-            }
-            if (!s->endElement() && s->tick2() == tick) {
-                s->setEndElement(element);
-            }
-        }
-        break;
-    }
-    case ElementType::HARMONY:
-    case ElementType::FRET_DIAGRAM:
-        if (element->part()) {
-            element->part()->updateHarmonyChannels(true);
-        }
-        break;
-    case ElementType::GUITAR_BEND:
-    {
-        GuitarBend* bend = toGuitarBend(element);
-        if (bend->bendType() == GuitarBendType::GRACE_NOTE_BEND || bend->bendType() == GuitarBendType::PRE_BEND
-            || bend->bendType() == GuitarBendType::PRE_DIVE) {
-            Note* startNote = bend->startNote();
-            Chord* startChord = startNote ? startNote->chord() : nullptr;
-            if (startChord) {
-                startChord->setNoStem(true);
-                startChord->setBeamMode(BeamMode::NONE);
-            }
-        }
+        default: break;
     }
 
-    default:
-        break;
-    }
-
-    if (element->isTextBase() && toTextBase(element)->hasParentSegment()
-        && toSegment(element->parent())->isType(SegmentType::Duration)) {
+    if (element->isTextBase() && toTextBase(element)->hasParentSegment() && toSegment(element->parent())->isType(SegmentType::Duration)) {
         MoveElementAnchors::checkMeasureBoundariesAndMoveIfNeed(element);
     }
 
     element->triggerLayout();
 }
 
-void Score::doUndoAddElement(EngravingItem* element)
-{
+void Score::doUndoAddElement(EngravingItem *element) {
     if (element->generated()) {
         addElement(element);
     } else {
@@ -1232,9 +1148,8 @@ void Score::doUndoAddElement(EngravingItem* element)
 ///   changes throughout the score.
 //---------------------------------------------------------
 
-void Score::removeElement(EngravingItem* element)
-{
-    EngravingItem* parent = element->ownershipParentItem();
+void Score::removeElement(EngravingItem *element) {
+    EngravingItem *parent = element->ownershipParentItem();
     element->triggerLayout();
 
     // special for MEASURE, HBOX, VBOX
@@ -1243,16 +1158,12 @@ void Score::removeElement(EngravingItem* element)
     ElementType et = element->type();
     bool parentIsVBox = parent && parent->isVBox();
 
-    if (et == ElementType::MEASURE
-        || (et == ElementType::HBOX && !parentIsVBox)
-        || et == ElementType::VBOX
-        || et == ElementType::TBOX
-        || et == ElementType::FBOX
-        ) {
-        MeasureBase* mb = toMeasureBase(element);
+    if (et == ElementType::MEASURE || (et == ElementType::HBOX && !parentIsVBox) || et == ElementType::VBOX || et == ElementType::TBOX ||
+        et == ElementType::FBOX) {
+        MeasureBase *mb = toMeasureBase(element);
         measures()->remove(mb);
 
-        System* system = mb->system();
+        System *system = mb->system();
         if (!system) {
 #ifndef NDEBUG
             // vertical boxes are not shown in continuous view so no system
@@ -1266,7 +1177,7 @@ void Score::removeElement(EngravingItem* element)
 
         // See also InsertRemoveMeasures::removeMeasures()
         if (element->isBox() && system->measures().empty()) {
-            Page* page = system->page();
+            Page *page = system->page();
             if (page) {
                 muse::remove(page->systems(), system);
                 system->setPage(nullptr);
@@ -1296,7 +1207,7 @@ void Score::removeElement(EngravingItem* element)
         return;
     }
 
-    if (et == ElementType::BEAM) {            // a beam is not attached to its system
+    if (et == ElementType::BEAM) { // a beam is not attached to its system
         parent = nullptr;
     }
 
@@ -1305,100 +1216,90 @@ void Score::removeElement(EngravingItem* element)
     }
 
     switch (et) {
-    case ElementType::BEAM:
-        for (ChordRest* cr : toBeam(element)->elements()) {
-            cr->setBeam(0);
+        case ElementType::BEAM:
+            for (ChordRest *cr : toBeam(element)->elements()) {
+                cr->setBeam(0);
+            }
+            break;
+
+        case ElementType::SLUR:
+        case ElementType::HAMMER_ON_PULL_OFF:
+            addLayoutFlags(LayoutFlag::PLAY_EVENTS);
+            // fall through
+
+        case ElementType::VOLTA:
+        case ElementType::TRILL:
+        case ElementType::VIBRATO:
+        case ElementType::PEDAL:
+        case ElementType::LET_RING:
+        case ElementType::GRADUAL_TEMPO_CHANGE:
+        case ElementType::PALM_MUTE:
+        case ElementType::PARTIAL_LYRICSLINE:
+        case ElementType::WHAMMY_BAR:
+        case ElementType::RASGUEADO:
+        case ElementType::HARMONIC_MARK:
+        case ElementType::PICK_SCRAPE:
+        case ElementType::TEXTLINE:
+        case ElementType::HAIRPIN: {
+            Spanner *spanner = toSpanner(element);
+            spanner->triggerLayout();
+            removeSpanner(spanner);
+        } break;
+
+        case ElementType::GUITAR_BEND: {
+            Note *startNote = toGuitarBend(element)->startNote();
+            if (startNote) {
+                startNote->setParenthesesMode(ParenthesesMode::NONE);
+                startNote->chord()->setNoStem(false);
+                startNote->chord()->setBeamMode(BeamMode::AUTO);
+            }
+            Note *endNote = toGuitarBend(element)->endNote();
+            if (endNote) {
+                endNote->setGhost(false);
+                endNote->setVisible(true);
+                const StringData *stringData = endNote->originPart()->stringData(endNote->tick(), endNote->staffIdx());
+                int endFret = stringData->fret(endNote->pitch(), endNote->string(), endNote->staff());
+                endNote->setFret(endFret);
+            }
+            break;
         }
-        break;
 
-    case ElementType::SLUR:
-    case ElementType::HAMMER_ON_PULL_OFF:
-        addLayoutFlags(LayoutFlag::PLAY_EVENTS);
-    // fall through
+        case ElementType::OTTAVA: {
+            Ottava *o = toOttava(element);
+            o->triggerLayout();
+            removeSpanner(o);
+            o->staff()->updateOttava();
+        } break;
 
-    case ElementType::VOLTA:
-    case ElementType::TRILL:
-    case ElementType::VIBRATO:
-    case ElementType::PEDAL:
-    case ElementType::LET_RING:
-    case ElementType::GRADUAL_TEMPO_CHANGE:
-    case ElementType::PALM_MUTE:
-    case ElementType::PARTIAL_LYRICSLINE:
-    case ElementType::WHAMMY_BAR:
-    case ElementType::RASGUEADO:
-    case ElementType::HARMONIC_MARK:
-    case ElementType::PICK_SCRAPE:
-    case ElementType::TEXTLINE:
-    case ElementType::HAIRPIN:
-    {
-        Spanner* spanner = toSpanner(element);
-        spanner->triggerLayout();
-        removeSpanner(spanner);
-    }
-    break;
+        case ElementType::CHORD:
+        case ElementType::REST:
+        case ElementType::MMREST: {
+            ChordRest *cr = toChordRest(element);
+            if (cr->beam()) {
+                cr->beam()->remove(cr);
+            }
+            for (Lyrics *lyr : cr->lyrics()) {
+                lyr->removeFromScore();
+            }
+            // TODO: check for tuplet?
+        } break;
+        case ElementType::INSTRUMENT_CHANGE: {
+            addLayoutFlags(LayoutFlag::REBUILD_MIDI_MAPPING);
+            cmdState().instrumentsChanged = true;
+        } break;
 
-    case ElementType::GUITAR_BEND:
-    {
-        Note* startNote = toGuitarBend(element)->startNote();
-        if (startNote) {
-            startNote->setParenthesesMode(ParenthesesMode::NONE);
-            startNote->chord()->setNoStem(false);
-            startNote->chord()->setBeamMode(BeamMode::AUTO);
-        }
-        Note* endNote = toGuitarBend(element)->endNote();
-        if (endNote) {
-            endNote->setGhost(false);
-            endNote->setVisible(true);
-            const StringData* stringData = endNote->originPart()->stringData(endNote->tick(), endNote->staffIdx());
-            int endFret = stringData->fret(endNote->pitch(), endNote->string(), endNote->staff());
-            endNote->setFret(endFret);
-        }
-        break;
-    }
+        case ElementType::HARMONY:
+        case ElementType::FRET_DIAGRAM:
+            if (element->part()) {
+                element->part()->updateHarmonyChannels(true, true);
+            }
+            break;
 
-    case ElementType::OTTAVA:
-    {
-        Ottava* o = toOttava(element);
-        o->triggerLayout();
-        removeSpanner(o);
-        o->staff()->updateOttava();
-    }
-    break;
-
-    case ElementType::CHORD:
-    case ElementType::REST:
-    case ElementType::MMREST:
-    {
-        ChordRest* cr = toChordRest(element);
-        if (cr->beam()) {
-            cr->beam()->remove(cr);
-        }
-        for (Lyrics* lyr : cr->lyrics()) {
-            lyr->removeFromScore();
-        }
-        // TODO: check for tuplet?
-    }
-    break;
-    case ElementType::INSTRUMENT_CHANGE: {
-        addLayoutFlags(LayoutFlag::REBUILD_MIDI_MAPPING);
-        cmdState().instrumentsChanged = true;
-    }
-    break;
-
-    case ElementType::HARMONY:
-    case ElementType::FRET_DIAGRAM:
-        if (element->part()) {
-            element->part()->updateHarmonyChannels(true, true);
-        }
-        break;
-
-    default:
-        break;
+        default: break;
     }
 }
 
-void Score::doUndoRemoveElement(EngravingItem* element)
-{
+void Score::doUndoRemoveElement(EngravingItem *element) {
     if (element->generated()) {
         removeElement(element);
         //! HACK: don't delete as it may still be used in PropertiesPanel
@@ -1408,16 +1309,15 @@ void Score::doUndoRemoveElement(EngravingItem* element)
     }
 }
 
-bool Score::canReselectItem(const EngravingItem* item) const
-{
+bool Score::canReselectItem(const EngravingItem *item) const {
     if (!item || item->selected()) {
         return false;
     }
 
-    EngravingItem* seg = const_cast<EngravingItem*>(item->findAncestor(ElementType::SEGMENT));
+    EngravingItem *seg = const_cast<EngravingItem *>(item->findAncestor(ElementType::SEGMENT));
     if (seg) {
-        std::vector<EngravingItem*> elements = seg->getChildren(false);
-        return muse::contains(elements, const_cast<EngravingItem*>(item));
+        std::vector<EngravingItem *> elements = seg->getChildren(false);
+        return muse::contains(elements, const_cast<EngravingItem *>(item));
     }
 
     return true;
@@ -1427,9 +1327,8 @@ bool Score::canReselectItem(const EngravingItem* item) const
 //   firstMeasure
 //---------------------------------------------------------
 
-Measure* Score::firstMeasure() const
-{
-    MeasureBase* mb = m_measures.first();
+Measure *Score::firstMeasure() const {
+    MeasureBase *mb = m_measures.first();
     while (mb && !mb->isMeasure()) {
         mb = mb->next();
     }
@@ -1441,9 +1340,8 @@ Measure* Score::firstMeasure() const
 //   firstMeasureMM
 //---------------------------------------------------------
 
-Measure* Score::firstMeasureMM() const
-{
-    Measure* m = firstMeasure();
+Measure *Score::firstMeasureMM() const {
+    Measure *m = firstMeasure();
     if (m && style().styleB(Sid::createMultiMeasureRests) && m->hasMMRest()) {
         return m->mmRest();
     }
@@ -1454,13 +1352,9 @@ Measure* Score::firstMeasureMM() const
 //   firstMM
 //---------------------------------------------------------
 
-MeasureBase* Score::firstMM() const
-{
-    MeasureBase* m = m_measures.first();
-    if (m
-        && m->isMeasure()
-        && style().styleB(Sid::createMultiMeasureRests)
-        && toMeasure(m)->hasMMRest()) {
+MeasureBase *Score::firstMM() const {
+    MeasureBase *m = m_measures.first();
+    if (m && m->isMeasure() && style().styleB(Sid::createMultiMeasureRests) && toMeasure(m)->hasMMRest()) {
         return toMeasure(m)->mmRest();
     }
     return m;
@@ -1470,9 +1364,8 @@ MeasureBase* Score::firstMM() const
 //   measure
 //---------------------------------------------------------
 
-MeasureBase* Score::measure(int idx) const
-{
-    MeasureBase* mb = m_measures.first();
+MeasureBase *Score::measure(int idx) const {
+    MeasureBase *mb = m_measures.first();
     for (int i = 0; i < idx; ++i) {
         mb = mb->next();
         if (mb == 0) {
@@ -1488,10 +1381,9 @@ MeasureBase* Score::measure(int idx) const
 //    by its index, skipping other MeasureBase descendants
 //---------------------------------------------------------
 
-Measure* Score::crMeasure(int idx) const
-{
+Measure *Score::crMeasure(int idx) const {
     int i = -1;
-    for (MeasureBase* mb = m_measures.first(); mb; mb = mb->next()) {
+    for (MeasureBase *mb = m_measures.first(); mb; mb = mb->next()) {
         if (mb->isMeasure()) {
             ++i;
             if (i == idx) {
@@ -1506,9 +1398,8 @@ Measure* Score::crMeasure(int idx) const
 //   lastMeasure
 //---------------------------------------------------------
 
-Measure* Score::lastMeasure() const
-{
-    MeasureBase* mb = m_measures.last();
+Measure *Score::lastMeasure() const {
+    MeasureBase *mb = m_measures.last();
 
     if (!mb) {
         return nullptr;
@@ -1524,19 +1415,17 @@ Measure* Score::lastMeasure() const
 //   lastMeasureMM
 //---------------------------------------------------------
 
-Measure* Score::lastMeasureMM() const
-{
-    Measure* m = lastMeasure();
-    return m ? const_cast<Measure*>(m->coveringMMRestOrThis()) : nullptr;
+Measure *Score::lastMeasureMM() const {
+    Measure *m = lastMeasure();
+    return m ? const_cast<Measure *>(m->coveringMMRestOrThis()) : nullptr;
 }
 
 //---------------------------------------------------------
 //   endTick
 //---------------------------------------------------------
 
-Fraction Score::endTick() const
-{
-    Measure* m = lastMeasure();
+Fraction Score::endTick() const {
+    Measure *m = lastMeasure();
     return m ? m->endTick() : Fraction(0, 1);
 }
 
@@ -1544,10 +1433,9 @@ Fraction Score::endTick() const
 //   firstSegment
 //---------------------------------------------------------
 
-Segment* Score::firstSegment(SegmentType segType) const
-{
-    Segment* seg;
-    Measure* m = firstMeasure();
+Segment *Score::firstSegment(SegmentType segType) const {
+    Segment *seg;
+    Measure *m = firstMeasure();
     if (!m) {
         seg = 0;
     } else {
@@ -1563,9 +1451,8 @@ Segment* Score::firstSegment(SegmentType segType) const
 //   firstSegmentMM
 //---------------------------------------------------------
 
-Segment* Score::firstSegmentMM(SegmentType segType) const
-{
-    Measure* m = firstMeasureMM();
+Segment *Score::firstSegmentMM(SegmentType segType) const {
+    Measure *m = firstMeasureMM();
     return m ? m->first(segType) : 0;
 }
 
@@ -1573,9 +1460,8 @@ Segment* Score::firstSegmentMM(SegmentType segType) const
 //   lastSegment
 //---------------------------------------------------------
 
-Segment* Score::lastSegment() const
-{
-    Measure* m = lastMeasure();
+Segment *Score::lastSegment() const {
+    Measure *m = lastMeasure();
     return m ? m->last() : 0;
 }
 
@@ -1583,34 +1469,20 @@ Segment* Score::lastSegment() const
 //   lastSegmentMM
 //---------------------------------------------------------
 
-Segment* Score::lastSegmentMM() const
-{
-    Measure* m = lastMeasureMM();
+Segment *Score::lastSegmentMM() const {
+    Measure *m = lastMeasureMM();
     return m ? m->last() : 0;
 }
 
-double Score::utick2utime(int tick) const
-{
-    return tempoTimeline(/*expandRepeats*/ true).utick2utime(tick);
-}
+double Score::utick2utime(int tick) const { return tempoTimeline(/*expandRepeats*/ true).utick2utime(tick); }
 
-int Score::utime2utick(double utime) const
-{
-    return tempoTimeline(/*expandRepeats*/ true).utime2utick(utime);
-}
+int Score::utime2utick(double utime) const { return tempoTimeline(/*expandRepeats*/ true).utime2utick(utime); }
 
-const TempoTimeline& Score::tempoTimeline() const
-{
-    return masterScore()->tempoTimeline();
-}
+const TempoTimeline &Score::tempoTimeline() const { return masterScore()->tempoTimeline(); }
 
-const TempoTimeline& Score::tempoTimeline(bool expandRepeats) const
-{
-    return masterScore()->tempoTimeline(expandRepeats);
-}
+const TempoTimeline &Score::tempoTimeline(bool expandRepeats) const { return masterScore()->tempoTimeline(expandRepeats); }
 
-void Score::setTempoTimelineOverride(std::optional<TempoTimeline> timeline)
-{
+void Score::setTempoTimelineOverride(std::optional<TempoTimeline> timeline) {
     masterScore()->setTempoTimelineOverride(std::move(timeline));
 }
 
@@ -1618,31 +1490,30 @@ void Score::setTempoTimelineOverride(std::optional<TempoTimeline> timeline)
 //   scanElementsInRange
 //---------------------------------------------------------
 
-void Score::scanElementsInRange(std::function<void(EngravingItem*)> func)
-{
+void Score::scanElementsInRange(std::function<void(EngravingItem *)> func) {
     const Fraction selectionStartTick = m_selection.startSegment() ? m_selection.startSegment()->tick() : Fraction(0, 1);
     const Fraction selectionEndTick = m_selection.endSegment() ? m_selection.endSegment()->tick() : endTick();
-    auto doScanElement = [&](EngravingItem* e) {
+    auto doScanElement = [&](EngravingItem *e) {
         if (e->tick() >= selectionStartTick && e->tick() < selectionEndTick) {
             func(e);
         }
     };
 
-    System* lastSystem = nullptr;
+    System *lastSystem = nullptr;
     // Inculde previous measure/system so we scan items at their end tick
     // Filter anything else out in doScanElement
-    MeasureBase* startMb = m_selection.startMeasureBase();
+    MeasureBase *startMb = m_selection.startMeasureBase();
     if (startMb->prev()) {
         startMb = startMb->prev();
     }
-    for (MeasureBase* mb = startMb; mb && mb->tick() < selectionEndTick; mb = mb->next()) {
+    for (MeasureBase *mb = startMb; mb && mb->tick() < selectionEndTick; mb = mb->next()) {
         mb->scanElements(doScanElement);
 
         if (mb->isMeasure() && toMeasure(mb)->mmRest()) {
-            Measure* mmr = toMeasure(mb)->mmRest();
+            Measure *mmr = toMeasure(mb)->mmRest();
             mmr->scanElements(doScanElement);
         }
-        System* system = mb ? mb->system() : nullptr;
+        System *system = mb ? mb->system() : nullptr;
         if (system && system != lastSystem) {
             system->scanElements(doScanElement);
             lastSystem = system;
@@ -1654,12 +1525,11 @@ void Score::scanElementsInRange(std::function<void(EngravingItem*)> func)
 //   setSelection
 //---------------------------------------------------------
 
-void Score::setSelection(const Selection& s)
-{
+void Score::setSelection(const Selection &s) {
     deselectAll();
     m_selection = s;
 
-    for (EngravingItem* e : m_selection.elements()) {
+    for (EngravingItem *e : m_selection.elements()) {
         e->setSelected(true);
     }
 }
@@ -1668,11 +1538,10 @@ void Score::setSelection(const Selection& s)
 //   getText
 //---------------------------------------------------------
 
-Text* Score::getText(TextStyleType tid) const
-{
-    MeasureBase* m = first();
+Text *Score::getText(TextStyleType tid) const {
+    MeasureBase *m = first();
     if (m && m->isVBox()) {
-        for (EngravingItem* e : m->el()) {
+        for (EngravingItem *e : m->el()) {
             if (e->isText() && toText(e)->textStyleType() == tid) {
                 return toText(e);
             }
@@ -1685,8 +1554,7 @@ Text* Score::getText(TextStyleType tid) const
 //   metaTag
 //---------------------------------------------------------
 
-String Score::metaTag(const String& s) const
-{
+String Score::metaTag(const String &s) const {
     if (muse::contains(m_metaTags, s)) {
         return m_metaTags.at(s);
     }
@@ -1698,17 +1566,13 @@ String Score::metaTag(const String& s) const
 //   setMetaTag
 //---------------------------------------------------------
 
-void Score::setMetaTag(const String& tag, const String& val)
-{
-    m_metaTags.insert_or_assign(tag, val);
-}
+void Score::setMetaTag(const String &tag, const String &val) { m_metaTags.insert_or_assign(tag, val); }
 
 //---------------------------------------------------------
 //   setSynthesizerState
 //---------------------------------------------------------
 
-void Score::setSynthesizerState(const SynthesizerState& s)
-{
+void Score::setSynthesizerState(const SynthesizerState &s) {
     // TODO: make undoable
     m_synthesizerState = s;
 }
@@ -1717,11 +1581,10 @@ void Score::setSynthesizerState(const SynthesizerState& s)
 //   appendScore
 //---------------------------------------------------------
 
-bool Score::appendScore(Score* score, bool addPageBreak, bool addSectionBreak)
-{
+bool Score::appendScore(Score *score, bool addPageBreak, bool addSectionBreak) {
     if (parts().size() < score->parts().size() || staves().size() < score->staves().size()) {
-        LOGD("Score to append has %zu parts and %zu staves, but this score only has %zu parts and %zu staves.",
-             score->parts().size(), score->staves().size(), parts().size(), staves().size());
+        LOGD("Score to append has %zu parts and %zu staves, but this score only has %zu parts and %zu staves.", score->parts().size(),
+             score->staves().size(), parts().size(), staves().size());
         return false;
     }
 
@@ -1733,8 +1596,8 @@ bool Score::appendScore(Score* score, bool addPageBreak, bool addSectionBreak)
     // apply Page/Section Breaks if desired
     if (addPageBreak) {
         if (!last()->pageBreak()) {
-            last()->undoSetBreak(false, LayoutBreakType::LINE);       // remove line break if exists
-            last()->undoSetBreak(true, LayoutBreakType::PAGE);        // apply page break
+            last()->undoSetBreak(false, LayoutBreakType::LINE); // remove line break if exists
+            last()->undoSetBreak(true, LayoutBreakType::PAGE);  // apply page break
         }
     } else if (!last()->lineBreak() && !last()->pageBreak()) {
         last()->undoSetBreak(true, LayoutBreakType::LINE);
@@ -1761,40 +1624,39 @@ bool Score::appendScore(Score* score, bool addPageBreak, bool addSectionBreak)
 //     clone measures from another score to the end of this
 //---------------------------------------------------------
 
-bool Score::appendMeasuresFromScore(Score* score, const Fraction& startTick, const Fraction& endTick)
-{
-    Transaction& tx = transactionManager()->currentOrDummyTransaction();
+bool Score::appendMeasuresFromScore(Score *score, const Fraction &startTick, const Fraction &endTick) {
+    Transaction &tx = transactionManager()->currentOrDummyTransaction();
 
     Fraction tickOfAppend = last()->endTick();
     TieMap tieMap;
 
-    MeasureBase* fmb = score->tick2measure(startTick);
-    MeasureBase* emb = score->tick2measure(endTick);
+    MeasureBase *fmb = score->tick2measure(startTick);
+    MeasureBase *emb = score->tick2measure(endTick);
     Fraction curTick = tickOfAppend;
-    for (MeasureBase* cmb = fmb; cmb != emb; cmb = cmb->next()) {
-        MeasureBase* nmb;
+    for (MeasureBase *cmb = fmb; cmb != emb; cmb = cmb->next()) {
+        MeasureBase *nmb;
         if (cmb->isMeasure()) {
-            Measure* nm = toMeasure(cmb)->cloneMeasure(this, curTick, &tieMap);
+            Measure *nm = toMeasure(cmb)->cloneMeasure(this, curTick, &tieMap);
             curTick += nm->ticks();
             nmb = toMeasureBase(nm);
         } else {
-            nmb = static_cast<MeasureBase*>(cmb->clone());
+            nmb = static_cast<MeasureBase *>(cmb->clone());
         }
 
         nmb->setScore(this);
         measures()->append(nmb);
     }
 
-    Measure* firstAppendedMeasure = tick2measure(tickOfAppend);
+    Measure *firstAppendedMeasure = tick2measure(tickOfAppend);
 
     // if the appended score has less staves,
     // make sure the measures have full measure rest
-    for (Measure* m = firstAppendedMeasure; m; m = m->nextMeasure()) {
+    for (Measure *m = firstAppendedMeasure; m; m = m->nextMeasure()) {
         for (size_t staffIdx = 0; staffIdx < nstaves(); ++staffIdx) {
             Fraction f;
-            for (Segment* s = m->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
+            for (Segment *s = m->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
                 for (voice_idx_t v = 0; v < VOICES; ++v) {
-                    ChordRest* cr = toChordRest(s->element(staffIdx * VOICES + v));
+                    ChordRest *cr = toChordRest(s->element(staffIdx * VOICES + v));
                     if (cr == 0) {
                         continue;
                     }
@@ -1811,16 +1673,16 @@ bool Score::appendMeasuresFromScore(Score* score, const Fraction& startTick, con
     //  this is needed if it was changed and needs to be changed back
     size_t n = nstaves();
     Fraction otick = fmb->tick(), ctick = tickOfAppend;
-    for (staff_idx_t staffIdx = 0; staffIdx < n; ++staffIdx) {   // iterate over all staves
-        track_idx_t trackIdx = staff2track(staffIdx);     // idx of irst track on the staff
-        Staff* staff = this->staff(staffIdx);
-        Staff* ostaff = score->staff(staffIdx);
+    for (staff_idx_t staffIdx = 0; staffIdx < n; ++staffIdx) { // iterate over all staves
+        track_idx_t trackIdx = staff2track(staffIdx);          // idx of irst track on the staff
+        Staff *staff = this->staff(staffIdx);
+        Staff *ostaff = score->staff(staffIdx);
 
         // check if key signature needs to be changed
         if (ostaff->key(otick) != staff->key(ctick)) {
-            Segment* ns = firstAppendedMeasure->undoGetSegment(SegmentType::KeySig, ctick);
+            Segment *ns = firstAppendedMeasure->undoGetSegment(SegmentType::KeySig, ctick);
             KeySigEvent nkse = KeySigEvent(ostaff->keySigEvent(otick));
-            KeySig* nks = Factory::createKeySig(ns);
+            KeySig *nks = Factory::createKeySig(ns);
             nks->setScore(this);
             nks->setTrack(trackIdx);
 
@@ -1829,29 +1691,27 @@ bool Score::appendMeasuresFromScore(Score* score, const Fraction& startTick, con
             ns->add(nks);
         }
         // check if a key signature is present but is spurious (i.e. no actual change)
-        else if (staff->currentKeyTick(ctick) == ctick
-                 && staff->key(ctick - Fraction::eps()) == ostaff->key(otick)) {
-            Segment* ns = firstAppendedMeasure->first(SegmentType::KeySig);
+        else if (staff->currentKeyTick(ctick) == ctick && staff->key(ctick - Fraction::eps()) == ostaff->key(otick)) {
+            Segment *ns = firstAppendedMeasure->first(SegmentType::KeySig);
             if (ns) {
                 ns->remove(ns->element(trackIdx));
             }
         }
 
         // check if time signature needs to be changed
-        TimeSig* ots = ostaff->timeSig(otick), * cts = staff->timeSig(ctick);
-        TimeSig* pts = staff->timeSig(ctick - Fraction::eps());
+        TimeSig *ots = ostaff->timeSig(otick), *cts = staff->timeSig(ctick);
+        TimeSig *pts = staff->timeSig(ctick - Fraction::eps());
         if (ots && cts && *ots != *cts) {
-            Segment* ns = firstAppendedMeasure->undoGetSegment(SegmentType::TimeSig, ctick);
-            TimeSig* nsig = new TimeSig(*ots);
+            Segment *ns = firstAppendedMeasure->undoGetSegment(SegmentType::TimeSig, ctick);
+            TimeSig *nsig = new TimeSig(*ots);
 
             nsig->setScore(this);
             nsig->setTrack(trackIdx);
             ns->add(nsig);
         }
         // check if a time signature is present but is spurious (i.e. no actual change)
-        else if (staff->currentTimeSigTick(ctick) == ctick
-                 && ots && pts && *pts == *ots) {
-            Segment* ns = firstAppendedMeasure->first(SegmentType::TimeSig);
+        else if (staff->currentTimeSigTick(ctick) == ctick && ots && pts && *pts == *ots) {
+            Segment *ns = firstAppendedMeasure->first(SegmentType::TimeSig);
             if (ns) {
                 ns->remove(ns->element(trackIdx));
             }
@@ -1862,9 +1722,8 @@ bool Score::appendMeasuresFromScore(Score* score, const Fraction& startTick, con
             EditClef::undoChangeClef(tx, this, staff, firstAppendedMeasure, ostaff->clef(otick));
         }
         // check if a clef change is present but is spurious (i.e. no actual change)
-        else if (staff->currentClefTick(ctick) == ctick
-                 && staff->clef(ctick - Fraction::eps()) == ostaff->clef(otick)) {
-            Segment* ns = firstAppendedMeasure->first(SegmentType::Clef);
+        else if (staff->currentClefTick(ctick) == ctick && staff->clef(ctick - Fraction::eps()) == ostaff->clef(otick)) {
+            Segment *ns = firstAppendedMeasure->first(SegmentType::Clef);
             if (!ns) {
                 ns = firstAppendedMeasure->first(SegmentType::HeaderClef);
             }
@@ -1875,7 +1734,7 @@ bool Score::appendMeasuresFromScore(Score* score, const Fraction& startTick, con
     }
 
     // check if section starts with a pick-up measure to be merged with end of previous section
-    Measure* cm = firstAppendedMeasure, * pm = cm->prevMeasure();
+    Measure *cm = firstAppendedMeasure, *pm = cm->prevMeasure();
     if (pm->timesig() == cm->timesig() && pm->ticks() + cm->ticks() == cm->timesig()) {
         SplitJoinMeasure::joinMeasures(tx, m_masterScore, pm->tick(), cm->tick());
     }
@@ -1884,12 +1743,12 @@ bool Score::appendMeasuresFromScore(Score* score, const Fraction& startTick, con
     auto ospans = score->spanner();
     auto lb = ospans.lower_bound(startTick.ticks()), ub = ospans.upper_bound(endTick.ticks());
     for (auto sp = lb; sp != ub; sp++) {
-        Spanner* spanner = sp->second;
+        Spanner *spanner = sp->second;
 
         if (spanner->tick2() > endTick) {
-            continue;                                 // map is by tick() so this can still happen in theory...
+            continue; // map is by tick() so this can still happen in theory...
         }
-        Spanner* ns = toSpanner(spanner->clone());
+        Spanner *ns = toSpanner(spanner->clone());
         ns->setScore(this);
         ns->moveToDummy();
         ns->setTick(spanner->tick() - startTick + tickOfAppend);
@@ -1906,29 +1765,28 @@ bool Score::appendMeasuresFromScore(Score* score, const Fraction& startTick, con
 //   splitStaff
 //---------------------------------------------------------
 
-void Score::splitStaff(staff_idx_t staffIdx, int splitPoint)
-{
-//      LOGD("split staff %d point %d", staffIdx, splitPoint);
+void Score::splitStaff(staff_idx_t staffIdx, int splitPoint) {
+    //      LOGD("split staff %d point %d", staffIdx, splitPoint);
 
     //
     // create second staff
     //
-    Staff* st = staff(staffIdx);
-    Part* p  = st->part();
-    Staff* ns = Factory::createStaff(p);
+    Staff *st = staff(staffIdx);
+    Part *p = st->part();
+    Staff *ns = Factory::createStaff(p);
     ns->init(st);
 
     // convert staffIdx from score-relative to part-relative
     staff_idx_t staffIdxPart = staffIdx - p->staff(0)->idx();
     undoInsertStaff(ns, staffIdxPart + 1, false);
 
-    Segment* seg = firstMeasure()->getSegment(SegmentType::HeaderClef, Fraction(0, 1));
-    Clef* clef = Factory::createClef(seg);
+    Segment *seg = firstMeasure()->getSegment(SegmentType::HeaderClef, Fraction(0, 1));
+    Clef *clef = Factory::createClef(seg);
     clef->setClefType(ClefType::F);
     clef->setTrack((staffIdx + 1) * VOICES);
     undoAddElement(clef);
 
-    Transaction& tx = transactionManager()->currentOrDummyTransaction();
+    Transaction &tx = transactionManager()->currentOrDummyTransaction();
     EditKeySig::undoChangeKeySig(tx, this, ns, Fraction(0, 1), st->keySigEvent(Fraction(0, 1)));
 
     masterScore()->rebuildMidiMapping();
@@ -1944,20 +1802,21 @@ void Score::splitStaff(staff_idx_t staffIdx, int splitPoint)
 
     // Keep track of ties to be reconnected.
     struct OldTie {
-        Tie* tie;
-        Note* nnote;
+        Tie *tie;
+        Note *nnote;
     };
-    std::map<Note*, OldTie> oldTies;
+
+    std::map<Note *, OldTie> oldTies;
 
     // Notes under the split point can be part of a tuplet, so keep track
     // of the tuplet mapping too!
-    std::map<Tuplet*, Tuplet*> tupletMapping;
-    Tuplet* tupletSrc[VOICES] = { };
-    Tuplet* tupletDst[VOICES] = { };
+    std::map<Tuplet *, Tuplet *> tupletMapping;
+    Tuplet *tupletSrc[VOICES] = {};
+    Tuplet *tupletDst[VOICES] = {};
 
-    for (Segment* s = firstSegment(SegmentType::ChordRest); s; s = s->next1(SegmentType::ChordRest)) {
+    for (Segment *s = firstSegment(SegmentType::ChordRest); s; s = s->next1(SegmentType::ChordRest)) {
         for (voice_idx_t voice = 0; voice < VOICES; ++voice) {
-            EngravingItem* e = s->element(strack + voice);
+            EngravingItem *e = s->element(strack + voice);
 
             if (!e) {
                 continue;
@@ -1969,7 +1828,7 @@ void Score::splitStaff(staff_idx_t staffIdx, int splitPoint)
                 } else {
                     tupletDst[voice] = Factory::copyTuplet(*tupletSrc[voice]);
                     tupletDst[voice]->setTrack(dtrack);
-                    tupletMapping.insert({ tupletSrc[voice], tupletDst[voice] });
+                    tupletMapping.insert({tupletSrc[voice], tupletDst[voice]});
                 }
             } else {
                 tupletSrc[voice] = nullptr;
@@ -1982,13 +1841,13 @@ void Score::splitStaff(staff_idx_t staffIdx, int splitPoint)
             TDuration lengthSrc = TDuration();
 
             if (e->isChord()) {
-                Chord* c = toChord(e);
-                std::list<Note*> removeNotes;
-                for (Note* note : c->notes()) {
+                Chord *c = toChord(e);
+                std::list<Note *> removeNotes;
+                for (Note *note : c->notes()) {
                     if (note->pitch() >= splitPoint) {
                         continue;
                     } else {
-                        Chord* chord = toChord(s->element(dtrack + voice));
+                        Chord *chord = toChord(s->element(dtrack + voice));
                         assert(!chord || (chord->isChord()));
                         if (!chord) {
                             chord = Factory::copyChord(*c);
@@ -1998,12 +1857,12 @@ void Score::splitStaff(staff_idx_t staffIdx, int splitPoint)
                             chord->setTrack(dtrack + voice);
                             undoAddElement(chord);
                         }
-                        Note* nnote = Factory::copyNote(*note);
+                        Note *nnote = Factory::copyNote(*note);
                         if (note->tieFor()) {
                             // Save the note and the tie for processing later.
                             // Use the end note as index in the map so, when this is found
                             // we know the tie has to be recreated.
-                            oldTies.insert({ note->tieFor()->endNote(), OldTie { note->tieFor(), nnote } });
+                            oldTies.insert({note->tieFor()->endNote(), OldTie{note->tieFor(), nnote}});
                         }
                         nnote->setTrack(dtrack + voice);
                         chord->add(nnote);
@@ -2016,7 +1875,7 @@ void Score::splitStaff(staff_idx_t staffIdx, int splitPoint)
                         if (muse::contains(oldTies, note)) {
                             // Yes! Create a tie between the new notes and remove the
                             // old tie.
-                            Tie* tie = oldTies[note].tie->clone();
+                            Tie *tie = oldTies[note].tie->clone();
                             tie->setStartNote(oldTies[note].nnote);
                             tie->setEndNote(nnote);
                             tie->setTrack(nnote->track());
@@ -2027,26 +1886,26 @@ void Score::splitStaff(staff_idx_t staffIdx, int splitPoint)
                     }
                 }
                 createRestSrc = false;
-                for (Note* note : removeNotes) {
+                for (Note *note : removeNotes) {
                     undoRemoveElement(note);
-                    Chord* chord = note->chord();
+                    Chord *chord = note->chord();
                     if (chord->notes().empty()) {
                         for (auto sp : spanner()) {
-                            Slur* slur = toSlur(sp.second);
+                            Slur *slur = toSlur(sp.second);
                             if (!slur->isSlur()) {
                                 continue;
                             }
                             if (slur->startCR() == chord) {
                                 slur->undoChangeProperty(Pid::TRACK, slur->track() + VOICES);
-                                for (EngravingObject* ee : slur->linkList()) {
-                                    Slur* lslur = toSlur(ee);
+                                for (EngravingObject *ee : slur->linkList()) {
+                                    Slur *lslur = toSlur(ee);
                                     lslur->setStartElement(0);
                                 }
                             }
                             if (slur->endCR() == chord) {
                                 slur->undoChangeProperty(Pid::SPANNER_TRACK2, slur->track2() + VOICES);
-                                for (EngravingObject* ee : slur->linkList()) {
-                                    Slur* lslur = toSlur(ee);
+                                for (EngravingObject *ee : slur->linkList()) {
+                                    Slur *lslur = toSlur(ee);
                                     lslur->setEndElement(0);
                                 }
                             }
@@ -2072,13 +1931,12 @@ void Score::splitStaff(staff_idx_t staffIdx, int splitPoint)
 //   cmdRemovePart
 //---------------------------------------------------------
 
-void Score::cmdRemovePart(Part* part)
-{
+void Score::cmdRemovePart(Part *part) {
     if (!part) {
         return;
     }
 
-    Transaction& tx = transactionManager()->currentOrDummyTransaction();
+    Transaction &tx = transactionManager()->currentOrDummyTransaction();
     EditStaveSharing::handleRemovePart(tx, part);
 
     staff_idx_t sidx = staffIdx(part);
@@ -2099,8 +1957,7 @@ void Score::cmdRemovePart(Part* part)
 //   insertPart
 //---------------------------------------------------------
 
-void Score::insertPart(Part* part, size_t targetPartIdx)
-{
+void Score::insertPart(Part *part, size_t targetPartIdx) {
     if (!part) {
         return;
     }
@@ -2119,8 +1976,7 @@ void Score::insertPart(Part* part, size_t targetPartIdx)
     markInstrumentsAsPrimary(m_parts);
 }
 
-void Score::appendPart(Part* part)
-{
+void Score::appendPart(Part *part) {
     if (!part) {
         return;
     }
@@ -2135,8 +1991,7 @@ void Score::appendPart(Part* part)
 //   removePart
 //---------------------------------------------------------
 
-void Score::removePart(Part* part)
-{
+void Score::removePart(Part *part) {
     part_idx_t index = muse::indexOf(m_parts, part);
 
     if (index == muse::nidx) {
@@ -2152,7 +2007,7 @@ void Score::removePart(Part* part)
     markInstrumentsAsPrimary(m_parts);
 
     if (m_excerpt) {
-        for (Part* excerptPart : m_excerpt->parts()) {
+        for (Part *excerptPart : m_excerpt->parts()) {
             if (excerptPart->id() != part->id()) {
                 continue;
             }
@@ -2171,8 +2026,7 @@ void Score::removePart(Part* part)
 //   insertStaff
 //---------------------------------------------------------
 
-void Score::insertStaff(Staff* staff, staff_idx_t ridx)
-{
+void Score::insertStaff(Staff *staff, staff_idx_t ridx) {
     if (!staff || !staff->part()) {
         return;
     }
@@ -2182,15 +2036,15 @@ void Score::insertStaff(Staff* staff, staff_idx_t ridx)
 
     staff_idx_t idx = staffIdx(staff->part()) + ridx;
     m_staves.insert(m_staves.begin() + idx, staff);
-    m_brackets.insert(m_brackets.begin() + idx, std::vector<BracketItem*>());
+    m_brackets.insert(m_brackets.begin() + idx, std::vector<BracketItem *>());
     for (staff_idx_t i = idx + 1; i < static_cast<staff_idx_t>(m_brackets.size()); ++i) {
-        for (BracketItem* bi : m_brackets[i]) {
+        for (BracketItem *bi : m_brackets[i]) {
             bi->setStartStaffIdx(i);
         }
     }
 
     for (auto i = staff->score()->spanner().cbegin(); i != staff->score()->spanner().cend(); ++i) {
-        Spanner* s = i->second;
+        Spanner *s = i->second;
         if (!moveDownWhenAddingStaves(s, idx)) {
             continue;
         }
@@ -2200,7 +2054,7 @@ void Score::insertStaff(Staff* staff, staff_idx_t ridx)
                 t = ntracks() - 1;
             }
             s->setTrack(t);
-            for (SpannerSegment* ss : s->spannerSegments()) {
+            for (SpannerSegment *ss : s->spannerSegments()) {
                 ss->setTrack(t);
             }
             if (s->track2() != muse::nidx) {
@@ -2213,8 +2067,7 @@ void Score::insertStaff(Staff* staff, staff_idx_t ridx)
     updateStavesNumberForSystems();
 }
 
-void Score::appendStaff(Staff* staff)
-{
+void Score::appendStaff(Staff *staff) {
     if (!staff || !staff->part()) {
         return;
     }
@@ -2227,23 +2080,20 @@ void Score::appendStaff(Staff* staff)
     updateStavesNumberForSystems();
 }
 
-void Score::assignIdIfNeed(Staff& staff) const
-{
+void Score::assignIdIfNeed(Staff &staff) const {
     if (staff.id() == INVALID_ID) {
         staff.setId(newStaffId());
     }
 }
 
-void Score::assignIdIfNeed(Part& part) const
-{
+void Score::assignIdIfNeed(Part &part) const {
     if (part.id() == INVALID_ID) {
         part.setId(newPartId());
     }
 }
 
-void Score::updateStavesNumberForSystems()
-{
-    for (System* system : m_systems) {
+void Score::updateStavesNumberForSystems() {
+    for (System *system : m_systems) {
         if (!system->firstMeasure()) {
             continue;
         }
@@ -2252,22 +2102,20 @@ void Score::updateStavesNumberForSystems()
     }
 }
 
-ID Score::newStaffId() const
-{
+ID Score::newStaffId() const {
     ID maxId = 0;
 
-    for (const Staff* staff : score()->staves()) {
+    for (const Staff *staff : score()->staves()) {
         maxId = std::max(maxId, staff->id());
     }
 
     return maxId + 1;
 }
 
-ID Score::newPartId() const
-{
+ID Score::newPartId() const {
     ID maxId = 0;
 
-    for (const Part* part : score()->parts()) {
+    for (const Part *part : score()->parts()) {
         maxId = std::max(maxId, part->id());
     }
 
@@ -2278,15 +2126,14 @@ ID Score::newPartId() const
 //   removeStaff
 //---------------------------------------------------------
 
-void Score::removeStaff(Staff* staff)
-{
+void Score::removeStaff(Staff *staff) {
     staff_idx_t idx = staff->idx();
     for (auto i = staff->score()->spanner().cbegin(); i != staff->score()->spanner().cend(); ++i) {
-        Spanner* s = i->second;
+        Spanner *s = i->second;
         if (s->staffIdx() > idx) {
-            track_idx_t t =  s->track() >= VOICES ? s->track() - VOICES : 0;
+            track_idx_t t = s->track() >= VOICES ? s->track() - VOICES : 0;
             s->setTrack(t);
-            for (SpannerSegment* ss : s->spannerSegments()) {
+            for (SpannerSegment *ss : s->spannerSegments()) {
                 ss->setTrack(t);
             }
             if (s->track2() != muse::nidx) {
@@ -2301,7 +2148,7 @@ void Score::removeStaff(Staff* staff)
     muse::DeleteAll(m_brackets[idx]);
     m_brackets.erase(m_brackets.begin() + idx);
     for (staff_idx_t i = idx; i < static_cast<staff_idx_t>(m_brackets.size()); ++i) {
-        for (BracketItem* bi : m_brackets[i]) {
+        for (BracketItem *bi : m_brackets[i]) {
             bi->setStartStaffIdx(i);
         }
     }
@@ -2318,13 +2165,12 @@ void Score::removeStaff(Staff* staff)
 //   adjustKeySigs
 //---------------------------------------------------------
 
-void Score::adjustKeySigs(track_idx_t sidx, track_idx_t eidx, KeyList km)
-{
+void Score::adjustKeySigs(track_idx_t sidx, track_idx_t eidx, KeyList km) {
     for (track_idx_t staffIdx = sidx; staffIdx < eidx; ++staffIdx) {
-        Staff* staff = m_staves[staffIdx];
+        Staff *staff = m_staves[staffIdx];
         for (auto i = km.begin(); i != km.end(); ++i) {
             Fraction tick = Fraction::fromTicks(i->first);
-            Measure* measure = tick2measure(tick);
+            Measure *measure = tick2measure(tick);
             if (!measure) {
                 continue;
             }
@@ -2339,8 +2185,8 @@ void Score::adjustKeySigs(track_idx_t sidx, track_idx_t eidx, KeyList km)
             }
             staff->setKey(tick, key);
 
-            Segment* s = measure->getSegment(SegmentType::KeySig, tick);
-            KeySig* keysig = Factory::createKeySig(s);
+            Segment *s = measure->getSegment(SegmentType::KeySig, tick);
+            KeySig *keysig = Factory::createKeySig(s);
             keysig->setTrack(staffIdx * VOICES);
             keysig->setKeySigEvent(key);
             doUndoAddElement(keysig);
@@ -2353,15 +2199,14 @@ void Score::adjustKeySigs(track_idx_t sidx, track_idx_t eidx, KeyList km)
 //      This is taken from MuseScore::editInstrList()
 //---------------------------------------------------------
 
-KeyList Score::keyList() const
-{
+KeyList Score::keyList() const {
     // find the keylist of the first pitched staff
     KeyList tmpKeymap;
-    Staff* firstStaff = nullptr;
+    Staff *firstStaff = nullptr;
     bool isFirstStaff = true;
-    for (Staff* s : masterScore()->staves()) {
+    for (Staff *s : masterScore()->staves()) {
         if (!s->isDrumStaff(Fraction(0, 1))) {
-            KeyList* km = s->keyList();
+            KeyList *km = s->keyList();
             if (isFirstStaff) {
                 isFirstStaff = false;
                 tmpKeymap.insert(km->begin(), km->end());
@@ -2398,8 +2243,8 @@ KeyList Score::keyList() const
         }
     }
     Key normalizedC = Key::C;
-    bool needNormalize = firstStaff && !masterScore()->style().styleB(Sid::concertPitch)
-                         && (firstStaff->part()->instrument()->transpose().chromatic || firstStaff->part()->instruments().size() > 1);
+    bool needNormalize = firstStaff && !masterScore()->style().styleB(Sid::concertPitch) &&
+                         (firstStaff->part()->instrument()->transpose().chromatic || firstStaff->part()->instruments().size() > 1);
     // normalize the keyevents to concert pitch if necessary
     KeyList nkl;
     for (auto key : tmpKeymap) {
@@ -2411,8 +2256,8 @@ KeyList Score::keyList() const
             nkl.insert(key);
         }
     }
-    if (firstStaff && !masterScore()->style().styleB(Sid::concertPitch)
-        && (firstStaff->part()->instrument()->transpose().chromatic || firstStaff->part()->instruments().size() > 1)) {
+    if (firstStaff && !masterScore()->style().styleB(Sid::concertPitch) &&
+        (firstStaff->part()->instrument()->transpose().chromatic || firstStaff->part()->instruments().size() > 1)) {
         int interval = firstStaff->part()->instrument()->transpose().chromatic;
         normalizedC = Transpose::transposeKey(normalizedC, interval);
     }
@@ -2430,18 +2275,16 @@ KeyList Score::keyList() const
 //   cmdRemoveStaff
 //---------------------------------------------------------
 
-void Score::cmdRemoveStaff(staff_idx_t staffIdx)
-{
-    Staff* s = staff(staffIdx);
+void Score::cmdRemoveStaff(staff_idx_t staffIdx) {
+    Staff *s = staff(staffIdx);
     EditStaffBrackets::adjustBracketsDel(this, staffIdx, staffIdx + 1);
 
     undoRemoveStaff(s);
 }
 
-void Score::sortSystemObjects(std::vector<staff_idx_t>& dst)
-{
+void Score::sortSystemObjects(std::vector<staff_idx_t> &dst) {
     std::vector<staff_idx_t> moveTo;
-    for (const Staff* staff : m_systemObjectStaves) {
+    for (const Staff *staff : m_systemObjectStaves) {
         staff_idx_t oldStaffIdx = staff->idx();
         staff_idx_t newStaffIfx = oldStaffIdx < dst.size() ? dst[oldStaffIdx] : muse::nidx;
 
@@ -2458,13 +2301,13 @@ void Score::sortSystemObjects(std::vector<staff_idx_t>& dst)
             continue;
         } else {
             // move all system objects from systemObjectStaves[i] to _staves[moveTo[i]]
-            for (MeasureBase* mb = measures()->first(); mb; mb = mb->next()) {
+            for (MeasureBase *mb = measures()->first(); mb; mb = mb->next()) {
                 if (!mb->isMeasure()) {
                     continue;
                 }
 
-                Measure* m = toMeasure(mb);
-                for (EngravingItem* e : m->el()) {
+                Measure *m = toMeasure(mb);
+                for (EngravingItem *e : m->el()) {
                     if ((e->isJump() || e->isMarker()) && e->isLinked() && e->track() == staff2track(m_systemObjectStaves[i]->idx())) {
                         if (moveTo[i] == muse::nidx) {
                             // delete this clone
@@ -2477,15 +2320,12 @@ void Score::sortSystemObjects(std::vector<staff_idx_t>& dst)
                     }
                 }
 
-                for (Segment* s = m->first(); s; s = s->next()) {
+                for (Segment *s = m->first(); s; s = s->next()) {
                     if (s->isChordRest() || !s->annotations().empty()) {
                         const auto annotations = s->annotations(); // make a copy since we alter the list
-                        for (EngravingItem* e : annotations) {
-                            if (e->isRehearsalMark()
-                                || e->isSystemText()
-                                || e->isTripletFeel()
-                                || e->isTempoText()
-                                || isSystemTextLine(e)) {
+                        for (EngravingItem *e : annotations) {
+                            if (e->isRehearsalMark() || e->isSystemText() || e->isTripletFeel() || e->isTempoText() ||
+                                isSystemTextLine(e)) {
                                 if (e->track() == staff2track(m_systemObjectStaves[i]->idx()) && e->isLinked()) {
                                     if (moveTo[i] == muse::nidx) {
                                         s->removeAnnotation(e);
@@ -2516,18 +2356,17 @@ void Score::sortSystemObjects(std::vector<staff_idx_t>& dst)
 //   sortStaves
 //---------------------------------------------------------
 
-void Score::sortStaves(std::vector<staff_idx_t>& dst)
-{
+void Score::sortStaves(std::vector<staff_idx_t> &dst) {
     sortSystemObjects(dst);
     muse::DeleteAll(systems());
-    systems().clear();    //??
+    systems().clear(); //??
     m_parts.clear();
-    Part* curPart = nullptr;
-    std::vector<Staff*> dl;
+    Part *curPart = nullptr;
+    std::vector<Staff *> dl;
     std::map<size_t, size_t> trackMap;
     track_idx_t track = 0;
     for (staff_idx_t idx : dst) {
-        Staff* staff = m_staves[idx];
+        Staff *staff = m_staves[idx];
         if (staff->part() != curPart) {
             curPart = staff->part();
             curPart->clearStaves();
@@ -2536,26 +2375,26 @@ void Score::sortStaves(std::vector<staff_idx_t>& dst)
         curPart->appendStaff(staff);
         dl.push_back(staff);
         for (size_t itrack = 0; itrack < VOICES; ++itrack) {
-            trackMap.insert({ idx* VOICES + itrack, track++ });
+            trackMap.insert({idx * VOICES + itrack, track++});
         }
     }
     m_staves = dl;
 
-    for (Measure* m = firstMeasure(); m; m = m->nextMeasure()) {
+    for (Measure *m = firstMeasure(); m; m = m->nextMeasure()) {
         m->sortStaves(dst);
         if (m->hasMMRest()) {
             m->mmRest()->sortStaves(dst);
         }
     }
     for (auto i : m_spanner.map()) {
-        Spanner* sp = i.second;
-        voice_idx_t voice    = sp->voice();
+        Spanner *sp = i.second;
+        voice_idx_t voice = sp->voice();
         staff_idx_t staffIdx = sp->staffIdx();
         staff_idx_t idx = muse::indexOf(dst, staffIdx);
         if (idx != muse::nidx && !sp->isTopSystemObject()) {
             sp->setTrack(idx * VOICES + voice);
             if (sp->track2() != muse::nidx) {
-                sp->setTrack2(idx * VOICES + (sp->track2() % VOICES));        // at least keep the voice...
+                sp->setTrack2(idx * VOICES + (sp->track2() % VOICES)); // at least keep the voice...
             }
         }
     }
@@ -2567,18 +2406,17 @@ void Score::sortStaves(std::vector<staff_idx_t>& dst)
 //   cmdConcertPitchChanged
 //---------------------------------------------------------
 
-void Score::cmdConcertPitchChanged(bool flag)
-{
+void Score::cmdConcertPitchChanged(bool flag) {
     if (flag == style().styleB(Sid::concertPitch)) {
         return;
     }
 
-    Transaction& tx = transactionManager()->currentOrDummyTransaction();
+    Transaction &tx = transactionManager()->currentOrDummyTransaction();
 
-    undoChangeStyleVal(Sid::concertPitch, flag);         // change style flag
+    undoChangeStyleVal(Sid::concertPitch, flag); // change style flag
 
-    for (Staff* staff : m_staves) {
-        if (staff->staffType(Fraction(0, 1))->group() == StaffGroup::PERCUSSION) {         // TODO
+    for (Staff *staff : m_staves) {
+        if (staff->staffType(Fraction(0, 1))->group() == StaffGroup::PERCUSSION) { // TODO
             continue;
         }
         // if this staff has no transposition, and no instrument changes, we can skip it
@@ -2590,26 +2428,26 @@ void Score::cmdConcertPitchChanged(bool flag)
             interval.flip();
         }
 
-        staff_idx_t staffIdx   = staff->idx();
+        staff_idx_t staffIdx = staff->idx();
         track_idx_t startTrack = staffIdx * VOICES;
-        track_idx_t endTrack   = startTrack + VOICES;
+        track_idx_t endTrack = startTrack + VOICES;
 
         Transpose::transposeKeys(tx, this, staffIdx, staffIdx + 1, Fraction(0, 1), lastSegment()->tick(), !flag);
 
-        for (Segment* segment = firstSegment(SegmentType::ChordRest); segment; segment = segment->next1(SegmentType::ChordRest)) {
+        for (Segment *segment = firstSegment(SegmentType::ChordRest); segment; segment = segment->next1(SegmentType::ChordRest)) {
             interval = staff->transpose(segment->tick());
             if (!flag) {
                 interval.flip();
             }
-            for (EngravingItem* e : segment->annotations()) {
+            for (EngravingItem *e : segment->annotations()) {
                 if (!e->isHarmony() || (e->track() < startTrack) || (e->track() >= endTrack)) {
                     continue;
                 }
-                Harmony* h  = toHarmony(e);
-                for (EngravingObject* se : h->linkList()) {
+                Harmony *h = toHarmony(e);
+                for (EngravingObject *se : h->linkList()) {
                     // don't transpose all links
                     // just ones resulting from mmrests
-                    Harmony* he = toHarmony(se);              // toHarmony() does not work as e is an ScoreElement
+                    Harmony *he = toHarmony(se); // toHarmony() does not work as e is an ScoreElement
                     if (he->staff() == h->staff()) {
                         Transpose::undoTransposeHarmony(tx, he, interval);
                     }
@@ -2621,17 +2459,13 @@ void Score::cmdConcertPitchChanged(bool flag)
     }
 }
 
-static void onFocusedItemChanged(EngravingItem* item)
-{
-    UNUSED(item);
-}
+static void onFocusedItemChanged(EngravingItem *item) { UNUSED(item); }
 
 //---------------------------------------------------------
 //   deselect
 //---------------------------------------------------------
 
-void Score::deselect(EngravingItem* el)
-{
+void Score::deselect(EngravingItem *el) {
     addRefresh(el->pageBoundingRect());
     m_selection.remove(el);
     setSelectionChanged(true);
@@ -2643,14 +2477,12 @@ void Score::deselect(EngravingItem* el)
 //    staffIdx is valid, if element is of type MEASURE
 //---------------------------------------------------------
 
-void Score::select(EngravingItem* item, SelectType type, staff_idx_t staffIdx)
-{
-    select(std::vector<EngravingItem*> { item }, type, staffIdx);
+void Score::select(EngravingItem *item, SelectType type, staff_idx_t staffIdx) {
+    select(std::vector<EngravingItem *>{item}, type, staffIdx);
 }
 
-void Score::select(const std::vector<EngravingItem*>& items, SelectType type, staff_idx_t staffIdx)
-{
-    for (EngravingItem* item : items) {
+void Score::select(const std::vector<EngravingItem *> &items, SelectType type, staff_idx_t staffIdx) {
+    for (EngravingItem *item : items) {
         doSelect(item, type, staffIdx);
     }
 
@@ -2659,25 +2491,17 @@ void Score::select(const std::vector<EngravingItem*>& items, SelectType type, st
     }
 }
 
-void Score::doSelect(EngravingItem* e, SelectType type, staff_idx_t staffIdx)
-{
+void Score::doSelect(EngravingItem *e, SelectType type, staff_idx_t staffIdx) {
     if (MScore::debugMode) {
-        LOGD("select element <%s> type %d(state %d) staff %zu",
-             e ? e->typeName() : "", int(type), int(selection().state()), e ? e->staffIdx() : -1);
+        LOGD("select element <%s> type %d(state %d) staff %zu", e ? e->typeName() : "", int(type), int(selection().state()),
+             e ? e->staffIdx() : -1);
     }
 
     switch (type) {
-    case SelectType::SINGLE:
-        selectSingle(e, staffIdx);
-        break;
-    case SelectType::ADD:
-        selectAdd(e);
-        break;
-    case SelectType::RANGE:
-        selectRange(e, staffIdx);
-        break;
-    case SelectType::REPLACE:
-        break;
+        case SelectType::SINGLE: selectSingle(e, staffIdx); break;
+        case SelectType::ADD: selectAdd(e); break;
+        case SelectType::RANGE: selectRange(e, staffIdx); break;
+        case SelectType::REPLACE: break;
     }
     setSelectionChanged(true);
 }
@@ -2687,8 +2511,7 @@ void Score::doSelect(EngravingItem* e, SelectType type, staff_idx_t staffIdx)
 //    staffIdx is valid, if element is of type MEASURE
 //---------------------------------------------------------
 
-void Score::selectSingle(EngravingItem* e, staff_idx_t staffIdx)
-{
+void Score::selectSingle(EngravingItem *e, staff_idx_t staffIdx) {
     SelState selState = m_selection.state();
     deselectAll();
     if (e == 0) {
@@ -2721,8 +2544,7 @@ void Score::selectSingle(EngravingItem* e, staff_idx_t staffIdx)
 //   switchToPageMode
 //---------------------------------------------------------
 
-void Score::switchToPageMode()
-{
+void Score::switchToPageMode() {
     if (layoutMode() != LayoutMode::PAGE) {
         setLayoutMode(LayoutMode::PAGE);
         doLayout();
@@ -2733,8 +2555,7 @@ void Score::switchToPageMode()
 //   selectAdd
 //---------------------------------------------------------
 
-void Score::selectAdd(EngravingItem* e)
-{
+void Score::selectAdd(EngravingItem *e) {
     SelState selState = m_selection.state();
 
     if (m_selection.isRange()) {
@@ -2743,13 +2564,10 @@ void Score::selectAdd(EngravingItem* e)
     }
 
     if (e->isMeasure()) {
-        Measure* m = toMeasure(e)->coveringMMRestOrThis();
-        Fraction tick  = m->tick();
+        Measure *m = toMeasure(e)->coveringMMRestOrThis();
+        Fraction tick = m->tick();
         if (m_selection.isNone()) {
-            m_selection.setRange(m->tick2segment(tick),
-                                 m == lastMeasureMM() ? 0 : m->last(),
-                                 0,
-                                 nstaves());
+            m_selection.setRange(m->tick2segment(tick), m == lastMeasureMM() ? 0 : m->last(), 0, nstaves());
             setUpdateAll();
             selState = SelState::RANGE;
             m_selection.updateSelectedElements();
@@ -2768,9 +2586,8 @@ void Score::selectAdd(EngravingItem* e)
 //    staffIdx is valid, if element is of type MEASURE
 //---------------------------------------------------------
 
-static Segment* findElementStartSegment(Score* score, EngravingItem* e)
-{
-    if (Segment* ancestor = toSegment(e->findAncestor(ElementType::SEGMENT))) {
+static Segment *findElementStartSegment(Score *score, EngravingItem *e) {
+    if (Segment *ancestor = toSegment(e->findAncestor(ElementType::SEGMENT))) {
         if (ancestor->isType(SegmentType::Duration)) {
             return ancestor;
         }
@@ -2781,17 +2598,16 @@ static Segment* findElementStartSegment(Score* score, EngravingItem* e)
 
 /// Returns `nullptr` when the end segment is the end of the score;
 /// returns `def` if no end segment is found.
-static Segment* findElementEndSegment(Score* score, EngravingItem* e, Segment* def)
-{
-    ChordRest* cr = nullptr;
+static Segment *findElementEndSegment(Score *score, EngravingItem *e, Segment *def) {
+    ChordRest *cr = nullptr;
 
     if (e->isNote()) {
         cr = toNote(e)->chord();
     } else if (e->isChordRest()) {
         cr = toChordRest(e);
-    } else if (EngravingItem* c = e->findAncestor(ElementType::CHORD)) {
+    } else if (EngravingItem *c = e->findAncestor(ElementType::CHORD)) {
         cr = toChordRest(c);
-    } else if (EngravingItem* r = e->findAncestor(ElementType::REST)) {
+    } else if (EngravingItem *r = e->findAncestor(ElementType::REST)) {
         cr = toChordRest(r);
     }
 
@@ -2800,65 +2616,59 @@ static Segment* findElementEndSegment(Score* score, EngravingItem* e, Segment* d
     }
 
     if (e->isSpanner() || e->isSpannerSegment()) {
-        Spanner* sp = e->isSpanner() ? toSpanner(e) : toSpannerSegment(e)->spanner();
+        Spanner *sp = e->isSpanner() ? toSpanner(e) : toSpannerSegment(e)->spanner();
         return score->tick2segmentMM(sp->tick2(), true, SegmentType::Duration);
     }
 
-    if (Segment* seg = toSegment(e->findAncestor(ElementType::SEGMENT))) {
+    if (Segment *seg = toSegment(e->findAncestor(ElementType::SEGMENT))) {
         if (seg->isType(SegmentType::Duration)) {
             // https://github.com/musescore/MuseScore/pull/25821#issuecomment-2617369881
             return seg->nextCR(e->track(), true);
         }
         // Strictly speaking redundant, but more efficient than `tick2segmentMM`
-        else if (Segment* crSegAtSameTick = seg->measure()->findSegmentR(SegmentType::Duration, seg->rtick())) {
+        else if (Segment *crSegAtSameTick = seg->measure()->findSegmentR(SegmentType::Duration, seg->rtick())) {
             return crSegAtSameTick;
         }
     }
 
-    const Fraction& tick = e->tick();
+    const Fraction &tick = e->tick();
     if (tick == score->endTick()) {
         return nullptr;
     }
 
-    if (Segment* seg = score->tick2segmentMM(tick, true, SegmentType::Duration)) {
+    if (Segment *seg = score->tick2segmentMM(tick, true, SegmentType::Duration)) {
         return seg;
     }
 
     return def;
 }
 
-static std::pair</*startStaff*/ staff_idx_t, /*endStaff*/ staff_idx_t> boxStartEndStaves(const Box* box, size_t scoreNstaves)
-{
-    IF_ASSERT_FAILED(box) {
-        return { muse::nidx, muse::nidx };
-    }
+static std::pair</*startStaff*/ staff_idx_t, /*endStaff*/ staff_idx_t> boxStartEndStaves(const Box *box, size_t scoreNstaves) {
+    IF_ASSERT_FAILED(box) { return {muse::nidx, muse::nidx}; }
 
     if (box->isVBoxBase()) {
         if (scoreNstaves == 0) {
-            return { muse::nidx, muse::nidx };
+            return {muse::nidx, muse::nidx};
         }
-        return { 0, scoreNstaves };
+        return {0, scoreNstaves};
     }
 
-    const System* system = box->system();
+    const System *system = box->system();
     if (!system) {
-        return { muse::nidx, muse::nidx };
+        return {muse::nidx, muse::nidx};
     }
 
     const staff_idx_t firstVisible = system->firstVisibleStaff();
     const staff_idx_t lastVisible = system->lastVisibleStaff();
     if (firstVisible == muse::nidx || lastVisible == muse::nidx) {
-        return { muse::nidx, muse::nidx };
+        return {muse::nidx, muse::nidx};
     }
-    return { firstVisible, lastVisible + 1 };
+    return {firstVisible, lastVisible + 1};
 }
 
-void Score::selectRange(EngravingItem* e, staff_idx_t staffIdx)
-{
+void Score::selectRange(EngravingItem *e, staff_idx_t staffIdx) {
     if (m_selection.isSingle()) {
-        if (!e->isMeasureBase()
-            && !e->isNote()
-            && !e->isChordRest()) {
+        if (!e->isMeasureBase() && !e->isNote() && !e->isChordRest()) {
             // Try to select similar in range
             bool success = trySelectSimilarInRange(e);
             if (success) {
@@ -2874,9 +2684,9 @@ void Score::selectRange(EngravingItem* e, staff_idx_t staffIdx)
     }
 
     if (e->isMeasure()) {
-        Measure* m = toMeasure(e)->coveringMMRestOrThis();
-        Segment* startSegment = m->first(SegmentType::ChordRest);
-        Segment* endSegment = m->last();
+        Measure *m = toMeasure(e)->coveringMMRestOrThis();
+        Segment *startSegment = m->first(SegmentType::ChordRest);
+        Segment *endSegment = m->last();
         Fraction tick = m->tick();
         Fraction etick = tick + m->ticks();
 
@@ -2910,7 +2720,7 @@ void Score::selectRange(EngravingItem* e, staff_idx_t staffIdx)
             deselectAll();
         }
 
-        ChordRest* cr = e->isNote() ? static_cast<ChordRest*>(toNote(e)->chord()) : toChordRest(e);
+        ChordRest *cr = e->isNote() ? static_cast<ChordRest *>(toNote(e)->chord()) : toChordRest(e);
 
         SegmentType st = SegmentType::ChordRest | SegmentType::EndBarLine | SegmentType::Clef;
         m_selection.setRange(cr->segment(), cr->nextSegmentAfterCR(st), cr->staffIdx(), cr->staffIdx() + 1);
@@ -2924,9 +2734,8 @@ void Score::selectRange(EngravingItem* e, staff_idx_t staffIdx)
     doSelect(e, SelectType::SINGLE, staffIdx);
 }
 
-bool Score::trySelectSimilarInRange(EngravingItem* e)
-{
-    EngravingItem* selectedElement = m_selection.element();
+bool Score::trySelectSimilarInRange(EngravingItem *e) {
+    EngravingItem *selectedElement = m_selection.element();
     if (!selectedElement || e->type() != selectedElement->type()) {
         return false;
     }
@@ -2948,8 +2757,8 @@ bool Score::trySelectSimilarInRange(EngravingItem* e)
         std::swap(t1, t2);
     }
 
-    Segment* s1 = tick2segmentMM(t1, true, SegmentType::ChordRest);
-    Segment* s2 = tick2segmentMM(t2, true, SegmentType::ChordRest);
+    Segment *s1 = tick2segmentMM(t1, true, SegmentType::ChordRest);
+    Segment *s2 = tick2segmentMM(t2, true, SegmentType::ChordRest);
     if (s2) {
         s2 = s2->next1MM(SegmentType::ChordRest);
     }
@@ -2962,8 +2771,8 @@ bool Score::trySelectSimilarInRange(EngravingItem* e)
     selectSimilarInRange(e);
     if (selectedElement->track() == e->track()) {
         // limit to this voice only
-        const std::vector<EngravingItem*>& list = m_selection.elements();
-        for (EngravingItem* el : list) {
+        const std::vector<EngravingItem *> &list = m_selection.elements();
+        for (EngravingItem *el : list) {
             if (el->track() != e->track()) {
                 m_selection.remove(el);
             }
@@ -2973,17 +2782,16 @@ bool Score::trySelectSimilarInRange(EngravingItem* e)
     return true;
 }
 
-bool Score::tryExtendSingleSelectionToRange(EngravingItem* newElement, staff_idx_t staffIdx)
-{
-    EngravingItem* selectedElement = m_selection.element();
+bool Score::tryExtendSingleSelectionToRange(EngravingItem *newElement, staff_idx_t staffIdx) {
+    EngravingItem *selectedElement = m_selection.element();
     if (!selectedElement) {
         return false;
     }
 
-    Segment* startSegment = nullptr;
-    Segment* endSegment = nullptr;
+    Segment *startSegment = nullptr;
+    Segment *endSegment = nullptr;
 
-    Box* selectedBox = selectedElement->isBox() ? toBox(selectedElement) : nullptr;
+    Box *selectedBox = selectedElement->isBox() ? toBox(selectedElement) : nullptr;
     if (selectedBox) {
         if (selectedBox->tick() == endTick()) {
             startSegment = lastSegmentMM();
@@ -2999,7 +2807,7 @@ bool Score::tryExtendSingleSelectionToRange(EngravingItem* newElement, staff_idx
         return false;
     }
 
-    Box* newBox = newElement->isBox() ? toBox(newElement) : nullptr;
+    Box *newBox = newElement->isBox() ? toBox(newElement) : nullptr;
 
     staff_idx_t startStaffIdx = muse::nidx;
     staff_idx_t endStaffIdx = muse::nidx;
@@ -3024,7 +2832,7 @@ bool Score::tryExtendSingleSelectionToRange(EngravingItem* newElement, staff_idx
 
     // TODO: Quite a lot of nesting - should clean this up...
     if (newElement->isMeasure()) {
-        Measure* m = toMeasure(newElement)->coveringMMRestOrThis();
+        Measure *m = toMeasure(newElement)->coveringMMRestOrThis();
         const Fraction tick = m->tick();
 
         if (tick < startSegment->tick()) {
@@ -3047,8 +2855,8 @@ bool Score::tryExtendSingleSelectionToRange(EngravingItem* newElement, staff_idx
 
         activeTrack = staffIdx * VOICES;
     } else {
-        Segment* newStartSegment = nullptr;
-        Segment* newEndSegment = nullptr;
+        Segment *newStartSegment = nullptr;
+        Segment *newEndSegment = nullptr;
         if (newBox) {
             if (newBox->tick() == endTick()) {
                 newStartSegment = lastSegmentMM();
@@ -3061,9 +2869,9 @@ bool Score::tryExtendSingleSelectionToRange(EngravingItem* newElement, staff_idx
             newEndSegment = findElementEndSegment(this, newElement, newStartSegment);
         }
 
-        if (newStartSegment && (newStartSegment->tick() != startSegment->tick()
-                                ? newStartSegment->tick() < startSegment->tick()
-                                : newBox && (!selectedBox || newBox->isBefore(selectedBox)))) {
+        if (newStartSegment &&
+            (newStartSegment->tick() != startSegment->tick() ? newStartSegment->tick() < startSegment->tick() :
+                                                               newBox && (!selectedBox || newBox->isBefore(selectedBox)))) {
             startSegment = newStartSegment;
             activeSegmentIsStart = true;
             extendedBackwards = true;
@@ -3071,8 +2879,7 @@ bool Score::tryExtendSingleSelectionToRange(EngravingItem* newElement, staff_idx
 
         const Fraction newEndTick = newEndSegment ? newEndSegment->tick() : endTick();
         const Fraction rangeEndTick = endSegment ? endSegment->tick() : endTick();
-        if (newEndTick != rangeEndTick ? newEndTick > rangeEndTick
-            : newBox && (!selectedBox || selectedBox->isBefore(newBox))) {
+        if (newEndTick != rangeEndTick ? newEndTick > rangeEndTick : newBox && (!selectedBox || selectedBox->isBefore(newBox))) {
             endSegment = newEndSegment;
             extendedForwards = true;
         }
@@ -3091,8 +2898,8 @@ bool Score::tryExtendSingleSelectionToRange(EngravingItem* newElement, staff_idx
         }
     }
 
-    Box* startBox = extendedBackwards ? newBox : selectedBox;
-    Box* endBox = extendedForwards ? newBox : selectedBox;
+    Box *startBox = extendedBackwards ? newBox : selectedBox;
+    Box *endBox = extendedForwards ? newBox : selectedBox;
 
     m_selection.setRange(startSegment, endSegment, startStaffIdx, endStaffIdx, startBox, endBox);
     m_selection.updateSelectedElements();
@@ -3103,12 +2910,11 @@ bool Score::tryExtendSingleSelectionToRange(EngravingItem* newElement, staff_idx
     return true;
 }
 
-bool Score::tryExtendRangeSelectionToElem(EngravingItem* e)
-{
-    Box* box = e->isBox() ? toBox(e) : nullptr;
+bool Score::tryExtendRangeSelectionToElem(EngravingItem *e) {
+    Box *box = e->isBox() ? toBox(e) : nullptr;
 
-    Segment* elemStartSeg = nullptr;
-    Segment* elemEndSeg = nullptr;
+    Segment *elemStartSeg = nullptr;
+    Segment *elemEndSeg = nullptr;
     if (box) {
         if (box->tick() == endTick()) {
             elemStartSeg = lastSegmentMM();
@@ -3146,10 +2952,7 @@ bool Score::tryExtendRangeSelectionToElem(EngravingItem* e)
     const Fraction elemStartTick = elemStartSeg->tick();
     const Fraction elemEndTick = elemEndSeg ? elemEndSeg->tick() : endTick();
 
-    m_selection.extendRangeSelection(elemStartSeg, elemEndSeg,
-                                     elementStaffIdx,
-                                     elemStartTick, elemEndTick,
-                                     box);
+    m_selection.extendRangeSelection(elemStartSeg, elemEndSeg, elementStaffIdx, elemStartTick, elemEndTick, box);
 
     m_selection.updateSelectedElements();
     m_selection.setActiveTrack(box ? staff2track(m_selection.staffStart()) : e->track());
@@ -3160,8 +2963,7 @@ bool Score::tryExtendRangeSelectionToElem(EngravingItem* e)
 //   collectMatch
 //---------------------------------------------------------
 
-void Score::collectMatch(ElementPattern* p, EngravingItem* e)
-{
+void Score::collectMatch(ElementPattern *p, EngravingItem *e) {
     if (p->type != int(ElementType::INVALID) && p->type != int(e->type())) {
         return;
     }
@@ -3178,8 +2980,7 @@ void Score::collectMatch(ElementPattern* p, EngravingItem* e)
         return;
     }
 
-    if ((p->staffStart != muse::nidx)
-        && ((p->staffStart > e->staffIdx()) || (p->staffEnd <= e->staffIdx()))) {
+    if ((p->staffStart != muse::nidx) && ((p->staffStart > e->staffIdx()) || (p->staffEnd <= e->staffIdx()))) {
         return;
     }
 
@@ -3188,7 +2989,7 @@ void Score::collectMatch(ElementPattern* p, EngravingItem* e)
     }
 
     if (p->system) {
-        EngravingItem* ee = e;
+        EngravingItem *ee = e;
         do {
             if (ee->isSystem()) {
                 if (p->system != ee) {
@@ -3201,7 +3002,7 @@ void Score::collectMatch(ElementPattern* p, EngravingItem* e)
     }
 
     if (e->isRest() && p->durationTicks != Fraction(-1, 1)) {
-        const Rest* r = toRest(e);
+        const Rest *r = toRest(e);
         if (p->durationTicks != r->actualTicks()) {
             return;
         }
@@ -3234,12 +3035,11 @@ void Score::collectMatch(ElementPattern* p, EngravingItem* e)
 //   collectNoteMatch
 //---------------------------------------------------------
 
-void Score::collectNoteMatch(NotePattern* p, EngravingItem* e)
-{
+void Score::collectNoteMatch(NotePattern *p, EngravingItem *e) {
     if (!e->isNote()) {
         return;
     }
-    Note* n = toNote(e);
+    Note *n = toNote(e);
     if (p->type != NoteType::INVALID && p->type != n->noteType()) {
         return;
     }
@@ -3261,8 +3061,7 @@ void Score::collectNoteMatch(NotePattern* p, EngravingItem* e)
     if (p->durationTicks != Fraction(-1, 1) && p->durationTicks != n->chord()->actualTicks()) {
         return;
     }
-    if ((p->staffStart != muse::nidx)
-        && ((p->staffStart > e->staffIdx()) || (p->staffEnd <= e->staffIdx()))) {
+    if ((p->staffStart != muse::nidx) && ((p->staffStart > e->staffIdx()) || (p->staffEnd <= e->staffIdx()))) {
         return;
     }
     if (p->voice != muse::nidx && p->voice != e->voice()) {
@@ -3284,9 +3083,8 @@ void Score::collectNoteMatch(NotePattern* p, EngravingItem* e)
 //   selectSimilar
 //---------------------------------------------------------
 
-void Score::selectSimilar(EngravingItem* e, bool sameStaff)
-{
-    Score* score = e->score();
+void Score::selectSimilar(EngravingItem *e, bool sameStaff) {
+    Score *score = e->score();
 
     ElementPattern pattern;
     pattern.type = int(e->type());
@@ -3294,7 +3092,7 @@ void Score::selectSimilar(EngravingItem* e, bool sameStaff)
     pattern.subtypeValid = false;
     if (e->isNote()) {
         if (toNote(e)->chord()->isGrace()) {
-            pattern.subtype = -1;       // hack
+            pattern.subtype = -1; // hack
         } else {
             pattern.subtype = e->subtype();
         }
@@ -3306,7 +3104,7 @@ void Score::selectSimilar(EngravingItem* e, bool sameStaff)
     pattern.staffEnd = sameStaff ? e->staffIdx() + 1 : muse::nidx;
     pattern.voice = muse::nidx;
 
-    score->scanElements([&](EngravingItem* item) { collectMatch(&pattern, item); });
+    score->scanElements([&](EngravingItem *item) { collectMatch(&pattern, item); });
 
     score->select(0, SelectType::SINGLE, 0);
     score->select(pattern.el, SelectType::ADD, 0);
@@ -3316,17 +3114,16 @@ void Score::selectSimilar(EngravingItem* e, bool sameStaff)
 //   selectSimilarInRange
 //---------------------------------------------------------
 
-void Score::selectSimilarInRange(EngravingItem* e)
-{
-    Score* score = e->score();
+void Score::selectSimilarInRange(EngravingItem *e) {
+    Score *score = e->score();
 
     ElementPattern pattern;
-    pattern.type    = int(e->type());
+    pattern.type = int(e->type());
     pattern.subtype = 0;
     pattern.subtypeValid = false;
     if (e->isNote()) {
         if (toNote(e)->chord()->isGrace()) {
-            pattern.subtype = -1;       //hack
+            pattern.subtype = -1; //hack
         } else {
             pattern.subtype = e->subtype();
         }
@@ -3339,7 +3136,7 @@ void Score::selectSimilarInRange(EngravingItem* e)
     pattern.staffEnd = selection().staffEnd();
     pattern.voice = muse::nidx;
 
-    score->scanElementsInRange([&](EngravingItem* item) { collectMatch(&pattern, item); });
+    score->scanElementsInRange([&](EngravingItem *item) { collectMatch(&pattern, item); });
 
     score->select(0, SelectType::SINGLE, 0);
     score->select(pattern.el, SelectType::ADD, 0);
@@ -3349,8 +3146,7 @@ void Score::selectSimilarInRange(EngravingItem* e)
 //   scoreOrder
 //---------------------------------------------------------
 
-ScoreOrder Score::scoreOrder() const
-{
+ScoreOrder Score::scoreOrder() const {
     ScoreOrder order = m_scoreOrder;
     order.customized = !order.isScoreOrder(this);
     return order;
@@ -3360,22 +3156,18 @@ ScoreOrder Score::scoreOrder() const
 //   setScoreOrder
 //---------------------------------------------------------
 
-void Score::setScoreOrder(ScoreOrder order)
-{
-    m_scoreOrder = order;
-}
+void Score::setScoreOrder(ScoreOrder order) { m_scoreOrder = order; }
 
 //---------------------------------------------------------
 //   updateBracesAndBarlines
 //---------------------------------------------------------
 
-void Score::updateBracesAndBarlines(Part* part, size_t newIndex)
-{
+void Score::updateBracesAndBarlines(Part *part, size_t newIndex) {
     bool noBracesFound = true;
     for (size_t indexInPart = 0; indexInPart < part->nstaves(); ++indexInPart) {
         size_t indexInScore = part->staves()[indexInPart]->idx();
-        const std::vector<BracketItem*>& staffBrackets = brackets(indexInScore);
-        for (BracketItem* bi : staffBrackets) {
+        const std::vector<BracketItem *> &staffBrackets = brackets(indexInScore);
+        for (BracketItem *bi : staffBrackets) {
             noBracesFound = false;
             if (bi->bracketType() == BracketType::BRACE) {
                 if ((indexInPart <= newIndex) && (newIndex <= (bi->bracketSpan()))) {
@@ -3386,8 +3178,8 @@ void Score::updateBracesAndBarlines(Part* part, size_t newIndex)
     }
 
     auto updateBracketSpan = [this, part](size_t modIndex, size_t refIndex) {
-        Staff* modStaff = staff(part->staves()[modIndex]->idx());
-        Staff* refStaff = staff(part->staves()[refIndex]->idx());
+        Staff *modStaff = staff(part->staves()[modIndex]->idx());
+        Staff *refStaff = staff(part->staves()[refIndex]->idx());
         modStaff->undoChangeProperty(Pid::STAFF_BARLINE_SPAN, refStaff->getProperty(Pid::STAFF_BARLINE_SPAN));
     };
 
@@ -3396,7 +3188,7 @@ void Score::updateBracesAndBarlines(Part* part, size_t newIndex)
     }
 
     if (part->nstaves() == 2) {
-        const InstrumentTemplate* tp = searchTemplate(part->instrumentId());
+        const InstrumentTemplate *tp = searchTemplate(part->instrumentId());
         if (tp) {
             const bool firstStaffBarLineSpan = tp->barlineSpan[0];
             if (firstStaffBarLineSpan) {
@@ -3415,10 +3207,7 @@ void Score::updateBracesAndBarlines(Part* part, size_t newIndex)
 //   setBracketsAndBarlines
 //---------------------------------------------------------
 
-void Score::setBracketsAndBarlines()
-{
-    scoreOrder().setBracketsAndBarlines(this);
-}
+void Score::setBracketsAndBarlines() { scoreOrder().setBracketsAndBarlines(this); }
 
 //---------------------------------------------------------
 //   remapBracketsAndBarlines
@@ -3427,28 +3216,27 @@ void Score::setBracketsAndBarlines()
 ///  an excerpt or adding new parts to it.
 //---------------------------------------------------------
 
-void Score::remapBracketsAndBarlines()
-{
+void Score::remapBracketsAndBarlines() {
     if (isMaster()) {
         return;
     }
 
     // Remove all brackets
-    for (Staff* staff : staves()) {
-        std::vector<BracketItem*>& staffBrackets = brackets(staff->idx());
-        for (BracketItem* bracket : staffBrackets) {
+    for (Staff *staff : staves()) {
+        std::vector<BracketItem *> &staffBrackets = brackets(staff->idx());
+        for (BracketItem *bracket : staffBrackets) {
             bracket->setBracketType(BracketType::NO_BRACKET);
         }
     }
     // Remap all brackets from masterScore
-    Score* master = masterScore();
+    Score *master = masterScore();
     for (staff_idx_t masterStaffIdx = 0; masterStaffIdx < master->nstaves(); ++masterStaffIdx) {
-        Staff* masterStaff = master->staff(masterStaffIdx);
-        std::vector<BracketItem*>& staffBrackets = master->brackets(masterStaffIdx);
+        Staff *masterStaff = master->staff(masterStaffIdx);
+        std::vector<BracketItem *> &staffBrackets = master->brackets(masterStaffIdx);
 
         for (size_t bracketIdx = 0; bracketIdx < staffBrackets.size(); ++bracketIdx) {
-            BracketItem* bracket = staffBrackets.at(bracketIdx);
-            Staff* firstBracketed = nullptr;
+            BracketItem *bracket = staffBrackets.at(bracketIdx);
+            Staff *firstBracketed = nullptr;
             int span = 0;
 
             // There is no guarantee that bracket->bracketSpan() is correctly bounded,
@@ -3458,11 +3246,9 @@ void Score::remapBracketsAndBarlines()
 
             for (staff_idx_t spannedMasterStIdx = masterStaffIdx; spannedMasterStIdx < endSpannedMasterStaffIdx; ++spannedMasterStIdx) {
                 masterStaff = master->staff(spannedMasterStIdx);
-                IF_ASSERT_FAILED(masterStaff) {
-                    continue;
-                }
+                IF_ASSERT_FAILED(masterStaff) { continue; }
 
-                Staff* linkedStaff = toStaff(masterStaff->findLinkedInScore(this));
+                Staff *linkedStaff = toStaff(masterStaff->findLinkedInScore(this));
                 if (!linkedStaff) {
                     continue;
                 }
@@ -3482,8 +3268,8 @@ void Score::remapBracketsAndBarlines()
     }
 
     // Remap all barline spans from masterScore
-    for (Staff* staff : staves()) {
-        Staff* masterStaff = toStaff(staff->findLinkedInScore(masterScore()));
+    for (Staff *staff : staves()) {
+        Staff *masterStaff = toStaff(staff->findLinkedInScore(masterScore()));
         if (!masterStaff || !masterStaff->barLineSpan()) {
             continue;
         }
@@ -3509,11 +3295,10 @@ void Score::remapBracketsAndBarlines()
 //   lassoSelect
 //---------------------------------------------------------
 
-void Score::lassoSelect(const RectF& bbox)
-{
+void Score::lassoSelect(const RectF &bbox) {
     select(0, SelectType::SINGLE, 0);
     RectF fr(bbox.normalized());
-    for (Page* page : pages()) {
+    for (Page *page : pages()) {
         RectF pr(page->ldata()->bbox());
         RectF frr(fr.translated(-page->pos()));
         if (pr.right() < frr.left()) {
@@ -3523,10 +3308,10 @@ void Score::lassoSelect(const RectF& bbox)
             break;
         }
 
-        std::vector<EngravingItem*> items = page->items(frr);
-        std::vector<EngravingItem*> itemsToSelect;
+        std::vector<EngravingItem *> items = page->items(frr);
+        std::vector<EngravingItem *> itemsToSelect;
 
-        for (EngravingItem* item : items) {
+        for (EngravingItem *item : items) {
             if (frr.contains(item->pageBoundingRect())) {
                 if (!item->isMeasure() && item->selectable()) {
                     itemsToSelect.push_back(item);
@@ -3542,14 +3327,13 @@ void Score::lassoSelect(const RectF& bbox)
 //   lassoSelectEnd
 //---------------------------------------------------------
 
-void Score::lassoSelectEnd()
-{
-    int noteRestCount     = 0;
-    Segment* startSegment = 0;
-    Segment* endSegment   = 0;
+void Score::lassoSelectEnd() {
+    int noteRestCount = 0;
+    Segment *startSegment = 0;
+    Segment *endSegment = 0;
     staff_idx_t startStaff = 0x7fffffff;
     staff_idx_t endStaff = 0;
-    const ChordRest* endCR = 0;
+    const ChordRest *endCR = 0;
 
     if (m_selection.elements().empty()) {
         m_selection.setState(SelState::NONE);
@@ -3558,7 +3342,7 @@ void Score::lassoSelectEnd()
     }
     m_selection.setState(SelState::LIST);
 
-    for (const EngravingItem* e : m_selection.elements()) {
+    for (const EngravingItem *e : m_selection.elements()) {
         if (!e->isNote() && !e->isRest()) {
             continue;
         }
@@ -3566,7 +3350,7 @@ void Score::lassoSelectEnd()
         if (e->isNote()) {
             e = toNote(e)->chord();
         }
-        Segment* seg = toChordRest(e)->segment();
+        Segment *seg = toChordRest(e)->segment();
         if ((startSegment == 0) || (*seg < *startSegment)) {
             startSegment = seg;
         }
@@ -3583,9 +3367,7 @@ void Score::lassoSelectEnd()
         }
     }
     if (noteRestCount > 0) {
-        endSegment = endCR->nextSegmentAfterCR(SegmentType::ChordRest
-                                               | SegmentType::EndBarLine
-                                               | SegmentType::Clef);
+        endSegment = endCR->nextSegmentAfterCR(SegmentType::ChordRest | SegmentType::EndBarLine | SegmentType::Clef);
 
         m_selection.setRange(startSegment, endSegment, startStaff, endStaff + 1);
 
@@ -3601,25 +3383,23 @@ void Score::lassoSelectEnd()
 //   addLyrics
 //---------------------------------------------------------
 
-void Score::addLyrics(const Fraction& tick, staff_idx_t staffIdx, const String& txt)
-{
+void Score::addLyrics(const Fraction &tick, staff_idx_t staffIdx, const String &txt) {
     if (txt.trimmed().isEmpty()) {
         return;
     }
-    Measure* measure = tick2measure(tick);
-    Segment* seg     = measure->findSegment(SegmentType::ChordRest, tick);
+    Measure *measure = tick2measure(tick);
+    Segment *seg = measure->findSegment(SegmentType::ChordRest, tick);
     if (seg == 0) {
-        LOGD("no segment found for lyrics<%s> at tick %d",
-             muPrintable(txt), tick.ticks());
+        LOGD("no segment found for lyrics<%s> at tick %d", muPrintable(txt), tick.ticks());
         return;
     }
 
     bool lyricsAdded = false;
     for (voice_idx_t voice = 0; voice < VOICES; ++voice) {
         track_idx_t track = staffIdx * VOICES + voice;
-        ChordRest* cr = toChordRest(seg->element(track));
+        ChordRest *cr = toChordRest(seg->element(track));
         if (cr) {
-            Lyrics* l = Factory::createLyrics(cr);
+            Lyrics *l = Factory::createLyrics(cr);
             l->setXmlText(txt);
             l->setTrack(track);
             cr->add(l);
@@ -3628,26 +3408,20 @@ void Score::addLyrics(const Fraction& tick, staff_idx_t staffIdx, const String& 
         }
     }
     if (!lyricsAdded) {
-        LOGD("no chord/rest for lyrics<%s> at tick %d, staff %zu",
-             muPrintable(txt), tick.ticks(), staffIdx);
+        LOGD("no chord/rest for lyrics<%s> at tick %d, staff %zu", muPrintable(txt), tick.ticks(), staffIdx);
     }
 }
 
-BeatsPerSecond Score::tempo(const Fraction& tick) const
-{
-    return tempoTimeline(/*expandRepeats*/ false).tempo(tick.ticks());
-}
+BeatsPerSecond Score::tempo(const Fraction &tick) const { return tempoTimeline(/*expandRepeats*/ false).tempo(tick.ticks()); }
 
-BeatsPerSecond Score::multipliedTempo(const Fraction& tick) const
-{
-    const TempoTimeline& timeline = tempoTimeline(/*expandRepeats*/ false);
+BeatsPerSecond Score::multipliedTempo(const Fraction &tick) const {
+    const TempoTimeline &timeline = tempoTimeline(/*expandRepeats*/ false);
     return timeline.tempo(tick.ticks()) * timeline.tempoMultiplier();
 }
 
-BeatsPerSecond Score::multipliedTempoAtUtick(int utick) const
-{
+BeatsPerSecond Score::multipliedTempoAtUtick(int utick) const {
     // utick is only truly expanded when repeats are expanded; otherwise it's a plain tick
-    const TempoTimeline& timeline = tempoTimeline();
+    const TempoTimeline &timeline = tempoTimeline();
     return timeline.tempo(utick) * timeline.tempoMultiplier();
 }
 
@@ -3655,8 +3429,7 @@ BeatsPerSecond Score::multipliedTempoAtUtick(int utick) const
 //   cmdSelectAll
 //---------------------------------------------------------
 
-void Score::cmdSelectAll()
-{
+void Score::cmdSelectAll() {
     TRACEFUNC;
 
     if (m_measures.size() == 0) {
@@ -3673,16 +3446,15 @@ void Score::cmdSelectAll()
 //   cmdSelectSection
 //---------------------------------------------------------
 
-void Score::cmdSelectSection()
-{
+void Score::cmdSelectSection() {
     TRACEFUNC;
 
-    Segment* s = m_selection.startSegment();
+    Segment *s = m_selection.startSegment();
     if (s == 0) {
         return;
     }
-    MeasureBase* sm = s->measure();
-    MeasureBase* em = sm;
+    MeasureBase *sm = s->measure();
+    MeasureBase *em = sm;
     while (sm->prev()) {
         if (sm->prev()->sectionBreak()) {
             break;
@@ -3717,12 +3489,11 @@ void Score::cmdSelectSection()
 //    and all part scores (if there are any)
 //---------------------------------------------------------
 
-std::list<Score*> Score::scoreList()
-{
-    std::list<Score*> scores;
-    MasterScore* root = masterScore();
+std::list<Score *> Score::scoreList() {
+    std::list<Score *> scores;
+    MasterScore *root = masterScore();
     scores.push_back(root);
-    for (const Excerpt* ex : root->excerpts()) {
+    for (const Excerpt *ex : root->excerpts()) {
         if (ex->excerptScore()) {
             scores.push_back(ex->excerptScore());
         }
@@ -3734,13 +3505,12 @@ std::list<Score*> Score::scoreList()
 //   appendPart
 //---------------------------------------------------------
 
-void Score::appendPart(const InstrumentTemplate* t)
-{
-    Part* part = new Part(this);
+void Score::appendPart(const InstrumentTemplate *t) {
+    Part *part = new Part(this);
     part->initFromInstrTemplate(t);
     for (staff_idx_t i = 0; i < t->staffCount; ++i) {
-        Staff* staff = Factory::createStaff(part);
-        StaffType* stt = staff->staffType(Fraction(0, 1));
+        Staff *staff = Factory::createStaff(part);
+        StaffType *stt = staff->staffType(Fraction(0, 1));
         undoInsertStaff(staff, i);
         staff->init(t, stt, int(i));
     }
@@ -3752,8 +3522,7 @@ void Score::appendPart(const InstrumentTemplate* t)
 //   appendMeasures
 //---------------------------------------------------------
 
-void Score::appendMeasures(int n)
-{
+void Score::appendMeasures(int n) {
     InsertMeasureOptions options;
     options.createMeasureRests = false;
 
@@ -3766,8 +3535,7 @@ void Score::appendMeasures(int n)
 //   addSpanner
 //---------------------------------------------------------
 
-void Score::addSpanner(Spanner* s, bool computeStartEnd)
-{
+void Score::addSpanner(Spanner *s, bool computeStartEnd) {
     m_spanner.addSpanner(s);
     s->added();
     if (computeStartEnd) {
@@ -3780,10 +3548,9 @@ void Score::addSpanner(Spanner* s, bool computeStartEnd)
 //   spannerList
 //---------------------------------------------------------
 
-std::vector<Spanner*> Score::spannerList() const
-{
-    std::vector<Spanner*> result;
-    const std::multimap<int, Spanner*>& spannerMap = m_spanner.map();
+std::vector<Spanner *> Score::spannerList() const {
+    std::vector<Spanner *> result;
+    const std::multimap<int, Spanner *> &spannerMap = m_spanner.map();
     result.reserve(spannerMap.size());
     for (auto it = spannerMap.begin(); it != spannerMap.end(); ++it) {
         result.push_back(it->second);
@@ -3795,19 +3562,18 @@ std::vector<Spanner*> Score::spannerList() const
 //   removeSpanner
 //---------------------------------------------------------
 
-void Score::removeSpanner(Spanner* s)
-{
+void Score::removeSpanner(Spanner *s) {
     m_spanner.removeSpanner(s);
     s->removed();
 
-    EngravingItem* startElement = s->startElement();
-    Chord* startChord = startElement && startElement->isChord() ? toChord(startElement) : nullptr;
+    EngravingItem *startElement = s->startElement();
+    Chord *startChord = startElement && startElement->isChord() ? toChord(startElement) : nullptr;
     if (startChord) {
         startChord->removeStartingSpanner(s);
     }
 
-    EngravingItem* endElement = s->endElement();
-    Chord* endChord = endElement && endElement->isChord() ? toChord(endElement) : nullptr;
+    EngravingItem *endElement = s->endElement();
+    Chord *endChord = endElement && endElement->isChord() ? toChord(endElement) : nullptr;
     if (endChord) {
         endChord->removeEndingSpanner(s);
     }
@@ -3819,8 +3585,7 @@ void Score::removeSpanner(Spanner* s)
 //    for track ?
 //---------------------------------------------------------
 
-bool Score::isSpannerStartEnd(const Fraction& tick, track_idx_t track) const
-{
+bool Score::isSpannerStartEnd(const Fraction &tick, track_idx_t track) const {
     for (auto i : m_spanner.map()) {
         if (i.second->track() != track) {
             continue;
@@ -3832,50 +3597,40 @@ bool Score::isSpannerStartEnd(const Fraction& tick, track_idx_t track) const
     return false;
 }
 
-void Score::insertTime(const Fraction& tick, const Fraction& len, const std::vector<RepeatSegmentInfo>& oldSegments)
-{
-    for (Staff* staff : staves()) {
+void Score::insertTime(const Fraction &tick, const Fraction &len, const std::vector<RepeatSegmentInfo> &oldSegments) {
+    for (Staff *staff : staves()) {
         staff->insertTime(tick, len);
     }
-    for (Part* part : parts()) {
+    for (Part *part : parts()) {
         part->insertTime(tick, len);
     }
 
     onTimeInserted(tick, len, oldSegments);
 }
 
-void Score::onTimeInserted(const Fraction&, const Fraction&, const std::vector<RepeatSegmentInfo>&)
-{
-}
+void Score::onTimeInserted(const Fraction &, const Fraction &, const std::vector<RepeatSegmentInfo> &) {}
 
 //---------------------------------------------------------
 //   addUnmanagedSpanner
 //---------------------------------------------------------
 
-void Score::addUnmanagedSpanner(Spanner* s)
-{
-    m_unmanagedSpanner.insert(s);
-}
+void Score::addUnmanagedSpanner(Spanner *s) { m_unmanagedSpanner.insert(s); }
 
 //---------------------------------------------------------
 //   removeSpanner
 //---------------------------------------------------------
 
-void Score::removeUnmanagedSpanner(Spanner* s)
-{
-    m_unmanagedSpanner.erase(s);
-}
+void Score::removeUnmanagedSpanner(Spanner *s) { m_unmanagedSpanner.erase(s); }
 
 //---------------------------------------------------------
 //   uniqueStaves
 //---------------------------------------------------------
 
-std::vector<staff_idx_t> Score::uniqueStaves() const
-{
+std::vector<staff_idx_t> Score::uniqueStaves() const {
     std::vector<staff_idx_t> sl;
 
     for (size_t staffIdx = 0; staffIdx < nstaves(); ++staffIdx) {
-        Staff* s = staff(staffIdx);
+        Staff *s = staff(staffIdx);
         if (s->links()) {
             bool alreadyInList = false;
             for (staff_idx_t idx : sl) {
@@ -3898,9 +3653,8 @@ std::vector<staff_idx_t> Score::uniqueStaves() const
 //    find chord/rest <= tick in track
 //---------------------------------------------------------
 
-ChordRest* Score::findCR(Fraction tick, track_idx_t track) const
-{
-    Measure* m = tick2measureMM(tick);
+ChordRest *Score::findCR(Fraction tick, track_idx_t track) const {
+    Measure *m = tick2measureMM(tick);
     if (!m) {
         //LOGD("findCR: no measure for tick %d", tick.ticks());
         return nullptr;
@@ -3909,12 +3663,12 @@ ChordRest* Score::findCR(Fraction tick, track_idx_t track) const
     if (m->isMMRest()) {
         tick = m->tick();
     }
-    Segment* s = m->first(SegmentType::ChordRest);
-    for (Segment* ns = s;; ns = ns->next(SegmentType::ChordRest)) {
+    Segment *s = m->first(SegmentType::ChordRest);
+    for (Segment *ns = s;; ns = ns->next(SegmentType::ChordRest)) {
         if (!ns || ns->tick() > tick) {
             break;
         }
-        EngravingItem* el = ns->element(track);
+        EngravingItem *el = ns->element(track);
         if (el && el->isRest() && toRest(el)->isGap()) {
             continue;
         } else if (el) {
@@ -3925,7 +3679,7 @@ ChordRest* Score::findCR(Fraction tick, track_idx_t track) const
     if (!s) {
         return nullptr;
     }
-    EngravingItem* el = s->element(track);
+    EngravingItem *el = s->element(track);
     if (el && el->isRest() && toRest(el)->isGap()) {
         return nullptr;
     }
@@ -3938,8 +3692,7 @@ ChordRest* Score::findCR(Fraction tick, track_idx_t track) const
 //    find last chord/rest on staff that ends before tick
 //---------------------------------------------------------
 
-ChordRest* Score::findChordRestEndingBeforeTickInStaff(const Fraction& tick, staff_idx_t staffIdx) const
-{
+ChordRest *Score::findChordRestEndingBeforeTickInStaff(const Fraction &tick, staff_idx_t staffIdx) const {
     return findChordRestEndingBeforeTickInStaffAndVoice(tick, staffIdx, false, 0);
 }
 
@@ -3947,8 +3700,7 @@ ChordRest* Score::findChordRestEndingBeforeTickInStaff(const Fraction& tick, sta
 //   findChordRestEndingBeforeTickInStaffAndVoice
 //    find last chord/rest on staff and voice that ends before tick
 //-----------------------------------------------------------------
-ChordRest* Score::findChordRestEndingBeforeTickInStaffAndVoice(const Fraction& tick, staff_idx_t staffIdx, voice_idx_t voice) const
-{
+ChordRest *Score::findChordRestEndingBeforeTickInStaffAndVoice(const Fraction &tick, staff_idx_t staffIdx, voice_idx_t voice) const {
     return findChordRestEndingBeforeTickInStaffAndVoice(tick, staffIdx, true, voice);
 }
 
@@ -3957,11 +3709,10 @@ ChordRest* Score::findChordRestEndingBeforeTickInStaffAndVoice(const Fraction& t
 //    find last chord/rest on staff and voice that ends before tick
 //    allow no specific voice
 //-----------------------------------------------------------------
-ChordRest* Score::findChordRestEndingBeforeTickInStaffAndVoice(const Fraction& tick, staff_idx_t staffIdx, bool forceVoice,
-                                                               voice_idx_t voice) const
-{
+ChordRest *Score::findChordRestEndingBeforeTickInStaffAndVoice(const Fraction &tick, staff_idx_t staffIdx, bool forceVoice,
+                                                               voice_idx_t voice) const {
     Fraction ptick = tick - Fraction::eps();
-    Measure* m = tick2measureMM(ptick);
+    Measure *m = tick2measureMM(ptick);
     if (!m) {
         LOGD("findCRinStaff: no measure for tick %d", ptick.ticks());
         return nullptr;
@@ -3971,19 +3722,19 @@ ChordRest* Score::findChordRestEndingBeforeTickInStaffAndVoice(const Fraction& t
         ptick = m->tick();
     }
 
-    Segment* s = m->first(SegmentType::ChordRest);
+    Segment *s = m->first(SegmentType::ChordRest);
     track_idx_t strack = forceVoice ? staffIdx * VOICES + voice : staffIdx * VOICES;
     track_idx_t etrack = forceVoice ? strack + 1 : strack + VOICES;
     track_idx_t actualTrack = strack;
 
     Fraction lastTick = Fraction(-1, 1);
-    for (Segment* ns = s;; ns = ns->next(SegmentType::ChordRest)) {
+    for (Segment *ns = s;; ns = ns->next(SegmentType::ChordRest)) {
         if (!ns || ns->tick() > ptick) {
             break;
         }
         // found a segment; now find longest cr on this staff that does not overlap tick
         for (track_idx_t t = strack; t < etrack; ++t) {
-            ChordRest* cr = toChordRest(ns->element(t));
+            ChordRest *cr = toChordRest(ns->element(t));
             if ((cr) && ((!forceVoice) || voice == cr->voice())) {
                 Fraction endTick = cr->endTick();
                 if (endTick >= lastTick && endTick <= tick) {
@@ -4000,16 +3751,15 @@ ChordRest* Score::findChordRestEndingBeforeTickInStaffAndVoice(const Fraction& t
     return nullptr;
 }
 
-ChordRest* Score::findChordRestEndingBeforeTickInTrack(const Fraction& tick, track_idx_t trackIdx) const
-{
-    Measure* m = tick2measureMM(tick - Fraction::eps());
+ChordRest *Score::findChordRestEndingBeforeTickInTrack(const Fraction &tick, track_idx_t trackIdx) const {
+    Measure *m = tick2measureMM(tick - Fraction::eps());
     if (!m) {
         LOGD("findCRinStaff: no measure for tick %d", tick.ticks());
         return nullptr;
     }
 
-    for (const Segment* s = m->last(SegmentType::ChordRest); s; s = s->prev(SegmentType::ChordRest)) {
-        if (ChordRest* cr = toChordRest(s->element(trackIdx))) {
+    for (const Segment *s = m->last(SegmentType::ChordRest); s; s = s->prev(SegmentType::ChordRest)) {
+        if (ChordRest *cr = toChordRest(s->element(trackIdx))) {
             if (cr->endTick() <= tick) {
                 return cr;
             }
@@ -4023,11 +3773,8 @@ ChordRest* Score::findChordRestEndingBeforeTickInTrack(const Fraction& tick, tra
 //   cmdNextPrevSystem
 //---------------------------------------------------------
 
-ChordRest* Score::cmdNextPrevSystem(ChordRest* cr, bool next)
-{
-    IF_ASSERT_FAILED(cr) {
-        return nullptr;
-    }
+ChordRest *Score::cmdNextPrevSystem(ChordRest *cr, bool next) {
+    IF_ASSERT_FAILED(cr) { return nullptr; }
 
     auto newCR = cr;
     auto currentMeasure = cr->measure();
@@ -4046,9 +3793,8 @@ ChordRest* Score::cmdNextPrevSystem(ChordRest* cr, bool next)
     if (next) {
         if ((destinationMeasure = currentSystem->lastMeasure()->nextMeasure())) {
             // There is a next system present: get it and accommodate for MMRest
-            currentSystem = destinationMeasure->system()
-                            ? destinationMeasure->system()
-                            : destinationMeasure->coveringMMRestOrThis()->system();
+            currentSystem =
+                destinationMeasure->system() ? destinationMeasure->system() : destinationMeasure->coveringMMRestOrThis()->system();
             if (!currentSystem) {
                 return cr;
             }
@@ -4065,8 +3811,8 @@ ChordRest* Score::cmdNextPrevSystem(ChordRest* cr, bool next)
                         cr = newCR;
                     }
                     // Last visual measure is a MMRest: go to very last measure within that MMRest
-                    else if ((destinationMeasure = lastMeasureMM())
-                             && (newCR = destinationMeasure->first()->nextChordRest(trackZeroVoice(cr->track()), false))) {
+                    else if ((destinationMeasure = lastMeasureMM()) &&
+                             (newCR = destinationMeasure->first()->nextChordRest(trackZeroVoice(cr->track()), false))) {
                         cr = newCR;
                     }
                 }
@@ -4078,14 +3824,13 @@ ChordRest* Score::cmdNextPrevSystem(ChordRest* cr, bool next)
         auto currentSegment = cr->segment();
         // Only go to previous system's beginning if user is already at the absolute beginning of current system
         // and not in first measure of entire score
-        if ((destinationMeasure != firstMeasure() && destinationMeasure != firstMeasureMM())
-            && (currentSegment == firstSegment || (currentMeasure->mmRest() && currentMeasure->mmRest()->isFirstInSystem()))) {
+        if ((destinationMeasure != firstMeasure() && destinationMeasure != firstMeasureMM()) &&
+            (currentSegment == firstSegment || (currentMeasure->mmRest() && currentMeasure->mmRest()->isFirstInSystem()))) {
             if (!(destinationMeasure = destinationMeasure->prevMeasureMM())) {
                 return cr;
             }
-            if (!(currentSystem = destinationMeasure->system()
-                                  ? destinationMeasure->system()
-                                  : destinationMeasure->coveringMMRestOrThis()->system())) {
+            if (!(currentSystem =
+                      destinationMeasure->system() ? destinationMeasure->system() : destinationMeasure->coveringMMRestOrThis()->system())) {
                 return cr;
             }
             destinationMeasure = currentSystem->firstMeasure();
@@ -4105,9 +3850,8 @@ ChordRest* Score::cmdNextPrevSystem(ChordRest* cr, bool next)
 //   to be used as a navigation command
 //---------------------------------------------------------
 
-Box* Score::cmdNextPrevFrame(MeasureBase* currentMeasureBase, bool next) const
-{
-    Box* selectedBox { nullptr };
+Box *Score::cmdNextPrevFrame(MeasureBase *currentMeasureBase, bool next) const {
+    Box *selectedBox{nullptr};
     while (!selectedBox && (currentMeasureBase = (next ? currentMeasureBase->next() : currentMeasureBase->prev()))) {
         if (currentMeasureBase->isBox()) {
             selectedBox = toBox(currentMeasureBase);
@@ -4121,8 +3865,7 @@ Box* Score::cmdNextPrevFrame(MeasureBase* currentMeasureBase, bool next) const
 //    Return [Box* or ChordRest*] of next/previous section
 //---------------------------------------------------------
 
-EngravingItem* Score::cmdNextPrevSection(EngravingItem* el, bool dir) const
-{
+EngravingItem *Score::cmdNextPrevSection(EngravingItem *el, bool dir) const {
     auto currentMeasureBase = el->findMeasureBase();
     auto destination = currentMeasureBase;
     if (currentMeasureBase) {
@@ -4168,13 +3911,12 @@ EngravingItem* Score::cmdNextPrevSection(EngravingItem* el, bool dir) const
 //    MeasureBase within score
 //---------------------------------------------------------
 
-MeasureBase* Score::getNextPrevSectionBreak(MeasureBase* mb, bool dir) const
-{
+MeasureBase *Score::getNextPrevSectionBreak(MeasureBase *mb, bool dir) const {
     auto destination = mb;
     if (destination) {
         if (dir) {
             // Find next section break
-            auto endOfSection { false };
+            auto endOfSection{false};
             while (!endOfSection) {
                 if ((destination = destination->next())) {
                     endOfSection = destination->sectionBreak();
@@ -4184,7 +3926,7 @@ MeasureBase* Score::getNextPrevSectionBreak(MeasureBase* mb, bool dir) const
             }
         } else {
             // Find previous section break
-            auto inCurrentSection { true };
+            auto inCurrentSection{true};
             while (inCurrentSection && destination) {
                 if (destination->index()) {
                     // Safety: SegFaults if invoking prev() when index=0
@@ -4210,11 +3952,10 @@ MeasureBase* Score::getNextPrevSectionBreak(MeasureBase* mb, bool dir) const
 //    MeasureBase
 //---------------------------------------------------------
 
-EngravingItem* Score::getScoreElementOfMeasureBase(MeasureBase* mb) const
-{
-    EngravingItem* el { nullptr };
-    ChordRest* cr { nullptr };
-    const Measure* currentMeasure { nullptr };
+EngravingItem *Score::getScoreElementOfMeasureBase(MeasureBase *mb) const {
+    EngravingItem *el{nullptr};
+    ChordRest *cr{nullptr};
+    const Measure *currentMeasure{nullptr};
     if (mb) {
         if (mb->isBox()) {
             el = toBox(mb);
@@ -4235,10 +3976,9 @@ EngravingItem* Score::getScoreElementOfMeasureBase(MeasureBase* mb) const
 //   nmeasure
 //---------------------------------------------------------
 
-size_t Score::nmeasures() const
-{
+size_t Score::nmeasures() const {
     size_t n = 0;
-    for (const Measure* m = firstMeasure(); m; m = m->nextMeasure()) {
+    for (const Measure *m = firstMeasure(); m; m = m->nextMeasure()) {
         n++;
     }
     return n;
@@ -4248,9 +3988,8 @@ size_t Score::nmeasures() const
 //   firstTrailingMeasure
 //---------------------------------------------------------
 
-Measure* Score::firstTrailingMeasure(ChordRest** cr)
-{
-    Measure* firstMeasure = nullptr;
+Measure *Score::firstTrailingMeasure(ChordRest **cr) {
+    Measure *firstMeasure = nullptr;
     auto m = lastMeasure();
 
     if (!cr) {
@@ -4261,7 +4000,7 @@ Measure* Score::firstTrailingMeasure(ChordRest** cr)
         }
     } else {
         // Active selection: select full measure rest of active staff's empty trailing measure
-        ChordRest* tempCR = *cr;
+        ChordRest *tempCR = *cr;
         while (m && (tempCR = m->first()->nextChordRest(trackZeroVoice((*cr)->track()), false))->isFullMeasureRest()) {
             *cr = tempCR;
             firstMeasure = m;
@@ -4276,16 +4015,15 @@ Measure* Score::firstTrailingMeasure(ChordRest** cr)
 //   hasLyrics
 //---------------------------------------------------------
 
-bool Score::hasLyrics() const
-{
+bool Score::hasLyrics() const {
     if (!firstMeasure()) {
         return false;
     }
 
     SegmentType st = SegmentType::ChordRest;
-    for (Segment* seg = firstMeasure()->first(st); seg; seg = seg->next1(st)) {
+    for (Segment *seg = firstMeasure()->first(st); seg; seg = seg->next1(st)) {
         for (size_t i = 0; i < ntracks(); ++i) {
-            ChordRest* cr = toChordRest(seg->element(static_cast<int>(i)));
+            ChordRest *cr = toChordRest(seg->element(static_cast<int>(i)));
             if (cr && !cr->lyrics().empty()) {
                 return true;
             }
@@ -4298,15 +4036,14 @@ bool Score::hasLyrics() const
 //   hasHarmonies
 //---------------------------------------------------------
 
-bool Score::hasHarmonies() const
-{
+bool Score::hasHarmonies() const {
     if (!firstMeasure()) {
         return false;
     }
 
     SegmentType st = SegmentType::ChordRest;
-    for (Segment* seg = firstMeasure()->first(st); seg; seg = seg->next1(st)) {
-        for (EngravingItem* e : seg->annotations()) {
+    for (Segment *seg = firstMeasure()->first(st); seg; seg = seg->next1(st)) {
+        for (EngravingItem *e : seg->annotations()) {
             if (e->isHarmony()) {
                 return true;
             }
@@ -4319,29 +4056,25 @@ bool Score::hasHarmonies() const
 //   lyricCount
 //---------------------------------------------------------
 
-int Score::lyricCount() const
-{
-    return int(lyrics().size());
-}
+int Score::lyricCount() const { return int(lyrics().size()); }
 
-std::vector<Lyrics*> Score::lyrics() const
-{
-    std::vector<Lyrics*> result;
+std::vector<Lyrics *> Score::lyrics() const {
+    std::vector<Lyrics *> result;
     SegmentType st = SegmentType::ChordRest;
     for (size_t track = 0; track < ntracks(); track++) {
         size_t maxLyrics = 1;
-        for (Measure* m = firstMeasure(); m; m = m->nextMeasure()) {
+        for (Measure *m = firstMeasure(); m; m = m->nextMeasure()) {
             m->setPlaybackCount(0);
         }
         // follow the repeat segments
-        const RepeatList& rlist = expandedRepeatList();
-        for (const RepeatSegment* rs : rlist) {
-            Fraction startTick  = Fraction::fromTicks(rs->tick);
-            Fraction endTick    = Fraction::fromTicks(rs->endTick());
-            for (Measure* m = tick2measure(startTick); m; m = m->nextMeasure()) {
+        const RepeatList &rlist = expandedRepeatList();
+        for (const RepeatSegment *rs : rlist) {
+            Fraction startTick = Fraction::fromTicks(rs->tick);
+            Fraction endTick = Fraction::fromTicks(rs->endTick());
+            for (Measure *m = tick2measure(startTick); m; m = m->nextMeasure()) {
                 size_t playCount = m->playbackCount();
-                for (Segment* seg = m->first(st); seg; seg = seg->next(st)) {
-                    ChordRest* cr = toChordRest(seg->element(track));
+                for (Segment *seg = m->first(st); seg; seg = seg->next(st)) {
+                    ChordRest *cr = toChordRest(seg->element(track));
                     if (!cr || cr->lyrics().empty()) {
                         continue;
                     }
@@ -4351,7 +4084,7 @@ std::vector<Lyrics*> Score::lyrics() const
                     if (playCount > cr->lyrics().size()) {
                         continue;
                     }
-                    Lyrics* l = cr->lyrics(static_cast<int>(playCount));
+                    Lyrics *l = cr->lyrics(static_cast<int>(playCount));
                     if (!l) {
                         continue;
                     }
@@ -4365,13 +4098,13 @@ std::vector<Lyrics*> Score::lyrics() const
         }
         // consider remaining lyrics
         for (size_t lyricsNumber = 0; lyricsNumber < maxLyrics; lyricsNumber++) {
-            for (Measure* m = firstMeasure(); m; m = m->nextMeasure()) {
+            for (Measure *m = firstMeasure(); m; m = m->nextMeasure()) {
                 size_t playCount = m->playbackCount();
                 if (lyricsNumber < playCount) {
                     continue;
                 }
-                for (Segment* seg = m->first(st); seg; seg = seg->next(st)) {
-                    ChordRest* cr = toChordRest(seg->element(track));
+                for (Segment *seg = m->first(st); seg; seg = seg->next(st)) {
+                    ChordRest *cr = toChordRest(seg->element(track));
                     if (!cr || cr->lyrics().empty()) {
                         continue;
                     }
@@ -4381,7 +4114,7 @@ std::vector<Lyrics*> Score::lyrics() const
                     if (lyricsNumber > cr->lyrics().size()) {
                         continue;
                     }
-                    Lyrics* l = cr->lyrics(static_cast<int>(lyricsNumber));
+                    Lyrics *l = cr->lyrics(static_cast<int>(lyricsNumber));
                     if (!l) {
                         continue;
                     }
@@ -4397,11 +4130,10 @@ std::vector<Lyrics*> Score::lyrics() const
 //   extractLyrics
 //---------------------------------------------------------
 
-String Score::extractLyrics() const
-{
+String Score::extractLyrics() const {
     String result;
-    std::vector<Lyrics*> list = lyrics();
-    for (const Lyrics* l : list) {
+    std::vector<Lyrics *> list = lyrics();
+    for (const Lyrics *l : list) {
         String lyric = l->plainText().trimmed();
         LyricsSyllabic ls = l->syllabic();
         if (ls == LyricsSyllabic::SINGLE || ls == LyricsSyllabic::END) {
@@ -4417,12 +4149,11 @@ String Score::extractLyrics() const
 //   harmonyCount
 //---------------------------------------------------------
 
-int Score::harmonyCount() const
-{
+int Score::harmonyCount() const {
     int count = 0;
     SegmentType st = SegmentType::ChordRest;
-    for (Segment* seg = firstMeasure()->first(st); seg; seg = seg->next1(st)) {
-        for (EngravingItem* e : seg->annotations()) {
+    for (Segment *seg = firstMeasure()->first(st); seg; seg = seg->next1(st)) {
+        for (EngravingItem *e : seg->annotations()) {
             if (e->isHarmony()) {
                 count++;
             }
@@ -4435,14 +4166,14 @@ int Score::harmonyCount() const
 //   keysig
 //---------------------------------------------------------
 
-int Score::keysig() const
-{
+int Score::keysig() const {
     Key result = Key::C;
     for (size_t staffIdx = 0; staffIdx < nstaves(); ++staffIdx) {
-        Staff* st = staff(staffIdx);
+        Staff *st = staff(staffIdx);
         constexpr Fraction t(0, 1);
         Key key = st->concertKey(t);
-        if (st->staffType(t)->group() == StaffGroup::PERCUSSION || st->keySigEvent(t).isAtonal()) {         // ignore percussion and custom / atonal key
+        if (st->staffType(t)->group() == StaffGroup::PERCUSSION ||
+            st->keySigEvent(t).isAtonal()) { // ignore percussion and custom / atonal key
             continue;
         }
         result = key;
@@ -4456,13 +4187,12 @@ int Score::keysig() const
 //   duration
 //---------------------------------------------------------
 
-int Score::duration() const
-{
-    const RepeatList& rl = masterScore()->repeatList(true);
+int Score::duration() const {
+    const RepeatList &rl = masterScore()->repeatList(true);
     if (rl.empty()) {
         return 0;
     }
-    const RepeatSegment* rs = rl.back();
+    const RepeatSegment *rs = rl.back();
     return lrint(utick2utime(rs->utick + rs->len()));
 }
 
@@ -4470,21 +4200,20 @@ int Score::duration() const
 //   durationWithoutRepeats
 //---------------------------------------------------------
 
-int Score::durationWithoutRepeats() const
-{
-    const RepeatList& rl = masterScore()->repeatList(false);
+int Score::durationWithoutRepeats() const {
+    const RepeatList &rl = masterScore()->repeatList(false);
     if (rl.empty()) {
         return 0;
     }
-    const RepeatSegment* rs = rl.back();
+    const RepeatSegment *rs = rl.back();
     return lrint(utick2utime(rs->utick + rs->len()));
 }
 
-std::set<staff_idx_t> Score::staffIdxSetFromRange(const track_idx_t trackFrom, const track_idx_t trackTo, StaffAccepted staffAccepted) const
-{
+std::set<staff_idx_t> Score::staffIdxSetFromRange(const track_idx_t trackFrom, const track_idx_t trackTo,
+                                                  StaffAccepted staffAccepted) const {
     std::set<staff_idx_t> result;
 
-    for (const Part* part : m_score->parts()) {
+    for (const Part *part : m_score->parts()) {
         const TrackRange range = part->trackRange();
         if (trackTo < range.startTrack || trackFrom >= range.endTrack) {
             continue;
@@ -4497,7 +4226,7 @@ std::set<staff_idx_t> Score::staffIdxSetFromRange(const track_idx_t trackFrom, c
         }
 
         for (staff_idx_t idx : staffIdxList) {
-            const Staff* staff = m_score->staff(idx);
+            const Staff *staff = m_score->staff(idx);
             if (!staff) {
                 continue;
             }
@@ -4515,8 +4244,7 @@ std::set<staff_idx_t> Score::staffIdxSetFromRange(const track_idx_t trackFrom, c
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Score::getProperty(Pid /*id*/) const
-{
+PropertyValue Score::getProperty(Pid /*id*/) const {
     LOGD("Score::getProperty: unhandled id");
     return PropertyValue();
 }
@@ -4525,8 +4253,7 @@ PropertyValue Score::getProperty(Pid /*id*/) const
 //   setProperty
 //---------------------------------------------------------
 
-bool Score::setProperty(Pid /*id*/, const PropertyValue& /*v*/)
-{
+bool Score::setProperty(Pid /*id*/, const PropertyValue & /*v*/) {
     LOGD("Score::setProperty: unhandled id");
     setLayoutAll();
     return true;
@@ -4536,25 +4263,20 @@ bool Score::setProperty(Pid /*id*/, const PropertyValue& /*v*/)
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Score::propertyDefault(Pid /*id*/) const
-{
-    return PropertyValue();
-}
+PropertyValue Score::propertyDefault(Pid /*id*/) const { return PropertyValue(); }
 
-void Score::resetStyleValue(Sid styleToReset)
-{
-    const MStyle& defStyle = DefaultStyle::defaultStyle();
+void Score::resetStyleValue(Sid styleToReset) {
+    const MStyle &defStyle = DefaultStyle::defaultStyle();
     undoChangeStyleVal(styleToReset, defStyle.value(styleToReset));
 }
 
-void Score::resetStyleValues(const StyleIdSet& styleIdSet)
-{
+void Score::resetStyleValues(const StyleIdSet &styleIdSet) {
     if (styleIdSet.empty()) {
         return;
     }
 
     std::unordered_map<Sid, PropertyValue> values;
-    const MStyle& defStyle = DefaultStyle::defaultStyle();
+    const MStyle &defStyle = DefaultStyle::defaultStyle();
 
     for (Sid sid : styleIdSet) {
         values.emplace(sid, defStyle.value(sid));
@@ -4567,8 +4289,7 @@ void Score::resetStyleValues(const StyleIdSet& styleIdSet)
 //   setStyle
 //---------------------------------------------------------
 
-void Score::setStyle(const MStyle& s, const bool overlap)
-{
+void Score::setStyle(const MStyle &s, const bool overlap) {
     if (!overlap) {
         style() = s;
         return;
@@ -4589,12 +4310,11 @@ void Score::setStyle(const MStyle& s, const bool overlap)
 //   getTextStyleUserName
 //---------------------------------------------------------
 
-TranslatableString Score::getTextStyleUserName(TextStyleType tid) const
-{
+TranslatableString Score::getTextStyleUserName(TextStyleType tid) const {
     if (int(tid) >= int(TextStyleType::USER1) && int(tid) <= int(TextStyleType::USER12)) {
         int idx = int(tid) - int(TextStyleType::USER1);
-        Sid sid[] = { Sid::user1Name, Sid::user2Name, Sid::user3Name, Sid::user4Name, Sid::user5Name, Sid::user6Name,
-                      Sid::user7Name, Sid::user8Name, Sid::user9Name, Sid::user10Name, Sid::user11Name, Sid::user12Name };
+        Sid sid[] = {Sid::user1Name, Sid::user2Name, Sid::user3Name, Sid::user4Name,  Sid::user5Name,  Sid::user6Name,
+                     Sid::user7Name, Sid::user8Name, Sid::user9Name, Sid::user10Name, Sid::user11Name, Sid::user12Name};
         String userName = style().styleSt(sid[idx]);
         if (!userName.empty()) {
             return TranslatableString::untranslatable(userName);
@@ -4603,17 +4323,13 @@ TranslatableString Score::getTextStyleUserName(TextStyleType tid) const
     return TConv::userName(tid);
 }
 
-String Score::name() const
-{
-    return m_excerpt ? m_excerpt->name() : String();
-}
+String Score::name() const { return m_excerpt ? m_excerpt->name() : String(); }
 
 //---------------------------------------------------------
 //   addRefresh
 //---------------------------------------------------------
 
-void Score::addRefresh(const RectF& r)
-{
+void Score::addRefresh(const RectF &r) {
     m_updateState.refresh.unite(r);
     cmdState().setUpdateMode(UpdateMode::Update);
 }
@@ -4624,10 +4340,9 @@ void Score::addRefresh(const RectF& r)
 //  Return index for the staff in the score.
 //---------------------------------------------------------
 
-staff_idx_t Score::staffIdx(const Staff* staff) const
-{
+staff_idx_t Score::staffIdx(const Staff *staff) const {
     staff_idx_t idx = 0;
-    for (Staff* s : m_staves) {
+    for (Staff *s : m_staves) {
         if (s == staff) {
             break;
         }
@@ -4642,10 +4357,9 @@ staff_idx_t Score::staffIdx(const Staff* staff) const
 ///  Return index for the first staff of \a part.
 //---------------------------------------------------------
 
-staff_idx_t Score::staffIdx(const Part* part) const
-{
+staff_idx_t Score::staffIdx(const Part *part) const {
     staff_idx_t idx = 0;
-    for (Part* p : m_parts) {
+    for (Part *p : m_parts) {
         if (p == part) {
             break;
         }
@@ -4654,9 +4368,8 @@ staff_idx_t Score::staffIdx(const Part* part) const
     return idx;
 }
 
-Staff* Score::staffById(const ID& staffId) const
-{
-    for (Staff* staff : m_staves) {
+Staff *Score::staffById(const ID &staffId) const {
+    for (Staff *staff : m_staves) {
         if (staff->id() == staffId) {
             return staff;
         }
@@ -4665,9 +4378,8 @@ Staff* Score::staffById(const ID& staffId) const
     return nullptr;
 }
 
-Part* Score::partById(const ID& partId) const
-{
-    for (Part* part : m_parts) {
+Part *Score::partById(const ID &partId) const {
+    for (Part *part : m_parts) {
         if (part->id() == partId) {
             return part;
         }
@@ -4676,25 +4388,15 @@ Part* Score::partById(const ID& partId) const
     return nullptr;
 }
 
-void Score::clearSystemObjectStaves()
-{
-    m_systemObjectStaves.clear();
-}
+void Score::clearSystemObjectStaves() { m_systemObjectStaves.clear(); }
 
-void Score::addSystemObjectStaff(Staff* staff)
-{
-    m_systemObjectStaves.push_back(staff);
-}
+void Score::addSystemObjectStaff(Staff *staff) { m_systemObjectStaves.push_back(staff); }
 
-void Score::removeSystemObjectStaff(Staff* staff)
-{
-    muse::remove(m_systemObjectStaves, staff);
-}
+void Score::removeSystemObjectStaff(Staff *staff) { muse::remove(m_systemObjectStaves, staff); }
 
-const std::vector<Staff*> Score::systemObjectStavesWithTopStaff() const
-{
-    std::vector<Staff*> result;
-    if (Staff* topStaff = staff(0)) {
+const std::vector<Staff *> Score::systemObjectStavesWithTopStaff() const {
+    std::vector<Staff *> result;
+    if (Staff *topStaff = staff(0)) {
         result.push_back(topStaff);
     }
 
@@ -4703,15 +4405,11 @@ const std::vector<Staff*> Score::systemObjectStavesWithTopStaff() const
     return result;
 }
 
-const std::vector<Part*>& Score::parts() const
-{
-    return m_parts;
-}
+const std::vector<Part *> &Score::parts() const { return m_parts; }
 
-size_t Score::visiblePartCount() const
-{
+size_t Score::visiblePartCount() const {
     int count = 0;
-    for (const Part* part : m_parts) {
+    for (const Part *part : m_parts) {
         if (part->show()) {
             ++count;
         }
@@ -4719,12 +4417,11 @@ size_t Score::visiblePartCount() const
     return count;
 }
 
-std::vector<Part*> Score::visibleParts() const
-{
-    std::vector<Part*> result;
+std::vector<Part *> Score::visibleParts() const {
+    std::vector<Part *> result;
     result.reserve(m_parts.size());
 
-    for (Part* p : m_parts) {
+    for (Part *p : m_parts) {
         if (p->show()) {
             result.push_back(p);
         }
@@ -4733,10 +4430,9 @@ std::vector<Part*> Score::visibleParts() const
     return result;
 }
 
-std::vector<SharedPart*> Score::sharedParts() const
-{
-    std::vector<SharedPart*> sharedParts;
-    for (Part* part : m_parts) {
+std::vector<SharedPart *> Score::sharedParts() const {
+    std::vector<SharedPart *> sharedParts;
+    for (Part *part : m_parts) {
         if (part->isSharedPart()) {
             sharedParts.push_back(toSharedPart(part));
         }
@@ -4745,9 +4441,8 @@ std::vector<SharedPart*> Score::sharedParts() const
     return sharedParts;
 }
 
-bool Score::hasSharedParts() const
-{
-    for (Part* part : m_parts) {
+bool Score::hasSharedParts() const {
+    for (Part *part : m_parts) {
         if (part->isSharedPart()) {
             return true;
         }
@@ -4756,10 +4451,9 @@ bool Score::hasSharedParts() const
     return false;
 }
 
-size_t Score::visibleStavesCount() const
-{
+size_t Score::visibleStavesCount() const {
     int count = 0;
-    for (const Staff* staff : m_staves) {
+    for (const Staff *staff : m_staves) {
         if (staff->show()) {
             ++count;
         }
@@ -4767,9 +4461,8 @@ size_t Score::visibleStavesCount() const
     return count;
 }
 
-bool Score::allStavesInvisible() const
-{
-    for (const Staff* staff : m_staves) {
+bool Score::allStavesInvisible() const {
+    for (const Staff *staff : m_staves) {
         if (staff->show()) {
             return false;
         }
@@ -4778,14 +4471,10 @@ bool Score::allStavesInvisible() const
     return true;
 }
 
-ShadowNote* Score::shadowNote() const
-{
-    return m_shadowNote;
-}
+ShadowNote *Score::shadowNote() const { return m_shadowNote; }
 
-void Score::rebuildBspTree()
-{
-    for (Page* page : pages()) {
+void Score::rebuildBspTree() {
+    for (Page *page : pages()) {
         page->invalidateBspTree();
     }
 }
@@ -4795,20 +4484,19 @@ void Score::rebuildBspTree()
 //    scan all elements
 //---------------------------------------------------------
 
-void Score::scanElements(std::function<void(EngravingItem*)> func)
-{
-    for (MeasureBase* mb = first(); mb; mb = mb->next()) {
+void Score::scanElements(std::function<void(EngravingItem *)> func) {
+    for (MeasureBase *mb = first(); mb; mb = mb->next()) {
         mb->scanElements(func);
         if (mb->isMeasure()) {
-            Measure* m = toMeasure(mb);
-            Measure* mmr = m->mmRest();
+            Measure *m = toMeasure(mb);
+            Measure *mmr = m->mmRest();
             if (mmr) {
                 mmr->scanElements(func);
             }
         }
     }
-    for (Page* page : pages()) {
-        for (System* s :page->systems()) {
+    for (Page *page : pages()) {
+        for (System *s : page->systems()) {
             s->scanElements(func);
         }
         func(page);
@@ -4820,26 +4508,25 @@ void Score::scanElements(std::function<void(EngravingItem*)> func)
 ///   Rebuild tie connections.
 //---------------------------------------------------------
 
-void Score::connectTies(bool silent)
-{
+void Score::connectTies(bool silent) {
     size_t tracks = nstaves() * VOICES;
-    Measure* m = firstMeasure();
+    Measure *m = firstMeasure();
     if (!m) {
         return;
     }
 
-    auto connectTiesForChord = [silent](Chord* c, Segment* s, track_idx_t track) -> void {
-        for (Note* n : c->notes()) {
+    auto connectTiesForChord = [silent](Chord *c, Segment *s, track_idx_t track) -> void {
+        for (Note *n : c->notes()) {
             if (n->laissezVib()) {
                 continue;
             }
             // connect a tie without end note
-            Tie* tie = n->tieFor();
+            Tie *tie = n->tieFor();
             if (tie) {
                 tie->updatePossibleJumpPoints();
             }
             if (tie && !tie->isPartialTie() && !tie->endNote()) {
-                Note* nnote;
+                Note *nnote;
                 nnote = searchTieNote(n);
                 if (nnote == 0) {
                     if (!silent) {
@@ -4853,9 +4540,9 @@ void Score::connectTies(bool silent)
                 }
             }
             // connect a glissando without initial note (old glissando format)
-            for (Spanner* spanner : n->spannerBack()) {
+            for (Spanner *spanner : n->spannerBack()) {
                 if (spanner->isGlissando() && !spanner->startElement()) {
-                    Note* initialNote = Glissando::guessInitialNote(n->chord());
+                    Note *initialNote = Glissando::guessInitialNote(n->chord());
                     n->removeSpannerBack(spanner);
                     if (initialNote) {
                         spanner->setStartElement(initialNote);
@@ -4872,7 +4559,7 @@ void Score::connectTies(bool silent)
                 }
             }
             // spanner with no end element can happen during copy/paste
-            for (Spanner* spanner : n->spannerFor()) {
+            for (Spanner *spanner : n->spannerFor()) {
                 if (spanner->endElement() == nullptr) {
                     n->removeSpannerFor(spanner);
                     delete spanner;
@@ -4882,21 +4569,21 @@ void Score::connectTies(bool silent)
     };
 
     SegmentType st = SegmentType::ChordRest;
-    for (Segment* s = m->first(st); s; s = s->next1(st)) {
+    for (Segment *s = m->first(st); s; s = s->next1(st)) {
         for (track_idx_t track = 0; track < tracks; ++track) {
-            EngravingItem* e = s->element(track);
+            EngravingItem *e = s->element(track);
             if (e == 0 || !e->isChord()) {
                 continue;
             }
-            Chord* c = toChord(e);
+            Chord *c = toChord(e);
             connectTiesForChord(c, s, track);
-            for (Chord* gc : c->graceNotes()) {
+            for (Chord *gc : c->graceNotes()) {
                 connectTiesForChord(gc, s, track);
 
-                for (Note* n : gc->notes()) {
+                for (Note *n : gc->notes()) {
                     // spanner with no end element apparently happens when reading some 206 files
                     // (and possibly in other situations too)
-                    for (Spanner* spanner : n->spannerFor()) {
+                    for (Spanner *spanner : n->spannerFor()) {
                         if (spanner->endElement() == nullptr) {
                             n->removeSpannerFor(spanner);
                             delete spanner;
@@ -4908,25 +4595,20 @@ void Score::connectTies(bool silent)
     }
 }
 
-bool Score::autoLayoutEnabled() const
-{
-    return isOpen();
-}
+bool Score::autoLayoutEnabled() const { return isOpen(); }
 
 //---------------------------------------------------------
 //   doLayout
 //    do a complete (re-) layout
 //---------------------------------------------------------
 
-void Score::doLayout()
-{
+void Score::doLayout() {
     TRACEFUNC;
 
     doLayoutRange(Fraction(0, 1), Fraction(-1, 1));
 }
 
-void Score::doLayoutRange(const Fraction& st, const Fraction& et)
-{
+void Score::doLayoutRange(const Fraction &st, const Fraction &et) {
     TRACEFUNC;
 
     Fraction start = st;
@@ -4934,7 +4616,7 @@ void Score::doLayoutRange(const Fraction& st, const Fraction& et)
 
     auto spanners = score()->spannerMap().findOverlapping(st.ticks(), et.ticks());
     for (auto interval : spanners) {
-        Spanner* spanner = interval.value;
+        Spanner *spanner = interval.value;
         if (!spanner->staff()->visible()) {
             continue;
         }
@@ -4954,37 +4636,30 @@ void Score::doLayoutRange(const Fraction& st, const Fraction& et)
     renderer()->layoutScore(this, start, end);
 }
 
-void Score::updatePaddingTables()
-{
-    m_paddingTables.update(style());
-}
+void Score::updatePaddingTables() { m_paddingTables.update(style()); }
 
-void Score::addSystemLock(const RangeLock* lock)
-{
+void Score::addSystemLock(const RangeLock *lock) {
     m_systemLocks.add(lock);
 
     lock->startMB()->triggerLayout();
     lock->endMB()->triggerLayout();
 }
 
-void Score::removeSystemLock(const RangeLock* lock)
-{
+void Score::removeSystemLock(const RangeLock *lock) {
     m_systemLocks.remove(lock);
 
     lock->startMB()->triggerLayout();
     lock->endMB()->triggerLayout();
 }
 
-void Score::addPageLock(const RangeLock* lock)
-{
+void Score::addPageLock(const RangeLock *lock) {
     m_pageLocks.add(lock);
 
     lock->startMB()->triggerLayout();
     lock->endMB()->triggerLayout();
 }
 
-void Score::removePageLock(const RangeLock* lock)
-{
+void Score::removePageLock(const RangeLock *lock) {
     m_pageLocks.remove(lock);
 
     lock->startMB()->triggerLayout();
@@ -4995,25 +4670,24 @@ void Score::removePageLock(const RangeLock* lock)
 //   updateSwing
 //---------------------------------------------------------
 
-void Score::updateSwing()
-{
-    for (Staff* s : m_staves) {
+void Score::updateSwing() {
+    for (Staff *s : m_staves) {
         s->clearSwingMap();
     }
-    Measure* fm = firstMeasure();
+    Measure *fm = firstMeasure();
     if (!fm) {
         return;
     }
-    for (Segment* s = fm->first(SegmentType::ChordRest); s; s = s->next1(SegmentType::ChordRest)) {
-        for (const EngravingItem* e : s->annotations()) {
+    for (Segment *s = fm->first(SegmentType::ChordRest); s; s = s->next1(SegmentType::ChordRest)) {
+        for (const EngravingItem *e : s->annotations()) {
             if (!e->isStaffTextBase()) {
                 continue;
             }
-            const StaffTextBase* st = toStaffTextBase(e);
+            const StaffTextBase *st = toStaffTextBase(e);
             if (st->xmlText().isEmpty()) {
                 continue;
             }
-            Staff* staff = st->staff();
+            Staff *staff = st->staff();
             if (!st->swing()) {
                 continue;
             }
@@ -5021,7 +4695,7 @@ void Score::updateSwing()
             sp.swingRatio = st->swingParameters().swingRatio;
             sp.swingUnit = st->swingParameters().swingUnit;
             if (st->systemFlag()) {
-                for (Staff* sta : m_staves) {
+                for (Staff *sta : m_staves) {
                     sta->insertIntoSwingMap(s->tick(), sp);
                 }
             } else {
@@ -5035,21 +4709,20 @@ void Score::updateSwing()
 //   updateCapo
 //---------------------------------------------------------
 
-void Score::updateCapo(bool ignoreNotationUpdate /* = false */)
-{
-    Measure* fm = firstMeasure();
+void Score::updateCapo(bool ignoreNotationUpdate /* = false */) {
+    Measure *fm = firstMeasure();
     if (!fm) {
         return;
     }
 
-    for (Segment* s = fm->first(SegmentType::ChordRest); s; s = s->next1(SegmentType::ChordRest)) {
+    for (Segment *s = fm->first(SegmentType::ChordRest); s; s = s->next1(SegmentType::ChordRest)) {
         Fraction segmentTick = s->tick();
 
-        for (EngravingItem* e : s->annotations()) {
+        for (EngravingItem *e : s->annotations()) {
             if (e->isHarmony()) {
                 toHarmony(e)->realizedHarmony().setDirty(true);
             } else if (e->isFretDiagram()) {
-                Harmony* harmony = toFretDiagram(e)->harmony();
+                Harmony *harmony = toFretDiagram(e)->harmony();
                 if (harmony) {
                     harmony->realizedHarmony().setDirty(true);
                 }
@@ -5059,7 +4732,7 @@ void Score::updateCapo(bool ignoreNotationUpdate /* = false */)
                 continue;
             }
 
-            for (Staff* staff : e->staff()->staffList()) {
+            for (Staff *staff : e->staff()->staffList()) {
                 staff->insertCapoParams(segmentTick, toCapo(e)->params(), ignoreNotationUpdate);
             }
         }
@@ -5070,21 +4743,20 @@ void Score::updateCapo(bool ignoreNotationUpdate /* = false */)
 //   updateChannel
 //---------------------------------------------------------
 
-void Score::updateChannel()
-{
-    for (Staff* s : staves()) {
+void Score::updateChannel() {
+    for (Staff *s : staves()) {
         for (voice_idx_t i = 0; i < VOICES; ++i) {
             s->clearChannelList(i);
         }
     }
-    Measure* fm = firstMeasure();
+    Measure *fm = firstMeasure();
     if (!fm) {
         return;
     }
-    for (Segment* s = fm->first(SegmentType::ChordRest); s; s = s->next1(SegmentType::ChordRest)) {
-        for (const EngravingItem* e : s->annotations()) {
+    for (Segment *s = fm->first(SegmentType::ChordRest); s; s = s->next1(SegmentType::ChordRest)) {
+        for (const EngravingItem *e : s->annotations()) {
             if (e->isInstrumentChange()) {
-                for (Staff* staff : e->part()->staves()) {
+                for (Staff *staff : e->part()->staves()) {
                     for (voice_idx_t voice = 0; voice < VOICES; ++voice) {
                         staff->insertIntoChannelList(voice, s->tick(), 0);
                     }
@@ -5094,13 +4766,13 @@ void Score::updateChannel()
             if (!e->isStaffTextBase()) {
                 continue;
             }
-            const StaffTextBase* st = toStaffTextBase(e);
+            const StaffTextBase *st = toStaffTextBase(e);
             for (voice_idx_t voice = 0; voice < VOICES; ++voice) {
                 String an(st->channelName(voice));
                 if (an.isEmpty()) {
                     continue;
                 }
-                Staff* staff = Score::staff(st->staffIdx());
+                Staff *staff = Score::staff(st->staffIdx());
                 int a = staff->part()->instrument(s->tick())->channelIdx(an);
                 if (a != -1) {
                     staff->insertIntoChannelList(voice, s->tick(), a);
@@ -5110,7 +4782,7 @@ void Score::updateChannel()
     }
 
     for (auto it = spanner().cbegin(); it != spanner().cend(); ++it) {
-        Spanner* spanner = (*it).second;
+        Spanner *spanner = (*it).second;
         if (spanner->isPalmMute()) {
             toPalmMute(spanner)->setChannel();
         }
@@ -5119,26 +4791,26 @@ void Score::updateChannel()
         }
     }
 
-    for (Segment* s = fm->first(SegmentType::ChordRest); s; s = s->next1(SegmentType::ChordRest)) {
-        for (Staff* st : staves()) {
+    for (Segment *s = fm->first(SegmentType::ChordRest); s; s = s->next1(SegmentType::ChordRest)) {
+        for (Staff *st : staves()) {
             track_idx_t strack = st->idx() * VOICES;
             track_idx_t etrack = strack + VOICES;
             for (track_idx_t track = strack; track < etrack; ++track) {
                 if (!s->element(track)) {
                     continue;
                 }
-                EngravingItem* e = s->element(track);
+                EngravingItem *e = s->element(track);
                 if (!e->isChord()) {
                     continue;
                 }
-                Chord* c = toChord(e);
+                Chord *c = toChord(e);
                 size_t channel = st->channel(c->tick(), c->voice());
-                Instrument* instr = c->part()->instrument(c->tick());
+                Instrument *instr = c->part()->instrument(c->tick());
                 if (channel >= instr->channel().size()) {
                     LOGD() << "Channel " << channel << " too high. Max " << instr->channel().size();
                     channel = 0;
                 }
-                for (Note* note : c->notes()) {
+                for (Note *note : c->notes()) {
                     if (note->hidden()) {
                         continue;
                     }
@@ -5149,8 +4821,7 @@ void Score::updateChannel()
     }
 }
 
-SystemDivider* Score::systemDivider(size_t systemIdx, SystemDividerType type) const
-{
+SystemDivider *Score::systemDivider(size_t systemIdx, SystemDividerType type) const {
     if (muse::contains(m_systemDividers, systemIdx)) {
         return m_systemDividers.at(systemIdx).at(static_cast<size_t>(type));
     }
@@ -5158,40 +4829,33 @@ SystemDivider* Score::systemDivider(size_t systemIdx, SystemDividerType type) co
     return nullptr;
 }
 
-void Score::addSystemDivider(size_t systemIdx, SystemDivider* divider)
-{
+void Score::addSystemDivider(size_t systemIdx, SystemDivider *divider) {
     if (!muse::contains(m_systemDividers, systemIdx)) {
-        m_systemDividers.emplace(systemIdx, std::array<SystemDivider*, 2> { nullptr, nullptr });
+        m_systemDividers.emplace(systemIdx, std::array<SystemDivider *, 2>{nullptr, nullptr});
     }
 
     m_systemDividers.at(systemIdx)[static_cast<size_t>(divider->dividerType())] = divider;
 }
 
-BracketType Score::bracketType(staff_idx_t staffIdx, size_t idx) const
-{
-    const std::vector<BracketItem*>& staffBrackets = brackets(staffIdx);
+BracketType Score::bracketType(staff_idx_t staffIdx, size_t idx) const {
+    const std::vector<BracketItem *> &staffBrackets = brackets(staffIdx);
     if (idx < staffBrackets.size()) {
         return staffBrackets[idx]->bracketType();
     }
     return BracketType::NO_BRACKET;
 }
 
-size_t Score::bracketSpan(staff_idx_t staffIdx, size_t idx) const
-{
-    const std::vector<BracketItem*>& staffBrackets = brackets(staffIdx);
+size_t Score::bracketSpan(staff_idx_t staffIdx, size_t idx) const {
+    const std::vector<BracketItem *> &staffBrackets = brackets(staffIdx);
     if (idx < staffBrackets.size()) {
         return staffBrackets[idx]->bracketSpan();
     }
     return 0;
 }
 
-const std::vector<BracketItem*>& Score::brackets(staff_idx_t staffIdx) const
-{
-    return m_brackets.at(staffIdx);
-}
+const std::vector<BracketItem *> &Score::brackets(staff_idx_t staffIdx) const { return m_brackets.at(staffIdx); }
 
-std::vector<BracketItem*>& Score::brackets(staff_idx_t staffIdx)
-{
+std::vector<BracketItem *> &Score::brackets(staff_idx_t staffIdx) {
     const size_t newSize = std::max(static_cast<size_t>(staffIdx) + 1, m_staves.size());
     if (m_brackets.size() < newSize) {
         m_brackets.resize(newSize);
@@ -5203,9 +4867,8 @@ std::vector<BracketItem*>& Score::brackets(staff_idx_t staffIdx)
 //   bracketLevels
 //---------------------------------------------------------
 
-size_t Score::bracketLevels(staff_idx_t staffIdx) const
-{
-    const std::vector<BracketItem*>& staffBrackets = brackets(staffIdx);
+size_t Score::bracketLevels(staff_idx_t staffIdx) const {
+    const std::vector<BracketItem *> &staffBrackets = brackets(staffIdx);
     size_t columns = 0;
     for (auto bi : staffBrackets) {
         columns = std::max(columns, bi->column());
@@ -5215,47 +4878,49 @@ size_t Score::bracketLevels(staff_idx_t staffIdx) const
 
 AutomationDataConstPtr Score::automationData() const { return m_masterScore->automationData(); }
 
-void Score::editAutomationPoints(const AutomationCurveKey& key, AutomationPointEdits& edits, bool undoable)
-{
+void Score::editAutomationPoints(const AutomationCurveKey &key, AutomationPointEdits &edits, bool undoable) {
     m_masterScore->editAutomationPoints(key, edits, undoable);
 }
 
-TransactionManager* Score::transactionManager() const { return m_masterScore->transactionManager(); }
-UndoStack* Score::undoStack() const { return m_masterScore->undoStack(); }
-const RepeatList& Score::repeatList()  const { return m_masterScore->repeatList(); }
-const RepeatList& Score::repeatList(bool expandRepeats, bool updateTies)  const
-{
+TransactionManager *Score::transactionManager() const { return m_masterScore->transactionManager(); }
+
+UndoStack *Score::undoStack() const { return m_masterScore->undoStack(); }
+
+const RepeatList &Score::repeatList() const { return m_masterScore->repeatList(); }
+
+const RepeatList &Score::repeatList(bool expandRepeats, bool updateTies) const {
     return m_masterScore->repeatList(expandRepeats, updateTies);
 }
 
-std::vector<RepeatSegmentInfo> Score::repeatSegmentInfoList(bool expandRepeats) const
-{
+std::vector<RepeatSegmentInfo> Score::repeatSegmentInfoList(bool expandRepeats) const {
     // Read-only: don't trigger tie/jump-point cleanup, safe to call mid-edit
     return repeatList(expandRepeats, false).segmentInfoList();
 }
 
-const RepeatList& Score::expandedRepeatList() const
-{
-    return repeatList(/*expandRepeats*/ true);
-}
+const RepeatList &Score::expandedRepeatList() const { return repeatList(/*expandRepeats*/ true); }
 
-TimeSigMap* Score::sigmap() const { return m_masterScore->sigmap(); }
+TimeSigMap *Score::sigmap() const { return m_masterScore->sigmap(); }
 
 void Score::setUpdateAll() { m_masterScore->setUpdateAll(); }
 
-void Score::setLayoutAll(staff_idx_t staff, const EngravingItem* e) { m_masterScore->setLayoutAll(staff, e); }
-void Score::setLayout(const Fraction& tick, staff_idx_t staff, const EngravingItem* e) { m_masterScore->setLayout(tick, staff, e); }
-void Score::setLayout(const Fraction& tick1, const Fraction& tick2, staff_idx_t staff1, staff_idx_t staff2, const EngravingItem* e)
-{
+void Score::setLayoutAll(staff_idx_t staff, const EngravingItem *e) { m_masterScore->setLayoutAll(staff, e); }
+
+void Score::setLayout(const Fraction &tick, staff_idx_t staff, const EngravingItem *e) { m_masterScore->setLayout(tick, staff, e); }
+
+void Score::setLayout(const Fraction &tick1, const Fraction &tick2, staff_idx_t staff1, staff_idx_t staff2, const EngravingItem *e) {
     m_masterScore->setLayout(tick1, tick2, staff1, staff2, e);
 }
 
-CmdState& Score::cmdState() { return m_masterScore->cmdState(); }
-const CmdState& Score::cmdState() const { return m_masterScore->cmdState(); }
+CmdState &Score::cmdState() { return m_masterScore->cmdState(); }
+
+const CmdState &Score::cmdState() const { return m_masterScore->cmdState(); }
+
 void Score::addLayoutFlags(LayoutFlags f) { m_masterScore->addLayoutFlags(f); }
+
 void Score::setInstrumentsChanged(bool v) { m_masterScore->setInstrumentsChanged(v); }
 
 Fraction Score::loopBoundaryTick(LoopBoundaryType type) const { return m_masterScore->loopBoundaryTick(type); }
+
 void Score::setLoopBoundaryTick(LoopBoundaryType type, Fraction tick) { m_masterScore->setLoopBoundaryTick(type, tick); }
 
 //---------------------------------------------------------
@@ -5268,4 +4933,4 @@ void Score::setLoopBoundaryTick(LoopBoundaryType type, Fraction tick) { m_master
 //---------------------------------------------------------
 
 int ScoreLoad::m_loading = 0;
-}
+} // namespace mu::engraving

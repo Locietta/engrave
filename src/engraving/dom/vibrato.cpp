@@ -37,20 +37,16 @@ using namespace mu;
 using namespace mu::engraving;
 
 namespace mu::engraving {
-VibratoSegment::VibratoSegment(Vibrato* sp)
-    : LineSegment(ElementType::VIBRATO_SEGMENT, sp, ElementFlag::MOVABLE | ElementFlag::ON_STAFF)
-{
-}
+VibratoSegment::VibratoSegment(Vibrato *sp) : LineSegment(ElementType::VIBRATO_SEGMENT, sp, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {}
 
 //---------------------------------------------------------
 //   symbolLine
 //---------------------------------------------------------
 
-void VibratoSegment::symbolLine(SymId start, SymId fill)
-{
+void VibratoSegment::symbolLine(SymId start, SymId fill) {
     double x1 = 0;
     double x2 = pos2().x();
-    double w   = x2 - x1;
+    double w = x2 - x1;
     double mag = magS();
     IEngravingFontPtr f = score()->engravingFont();
 
@@ -58,7 +54,7 @@ void VibratoSegment::symbolLine(SymId start, SymId fill)
     m_symbols.push_back(start);
     double w1 = f->advance(start, mag);
     double w2 = f->advance(fill, mag);
-    int n    = lrint((w - w1) / w2);
+    int n = lrint((w - w1) / w2);
     for (int i = 0; i < n; ++i) {
         m_symbols.push_back(fill);
     }
@@ -66,11 +62,10 @@ void VibratoSegment::symbolLine(SymId start, SymId fill)
     setbbox(r);
 }
 
-void VibratoSegment::symbolLine(SymId start, SymId fill, SymId end)
-{
+void VibratoSegment::symbolLine(SymId start, SymId fill, SymId end) {
     double x1 = 0;
     double x2 = pos2().x();
-    double w   = x2 - x1;
+    double w = x2 - x1;
     double mag = magS();
     IEngravingFontPtr f = score()->engravingFont();
 
@@ -79,7 +74,7 @@ void VibratoSegment::symbolLine(SymId start, SymId fill, SymId end)
     double w1 = f->bbox(start, mag).width();
     double w2 = f->width(fill, mag);
     double w3 = f->width(end, mag);
-    int n    = lrint((w - w1 - w3) / w2);
+    int n = lrint((w - w1 - w3) / w2);
     for (int i = 0; i < n; ++i) {
         m_symbols.push_back(fill);
     }
@@ -92,8 +87,7 @@ void VibratoSegment::symbolLine(SymId start, SymId fill, SymId end)
 //   propertyDelegate
 //---------------------------------------------------------
 
-EngravingObject* VibratoSegment::propertyDelegate(Pid pid) const
-{
+EngravingObject *VibratoSegment::propertyDelegate(Pid pid) const {
     if (pid == Pid::VIBRATO_TYPE || pid == Pid::PLACEMENT) {
         return spanner();
     }
@@ -104,81 +98,61 @@ EngravingObject* VibratoSegment::propertyDelegate(Pid pid) const
 //   vibratoStyle
 //---------------------------------------------------------
 
-static const ElementStyle vibratoStyle {
-    { Sid::vibratoPlacement,      Pid::PLACEMENT },
+static const ElementStyle vibratoStyle{
+    {Sid::vibratoPlacement, Pid::PLACEMENT},
 };
 
 //---------------------------------------------------------
 //   Vibrato
 //---------------------------------------------------------
 
-Vibrato::Vibrato(DummyParentOr<EngravingItem> parent)
-    : SLine(ElementType::VIBRATO, parent)
-{
+Vibrato::Vibrato(DummyParentOr<EngravingItem> parent) : SLine(ElementType::VIBRATO, parent) {
     initElementStyle(&vibratoStyle);
     m_vibratoType = VibratoType::GUITAR_VIBRATO;
 }
 
-Vibrato::~Vibrato()
-{
-}
+Vibrato::~Vibrato() {}
 
-static const ElementStyle vibratoSegmentStyle {
-    { Sid::vibratoMinDistance,    Pid::MIN_DISTANCE },
+static const ElementStyle vibratoSegmentStyle{
+    {Sid::vibratoMinDistance, Pid::MIN_DISTANCE},
 };
 
 //---------------------------------------------------------
 //   createLineSegment
 //---------------------------------------------------------
 
-LineSegment* Vibrato::createLineSegment()
-{
-    VibratoSegment* seg = new VibratoSegment(this);
+LineSegment *Vibrato::createLineSegment() {
+    VibratoSegment *seg = new VibratoSegment(this);
     seg->setTrack(track());
     seg->setColor(lineColor());
     seg->initElementStyle(&vibratoSegmentStyle);
     return seg;
 }
 
-PointF Vibrato::linePos(Grip grip, System** system) const
-{
-    return Trill::trillLinePos(this, grip, system);
-}
+PointF Vibrato::linePos(Grip grip, System **system) const { return Trill::trillLinePos(this, grip, system); }
 
 //---------------------------------------------------------
 //   vibratoTypeName
 //---------------------------------------------------------
 
-String Vibrato::vibratoTypeUserName() const
-{
-    return TConv::translatedUserName(vibratoType());
-}
+String Vibrato::vibratoTypeUserName() const { return TConv::translatedUserName(vibratoType()); }
 
 //---------------------------------------------------------
 //   subtypeUserName
 //---------------------------------------------------------
 
-muse::TranslatableString Vibrato::subtypeUserName() const
-{
-    return TConv::userName(vibratoType());
-}
+muse::TranslatableString Vibrato::subtypeUserName() const { return TConv::userName(vibratoType()); }
 
-Sid Vibrato::defaultPosSid() const
-{
-    return placeAbove() ? Sid::vibratoPosAbove : Sid::vibratoPosBelow;
-}
+Sid Vibrato::defaultPosSid() const { return placeAbove() ? Sid::vibratoPosAbove : Sid::vibratoPosBelow; }
 
 //---------------------------------------------------------
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Vibrato::getProperty(Pid propertyId) const
-{
+PropertyValue Vibrato::getProperty(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::VIBRATO_TYPE:
-        return int(vibratoType());
-    default:
-        break;
+        case Pid::VIBRATO_TYPE: return int(vibratoType());
+        default: break;
     }
     return SLine::getProperty(propertyId);
 }
@@ -187,18 +161,14 @@ PropertyValue Vibrato::getProperty(Pid propertyId) const
 //   setProperty
 //---------------------------------------------------------
 
-bool Vibrato::setProperty(Pid propertyId, const PropertyValue& val)
-{
+bool Vibrato::setProperty(Pid propertyId, const PropertyValue &val) {
     switch (propertyId) {
-    case Pid::VIBRATO_TYPE:
-        setVibratoType(VibratoType(val.toInt()));
-        break;
-    case Pid::COLOR:
-        setColor(val.value<Color>());
-        setLineColor(val.value<Color>());
-        break;
-    default:
-        return SLine::setProperty(propertyId, val);
+        case Pid::VIBRATO_TYPE: setVibratoType(VibratoType(val.toInt())); break;
+        case Pid::COLOR:
+            setColor(val.value<Color>());
+            setLineColor(val.value<Color>());
+            break;
+        default: return SLine::setProperty(propertyId, val);
     }
     triggerLayout();
     return true;
@@ -208,15 +178,11 @@ bool Vibrato::setProperty(Pid propertyId, const PropertyValue& val)
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Vibrato::propertyDefault(Pid propertyId) const
-{
+PropertyValue Vibrato::propertyDefault(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::VIBRATO_TYPE:
-        return static_cast<int>(VibratoType::GUITAR_VIBRATO);
-    case Pid::PLACEMENT:
-        return style().styleV(Sid::vibratoPlacement);
-    default:
-        return SLine::propertyDefault(propertyId);
+        case Pid::VIBRATO_TYPE: return static_cast<int>(VibratoType::GUITAR_VIBRATO);
+        case Pid::PLACEMENT: return style().styleV(Sid::vibratoPlacement);
+        default: return SLine::propertyDefault(propertyId);
     }
 }
 
@@ -224,5 +190,4 @@ PropertyValue Vibrato::propertyDefault(Pid propertyId) const
 //   accessibleInfo
 //---------------------------------------------------------
 
-
-}
+} // namespace mu::engraving

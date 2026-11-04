@@ -13,7 +13,7 @@
 #endif
 
 namespace music {
-void write_atomic(const std::filesystem::path& path, std::string_view bytes) {
+void write_atomic(const std::filesystem::path &path, std::string_view bytes) {
     std::random_device random;
     auto temporary = path.parent_path() / (".musescore-export-" + std::to_string(random()) + "-" + std::to_string(random()));
 #ifdef _WIN32
@@ -51,7 +51,9 @@ void write_atomic(const std::filesystem::path& path, std::string_view bytes) {
             bytes.remove_prefix(static_cast<size_t>(written));
         }
         int flushed;
-        do { flushed = ::fsync(file); } while (flushed != 0 && errno == EINTR);
+        do {
+            flushed = ::fsync(file);
+        } while (flushed != 0 && errno == EINTR);
         if (flushed != 0) throw std::system_error(errno, std::generic_category(), "Cannot flush export");
         const int result = ::close(file);
         file = -1;
@@ -65,4 +67,4 @@ void write_atomic(const std::filesystem::path& path, std::string_view bytes) {
     }
 #endif
 }
-}
+} // namespace music

@@ -168,9 +168,12 @@ enum class UndoableCommandFilter : unsigned char {
     ChangePropertyLinked,
 };
 
-#define UNDO_TYPE(t) CommandType type() const override { return t; }
-#define UNDO_NAME(a) const char* name() const override { return a; }
-#define UNDO_CHANGED_OBJECTS(...) std::vector<EngravingObject*> objectItems() const override { return __VA_ARGS__; }
+#define UNDO_TYPE(t) \
+    CommandType type() const override { return t; }
+#define UNDO_NAME(a) \
+    const char *name() const override { return a; }
+#define UNDO_CHANGED_OBJECTS(...) \
+    std::vector<EngravingObject *> objectItems() const override { return __VA_ARGS__; }
 
 struct ChangedRange {
     Fraction tickFrom;
@@ -179,8 +182,7 @@ struct ChangedRange {
     staff_idx_t staffIdxTo = muse::nidx;
 };
 
-class UndoableCommand
-{
+class UndoableCommand {
 public:
     virtual ~UndoableCommand() = default;
 
@@ -189,17 +191,19 @@ public:
 
     virtual void cleanup(bool /*wasDone*/) {}
 
-    virtual std::vector<EngravingObject*> objectItems() const { return {}; }
-    virtual const char* name() const { return "UndoableCommand"; }
+    virtual std::vector<EngravingObject *> objectItems() const { return {}; }
+
+    virtual const char *name() const { return "UndoableCommand"; }
+
     virtual CommandType type() const { return CommandType::Unknown; }
 
     virtual std::optional<ChangedRange> changedRange() const { return std::nullopt; }
 
-    virtual bool matchesFilter(UndoableCommandFilter, const EngravingItem* /* target */) const { return false; }
+    virtual bool matchesFilter(UndoableCommandFilter, const EngravingItem * /* target */) const { return false; }
 
 protected:
     virtual void flip() {}
 };
 
-std::vector<EngravingObject*> compoundObjects(EngravingObject* object);
-}
+std::vector<EngravingObject *> compoundObjects(EngravingObject *object);
+} // namespace mu::engraving

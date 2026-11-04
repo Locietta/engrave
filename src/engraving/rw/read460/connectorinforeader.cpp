@@ -50,16 +50,14 @@ using namespace mu::engraving::read460;
 //   ConnectorInfoReader
 //---------------------------------------------------------
 
-ConnectorInfoReader::ConnectorInfoReader(XmlReader& e, ReadContext* ctx, EngravingItem* current, int track)
-    : ConnectorInfo(current, track), m_reader(&e), m_ctx(ctx), m_connector(nullptr), m_connectorReceiver(current)
-{}
+ConnectorInfoReader::ConnectorInfoReader(XmlReader &e, ReadContext *ctx, EngravingItem *current, int track)
+    : ConnectorInfo(current, track), m_reader(&e), m_ctx(ctx), m_connector(nullptr), m_connectorReceiver(current) {}
 
 //---------------------------------------------------------
 //   readPositionInfo
 //---------------------------------------------------------
 
-static Location readPositionInfo(ReadContext* ctx, int track)
-{
+static Location readPositionInfo(ReadContext *ctx, int track) {
     Location info = ctx->location();
     info.setTrack(track);
     return info;
@@ -69,9 +67,8 @@ static Location readPositionInfo(ReadContext* ctx, int track)
 //   ConnectorInfoReader
 //---------------------------------------------------------
 
-ConnectorInfoReader::ConnectorInfoReader(XmlReader& e, ReadContext* ctx, Score* current, int track)
-    : ConnectorInfo(current, readPositionInfo(ctx, track)), m_reader(&e), m_ctx(ctx), m_connector(nullptr), m_connectorReceiver(current)
-{
+ConnectorInfoReader::ConnectorInfoReader(XmlReader &e, ReadContext *ctx, Score *current, int track)
+    : ConnectorInfo(current, readPositionInfo(ctx, track)), m_reader(&e), m_ctx(ctx), m_connector(nullptr), m_connectorReceiver(current) {
     setCurrentUpdated(true);
 }
 
@@ -79,9 +76,8 @@ ConnectorInfoReader::ConnectorInfoReader(XmlReader& e, ReadContext* ctx, Score* 
 //   ConnectorInfoReader::read
 //---------------------------------------------------------
 
-bool ConnectorInfoReader::read()
-{
-    XmlReader& e = *m_reader;
+bool ConnectorInfoReader::read() {
+    XmlReader &e = *m_reader;
     const AsciiStringView name(e.asciiAttribute("type"));
     m_type = TConv::fromXml(name, ElementType::INVALID);
 
@@ -98,8 +94,8 @@ bool ConnectorInfoReader::read()
             if (tag == name) {
                 m_connector = Factory::createItemByName(tag, m_connectorReceiver->score()->dummy());
             } else {
-                LOGW("ConnectorInfoReader::read: element tag (%s) does not match connector type (%s). Is the file corrupted?",
-                     tag.ascii(), name.ascii());
+                LOGW("ConnectorInfoReader::read: element tag (%s) does not match connector type (%s). Is the file corrupted?", tag.ascii(),
+                     name.ascii());
             }
 
             if (!m_connector) {
@@ -117,9 +113,8 @@ bool ConnectorInfoReader::read()
 //   ConnectorInfoReader::readEndpointLocation
 //---------------------------------------------------------
 
-void ConnectorInfoReader::readEndpointLocation(Location& l)
-{
-    XmlReader& e = *m_reader;
+void ConnectorInfoReader::readEndpointLocation(Location &l) {
+    XmlReader &e = *m_reader;
     while (e.readNextStartElement()) {
         const AsciiStringView tag(e.name());
         if (tag == "location") {
@@ -131,17 +126,13 @@ void ConnectorInfoReader::readEndpointLocation(Location& l)
     }
 }
 
-Fraction ConnectorInfoReader::curTick() const
-{
-    return m_ctx->tick();
-}
+Fraction ConnectorInfoReader::curTick() const { return m_ctx->tick(); }
 
 //---------------------------------------------------------
 //   ConnectorInfoReader::update
 //---------------------------------------------------------
 
-void ConnectorInfoReader::update()
-{
+void ConnectorInfoReader::update() {
     if (!currentUpdated()) {
         updateCurrentInfo(m_ctx->pasteMode());
     }
@@ -157,15 +148,13 @@ void ConnectorInfoReader::update()
 //   ConnectorInfoReader::addToScore
 //---------------------------------------------------------
 
-class ReadAddConnectorVisitor : public rtti::Visitor<ReadAddConnectorVisitor>
-{
+class ReadAddConnectorVisitor : public rtti::Visitor<ReadAddConnectorVisitor> {
 public:
 
-    template<typename T>
-    static bool doVisit(EngravingObject* item, ConnectorInfoReader* info, bool pasteMode)
-    {
+    template <typename T>
+    static bool doVisit(EngravingObject *item, ConnectorInfoReader *info, bool pasteMode) {
         if (T::classof(item) || (std::is_same<T, ChordRest>::value && item->isChordRest())) {
-            ConnectorInfoReader::readAddConnector(static_cast<T*>(item), info, pasteMode);
+            ConnectorInfoReader::readAddConnector(static_cast<T *>(item), info, pasteMode);
             return true;
         }
         return false;
@@ -174,14 +163,13 @@ public:
 
 using ReadAddConnectorTypes = rtti::TypeList<ChordRest, Measure, Note, Score>;
 
-void ConnectorInfoReader::addToScore(bool pasteMode)
-{
-    ConnectorInfoReader* r = this;
+void ConnectorInfoReader::addToScore(bool pasteMode) {
+    ConnectorInfoReader *r = this;
     while (r->prev()) {
         r = r->prev();
     }
     while (r) {
-        bool found = ReadAddConnectorVisitor::visit(ReadAddConnectorTypes {}, r->m_connectorReceiver, r, pasteMode);
+        bool found = ReadAddConnectorVisitor::visit(ReadAddConnectorTypes{}, r->m_connectorReceiver, r, pasteMode);
         DO_ASSERT(found);
         r = r->next();
     }
@@ -191,8 +179,7 @@ void ConnectorInfoReader::addToScore(bool pasteMode)
 //   ConnectorInfoReader::readConnector
 //---------------------------------------------------------
 
-void ConnectorInfoReader::readConnector(std::shared_ptr<ConnectorInfoReader> info, XmlReader& e, ReadContext& ctx)
-{
+void ConnectorInfoReader::readConnector(std::shared_ptr<ConnectorInfoReader> info, XmlReader &e, ReadContext &ctx) {
     if (!info->read()) {
         e.skipCurrentElement();
         return;
@@ -204,12 +191,11 @@ void ConnectorInfoReader::readConnector(std::shared_ptr<ConnectorInfoReader> inf
 //   ConnectorInfoReader::connector
 //---------------------------------------------------------
 
-EngravingItem* ConnectorInfoReader::connector()
-{
+EngravingItem *ConnectorInfoReader::connector() {
     // connector should be contained in the first node normally.
-    ConnectorInfo* i = findFirst();
+    ConnectorInfo *i = findFirst();
     if (i) {
-        return static_cast<ConnectorInfoReader*>(i)->m_connector;
+        return static_cast<ConnectorInfoReader *>(i)->m_connector;
     }
     return nullptr;
 }
@@ -218,22 +204,18 @@ EngravingItem* ConnectorInfoReader::connector()
 //   ConnectorInfoReader::connector
 //---------------------------------------------------------
 
-const EngravingItem* ConnectorInfoReader::connector() const
-{
-    return const_cast<ConnectorInfoReader*>(this)->connector();
-}
+const EngravingItem *ConnectorInfoReader::connector() const { return const_cast<ConnectorInfoReader *>(this)->connector(); }
 
 //---------------------------------------------------------
 //   ConnectorInfoReader::releaseConnector
 //---------------------------------------------------------
 
-EngravingItem* ConnectorInfoReader::releaseConnector()
-{
-    ConnectorInfoReader* i = static_cast<ConnectorInfoReader*>(findFirst());
+EngravingItem *ConnectorInfoReader::releaseConnector() {
+    ConnectorInfoReader *i = static_cast<ConnectorInfoReader *>(findFirst());
     if (!i) {
         // circular connector?
-        ConnectorInfoReader* ii = this;
-        EngravingItem* c = nullptr;
+        ConnectorInfoReader *ii = this;
+        EngravingItem *c = nullptr;
         while (ii->prev()) {
             if (ii->m_connector) {
                 c = ii->m_connector;
@@ -246,191 +228,179 @@ EngravingItem* ConnectorInfoReader::releaseConnector()
         }
         return c;
     }
-    EngravingItem* c = i->m_connector;
+    EngravingItem *c = i->m_connector;
     i->m_connector = nullptr;
     return c;
 }
 
-void ConnectorInfoReader::readAddConnector(ChordRest* item, ConnectorInfoReader* info, bool pasteMode)
-{
+void ConnectorInfoReader::readAddConnector(ChordRest *item, ConnectorInfoReader *info, bool pasteMode) {
     const ElementType type = info->type();
     switch (type) {
-    case ElementType::SLUR:
-    case ElementType::HAMMER_ON_PULL_OFF:
-    {
-        Spanner* spanner = toSpanner(info->connector());
-        const Location& l = info->location();
+        case ElementType::SLUR:
+        case ElementType::HAMMER_ON_PULL_OFF: {
+            Spanner *spanner = toSpanner(info->connector());
+            const Location &l = info->location();
 
-        if (info->isStart()) {
-            spanner->setTrack(l.track());
-            // trillCueNotes have unreliable tick() while reading so use instead tick from readContext
-            Fraction startTick = item->isChord() && toChord(item)->isTrillCueNote() ? info->curTick() : item->tick();
-            spanner->setTick(startTick);
-            spanner->setStartElement(item);
-            if (pasteMode) {
-                item->score()->undoAddElement(spanner);
-                for (EngravingObject* linkedSpanner : spanner->linkList()) {
-                    if (linkedSpanner == spanner) {
-                        continue;
-                    }
-                    Spanner* ls = toSpanner(linkedSpanner);
-                    ls->setTick(spanner->tick());
-                    for (EngravingObject* linkedCR : item->linkList()) {
-                        ChordRest* cr = toChordRest(linkedCR);
-                        if (cr->score() == linkedSpanner->score() && cr->staffIdx() == ls->staffIdx()) {
-                            ls->setTrack(cr->track());
-                            if (ls->isSlur()) {
-                                ls->setStartElement(cr);
-                            }
-                            break;
-                        }
-                    }
-                }
-            } else {
-                item->score()->addSpanner(spanner);
-            }
-        } else if (info->isEnd()) {
-            spanner->setTrack2(l.track());
-            spanner->setTick2(item->tick());
-            spanner->setEndElement(item);
-            if (pasteMode) {
-                for (EngravingObject* linkedSpanner : spanner->linkList()) {
-                    if (linkedSpanner == spanner) {
-                        continue;
-                    }
-                    Spanner* ls = toSpanner(linkedSpanner);
-                    ls->setTick2(spanner->tick2());
-                    for (EngravingObject* linkedCR : item->linkList()) {
-                        ChordRest* cr = toChordRest(linkedCR);
-                        if (cr->score() == linkedSpanner->score() && cr->staffIdx() == ls->staffIdx()) {
-                            ls->setTrack2(cr->track());
-                            if (ls->isSlur()) {
-                                ls->setEndElement(cr);
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-        } else {
-            LOGD("ChordRest::readAddConnector(): Slur end is neither start nor end");
-        }
-    }
-    break;
-    default:
-        break;
-    }
-}
-
-void ConnectorInfoReader::readAddConnector(Measure* item, ConnectorInfoReader* info, bool pasteMode)
-{
-    const ElementType type = info->type();
-    switch (type) {
-    case ElementType::HAIRPIN:
-    case ElementType::PEDAL:
-    case ElementType::OTTAVA:
-    case ElementType::TRILL:
-    case ElementType::TEXTLINE:
-    case ElementType::LET_RING:
-    case ElementType::GRADUAL_TEMPO_CHANGE:
-    case ElementType::VIBRATO:
-    case ElementType::PALM_MUTE:
-    case ElementType::PARTIAL_LYRICSLINE:
-    case ElementType::WHAMMY_BAR:
-    case ElementType::RASGUEADO:
-    case ElementType::HARMONIC_MARK:
-    case ElementType::PICK_SCRAPE:
-    case ElementType::VOLTA:
-    {
-        Spanner* sp = toSpanner(info->connector());
-        const Location& l = info->location();
-        Fraction lTick    = l.frac();
-        Fraction spTick   = pasteMode ? lTick : (item->tick() + lTick);
-        if (info->isStart()) {
-            sp->setTrack(l.track());
-            sp->setTrack2(sp->track());
-            sp->setTick(spTick);
-            // Defer computing the end element: the end anchor (tick2/track2) is only known once the
-            // matching end connector is processed (below). Computing it here would cache a wrong value
-            // (tick2 == tick) that nothing recomputes until layout. See readAddConnector end branch.
-            item->score()->addSpanner(sp, /*computeStartEnd=*/ false);
-            sp->computeStartElement();
-        } else if (info->isEnd()) {
-            sp->setTrack2(l.track());
-            sp->setTick2(spTick);
-            // Now that the end anchor is set, compute the end element once with the final value.
-            sp->computeEndElement();
-        }
-    }
-    break;
-    default:
-        break;
-    }
-}
-
-void ConnectorInfoReader::readAddConnector(Note* item, ConnectorInfoReader* info, bool pasteMode)
-{
-    const ElementType type = info->type();
-    const Location& l = info->location();
-    switch (type) {
-    case ElementType::TIE:
-    case ElementType::TEXTLINE:
-    case ElementType::GLISSANDO:
-    case ElementType::GUITAR_BEND:
-    case ElementType::NOTELINE:
-    {
-        Spanner* sp = toSpanner(info->connector());
-        if (info->isStart()) {
-            sp->setTrack(l.track());
-            sp->setTick(item->tick());
-            if (sp->isTie()) {
-                Note* n = item;
-                while (n->tieFor()) {
-                    n = n->tieFor()->endNote();
-                }
-                Tie* tie = toTie(sp);
-                tie->setOwnershipParent(n);
-                tie->setStartNote(n);
-                n->setTieFor(tie);
-            } else {
-                sp->setStartElement(item);
-                item->addSpannerFor(sp);
-                sp->setOwnershipParent(item);
-            }
-        } else if (info->isEnd()) {
-            sp->setTrack2(l.track());
-            sp->setTick2(item->tick());
-            sp->setEndElement(item);
-            if (sp->isTie()) {
-                Tie* tie = toTie(sp);
-                item->setTieBack(tie);
+            if (info->isStart()) {
+                spanner->setTrack(l.track());
+                // trillCueNotes have unreliable tick() while reading so use instead tick from readContext
+                Fraction startTick = item->isChord() && toChord(item)->isTrillCueNote() ? info->curTick() : item->tick();
+                spanner->setTick(startTick);
+                spanner->setStartElement(item);
                 if (pasteMode) {
-                    tie->updatePossibleJumpPoints();
+                    item->score()->undoAddElement(spanner);
+                    for (EngravingObject *linkedSpanner : spanner->linkList()) {
+                        if (linkedSpanner == spanner) {
+                            continue;
+                        }
+                        Spanner *ls = toSpanner(linkedSpanner);
+                        ls->setTick(spanner->tick());
+                        for (EngravingObject *linkedCR : item->linkList()) {
+                            ChordRest *cr = toChordRest(linkedCR);
+                            if (cr->score() == linkedSpanner->score() && cr->staffIdx() == ls->staffIdx()) {
+                                ls->setTrack(cr->track());
+                                if (ls->isSlur()) {
+                                    ls->setStartElement(cr);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    item->score()->addSpanner(spanner);
+                }
+            } else if (info->isEnd()) {
+                spanner->setTrack2(l.track());
+                spanner->setTick2(item->tick());
+                spanner->setEndElement(item);
+                if (pasteMode) {
+                    for (EngravingObject *linkedSpanner : spanner->linkList()) {
+                        if (linkedSpanner == spanner) {
+                            continue;
+                        }
+                        Spanner *ls = toSpanner(linkedSpanner);
+                        ls->setTick2(spanner->tick2());
+                        for (EngravingObject *linkedCR : item->linkList()) {
+                            ChordRest *cr = toChordRest(linkedCR);
+                            if (cr->score() == linkedSpanner->score() && cr->staffIdx() == ls->staffIdx()) {
+                                ls->setTrack2(cr->track());
+                                if (ls->isSlur()) {
+                                    ls->setEndElement(cr);
+                                }
+                                break;
+                            }
+                        }
+                    }
                 }
             } else {
-                bool isNoteAnchoredTextLine = sp->isNoteLine() && toNoteLine(sp)->enforceMinLength();
-                if ((sp->isGlissando() || sp->isGuitarBend() || isNoteAnchoredTextLine) && item->ownershipParent()
-                    && item->ownershipParent()->isChord()) {
-                    toChord(item->ownershipParent())->setEndsNoteAnchoredLine(true);
-                }
-                item->addSpannerBack(sp);
+                LOGD("ChordRest::readAddConnector(): Slur end is neither start nor end");
             }
-
-            // As spanners get added after being fully read, they
-            // do not get cloned with the note when pasting to
-            // linked staves. So add this spanner explicitly.
-            if (pasteMode) {
-                item->score()->undoAddElement(sp);
-            }
-        }
-    }
-    default:
-        break;
+        } break;
+        default: break;
     }
 }
 
-void ConnectorInfoReader::readAddConnector(Score* item, ConnectorInfoReader* info, bool pasteMode)
-{
+void ConnectorInfoReader::readAddConnector(Measure *item, ConnectorInfoReader *info, bool pasteMode) {
+    const ElementType type = info->type();
+    switch (type) {
+        case ElementType::HAIRPIN:
+        case ElementType::PEDAL:
+        case ElementType::OTTAVA:
+        case ElementType::TRILL:
+        case ElementType::TEXTLINE:
+        case ElementType::LET_RING:
+        case ElementType::GRADUAL_TEMPO_CHANGE:
+        case ElementType::VIBRATO:
+        case ElementType::PALM_MUTE:
+        case ElementType::PARTIAL_LYRICSLINE:
+        case ElementType::WHAMMY_BAR:
+        case ElementType::RASGUEADO:
+        case ElementType::HARMONIC_MARK:
+        case ElementType::PICK_SCRAPE:
+        case ElementType::VOLTA: {
+            Spanner *sp = toSpanner(info->connector());
+            const Location &l = info->location();
+            Fraction lTick = l.frac();
+            Fraction spTick = pasteMode ? lTick : (item->tick() + lTick);
+            if (info->isStart()) {
+                sp->setTrack(l.track());
+                sp->setTrack2(sp->track());
+                sp->setTick(spTick);
+                // Defer computing the end element: the end anchor (tick2/track2) is only known once the
+                // matching end connector is processed (below). Computing it here would cache a wrong value
+                // (tick2 == tick) that nothing recomputes until layout. See readAddConnector end branch.
+                item->score()->addSpanner(sp, /*computeStartEnd=*/false);
+                sp->computeStartElement();
+            } else if (info->isEnd()) {
+                sp->setTrack2(l.track());
+                sp->setTick2(spTick);
+                // Now that the end anchor is set, compute the end element once with the final value.
+                sp->computeEndElement();
+            }
+        } break;
+        default: break;
+    }
+}
+
+void ConnectorInfoReader::readAddConnector(Note *item, ConnectorInfoReader *info, bool pasteMode) {
+    const ElementType type = info->type();
+    const Location &l = info->location();
+    switch (type) {
+        case ElementType::TIE:
+        case ElementType::TEXTLINE:
+        case ElementType::GLISSANDO:
+        case ElementType::GUITAR_BEND:
+        case ElementType::NOTELINE: {
+            Spanner *sp = toSpanner(info->connector());
+            if (info->isStart()) {
+                sp->setTrack(l.track());
+                sp->setTick(item->tick());
+                if (sp->isTie()) {
+                    Note *n = item;
+                    while (n->tieFor()) {
+                        n = n->tieFor()->endNote();
+                    }
+                    Tie *tie = toTie(sp);
+                    tie->setOwnershipParent(n);
+                    tie->setStartNote(n);
+                    n->setTieFor(tie);
+                } else {
+                    sp->setStartElement(item);
+                    item->addSpannerFor(sp);
+                    sp->setOwnershipParent(item);
+                }
+            } else if (info->isEnd()) {
+                sp->setTrack2(l.track());
+                sp->setTick2(item->tick());
+                sp->setEndElement(item);
+                if (sp->isTie()) {
+                    Tie *tie = toTie(sp);
+                    item->setTieBack(tie);
+                    if (pasteMode) {
+                        tie->updatePossibleJumpPoints();
+                    }
+                } else {
+                    bool isNoteAnchoredTextLine = sp->isNoteLine() && toNoteLine(sp)->enforceMinLength();
+                    if ((sp->isGlissando() || sp->isGuitarBend() || isNoteAnchoredTextLine) && item->ownershipParent() &&
+                        item->ownershipParent()->isChord()) {
+                        toChord(item->ownershipParent())->setEndsNoteAnchoredLine(true);
+                    }
+                    item->addSpannerBack(sp);
+                }
+
+                // As spanners get added after being fully read, they
+                // do not get cloned with the note when pasting to
+                // linked staves. So add this spanner explicitly.
+                if (pasteMode) {
+                    item->score()->undoAddElement(sp);
+                }
+            }
+        }
+        default: break;
+    }
+}
+
+void ConnectorInfoReader::readAddConnector(Score *item, ConnectorInfoReader *info, bool pasteMode) {
     if (!pasteMode) {
         // How did we get there?
         LOGD("Score::readAddConnector is called not in paste mode.");
@@ -443,36 +413,33 @@ void ConnectorInfoReader::readAddConnector(Score* item, ConnectorInfoReader* inf
 
     const ElementType type = info->type();
     switch (type) {
-    case ElementType::HAIRPIN:
-    case ElementType::PEDAL:
-    case ElementType::OTTAVA:
-    case ElementType::TRILL:
-    case ElementType::TEXTLINE:
-    case ElementType::PALM_MUTE:
-    case ElementType::PARTIAL_LYRICSLINE:
-    case ElementType::WHAMMY_BAR:
-    case ElementType::RASGUEADO:
-    case ElementType::HARMONIC_MARK:
-    case ElementType::PICK_SCRAPE:
-    case ElementType::LET_RING:
-    case ElementType::VIBRATO:
-    {
-        Spanner* sp = toSpanner(info->connector());
-        const Location& l = info->location();
-        if (info->isStart()) {
-            sp->setTrack(l.track());
-            sp->setTrack2(l.track());
-            sp->setTick(l.frac());
-        } else if (info->isEnd()) {
-            sp->setTick2(l.frac());
-            item->undoAddElement(sp);
-            if (sp->isOttava()) {
-                sp->staff()->updateOttava();
+        case ElementType::HAIRPIN:
+        case ElementType::PEDAL:
+        case ElementType::OTTAVA:
+        case ElementType::TRILL:
+        case ElementType::TEXTLINE:
+        case ElementType::PALM_MUTE:
+        case ElementType::PARTIAL_LYRICSLINE:
+        case ElementType::WHAMMY_BAR:
+        case ElementType::RASGUEADO:
+        case ElementType::HARMONIC_MARK:
+        case ElementType::PICK_SCRAPE:
+        case ElementType::LET_RING:
+        case ElementType::VIBRATO: {
+            Spanner *sp = toSpanner(info->connector());
+            const Location &l = info->location();
+            if (info->isStart()) {
+                sp->setTrack(l.track());
+                sp->setTrack2(l.track());
+                sp->setTick(l.frac());
+            } else if (info->isEnd()) {
+                sp->setTick2(l.frac());
+                item->undoAddElement(sp);
+                if (sp->isOttava()) {
+                    sp->staff()->updateOttava();
+                }
             }
-        }
-    }
-    break;
-    default:
-        break;
+        } break;
+        default: break;
     }
 }

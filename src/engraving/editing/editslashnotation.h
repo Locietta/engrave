@@ -26,12 +26,11 @@ namespace mu::engraving {
 class Score;
 class Transaction;
 
-class EditSlashNotation
-{
+class EditSlashNotation {
 public:
     /// Fills the selected region with slashes.
-    static void slashFill(Transaction& tx, Score* score);
+    static void slashFill(Transaction &tx, Score *score);
     /// Converts rhythms in the selected region to slashes.
-    static void slashRhythm(Transaction& tx, Score* score);
+    static void slashRhythm(Transaction &tx, Score *score);
 };
-}
+} // namespace mu::engraving

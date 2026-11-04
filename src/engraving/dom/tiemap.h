@@ -32,13 +32,14 @@ class Tie;
 //   TieMap
 //---------------------------------------------------------
 
-class TieMap : public ElementMap
-{
+class TieMap : public ElementMap {
     OBJECT_ALLOCATOR(engraving, TieMap)
 public:
     TieMap() {}
-    Tie* findNew(Tie* o) const { return (Tie*)(ElementMap::findNew((EngravingItem*)o)); }
-    void add(Tie* _o, Tie* _n) { ElementMap::add((EngravingItem*)_o, (EngravingItem*)_n); }
+
+    Tie *findNew(Tie *o) const { return (Tie *) (ElementMap::findNew((EngravingItem *) o)); }
+
+    void add(Tie *_o, Tie *_n) { ElementMap::add((EngravingItem *) _o, (EngravingItem *) _n); }
 };
 } // namespace mu::engraving
 #endif

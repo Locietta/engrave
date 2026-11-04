@@ -21,21 +21,19 @@
  */
 #pragma once
 
-
 #include "draw/painter.h"
 #include "paintoptions.h"
 
 namespace mu::engraving {
 class EngravingItem;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::rendering {
-class ISingleRenderer
-{
+class ISingleRenderer {
 public:
     virtual ~ISingleRenderer() = default;
 
-    virtual void layoutItem(EngravingItem* item) = 0;
-    virtual void drawItem(const EngravingItem* item, muse::draw::Painter* p, const PaintOptions& opt) = 0;
+    virtual void layoutItem(EngravingItem *item) = 0;
+    virtual void drawItem(const EngravingItem *item, muse::draw::Painter *p, const PaintOptions &opt) = 0;
 };
-}
+} // namespace mu::engraving::rendering

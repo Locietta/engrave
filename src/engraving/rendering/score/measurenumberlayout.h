@@ -27,17 +27,16 @@
 #include "engraving/dom/mmrestrange.h"
 
 namespace mu::engraving::rendering::score {
-class MeasureNumberLayout
-{
+class MeasureNumberLayout {
 public:
-    static void layoutMeasureNumber(MeasureNumber* item, MeasureNumber::LayoutData* ldata, const LayoutContext& ctx);
-    static void layoutMMRestRange(MMRestRange* item, MMRestRange::LayoutData* ldata, const LayoutContext& ctx);
+    static void layoutMeasureNumber(MeasureNumber *item, MeasureNumber::LayoutData *ldata, const LayoutContext &ctx);
+    static void layoutMMRestRange(MMRestRange *item, MMRestRange::LayoutData *ldata, const LayoutContext &ctx);
 
 private:
-    static void layoutMeasureNumberBase(MeasureNumberBase* item, MeasureNumberBase::LayoutData* ldata);
+    static void layoutMeasureNumberBase(MeasureNumberBase *item, MeasureNumberBase::LayoutData *ldata);
 
-    static const Segment* refBarlineSegment(const MeasureNumber* item, bool alignToBarline, AlignH hPlacement);
-    static void checkBarlineCollisions(const MeasureNumber* item, const Segment* barlineSeg, AlignH hPlacement,
-                                       MeasureNumber::LayoutData* ldata);
+    static const Segment *refBarlineSegment(const MeasureNumber *item, bool alignToBarline, AlignH hPlacement);
+    static void checkBarlineCollisions(const MeasureNumber *item, const Segment *barlineSeg, AlignH hPlacement,
+                                       MeasureNumber::LayoutData *ldata);
 };
-}
+} // namespace mu::engraving::rendering::score

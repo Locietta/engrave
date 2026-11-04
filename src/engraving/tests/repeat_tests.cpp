@@ -34,26 +34,24 @@ using namespace mu::engraving;
 
 static const String REPEAT_DATA_DIR(u"repeat_data/");
 
-class Engraving_RepeatTests : public ::testing::Test
-{
+class Engraving_RepeatTests : public ::testing::Test {
 public:
-    void repeat(const char* path, const String& ref);
+    void repeat(const char *path, const String &ref);
 };
 
-void Engraving_RepeatTests::repeat(const char* path, const String& ref)
-{
-    MasterScore* score = ScoreRW::readScore(REPEAT_DATA_DIR + String::fromUtf8(path));
+void Engraving_RepeatTests::repeat(const char *path, const String &ref) {
+    MasterScore *score = ScoreRW::readScore(REPEAT_DATA_DIR + String::fromUtf8(path));
     ASSERT_TRUE(score);
 
     score->setExpandRepeats(true);
 
     StringList sl;
 
-    for (const RepeatSegment* rs : score->repeatList()) {
+    for (const RepeatSegment *rs : score->repeatList()) {
         int startTick = rs->tick;
-        int endTick   = rs->endTick();
+        int endTick = rs->endTick();
 
-        for (const Measure* m = score->tick2measure(Fraction::fromTicks(startTick)); m; m = m->nextMeasure()) {
+        for (const Measure *m = score->tick2measure(Fraction::fromTicks(startTick)); m; m = m->nextMeasure()) {
             sl.append(String::number(m->measureNumber() + 1));
 
             if (m->endTick().ticks() >= endTick) {
@@ -138,8 +136,7 @@ TEST_F(Engraving_RepeatTests, repeat13) {
     repeat("repeat13.mscx", u"1;2;3;4;5; 1;2;3;4;5");
 }
 
-TEST_F(Engraving_RepeatTests, repeat14)
-{
+TEST_F(Engraving_RepeatTests, repeat14) {
     // complex roadmap DS al coda, volta, repeat
     repeat("repeat14.mscx",
            u"1;2;3;4;5;6;7;8;9;10; 2;3;4;5;6;7;8; 11;12; 2;3;4;5;6;7;8; 13;14;15;16;17;18; 16;17;18; 19;20;21;22;23; 5;6;7; 24;25;26");
@@ -418,9 +415,7 @@ TEST_F(Engraving_RepeatTests, repeat68) {
 // There are 2 instruments (Piano) in this score, and each instrument has a D.S. at the same position (3rd measure)
 // Make sure that we don't repeat the measures twice
 // See: https://github.com/musescore/MuseScore/issues/27647
-TEST_F(Engraving_RepeatTests, repeat69) {
-    repeat("repeat69.mscx", u"1; 2;3; 2;3; 4");
-}
+TEST_F(Engraving_RepeatTests, repeat69) { repeat("repeat69.mscx", u"1; 2;3; 2;3; 4"); }
 
 TEST_F(Engraving_RepeatTests, repeat70) {
     // Open volta whose endings lie beyond the exhausted repeats: it is played after them

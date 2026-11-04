@@ -48,8 +48,7 @@ using namespace mu::engraving;
 //    element.
 //---------------------------------------------------------
 
-static void resetElementPosition(EngravingItem* e)
-{
+static void resetElementPosition(EngravingItem *e) {
     if (e->generated()) {
         return;
     }
@@ -62,26 +61,14 @@ static void resetElementPosition(EngravingItem* e)
     }
 }
 
-static void resetTextProperties(EngravingItem* e)
-{
+static void resetTextProperties(EngravingItem *e) {
     if (e->generated() || !e->isTextBase()) {
         return;
     }
 
-    static const std::vector<Pid> TEXT_STYLE_TO_RESET {
-        Pid::FONT_FACE,
-        Pid::FONT_SIZE,
-        Pid::FONT_STYLE,
-        Pid::SIZE_SPATIUM_DEPENDENT,
-        Pid::FRAME_TYPE,
-        Pid::TEXT_LINE_SPACING,
-        Pid::FRAME_FG_COLOR,
-        Pid::FRAME_BG_COLOR,
-        Pid::FRAME_WIDTH,
-        Pid::FRAME_PADDING,
-        Pid::FRAME_ROUND,
-        Pid::ALIGN
-    };
+    static const std::vector<Pid> TEXT_STYLE_TO_RESET{
+        Pid::FONT_FACE,      Pid::FONT_SIZE,      Pid::FONT_STYLE,  Pid::SIZE_SPATIUM_DEPENDENT, Pid::FRAME_TYPE,  Pid::TEXT_LINE_SPACING,
+        Pid::FRAME_FG_COLOR, Pid::FRAME_BG_COLOR, Pid::FRAME_WIDTH, Pid::FRAME_PADDING,          Pid::FRAME_ROUND, Pid::ALIGN};
 
     for (Pid pid : TEXT_STYLE_TO_RESET) {
         // TODO: use undoResetProperty: https://github.com/musescore/MuseScore/issues/16516
@@ -90,131 +77,128 @@ static void resetTextProperties(EngravingItem* e)
     }
 }
 
-void Reset::resetToDefaultLayout(Transaction& tx, Score* score)
-{
+void Reset::resetToDefaultLayout(Transaction &tx, Score *score) {
     TRACEFUNC;
 
-    StyleIdSet dontResetTheseStyles {
-        Sid::lyricsPlacement,
-        Sid::repeatBarTips,
-        Sid::startBarlineSingle,
-        Sid::startBarlineMultiple,
-        Sid::dividerLeft,
-        Sid::dividerRightY,
-        Sid::useStraightNoteFlags,
-        Sid::mrNumberSeries,
-        Sid::mrNumberEveryXMeasures,
-        Sid::mrNumberSeriesWithParentheses,
-        Sid::oneMeasureRepeatShow1,
-        Sid::fourMeasureRepeatShowExtenders,
-        Sid::useWideBeams,
-        Sid::hairpinPlacement,
-        Sid::pedalPlacement,
-        Sid::trillPlacement,
-        Sid::vibratoPlacement,
-        Sid::harmonyPlacement,
-        Sid::romanNumeralPlacement,
-        Sid::nashvilleNumberPlacement,
-        Sid::harmonyVoiceLiteral,
-        Sid::harmonyVoicing,
-        Sid::harmonyDuration,
-        Sid::capoPosition,
-        Sid::fretNumPos,
-        Sid::fretPlacement,
-        Sid::fretStrings,
-        Sid::fretFrets,
-        Sid::fretNut,
-        Sid::fretOrientation,
-        Sid::showPageNumber,
-        Sid::showPageNumberOne,
-        Sid::pageNumberOddEven,
-        Sid::showMeasureNumber,
-        Sid::showMeasureNumberOne,
-        Sid::measureNumberInterval,
-        Sid::measureNumberSystem,
-        Sid::measureNumberPlacementMode,
-        Sid::genClef,
-        Sid::hideTabClefAfterFirst,
-        Sid::genKeysig,
-        Sid::genCourtesyTimesig,
-        Sid::genCourtesyKeysig,
-        Sid::genCourtesyClef,
-        Sid::swingRatio,
-        Sid::swingUnit,
-        Sid::chordSymbolSpelling,
-        Sid::automaticCapitalization,
-        Sid::lowerCaseMinorChords,
-        Sid::lowerCaseBassNotes,
-        Sid::allCapsNoteNames,
-        Sid::chordStyle,
-        Sid::chordsXmlFile,
-        Sid::chordDescriptionFile,
-        Sid::concertPitch,
-        Sid::createMultiMeasureRests,
-        Sid::minEmptyMeasures,
-        Sid::hideEmptyStaves,
-        Sid::dontHideStavesInFirstSystem,
-        Sid::enableIndentationOnFirstSystem,
-        Sid::firstSystemIndentationValue,
-        Sid::hideInstrumentNameIfOneInstrument,
-        Sid::gateTime,
-        Sid::tenutoGateTime,
-        Sid::staccatoGateTime,
-        Sid::slurGateTime,
-        Sid::sectionPause,
-        Sid::showHeader,
-        Sid::headerFirstPage,
-        Sid::headerOddEven,
-        Sid::evenHeaderL,
-        Sid::evenHeaderC,
-        Sid::evenHeaderR,
-        Sid::oddHeaderL,
-        Sid::oddHeaderC,
-        Sid::oddHeaderR,
-        Sid::showFooter,
-        Sid::footerFirstPage,
-        Sid::footerOddEven,
-        Sid::evenFooterL,
-        Sid::evenFooterC,
-        Sid::evenFooterR,
-        Sid::oddFooterL,
-        Sid::oddFooterC,
-        Sid::oddFooterR,
-        Sid::tupletOutOfStaff,
-        Sid::tupletDirection,
-        Sid::tupletBracketType,
-        Sid::dynamicsPlacement,
-        Sid::textLinePlacement,
-        Sid::harpPedalDiagramPlacement,
-        Sid::harpPedalTextDiagramPlacement,
-        Sid::expressionPlacement,
-        Sid::tupletNumberType,
-        Sid::mmRestShowMeasureNumberRange,
-        Sid::mmRestRangeBracketType,
-        Sid::mmRestRangeVPlacement,
-        Sid::staffTextPlacement,
-        Sid::repeatLeftPlacement,
-        Sid::repeatRightPlacement,
-        Sid::instrumentChangePlacement,
-        Sid::stickingPlacement,
-        Sid::letRingPlacement,
-        Sid::palmMutePlacement,
-        Sid::pageWidth,
-        Sid::pageHeight,
-        Sid::pagePrintableWidth,
-        Sid::pageEvenTopMargin,
-        Sid::pageEvenBottomMargin,
-        Sid::pageEvenLeftMargin,
-        Sid::pageOddTopMargin,
-        Sid::pageOddBottomMargin,
-        Sid::pageOddLeftMargin,
-        Sid::pageTwosided,
-        Sid::spatium,
-        Sid::concertPitch,
-        Sid::createMultiMeasureRests
-    };
+    StyleIdSet dontResetTheseStyles{Sid::lyricsPlacement,
+                                    Sid::repeatBarTips,
+                                    Sid::startBarlineSingle,
+                                    Sid::startBarlineMultiple,
+                                    Sid::dividerLeft,
+                                    Sid::dividerRightY,
+                                    Sid::useStraightNoteFlags,
+                                    Sid::mrNumberSeries,
+                                    Sid::mrNumberEveryXMeasures,
+                                    Sid::mrNumberSeriesWithParentheses,
+                                    Sid::oneMeasureRepeatShow1,
+                                    Sid::fourMeasureRepeatShowExtenders,
+                                    Sid::useWideBeams,
+                                    Sid::hairpinPlacement,
+                                    Sid::pedalPlacement,
+                                    Sid::trillPlacement,
+                                    Sid::vibratoPlacement,
+                                    Sid::harmonyPlacement,
+                                    Sid::romanNumeralPlacement,
+                                    Sid::nashvilleNumberPlacement,
+                                    Sid::harmonyVoiceLiteral,
+                                    Sid::harmonyVoicing,
+                                    Sid::harmonyDuration,
+                                    Sid::capoPosition,
+                                    Sid::fretNumPos,
+                                    Sid::fretPlacement,
+                                    Sid::fretStrings,
+                                    Sid::fretFrets,
+                                    Sid::fretNut,
+                                    Sid::fretOrientation,
+                                    Sid::showPageNumber,
+                                    Sid::showPageNumberOne,
+                                    Sid::pageNumberOddEven,
+                                    Sid::showMeasureNumber,
+                                    Sid::showMeasureNumberOne,
+                                    Sid::measureNumberInterval,
+                                    Sid::measureNumberSystem,
+                                    Sid::measureNumberPlacementMode,
+                                    Sid::genClef,
+                                    Sid::hideTabClefAfterFirst,
+                                    Sid::genKeysig,
+                                    Sid::genCourtesyTimesig,
+                                    Sid::genCourtesyKeysig,
+                                    Sid::genCourtesyClef,
+                                    Sid::swingRatio,
+                                    Sid::swingUnit,
+                                    Sid::chordSymbolSpelling,
+                                    Sid::automaticCapitalization,
+                                    Sid::lowerCaseMinorChords,
+                                    Sid::lowerCaseBassNotes,
+                                    Sid::allCapsNoteNames,
+                                    Sid::chordStyle,
+                                    Sid::chordsXmlFile,
+                                    Sid::chordDescriptionFile,
+                                    Sid::concertPitch,
+                                    Sid::createMultiMeasureRests,
+                                    Sid::minEmptyMeasures,
+                                    Sid::hideEmptyStaves,
+                                    Sid::dontHideStavesInFirstSystem,
+                                    Sid::enableIndentationOnFirstSystem,
+                                    Sid::firstSystemIndentationValue,
+                                    Sid::hideInstrumentNameIfOneInstrument,
+                                    Sid::gateTime,
+                                    Sid::tenutoGateTime,
+                                    Sid::staccatoGateTime,
+                                    Sid::slurGateTime,
+                                    Sid::sectionPause,
+                                    Sid::showHeader,
+                                    Sid::headerFirstPage,
+                                    Sid::headerOddEven,
+                                    Sid::evenHeaderL,
+                                    Sid::evenHeaderC,
+                                    Sid::evenHeaderR,
+                                    Sid::oddHeaderL,
+                                    Sid::oddHeaderC,
+                                    Sid::oddHeaderR,
+                                    Sid::showFooter,
+                                    Sid::footerFirstPage,
+                                    Sid::footerOddEven,
+                                    Sid::evenFooterL,
+                                    Sid::evenFooterC,
+                                    Sid::evenFooterR,
+                                    Sid::oddFooterL,
+                                    Sid::oddFooterC,
+                                    Sid::oddFooterR,
+                                    Sid::tupletOutOfStaff,
+                                    Sid::tupletDirection,
+                                    Sid::tupletBracketType,
+                                    Sid::dynamicsPlacement,
+                                    Sid::textLinePlacement,
+                                    Sid::harpPedalDiagramPlacement,
+                                    Sid::harpPedalTextDiagramPlacement,
+                                    Sid::expressionPlacement,
+                                    Sid::tupletNumberType,
+                                    Sid::mmRestShowMeasureNumberRange,
+                                    Sid::mmRestRangeBracketType,
+                                    Sid::mmRestRangeVPlacement,
+                                    Sid::staffTextPlacement,
+                                    Sid::repeatLeftPlacement,
+                                    Sid::repeatRightPlacement,
+                                    Sid::instrumentChangePlacement,
+                                    Sid::stickingPlacement,
+                                    Sid::letRingPlacement,
+                                    Sid::palmMutePlacement,
+                                    Sid::pageWidth,
+                                    Sid::pageHeight,
+                                    Sid::pagePrintableWidth,
+                                    Sid::pageEvenTopMargin,
+                                    Sid::pageEvenBottomMargin,
+                                    Sid::pageEvenLeftMargin,
+                                    Sid::pageOddTopMargin,
+                                    Sid::pageOddBottomMargin,
+                                    Sid::pageOddLeftMargin,
+                                    Sid::pageTwosided,
+                                    Sid::spatium,
+                                    Sid::concertPitch,
+                                    Sid::createMultiMeasureRests};
 
-    auto resetPositionAndTextProperties = [](EngravingItem* e) {
+    auto resetPositionAndTextProperties = [](EngravingItem *e) {
         resetElementPosition(e);
         resetTextProperties(e);
     };
@@ -225,15 +209,13 @@ void Reset::resetToDefaultLayout(Transaction& tx, Score* score)
     EditSystemLocks::undoRemoveAllLocks(tx, score);
 }
 
-void Reset::resetTextStyleOverrides(Score* score)
-{
+void Reset::resetTextStyleOverrides(Score *score) {
     TRACEFUNC;
 
     score->scanElements(resetTextProperties);
 }
 
-void Reset::resetAllStyles(Transaction&, Score* score, const StyleIdSet& exceptTheseOnes)
-{
+void Reset::resetAllStyles(Transaction &, Score *score, const StyleIdSet &exceptTheseOnes) {
     TRACEFUNC;
 
     int beginIdx = int(Sid::NOSTYLE) + 1;
@@ -256,22 +238,21 @@ void Reset::resetAllStyles(Transaction&, Score* score, const StyleIdSet& exceptT
 //   Removes system/page breaks and spacers
 //---------------------------------------------------------
 
-void Reset::resetMeasuresLayout(Transaction&, Score* score)
-{
+void Reset::resetMeasuresLayout(Transaction &, Score *score) {
     TRACEFUNC;
 
-    std::vector<EngravingItem*> itemsToRemove;
+    std::vector<EngravingItem *> itemsToRemove;
 
-    for (MeasureBase* mb = score->first(); mb; mb = mb->next()) {
+    for (MeasureBase *mb = score->first(); mb; mb = mb->next()) {
         if (mb->isMeasure()) {
             mb->undoResetProperty(Pid::USER_STRETCH);
 
-            for (const MStaff* staff : toMeasure(mb)->mstaves()) {
-                if (Spacer* spacer = staff->vspacerDown()) {
+            for (const MStaff *staff : toMeasure(mb)->mstaves()) {
+                if (Spacer *spacer = staff->vspacerDown()) {
                     itemsToRemove.push_back(spacer);
                 }
 
-                if (Spacer* spacer = staff->vspacerUp()) {
+                if (Spacer *spacer = staff->vspacerUp()) {
                     itemsToRemove.push_back(spacer);
                 }
             }
@@ -281,20 +262,19 @@ void Reset::resetMeasuresLayout(Transaction&, Score* score)
             continue;
         }
 
-        for (EngravingItem* item : mb->el()) {
+        for (EngravingItem *item : mb->el()) {
             if (item->isLayoutBreak() && !toLayoutBreak(item)->isSectionBreak()) {
                 itemsToRemove.push_back(item);
             }
         }
     }
 
-    for (EngravingItem* item : itemsToRemove) {
+    for (EngravingItem *item : itemsToRemove) {
         score->undoRemoveElement(item);
     }
 }
 
-void Reset::resetAllPositions(Transaction&, Score* score)
-{
+void Reset::resetAllPositions(Transaction &, Score *score) {
     TRACEFUNC;
 
     score->scanElements(resetElementPosition);

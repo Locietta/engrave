@@ -28,10 +28,9 @@ namespace mu::engraving {
 class EngravingItem;
 class Transaction;
 
-class EditPosition
-{
+class EditPosition {
 public:
-    static void freezeItemsPositions(Transaction& tx, const std::vector<EngravingItem*>& items);
-    static void freezeItemPosition(Transaction& tx, EngravingItem* item);
+    static void freezeItemsPositions(Transaction &tx, const std::vector<EngravingItem *> &items);
+    static void freezeItemPosition(Transaction &tx, EngravingItem *item);
 };
-}
+} // namespace mu::engraving

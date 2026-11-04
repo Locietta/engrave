@@ -28,15 +28,14 @@
 //! See Project class description for detail
 
 namespace mu::engraving::compat {
-class ScoreAccess
-{
+class ScoreAccess {
 public:
 
-    static MasterScore* createMasterScore(const EngravingServices& services);
-    static MasterScore* createMasterScoreWithBaseStyle(const EngravingServices& services);
-    static MasterScore* createMasterScoreWithDefaultStyle(const EngravingServices& services);
-    static MasterScore* createMasterScore(const EngravingServices& services, const MStyle& style);
+    static MasterScore *createMasterScore(const EngravingServices &services);
+    static MasterScore *createMasterScoreWithBaseStyle(const EngravingServices &services);
+    static MasterScore *createMasterScoreWithDefaultStyle(const EngravingServices &services);
+    static MasterScore *createMasterScore(const EngravingServices &services, const MStyle &style);
 };
-}
+} // namespace mu::engraving::compat
 
 #endif // MU_ENGRAVING_SCOREACCESS_H

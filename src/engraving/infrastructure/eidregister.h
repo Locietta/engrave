@@ -37,40 +37,39 @@ class EngravingObject;
 // EIDs in the input that could not be used as they were: the text was not a valid
 // id, or another element already had it. The reader repairs both, so these count
 // load-time repairs, not a live inconsistency.
-struct EIDRepairCount
-{
+struct EIDRepairCount {
     size_t malformed = 0;
     size_t duplicate = 0;
 
     bool any() const { return malformed > 0 || duplicate > 0; }
 };
 
-class EIDRegister
-{
+class EIDRegister {
 public:
     EIDRegister() = default;
 
-    EID newEIDForItem(const EngravingObject* item);
+    EID newEIDForItem(const EngravingObject *item);
     // False, and neither map touched, when the EID already belongs to another
     // element; the caller gives the element a fresh EID instead.
-    bool registerItemEID(const EID& eid, const EngravingObject* item);
-    void removeItem(const EngravingObject* item);
-    void onItemDestroyed(const EngravingObject* item);
+    bool registerItemEID(const EID &eid, const EngravingObject *item);
+    void removeItem(const EngravingObject *item);
+    void onItemDestroyed(const EngravingObject *item);
 
     void noteMalformedEID() { ++m_repairs.malformed; }
+
     EIDRepairCount repairs() const;
 
-    EngravingObject* itemFromEID(const EID& eid) const;
-    EID EIDFromItem(const EngravingObject* item) const;
+    EngravingObject *itemFromEID(const EID &eid) const;
+    EID EIDFromItem(const EngravingObject *item) const;
     // Every pair in the register, for the id bijection checks of the tests.
-    std::vector<std::pair<EID, const EngravingObject*> > entries() const;
+    std::vector<std::pair<EID, const EngravingObject *>> entries() const;
     size_t size() const;
 
 private:
-    EIDRegister(const EIDRegister&) = delete;
+    EIDRegister(const EIDRegister &) = delete;
 
-    std::unordered_map<EID, EngravingObject*> m_eidToItem;
-    std::unordered_map<EngravingObject*, EID> m_itemToEid;
+    std::unordered_map<EID, EngravingObject *> m_eidToItem;
+    std::unordered_map<EngravingObject *, EID> m_itemToEid;
 
     EIDRepairCount m_repairs;
 
@@ -78,4 +77,4 @@ private:
 
     mutable std::shared_mutex m_mutex;
 };
-}
+} // namespace mu::engraving

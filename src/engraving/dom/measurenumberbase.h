@@ -32,14 +32,13 @@ namespace mu::engraving {
 ///   Reimplemented by MMRestRange
 //---------------------------------------------------------
 
-class MeasureNumberBase : public TextBase
-{
+class MeasureNumberBase : public TextBase {
     OBJECT_ALLOCATOR(engraving, MeasureNumberBase)
 public:
-    MeasureNumberBase(const ElementType& type, DummyParentOr<Measure> parent, TextStyleType = TextStyleType::DEFAULT);
-    MeasureNumberBase(const MeasureNumberBase& other);
+    MeasureNumberBase(const ElementType &type, DummyParentOr<Measure> parent, TextStyleType = TextStyleType::DEFAULT);
+    MeasureNumberBase(const MeasureNumberBase &other);
 
-    Measure* measure() const { return toMeasure(ownershipParent()); }
+    Measure *measure() const { return toMeasure(ownershipParent()); }
 
     // The measure numbers' text should not be editable
     bool positionRelativeToNoteheadRest() const override { return false; }

@@ -33,45 +33,32 @@
 #include "number.h"
 #include "io/path.h"
 
-
 namespace muse {
 class Val;
 using ValList = std::vector<Val>;
 using ValMap = std::map<std::string, Val>;
-class Val
-{
+
+class Val {
 public:
-    enum class Type {
-        Undefined = 0,
-        Bool,
-        Int,
-        Int64,
-        Double,
-        String,
-        List,
-        Map,
-        Color
-    };
+    enum class Type { Undefined = 0, Bool, Int, Int64, Double, String, List, Map, Color };
 
     Val() = default;
     explicit Val(bool val);
     explicit Val(int val);
     explicit Val(int64_t val);
     explicit Val(double val);
-    template<typename T>
-    explicit Val(number_t<T> val)
-        : Val{val.raw()} {}
-    explicit Val(const std::string& str);
-    explicit Val(const char* str);
-    explicit Val(const io::path_t& path);
-    explicit Val(const ValList& list);
-    explicit Val(const ValMap& map);
 
-    template<class E, typename = std::enable_if_t<std::is_enum_v<E> > >
-    explicit Val(E val)
-        : Val{static_cast<std::underlying_type_t<E> >(val)}
-    {
-    }
+    template <typename T>
+    explicit Val(number_t<T> val) : Val{val.raw()} {}
+
+    explicit Val(const std::string &str);
+    explicit Val(const char *str);
+    explicit Val(const io::path_t &path);
+    explicit Val(const ValList &list);
+    explicit Val(const ValMap &map);
+
+    template <class E, typename = std::enable_if_t<std::is_enum_v<E>>>
+    explicit Val(E val) : Val{static_cast<std::underlying_type_t<E>>(val)} {}
 
     void setType(Type t);
     Type type() const;
@@ -87,15 +74,13 @@ public:
     ValList toList() const;
     ValMap toMap() const;
 
-    template<class E, typename = std::enable_if_t<std::is_enum_v<E> > >
-    E toEnum() const
-    {
+    template <class E, typename = std::enable_if_t<std::is_enum_v<E>>>
+    E toEnum() const {
         return static_cast<E>(toInt());
     }
 
-    template<typename T>
-    std::optional<T> toType() const
-    {
+    template <typename T>
+    std::optional<T> toType() const {
         if constexpr (std::is_same<T, bool>::value) {
             return doToBool();
         } else if constexpr (std::is_same<T, int>::value) {
@@ -124,7 +109,7 @@ public:
                 return std::nullopt;
             }
             T result;
-            for (const auto& item : *list) {
+            for (const auto &item : *list) {
                 auto value = item.toType<typename T::value_type>();
                 if (!value) {
                     return std::nullopt;
@@ -138,7 +123,7 @@ public:
                 return std::nullopt;
             }
             T result;
-            for (const auto& item : *map) {
+            for (const auto &item : *map) {
                 auto value = item.second.toType<typename T::mapped_type>();
                 if (!value) {
                     return std::nullopt;
@@ -152,9 +137,8 @@ public:
         }
     }
 
-    template<typename T>
-    static Val fromType(const T& value)
-    {
+    template <typename T>
+    static Val fromType(const T &value) {
         if constexpr (std::is_same<T, bool>::value) {
             return Val(value);
         } else if constexpr (std::is_same<T, int>::value) {
@@ -175,13 +159,13 @@ public:
             return Val(value);
         } else if constexpr (is_vector<T>::value) {
             ValList list;
-            for (const auto& item : value) {
+            for (const auto &item : value) {
                 list.push_back(fromType(item));
             }
             return Val(list);
         } else if constexpr (is_string_map<T>()) {
             ValMap map;
-            for (const auto& item : value) {
+            for (const auto &item : value) {
                 map[item.first] = fromType(item.second);
             }
             return Val(map);
@@ -191,20 +175,29 @@ public:
         }
     }
 
-    bool operator ==(const Val& v) const;
-    bool operator <(const Val& v) const;
+    bool operator==(const Val &v) const;
+    bool operator<(const Val &v) const;
 
 
 private:
 
-    template<typename T> struct is_number : std::false_type {};
-    template<typename T> struct is_number<number_t<T> > : std::true_type {};
+    template <typename T>
+    struct is_number : std::false_type {};
 
-    template<typename T> struct is_vector : std::false_type {};
-    template<typename U, typename A> struct is_vector<std::vector<U, A> > : std::true_type {};
+    template <typename T>
+    struct is_number<number_t<T>> : std::true_type {};
 
-    template<typename T> struct is_string_map : std::false_type {};
-    template<typename U, typename C, typename A> struct is_string_map<std::map<std::string, U, C, A> > : std::true_type {};
+    template <typename T>
+    struct is_vector : std::false_type {};
+
+    template <typename U, typename A>
+    struct is_vector<std::vector<U, A>> : std::true_type {};
+
+    template <typename T>
+    struct is_string_map : std::false_type {};
+
+    template <typename U, typename C, typename A>
+    struct is_string_map<std::map<std::string, U, C, A>> : std::true_type {};
 
     Type valueType() const;
 
@@ -224,24 +217,23 @@ private:
 };
 
 //! NOTE Helper class for the serialization/deserialization of lists and maps
-class ValJson
-{
+class ValJson {
 public:
-    static bool toString(const ValList& list, std::string& str);
-    static bool toString(const ValMap& map, std::string& str);
-    static bool fromString(const std::string& str, ValList& list);
-    static bool fromString(const std::string& str, ValMap& map);
+    static bool toString(const ValList &list, std::string &str);
+    static bool toString(const ValMap &map, std::string &str);
+    static bool fromString(const std::string &str, ValList &list);
+    static bool fromString(const std::string &str, ValMap &map);
 
 private:
     static std::string_view trim(std::string_view str);
     static bool isIntegerToken(std::string_view str);
     static bool isDoubleToken(std::string_view str);
-    static bool splitTopLevel(std::string_view str, std::vector<std::string_view>& out);
+    static bool splitTopLevel(std::string_view str, std::vector<std::string_view> &out);
     static size_t topLevelColon(std::string_view str);
     static std::optional<Val> parseValue(std::string_view token);
-    static bool parseList(std::string_view str, ValList& list);
-    static bool parseMap(std::string_view str, ValMap& map);
+    static bool parseList(std::string_view str, ValList &list);
+    static bool parseMap(std::string_view str, ValMap &map);
 };
-}
+} // namespace muse
 
 #endif // MUSE_GLOBAL_VAL_H

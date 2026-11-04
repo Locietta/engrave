@@ -22,6 +22,6 @@ struct Image {
 };
 
 // A PNG cairo writes: 8-bit RGBA, no interlacing.
-std::optional<Image> decode_png(std::span<const std::byte> file, std::string& error);
+std::optional<Image> decode_png(std::span<const std::byte> file, std::string &error);
 
 } // namespace music::test

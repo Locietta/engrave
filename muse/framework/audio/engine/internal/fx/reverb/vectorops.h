@@ -35,62 +35,48 @@
 // inside add().
 //
 
-namespace muse::audio::fx {
-namespace vo {
-inline void* allocate(int32_t bytes)
-{
-    return ::malloc(bytes);
-}
+namespace muse::audio::fx { namespace vo {
+inline void *allocate(int32_t bytes) { return ::malloc(bytes); }
 
-inline void free(void* ptr)
-{
-    return ::free(ptr);
-}
+inline void free(void *ptr) { return ::free(ptr); }
 
-template<class T>
-void copy(const T* src, T* dst, int32_t n)
-{
+template <class T>
+void copy(const T *src, T *dst, int32_t n) {
     memcpy(dst, src, n * sizeof(T));
 }
 
-template<class T>
-void add(const T* src1, const T* src2, T* dst, int32_t n)
-{
+template <class T>
+void add(const T *src1, const T *src2, T *dst, int32_t n) {
     for (int32_t i = 0; i < n; i++) {
         dst[i] = src1[i] + src2[i];
     }
 }
 
-template<class T>
-void subtract(const T* src1, const T* src2, T* dst, int32_t n)
-{
+template <class T>
+void subtract(const T *src1, const T *src2, T *dst, int32_t n) {
     for (int32_t i = 0; i < n; i++) {
         dst[i] = src2[i] - src1[i];
     }
 }
 
-template<class T>
-void constantMultiply(const T* src, T constant, T* dst, int32_t n)
-{
+template <class T>
+void constantMultiply(const T *src, T constant, T *dst, int32_t n) {
     for (int32_t i = 0; i < n; i++) {
         dst[i] = src[i] * constant;
     }
 }
 
-template<class T>
-inline void constantMultiplyAndAdd(const T* src, T constant, T* dst, int32_t n)
-{
+template <class T>
+inline void constantMultiplyAndAdd(const T *src, T constant, T *dst, int32_t n) {
     for (int32_t i = 0; i < n; i++) {
         dst[i] += src[i] * constant;
     }
 }
 
-template<class T>
-void setToZero(T* dst, int32_t n)
-{
+template <class T>
+void setToZero(T *dst, int32_t n) {
     std::fill(dst, dst + n, 0.f);
 }
-} // namespace vo
-}
+}} // namespace muse::audio::fx::vo
 
 #endif // MUSE_AUDIO_VECTOROPS_H

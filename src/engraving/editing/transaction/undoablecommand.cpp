@@ -29,25 +29,24 @@
 
 using namespace mu::engraving;
 
-std::vector<EngravingObject*> mu::engraving::compoundObjects(EngravingObject* object)
-{
-    std::vector<EngravingObject*> objects;
+std::vector<EngravingObject *> mu::engraving::compoundObjects(EngravingObject *object) {
+    std::vector<EngravingObject *> objects;
 
     if (object->isChord()) {
-        const Chord* chord = toChord(object);
-        for (const Note* note : chord->notes()) {
-            for (Note* compoundNote : note->compoundNotes()) {
+        const Chord *chord = toChord(object);
+        for (const Note *note : chord->notes()) {
+            for (Note *compoundNote : note->compoundNotes()) {
                 objects.push_back(compoundNote);
             }
         }
     } else if (object->isNote()) {
-        const Note* note = toNote(object);
-        for (Note* compoundNote : note->compoundNotes()) {
+        const Note *note = toNote(object);
+        for (Note *compoundNote : note->compoundNotes()) {
             objects.push_back(compoundNote);
         }
     } else if (object->isFretDiagram()) {
-        const FretDiagram* fret = toFretDiagram(object);
-        if (Harmony* harmony = fret->harmony()) {
+        const FretDiagram *fret = toFretDiagram(object);
+        if (Harmony *harmony = fret->harmony()) {
             objects.push_back(harmony);
         }
     }
@@ -57,12 +56,6 @@ std::vector<EngravingObject*> mu::engraving::compoundObjects(EngravingObject* ob
     return objects;
 }
 
-void UndoableCommand::undo()
-{
-    flip();
-}
+void UndoableCommand::undo() { flip(); }
 
-void UndoableCommand::redo()
-{
-    flip();
-}
+void UndoableCommand::redo() { flip(); }

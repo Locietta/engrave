@@ -24,14 +24,13 @@
 #include "xmlreader.h"
 
 namespace mu::engraving::rw {
-class HarmonyToDiagramReader
-{
+class HarmonyToDiagramReader {
 public:
     struct FretDiagramInfo {
         String xml;
         String pattern;
     };
 
-    static std::unordered_map<String, FretDiagramInfo> read(XmlReader& reader);
+    static std::unordered_map<String, FretDiagramInfo> read(XmlReader &reader);
 };
-}
+} // namespace mu::engraving::rw

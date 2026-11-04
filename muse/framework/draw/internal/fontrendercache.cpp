@@ -36,8 +36,7 @@
 
 using namespace muse::draw;
 
-void FontRenderCache::init()
-{
+void FontRenderCache::init() {
     m_cache.clear();
     m_cacheInfoLoaded = false;
     m_cacheInfoMap.clear();
@@ -48,8 +47,7 @@ void FontRenderCache::init()
     }
 }
 
-void FontRenderCache::setCacheDirPath(const muse::io::path_t& path, const std::string& revision)
-{
+void FontRenderCache::setCacheDirPath(const muse::io::path_t &path, const std::string &revision) {
     m_cacheDirPath = path;
     m_cacheRevision = revision;
     m_cache.clear();
@@ -62,13 +60,9 @@ void FontRenderCache::setCacheDirPath(const muse::io::path_t& path, const std::s
     }
 }
 
-muse::io::path_t FontRenderCache::revisionFilePath() const
-{
-    return m_cacheDirPath.appendingComponent("revision");
-}
+muse::io::path_t FontRenderCache::revisionFilePath() const { return m_cacheDirPath.appendingComponent("revision"); }
 
-void FontRenderCache::updateCacheRevision()
-{
+void FontRenderCache::updateCacheRevision() {
     if (m_cacheRevision.empty()) {
         return;
     }
@@ -91,7 +85,7 @@ void FontRenderCache::updateCacheRevision()
         }
 
         bool isCleared = true;
-        for (const muse::io::path_t& filePath : files.val) {
+        for (const muse::io::path_t &filePath : files.val) {
             if (!muse::io::File::remove(filePath)) {
                 LOGE() << "failed remove font render cache file: " << filePath;
                 isCleared = false;
@@ -111,33 +105,19 @@ void FontRenderCache::updateCacheRevision()
     }
 }
 
-static std::string realToString(double n)
-{
+static std::string realToString(double n) {
     std::ostringstream stream;
     stream << std::scientific << std::setprecision(std::numeric_limits<double>::max_digits10) << n;
     return stream.str();
 }
 
-enum class CacheInfoParam : size_t {
-    Width = 0,
-    Height,
-    RectX,
-    RectY,
-    RectWidth,
-    RectHeight,
-    Range,
-    Count
-};
+enum class CacheInfoParam : size_t { Width = 0, Height, RectX, RectY, RectWidth, RectHeight, Range, Count };
 
 static constexpr size_t CACHE_INFO_PARAM_COUNT = static_cast<size_t>(CacheInfoParam::Count);
 
-static constexpr size_t paramIndex(CacheInfoParam param)
-{
-    return static_cast<size_t>(param);
-}
+static constexpr size_t paramIndex(CacheInfoParam param) { return static_cast<size_t>(param); }
 
-static std::string keyToString(const FaceKey& face, glyph_idx_t glyphIdx)
-{
+static std::string keyToString(const FaceKey &face, glyph_idx_t glyphIdx) {
     std::string str;
     str.reserve(50);
     str += face.dataKey.family().id().toStdString();
@@ -148,21 +128,14 @@ static std::string keyToString(const FaceKey& face, glyph_idx_t glyphIdx)
     return str;
 }
 
-static std::array<std::string, CACHE_INFO_PARAM_COUNT> cacheInfoParams(const GlyphImage& image)
-{
+static std::array<std::string, CACHE_INFO_PARAM_COUNT> cacheInfoParams(const GlyphImage &image) {
     return {
-        std::to_string(image.sdf.width),
-        std::to_string(image.sdf.height),
-        realToString(image.rect.x()),
-        realToString(image.rect.y()),
-        realToString(image.rect.width()),
-        realToString(image.rect.height()),
-        realToString(image.range),
+        std::to_string(image.sdf.width),  std::to_string(image.sdf.height),  realToString(image.rect.x()), realToString(image.rect.y()),
+        realToString(image.rect.width()), realToString(image.rect.height()), realToString(image.range),
     };
 }
 
-static std::string cacheInfoToString(const GlyphImage& image)
-{
+static std::string cacheInfoToString(const GlyphImage &image) {
     std::string str;
     const std::array<std::string, CACHE_INFO_PARAM_COUNT> params = cacheInfoParams(image);
     for (size_t i = 0; i < params.size(); ++i) {
@@ -174,8 +147,7 @@ static std::string cacheInfoToString(const GlyphImage& image)
     return str;
 }
 
-muse::io::path_t FontRenderCache::makeFilePath(const FaceKey& face, glyph_idx_t glyphIdx, const GlyphImage& image) const
-{
+muse::io::path_t FontRenderCache::makeFilePath(const FaceKey &face, glyph_idx_t glyphIdx, const GlyphImage &image) const {
     std::string str;
     str.reserve(100);
     str += keyToString(face, glyphIdx);
@@ -185,8 +157,7 @@ muse::io::path_t FontRenderCache::makeFilePath(const FaceKey& face, glyph_idx_t 
     return muse::io::path_t(str);
 }
 
-void FontRenderCache::store(const FaceKey& face, glyph_idx_t glyphIdx, const GlyphImage& image)
-{
+void FontRenderCache::store(const FaceKey &face, glyph_idx_t glyphIdx, const GlyphImage &image) {
     m_cache[face][glyphIdx] = image;
 
     if (m_cacheDirPath.empty()) {
@@ -203,11 +174,10 @@ void FontRenderCache::store(const FaceKey& face, glyph_idx_t glyphIdx, const Gly
     file.write(image.sdf.bitmap);
 }
 
-GlyphImage FontRenderCache::load(const FaceKey& face, glyph_idx_t glyphIdx) const
-{
+GlyphImage FontRenderCache::load(const FaceKey &face, glyph_idx_t glyphIdx) const {
     auto faceIt = m_cache.find(face);
     if (faceIt != m_cache.end()) {
-        const GlyphImages& images = faceIt->second;
+        const GlyphImages &images = faceIt->second;
         auto imageIt = images.find(glyphIdx);
         if (imageIt != images.end()) {
             return imageIt->second;
@@ -226,7 +196,7 @@ GlyphImage FontRenderCache::load(const FaceKey& face, glyph_idx_t glyphIdx) cons
         return GlyphImage();
     }
 
-    const CacheInfo& info = cacheInfoIt->second;
+    const CacheInfo &info = cacheInfoIt->second;
     muse::io::File file(info.filePath);
     if (!file.open(muse::io::IODevice::ReadOnly)) {
         LOGE() << "failed read file: " << file.filePath();
@@ -236,8 +206,7 @@ GlyphImage FontRenderCache::load(const FaceKey& face, glyph_idx_t glyphIdx) cons
     GlyphImage image;
     image.sdf.bitmap = file.readAll();
     image.sdf.width = info.width;
-    image.sdf.hash = std::hash<std::string_view> {}({ reinterpret_cast<const char*>(image.sdf.bitmap.data()),
-                                                      image.sdf.bitmap.size() });
+    image.sdf.hash = std::hash<std::string_view>{}({reinterpret_cast<const char *>(image.sdf.bitmap.data()), image.sdf.bitmap.size()});
     image.sdf.height = info.height;
     image.rect = info.rect;
     image.range = info.range;
@@ -247,10 +216,9 @@ GlyphImage FontRenderCache::load(const FaceKey& face, glyph_idx_t glyphIdx) cons
     return image;
 }
 
-void FontRenderCache::loadCachedInfo(CacheInfoMap& map, const muse::io::path_t& dir) const
-{
+void FontRenderCache::loadCachedInfo(CacheInfoMap &map, const muse::io::path_t &dir) const {
     muse::RetVal<muse::io::paths_t> files = muse::io::Dir::scanFiles(dir, {}, muse::io::ScanMode::FilesInCurrentDir);
-    for (const muse::io::path_t& p : files.val) {
+    for (const muse::io::path_t &p : files.val) {
         std::string str = muse::io::FileInfo(p).completeBaseName().toStdString();
 
         size_t startInfoIdx = str.find('[');

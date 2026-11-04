@@ -30,11 +30,8 @@ using namespace mu::engraving;
 //   ChangeSoundFlag
 //---------------------------------------------------------
 
-void ChangeSoundFlag::flip()
-{
-    IF_ASSERT_FAILED(m_soundFlag) {
-        return;
-    }
+void ChangeSoundFlag::flip() {
+    IF_ASSERT_FAILED(m_soundFlag) { return; }
 
     SoundFlag::PresetCodes presets = m_soundFlag->soundPresets();
     SoundFlag::PlayingTechniqueCode technique = m_soundFlag->playingTechnique();

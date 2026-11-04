@@ -43,26 +43,25 @@ struct IdValue {
     muse::String data;
 
     IdValue() {}
-    IdValue(int _id, const muse::String& _data)
-        : id(_id), data(_data) {}
+
+    IdValue(int _id, const muse::String &_data) : id(_id), data(_data) {}
 };
 
 //---------------------------------------------------------
 //   SynthesizerGroup
 //---------------------------------------------------------
 
-class SynthesizerGroup : public std::list<IdValue>
-{
+class SynthesizerGroup : public std::list<IdValue> {
     OBJECT_ALLOCATOR(engraving, SynthesizerGroup)
 
 public:
-    const muse::String& name() const { return m_name; }
-    void setName(const muse::String& s) { m_name = s; }
+    const muse::String &name() const { return m_name; }
 
-    SynthesizerGroup()
-        : std::list<IdValue>() {}
-    SynthesizerGroup(const char* n, std::list<IdValue> l)
-        : std::list<IdValue>(l), m_name(muse::String::fromUtf8(n)) {}
+    void setName(const muse::String &s) { m_name = s; }
+
+    SynthesizerGroup() : std::list<IdValue>() {}
+
+    SynthesizerGroup(const char *n, std::list<IdValue> l) : std::list<IdValue>(l), m_name(muse::String::fromUtf8(n)) {}
 
 private:
     muse::String m_name;
@@ -72,26 +71,23 @@ private:
 //   SynthesizerState
 //---------------------------------------------------------
 
-class SynthesizerState : public std::list<SynthesizerGroup>
-{
+class SynthesizerState : public std::list<SynthesizerGroup> {
     OBJECT_ALLOCATOR(engraving, SynthesizerState)
 
 public:
-    SynthesizerState(std::initializer_list<SynthesizerGroup> l)
-    {
-        insert(end(), l.begin(), l.end());
-    }
+    SynthesizerState(std::initializer_list<SynthesizerGroup> l) { insert(end(), l.begin(), l.end()); }
 
-    SynthesizerState()
-        : std::list<SynthesizerGroup>() {}
+    SynthesizerState() : std::list<SynthesizerGroup>() {}
 
-    void write(XmlWriter&, bool force = false) const;
-    void read(XmlReader&);
-    SynthesizerGroup group(const muse::String& name) const;
+    void write(XmlWriter &, bool force = false) const;
+    void read(XmlReader &);
+    SynthesizerGroup group(const muse::String &name) const;
     bool isDefaultSynthSoundfont();
     int ccToUse() const;
     int method() const;
+
     bool isDefault() const { return m_isDefault; }
+
     void setIsDefault(bool val) { m_isDefault = val; }
 
 private:

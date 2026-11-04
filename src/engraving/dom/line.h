@@ -39,41 +39,41 @@ class System;
 ///    For every staff a segment is created.
 //---------------------------------------------------------
 
-class LineSegment : public SpannerSegment
-{
+class LineSegment : public SpannerSegment {
     OBJECT_ALLOCATOR(engraving, LineSegment)
 protected:
 
-    LineSegment(const ElementType& type, SLine* sp, ElementFlags f = ElementFlag::NOTHING);
+    LineSegment(const ElementType &type, SLine *sp, ElementFlags f = ElementFlag::NOTHING);
 
 public:
 
-    LineSegment(const LineSegment&);
-    SLine* line() const { return (SLine*)spanner(); }
+    LineSegment(const LineSegment &);
+
+    SLine *line() const { return (SLine *) spanner(); }
+
     virtual void spatiumChanged(double, double) override;
     virtual void localSpatiumChanged(double, double) override;
 
     friend class SLine;
 
-    virtual EngravingObject* propertyDelegate(Pid) const override;
-
+    virtual EngravingObject *propertyDelegate(Pid) const override;
 
     Spatium lineWidth() const;
 
-    double absoluteFromSpatium(const Spatium& sp) const override;
+    double absoluteFromSpatium(const Spatium &sp) const override;
 
 protected:
-    virtual void rebaseOffsetsOnAnchorChanged(Grip grip, const PointF& oldPos, System* sys);
+    virtual void rebaseOffsetsOnAnchorChanged(Grip grip, const PointF &oldPos, System *sys);
 
 private:
-    PointF leftAnchorPosition(const double& systemPositionY) const;
-    PointF rightAnchorPosition(const double& systemPositionY) const;
+    PointF leftAnchorPosition(const double &systemPositionY) const;
+    PointF rightAnchorPosition(const double &systemPositionY) const;
 
-    Segment* findSegmentForGrip(Grip grip, PointF pos) const;
-    static PointF deltaRebaseLeft(const Segment* oldSeg, const Segment* newSeg);
-    static PointF deltaRebaseRight(const Segment* oldSeg, const Segment* newSeg);
-    static Fraction lastSegmentEndTick(const Segment* lastSeg, const Spanner* s);
-    LineSegment* rebaseAnchor(Grip grip, Segment* newSeg);
+    Segment *findSegmentForGrip(Grip grip, PointF pos) const;
+    static PointF deltaRebaseLeft(const Segment *oldSeg, const Segment *newSeg);
+    static PointF deltaRebaseRight(const Segment *oldSeg, const Segment *newSeg);
+    static Fraction lastSegmentEndTick(const Segment *lastSeg, const Spanner *s);
+    LineSegment *rebaseAnchor(Grip grip, Segment *newSeg);
 };
 
 //---------------------------------------------------------
@@ -81,50 +81,64 @@ private:
 ///    virtual base class for Hairpin, Trill and TextLine
 //---------------------------------------------------------
 
-class SLine : public Spanner
-{
+class SLine : public Spanner {
     OBJECT_ALLOCATOR(engraving, SLine)
 
 public:
-    SLine(const ElementType& type, EngravingObject* parent, ElementFlags = ElementFlag::NOTHING);
-    SLine(const SLine&);
+    SLine(const ElementType &type, EngravingObject *parent, ElementFlags = ElementFlag::NOTHING);
+    SLine(const SLine &);
 
-    virtual LineSegment* createLineSegment() = 0;
+    virtual LineSegment *createLineSegment() = 0;
     void setLen(double l);
 
     bool diagonal() const { return m_diagonal; }
+
     void setDiagonal(bool v) { m_diagonal = v; }
 
     Spatium lineWidth() const { return m_lineWidth; }
+
     Color lineColor() const { return m_lineColor; }
+
     LineType lineStyle() const { return m_lineStyle; }
-    void setLineWidth(const Spatium& v) { m_lineWidth = v; }
-    void setLineColor(const Color& v) { m_lineColor = v; }
+
+    void setLineWidth(const Spatium &v) { m_lineWidth = v; }
+
+    void setLineColor(const Color &v) { m_lineColor = v; }
+
     void setLineStyle(LineType v) { m_lineStyle = v; }
 
     double dashLineLen() const { return m_dashLineLen; }
+
     void setDashLineLen(double val) { m_dashLineLen = val; }
+
     double dashGapLen() const { return m_dashGapLen; }
+
     void setDashGapLen(double val) { m_dashGapLen = val; }
 
-    LineSegment* frontSegment() { return toLineSegment(Spanner::frontSegment()); }
-    const LineSegment* frontSegment() const { return toLineSegment(Spanner::frontSegment()); }
-    LineSegment* backSegment() { return toLineSegment(Spanner::backSegment()); }
-    const LineSegment* backSegment() const { return toLineSegment(Spanner::backSegment()); }
-    LineSegment* segmentAt(int n) { return toLineSegment(Spanner::segmentAt(n)); }
-    const LineSegment* segmentAt(int n) const { return toLineSegment(Spanner::segmentAt(n)); }
+    LineSegment *frontSegment() { return toLineSegment(Spanner::frontSegment()); }
+
+    const LineSegment *frontSegment() const { return toLineSegment(Spanner::frontSegment()); }
+
+    LineSegment *backSegment() { return toLineSegment(Spanner::backSegment()); }
+
+    const LineSegment *backSegment() const { return toLineSegment(Spanner::backSegment()); }
+
+    LineSegment *segmentAt(int n) { return toLineSegment(Spanner::segmentAt(n)); }
+
+    const LineSegment *segmentAt(int n) const { return toLineSegment(Spanner::segmentAt(n)); }
 
     PropertyValue getProperty(Pid id) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid id) const override;
 
-    virtual PointF linePos(Grip grip, System** system) const;
+    virtual PointF linePos(Grip grip, System **system) const;
+
     virtual bool allowTimeAnchor() const override { return true; }
 
     void undoMoveStart(Fraction tickDiff);
     void undoMoveEnd(Fraction tickDiff);
 
-    static Note* guessFinalNote(Note* startNote);
+    static Note *guessFinalNote(Note *startNote);
 
 private:
 
@@ -137,4 +151,4 @@ private:
     double m_dashGapLen = 5.0;
     bool m_diagonal = false;
 };
-}
+} // namespace mu::engraving

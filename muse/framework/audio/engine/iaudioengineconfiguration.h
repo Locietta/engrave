@@ -21,16 +21,14 @@
  */
 #pragma once
 
-
 #include "audio/common/audiotypes.h"
 
 namespace muse::audio::engine {
-class IAudioEngineConfiguration
-{
+class IAudioEngineConfiguration {
 public:
     virtual ~IAudioEngineConfiguration() = default;
 
-    virtual void setConfig(const AudioEngineConfig& conf) = 0;
+    virtual void setConfig(const AudioEngineConfig &conf) = 0;
 
     virtual bool autoProcessOnlineSoundsInBackground() const = 0;
 
@@ -41,4 +39,4 @@ public:
 
     virtual AudioInputParams defaultAudioInputParams() const = 0;
 };
-}
+} // namespace muse::audio::engine

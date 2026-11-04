@@ -48,16 +48,12 @@ using Json = nlohmann::json;
 
 constexpr std::size_t kMaxScoreBytes = 8 * 1024 * 1024;
 
-std::string lowercase(std::string value)
-{
-    std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) {
-        return static_cast<char>(std::tolower(c));
-    });
+std::string lowercase(std::string value) {
+    std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
     return value;
 }
 
-std::string to_utf8(const fs::path& path)
-{
+std::string to_utf8(const fs::path &path) {
     const std::u8string utf8 = path.u8string();
     std::string result;
     result.reserve(utf8.size());
@@ -67,8 +63,7 @@ std::string to_utf8(const fs::path& path)
     return result;
 }
 
-std::string score_format_from_path(const fs::path& path)
-{
+std::string score_format_from_path(const fs::path &path) {
     const std::string ext = lowercase(to_utf8(path.extension()));
     if (ext == ".musicxml" || ext == ".xml") {
         return "musicxml";
@@ -85,15 +80,14 @@ std::string score_format_from_path(const fs::path& path)
     if (ext == ".mid" || ext == ".midi" || ext == ".kar") {
         return "mid";
     }
-    if (ext == ".gp" || ext == ".gp3" || ext == ".gp4" || ext == ".gp5" || ext == ".gp6"
-        || ext == ".gp7" || ext == ".gpx" || ext == ".gtp" || ext == ".ptb") {
+    if (ext == ".gp" || ext == ".gp3" || ext == ".gp4" || ext == ".gp5" || ext == ".gp6" || ext == ".gp7" || ext == ".gpx" ||
+        ext == ".gtp" || ext == ".ptb") {
         return ext.substr(1);
     }
     throw std::invalid_argument("unsupported score extension: " + ext);
 }
 
-std::string audio_format_from_path(const fs::path& path)
-{
+std::string audio_format_from_path(const fs::path &path) {
     const std::string ext = lowercase(to_utf8(path.extension()));
     if (ext == ".wav") {
         return "wav";
@@ -113,8 +107,7 @@ std::string audio_format_from_path(const fs::path& path)
     throw std::invalid_argument("unsupported audio extension: " + ext);
 }
 
-music::EngineAudioFormat parse_audio_format(const std::string& name)
-{
+music::EngineAudioFormat parse_audio_format(const std::string &name) {
     if (name == "wav") {
         return music::EngineAudioFormat::Wav;
     }
@@ -130,8 +123,7 @@ music::EngineAudioFormat parse_audio_format(const std::string& name)
     return music::EngineAudioFormat::Aac;
 }
 
-std::string read_file(const fs::path& path)
-{
+std::string read_file(const fs::path &path) {
     std::ifstream stream(path, std::ios::binary);
     if (!stream.is_open()) {
         throw std::runtime_error("cannot open score file: " + to_utf8(path));
@@ -154,12 +146,10 @@ std::string read_file(const fs::path& path)
     return data;
 }
 
-std::uint64_t peak_working_set_bytes()
-{
+std::uint64_t peak_working_set_bytes() {
 #ifdef _WIN32
     PROCESS_MEMORY_COUNTERS_EX counters{};
-    if (!GetProcessMemoryInfo(GetCurrentProcess(), reinterpret_cast<PROCESS_MEMORY_COUNTERS*>(&counters),
-                              sizeof(counters))) {
+    if (!GetProcessMemoryInfo(GetCurrentProcess(), reinterpret_cast<PROCESS_MEMORY_COUNTERS *>(&counters), sizeof(counters))) {
         return 0;
     }
     return static_cast<std::uint64_t>(counters.PeakWorkingSetSize);
@@ -176,57 +166,48 @@ std::uint64_t peak_working_set_bytes()
 #endif
 }
 
-double seconds_since(const std::chrono::steady_clock::time_point& start)
-{
+double seconds_since(const std::chrono::steady_clock::time_point &start) {
     return std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
 }
 
-Json track_json(const music::EngineAudioTrackInfo& track)
-{
-    return Json {
-        { "partId", track.part_id },
-        { "instrumentId", track.instrument_id },
-        { "partName", track.part_name },
-        { "instrumentName", track.instrument_name },
-        { "chordSymbols", track.chord_symbols },
-        { "partIndex", track.part_index },
+Json track_json(const music::EngineAudioTrackInfo &track) {
+    return Json{
+        {"partId", track.part_id},
+        {"instrumentId", track.instrument_id},
+        {"partName", track.part_name},
+        {"instrumentName", track.instrument_name},
+        {"chordSymbols", track.chord_symbols},
+        {"partIndex", track.part_index},
     };
 }
 
-Json midi_event_json(const muse::midi::Event& event)
-{
-    Json json = { { "opcode", event.opcodeString() } };
+Json midi_event_json(const muse::midi::Event &event) {
+    Json json = {{"opcode", event.opcodeString()}};
     if (!event.isChannelVoice()) {
         return json;
     }
 
     json["channel"] = static_cast<int>(event.channel());
     switch (event.opcode()) {
-    case muse::midi::Event::Opcode::NoteOn:
-    case muse::midi::Event::Opcode::NoteOff:
-        json["note"] = static_cast<int>(event.note());
-        json["velocity"] = static_cast<int>(event.velocity7());
-        break;
-    case muse::midi::Event::Opcode::ControlChange:
-        json["index"] = static_cast<int>(event.index());
-        json["data"] = static_cast<int>(event.data7());
-        break;
-    case muse::midi::Event::Opcode::PitchBend:
-        json["pitchBend"] = static_cast<int>(event.pitchBend14());
-        break;
-    case muse::midi::Event::Opcode::ProgramChange:
-        json["program"] = static_cast<int>(event.program());
-        break;
-    default:
-        break;
+        case muse::midi::Event::Opcode::NoteOn:
+        case muse::midi::Event::Opcode::NoteOff:
+            json["note"] = static_cast<int>(event.note());
+            json["velocity"] = static_cast<int>(event.velocity7());
+            break;
+        case muse::midi::Event::Opcode::ControlChange:
+            json["index"] = static_cast<int>(event.index());
+            json["data"] = static_cast<int>(event.data7());
+            break;
+        case muse::midi::Event::Opcode::PitchBend: json["pitchBend"] = static_cast<int>(event.pitchBend14()); break;
+        case muse::midi::Event::Opcode::ProgramChange: json["program"] = static_cast<int>(event.program()); break;
+        default: break;
     }
 
     return json;
 }
 } // namespace
 
-int main(int argc, char** argv)
-{
+int main(int argc, char **argv) {
     Json out = Json::object();
     out["ok"] = false;
 
@@ -261,7 +242,7 @@ int main(int argc, char** argv)
                 return 2;
             }
         }
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
         std::cerr << "Invalid argument: " << e.what() << '\n';
         return 2;
     }
@@ -282,7 +263,7 @@ int main(int argc, char** argv)
         auto runtimeStart = std::chrono::steady_clock::now();
         music::EngineContext context(assets);
         auto score = music::load_native_score(context, scoreBytes, scoreFormat);
-        mu::engraving::MasterScore* master = score->masterScore();
+        mu::engraving::MasterScore *master = score->masterScore();
         out["loadSeconds"] = seconds_since(runtimeStart);
 
         auto engineStart = std::chrono::steady_clock::now();
@@ -290,10 +271,10 @@ int main(int argc, char** argv)
         const bool engineReady = music::initialize_engine_audio(context.audio(), soundfont, &bootstrapError);
         out["engineSeconds"] = seconds_since(engineStart);
         out["soundfont"] = {
-            { "path", soundfont },
-            { "resourceId", music::engine_soundfont_resource_id(context.audio()) },
-            { "uri", music::engine_soundfont_uri(context.audio()) },
-            { "uriRoundTrip", false },
+            {"path", soundfont},
+            {"resourceId", music::engine_soundfont_resource_id(context.audio())},
+            {"uri", music::engine_soundfont_uri(context.audio())},
+            {"uriRoundTrip", false},
         };
         if (!engineReady) {
             throw std::runtime_error(bootstrapError.empty() ? "engine initialisation failed" : bootstrapError);
@@ -316,8 +297,7 @@ int main(int argc, char** argv)
             music::generate_score_excerpts(master);
         }
         out["excerptCount"] = master->excerpts().size();
-        const std::vector<music::EngineAudioTrackInfo> tracks =
-            music::engine_audio_tracks(master, excerptId);
+        const std::vector<music::EngineAudioTrackInfo> tracks = music::engine_audio_tracks(master, excerptId);
         out["trackCount"] = tracks.size();
 
         music::AudioRenderRequest request;
@@ -344,14 +324,14 @@ int main(int argc, char** argv)
             constexpr std::size_t kMaxMidiEvents = 1000000;
             midiEvents.reserve(4096);
             music::set_engine_audio_midi_event_hook(context.audio(),
-                [&midiEventCount, &midiEvents](const muse::midi::Event& event, std::uint64_t frame) {
-                    ++midiEventCount;
-                    if (midiEvents.size() < kMaxMidiEvents) {
-                        Json json = midi_event_json(event);
-                        json["frame"] = frame;
-                        midiEvents.push_back(std::move(json));
-                    }
-                });
+                                                    [&midiEventCount, &midiEvents](const muse::midi::Event &event, std::uint64_t frame) {
+                                                        ++midiEventCount;
+                                                        if (midiEvents.size() < kMaxMidiEvents) {
+                                                            Json json = midi_event_json(event);
+                                                            json["frame"] = frame;
+                                                            midiEvents.push_back(std::move(json));
+                                                        }
+                                                    });
         }
         const music::AudioRenderResult result = music::export_score_audio(context.audio(), master, request);
         if (captureMidi) {
@@ -366,7 +346,7 @@ int main(int argc, char** argv)
         out["ok"] = result.ok;
         out["error"] = result.error;
         out["tracks"] = Json::array();
-        for (const music::EngineAudioTrackInfo& track : tracks) {
+        for (const music::EngineAudioTrackInfo &track : tracks) {
             out["tracks"].push_back(track_json(track));
         }
         out["midiEventTotal"] = midiEventCount;
@@ -376,7 +356,7 @@ int main(int argc, char** argv)
         }
         out["peakWorkingSetBytes"] = peak_working_set_bytes();
         out["peakWorkingSetMiB"] = peak_working_set_bytes() / (1024.0 * 1024.0);
-    } catch (const std::exception& e) {
+    } catch (const std::exception &e) {
         out["ok"] = false;
         out["error"] = e.what();
         out["peakWorkingSetBytes"] = peak_working_set_bytes();

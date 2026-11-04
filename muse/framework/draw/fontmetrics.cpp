@@ -25,137 +25,59 @@ using namespace muse;
 using namespace muse::draw;
 
 namespace {
-IFontProvider* s_provider = nullptr;
-}
+IFontProvider *s_provider = nullptr;
+} // namespace
 
-void FontMetrics::setProvider(IFontProvider* provider)
-{
-    s_provider = provider;
-}
+void FontMetrics::setProvider(IFontProvider *provider) { s_provider = provider; }
 
-IFontProvider* FontMetrics::fontProvider()
-{
-    return s_provider;
-}
+IFontProvider *FontMetrics::fontProvider() { return s_provider; }
 
-FontMetrics::FontMetrics(const Font& font)
-    : m_font(font)
-{
-}
+FontMetrics::FontMetrics(const Font &font) : m_font(font) {}
 
-double FontMetrics::lineSpacing() const
-{
-    return fontProvider()->lineSpacing(m_font);
-}
+double FontMetrics::lineSpacing() const { return fontProvider()->lineSpacing(m_font); }
 
-double FontMetrics::xHeight() const
-{
-    return fontProvider()->xHeight(m_font);
-}
+double FontMetrics::xHeight() const { return fontProvider()->xHeight(m_font); }
 
-double FontMetrics::height() const
-{
-    return fontProvider()->height(m_font);
-}
+double FontMetrics::height() const { return fontProvider()->height(m_font); }
 
-double FontMetrics::capHeight() const
-{
-    return fontProvider()->capHeight(m_font);
-}
+double FontMetrics::capHeight() const { return fontProvider()->capHeight(m_font); }
 
-double FontMetrics::ascent() const
-{
-    return fontProvider()->ascent(m_font);
-}
+double FontMetrics::ascent() const { return fontProvider()->ascent(m_font); }
 
-double FontMetrics::descent() const
-{
-    return fontProvider()->descent(m_font);
-}
+double FontMetrics::descent() const { return fontProvider()->descent(m_font); }
 
-double FontMetrics::underlinePos() const
-{
-    return fontProvider()->underlinePos(m_font);
-}
+double FontMetrics::underlinePos() const { return fontProvider()->underlinePos(m_font); }
 
-double FontMetrics::lineWidth() const
-{
-    return fontProvider()->lineWidth(m_font);
-}
+double FontMetrics::lineWidth() const { return fontProvider()->lineWidth(m_font); }
 
-double FontMetrics::strikeOutPos() const
-{
-    return fontProvider()->strikeOutPos(m_font);
-}
+double FontMetrics::strikeOutPos() const { return fontProvider()->strikeOutPos(m_font); }
 
-double FontMetrics::width(const String& string) const
-{
-    return horizontalAdvance(string);
-}
+double FontMetrics::width(const String &string) const { return horizontalAdvance(string); }
 
-double FontMetrics::width(const Char& ch) const
-{
-    return horizontalAdvance(ch);
-}
+double FontMetrics::width(const Char &ch) const { return horizontalAdvance(ch); }
 
-double FontMetrics::horizontalAdvance(const String& string) const
-{
-    return fontProvider()->horizontalAdvance(m_font, string);
-}
+double FontMetrics::horizontalAdvance(const String &string) const { return fontProvider()->horizontalAdvance(m_font, string); }
 
-double FontMetrics::horizontalAdvance(char32_t ucs4) const
-{
-    return fontProvider()->horizontalAdvance(m_font, ucs4);
-}
+double FontMetrics::horizontalAdvance(char32_t ucs4) const { return fontProvider()->horizontalAdvance(m_font, ucs4); }
 
-RectF FontMetrics::boundingRect(const String& string) const
-{
-    return fontProvider()->boundingRect(m_font, string);
-}
+RectF FontMetrics::boundingRect(const String &string) const { return fontProvider()->boundingRect(m_font, string); }
 
-RectF FontMetrics::boundingRect(char32_t ucs4) const
-{
-    return fontProvider()->boundingRect(m_font, ucs4);
-}
+RectF FontMetrics::boundingRect(char32_t ucs4) const { return fontProvider()->boundingRect(m_font, ucs4); }
 
-RectF FontMetrics::tightBoundingRect(const String& string) const
-{
-    return fontProvider()->tightBoundingRect(m_font, string);
-}
+RectF FontMetrics::tightBoundingRect(const String &string) const { return fontProvider()->tightBoundingRect(m_font, string); }
 
-RectF FontMetrics::tightBoundingRect(const Char& ch) const
-{
-    return fontProvider()->tightBoundingRect(m_font, ch);
-}
+RectF FontMetrics::tightBoundingRect(const Char &ch) const { return fontProvider()->tightBoundingRect(m_font, ch); }
 
-bool FontMetrics::inFont(char32_t ucs4) const
-{
-    return fontProvider()->inFont(m_font, ucs4);
-}
+bool FontMetrics::inFont(char32_t ucs4) const { return fontProvider()->inFont(m_font, ucs4); }
 
 // Static
 
-double FontMetrics::width(const Font& f, const String& string)
-{
-    return FontMetrics(f).width(string);
-}
+double FontMetrics::width(const Font &f, const String &string) { return FontMetrics(f).width(string); }
 
-RectF FontMetrics::boundingRect(const Font& f, const String& string)
-{
-    return FontMetrics(f).boundingRect(string);
-}
+RectF FontMetrics::boundingRect(const Font &f, const String &string) { return FontMetrics(f).boundingRect(string); }
 
-RectF FontMetrics::tightBoundingRect(const Font& f, const String& string)
-{
-    return FontMetrics(f).tightBoundingRect(string);
-}
+RectF FontMetrics::tightBoundingRect(const Font &f, const String &string) { return FontMetrics(f).tightBoundingRect(string); }
 
-double FontMetrics::ascent(const Font& f)
-{
-    return FontMetrics(f).ascent();
-}
+double FontMetrics::ascent(const Font &f) { return FontMetrics(f).ascent(); }
 
-double FontMetrics::capHeight(const Font& f)
-{
-    return FontMetrics(f).capHeight();
-}
+double FontMetrics::capHeight(const Font &f) { return FontMetrics(f).capHeight(); }

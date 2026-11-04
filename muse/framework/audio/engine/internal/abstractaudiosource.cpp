@@ -25,17 +25,8 @@ using namespace muse;
 using namespace muse::audio;
 using namespace muse::audio::engine;
 
-void AbstractAudioSource::setMode(const ProcessMode mode)
-{
-    m_mode = mode;
-}
+void AbstractAudioSource::setMode(const ProcessMode mode) { m_mode = mode; }
 
-ProcessMode AbstractAudioSource::mode() const
-{
-    return m_mode;
-}
+ProcessMode AbstractAudioSource::mode() const { return m_mode; }
 
-void AbstractAudioSource::setOutputSpec(const OutputSpec& spec)
-{
-    m_outputSpec = spec;
-}
+void AbstractAudioSource::setOutputSpec(const OutputSpec &spec) { m_outputSpec = spec; }

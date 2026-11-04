@@ -30,20 +30,20 @@ namespace mu::engraving {
 //   Text
 //---------------------------------------------------------
 
-class Text final : public TextBase
-{
+class Text final : public TextBase {
     OBJECT_ALLOCATOR(engraving, Text)
     DECLARE_CLASSOF(ElementType::TEXT)
 
 public:
     Text(DummyParentOr<EngravingItem> parent, TextStyleType tid = TextStyleType::DEFAULT);
-    Text* clone() const override { return new Text(*this); }
 
-    EngravingObject* propertyDelegate(Pid) const override;
+    Text *clone() const override { return new Text(*this); }
+
+    EngravingObject *propertyDelegate(Pid) const override;
     PropertyValue propertyDefault(Pid id) const override;
     PropertyValue getProperty(Pid id) const override;
 
-    static String readXmlText(XmlReader& r, Score* score);
+    static String readXmlText(XmlReader &r, Score *score);
 
     void setLayoutToParentWidth(bool v) { m_layoutToParentWidth = v; }
 

@@ -28,24 +28,23 @@
 
 namespace muse::io {
 class IODevice;
-}
+} // namespace muse::io
 
 namespace muse::audio::encode {
 struct AacEncoderHandler;
 
-class AacEncoder : public AbstractAudioEncoder
-{
+class AacEncoder : public AbstractAudioEncoder {
 public:
-    AacEncoder(const SoundTrackFormat&, io::IODevice&);
+    AacEncoder(const SoundTrackFormat &, io::IODevice &);
 
     ~AacEncoder() noexcept override;
 
     bool begin(samples_t totalSamplesNumber) override;
-    size_t encode(samples_t samplesPerChannel, const float* input) override;
+    size_t encode(samples_t samplesPerChannel, const float *input) override;
     Ret end() override;
 
 private:
     std::unique_ptr<AacEncoderHandler> m_handler;
-    io::IODevice* m_dstDevice = nullptr;
+    io::IODevice *m_dstDevice = nullptr;
 };
-}
+} // namespace muse::audio::encode

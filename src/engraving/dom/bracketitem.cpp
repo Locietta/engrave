@@ -31,112 +31,69 @@
 using namespace mu;
 
 namespace mu::engraving {
-BracketItem::BracketItem(DummyParentOr<EngravingItem> parent)
-    : EngravingItem(ElementType::BRACKET_ITEM, parent)
-{
-}
+BracketItem::BracketItem(DummyParentOr<EngravingItem> parent) : EngravingItem(ElementType::BRACKET_ITEM, parent) {}
 
 BracketItem::BracketItem(DummyParentOr<EngravingItem> parent, BracketType bracketType, size_t span)
-    : EngravingItem(ElementType::BRACKET_ITEM, parent), m_bracketType(bracketType), m_bracketSpan(span)
-{
-}
+    : EngravingItem(ElementType::BRACKET_ITEM, parent), m_bracketType(bracketType), m_bracketSpan(span) {}
 
-EngravingItem* BracketItem::clone() const
-{
-    return new BracketItem(*this);
-}
+EngravingItem *BracketItem::clone() const { return new BracketItem(*this); }
 
-Staff* BracketItem::startStaff() const
-{
-    return score() ? score()->staff(m_startStaffIdx) : nullptr;
-}
+Staff *BracketItem::startStaff() const { return score() ? score()->staff(m_startStaffIdx) : nullptr; }
 
-PropertyValue BracketItem::getProperty(Pid id) const
-{
+PropertyValue BracketItem::getProperty(Pid id) const {
     switch (id) {
-    case Pid::SYSTEM_BRACKET:
-        return int(m_bracketType);
-    case Pid::BRACKET_COLUMN:
-        return m_column;
-    case Pid::BRACKET_SPAN:
-        return static_cast<int>(m_bracketSpan);
-    case Pid::STAFF_LONG_NAME:
-        return longName();
-    case Pid::STAFF_SHORT_NAME:
-        return shortName();
-    case Pid::GROUP_BRACKET_SHOW_TEXT:
-        return m_showText;
-    case Pid::GROUP_BRACKET_SHOW_BRACKET:
-        return m_showBracket;
-    default:
-        return EngravingItem::getProperty(id);
+        case Pid::SYSTEM_BRACKET: return int(m_bracketType);
+        case Pid::BRACKET_COLUMN: return m_column;
+        case Pid::BRACKET_SPAN: return static_cast<int>(m_bracketSpan);
+        case Pid::STAFF_LONG_NAME: return longName();
+        case Pid::STAFF_SHORT_NAME: return shortName();
+        case Pid::GROUP_BRACKET_SHOW_TEXT: return m_showText;
+        case Pid::GROUP_BRACKET_SHOW_BRACKET: return m_showBracket;
+        default: return EngravingItem::getProperty(id);
     }
 }
 
-bool BracketItem::setProperty(Pid id, const PropertyValue& v)
-{
+bool BracketItem::setProperty(Pid id, const PropertyValue &v) {
     switch (id) {
-    case Pid::SYSTEM_BRACKET:
-        EditStaffBrackets::setBracketType(score(), startStaffIdx(), column(), BracketType(v.toInt())); // change bracket type global
-        break;
-    case Pid::BRACKET_COLUMN:
-        EditStaffBrackets::changeBracketColumn(score(), startStaffIdx(), column(), static_cast<size_t>(v.toInt()));
-        break;
-    case Pid::BRACKET_SPAN:
-        m_bracketSpan = static_cast<size_t>(v.toInt());
-        break;
-    case Pid::VISIBLE:
-        setVisible(v.toBool());
-        break;
-    case Pid::STAFF_LONG_NAME:
-        m_name.setLongName(v.value<String>());
-        break;
-    case Pid::STAFF_SHORT_NAME:
-        m_name.setShortName(v.value<String>());
-        break;
-    case Pid::GROUP_BRACKET_SHOW_TEXT:
-        m_showText = v.toBool();
-        break;
-    case Pid::GROUP_BRACKET_SHOW_BRACKET:
-        m_showBracket = v.toBool();
-        break;
-    default:
-        return EngravingItem::setProperty(id, v);
+        case Pid::SYSTEM_BRACKET:
+            EditStaffBrackets::setBracketType(score(), startStaffIdx(), column(), BracketType(v.toInt())); // change bracket type global
+            break;
+        case Pid::BRACKET_COLUMN:
+            EditStaffBrackets::changeBracketColumn(score(), startStaffIdx(), column(), static_cast<size_t>(v.toInt()));
+            break;
+        case Pid::BRACKET_SPAN: m_bracketSpan = static_cast<size_t>(v.toInt()); break;
+        case Pid::VISIBLE: setVisible(v.toBool()); break;
+        case Pid::STAFF_LONG_NAME: m_name.setLongName(v.value<String>()); break;
+        case Pid::STAFF_SHORT_NAME: m_name.setShortName(v.value<String>()); break;
+        case Pid::GROUP_BRACKET_SHOW_TEXT: m_showText = v.toBool(); break;
+        case Pid::GROUP_BRACKET_SHOW_BRACKET: m_showBracket = v.toBool(); break;
+        default: return EngravingItem::setProperty(id, v);
     }
     score()->setLayoutAll();
     return true;
 }
 
-PropertyValue BracketItem::propertyDefault(Pid id) const
-{
+PropertyValue BracketItem::propertyDefault(Pid id) const {
     switch (id) {
-    case Pid::SYSTEM_BRACKET:
-        return int(BracketType::NORMAL);
-    case Pid::BRACKET_COLUMN:
-        return size_t(0);
-    case Pid::STAFF_LONG_NAME:
-        return muse::mtrc("systemBrackets", "GROUP");
-    case Pid::STAFF_SHORT_NAME:
-        return muse::mtrc("systemBrackets", "GR.", "Short for GROUP");
-    case Pid::GROUP_BRACKET_SHOW_TEXT:
-    case Pid::GROUP_BRACKET_SHOW_BRACKET:
-        return true;
-    default:
-        return EngravingItem::propertyDefault(id);
+        case Pid::SYSTEM_BRACKET: return int(BracketType::NORMAL);
+        case Pid::BRACKET_COLUMN: return size_t(0);
+        case Pid::STAFF_LONG_NAME: return muse::mtrc("systemBrackets", "GROUP");
+        case Pid::STAFF_SHORT_NAME: return muse::mtrc("systemBrackets", "GR.", "Short for GROUP");
+        case Pid::GROUP_BRACKET_SHOW_TEXT:
+        case Pid::GROUP_BRACKET_SHOW_BRACKET: return true;
+        default: return EngravingItem::propertyDefault(id);
     }
 }
 
-bool BracketItem::intersects(const BracketItem* other) const
-{
+bool BracketItem::intersects(const BracketItem *other) const {
     staff_idx_t firstOfOther = other->startStaffIdx();
     staff_idx_t lastOfOther = firstOfOther + other->bracketSpan() - 1;
     return intersects(firstOfOther, lastOfOther);
 }
 
-bool BracketItem::intersects(staff_idx_t first, staff_idx_t last) const
-{
+bool BracketItem::intersects(staff_idx_t first, staff_idx_t last) const {
     staff_idx_t firstOfThis = m_startStaffIdx;
     staff_idx_t lastOfThis = firstOfThis + bracketSpan() - 1;
     return firstOfThis <= last && lastOfThis >= first;
 }
-}
+} // namespace mu::engraving

@@ -47,58 +47,49 @@ namespace mu::engraving {
 //   instrumentChangeStyle
 //---------------------------------------------------------
 
-static const ElementStyle instrumentChangeStyle {
-    { Sid::instrumentChangePlacement,          Pid::PLACEMENT },
-    { Sid::instrumentChangeMinDistance,        Pid::MIN_DISTANCE },
+static const ElementStyle instrumentChangeStyle{
+    {Sid::instrumentChangePlacement, Pid::PLACEMENT},
+    {Sid::instrumentChangeMinDistance, Pid::MIN_DISTANCE},
 };
 
 //---------------------------------------------------------
 //   InstrumentChange
 //---------------------------------------------------------
 
-InstrumentChange::InstrumentChange(EngravingObject* parent)
-    : TextBase(ElementType::INSTRUMENT_CHANGE, parent, TextStyleType::INSTRUMENT_CHANGE, ElementFlag::MOVABLE | ElementFlag::ON_STAFF)
-{
+InstrumentChange::InstrumentChange(EngravingObject *parent)
+    : TextBase(ElementType::INSTRUMENT_CHANGE, parent, TextStyleType::INSTRUMENT_CHANGE, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
     initElementStyle(&instrumentChangeStyle);
     m_instrument = new Instrument();
 }
 
-InstrumentChange::InstrumentChange(const Instrument& i, EngravingObject* parent)
-    : TextBase(ElementType::INSTRUMENT_CHANGE, parent, TextStyleType::INSTRUMENT_CHANGE, ElementFlag::MOVABLE | ElementFlag::ON_STAFF)
-{
+InstrumentChange::InstrumentChange(const Instrument &i, EngravingObject *parent)
+    : TextBase(ElementType::INSTRUMENT_CHANGE, parent, TextStyleType::INSTRUMENT_CHANGE, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
     initElementStyle(&instrumentChangeStyle);
     m_instrument = new Instrument(i);
 }
 
-InstrumentChange::InstrumentChange(const InstrumentChange& is)
-    : TextBase(is)
-{
+InstrumentChange::InstrumentChange(const InstrumentChange &is) : TextBase(is) {
     m_instrument = new Instrument(*is.m_instrument);
     m_init = is.m_init;
 }
 
-InstrumentChange::~InstrumentChange()
-{
-    delete m_instrument;
-}
+InstrumentChange::~InstrumentChange() { delete m_instrument; }
 
-void InstrumentChange::setInstrument(const Instrument& i)
-{
+void InstrumentChange::setInstrument(const Instrument &i) {
     *m_instrument = i;
     //delete _instrument;
     //_instrument = new Instrument(i);
 }
 
-void InstrumentChange::setupInstrument(const Instrument* instrument, bool updateText)
-{
+void InstrumentChange::setupInstrument(const Instrument *instrument, bool updateText) {
     if (!m_init) {
         return;
     }
 
-    Transaction& tx = score()->transactionManager()->currentOrDummyTransaction();
+    Transaction &tx = score()->transactionManager()->currentOrDummyTransaction();
 
     Fraction tickStart = segment()->tick();
-    Part* part = staff()->part();
+    Part *part = staff()->part();
     Interval oldV = part->instrument(tickStart)->transpose();
     Interval oldKv = staff()->transpose(tickStart);
     Interval v = instrument->transpose();
@@ -106,14 +97,13 @@ void InstrumentChange::setupInstrument(const Instrument* instrument, bool update
 
     // change the clef for each staff
     for (size_t i = 0; i < part->nstaves(); i++) {
-        ClefType oldClefType = concPitch ? part->instrument(tickStart)->clefType(i).concertClef
-                               : part->instrument(tickStart)->clefType(i).transposingClef;
-        ClefType newClefType = concPitch ? instrument->clefType(i).concertClef
-                               : instrument->clefType(i).transposingClef;
+        ClefType oldClefType =
+            concPitch ? part->instrument(tickStart)->clefType(i).concertClef : part->instrument(tickStart)->clefType(i).transposingClef;
+        ClefType newClefType = concPitch ? instrument->clefType(i).concertClef : instrument->clefType(i).transposingClef;
         // Introduce cleff change only if the new clef *symbol* is different from the old one
         if (ClefInfo::symId(oldClefType) != ClefInfo::symId(newClefType)) {
             // If instrument change is at the start of a measure, use the measure as the element, as this will place the instrument change before the barline.
-            EngravingItem* element = rtick().isZero() ? toEngravingItem(findMeasure()) : toEngravingItem(this);
+            EngravingItem *element = rtick().isZero() ? toEngravingItem(findMeasure()) : toEngravingItem(this);
             EditClef::undoChangeClef(tx, score(), part->staff(i), element, newClefType, true);
         }
     }
@@ -124,9 +114,9 @@ void InstrumentChange::setupInstrument(const Instrument* instrument, bool update
             if (!part->staff(i)->keySigEvent(tickStart).isAtonal()) {
                 KeySigEvent ks;
                 // Check, if some key signature is already there, if no, mark new one "for instrument change"
-                Segment* seg = segment()->prev1(SegmentType::KeySig);
+                Segment *seg = segment()->prev1(SegmentType::KeySig);
                 voice_idx_t voice = part->staff(i)->idx() * VOICES;
-                KeySig* ksig = seg ? toKeySig(seg->element(voice)) : nullptr;
+                KeySig *ksig = seg ? toKeySig(seg->element(voice)) : nullptr;
                 bool forInstChange = !(ksig && ksig->tick() == tickStart && !ksig->generated());
                 ks.setForInstrumentChange(forInstChange);
                 Key cKey = part->staff(i)->concertKey(tickStart);
@@ -137,16 +127,16 @@ void InstrumentChange::setupInstrument(const Instrument* instrument, bool update
     }
 
     // change instrument in all linked scores
-    for (EngravingObject* se : linkList()) {
-        InstrumentChange* lic = static_cast<InstrumentChange*>(se);
-        Instrument* newInstrument = new Instrument(*instrument);
+    for (EngravingObject *se : linkList()) {
+        InstrumentChange *lic = static_cast<InstrumentChange *>(se);
+        Instrument *newInstrument = new Instrument(*instrument);
         tx.push(new ChangeInstrument(lic, newInstrument));
     }
 
     // transpose for current score only
     // this automatically propagates to linked scores
     if (part->instrument(tickStart)->transpose() != oldV) {
-        auto i = part->instruments().upper_bound(tickStart.ticks());              // find(), ++i
+        auto i = part->instruments().upper_bound(tickStart.ticks()); // find(), ++i
         Fraction tickEnd;
         if (i == part->instruments().end()) {
             tickEnd = Fraction(-1, 1);
@@ -169,16 +159,15 @@ void InstrumentChange::setupInstrument(const Instrument* instrument, bool update
 //   keySigs
 //---------------------------------------------------------
 
-std::vector<KeySig*> InstrumentChange::keySigs(bool all) const
-{
-    std::vector<KeySig*> keysigs;
-    Segment* seg = segment()->prev1(SegmentType::KeySig);
+std::vector<KeySig *> InstrumentChange::keySigs(bool all) const {
+    std::vector<KeySig *> keysigs;
+    Segment *seg = segment()->prev1(SegmentType::KeySig);
     if (seg) {
         voice_idx_t startVoice = part()->staff(0)->idx() * VOICES;
         voice_idx_t endVoice = part()->staff(part()->nstaves() - 1)->idx() * VOICES;
         Fraction t = tick();
         for (voice_idx_t i = startVoice; i <= endVoice; i += VOICES) {
-            KeySig* ks = toKeySig(seg->element(i));
+            KeySig *ks = toKeySig(seg->element(i));
             if (ks && (all || ks->forInstrumentChange()) && ks->tick() == t) {
                 keysigs.push_back(ks);
             }
@@ -191,16 +180,15 @@ std::vector<KeySig*> InstrumentChange::keySigs(bool all) const
 //   clefs
 //---------------------------------------------------------
 
-std::vector<Clef*> InstrumentChange::clefs() const
-{
-    std::vector<Clef*> clefs;
-    Segment* seg = segment()->prev1(SegmentType::Clef);
+std::vector<Clef *> InstrumentChange::clefs() const {
+    std::vector<Clef *> clefs;
+    Segment *seg = segment()->prev1(SegmentType::Clef);
     if (seg) {
         voice_idx_t startVoice = part()->staff(0)->idx() * VOICES;
         voice_idx_t endVoice = part()->staff(part()->nstaves() - 1)->idx() * VOICES;
         Fraction t = tick();
         for (voice_idx_t i = startVoice; i <= endVoice; i += VOICES) {
-            Clef* clef = toClef(seg->element(i));
+            Clef *clef = toClef(seg->element(i));
             if (clef && clef->forInstrumentChange() && clef->tick() == t) {
                 clefs.push_back(clef);
             }
@@ -213,13 +201,10 @@ std::vector<Clef*> InstrumentChange::clefs() const
 //   propertyDefault
 //---------------------------------------------------------
 
-engraving::PropertyValue InstrumentChange::propertyDefault(Pid propertyId) const
-{
+engraving::PropertyValue InstrumentChange::propertyDefault(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::TEXT_STYLE:
-        return TextStyleType::INSTRUMENT_CHANGE;
-    default:
-        return TextBase::propertyDefault(propertyId);
+        case Pid::TEXT_STYLE: return TextStyleType::INSTRUMENT_CHANGE;
+        default: return TextBase::propertyDefault(propertyId);
     }
 }
-}
+} // namespace mu::engraving

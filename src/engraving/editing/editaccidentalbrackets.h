@@ -26,10 +26,9 @@ namespace mu::engraving {
 class Score;
 class Transaction;
 
-class EditAccidentalBrackets
-{
+class EditAccidentalBrackets {
 public:
-    static void addBracket(Transaction& tx, Score* score);
-    static void addBraces(Transaction& tx, Score* score);
+    static void addBracket(Transaction &tx, Score *score);
+    static void addBraces(Transaction &tx, Score *score);
 };
-}
+} // namespace mu::engraving

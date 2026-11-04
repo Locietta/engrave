@@ -34,36 +34,37 @@ class Transaction;
 ///    base class for Symbol and Image
 //---------------------------------------------------------
 
-class BSymbol : public EngravingItem
-{
+class BSymbol : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, BSymbol)
 public:
 
-    Segment* segment() const { return (Segment*)ownershipParent(); }
+    Segment *segment() const { return (Segment *) ownershipParent(); }
 
-    void scanElements(std::function<void(EngravingItem*)> func) override;
+    void scanElements(std::function<void(EngravingItem *)> func) override;
 
-    BSymbol& operator=(const BSymbol&) = delete;
+    BSymbol &operator=(const BSymbol &) = delete;
 
-    void add(EngravingItem*) override;
-    void remove(EngravingItem*) override;
-    bool acceptDrop(EditData&) const override;
-    EngravingItem* drop(Transaction& tx, EditData&) override;
+    void add(EngravingItem *) override;
+    void remove(EngravingItem *) override;
+    bool acceptDrop(EditData &) const override;
+    EngravingItem *drop(Transaction &tx, EditData &) override;
 
     Align align() const { return m_align; }
+
     void setAlign(Align a) { m_align = a; }
 
-    const std::vector<EngravingItem*>& leafs() const { return m_leafs; }
+    const std::vector<EngravingItem *> &leafs() const { return m_leafs; }
+
     PointF pagePos() const override;
     PointF canvasPos() const override;
 
 protected:
-    BSymbol(const ElementType& type, EngravingObject* parent, ElementFlags f = ElementFlag::NOTHING);
-    BSymbol(const BSymbol&);
+    BSymbol(const ElementType &type, EngravingObject *parent, ElementFlags f = ElementFlag::NOTHING);
+    BSymbol(const BSymbol &);
 
 private:
 
-    std::vector<EngravingItem*> m_leafs;
-    Align m_align = { AlignH::LEFT, AlignV::BASELINE };
+    std::vector<EngravingItem *> m_leafs;
+    Align m_align = {AlignH::LEFT, AlignV::BASELINE};
 };
-}
+} // namespace mu::engraving

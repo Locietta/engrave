@@ -35,8 +35,7 @@ enum class EditDataType : signed char {
     TextEditData,
 };
 
-class ElementEditData
-{
+class ElementEditData {
 public:
     virtual ~ElementEditData() = default;
 
@@ -46,16 +45,13 @@ public:
         PropertyFlags f;
     };
 
-    EngravingItem* e = nullptr;
+    EngravingItem *e = nullptr;
     std::vector<PropertyData> propertyData;
 
-    void pushProperty(Pid pid)
-    {
-        propertyData.emplace_back(PropertyData { pid, e->getProperty(pid), e->propertyFlags(pid) });
-    }
+    void pushProperty(Pid pid) { propertyData.emplace_back(PropertyData{pid, e->getProperty(pid), e->propertyFlags(pid)}); }
 
     virtual EditDataType type() { return EditDataType::ElementEditData; }
 };
 
 using ElementEditDataPtr = std::shared_ptr<ElementEditData>;
-}
+} // namespace mu::engraving

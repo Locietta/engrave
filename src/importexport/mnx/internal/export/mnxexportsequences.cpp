@@ -65,18 +65,16 @@ namespace mu::iex::mnxio {
 //   export accidental details into accidentalDisplay
 //---------------------------------------------------------
 
-static void exportAccidentalDetails(mnx::sequence::Note& mnxNote, const Note* note)
-{
-    if (Accidental* acc = note->accidental()) {
+static void exportAccidentalDetails(mnx::sequence::Note &mnxNote, const Note *note) {
+    if (Accidental *acc = note->accidental()) {
         bool force = acc->role() == AccidentalRole::USER;
         const AccidentalBracket bracket = acc->bracket();
         if (force || bracket != AccidentalBracket::NONE) {
             auto accDisp = mnxNote.ensure_accidentalDisplay(acc->visible());
             accDisp.set_force(force);
             if (bracket != AccidentalBracket::NONE) {
-                auto mnxAcciBracket = bracket == AccidentalBracket::PARENTHESIS
-                                      ? mnx::AccidentalEnclosureSymbol::Parentheses
-                                      : mnx::AccidentalEnclosureSymbol::Brackets;
+                auto mnxAcciBracket = bracket == AccidentalBracket::PARENTHESIS ? mnx::AccidentalEnclosureSymbol::Parentheses :
+                                                                                  mnx::AccidentalEnclosureSymbol::Brackets;
                 auto enclosure = accDisp.ensure_enclosure(mnxAcciBracket);
             }
         }
@@ -90,9 +88,8 @@ static void exportAccidentalDetails(mnx::sequence::Note& mnxNote, const Note* no
 //   delta if not
 //---------------------------------------------------------
 
-static int calcWrittenDiatonicDelta(const Note* note)
-{
-    const Staff* staff = note->staff();
+static int calcWrittenDiatonicDelta(const Note *note) {
+    const Staff *staff = note->staff();
     Interval transpose = staff->transpose(note->tick());
     if (transpose.isZero()) {
         return 0;
@@ -103,9 +100,7 @@ static int calcWrittenDiatonicDelta(const Note* note)
     const int writtenPitch = note->pitch() + transpose.chromatic;
     const int concertTpc = note->tpc1();
     const int writtenTpc = note->tpc2();
-    IF_ASSERT_FAILED(tpcIsValid(concertTpc) && tpcIsValid(writtenTpc)) {
-        return 0;
-    }
+    IF_ASSERT_FAILED(tpcIsValid(concertTpc) && tpcIsValid(writtenTpc)) { return 0; }
 
     int expectedWrittenTpc = Transpose::transposeTpc(concertTpc, transpose, true);
     IF_ASSERT_FAILED(tpc2pitch(expectedWrittenTpc) == tpc2pitch(writtenTpc)) {
@@ -121,8 +116,7 @@ static int calcWrittenDiatonicDelta(const Note* note)
     if (std::abs(delta) > maxDelta) {
         LOGW() << "Skipping written pitch override with large diatonic delta:"
                << " concert=" << tpcUserName(concertTpc, concertPitch, true).toStdString()
-               << " transposed=" << tpcUserName(writtenTpc, writtenPitch, true).toStdString()
-               << " delta=" << delta;
+               << " transposed=" << tpcUserName(writtenTpc, writtenPitch, true).toStdString() << " delta=" << delta;
         return 0;
     }
 
@@ -134,12 +128,8 @@ static int calcWrittenDiatonicDelta(const Note* note)
 //   export lyrics on a chord/rest into mnxEvent
 //---------------------------------------------------------
 
-static void createLyrics(mnx::sequence::Event& mnxEvent, const ChordRest* cr,
-                         std::set<std::string>& lyricLineIds)
-{
-    IF_ASSERT_FAILED(cr) {
-        return;
-    }
+static void createLyrics(mnx::sequence::Event &mnxEvent, const ChordRest *cr, std::set<std::string> &lyricLineIds) {
+    IF_ASSERT_FAILED(cr) { return; }
 
     const auto lyrics = cr->lyrics();
     if (lyrics.empty()) {
@@ -149,7 +139,7 @@ static void createLyrics(mnx::sequence::Event& mnxEvent, const ChordRest* cr,
     auto mnxLyrics = mnxEvent.ensure_lyrics();
     auto mnxLines = mnxLyrics.ensure_lines();
 
-    for (const auto& lyric : lyrics) {
+    for (const auto &lyric : lyrics) {
         const std::string lineId = std::to_string(lyric->verse() + 1);
         lyricLineIds.insert(lineId);
         auto mnxLine = mnxLines.append(lineId, lyric->plainText().toStdString());
@@ -164,47 +154,33 @@ static void createLyrics(mnx::sequence::Event& mnxEvent, const ChordRest* cr,
 //   export a single marking from an Articulation instance
 //---------------------------------------------------------
 
-static std::optional<mnx::sequence::EventMarkingBase> createMarking(const Articulation* a,
-                                                                    mnx::sequence::EventMarkings mnxMarkings)
-{
+static std::optional<mnx::sequence::EventMarkingBase> createMarking(const Articulation *a, mnx::sequence::EventMarkings mnxMarkings) {
     const SymId sym = a->symId();
 
     switch (sym) {
-    case SymId::articAccentAbove:
-    case SymId::articAccentBelow:
-        return mnxMarkings.ensure_accent();
-    case SymId::stringsDownBow:
-    case SymId::stringsDownBowTurned:
-        return mnxMarkings.ensure_bowDirection(mnx::MarkingUpDown::Down);
-    case SymId::stringsUpBow:
-    case SymId::stringsUpBowTurned:
-        return mnxMarkings.ensure_bowDirection(mnx::MarkingUpDown::Up);
-    case SymId::articSoftAccentAbove:
-    case SymId::articSoftAccentBelow:
-        return mnxMarkings.ensure_softAccent();
-    case SymId::articStaccatoAbove:
-    case SymId::articStaccatoBelow:
-        return mnxMarkings.ensure_staccato();
-    case SymId::articStaccatissimoAbove:
-    case SymId::articStaccatissimoBelow:
-        return mnxMarkings.ensure_staccatissimo();
-    case SymId::articStaccatissimoStrokeAbove:
-    case SymId::articStaccatissimoStrokeBelow:
-        return mnxMarkings.ensure_spiccato();
-    case SymId::articStressAbove:
-    case SymId::articStressBelow:
-        return mnxMarkings.ensure_stress();
-    case SymId::articUnstressAbove:
-    case SymId::articUnstressBelow:
-        return mnxMarkings.ensure_unstress();
-    case SymId::articMarcatoAbove:
-    case SymId::articMarcatoBelow:
-        return mnxMarkings.ensure_strongAccent();
-    case SymId::articTenutoAbove:
-    case SymId::articTenutoBelow:
-        return mnxMarkings.ensure_tenuto();
-    default:
-        break;
+        case SymId::articAccentAbove:
+        case SymId::articAccentBelow: return mnxMarkings.ensure_accent();
+        case SymId::stringsDownBow:
+        case SymId::stringsDownBowTurned: return mnxMarkings.ensure_bowDirection(mnx::MarkingUpDown::Down);
+        case SymId::stringsUpBow:
+        case SymId::stringsUpBowTurned: return mnxMarkings.ensure_bowDirection(mnx::MarkingUpDown::Up);
+        case SymId::articSoftAccentAbove:
+        case SymId::articSoftAccentBelow: return mnxMarkings.ensure_softAccent();
+        case SymId::articStaccatoAbove:
+        case SymId::articStaccatoBelow: return mnxMarkings.ensure_staccato();
+        case SymId::articStaccatissimoAbove:
+        case SymId::articStaccatissimoBelow: return mnxMarkings.ensure_staccatissimo();
+        case SymId::articStaccatissimoStrokeAbove:
+        case SymId::articStaccatissimoStrokeBelow: return mnxMarkings.ensure_spiccato();
+        case SymId::articStressAbove:
+        case SymId::articStressBelow: return mnxMarkings.ensure_stress();
+        case SymId::articUnstressAbove:
+        case SymId::articUnstressBelow: return mnxMarkings.ensure_unstress();
+        case SymId::articMarcatoAbove:
+        case SymId::articMarcatoBelow: return mnxMarkings.ensure_strongAccent();
+        case SymId::articTenutoAbove:
+        case SymId::articTenutoBelow: return mnxMarkings.ensure_tenuto();
+        default: break;
     }
 
     return std::nullopt;
@@ -216,9 +192,8 @@ static std::optional<mnx::sequence::EventMarkingBase> createMarking(const Articu
 //   events and full measure rests
 //---------------------------------------------------------
 
-template<typename EventType>
-void static processAnnotations(EventType& mnxEvent, ChordRest* cr)
-{
+template <typename EventType>
+void static processAnnotations(EventType &mnxEvent, ChordRest *cr) {
     // Grace notes are parented to their main chord, not directly to a segment.
     // Segment-anchored annotations such as fermatas belong to the main chord's
     // segment and must not be re-exported from each grace note event.
@@ -226,16 +201,14 @@ void static processAnnotations(EventType& mnxEvent, ChordRest* cr)
         return;
     }
 
-    if (Segment* seg = cr->segment()) {
-        for (EngravingItem* ann : seg->annotations()) {
+    if (Segment *seg = cr->segment()) {
+        for (EngravingItem *ann : seg->annotations()) {
             if (!ann || ann->track() != cr->track()) {
                 continue;
             }
             if (ann->isFermata()) {
-                const Fermata* fermata = toFermata(ann);
-                IF_ASSERT_FAILED(fermata) {
-                    continue;
-                }
+                const Fermata *fermata = toFermata(ann);
+                IF_ASSERT_FAILED(fermata) { continue; }
                 mnxEvent.set_fermata(MnxExporter::mnxFermataFromFermata(fermata));
                 /// @note MNX currently can only store one barline fermata per measure stack.
                 /// To keep the loop clean for future expansion, this code deliberately
@@ -252,25 +225,20 @@ void static processAnnotations(EventType& mnxEvent, ChordRest* cr)
 //   tremolo
 //---------------------------------------------------------
 
-void MnxExporter::createMarkings(mnx::sequence::Event& mnxEvent, ChordRest* cr)
-{
-    IF_ASSERT_FAILED(cr) {
-        return;
-    }
+void MnxExporter::createMarkings(mnx::sequence::Event &mnxEvent, ChordRest *cr) {
+    IF_ASSERT_FAILED(cr) { return; }
 
     if (cr->isChord()) {
-        const Chord* chord = toChord(cr);
-        for (Articulation* a : chord->articulations()) {
-            IF_ASSERT_FAILED(a) {
-                continue;
-            }
+        const Chord *chord = toChord(cr);
+        for (Articulation *a : chord->articulations()) {
+            IF_ASSERT_FAILED(a) { continue; }
             auto mnxMarkings = mnxEvent.ensure_markings();
             if (auto marking = createMarking(a, mnxMarkings)) {
                 marking->set_or_clear_orient(toMnxOrientation(a->anchor()));
             }
         }
 
-        if (const TremoloSingleChord* trem = chord->tremoloSingleChord()) {
+        if (const TremoloSingleChord *trem = chord->tremoloSingleChord()) {
             const int marks = int(trem->tremoloType()) - int(TremoloType::R8) + 1;
             DO_ASSERT(marks > 0);
             if (marks > 0) {
@@ -280,7 +248,7 @@ void MnxExporter::createMarkings(mnx::sequence::Event& mnxEvent, ChordRest* cr)
         }
     }
 
-    if (Breath* breath = cr->hasBreathMark()) {
+    if (Breath *breath = cr->hasBreathMark()) {
         auto mnxMarkings = mnxEvent.ensure_markings();
         auto mnxBreath = mnxMarkings.ensure_breath();
         mnxBreath.set_or_clear_orient(toMnxOrientation(breath->placement()));
@@ -296,13 +264,10 @@ void MnxExporter::createMarkings(mnx::sequence::Event& mnxEvent, ChordRest* cr)
 //   tupletContainsChordRest
 //---------------------------------------------------------
 
-static bool tupletContainsChordRest(const Tuplet* tuplet, const ChordRest* chordRest)
-{
-    IF_ASSERT_FAILED(tuplet && chordRest) {
-        return false;
-    }
+static bool tupletContainsChordRest(const Tuplet *tuplet, const ChordRest *chordRest) {
+    IF_ASSERT_FAILED(tuplet && chordRest) { return false; }
 
-    for (const DurationElement* element : tuplet->elements()) {
+    for (const DurationElement *element : tuplet->elements()) {
         if (!element) {
             continue;
         }
@@ -325,13 +290,10 @@ static bool tupletContainsChordRest(const Tuplet* tuplet, const ChordRest* chord
 //   firstTupletChordRest
 //---------------------------------------------------------
 
-static ChordRest* firstTupletChordRest(const Tuplet* tuplet)
-{
-    IF_ASSERT_FAILED(tuplet) {
-        return nullptr;
-    }
+static ChordRest *firstTupletChordRest(const Tuplet *tuplet) {
+    IF_ASSERT_FAILED(tuplet) { return nullptr; }
 
-    for (DurationElement* element : tuplet->elements()) {
+    for (DurationElement *element : tuplet->elements()) {
         if (!element) {
             continue;
         }
@@ -339,7 +301,7 @@ static ChordRest* firstTupletChordRest(const Tuplet* tuplet)
             return toChordRest(element);
         }
         if (element->isTuplet()) {
-            if (ChordRest* nested = firstTupletChordRest(toTuplet(element))) {
+            if (ChordRest *nested = firstTupletChordRest(toTuplet(element))) {
                 return nested;
             }
         }
@@ -352,13 +314,10 @@ static ChordRest* firstTupletChordRest(const Tuplet* tuplet)
 //   emits MNX ties for the given note
 //---------------------------------------------------------
 
-void MnxExporter::createTies(mnx::sequence::NoteBase& mnxNote, Note* note)
-{
-    IF_ASSERT_FAILED(note) {
-        return;
-    }
+void MnxExporter::createTies(mnx::sequence::NoteBase &mnxNote, Note *note) {
+    IF_ASSERT_FAILED(note) { return; }
 
-    auto appendTie = [&](Note* targetNote, const Tie* dirTie, bool isCrossJump) {
+    auto appendTie = [&](Note *targetNote, const Tie *dirTie, bool isCrossJump) {
         IF_ASSERT_FAILED(targetNote) {
             LOGW() << "Skipping tie with missing target note.";
             return;
@@ -386,7 +345,7 @@ void MnxExporter::createTies(mnx::sequence::NoteBase& mnxNote, Note* note)
         }
     };
 
-    Tie* tieFor = note->tieFor();
+    Tie *tieFor = note->tieFor();
     if (tieFor && !tieFor->isPartialTie()) {
         if (tieFor->isLaissezVib()) {
             auto mnxTie = mnxNote.ensure_ties().append();
@@ -400,12 +359,12 @@ void MnxExporter::createTies(mnx::sequence::NoteBase& mnxNote, Note* note)
         }
     }
 
-    const TieJumpPointList* jumpPoints = note->tieJumpPoints();
+    const TieJumpPointList *jumpPoints = note->tieJumpPoints();
     if (!jumpPoints || jumpPoints->empty()) {
         return;
     }
 
-    for (const TieJumpPoint* jumpPoint : *jumpPoints) {
+    for (const TieJumpPoint *jumpPoint : *jumpPoints) {
         if (!jumpPoint || !jumpPoint->active() || jumpPoint->followingNote()) {
             continue;
         }
@@ -420,16 +379,13 @@ void MnxExporter::createTies(mnx::sequence::NoteBase& mnxNote, Note* note)
 //   returns true when appended
 //---------------------------------------------------------
 
-bool MnxExporter::createNotes(mnx::sequence::Event& mnxEvent, ChordRest* chordRest)
-{
+bool MnxExporter::createNotes(mnx::sequence::Event &mnxEvent, ChordRest *chordRest) {
     using MnxNote = mnx::sequence::Note;
     using MnxKitNote = mnx::sequence::KitNote;
 
-    IF_ASSERT_FAILED(chordRest->isChord()) {
-        return false;
-    }
+    IF_ASSERT_FAILED(chordRest->isChord()) { return false; }
 
-    auto appendKitNote = [&](mnx::Array<MnxKitNote>& mnxKitNotes, Note* note) -> bool {
+    auto appendKitNote = [&](mnx::Array<MnxKitNote> &mnxKitNotes, Note *note) -> bool {
         const int pitch = note->pitch();
         if (!pitchIsValid(pitch)) {
             LOGW() << "Skipping kit note with invalid MIDI pitch: " << pitch;
@@ -442,7 +398,7 @@ bool MnxExporter::createNotes(mnx::sequence::Event& mnxEvent, ChordRest* chordRe
         return true;
     };
 
-    auto appendNote = [&](mnx::Array<MnxNote>& mnxNotes, Note* note) -> bool {
+    auto appendNote = [&](mnx::Array<MnxNote> &mnxNotes, Note *note) -> bool {
         const auto pitch = toMnxPitch(note);
         if (!pitch) {
             LOGW() << "Skipping note with unsupported pitch.";
@@ -459,19 +415,19 @@ bool MnxExporter::createNotes(mnx::sequence::Event& mnxEvent, ChordRest* chordRe
         return true;
     };
 
-    const Chord* chord = toChord(chordRest);
-    const std::vector<Note*>& chordNotes = chord->notes();
+    const Chord *chord = toChord(chordRest);
+    const std::vector<Note *> &chordNotes = chord->notes();
     IF_ASSERT_FAILED(!chordNotes.empty()) {
         LOGW() << "Skipping chord event with no notes.";
         return false;
     }
 
-    const Staff* staff = chord->staff();
+    const Staff *staff = chord->staff();
     const bool isDrumset = staff && staff->isDrumStaff(chord->tick());
     if (isDrumset) {
         auto mnxKitNotes = mnxEvent.ensure_kitNotes();
         bool hasNote = false;
-        for (Note* note : chordNotes) {
+        for (Note *note : chordNotes) {
             hasNote = appendKitNote(mnxKitNotes, note) || hasNote;
         }
         if (!hasNote) {
@@ -483,7 +439,7 @@ bool MnxExporter::createNotes(mnx::sequence::Event& mnxEvent, ChordRest* chordRe
 
     auto mnxNotes = mnxEvent.ensure_notes();
     bool hasNote = false;
-    for (Note* note : chordNotes) {
+    for (Note *note : chordNotes) {
         hasNote = appendNote(mnxNotes, note) || hasNote;
     }
     if (!hasNote) {
@@ -500,16 +456,13 @@ bool MnxExporter::createNotes(mnx::sequence::Event& mnxEvent, ChordRest* chordRe
 //   returns true when appended
 //---------------------------------------------------------
 
-bool MnxExporter::createRest(mnx::sequence::Event& mnxEvent, ChordRest* chordRest)
-{
-    IF_ASSERT_FAILED(chordRest->isRest()) {
-        return false;
-    }
+bool MnxExporter::createRest(mnx::sequence::Event &mnxEvent, ChordRest *chordRest) {
+    IF_ASSERT_FAILED(chordRest->isRest()) { return false; }
     auto mnxRest = mnxEvent.ensure_rest();
 
     if (m_exportRestPositions) {
-        if (Rest* rest = toRest(chordRest)) {
-            const Staff* staff = rest->staff();
+        if (Rest *rest = toRest(chordRest)) {
+            const Staff *staff = rest->staff();
             if (staff && rest->ldata() && rest->ldata()->isSetPos()) {
                 const double lineDist = staff->lineDistance(rest->tick());
                 const double staffStep = lineDist * rest->spatium() * 0.5; // half-space
@@ -535,40 +488,27 @@ bool MnxExporter::createRest(mnx::sequence::Event& mnxEvent, ChordRest* chordRes
 //   emits MNX beams for a single primary beam group
 //---------------------------------------------------------
 
-void MnxExporter::createBeam(ExportContext& ctx, ChordRest* chordRest)
-{
-    IF_ASSERT_FAILED(chordRest) {
-        return;
-    }
+void MnxExporter::createBeam(ExportContext &ctx, ChordRest *chordRest) {
+    IF_ASSERT_FAILED(chordRest) { return; }
 
-    Beam* beam = chordRest->beam();
+    Beam *beam = chordRest->beam();
     if (!beam) {
         return;
     }
-    const std::vector<ChordRest*>& elements = beam->elements();
+    const std::vector<ChordRest *> &elements = beam->elements();
     if (elements.empty() || elements.front() != chordRest) {
         return;
     }
-    IF_ASSERT_FAILED(elements.front()->measure() == ctx.measure) {
-        return;
-    }
+    IF_ASSERT_FAILED(elements.front()->measure() == ctx.measure) { return; }
     /// @todo Handle beams that cross system breaks, rather than just mirroring layout segments.
     /// This work is deferred on the chance that it may become much simpler if
     /// MuseScore also implements beams across system breaks.
 
     auto mnxBeams = ctx.mnxMeasure.ensure_beams();
 
-    enum class BeamAction {
-        Begin,
-        Continue,
-        End,
-        ForwardHook,
-        BackwardHook
-    };
+    enum class BeamAction { Begin, Continue, End, ForwardHook, BackwardHook };
 
-    auto appendBeamLevel = [&](auto&& self,
-                               mnx::Array<mnx::part::Beam>& mnxBeamArray,
-                               const std::vector<ChordRest*>& beamElements,
+    auto appendBeamLevel = [&](auto &&self, mnx::Array<mnx::part::Beam> &mnxBeamArray, const std::vector<ChordRest *> &beamElements,
                                size_t startIdx, size_t endIdx, int level) -> void {
         auto beamActionForLevel = [&](size_t idx) -> std::optional<BeamAction> {
             int prevBeams = -1;
@@ -586,11 +526,9 @@ void MnxExporter::createBeam(ExportContext& ctx, ChordRest* chordRest)
                 nextBeamMode = beamElements[idx + 1]->beamMode();
             }
 
-            auto participates = [&](int beams) {
-                return beams >= level;
-            };
+            auto participates = [&](int beams) { return beams >= level; };
 
-            const bool curPart  = participates(currentBeams);
+            const bool curPart = participates(currentBeams);
             const bool prevPart = participates(prevBeams);
             const bool nextPart = participates(nextBeams);
 
@@ -600,13 +538,10 @@ void MnxExporter::createBeam(ExportContext& ctx, ChordRest* chordRest)
             }
 
             // Forced begins from BeamMode (but still only on participants)
-            const bool forcedBegin
-                =(currentBeamMode == BeamMode::BEGIN16 && level > 1)
-                  || (currentBeamMode == BeamMode::BEGIN32 && level > 2);
+            const bool forcedBegin =
+                (currentBeamMode == BeamMode::BEGIN16 && level > 1) || (currentBeamMode == BeamMode::BEGIN32 && level > 2);
 
-            const bool forcedEnd
-                =(nextBeamMode == BeamMode::BEGIN16 && level > 1)
-                  || (nextBeamMode == BeamMode::BEGIN32 && level > 2);
+            const bool forcedEnd = (nextBeamMode == BeamMode::BEGIN16 && level > 1) || (nextBeamMode == BeamMode::BEGIN32 && level > 2);
 
             // Isolated at this level => hook
             if (!prevPart && !nextPart) {
@@ -651,16 +586,12 @@ void MnxExporter::createBeam(ExportContext& ctx, ChordRest* chordRest)
                 currentStart = idx;
                 currentBeam->events().push_back(eventId);
             } else if (action == BeamAction::Continue) {
-                IF_ASSERT_FAILED(currentBeam) {
-                    continue;
-                }
+                IF_ASSERT_FAILED(currentBeam) { continue; }
                 currentBeam->events().push_back(eventId);
             } else if (action == BeamAction::End) {
-                IF_ASSERT_FAILED(currentBeam && currentStart) {
-                    continue;
-                }
+                IF_ASSERT_FAILED(currentBeam && currentStart) { continue; }
                 currentBeam->events().push_back(eventId);
-                ranges.push_back(BeamRange { currentBeam.value(), currentStart.value(), idx });
+                ranges.push_back(BeamRange{currentBeam.value(), currentStart.value(), idx});
                 currentBeam.reset();
                 currentStart.reset();
             } else if (action == BeamAction::ForwardHook || action == BeamAction::BackwardHook) {
@@ -671,7 +602,7 @@ void MnxExporter::createBeam(ExportContext& ctx, ChordRest* chordRest)
             }
         }
 
-        for (auto& range : ranges) {
+        for (auto &range : ranges) {
             bool hasNested = false;
             for (size_t idx = range.startIdx; idx <= range.endIdx; ++idx) {
                 if (beamElements[idx]->beams() >= level + 1) {
@@ -696,8 +627,7 @@ void MnxExporter::createBeam(ExportContext& ctx, ChordRest* chordRest)
 //   returns true when appended
 //---------------------------------------------------------
 
-bool MnxExporter::appendEvent(mnx::sequence::SequenceContent content, ExportContext& ctx, ChordRest* chordRest)
-{
+bool MnxExporter::appendEvent(mnx::sequence::SequenceContent content, ExportContext &ctx, ChordRest *chordRest) {
     const TDuration duration = chordRest->durationType();
     IF_ASSERT_FAILED(duration.type() != DurationType::V_MEASURE) {
         LOGW() << "appendEvent received V_MEASURE duration; full-measure rests must be exported via sequence.fullMeasure.";
@@ -708,17 +638,15 @@ bool MnxExporter::appendEvent(mnx::sequence::SequenceContent content, ExportCont
     if (isRest && (!chordRest->visible() || toRest(chordRest)->isGap())) {
         /// @todo Revisit doing this for `!visible()` if MNX adds support for explicit rest visibility.
         const Fraction gapTicks = chordRest->ticks();
-        const mnx::FractionValue gapDuration(
-            static_cast<mnx::FractionValue::NumType>(gapTicks.numerator()),
-            static_cast<mnx::FractionValue::NumType>(gapTicks.denominator()));
+        const mnx::FractionValue gapDuration(static_cast<mnx::FractionValue::NumType>(gapTicks.numerator()),
+                                             static_cast<mnx::FractionValue::NumType>(gapTicks.denominator()));
         content.appendSpace(gapDuration);
         return true;
     }
 
     const auto noteValue = toMnxNoteValue(duration);
     if (!noteValue) {
-        LOGW() << "Skipping ChordRest with unsupported MNX duration type: "
-               << static_cast<int>(duration.type());
+        LOGW() << "Skipping ChordRest with unsupported MNX duration type: " << static_cast<int>(duration.type());
         return false;
     }
     auto mnxEvent = content.appendEvent(noteValue->base, noteValue->dots);
@@ -746,8 +674,7 @@ bool MnxExporter::appendEvent(mnx::sequence::SequenceContent content, ExportCont
     }
     /// @note slurs are created in exportSpanners
 
-    const bool success = isRest ? createRest(mnxEvent, chordRest)
-                         : createNotes(mnxEvent, chordRest);
+    const bool success = isRest ? createRest(mnxEvent, chordRest) : createNotes(mnxEvent, chordRest);
 
     if (success) {
         m_crToMnxEvent.emplace(chordRest, mnxEvent.pointer());
@@ -766,9 +693,7 @@ bool MnxExporter::appendEvent(mnx::sequence::SequenceContent content, ExportCont
 //   emit a grace container and recurse into its content
 //---------------------------------------------------------
 
-void MnxExporter::appendGrace(mnx::sequence::SequenceContent content, ExportContext& ctx,
-                              GraceNotesGroup& graceNotes)
-{
+void MnxExporter::appendGrace(mnx::sequence::SequenceContent content, ExportContext &ctx, GraceNotesGroup &graceNotes) {
     if (graceNotes.empty()) {
         return;
     }
@@ -778,8 +703,7 @@ void MnxExporter::appendGrace(mnx::sequence::SequenceContent content, ExportCont
     for (size_t start = 0; start < graceNotes.size();) {
         const bool slash = graceNotes[start]->showStemSlash();
         size_t end = start + 1;
-        while (end < graceNotes.size()
-               && graceNotes[end]->showStemSlash() == slash) {
+        while (end < graceNotes.size() && graceNotes[end]->showStemSlash() == slash) {
             ++end;
         }
 
@@ -787,7 +711,7 @@ void MnxExporter::appendGrace(mnx::sequence::SequenceContent content, ExportCont
         mnxGrace.set_slash(slash);
         /// @todo Grace note playback type has no obvious mapping from MuseScore. Revisit as appropriate.
 
-        std::vector<ChordRest*> graceChordRests;
+        std::vector<ChordRest *> graceChordRests;
         graceChordRests.reserve(end - start);
         for (size_t i = start; i < end; ++i) {
             graceChordRests.push_back(graceNotes[i]);
@@ -803,14 +727,11 @@ void MnxExporter::appendGrace(mnx::sequence::SequenceContent content, ExportCont
 //   find highest tuplet not already on the stack
 //---------------------------------------------------------
 
-const Tuplet* MnxExporter::findTopTuplet(ChordRest* chordRest, const ExportContext& ctx) const
-{
-    const Tuplet* tuplet = chordRest ? chordRest->tuplet() : nullptr;
-    const Tuplet* topMost = nullptr;
-    for (const Tuplet* cursor = tuplet; cursor; cursor = cursor->tuplet()) {
-        const bool activeTuplet = std::find(ctx.tupletStack.begin(),
-                                            ctx.tupletStack.end(), cursor)
-                                  != ctx.tupletStack.end();
+const Tuplet *MnxExporter::findTopTuplet(ChordRest *chordRest, const ExportContext &ctx) const {
+    const Tuplet *tuplet = chordRest ? chordRest->tuplet() : nullptr;
+    const Tuplet *topMost = nullptr;
+    for (const Tuplet *cursor = tuplet; cursor; cursor = cursor->tuplet()) {
+        const bool activeTuplet = std::find(ctx.tupletStack.begin(), ctx.tupletStack.end(), cursor) != ctx.tupletStack.end();
         if (!activeTuplet) {
             topMost = cursor;
         }
@@ -824,18 +745,14 @@ const Tuplet* MnxExporter::findTopTuplet(ChordRest* chordRest, const ExportConte
 //   returns last processed index
 //---------------------------------------------------------
 
-size_t MnxExporter::appendTuplet(mnx::sequence::SequenceContent content, ExportContext& ctx,
-                                 const std::vector<ChordRest*>& chordRests, size_t idx,
-                                 ChordRest* chordRest, const Tuplet* tuplet)
-{
-    IF_ASSERT_FAILED(tuplet) {
-        return idx;
-    }
+size_t MnxExporter::appendTuplet(mnx::sequence::SequenceContent content, ExportContext &ctx, const std::vector<ChordRest *> &chordRests,
+                                 size_t idx, ChordRest *chordRest, const Tuplet *tuplet) {
+    IF_ASSERT_FAILED(tuplet) { return idx; }
 
-    std::vector<ChordRest*> tupletChordRests;
+    std::vector<ChordRest *> tupletChordRests;
     size_t lastTupletIdx = idx;
     for (size_t scan = idx; scan < chordRests.size(); ++scan) {
-        ChordRest* scanCR = chordRests[scan];
+        ChordRest *scanCR = chordRests[scan];
         if (tupletContainsChordRest(tuplet, scanCR)) {
             tupletChordRests.push_back(scanCR);
             lastTupletIdx = scan;
@@ -855,16 +772,14 @@ size_t MnxExporter::appendTuplet(mnx::sequence::SequenceContent content, ExportC
     }
 
     if (chordRest->isChord()) {
-        const Chord* chord = toChord(chordRest);
+        const Chord *chord = toChord(chordRest);
         if (ctx.graceBeforeEmitted.insert(chordRest).second) {
             appendGrace(content, ctx, chord->graceNotesBefore());
         }
     }
 
-    auto inner = mnx::NoteValueQuantity::make(static_cast<unsigned>(ratio.numerator()),
-                                              *baseNoteValue);
-    auto outer = mnx::NoteValueQuantity::make(static_cast<unsigned>(ratio.denominator()),
-                                              *baseNoteValue);
+    auto inner = mnx::NoteValueQuantity::make(static_cast<unsigned>(ratio.numerator()), *baseNoteValue);
+    auto outer = mnx::NoteValueQuantity::make(static_cast<unsigned>(ratio.denominator()), *baseNoteValue);
     auto mnxTuplet = content.appendTuplet(inner, outer);
     mnxTuplet.set_or_clear_showNumber(toMnxTupletNumberType(tuplet->numberType()));
     mnxTuplet.set_or_clear_bracket(toMnxTupletBracketType(tuplet->bracketType()));
@@ -873,7 +788,7 @@ size_t MnxExporter::appendTuplet(mnx::sequence::SequenceContent content, ExportC
     ctx.tupletStack.push_back(tuplet);
     appendContent(mnxTuplet.content(), ctx, tupletChordRests, ContentContext::Tuplet);
     ctx.tupletStack.pop_back();
-    const ChordRest* lastTupletCR = tupletChordRests.back();
+    const ChordRest *lastTupletCR = tupletChordRests.back();
     if (lastTupletCR && lastTupletCR->isChord()) {
         if (ctx.graceAfterEmitted.insert(lastTupletCR).second) {
             appendGrace(content, ctx, toChord(lastTupletCR)->graceNotesAfter());
@@ -888,12 +803,10 @@ size_t MnxExporter::appendTuplet(mnx::sequence::SequenceContent content, ExportC
 //   returns last processed index
 //---------------------------------------------------------
 
-size_t MnxExporter::appendTremolo(mnx::sequence::SequenceContent content, ExportContext& ctx,
-                                  const std::vector<ChordRest*>& chordRests, size_t idx,
-                                  ChordRest* chordRest)
-{
-    Chord* chord = chordRest->isChord() ? toChord(chordRest) : nullptr;
-    const TremoloTwoChord* tremolo = chord ? chord->tremoloTwoChord() : nullptr;
+size_t MnxExporter::appendTremolo(mnx::sequence::SequenceContent content, ExportContext &ctx, const std::vector<ChordRest *> &chordRests,
+                                  size_t idx, ChordRest *chordRest) {
+    Chord *chord = chordRest->isChord() ? toChord(chordRest) : nullptr;
+    const TremoloTwoChord *tremolo = chord ? chord->tremoloTwoChord() : nullptr;
     IF_ASSERT_FAILED(chord && tremolo) {
         LOGW() << "Skipping ChordRest that is not part of a tremolo.";
         return idx;
@@ -904,7 +817,7 @@ size_t MnxExporter::appendTremolo(mnx::sequence::SequenceContent content, Export
         return idx;
     }
 
-    Chord* chord2 = tremolo->chord2();
+    Chord *chord2 = tremolo->chord2();
     IF_ASSERT_FAILED(chord2) {
         LOGW() << "Skipping tremolo with missing second chord.";
         return idx;
@@ -945,7 +858,7 @@ size_t MnxExporter::appendTremolo(mnx::sequence::SequenceContent content, Export
     auto mnxTremolo = content.appendMultiNoteTremolo(marks, outer);
     /// @todo Perhaps export tremolo individual duration if MNX provides clarity about it.
 
-    std::vector<ChordRest*> tremoloChordRests { chordRest, chord2 };
+    std::vector<ChordRest *> tremoloChordRests{chordRest, chord2};
     if (ctx.graceBeforeEmitted.insert(chordRest).second) {
         appendGrace(content, ctx, chord->graceNotesBefore());
     }
@@ -961,12 +874,10 @@ size_t MnxExporter::appendTremolo(mnx::sequence::SequenceContent content, Export
 //   walk chord/rest events into MNX content
 //---------------------------------------------------------
 
-void MnxExporter::appendContent(mnx::sequence::SequenceContent content, ExportContext& ctx,
-                                const std::vector<ChordRest*>& chordRests,
-                                ContentContext context)
-{
+void MnxExporter::appendContent(mnx::sequence::SequenceContent content, ExportContext &ctx, const std::vector<ChordRest *> &chordRests,
+                                ContentContext context) {
     for (size_t idx = 0; idx < chordRests.size(); ++idx) {
-        ChordRest* chordRest = chordRests[idx];
+        ChordRest *chordRest = chordRests[idx];
         IF_ASSERT_FAILED(chordRest) {
             LOGW() << "Skipping null ChordRest while exporting MNX content.";
             continue;
@@ -983,32 +894,27 @@ void MnxExporter::appendContent(mnx::sequence::SequenceContent content, ExportCo
 
         if (!inGrace) {
             if (chordRest->tuplet()) {
-                const Tuplet* topMost = findTopTuplet(chordRest, ctx);
+                const Tuplet *topMost = findTopTuplet(chordRest, ctx);
                 if (topMost && firstTupletChordRest(topMost) == chordRest) {
-                    const size_t lastIdx = appendTuplet(content, ctx, chordRests, idx,
-                                                        chordRest, topMost);
+                    const size_t lastIdx = appendTuplet(content, ctx, chordRests, idx, chordRest, topMost);
                     if (lastIdx >= idx) {
                         idx = lastIdx;
                         continue;
                     }
-                    IF_ASSERT_FAILED(lastIdx < idx) {
-                        LOGW() << "Invalid index returned by appendTuplet.";
-                    }
+                    IF_ASSERT_FAILED(lastIdx < idx) { LOGW() << "Invalid index returned by appendTuplet."; }
                 }
             }
             if (chordRest->isChord() && toChord(chordRest)->tremoloTwoChord()) {
                 if (!inTremolo) {
-                    const Chord* chord = toChord(chordRest);
-                    const TremoloTwoChord* tremolo = chord->tremoloTwoChord();
+                    const Chord *chord = toChord(chordRest);
+                    const TremoloTwoChord *tremolo = chord->tremoloTwoChord();
                     if (tremolo && tremolo->chord1() == chordRest) {
                         const size_t lastIdx = appendTremolo(content, ctx, chordRests, idx, chordRest);
                         if (lastIdx >= idx) {
                             idx = lastIdx;
                             continue;
                         }
-                        IF_ASSERT_FAILED(lastIdx < idx) {
-                            LOGW() << "Invalid index returned by appendTremolo.";
-                        }
+                        IF_ASSERT_FAILED(lastIdx < idx) { LOGW() << "Invalid index returned by appendTremolo."; }
                     }
                 }
             }
@@ -1036,8 +942,7 @@ void MnxExporter::appendContent(mnx::sequence::SequenceContent content, ExportCo
 //   createSequences
 //---------------------------------------------------------
 
-void MnxExporter::createSequences(const Part* part, const Measure* measure, mnx::part::Measure& mnxMeasure)
-{
+void MnxExporter::createSequences(const Part *part, const Measure *measure, mnx::part::Measure &mnxMeasure) {
     const size_t staves = part->nstaves();
     const track_idx_t partStartTrack = part->trackRange().startTrack;
     auto mnxSequences = mnxMeasure.sequences();
@@ -1045,12 +950,10 @@ void MnxExporter::createSequences(const Part* part, const Measure* measure, mnx:
     for (size_t staffIdx = 0; staffIdx < staves; ++staffIdx) {
         for (voice_idx_t voice = 0; voice < VOICES; ++voice) {
             const track_idx_t curTrackIdx = partStartTrack + VOICES * staffIdx + voice;
-            std::vector<ChordRest*> chordRests;
+            std::vector<ChordRest *> chordRests;
 
-            for (Segment* segment = measure->first(SegmentType::ChordRest);
-                 segment;
-                 segment = segment->next(SegmentType::ChordRest)) {
-                EngravingItem* item = segment->element(curTrackIdx);
+            for (Segment *segment = measure->first(SegmentType::ChordRest); segment; segment = segment->next(SegmentType::ChordRest)) {
+                EngravingItem *item = segment->element(curTrackIdx);
                 if (!item) {
                     continue;
                 }
@@ -1068,9 +971,9 @@ void MnxExporter::createSequences(const Part* part, const Measure* measure, mnx:
             mnxSequence.set_voice(makeMnxVoiceIdFromTrack(mnxSequence.staff(), curTrackIdx));
 
             if (chordRests.size() == 1) {
-                ChordRest* onlyCr = chordRests.front();
+                ChordRest *onlyCr = chordRests.front();
                 if (onlyCr->isRest()) {
-                    Rest* rest = toRest(onlyCr);
+                    Rest *rest = toRest(onlyCr);
                     if (rest->durationType().isMeasure()) {
                         if (rest->visible() && !rest->isGap()) {
                             auto fullMeasure = mnxSequence.ensure_fullMeasure();

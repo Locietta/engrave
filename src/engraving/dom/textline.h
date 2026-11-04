@@ -32,51 +32,50 @@ class Note;
 //   @@ TextLineSegment
 //---------------------------------------------------------
 
-class TextLineSegment final : public TextLineBaseSegment
-{
+class TextLineSegment final : public TextLineBaseSegment {
     OBJECT_ALLOCATOR(engraving, TextLineSegment)
     DECLARE_CLASSOF(ElementType::TEXTLINE_SEGMENT)
 
 public:
-    TextLineSegment(TextLine* sp, bool system=false);
+    TextLineSegment(TextLine *sp, bool system = false);
 
-    TextLineSegment* clone() const override { return new TextLineSegment(*this); }
+    TextLineSegment *clone() const override { return new TextLineSegment(*this); }
 
     void initStyle();
 
-    virtual EngravingObject* propertyDelegate(Pid) const override;
+    virtual EngravingObject *propertyDelegate(Pid) const override;
 
-    TextLine* textLine() const { return toTextLine(spanner()); }
+    TextLine *textLine() const { return toTextLine(spanner()); }
 };
 
 //---------------------------------------------------------
 //   @@ TextLine
 //---------------------------------------------------------
 
-class TextLine final : public TextLineBase
-{
+class TextLine final : public TextLineBase {
     OBJECT_ALLOCATOR(engraving, TextLine)
     DECLARE_CLASSOF(ElementType::TEXTLINE)
 
 public:
-    TextLine(DummyParentOr<EngravingItem> parent, bool system=false);
-    TextLine(const TextLine&);
+    TextLine(DummyParentOr<EngravingItem> parent, bool system = false);
+    TextLine(const TextLine &);
+
     ~TextLine() {}
 
-    void undoChangeProperty(Pid id, const PropertyValue&, PropertyFlags ps) override;
+    void undoChangeProperty(Pid id, const PropertyValue &, PropertyFlags ps) override;
 
-    TextLine* clone() const override { return new TextLine(*this); }
+    TextLine *clone() const override { return new TextLine(*this); }
 
     Anchor anchor() const override { return Anchor::SEGMENT; }
 
     void initStyle();
 
-    LineSegment* createLineSegment() override;
+    LineSegment *createLineSegment() override;
 
     bool allowTimeAnchor() const override;
 
     PropertyValue propertyDefault(Pid) const override;
-    bool setProperty(Pid id, const PropertyValue&) override;
+    bool setProperty(Pid id, const PropertyValue &) override;
     PropertyValue getProperty(Pid id) const override;
 
 protected:

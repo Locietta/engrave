@@ -4,15 +4,13 @@
 #include "logger.h"
 #include "types/string.h"
 
-int main(int argc, char** argv)
-{
+int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
 
-TEST(Diagnostics, DisabledMessagesDoNotEvaluateOperands)
-{
-    auto* logger = muse::logger::Logger::instance();
+TEST(Diagnostics, DisabledMessagesDoNotEvaluateOperands) {
+    auto *logger = muse::logger::Logger::instance();
     logger->setLevel(muse::logger::Level::Off);
     int calls = 0;
     LOGE() << ++calls;
@@ -22,21 +20,19 @@ TEST(Diagnostics, DisabledMessagesDoNotEvaluateOperands)
     EXPECT_EQ(calls, 0);
 }
 
-TEST(Diagnostics, UsesStderrAndPreservesUnicode)
-{
+TEST(Diagnostics, UsesStderrAndPreservesUnicode) {
     testing::internal::CaptureStderr();
     LOGE("%s", "UTF-8: ") << muse::String(u"\u97f3\u697d");
     EXPECT_EQ(testing::internal::GetCapturedStderr(), "ERROR: UTF-8: \xe9\x9f\xb3\xe6\xa5\xbd\n");
 }
 
-TEST(Diagnostics, AssertionsEvaluateOnceAndRetainReleaseRecovery)
-{
+TEST(Diagnostics, AssertionsEvaluateOnceAndRetainReleaseRecovery) {
     int calls = 0;
     DO_ASSERT(++calls == 1);
     EXPECT_EQ(calls, 1);
 #ifdef NDEBUG
     testing::internal::CaptureStderr();
-    const char* message = "chain ";
+    const char *message = "chain ";
     IF_ASSERT_FAILED_X(++calls == 99, message << calls) { ++calls; }
     const auto captured = testing::internal::GetCapturedStderr();
     EXPECT_EQ(calls, 3);
@@ -44,8 +40,7 @@ TEST(Diagnostics, AssertionsEvaluateOnceAndRetainReleaseRecovery)
 #endif
 }
 
-TEST(Diagnostics, DisabledScopedTimerDoesNotEvaluateLabel)
-{
+TEST(Diagnostics, DisabledScopedTimerDoesNotEvaluateLabel) {
 #ifndef ENGRAVE_PROFILE
     int calls = 0;
     TRACEFUNC_C((++calls, "scope"))
@@ -53,10 +48,9 @@ TEST(Diagnostics, DisabledScopedTimerDoesNotEvaluateLabel)
 #endif
 }
 
-TEST(Diagnostics, DisabledAssertionMessagesRemainLazy)
-{
+TEST(Diagnostics, DisabledAssertionMessagesRemainLazy) {
 #ifdef NDEBUG
-    auto* logger = muse::logger::Logger::instance();
+    auto *logger = muse::logger::Logger::instance();
     logger->setLevel(muse::logger::Level::Off);
     int conditions = 0;
     int messages = 0;

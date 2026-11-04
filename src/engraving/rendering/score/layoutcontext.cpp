@@ -40,72 +40,47 @@ using namespace mu::engraving::rendering::score;
 // LayoutConfiguration
 // ================================================
 
-LayoutConfiguration::LayoutConfiguration(IGetScoreInternal* s)
-    : m_getScore(s)
-{}
+LayoutConfiguration::LayoutConfiguration(IGetScoreInternal *s) : m_getScore(s) {}
 
-const Score* LayoutConfiguration::score() const
-{
-    const Score* score = m_getScore->score();
-    IF_ASSERT_FAILED(score) {
-        return nullptr;
-    }
+const Score *LayoutConfiguration::score() const {
+    const Score *score = m_getScore->score();
+    IF_ASSERT_FAILED(score) { return nullptr; }
     return score;
 }
 
-const LayoutOptions& LayoutConfiguration::options() const
-{
-    return score()->layoutOptions();
-}
+const LayoutOptions &LayoutConfiguration::options() const { return score()->layoutOptions(); }
 
-bool LayoutConfiguration::isPrintingMode() const
-{
-    IF_ASSERT_FAILED(score()) {
-        return false;
-    }
+bool LayoutConfiguration::isPrintingMode() const {
+    IF_ASSERT_FAILED(score()) { return false; }
 
     return score()->printing();
 }
 
-std::shared_ptr<const IEngravingFont> LayoutConfiguration::engravingFont() const
-{
-    IF_ASSERT_FAILED(score()) {
-        return nullptr;
-    }
+std::shared_ptr<const IEngravingFont> LayoutConfiguration::engravingFont() const {
+    IF_ASSERT_FAILED(score()) { return nullptr; }
     return score()->engravingFont();
 }
 
-const MStyle& LayoutConfiguration::style() const
-{
-    IF_ASSERT_FAILED(score()) {
-        return DefaultStyle::defaultStyle();
-    }
+const MStyle &LayoutConfiguration::style() const {
+    IF_ASSERT_FAILED(score()) { return DefaultStyle::defaultStyle(); }
     return score()->style();
 }
 
-bool LayoutConfiguration::isShowInvisible() const
-{
-    IF_ASSERT_FAILED(score()) {
-        return false;
-    }
+bool LayoutConfiguration::isShowInvisible() const {
+    IF_ASSERT_FAILED(score()) { return false; }
     return score()->isShowInvisible();
 }
 
-int LayoutConfiguration::pageNumberOffset() const
-{
-    IF_ASSERT_FAILED(score()) {
-        return 0;
-    }
+int LayoutConfiguration::pageNumberOffset() const {
+    IF_ASSERT_FAILED(score()) { return 0; }
     return score()->pageNumberOffset();
 }
 
-bool LayoutConfiguration::isVerticalSpreadEnabled() const
-{
+bool LayoutConfiguration::isVerticalSpreadEnabled() const {
     return styleB(Sid::enableVerticalSpread) && (viewMode() != LayoutMode::SYSTEM);
 }
 
-double LayoutConfiguration::maxSystemDistance() const
-{
+double LayoutConfiguration::maxSystemDistance() const {
     if (isVerticalSpreadEnabled()) {
         return style().styleAbsolute(Sid::maxSystemSpread);
     } else {
@@ -113,238 +88,163 @@ double LayoutConfiguration::maxSystemDistance() const
     }
 }
 
-bool LayoutConfiguration::isShowInstrumentNames() const
-{
-    return score()->showInstrumentNames();
-}
+bool LayoutConfiguration::isShowInstrumentNames() const { return score()->showInstrumentNames(); }
 
 // ================================================
 // DomAccessor
 // ================================================
 
-DomAccessor::DomAccessor(IGetScoreInternal* s)
-    : m_getScore(s)
-{}
+DomAccessor::DomAccessor(IGetScoreInternal *s) : m_getScore(s) {}
 
-const Score* DomAccessor::score() const
-{
-    return m_getScore->score();
-}
+const Score *DomAccessor::score() const { return m_getScore->score(); }
 
-Score* DomAccessor::score()
-{
-    return m_getScore->score();
-}
+Score *DomAccessor::score() { return m_getScore->score(); }
 
-const std::vector<Part*>& DomAccessor::parts() const
-{
+const std::vector<Part *> &DomAccessor::parts() const {
     IF_ASSERT_FAILED(score()) {
-        static const std::vector<Part*> dummy;
+        static const std::vector<Part *> dummy;
         return dummy;
     }
     return score()->parts();
 }
 
-size_t DomAccessor::visiblePartCount() const
-{
-    IF_ASSERT_FAILED(score()) {
-        return 0;
-    }
+size_t DomAccessor::visiblePartCount() const {
+    IF_ASSERT_FAILED(score()) { return 0; }
     return score()->visiblePartCount();
 }
 
-std::vector<Part*> DomAccessor::visibleParts() const
-{
-    IF_ASSERT_FAILED(score()) {
-        return {};
-    }
+std::vector<Part *> DomAccessor::visibleParts() const {
+    IF_ASSERT_FAILED(score()) { return {}; }
     return score()->visibleParts();
 }
 
-size_t DomAccessor::npages() const
-{
-    IF_ASSERT_FAILED(score()) {
-        return 0;
-    }
+size_t DomAccessor::npages() const {
+    IF_ASSERT_FAILED(score()) { return 0; }
     return score()->npages();
 }
 
-const std::vector<Page*>& DomAccessor::pages() const
-{
+const std::vector<Page *> &DomAccessor::pages() const {
     IF_ASSERT_FAILED(score()) {
-        static const std::vector<Page*> dummy;
+        static const std::vector<Page *> dummy;
         return dummy;
     }
     return score()->pages();
 }
 
-std::vector<Page*>& DomAccessor::pages()
-{
+std::vector<Page *> &DomAccessor::pages() {
     IF_ASSERT_FAILED(score()) {
-        static std::vector<Page*> dummy;
+        static std::vector<Page *> dummy;
         return dummy;
     }
     return score()->pages();
 }
 
-const std::vector<System*>& DomAccessor::systems() const
-{
+const std::vector<System *> &DomAccessor::systems() const {
     IF_ASSERT_FAILED(score()) {
-        static const std::vector<System*> dummy;
+        static const std::vector<System *> dummy;
         return dummy;
     }
     return score()->systems();
 }
 
-std::vector<System*>& DomAccessor::systems()
-{
+std::vector<System *> &DomAccessor::systems() {
     IF_ASSERT_FAILED(score()) {
-        static std::vector<System*> dummy;
+        static std::vector<System *> dummy;
         return dummy;
     }
     return score()->systems();
 }
 
-size_t DomAccessor::nstaves() const
-{
-    IF_ASSERT_FAILED(score()) {
-        return 0;
-    }
+size_t DomAccessor::nstaves() const {
+    IF_ASSERT_FAILED(score()) { return 0; }
     return score()->nstaves();
 }
 
-size_t DomAccessor::visibleStaffCount() const
-{
-    IF_ASSERT_FAILED(score()) {
-        return 0;
-    }
+size_t DomAccessor::visibleStaffCount() const {
+    IF_ASSERT_FAILED(score()) { return 0; }
 
     return score()->visibleStavesCount();
 }
 
-const std::vector<Staff*>& DomAccessor::staves() const
-{
+const std::vector<Staff *> &DomAccessor::staves() const {
     IF_ASSERT_FAILED(score()) {
-        static const std::vector<Staff*> dummy;
+        static const std::vector<Staff *> dummy;
         return dummy;
     }
     return score()->staves();
 }
 
-const Staff* DomAccessor::staff(staff_idx_t idx) const
-{
-    IF_ASSERT_FAILED(score()) {
-        return nullptr;
-    }
+const Staff *DomAccessor::staff(staff_idx_t idx) const {
+    IF_ASSERT_FAILED(score()) { return nullptr; }
     return score()->staff(idx);
 }
 
-bool DomAccessor::allStavesInvisible() const
-{
-    IF_ASSERT_FAILED(score()) {
-        return false;
-    }
+bool DomAccessor::allStavesInvisible() const {
+    IF_ASSERT_FAILED(score()) { return false; }
     return score()->allStavesInvisible();
 }
 
-size_t DomAccessor::ntracks() const
-{
-    IF_ASSERT_FAILED(score()) {
-        return 0;
-    }
+size_t DomAccessor::ntracks() const {
+    IF_ASSERT_FAILED(score()) { return 0; }
     return score()->ntracks();
 }
 
-size_t DomAccessor::nmeasures() const
-{
-    IF_ASSERT_FAILED(score()) {
-        return 0;
-    }
+size_t DomAccessor::nmeasures() const {
+    IF_ASSERT_FAILED(score()) { return 0; }
     return score()->nmeasures();
 }
 
-const Measure* DomAccessor::tick2measure(const Fraction& tick) const
-{
-    IF_ASSERT_FAILED(score()) {
-        return nullptr;
-    }
+const Measure *DomAccessor::tick2measure(const Fraction &tick) const {
+    IF_ASSERT_FAILED(score()) { return nullptr; }
     return score()->tick2measure(tick);
 }
 
-const Measure* DomAccessor::tick2measureMM(const Fraction& tick) const
-{
-    IF_ASSERT_FAILED(score()) {
-        return nullptr;
-    }
+const Measure *DomAccessor::tick2measureMM(const Fraction &tick) const {
+    IF_ASSERT_FAILED(score()) { return nullptr; }
     return score()->tick2measureMM(tick);
 }
 
-const Measure* DomAccessor::firstMeasure() const
-{
-    IF_ASSERT_FAILED(score()) {
-        return nullptr;
-    }
+const Measure *DomAccessor::firstMeasure() const {
+    IF_ASSERT_FAILED(score()) { return nullptr; }
     return score()->firstMeasure();
 }
 
-Measure* DomAccessor::firstMeasure()
-{
-    IF_ASSERT_FAILED(score()) {
-        return nullptr;
-    }
+Measure *DomAccessor::firstMeasure() {
+    IF_ASSERT_FAILED(score()) { return nullptr; }
     return score()->firstMeasure();
 }
 
-const Measure* DomAccessor::lastMeasure() const
-{
-    IF_ASSERT_FAILED(score()) {
-        return nullptr;
-    }
+const Measure *DomAccessor::lastMeasure() const {
+    IF_ASSERT_FAILED(score()) { return nullptr; }
     return score()->lastMeasure();
 }
 
-const Measure* DomAccessor::lastMeasureMM() const
-{
-    IF_ASSERT_FAILED(score()) {
-        return nullptr;
-    }
+const Measure *DomAccessor::lastMeasureMM() const {
+    IF_ASSERT_FAILED(score()) { return nullptr; }
     return score()->lastMeasureMM();
 }
 
-Measure* DomAccessor::lastMeasure()
-{
-    IF_ASSERT_FAILED(score()) {
-        return nullptr;
-    }
+Measure *DomAccessor::lastMeasure() {
+    IF_ASSERT_FAILED(score()) { return nullptr; }
     return score()->lastMeasure();
 }
 
-Measure* DomAccessor::lastMeasureMM()
-{
-    IF_ASSERT_FAILED(score()) {
-        return nullptr;
-    }
+Measure *DomAccessor::lastMeasureMM() {
+    IF_ASSERT_FAILED(score()) { return nullptr; }
     return score()->lastMeasureMM();
 }
 
-Measure* DomAccessor::tick2measure(const Fraction& tick)
-{
-    IF_ASSERT_FAILED(score()) {
-        return nullptr;
-    }
+Measure *DomAccessor::tick2measure(const Fraction &tick) {
+    IF_ASSERT_FAILED(score()) { return nullptr; }
     return score()->tick2measure(tick);
 }
 
-Measure* DomAccessor::tick2measureMM(const Fraction& tick)
-{
-    IF_ASSERT_FAILED(score()) {
-        return nullptr;
-    }
+Measure *DomAccessor::tick2measureMM(const Fraction &tick) {
+    IF_ASSERT_FAILED(score()) { return nullptr; }
     return score()->tick2measureMM(tick);
 }
 
-const SpannerMap& DomAccessor::spannerMap() const
-{
+const SpannerMap &DomAccessor::spannerMap() const {
     IF_ASSERT_FAILED(score()) {
         static const SpannerMap dummy;
         return dummy;
@@ -352,74 +252,46 @@ const SpannerMap& DomAccessor::spannerMap() const
     return score()->spannerMap();
 }
 
-const Segment* DomAccessor::lastSegment() const
-{
-    IF_ASSERT_FAILED(score()) {
-        return nullptr;
-    }
+const Segment *DomAccessor::lastSegment() const {
+    IF_ASSERT_FAILED(score()) { return nullptr; }
     return score()->lastSegment();
 }
 
-const ChordRest* DomAccessor::findCR(Fraction tick, track_idx_t track) const
-{
-    IF_ASSERT_FAILED(score()) {
-        return nullptr;
-    }
+const ChordRest *DomAccessor::findCR(Fraction tick, track_idx_t track) const {
+    IF_ASSERT_FAILED(score()) { return nullptr; }
     return score()->findCR(tick, track);
 }
 
-const RangeLocks* DomAccessor::systemLocks() const
-{
-    IF_ASSERT_FAILED(score()) {
-        return nullptr;
-    }
+const RangeLocks *DomAccessor::systemLocks() const {
+    IF_ASSERT_FAILED(score()) { return nullptr; }
     return score()->systemLocks();
 }
 
-const RangeLocks* DomAccessor::pageLocks() const
-{
-    IF_ASSERT_FAILED(score()) {
-        return nullptr;
-    }
+const RangeLocks *DomAccessor::pageLocks() const {
+    IF_ASSERT_FAILED(score()) { return nullptr; }
     return score()->pageLocks();
 }
 
-const PaddingTable& DomAccessor::paddingTable() const
-{
-    return score()->paddingTables().horizontalPaddingTable();
-}
+const PaddingTable &DomAccessor::paddingTable() const { return score()->paddingTables().horizontalPaddingTable(); }
 
-const std::vector<BracketItem*>& DomAccessor::brackets(staff_idx_t staffIdx) const
-{
-    return score()->brackets(staffIdx);
-}
+const std::vector<BracketItem *> &DomAccessor::brackets(staff_idx_t staffIdx) const { return score()->brackets(staffIdx); }
 
-ChordRest* DomAccessor::findCR(Fraction tick, track_idx_t track)
-{
-    IF_ASSERT_FAILED(score()) {
-        return nullptr;
-    }
+ChordRest *DomAccessor::findCR(Fraction tick, track_idx_t track) {
+    IF_ASSERT_FAILED(score()) { return nullptr; }
     return score()->findCR(tick, track);
 }
 
-MeasureBase* DomAccessor::first()
-{
-    IF_ASSERT_FAILED(score()) {
-        return nullptr;
-    }
+MeasureBase *DomAccessor::first() {
+    IF_ASSERT_FAILED(score()) { return nullptr; }
     return score()->first();
 }
 
-DummyParent* DomAccessor::dummyParent() const
-{
-    IF_ASSERT_FAILED(score()) {
-        return nullptr;
-    }
+DummyParent *DomAccessor::dummyParent() const {
+    IF_ASSERT_FAILED(score()) { return nullptr; }
     return score()->dummy();
 }
 
-void DomAccessor::doUndoAddElement(EngravingItem* item)
-{
+void DomAccessor::doUndoAddElement(EngravingItem *item) {
     if (item->generated()) {
         addElement(item);
     } else {
@@ -427,16 +299,12 @@ void DomAccessor::doUndoAddElement(EngravingItem* item)
     }
 }
 
-void DomAccessor::undoAddElement(EngravingItem* item, bool addToLinkedStaves, bool ctrlModifier)
-{
-    IF_ASSERT_FAILED(score()) {
-        return;
-    }
+void DomAccessor::undoAddElement(EngravingItem *item, bool addToLinkedStaves, bool ctrlModifier) {
+    IF_ASSERT_FAILED(score()) { return; }
     score()->undoAddElement(item, addToLinkedStaves, ctrlModifier);
 }
 
-void DomAccessor::doUndoRemoveElement(EngravingItem* item)
-{
+void DomAccessor::doUndoRemoveElement(EngravingItem *item) {
     if (item->generated()) {
         removeElement(item);
         item->deleteLater();
@@ -445,68 +313,46 @@ void DomAccessor::doUndoRemoveElement(EngravingItem* item)
     }
 }
 
-void DomAccessor::undoRemoveElement(EngravingItem* item)
-{
-    IF_ASSERT_FAILED(score()) {
-        return;
-    }
+void DomAccessor::undoRemoveElement(EngravingItem *item) {
+    IF_ASSERT_FAILED(score()) { return; }
     score()->undoRemoveElement(item);
 }
 
-void DomAccessor::undo(UndoableCommand* cmd) const
-{
-    IF_ASSERT_FAILED(score()) {
-        return;
-    }
+void DomAccessor::undo(UndoableCommand *cmd) const {
+    IF_ASSERT_FAILED(score()) { return; }
     score()->undo(cmd);
 }
 
-void DomAccessor::addElement(EngravingItem* item)
-{
-    IF_ASSERT_FAILED(score()) {
-        return;
-    }
+void DomAccessor::addElement(EngravingItem *item) {
+    IF_ASSERT_FAILED(score()) { return; }
     score()->addElement(item);
 }
 
-void DomAccessor::removeElement(EngravingItem* item)
-{
-    IF_ASSERT_FAILED(score()) {
-        return;
-    }
+void DomAccessor::removeElement(EngravingItem *item) {
+    IF_ASSERT_FAILED(score()) { return; }
     score()->removeElement(item);
 }
 
-void DomAccessor::updateLocksOnCreateMMRest(Measure* first, Measure* last)
-{
-    IF_ASSERT_FAILED(score()) {
-        return;
-    }
-    Transaction& tx = score()->transactionManager()->currentOrDummyTransaction();
+void DomAccessor::updateLocksOnCreateMMRest(Measure *first, Measure *last) {
+    IF_ASSERT_FAILED(score()) { return; }
+    Transaction &tx = score()->transactionManager()->currentOrDummyTransaction();
     EditPageLocks::updatePageLocksOnCreateMMRests(tx, score(), first, last);
     EditSystemLocks::updateSystemLocksOnCreateMMRests(tx, score(), first, last);
 }
 
-void DomAccessor::undoChangeParent(EngravingItem* element, EngravingItem* parent, staff_idx_t staff, bool changeLinksParents)
-{
-    IF_ASSERT_FAILED(score()) {
-        return;
-    }
+void DomAccessor::undoChangeParent(EngravingItem *element, EngravingItem *parent, staff_idx_t staff, bool changeLinksParents) {
+    IF_ASSERT_FAILED(score()) { return; }
     score()->undoChangeParent(element, parent, staff, changeLinksParents);
 }
 
-void DomAccessor::addUnmanagedSpanner(Spanner* s)
-{
-    IF_ASSERT_FAILED(score()) {
-        return;
-    }
+void DomAccessor::addUnmanagedSpanner(Spanner *s) {
+    IF_ASSERT_FAILED(score()) { return; }
     score()->addUnmanagedSpanner(s);
 }
 
-const std::set<Spanner*>& DomAccessor::unmanagedSpanners() const
-{
+const std::set<Spanner *> &DomAccessor::unmanagedSpanners() const {
     IF_ASSERT_FAILED(score()) {
-        static const std::set<Spanner*> dummy;
+        static const std::set<Spanner *> dummy;
         return dummy;
     }
     return score()->unmanagedSpanners();
@@ -515,20 +361,17 @@ const std::set<Spanner*>& DomAccessor::unmanagedSpanners() const
 // =============================================================
 // LayoutDebug
 // =============================================================
-LayoutDebug* LayoutDebug::instance()
-{
+LayoutDebug *LayoutDebug::instance() {
     static LayoutDebug ld;
     return &ld;
 }
 
-void LayoutDebug::callClear()
-{
+void LayoutDebug::callClear() {
     m_currentCall = nullptr;
     m_calls.clear();
 }
 
-void LayoutDebug::callBegin(const std::string_view& name, const std::string_view& info)
-{
+void LayoutDebug::callBegin(const std::string_view &name, const std::string_view &info) {
     //LOGDA() << name << " " << info;
     Call c;
     c.name = name;
@@ -543,95 +386,63 @@ void LayoutDebug::callBegin(const std::string_view& name, const std::string_view
     }
 }
 
-void LayoutDebug::callEnd()
-{
-    IF_ASSERT_FAILED(m_currentCall) {
-        return;
-    }
+void LayoutDebug::callEnd() {
+    IF_ASSERT_FAILED(m_currentCall) { return; }
 
     //LOGDA() << m_currentCall->name << " " << m_currentCall->info;
     m_currentCall = m_currentCall->top;
 }
 
-void LayoutDebug::callDump(const LayoutDebug::Call& c, std::stringstream& ss, int& indent)
-{
+void LayoutDebug::callDump(const LayoutDebug::Call &c, std::stringstream &ss, int &indent) {
     std::string gap;
     gap.resize(indent * 2, ' ');
     ss << "\n";
     ss << gap << c.name << " " << c.info;
 
-    for (const Call& cn : c.nested) {
+    for (const Call &cn : c.nested) {
         ++indent;
         callDump(cn, ss, indent);
         --indent;
     }
 }
 
-void LayoutDebug::callDump(std::stringstream& ss) const
-{
-    for (const Call& c : m_calls) {
+void LayoutDebug::callDump(std::stringstream &ss) const {
+    for (const Call &c : m_calls) {
         int indent = 0;
         callDump(c, ss, indent);
     }
 }
 
-void LayoutDebug::callPrint()
-{
-    LOGDA() << "\n" << callDump();
-}
+void LayoutDebug::callPrint() { LOGDA() << "\n" << callDump(); }
 
 // =============================================================
 // LayoutContext
 // =============================================================
 
-LayoutContext::LayoutContext(Score* score)
-    : m_score(score), m_configuration(this), m_dom(this)
-{
+LayoutContext::LayoutContext(Score *score) : m_score(score), m_configuration(this), m_dom(this) {
     if (score) {
         m_state.setFirstSystemIndent(score->style().styleB(Sid::enableIndentationOnFirstSystem));
     }
 }
 
-LayoutContext::~LayoutContext()
-{
+LayoutContext::~LayoutContext() {}
 
-}
+bool LayoutContext::isValid() const { return m_score != nullptr; }
 
-bool LayoutContext::isValid() const
-{
-    return m_score != nullptr;
-}
-
-IEngravingFontPtr LayoutContext::engravingFont() const
-{
-    IF_ASSERT_FAILED(m_score) {
-        return nullptr;
-    }
+IEngravingFontPtr LayoutContext::engravingFont() const {
+    IF_ASSERT_FAILED(m_score) { return nullptr; }
     return m_score->engravingFont();
 }
 
-const DomAccessor& LayoutContext::dom() const
-{
-    return m_dom;
-}
+const DomAccessor &LayoutContext::dom() const { return m_dom; }
 
-DomAccessor& LayoutContext::mutDom()
-{
-    return m_dom;
-}
+DomAccessor &LayoutContext::mutDom() { return m_dom; }
 
-const LayoutState& LayoutContext::state() const
-{
-    return m_state;
-}
+const LayoutState &LayoutContext::state() const { return m_state; }
 
-LayoutState& LayoutContext::mutState()
-{
-    return m_state;
-}
+LayoutState &LayoutContext::mutState() { return m_state; }
 
-const Selection& LayoutContext::selection() const
-{
+const Selection &LayoutContext::selection() const {
     IF_ASSERT_FAILED(m_score) {
         static const Selection dummy;
         return dummy;
@@ -639,18 +450,12 @@ const Selection& LayoutContext::selection() const
     return m_score->selection();
 }
 
-void LayoutContext::select(EngravingItem* item, SelectType type, staff_idx_t staff)
-{
-    IF_ASSERT_FAILED(m_score) {
-        return;
-    }
+void LayoutContext::select(EngravingItem *item, SelectType type, staff_idx_t staff) {
+    IF_ASSERT_FAILED(m_score) { return; }
     m_score->select(item, type, staff);
 }
 
-void LayoutContext::deselect(EngravingItem* el)
-{
-    IF_ASSERT_FAILED(m_score) {
-        return;
-    }
+void LayoutContext::deselect(EngravingItem *el) {
+    IF_ASSERT_FAILED(m_score) { return; }
     m_score->deselect(el);
 }

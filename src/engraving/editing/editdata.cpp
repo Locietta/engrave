@@ -27,13 +27,9 @@
 
 using namespace mu::engraving;
 
-void EditData::clear()
-{
-    *this = EditData();
-}
+void EditData::clear() { *this = EditData(); }
 
-std::shared_ptr<ElementEditData> EditData::getData(const EngravingItem* e) const
-{
+std::shared_ptr<ElementEditData> EditData::getData(const EngravingItem *e) const {
     for (std::shared_ptr<ElementEditData> ed : m_data) {
         if (ed->e == e) {
             return ed;
@@ -42,8 +38,7 @@ std::shared_ptr<ElementEditData> EditData::getData(const EngravingItem* e) const
     return 0;
 }
 
-bool EditData::control(bool textEditing) const
-{
+bool EditData::control(bool textEditing) const {
     if (textEditing) {
         return modifiers & TextEditingControlModifier;
     } else {

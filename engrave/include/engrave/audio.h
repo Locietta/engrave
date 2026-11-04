@@ -111,9 +111,9 @@ struct AudioOptions {
 using ByteSink = std::function<void(std::span<const std::byte> chunk)>;
 
 struct AudioRenderResult {
-    std::uint64_t bytes = 0;    // what the sink received
-    std::uint64_t frames = 0;   // sample frames the engine rendered
-    double seconds = 0.0;       // the encoded span: play time plus the 3 s tail
+    std::uint64_t bytes = 0;  // what the sink received
+    std::uint64_t frames = 0; // sample frames the engine rendered
+    double seconds = 0.0;     // the encoded span: play time plus the 3 s tail
 };
 
 } // namespace engrave

@@ -30,8 +30,7 @@ class Factory;
 class Segment;
 class Transaction;
 
-class KeySig final : public EngravingItem
-{
+class KeySig final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, KeySig)
     DECLARE_CLASSOF(ElementType::KEYSIG)
 
@@ -39,58 +38,73 @@ class KeySig final : public EngravingItem
 
 public:
 
-    KeySig* clone() const override { return new KeySig(*this); }
+    KeySig *clone() const override { return new KeySig(*this); }
 
-    bool acceptDrop(EditData&) const override;
-    EngravingItem* drop(Transaction& tx, EditData&) override;
+    bool acceptDrop(EditData &) const override;
+    EngravingItem *drop(Transaction &tx, EditData &) override;
 
     double mag() const override;
 
     void setKey(Key concertKey, Key transposedKey);
     void setKey(Key concertKey);
 
-    Segment* segment() const { return (Segment*)ownershipParent(); }
-    Measure* measure() const { return ownershipParent() ? (Measure*)ownershipParent()->ownershipParent() : nullptr; }
+    Segment *segment() const { return (Segment *) ownershipParent(); }
+
+    Measure *measure() const { return ownershipParent() ? (Measure *) ownershipParent()->ownershipParent() : nullptr; }
 
     Key key() const { return m_sig.key(); }
+
     Key concertKey() const { return m_sig.concertKey(); }
-    const std::vector<CustDef>& customKeyDefs() const { return m_sig.customKeyDefs(); }
+
+    const std::vector<CustDef> &customKeyDefs() const { return m_sig.customKeyDefs(); }
+
     int degInKey(int degree) const { return m_sig.degInKey(degree); }
+
     SymId symInKey(SymId sym, int degree) const { return m_sig.symInKey(sym, degree); }
+
     bool isCustom() const { return m_sig.custom(); }
+
     bool isAtonal() const { return m_sig.isAtonal(); }
+
     bool isChange() const;
-    const KeySigEvent& keySigEvent() const { return m_sig; }
-    bool operator==(const KeySig&) const;
-    void changeKeySigEvent(const KeySigEvent&);
-    void setKeySigEvent(const KeySigEvent& e) { m_sig = e; }
+
+    const KeySigEvent &keySigEvent() const { return m_sig; }
+
+    bool operator==(const KeySig &) const;
+    void changeKeySigEvent(const KeySigEvent &);
+
+    void setKeySigEvent(const KeySigEvent &e) { m_sig = e; }
 
     bool showCourtesy() const { return m_showCourtesy; }
+
     void setShowCourtesy(bool v) { m_showCourtesy = v; }
 
     KeyMode mode() const { return m_sig.mode(); }
+
     void setMode(KeyMode v) { m_sig.setMode(v); }
 
     PointF staffOffset() const override;
 
     bool hideNaturals() const { return m_hideNaturals; }
+
     void setHideNaturals(bool hide) { m_hideNaturals = hide; }
 
     void setForInstrumentChange(bool forInstrumentChange) { m_sig.setForInstrumentChange(forInstrumentChange); }
+
     bool forInstrumentChange() const { return m_sig.forInstrumentChange(); }
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     using EngravingItem::undoChangeProperty;
-    void undoChangeProperty(Pid id, const PropertyValue& v, PropertyFlags ps) override;
+    void undoChangeProperty(Pid id, const PropertyValue &v, PropertyFlags ps) override;
     PropertyValue propertyDefault(Pid id) const override;
-    EngravingObject* propertyDelegate(Pid) const override;
+    EngravingObject *propertyDelegate(Pid) const override;
 
-    EngravingItem* nextSegmentElement() override;
-    EngravingItem* prevSegmentElement() override;
-
+    EngravingItem *nextSegmentElement() override;
+    EngravingItem *prevSegmentElement() override;
 
     int subtype() const override { return int(key()) + 7; }
+
     muse::TranslatableString subtypeUserName() const override;
 
     struct LayoutData : public EngravingItem::LayoutData {
@@ -102,12 +116,12 @@ private:
     friend class Factory;
 
     KeySig(DummyParentOr<Segment>);
-    KeySig(const KeySig&);
+    KeySig(const KeySig &);
 
     void addLayout(SymId sym, int line);
 
     bool m_showCourtesy;
-    bool m_hideNaturals;       // used in layout to override score style (needed for the Continuous panel)
+    bool m_hideNaturals; // used in layout to override score style (needed for the Continuous panel)
     KeySigEvent m_sig;
 };
-}
+} // namespace mu::engraving

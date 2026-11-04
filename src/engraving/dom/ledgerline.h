@@ -37,24 +37,25 @@ class Chord;
 //!    y-origin:   SStaff
 //---------------------------------------------------------
 
-class LedgerLine final : public EngravingItem
-{
+class LedgerLine final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, LedgerLine)
     DECLARE_CLASSOF(ElementType::LEDGER_LINE)
 
 public:
     LedgerLine(DummyParentOr<EngravingItem>);
     ~LedgerLine();
-    LedgerLine& operator=(const LedgerLine&) = delete;
+    LedgerLine &operator=(const LedgerLine &) = delete;
 
-    LedgerLine* clone() const override { return new LedgerLine(*this); }
+    LedgerLine *clone() const override { return new LedgerLine(*this); }
 
-    Chord* chord() const { return toChord(ownershipParent()); }
+    Chord *chord() const { return toChord(ownershipParent()); }
 
     double len() const { return m_len; }
+
     void setLen(double v) { m_len = v; }
 
     void setVertical(bool v) { m_vertical = v; }
+
     bool vertical() const { return m_vertical; }
 
     void spatiumChanged(double /*oldValue*/, double /*newValue*/) override;
@@ -62,6 +63,7 @@ public:
     struct LayoutData : public EngravingItem::LayoutData {
         double lineWidth = 0.0;
     };
+
     DECLARE_LAYOUTDATA_METHODS(LedgerLine);
 
 private:

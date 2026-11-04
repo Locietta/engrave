@@ -40,32 +40,19 @@ using namespace muse::io;
 using namespace mu::engraving;
 
 String ScoreRW::m_rootPath;
-const EngravingServices* ScoreRW::m_services = nullptr;
+const EngravingServices *ScoreRW::m_services = nullptr;
 
-void ScoreRW::setRootPath(const String& path)
-{
-    m_rootPath = path;
-}
+void ScoreRW::setRootPath(const String &path) { m_rootPath = path; }
 
-String ScoreRW::rootPath()
-{
-    return m_rootPath;
-}
+String ScoreRW::rootPath() { return m_rootPath; }
 
-void ScoreRW::setServices(const EngravingServices* services)
-{
-    m_services = services;
-}
+void ScoreRW::setServices(const EngravingServices *services) { m_services = services; }
 
-const EngravingServices& ScoreRW::services()
-{
-    return *m_services;
-}
+const EngravingServices &ScoreRW::services() { return *m_services; }
 
-MasterScore* ScoreRW::readScore(const String& name, bool isAbsolutePath, ImportFunc importFunc)
-{
+MasterScore *ScoreRW::readScore(const String &name, bool isAbsolutePath, ImportFunc importFunc) {
     muse::io::path_t path = isAbsolutePath ? name : (rootPath() + u"/" + name);
-    MasterScore* score = compat::ScoreAccess::createMasterScoreWithBaseStyle(services());
+    MasterScore *score = compat::ScoreAccess::createMasterScoreWithBaseStyle(services());
     score->setFileInfoProvider(std::make_shared<LocalFileInfoProvider>(path));
     std::string suffix = muse::io::suffix(path);
 
@@ -85,15 +72,14 @@ MasterScore* ScoreRW::readScore(const String& name, bool isAbsolutePath, ImportF
         return nullptr;
     }
 
-    for (Score* s : score->scoreList()) {
+    for (Score *s : score->scoreList()) {
         s->doLayout();
     }
 
     return score;
 }
 
-bool ScoreRW::saveScore(Score* score, const String& name)
-{
+bool ScoreRW::saveScore(Score *score, const String &name) {
     File::remove(name);
 
     auto output = Buffer::opened(IODevice::WriteOnly);
@@ -105,11 +91,10 @@ bool ScoreRW::saveScore(Score* score, const String& name)
     return File::writeFile(name, output.data());
 }
 
-bool ScoreRW::saveScore(Score* score, const String& name, ExportFunc exportFunc)
-{
+bool ScoreRW::saveScore(Score *score, const String &name, ExportFunc exportFunc) {
     File::remove(name);
 
-    muse::io::path_t path =  name;
+    muse::io::path_t path = name;
     Err rv = exportFunc(score, path);
 
     if (rv != Err::NoError) {
@@ -120,8 +105,7 @@ bool ScoreRW::saveScore(Score* score, const String& name, ExportFunc exportFunc)
     }
 }
 
-muse::ByteArray ScoreRW::writeElement(const EngravingItem* element)
-{
+muse::ByteArray ScoreRW::writeElement(const EngravingItem *element) {
     auto buffer = Buffer::opened(IODevice::WriteOnly);
     XmlWriter xml(&buffer);
     xml.startDocument();
@@ -131,8 +115,7 @@ muse::ByteArray ScoreRW::writeElement(const EngravingItem* element)
     return buffer.data();
 }
 
-EngravingItem* ScoreRW::writeReadElement(EngravingItem* element)
-{
+EngravingItem *ScoreRW::writeReadElement(EngravingItem *element) {
     XmlReader e(writeElement(element));
     e.readNextStartElement();
     element = Factory::createItemByName(e.name(), element->score()->dummy());
@@ -140,7 +123,4 @@ EngravingItem* ScoreRW::writeReadElement(EngravingItem* element)
     return element;
 }
 
-bool ScoreRW::saveMimeData(muse::ByteArray mimeData, const String& saveName)
-{
-    return File::writeFile(saveName, mimeData);
-}
+bool ScoreRW::saveMimeData(muse::ByteArray mimeData, const String &saveName) { return File::writeFile(saveName, mimeData); }

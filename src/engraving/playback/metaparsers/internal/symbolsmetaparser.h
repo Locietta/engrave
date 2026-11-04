@@ -26,16 +26,15 @@
 #include "playback/metaparsers/metaparserbase.h"
 
 namespace mu::engraving {
-class SymbolsMetaParser : public MetaParserBase<SymbolsMetaParser>
-{
+class SymbolsMetaParser : public MetaParserBase<SymbolsMetaParser> {
 public:
     static muse::mpe::ArticulationTypeSet symbolToArticulations(SymId symId, OrnamentStyle ornamentStyle = OrnamentStyle::DEFAULT);
 
 private:
     friend MetaParserBase;
 
-    static void doParse(const EngravingItem* item, const RenderingContext& ctx, muse::mpe::ArticulationMap& result);
+    static void doParse(const EngravingItem *item, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
 };
-}
+} // namespace mu::engraving
 
 #endif // MU_ENGRAVING_SYMBOLSMETAPARSER_H

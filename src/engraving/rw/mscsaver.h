@@ -26,13 +26,13 @@
 
 namespace mu::engraving::write {
 class WriteContext;
-}
+} // namespace mu::engraving::write
 
 namespace mu::engraving {
 class MasterScore;
-class MscSaver
-{
+
+class MscSaver {
 public:
-    bool writeMscz(MasterScore* score, MscWriter& mscWriter, const write::WriteContext* ctx = nullptr);
+    bool writeMscz(MasterScore *score, MscWriter &mscWriter, const write::WriteContext *ctx = nullptr);
 };
-}
+} // namespace mu::engraving

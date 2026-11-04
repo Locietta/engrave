@@ -31,8 +31,7 @@
 
 namespace mu::engraving {
 //! Dummy element, used for drag&drop
-class ActionIcon final : public EngravingItem
-{
+class ActionIcon final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, ActionIcon)
     DECLARE_CLASSOF(ElementType::ACTION_ICON)
 
@@ -40,22 +39,22 @@ public:
     ActionIcon(DummyParentOr<EngravingItem> score);
     ~ActionIcon() override = default;
 
-    ActionIcon* clone() const override;
+    ActionIcon *clone() const override;
 
     void setActionType(ActionIconType val);
     ActionIconType actionType() const;
 
-    const muse::TranslatableString& title() const;
+    const muse::TranslatableString &title() const;
     char16_t icon() const;
 
-    const muse::draw::Font& iconFont() const { return m_iconFont; }
+    const muse::draw::Font &iconFont() const { return m_iconFont; }
 
     PropertyValue getProperty(Pid) const override;
-    bool setProperty(Pid, const PropertyValue&) override;
+    bool setProperty(Pid, const PropertyValue &) override;
 
 private:
     ActionIconType m_actionType = ActionIconType::UNDEFINED;
     muse::TranslatableString m_title;
     muse::draw::Font m_iconFont;
 };
-}
+} // namespace mu::engraving

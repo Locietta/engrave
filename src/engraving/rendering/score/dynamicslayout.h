@@ -27,15 +27,14 @@
 namespace mu::engraving::rendering::score {
 class LayoutConfiguration;
 
-class DynamicsLayout
-{
+class DynamicsLayout {
 public:
-    static void layoutDynamic(Dynamic* item, Dynamic::LayoutData* ldata, const LayoutConfiguration& conf);
+    static void layoutDynamic(Dynamic *item, Dynamic::LayoutData *ldata, const LayoutConfiguration &conf);
 
 private:
-    static void doLayoutDynamic(Dynamic* item, Dynamic::LayoutData* ldata, const LayoutConfiguration& conf);
-    static double computeCustomTextOffset(Dynamic* item, Dynamic::LayoutData* ldata, const LayoutConfiguration& conf);
-    static void layoutDynamicToEndOfPrevious(const Dynamic* item, TextBase::LayoutData* ldata);
-    static void manageBarlineCollisions(const Dynamic* item, TextBase::LayoutData* ldata);
+    static void doLayoutDynamic(Dynamic *item, Dynamic::LayoutData *ldata, const LayoutConfiguration &conf);
+    static double computeCustomTextOffset(Dynamic *item, Dynamic::LayoutData *ldata, const LayoutConfiguration &conf);
+    static void layoutDynamicToEndOfPrevious(const Dynamic *item, TextBase::LayoutData *ldata);
+    static void manageBarlineCollisions(const Dynamic *item, TextBase::LayoutData *ldata);
 };
 } // namespace mu::engraving::rendering::score

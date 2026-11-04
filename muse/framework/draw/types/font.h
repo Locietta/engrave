@@ -25,75 +25,59 @@
 #include "global/types/string.h"
 #include "global/types/flags.h"
 
-
 namespace muse::draw {
-class Font
-{
+class Font {
 public:
     struct FontFamily {
         FontFamily() = default;
-        FontFamily(const String& id)
-            : m_id(id.toLower()) {}
 
-        FontFamily(const char16_t* id)
-            : FontFamily(String(id)) {}
+        FontFamily(const String &id) : m_id(id.toLower()) {}
 
-        FontFamily(const std::string& id)
-            : FontFamily(String::fromStdString(id)) {}
+        FontFamily(const char16_t *id) : FontFamily(String(id)) {}
+
+        FontFamily(const std::string &id) : FontFamily(String::fromStdString(id)) {}
 
         inline bool valid() const { return !m_id.empty(); }
-        const String& id() const { return m_id; }
 
-        inline bool operator==(const FontFamily& o) const { return m_id == o.m_id; }
-        inline bool operator<(const FontFamily& o) const { return m_id < o.m_id; }
+        const String &id() const { return m_id; }
+
+        inline bool operator==(const FontFamily &o) const { return m_id == o.m_id; }
+
+        inline bool operator<(const FontFamily &o) const { return m_id < o.m_id; }
 
     private:
         String m_id;
     };
 
-    enum class Type {
-        Undefined = 0,
-        Unknown,
-        Icon,
-        Text,
-        MusicSymbolText,
-        MusicSymbol,
-        Tablature,
-        Harmony
-    };
+    enum class Type { Undefined = 0, Unknown, Icon, Text, MusicSymbolText, MusicSymbol, Tablature, Harmony };
 
     Font() = default;
-    Font(const FontFamily& family, Type type);
+    Font(const FontFamily &family, Type type);
 
     enum class Style {
         //Undefined   = -1,
-        Normal      = 0,
-        Bold        = 1 << 0,
-        Italic      = 1 << 1,
-        Underline   = 1 << 2,
-        Strike      = 1 << 3
+        Normal = 0,
+        Bold = 1 << 0,
+        Italic = 1 << 1,
+        Underline = 1 << 2,
+        Strike = 1 << 3
     };
 
-    enum class Hinting {
-        PreferDefaultHinting = 0,
-        PreferNoHinting = 1,
-        PreferVerticalHinting = 2,
-        PreferFullHinting = 3
-    };
+    enum class Hinting { PreferDefaultHinting = 0, PreferNoHinting = 1, PreferVerticalHinting = 2, PreferFullHinting = 3 };
 
     enum Weight {
-        Thin     = 0,    // 100
+        Thin = 0,        // 100
         ExtraLight = 12, // 200
-        Light    = 25,   // 300
-        Normal   = 50,   // 400
-        Medium   = 57,   // 500
+        Light = 25,      // 300
+        Normal = 50,     // 400
+        Medium = 57,     // 500
         DemiBold = 63,   // 600
-        Bold     = 75,   // 700
+        Bold = 75,       // 700
         ExtraBold = 81,  // 800
-        Black    = 87    // 900
+        Black = 87       // 900
     };
 
-    void setFamily(const FontFamily& family, Type type);
+    void setFamily(const FontFamily &family, Type type);
     FontFamily family() const;
     Type type() const;
 
@@ -121,9 +105,9 @@ public:
     Hinting hinting() const;
     void setHinting(Hinting hinting);
 
-    bool operator ==(const Font& other) const;
-    bool operator !=(const Font& other) const { return !this->operator ==(other); }
+    bool operator==(const Font &other) const;
 
+    bool operator!=(const Font &other) const { return !this->operator==(other); }
 
     static bool g_disableFontMerging;
 
@@ -134,10 +118,10 @@ private:
     double m_pointSizeF = -1.0;
     int m_pixelSize = -1;
     Weight m_weight = Weight::Normal;
-    muse::Flags<Style> m_style{ Style::Normal };
+    muse::Flags<Style> m_style{Style::Normal};
     bool m_noFontMerging = false;
     Hinting m_hinting = Hinting::PreferDefaultHinting;
 };
-}
+} // namespace muse::draw
 
 #endif // MUSE_DRAW_FONT_H

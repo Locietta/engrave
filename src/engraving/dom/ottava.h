@@ -43,14 +43,7 @@ struct OttavaE {
 //   OttavaType
 //---------------------------------------------------------
 
-enum class OttavaType : unsigned char {
-    OTTAVA_8VA,
-    OTTAVA_8VB,
-    OTTAVA_15MA,
-    OTTAVA_15MB,
-    OTTAVA_22MA,
-    OTTAVA_22MB
-};
+enum class OttavaType : unsigned char { OTTAVA_8VA, OTTAVA_8VB, OTTAVA_15MA, OTTAVA_15MB, OTTAVA_22MA, OTTAVA_22MB };
 
 //---------------------------------------------------------
 //   OttavaDefault
@@ -59,19 +52,18 @@ enum class OttavaType : unsigned char {
 struct OttavaDefault {
     OttavaType type = OttavaType::OTTAVA_8VA;
     int shift = 0;
-    const char* name = nullptr;
+    const char *name = nullptr;
     const TranslatableString userName = TranslatableString();
 };
 
 // order is important, should be the same as OttavaType
 static const OttavaDefault ottavaDefault[] = {
-    { OttavaType::OTTAVA_8VA,  12,  "8va",  TranslatableString("engraving/ottavatype", "8va alta") },
-    { OttavaType::OTTAVA_8VB,  -12, "8vb",  TranslatableString("engraving/ottavatype", "8va bassa") },
-    { OttavaType::OTTAVA_15MA, 24,  "15ma", TranslatableString("engraving/ottavatype", "15ma alta") },
-    { OttavaType::OTTAVA_15MB, -24, "15mb", TranslatableString("engraving/ottavatype", "15ma bassa") },
-    { OttavaType::OTTAVA_22MA, 36,  "22ma", TranslatableString("engraving/ottavatype", "22ma alta") },
-    { OttavaType::OTTAVA_22MB, -36, "22mb", TranslatableString("engraving/ottavatype", "22ma bassa") }
-};
+    {OttavaType::OTTAVA_8VA, 12, "8va", TranslatableString("engraving/ottavatype", "8va alta")},
+    {OttavaType::OTTAVA_8VB, -12, "8vb", TranslatableString("engraving/ottavatype", "8va bassa")},
+    {OttavaType::OTTAVA_15MA, 24, "15ma", TranslatableString("engraving/ottavatype", "15ma alta")},
+    {OttavaType::OTTAVA_15MB, -24, "15mb", TranslatableString("engraving/ottavatype", "15ma bassa")},
+    {OttavaType::OTTAVA_22MA, 36, "22ma", TranslatableString("engraving/ottavatype", "22ma alta")},
+    {OttavaType::OTTAVA_22MB, -36, "22mb", TranslatableString("engraving/ottavatype", "22ma bassa")}};
 
 class Ottava;
 
@@ -79,25 +71,25 @@ class Ottava;
 //   @@ OttavaSegment
 //---------------------------------------------------------
 
-class OttavaSegment final : public TextLineBaseSegment
-{
+class OttavaSegment final : public TextLineBaseSegment {
     OBJECT_ALLOCATOR(engraving, OttavaSegment)
     DECLARE_CLASSOF(ElementType::OTTAVA_SEGMENT)
 
-    void undoChangeProperty(Pid id, const PropertyValue&, PropertyFlags ps) override;
+    void undoChangeProperty(Pid id, const PropertyValue &, PropertyFlags ps) override;
 
 public:
-    OttavaSegment(Ottava* sp);
+    OttavaSegment(Ottava *sp);
 
-    OttavaSegment* clone() const override { return new OttavaSegment(*this); }
-    Ottava* ottava() const { return (Ottava*)spanner(); }
+    OttavaSegment *clone() const override { return new OttavaSegment(*this); }
 
-    EngravingObject* propertyDelegate(Pid) const override;
+    Ottava *ottava() const { return (Ottava *) spanner(); }
+
+    EngravingObject *propertyDelegate(Pid) const override;
 
     bool canBeExcludedFromOtherParts() const override { return true; }
 
 private:
-    void rebaseOffsetsOnAnchorChanged(Grip grip, const PointF& oldPos, System* sys) override;
+    void rebaseOffsetsOnAnchorChanged(Grip grip, const PointF &oldPos, System *sys) override;
 };
 
 //---------------------------------------------------------
@@ -105,41 +97,43 @@ private:
 //   @P ottavaType  enum (Ottava.OTTAVA_8VA, .OTTAVA_8VB, .OTTAVA_15MA, .OTTAVA_15MB, .OTTAVA_22MA, .OTTAVA_22MB)
 //---------------------------------------------------------
 
-class Ottava final : public TextLineBase
-{
+class Ottava final : public TextLineBase {
     OBJECT_ALLOCATOR(engraving, Ottava)
     DECLARE_CLASSOF(ElementType::OTTAVA)
 
 public:
     Ottava(DummyParentOr<EngravingItem> parent);
-    Ottava(const Ottava&);
+    Ottava(const Ottava &);
 
-    Ottava* clone() const override { return new Ottava(*this); }
+    Ottava *clone() const override { return new Ottava(*this); }
 
     Anchor anchor() const override { return Anchor::SEGMENT; }
 
     void setOttavaType(OttavaType val);
+
     OttavaType ottavaType() const { return m_ottavaType; }
 
     int subtype() const override { return int(ottavaType()); }
+
     TranslatableString subtypeUserName() const override;
 
     bool numbersOnly() const { return m_numbersOnly; }
+
     void setNumbersOnly(bool val);
 
     void setPlacement(PlacementV);
 
-    LineSegment* createLineSegment() override;
+    LineSegment *createLineSegment() override;
     int pitchShift() const;
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid) const override;
 
+    static const char *ottavaTypeName(OttavaType type);
 
-    static const char* ottavaTypeName(OttavaType type);
+    PointF linePos(Grip grip, System **system) const override;
 
-    PointF linePos(Grip grip, System** system) const override;
     bool allowTimeAnchor() const override { return false; }
 
 protected:
@@ -152,7 +146,7 @@ private:
 
     void updateStyledProperties();
     Sid getPropertyStyle(Pid) const override;
-    void undoChangeProperty(Pid id, const PropertyValue&, PropertyFlags ps) override;
+    void undoChangeProperty(Pid id, const PropertyValue &, PropertyFlags ps) override;
 
     OttavaType m_ottavaType = OttavaType::OTTAVA_8VA;
     bool m_numbersOnly = false;

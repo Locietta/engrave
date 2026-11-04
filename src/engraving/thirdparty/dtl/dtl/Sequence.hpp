@@ -39,27 +39,25 @@
 #define DTL_SEQUENCE_H
 
 namespace dtl {
-    
-    /**  
+
+/**  
      * sequence class template
      */
-    template <typename elem>
-    class Sequence
-    {
-    public :
-        typedef vector< elem > elemVec;
-        Sequence () {}
-        virtual ~Sequence () {}
-        
-        elemVec getSequence () const {
-            return sequence;
-        }
-        void addSequence (elem e) {
-            sequence.push_back(e);
-        }
-    protected :
-        elemVec sequence;
-    };
-}
+template <typename elem>
+class Sequence {
+public:
+    typedef vector<elem> elemVec;
+
+    Sequence() {}
+
+    virtual ~Sequence() {}
+
+    elemVec getSequence() const { return sequence; }
+
+    void addSequence(elem e) { sequence.push_back(e); }
+protected:
+    elemVec sequence;
+};
+} // namespace dtl
 
 #endif // DTL_SEQUENCE_H

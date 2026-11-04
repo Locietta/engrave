@@ -52,27 +52,26 @@ using namespace mu::engraving::read400;
 //   BarLineTable
 //---------------------------------------------------------
 
-const std::vector<BarLineTableItem> BarLine::barLineTable {
-    { BarLineType::NORMAL,           SymNames::userNameForSymId(SymId::barlineSingle) },
-    { BarLineType::DOUBLE,           SymNames::userNameForSymId(SymId::barlineDouble) },
-    { BarLineType::START_REPEAT,     SymNames::userNameForSymId(SymId::repeatLeft) },
-    { BarLineType::END_REPEAT,       SymNames::userNameForSymId(SymId::repeatRight) },
-    { BarLineType::BROKEN,           SymNames::userNameForSymId(SymId::barlineDashed) },
-    { BarLineType::END,              SymNames::userNameForSymId(SymId::barlineFinal) },
-    { BarLineType::END_START_REPEAT, SymNames::userNameForSymId(SymId::repeatRightLeft) },
-    { BarLineType::DOTTED,           SymNames::userNameForSymId(SymId::barlineDotted) },
-    { BarLineType::REVERSE_END,      SymNames::userNameForSymId(SymId::barlineReverseFinal) },
-    { BarLineType::HEAVY,            SymNames::userNameForSymId(SymId::barlineHeavy) },
-    { BarLineType::DOUBLE_HEAVY,     SymNames::userNameForSymId(SymId::barlineHeavyHeavy) },
+const std::vector<BarLineTableItem> BarLine::barLineTable{
+    {BarLineType::NORMAL, SymNames::userNameForSymId(SymId::barlineSingle)},
+    {BarLineType::DOUBLE, SymNames::userNameForSymId(SymId::barlineDouble)},
+    {BarLineType::START_REPEAT, SymNames::userNameForSymId(SymId::repeatLeft)},
+    {BarLineType::END_REPEAT, SymNames::userNameForSymId(SymId::repeatRight)},
+    {BarLineType::BROKEN, SymNames::userNameForSymId(SymId::barlineDashed)},
+    {BarLineType::END, SymNames::userNameForSymId(SymId::barlineFinal)},
+    {BarLineType::END_START_REPEAT, SymNames::userNameForSymId(SymId::repeatRightLeft)},
+    {BarLineType::DOTTED, SymNames::userNameForSymId(SymId::barlineDotted)},
+    {BarLineType::REVERSE_END, SymNames::userNameForSymId(SymId::barlineReverseFinal)},
+    {BarLineType::HEAVY, SymNames::userNameForSymId(SymId::barlineHeavy)},
+    {BarLineType::DOUBLE_HEAVY, SymNames::userNameForSymId(SymId::barlineHeavyHeavy)},
 };
 
 //---------------------------------------------------------
 //   translatedUserTypeName
 //---------------------------------------------------------
 
-String BarLine::translatedUserTypeName(BarLineType t)
-{
-    for (const auto& i : barLineTable) {
+String BarLine::translatedUserTypeName(BarLineType t) {
+    for (const auto &i : barLineTable) {
         if (i.type == t) {
             return i.userName.translated();
         }
@@ -84,45 +83,34 @@ String BarLine::translatedUserTypeName(BarLineType t)
 //   BarLine
 //---------------------------------------------------------
 
-BarLine::BarLine(DummyParentOr<Segment> parent)
-    : EngravingItem(ElementType::BAR_LINE, parent)
-{
-    setHeight(4 * spatium());   // for use in palettes
+BarLine::BarLine(DummyParentOr<Segment> parent) : EngravingItem(ElementType::BAR_LINE, parent) {
+    setHeight(4 * spatium()); // for use in palettes
 }
 
-BarLine::BarLine(const BarLine& bl)
-    : EngravingItem(bl)
-{
-    m_spanStaff   = bl.m_spanStaff;
-    m_spanFrom    = bl.m_spanFrom;
-    m_spanTo      = bl.m_spanTo;
+BarLine::BarLine(const BarLine &bl) : EngravingItem(bl) {
+    m_spanStaff = bl.m_spanStaff;
+    m_spanFrom = bl.m_spanFrom;
+    m_spanTo = bl.m_spanTo;
     m_barLineType = bl.m_barLineType;
-    m_playCount   = bl.m_playCount;
+    m_playCount = bl.m_playCount;
 
-    for (EngravingItem* e : bl.m_el) {
+    for (EngravingItem *e : bl.m_el) {
         add(e->clone());
     }
 }
 
-BarLine::~BarLine()
-{
-    muse::DeleteAll(m_el);
-}
+BarLine::~BarLine() { muse::DeleteAll(m_el); }
 
-void BarLine::setOwnershipParent(DummyParentOr<Segment> parent)
-{
-    EngravingItem::setOwnershipParent(parent);
-}
+void BarLine::setOwnershipParent(DummyParentOr<Segment> parent) { EngravingItem::setOwnershipParent(parent); }
 
 //---------------------------------------------------------
 //   canvasPos
 //---------------------------------------------------------
 
-PointF BarLine::canvasPos() const
-{
+PointF BarLine::canvasPos() const {
     PointF pos = EngravingItem::canvasPos();
     if (ownershipParent()) {
-        System* system = measure()->system();
+        System *system = measure()->system();
         double yoff = system ? system->staff(staffIdx())->y() : 0.0;
         pos.ry() += yoff;
     }
@@ -133,12 +121,11 @@ PointF BarLine::canvasPos() const
 //   pagePos
 //---------------------------------------------------------
 
-PointF BarLine::pagePos() const
-{
+PointF BarLine::pagePos() const {
     if (segment() == 0) {
         return pos();
     }
-    System* system = segment()->measure()->system();
+    System *system = segment()->measure()->system();
 
     double yp = y();
     if (system) {
@@ -146,8 +133,8 @@ PointF BarLine::pagePos() const
         staff_idx_t startIdx = staffIdx();
         staff_idx_t endIdx = startIdx + (spanStaff() ? 1 : 0);
         staff_idx_t staffIdx1 = startIdx;
-        Staff* staff1       = score()->staff(staffIdx1);
-        SysStaff* sysStaff1 = system->staff(staffIdx1);
+        Staff *staff1 = score()->staff(staffIdx1);
+        SysStaff *sysStaff1 = system->staff(staffIdx1);
 
         while (staff1 && sysStaff1 && !(sysStaff1->show() && staff1->show())) {
             if (++staffIdx1 >= endIdx) {
@@ -167,17 +154,16 @@ PointF BarLine::pagePos() const
 //   prevVisiblespannedStaff
 //---------------------------------------------------------
 
-static staff_idx_t prevVisibleSpannedStaff(const BarLine* bl)
-{
-    Score* score = bl->score();
+static staff_idx_t prevVisibleSpannedStaff(const BarLine *bl) {
+    Score *score = bl->score();
     int staffIdx = static_cast<int>(bl->staffIdx());
-    Segment* segment = bl->segment();
+    Segment *segment = bl->segment();
     for (int i = staffIdx - 1; i >= 0; --i) {
-        BarLine* nbl = toBarLine(segment->element(i * VOICES));
+        BarLine *nbl = toBarLine(segment->element(i * VOICES));
         if (!nbl || !nbl->spanStaff()) {
             break;
         }
-        Staff* s = score->staff(i);
+        Staff *s = score->staff(i);
         if (s->part()->show() && bl->measure()->visible(i)) {
             return i;
         }
@@ -189,14 +175,13 @@ static staff_idx_t prevVisibleSpannedStaff(const BarLine* bl)
 //   nextVisiblespannedStaff
 //---------------------------------------------------------
 
-static size_t nextVisibleSpannedStaff(const BarLine* bl)
-{
-    Score* score = bl->score();
+static size_t nextVisibleSpannedStaff(const BarLine *bl) {
+    Score *score = bl->score();
     size_t nstaves = score->nstaves();
     size_t staffIdx = bl->staffIdx();
-    Segment* segment = bl->segment();
+    Segment *segment = bl->segment();
     for (size_t i = staffIdx + 1; i < nstaves; ++i) {
-        Staff* s = score->staff(i);
+        Staff *s = score->staff(i);
         if (s->part()->show()) {
             // span/show bar line if this measure is visible
             if (bl->measure()->visible(i)) {
@@ -209,13 +194,13 @@ static size_t nextVisibleSpannedStaff(const BarLine* bl)
                     return i;
                 }
                 // ...or next measure is both visible and in the same system
-                Measure* nm = bl->measure()->nextMeasure();
+                Measure *nm = bl->measure()->nextMeasure();
                 if ((nm ? nm->visible(i) : false) && (nm ? nm->system() == bl->measure()->system() : false)) {
                     return i;
                 }
             }
         }
-        BarLine* nbl = toBarLine(segment->element(i * VOICES));
+        BarLine *nbl = toBarLine(segment->element(i * VOICES));
         if (!nbl || !nbl->spanStaff()) {
             break;
         }
@@ -227,9 +212,8 @@ static size_t nextVisibleSpannedStaff(const BarLine* bl)
 //   calcY
 //---------------------------------------------------------
 
-void BarLine::calcY()
-{
-    BarLine::LayoutData* data = mutldata();
+void BarLine::calcY() {
+    BarLine::LayoutData *data = mutldata();
     double _spatium = spatium();
     if (!ownershipParent()) {
         // for use in palette
@@ -242,15 +226,15 @@ void BarLine::calcY()
 
     bool spanStaff = staffIdx2 != staffIdx1;
 
-    Measure* measure = segment()->measure();
-    System* system = measure->system();
+    Measure *measure = segment()->measure();
+    System *system = measure->system();
     if (!system) {
         return;
     }
 
     Fraction tick = segment()->measure()->tick();
-    const Staff* staff1 = score()->staff(staffIdx1);
-    const StaffType* staffType1 = staff1->staffType(tick);
+    const Staff *staff1 = score()->staff(staffIdx1);
+    const StaffType *staffType1 = staff1->staffType(tick);
 
     bool oneLine = staffType1->lines() <= 1;
 
@@ -275,8 +259,8 @@ void BarLine::calcY()
     if (spanStaff) {
         // we need spatium and line distance of bottom staff
         // as it may be scalled diferently
-        const Staff* staff2 = score()->staff(staffIdx2);
-        const StaffType* staffType2 = staff2 ? staff2->staffType(tick) : staffType1;
+        const Staff *staff2 = score()->staff(staffIdx2);
+        const StaffType *staffType2 = staff2 ? staff2->staffType(tick) : staffType1;
         double spatium2 = staffType2->spatium();
         double lineDistance2 = staffType2->lineDistance().val() * spatium2;
         double startStaffY = system->staff(staffIdx1)->y();
@@ -292,9 +276,9 @@ void BarLine::calcY()
     // if stafftype change in next measure, check new staff positions
     Fraction tickNext = tick + measure->ticks();
     if (staff1->isStaffTypeStartFrom(tickNext)) {
-        Measure* measureNext = measure->nextMeasure();
-        System* systemNext = measureNext ? measureNext->system() : nullptr;
-        const StaffType* staffType1Next = staff1->staffType(tickNext);
+        Measure *measureNext = measure->nextMeasure();
+        System *systemNext = measureNext ? measureNext->system() : nullptr;
+        const StaffType *staffType1Next = staff1->staffType(tickNext);
         bool oneLineNext = staffType1Next->lines() <= 1;
         if (systemNext && systemNext == system && staffType1Next != staffType1) {
             if (oneLine && !oneLineNext) {
@@ -338,8 +322,7 @@ void BarLine::calcY()
 //   isTop
 //---------------------------------------------------------
 
-bool BarLine::isTop() const
-{
+bool BarLine::isTop() const {
     staff_idx_t idx = staffIdx();
     if (idx == 0) {
         return true;
@@ -352,8 +335,7 @@ bool BarLine::isTop() const
 //   isBottom
 //---------------------------------------------------------
 
-bool BarLine::isBottom() const
-{
+bool BarLine::isBottom() const {
     if (!m_spanStaff) {
         return true;
     }
@@ -369,16 +351,15 @@ bool BarLine::isBottom() const
 //   acceptDrop
 //---------------------------------------------------------
 
-bool BarLine::acceptDrop(EditData& data) const
-{
-    EngravingItem* e = data.dropElement;
+bool BarLine::acceptDrop(EditData &data) const {
+    EngravingItem *e = data.dropElement;
 
     if (e->isBarLine()) {
         return true;
     } else if (e->isFermata() || e->isSymbol() || e->isImage()) {
         return segment() && segment()->isEndBarLineType();
     } else if (e->isMeasureNumber() || e->isJump() || e->isMarker() || e->isLayoutBreak()) {
-        if (Measure* m = measure()) {
+        if (Measure *m = measure()) {
             bool left = (e->isMarker() && !toMarker(e)->isRightMarker()) || e->isMeasureNumber();
             if (left && segment()->isEndBarLineType() && m->nextMeasureMM()) {
                 m = m->nextMeasureMM();
@@ -393,12 +374,11 @@ bool BarLine::acceptDrop(EditData& data) const
 //   drop
 //---------------------------------------------------------
 
-EngravingItem* BarLine::drop(Transaction& tx, EditData& data)
-{
-    EngravingItem* e = data.dropElement;
+EngravingItem *BarLine::drop(Transaction &tx, EditData &data) {
+    EngravingItem *e = data.dropElement;
 
     if (e->isBarLine()) {
-        BarLine* bl    = toBarLine(e);
+        BarLine *bl = toBarLine(e);
         BarLineType st = bl->barLineType();
 
         if (segment()->segmentType() == SegmentType::BarLine) {
@@ -413,7 +393,7 @@ EngravingItem* BarLine::drop(Transaction& tx, EditData& data)
             bool oldRepeat = barLineType() & bt;
             bool newRepeat = bl->barLineType() & bt;
 
-            Measure* m = measure();
+            Measure *m = measure();
             if (bl->playCount() != -1) {
                 m->undoChangeProperty(Pid::REPEAT_COUNT, bl->playCount());
             }
@@ -427,8 +407,8 @@ EngravingItem* BarLine::drop(Transaction& tx, EditData& data)
                 if (bl->spanFrom() || bl->spanTo()) {
                     // if dropped spanFrom or spanTo are below the middle of standard staff (5 lines)
                     // adjust to the number of staff lines
-                    int spanFrom   = bl->spanFrom();
-                    int spanTo     = bl->spanTo();
+                    int spanFrom = bl->spanFrom();
+                    int spanTo = bl->spanTo();
                     undoChangeProperty(Pid::BARLINE_SPAN, false);
                     undoChangeProperty(Pid::BARLINE_SPAN_FROM, spanFrom);
                     undoChangeProperty(Pid::BARLINE_SPAN_TO, spanTo);
@@ -444,7 +424,7 @@ EngravingItem* BarLine::drop(Transaction& tx, EditData& data)
         }
         delete e;
     } else if (e->isArticulationFamily()) {
-        Articulation* atr = toArticulation(e);
+        Articulation *atr = toArticulation(e);
         atr->setOwnershipParent(this);
         atr->setTrack(track());
         score()->undoAddElement(atr);
@@ -456,7 +436,7 @@ EngravingItem* BarLine::drop(Transaction& tx, EditData& data)
         return e;
     } else if (e->isFermata()) {
         e->setPlacement(track() & 1 ? PlacementV::BELOW : PlacementV::ABOVE);
-        for (EngravingItem* el: segment()->annotations()) {
+        for (EngravingItem *el : segment()->annotations()) {
             if (el->isFermata() && (el->track() == track())) {
                 if (el->subtype() == e->subtype()) {
                     delete e;
@@ -475,7 +455,7 @@ EngravingItem* BarLine::drop(Transaction& tx, EditData& data)
         score()->undoAddElement(e);
         return e;
     } else if (e->isMeasureNumber() || e->isJump() || e->isMarker() || e->isLayoutBreak()) {
-        if (Measure* m = measure()) {
+        if (Measure *m = measure()) {
             bool left = (e->isMarker() && !toMarker(e)->isRightMarker()) || e->isMeasureNumber();
             if (left && segment()->isEndBarLineType() && m->nextMeasureMM()) {
                 m = m->nextMeasureMM();
@@ -490,8 +470,7 @@ EngravingItem* BarLine::drop(Transaction& tx, EditData& data)
 //   setShowTips
 //---------------------------------------------------------
 
-void BarLine::setShowTips(bool val)
-{
+void BarLine::setShowTips(bool val) {
     if (!score()) {
         return;
     }
@@ -503,8 +482,7 @@ void BarLine::setShowTips(bool val)
 //   showTips
 //---------------------------------------------------------
 
-bool BarLine::showTips() const
-{
+bool BarLine::showTips() const {
     if (!score()) {
         return false;
     }
@@ -512,8 +490,7 @@ bool BarLine::showTips() const
     return style().styleB(Sid::repeatBarTips);
 }
 
-void BarLine::setSelected(bool f)
-{
+void BarLine::setSelected(bool f) {
     if (f == selected()) {
         return;
     }
@@ -528,8 +505,7 @@ void BarLine::setSelected(bool f)
 //   gripsPositions
 //---------------------------------------------------------
 
-void BarLine::styleChanged()
-{
+void BarLine::styleChanged() {
     if (ownershipParent() && m_barLineType == BarLineType::END_REPEAT) {
         score()->undoUpdatePlayCountText(measure());
     }
@@ -540,10 +516,9 @@ void BarLine::styleChanged()
 //   scanElements
 //---------------------------------------------------------
 
-void BarLine::scanElements(std::function<void(EngravingItem*)> func)
-{
+void BarLine::scanElements(std::function<void(EngravingItem *)> func) {
     func(this);
-    for (EngravingItem* e : m_el) {
+    for (EngravingItem *e : m_el) {
         e->scanElements(func);
     }
 }
@@ -552,10 +527,9 @@ void BarLine::scanElements(std::function<void(EngravingItem*)> func)
 //   setTrack
 //---------------------------------------------------------
 
-void BarLine::setTrack(track_idx_t t)
-{
+void BarLine::setTrack(track_idx_t t) {
     EngravingItem::setTrack(t);
-    for (EngravingItem* e : m_el) {
+    for (EngravingItem *e : m_el) {
         e->setTrack(t);
     }
 }
@@ -564,20 +538,17 @@ void BarLine::setTrack(track_idx_t t)
 //   add
 //---------------------------------------------------------
 
-void BarLine::add(EngravingItem* e)
-{
+void BarLine::add(EngravingItem *e) {
     e->setOwnershipParent(this);
     switch (e->type()) {
-    case ElementType::ARTICULATION:
-    case ElementType::SYMBOL:
-    case ElementType::IMAGE:
-        m_el.push_back(e);
-        setGenerated(false);
-        e->added();
-        break;
-    default:
-        LOGD("BarLine::add() not impl. %s", e->typeName());
-        break;
+        case ElementType::ARTICULATION:
+        case ElementType::SYMBOL:
+        case ElementType::IMAGE:
+            m_el.push_back(e);
+            setGenerated(false);
+            e->added();
+            break;
+        default: LOGD("BarLine::add() not impl. %s", e->typeName()); break;
     }
 }
 
@@ -585,21 +556,18 @@ void BarLine::add(EngravingItem* e)
 //   remove
 //---------------------------------------------------------
 
-void BarLine::remove(EngravingItem* e)
-{
+void BarLine::remove(EngravingItem *e) {
     switch (e->type()) {
-    case ElementType::ARTICULATION:
-    case ElementType::SYMBOL:
-    case ElementType::IMAGE:
-        if (!m_el.remove(e)) {
-            LOGD("BarLine::remove(): cannot find %s", e->typeName());
-        } else {
-            e->removed();
-        }
-        break;
-    default:
-        LOGD("BarLine::remove() not impl. %s", e->typeName());
-        return;
+        case ElementType::ARTICULATION:
+        case ElementType::SYMBOL:
+        case ElementType::IMAGE:
+            if (!m_el.remove(e)) {
+                LOGD("BarLine::remove(): cannot find %s", e->typeName());
+            } else {
+                e->removed();
+            }
+            break;
+        default: LOGD("BarLine::remove() not impl. %s", e->typeName()); return;
     }
 }
 
@@ -607,25 +575,18 @@ void BarLine::remove(EngravingItem* e)
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue BarLine::getProperty(Pid id) const
-{
-    if (EngravingObject* e = const_cast<BarLine*>(this)->propertyDelegate(id)) {
+PropertyValue BarLine::getProperty(Pid id) const {
+    if (EngravingObject *e = const_cast<BarLine *>(this)->propertyDelegate(id)) {
         return e->getProperty(id);
     }
 
     switch (id) {
-    case Pid::BARLINE_TYPE:
-        return PropertyValue::fromValue(m_barLineType);
-    case Pid::BARLINE_SPAN:
-        return spanStaff();
-    case Pid::BARLINE_SPAN_FROM:
-        return spanFrom();
-    case Pid::BARLINE_SPAN_TO:
-        return spanTo();
-    case Pid::BARLINE_SHOW_TIPS:
-        return showTips();
-    default:
-        break;
+        case Pid::BARLINE_TYPE: return PropertyValue::fromValue(m_barLineType);
+        case Pid::BARLINE_SPAN: return spanStaff();
+        case Pid::BARLINE_SPAN_FROM: return spanFrom();
+        case Pid::BARLINE_SPAN_TO: return spanTo();
+        case Pid::BARLINE_SHOW_TIPS: return showTips();
+        default: break;
     }
     return EngravingItem::getProperty(id);
 }
@@ -634,30 +595,18 @@ PropertyValue BarLine::getProperty(Pid id) const
 //   setProperty
 //---------------------------------------------------------
 
-bool BarLine::setProperty(Pid id, const PropertyValue& v)
-{
-    if (EngravingObject* e = propertyDelegate(id)) {
+bool BarLine::setProperty(Pid id, const PropertyValue &v) {
+    if (EngravingObject *e = propertyDelegate(id)) {
         return e->setProperty(id, v);
     }
 
     switch (id) {
-    case Pid::BARLINE_TYPE:
-        setBarLineType(v.value<BarLineType>());
-        break;
-    case Pid::BARLINE_SPAN:
-        setSpanStaff(v.toBool());
-        break;
-    case Pid::BARLINE_SPAN_FROM:
-        setSpanFrom(v.toInt());
-        break;
-    case Pid::BARLINE_SPAN_TO:
-        setSpanTo(v.toInt());
-        break;
-    case Pid::BARLINE_SHOW_TIPS:
-        setShowTips(v.toBool());
-        break;
-    default:
-        return EngravingItem::setProperty(id, v);
+        case Pid::BARLINE_TYPE: setBarLineType(v.value<BarLineType>()); break;
+        case Pid::BARLINE_SPAN: setSpanStaff(v.toBool()); break;
+        case Pid::BARLINE_SPAN_FROM: setSpanFrom(v.toInt()); break;
+        case Pid::BARLINE_SPAN_TO: setSpanTo(v.toInt()); break;
+        case Pid::BARLINE_SHOW_TIPS: setShowTips(v.toBool()); break;
+        default: return EngravingItem::setProperty(id, v);
     }
     setGenerated(false);
     triggerLayout();
@@ -668,9 +617,8 @@ bool BarLine::setProperty(Pid id, const PropertyValue& v)
 //   undoChangeProperty
 //---------------------------------------------------------
 
-void BarLine::undoChangeProperty(Pid id, const PropertyValue& v, PropertyFlags ps)
-{
-    if (EngravingObject* e = propertyDelegate(id)) {
+void BarLine::undoChangeProperty(Pid id, const PropertyValue &v, PropertyFlags ps) {
+    if (EngravingObject *e = propertyDelegate(id)) {
         e->undoChangeProperty(id, v, ps);
         return;
     }
@@ -682,8 +630,7 @@ void BarLine::undoChangeProperty(Pid id, const PropertyValue& v, PropertyFlags p
     }
 }
 
-EngravingObject* BarLine::propertyDelegate(Pid pid) const
-{
+EngravingObject *BarLine::propertyDelegate(Pid pid) const {
     if (pid == Pid::REPEAT_COUNT) {
         return measure();
     } else if (pid == Pid::PLAY_COUNT_TEXT || pid == Pid::PLAY_COUNT_TEXT_SETTING) {
@@ -693,13 +640,12 @@ EngravingObject* BarLine::propertyDelegate(Pid pid) const
     return EngravingItem::propertyDelegate(pid);
 }
 
-PlayCountText* BarLine::playCountText() const
-{
-    Segment* endBarSeg = segment();
+PlayCountText *BarLine::playCountText() const {
+    Segment *endBarSeg = segment();
     if (!endBarSeg) {
         return nullptr;
     }
-    PlayCountText* playCountText = toPlayCountText(endBarSeg->findAnnotation(ElementType::PLAY_COUNT_TEXT, track(), track()));
+    PlayCountText *playCountText = toPlayCountText(endBarSeg->findAnnotation(ElementType::PLAY_COUNT_TEXT, track(), track()));
 
     return playCountText;
 }
@@ -708,34 +654,28 @@ PlayCountText* BarLine::playCountText() const
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue BarLine::propertyDefault(Pid propertyId) const
-{
-    if (EngravingObject* e = const_cast<BarLine*>(this)->propertyDelegate(propertyId)) {
+PropertyValue BarLine::propertyDefault(Pid propertyId) const {
+    if (EngravingObject *e = const_cast<BarLine *>(this)->propertyDelegate(propertyId)) {
         return e->propertyDefault(propertyId);
     }
 
     switch (propertyId) {
-    case Pid::BARLINE_TYPE:
-// dynamic default values are a bad idea: writing to xml the value maybe omitted resulting in
-//    wrong values on read (as the default may be different on read)
-//                  if (segment() && segment()->measure() && !segment()->measure()->nextMeasure())
-//                        return QVariant::fromValue(BarLineType::END);
-        return PropertyValue::fromValue(BarLineType::NORMAL);
+        case Pid::BARLINE_TYPE:
+            // dynamic default values are a bad idea: writing to xml the value maybe omitted resulting in
+            //    wrong values on read (as the default may be different on read)
+            //                  if (segment() && segment()->measure() && !segment()->measure()->nextMeasure())
+            //                        return QVariant::fromValue(BarLineType::END);
+            return PropertyValue::fromValue(BarLineType::NORMAL);
 
-    case Pid::BARLINE_SPAN:
-        return staff() ? staff()->barLineSpan() : false;
+        case Pid::BARLINE_SPAN: return staff() ? staff()->barLineSpan() : false;
 
-    case Pid::BARLINE_SPAN_FROM:
-        return staff() ? staff()->barLineFrom() : 0;
+        case Pid::BARLINE_SPAN_FROM: return staff() ? staff()->barLineFrom() : 0;
 
-    case Pid::BARLINE_SPAN_TO:
-        return staff() ? staff()->barLineTo() : 0;
+        case Pid::BARLINE_SPAN_TO: return staff() ? staff()->barLineTo() : 0;
 
-    case Pid::BARLINE_SHOW_TIPS:
-        return false;
+        case Pid::BARLINE_SHOW_TIPS: return false;
 
-    default:
-        break;
+        default: break;
     }
     return EngravingItem::propertyDefault(propertyId);
 }
@@ -744,27 +684,24 @@ PropertyValue BarLine::propertyDefault(Pid propertyId) const
 //   nextSegmentElement
 //---------------------------------------------------------
 
-EngravingItem* BarLine::nextSegmentElement()
-{
-    return segment()->firstInNextSegments(staffIdx());      //score()->inputState().prevTrack() / VOICES);
+EngravingItem *BarLine::nextSegmentElement() {
+    return segment()->firstInNextSegments(staffIdx()); //score()->inputState().prevTrack() / VOICES);
 }
 
 //---------------------------------------------------------
 //   prevSegmentElement
 //---------------------------------------------------------
 
-EngravingItem* BarLine::prevSegmentElement()
-{
-    return segment()->lastInPrevSegments(staffIdx());       //score()->inputState().prevTrack() / VOICES);
+EngravingItem *BarLine::prevSegmentElement() {
+    return segment()->lastInPrevSegments(staffIdx()); //score()->inputState().prevTrack() / VOICES);
 }
 
 //---------------------------------------------------------
 //   subtypeUserName
 //---------------------------------------------------------
 
-muse::TranslatableString BarLine::subtypeUserName() const
-{
-    for (const auto& i : barLineTable) {
+muse::TranslatableString BarLine::subtypeUserName() const {
+    for (const auto &i : barLineTable) {
         if (i.type == barLineType()) {
             return i.userName;
         }

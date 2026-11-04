@@ -35,35 +35,23 @@ namespace muse::audio::fx {
 extern const float ivn15_gn[64][15];
 extern const float ivn15_ms[64][15];
 
-class ImprovedVelvetNoiseDecorrelation
-{
+class ImprovedVelvetNoiseDecorrelation {
 public:
-    void configure(int sequence_number, double samplerate, int maxBlockSize)
-    {
+    void configure(int sequence_number, double samplerate, int maxBlockSize) {
         assert(sequence_number >= 0 && sequence_number < 64);
 
         m_filter.setFormat(maxBlockSize, int(samplerate * 0.03));
         m_filter.clearImpulses();
         for (int i = 0; i < 15; ++i) {
-            m_filter.appendImpulse(int(ivn15_ms[sequence_number][i] * 0.001f * samplerate + 0.5f),
-                                   ivn15_gn[sequence_number][i]);
+            m_filter.appendImpulse(int(ivn15_ms[sequence_number][i] * 0.001f * samplerate + 0.5f), ivn15_gn[sequence_number][i]);
         }
     }
 
-    float processSample(float smp)
-    {
-        return m_filter.processSample(smp);
-    }
+    float processSample(float smp) { return m_filter.processSample(smp); }
 
-    void processBlock(const float* smp_in, float* smp_out, int n)
-    {
-        m_filter.processBlock(smp_in, smp_out, n);
-    }
+    void processBlock(const float *smp_in, float *smp_out, int n) { m_filter.processBlock(smp_in, smp_out, n); }
 
-    void reset()
-    {
-        m_filter.reset();
-    }
+    void reset() { m_filter.reset(); }
 
 private:
     SparseFirFilter m_filter;

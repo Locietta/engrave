@@ -62,23 +62,16 @@ namespace mu::iex::mnxio {
 //   exportDrumsetKit
 //---------------------------------------------------------
 
-void MnxExporter::exportDrumsetKit(const Part* part, const Instrument* instrument, mnx::Part& mnxPart)
-{
-    IF_ASSERT_FAILED(part && instrument) {
-        return;
-    }
-    IF_ASSERT_FAILED(instrument->useDrumset()) {
-        return;
-    }
+void MnxExporter::exportDrumsetKit(const Part *part, const Instrument *instrument, mnx::Part &mnxPart) {
+    IF_ASSERT_FAILED(part && instrument) { return; }
+    IF_ASSERT_FAILED(instrument->useDrumset()) { return; }
 
-    const Drumset* drumset = instrument->drumset();
-    IF_ASSERT_FAILED(drumset) {
-        return;
-    }
+    const Drumset *drumset = instrument->drumset();
+    IF_ASSERT_FAILED(drumset) { return; }
 
-    const Staff* staffForKit = part->staff(0);
-    const Measure* firstMeasure = m_score ? m_score->firstMeasure() : nullptr;
-    const StaffType* staffType = nullptr;
+    const Staff *staffForKit = part->staff(0);
+    const Measure *firstMeasure = m_score ? m_score->firstMeasure() : nullptr;
+    const StaffType *staffType = nullptr;
     if (staffForKit && firstMeasure) {
         staffType = staffForKit->staffType(firstMeasure->tick());
     }
@@ -121,8 +114,7 @@ void MnxExporter::exportDrumsetKit(const Part* part, const Instrument* instrumen
 //   export clefs for a single measure
 //---------------------------------------------------------
 
-static void appendClefsForMeasure(const Part* part, const Measure* measure, mnx::part::Measure& mnxMeasure)
-{
+static void appendClefsForMeasure(const Part *part, const Measure *measure, mnx::part::Measure &mnxMeasure) {
     if (part && part->instrument() && part->instrument()->useDrumset()) {
         /// @todo Export percussion and tab staves/clefs when MNX supports them.
         return;
@@ -131,10 +123,10 @@ static void appendClefsForMeasure(const Part* part, const Measure* measure, mnx:
     const bool isFirstMeasure = (measure->prevMeasure() == nullptr);
     const size_t staves = part->nstaves();
     const TrackRange trackRange = part->trackRange();
-    std::optional<mnx::Array<mnx::part::PositionedClef> > mnxClefs;
+    std::optional<mnx::Array<mnx::part::PositionedClef>> mnxClefs;
 
     constexpr SegmentType cleftTypes = SegmentType::Clef | SegmentType::HeaderClef;
-    for (Segment* segment = measure->first(cleftTypes); segment; segment = segment->next(cleftTypes)) {
+    for (Segment *segment = measure->first(cleftTypes); segment; segment = segment->next(cleftTypes)) {
         const SegmentType segmentType = segment->segmentType();
         if ((segmentType == SegmentType::HeaderClef) && !isFirstMeasure) {
             continue;
@@ -142,7 +134,7 @@ static void appendClefsForMeasure(const Part* part, const Measure* measure, mnx:
 
         const Fraction rTick = segment->rtick();
         for (track_idx_t track = trackRange.startTrack; track < trackRange.endTrack; track += VOICES) {
-            Clef* clef = toClef(segment->element(track));
+            Clef *clef = toClef(segment->element(track));
             if (!clef || clef->isCourtesy()) {
                 continue;
             }
@@ -160,9 +152,7 @@ static void appendClefsForMeasure(const Part* part, const Measure* measure, mnx:
                 mnxClefs = mnxMeasure.ensure_clefs();
             }
 
-            auto mnxClef = mnxClefs->append(required->clefSign,
-                                            required->staffPosition,
-                                            required->octaveAdjustment);
+            auto mnxClef = mnxClefs->append(required->clefSign, required->staffPosition, required->octaveAdjustment);
             if (staves > 1) {
                 const size_t staffIdx = (track - trackRange.startTrack) / VOICES;
                 mnxClef.set_staff(static_cast<int>(staffIdx + 1));
@@ -178,17 +168,16 @@ static void appendClefsForMeasure(const Part* part, const Measure* measure, mnx:
 //   findFirstChordRest
 //---------------------------------------------------------
 
-static const ChordRest* findFirstChordRest(const Slur* s)
-{
+static const ChordRest *findFirstChordRest(const Slur *s) {
     /// @todo this function is copied from same function in musicxml and should probably be a method on Slur
 
-    const EngravingItem* e1 = s->startElement();
+    const EngravingItem *e1 = s->startElement();
     if (!e1 || !(e1->isChordRest())) {
         LOGD("no valid start element for slur %p", s);
         return nullptr;
     }
 
-    const EngravingItem* e2 = s->endElement();
+    const EngravingItem *e2 = s->endElement();
     if (!e2 || !(e2->isChordRest())) {
         LOGD("no valid end element for slur %p", s);
         return nullptr;
@@ -204,8 +193,8 @@ static const ChordRest* findFirstChordRest(const Slur* s)
         return nullptr;
     }
 
-    const Chord* c1 = toChord(e1);
-    const Chord* c2 = toChord(e2);
+    const Chord *c1 = toChord(e1);
+    const Chord *c2 = toChord(e2);
 
     // c1->tick() == c2->tick()
     if (!c1->isGrace() && !c2->isGrace()) {
@@ -214,18 +203,17 @@ static const ChordRest* findFirstChordRest(const Slur* s)
         LOGD("invalid slur between chords %p and %p at tick %d", c1, c2, c1->tick().ticks());
         return 0;
     } else if (c1->isGraceBefore() && !c2->isGraceBefore()) {
-        return c1;            // easy case: c1 first
+        return c1; // easy case: c1 first
     } else if (c1->isGraceAfter() && !c2->isGraceAfter()) {
-        return c2;            // easy case: c2 first
+        return c2; // easy case: c2 first
     } else if (c2->isGraceBefore() && !c1->isGraceBefore()) {
-        return c2;            // easy case: c2 first
+        return c2; // easy case: c2 first
     } else if (c2->isGraceAfter() && !c1->isGraceAfter()) {
-        return c1;            // easy case: c1 first
+        return c1; // easy case: c1 first
     } else {
         // both are grace before or both are grace after -> compare grace indexes
         // (note: higher means closer to the non-grace chord it is attached to)
-        if ((c1->isGraceBefore() && c1->graceIndex() < c2->graceIndex())
-            || (c1->isGraceAfter() && c1->graceIndex() > c2->graceIndex())) {
+        if ((c1->isGraceBefore() && c1->graceIndex() < c2->graceIndex()) || (c1->isGraceAfter() && c1->graceIndex() > c2->graceIndex())) {
             return c1;
         } else {
             return c2;
@@ -233,37 +221,30 @@ static const ChordRest* findFirstChordRest(const Slur* s)
     }
 }
 
-static mnx::MultiStaffOrientation mnxMultiStaffOrientFromDirection(const EngravingItem* item)
-{
+static mnx::MultiStaffOrientation mnxMultiStaffOrientFromDirection(const EngravingItem *item) {
     switch (item->getProperty(Pid::DIRECTION).value<DirectionV>()) {
-    case DirectionV::UP:
-        return mnx::MultiStaffOrientation::Above;
-    case DirectionV::DOWN:
-        return mnx::MultiStaffOrientation::Below;
-    case DirectionV::AUTO:
-        if (item->part()->staves().size() > 1) {
-            if (item->getProperty(Pid::CENTER_BETWEEN_STAVES) == AutoOnOff::ON) {
-                return mnx::MultiStaffOrientation::Between;
+        case DirectionV::UP: return mnx::MultiStaffOrientation::Above;
+        case DirectionV::DOWN: return mnx::MultiStaffOrientation::Below;
+        case DirectionV::AUTO:
+            if (item->part()->staves().size() > 1) {
+                if (item->getProperty(Pid::CENTER_BETWEEN_STAVES) == AutoOnOff::ON) {
+                    return mnx::MultiStaffOrientation::Between;
+                }
             }
-        }
     }
 
     return mnx::MultiStaffOrientation::Auto;
 }
 
-static void exportMnxVoiceAssignment(mnx::part::DynamicGroupBase& mnxDynamic, int mnxStaffNum,
-                                     VoiceAssignment voiceAssignment, track_idx_t curTrackIdx)
-{
+static void exportMnxVoiceAssignment(mnx::part::DynamicGroupBase &mnxDynamic, int mnxStaffNum, VoiceAssignment voiceAssignment,
+                                     track_idx_t curTrackIdx) {
     switch (voiceAssignment) {
-    case VoiceAssignment::CURRENT_VOICE_ONLY:
-        mnxDynamic.set_staff(mnxStaffNum);
-        mnxDynamic.set_voice(makeMnxVoiceIdFromTrack(mnxDynamic.staff_or(1), curTrackIdx));
-        break;
-    case VoiceAssignment::ALL_VOICE_IN_STAFF:
-        mnxDynamic.set_staff(mnxStaffNum);
-        break;
-    case VoiceAssignment::ALL_VOICE_IN_INSTRUMENT:
-        break;
+        case VoiceAssignment::CURRENT_VOICE_ONLY:
+            mnxDynamic.set_staff(mnxStaffNum);
+            mnxDynamic.set_voice(makeMnxVoiceIdFromTrack(mnxDynamic.staff_or(1), curTrackIdx));
+            break;
+        case VoiceAssignment::ALL_VOICE_IN_STAFF: mnxDynamic.set_staff(mnxStaffNum); break;
+        case VoiceAssignment::ALL_VOICE_IN_INSTRUMENT: break;
     }
 }
 
@@ -272,13 +253,10 @@ static void exportMnxVoiceAssignment(mnx::part::DynamicGroupBase& mnxDynamic, in
 //   export volta as an MNX ending
 //---------------------------------------------------------
 
-void MnxExporter::createVolta(const Volta* volta)
-{
-    IF_ASSERT_FAILED(volta) {
-        return;
-    }
+void MnxExporter::createVolta(const Volta *volta) {
+    IF_ASSERT_FAILED(volta) { return; }
 
-    Measure* startMeasure = toMeasure(volta->startElement());
+    Measure *startMeasure = toMeasure(volta->startElement());
     IF_ASSERT_FAILED(startMeasure) {
         LOGW() << "Skipping volta with missing start measure.";
         return;
@@ -288,7 +266,7 @@ void MnxExporter::createVolta(const Volta* volta)
     auto mnxMeasure = mnxDocument().global().measures().at(mnxMeasureIndex);
 
     const Fraction endTick = volta->tick2() - Fraction::eps();
-    Measure* endMeasure = startMeasure->score()->tick2measure(endTick);
+    Measure *endMeasure = startMeasure->score()->tick2measure(endTick);
     IF_ASSERT_FAILED(endMeasure) {
         LOGW() << "Skipping volta with missing end measure.";
         return;
@@ -300,7 +278,7 @@ void MnxExporter::createVolta(const Volta* volta)
 
     int duration = 0;
     bool foundEnd = false;
-    for (const Measure* cursor = startMeasure; cursor; cursor = cursor->nextMeasure()) {
+    for (const Measure *cursor = startMeasure; cursor; cursor = cursor->nextMeasure()) {
         ++duration;
         if (cursor == endMeasure) {
             foundEnd = true;
@@ -328,11 +306,8 @@ void MnxExporter::createVolta(const Volta* volta)
 //   export a single slur spanner
 //---------------------------------------------------------
 
-void MnxExporter::createSlur(const Slur* s)
-{
-    IF_ASSERT_FAILED(s) {
-        return;
-    }
+void MnxExporter::createSlur(const Slur *s) {
+    IF_ASSERT_FAILED(s) { return; }
     IF_ASSERT_FAILED(s->startElement() && s->endElement()) {
         LOGW() << "Skipping slur with missing endpoints.";
         return;
@@ -342,10 +317,8 @@ void MnxExporter::createSlur(const Slur* s)
         return;
     }
 
-    if (const ChordRest* startCR = findFirstChordRest(s)) {
-        const ChordRest* endCR = startCR == s->startElement()
-                                 ? toChordRest(s->endElement())
-                                 : toChordRest(s->startElement());
+    if (const ChordRest *startCR = findFirstChordRest(s)) {
+        const ChordRest *endCR = startCR == s->startElement() ? toChordRest(s->endElement()) : toChordRest(s->startElement());
         auto mnxEvent = mnxEventFromCR(startCR);
         auto endEvent = endCR ? mnxEventFromCR(endCR) : std::nullopt;
         if (mnxEvent && endEvent) {
@@ -365,19 +338,16 @@ void MnxExporter::createSlur(const Slur* s)
 //   export a single hairpin spanner
 //---------------------------------------------------------
 
-void MnxExporter::createHairpin(const Hairpin* hairpin)
-{
-    IF_ASSERT_FAILED(hairpin) {
-        return;
-    }
+void MnxExporter::createHairpin(const Hairpin *hairpin) {
+    IF_ASSERT_FAILED(hairpin) { return; }
 
     if (hairpin->isLineType()) {
         LOGI() << "Line-type hairpins not yet supported by MNX export.";
         return;
     }
 
-    const Staff* startStaff = m_score->staff(track2staff(hairpin->track()));
-    const Staff* endStaff = m_score->staff(track2staff(hairpin->effectiveTrack2()));
+    const Staff *startStaff = m_score->staff(track2staff(hairpin->track()));
+    const Staff *endStaff = m_score->staff(track2staff(hairpin->effectiveTrack2()));
     IF_ASSERT_FAILED(startStaff && startStaff->part()) {
         LOGW() << "Skipping hairpin with missing start staff or part context.";
         return;
@@ -387,14 +357,14 @@ void MnxExporter::createHairpin(const Hairpin* hairpin)
         LOGW() << "Hairpin has no end staff and will be exported using the start staff/voice only.";
     }
 
-    const Measure* startMeasure = m_score->tick2measure(hairpin->tick());
+    const Measure *startMeasure = m_score->tick2measure(hairpin->tick());
     IF_ASSERT_FAILED(startMeasure) {
         LOGW() << "Skipping hairpin with missing start measure for tick " << hairpin->tick().ticks() << ".";
         return;
     }
 
     const Fraction adjustedEndTick = hairpin->tick2() - Fraction::eps();
-    Measure* endMeasure = m_score->tick2measure(adjustedEndTick);
+    Measure *endMeasure = m_score->tick2measure(adjustedEndTick);
     IF_ASSERT_FAILED(endMeasure) {
         LOGW() << "Skipping hairpin with missing end measure.";
         return;
@@ -411,16 +381,12 @@ void MnxExporter::createHairpin(const Hairpin* hairpin)
 
     const Fraction startOffset = hairpin->tick() - startMeasure->tick();
     const Fraction endOffset = hairpin->tick2() - endMeasure->tick();
-    const std::string endMeasureId = getOrAssignEID(const_cast<Measure*>(endMeasure)).toStdString();
+    const std::string endMeasureId = getOrAssignEID(const_cast<Measure *>(endMeasure)).toStdString();
 
     auto mnxHairpin = mnxMeasure.ensure_dynamics().appendGradual(
-        hairpin->hairpinType() == HairpinType::CRESC_HAIRPIN
-        ? mnx::DynamicWedgeType::Increasing
-        : mnx::DynamicWedgeType::Decreasing,
+        hairpin->hairpinType() == HairpinType::CRESC_HAIRPIN ? mnx::DynamicWedgeType::Increasing : mnx::DynamicWedgeType::Decreasing,
         toMnxFractionValue(startOffset).reduced(),
-        mnx::MeasureRhythmicPosition::make(
-            endMeasureId,
-            toMnxFractionValue(endOffset).reduced()));
+        mnx::MeasureRhythmicPosition::make(endMeasureId, toMnxFractionValue(endOffset).reduced()));
 
     if (endStaff && endStaff->idx() != startStaff->idx()) {
         const auto [mnxEndPartIdx, mnxEndStaffNum] = mnxPartStaffFromStaffIdx(endStaff->idx());
@@ -440,11 +406,8 @@ void MnxExporter::createHairpin(const Hairpin* hairpin)
 //   export a single ottava spanner
 //---------------------------------------------------------
 
-void MnxExporter::createOttava(const Ottava* ottava)
-{
-    IF_ASSERT_FAILED(ottava) {
-        return;
-    }
+void MnxExporter::createOttava(const Ottava *ottava) {
+    IF_ASSERT_FAILED(ottava) { return; }
 
     if (!ottava->startElement() || !ottava->endElement()) {
         LOGW() << "Skipping ottava with missing endpoints.";
@@ -457,11 +420,11 @@ void MnxExporter::createOttava(const Ottava* ottava)
         return;
     }
 
-    const EngravingItem* startElement = ottava->startElement();
-    const EngravingItem* endElement = ottava->endElement();
+    const EngravingItem *startElement = ottava->startElement();
+    const EngravingItem *endElement = ottava->endElement();
 
-    const Measure* startMeasure = startElement->findMeasure();
-    const Measure* endMeasure = endElement->findMeasure();
+    const Measure *startMeasure = startElement->findMeasure();
+    const Measure *endMeasure = endElement->findMeasure();
 
     if (!startMeasure) {
         LOGW() << "Skipping ottava with missing start measure.";
@@ -479,35 +442,31 @@ void MnxExporter::createOttava(const Ottava* ottava)
     }
 
     const Fraction startOffset = ottava->tick() - startMeasure->tick();
-    const Fraction adjustedEndTick = ottava->endElement()->isChordRest()
-                                     ? toChordRest(ottava->endElement())->tick()
-                                     : ottava->tick2();
+    const Fraction adjustedEndTick = ottava->endElement()->isChordRest() ? toChordRest(ottava->endElement())->tick() : ottava->tick2();
     const Fraction endOffset = adjustedEndTick - endMeasure->tick();
 
     // Resolve part and staff so we can attach the ottava to the correct part measure.
-    const Staff* staff = startElement->staff();
+    const Staff *staff = startElement->staff();
     IF_ASSERT_FAILED(staff && staff->part()) {
         LOGW() << "Skipping ottava with missing staff or part context.";
         return;
     }
 
-    const Part* part = staff->part();
+    const Part *part = staff->part();
     const auto [mnxPartIdx, mnxStaffNum] = mnxPartStaffFromStaffIdx(staff->idx());
     const size_t mnxMeasureIndex = mnxMeasureIndexFromMeasure(startMeasure);
     auto mnxPart = mnxDocument().parts().at(mnxPartIdx);
     auto mnxMeasure = mnxPart.measures().at(mnxMeasureIndex);
-    const std::string endMeasureId = getOrAssignEID(const_cast<Measure*>(endMeasure)).toStdString();
+    const std::string endMeasureId = getOrAssignEID(const_cast<Measure *>(endMeasure)).toStdString();
 
-    auto mnxOttava = mnxMeasure.ensure_ottavas().append(amount.value(),
-                                                        toMnxFractionValue(startOffset).reduced(),
-                                                        mnx::MeasureRhythmicPosition::make(
-                                                            endMeasureId,
-                                                            toMnxFractionValue(endOffset).reduced()));
+    auto mnxOttava =
+        mnxMeasure.ensure_ottavas().append(amount.value(), toMnxFractionValue(startOffset).reduced(),
+                                           mnx::MeasureRhythmicPosition::make(endMeasureId, toMnxFractionValue(endOffset).reduced()));
 
     // toChord only asserts in debug builds, so the type has to be checked first: an ottava
     // ending on a rest would otherwise yield a bogus Chord* and read past it here.
     if (ottava->endElement()->isChord()) {
-        const Chord* endC = toChord(ottava->endElement());
+        const Chord *endC = toChord(ottava->endElement());
         if (!endC->graceNotesBefore().empty()) {
             // Ensure grace notes before the end of the ottava are included.
             mnxOttava.end().position().set_graceIndex(0);
@@ -525,31 +484,21 @@ void MnxExporter::createOttava(const Ottava* ottava)
 //   exportSpanners
 //---------------------------------------------------------
 
-void MnxExporter::exportSpanners()
-{
-    const SpannerMap::IntervalList& spanners = m_score->spannerMap().findOverlapping(
-        m_score->firstMeasure()->tick().ticks(), m_score->lastMeasure()->endTick().ticks());
+void MnxExporter::exportSpanners() {
+    const SpannerMap::IntervalList &spanners =
+        m_score->spannerMap().findOverlapping(m_score->firstMeasure()->tick().ticks(), m_score->lastMeasure()->endTick().ticks());
 
-    for (const auto& entry : spanners) {
-        Spanner* sp = entry.value;
+    for (const auto &entry : spanners) {
+        Spanner *sp = entry.value;
         if (sp->generated()) {
             continue;
         }
         switch (sp->type()) {
-        case ElementType::HAIRPIN:
-            createHairpin(toHairpin(sp));
-            break;
-        case ElementType::OTTAVA:
-            createOttava(toOttava(sp));
-            break;
-        case ElementType::SLUR:
-            createSlur(toSlur(sp));
-            break;
-        case ElementType::VOLTA:
-            createVolta(toVolta(sp));
-            break;
-        default:
-            break;
+            case ElementType::HAIRPIN: createHairpin(toHairpin(sp)); break;
+            case ElementType::OTTAVA: createOttava(toOttava(sp)); break;
+            case ElementType::SLUR: createSlur(toSlur(sp)); break;
+            case ElementType::VOLTA: createVolta(toVolta(sp)); break;
+            default: break;
         }
     }
 }
@@ -559,44 +508,39 @@ void MnxExporter::exportSpanners()
 //   emit MNX measure-level arpeggios and non-arpeggios
 //---------------------------------------------------------
 
-void MnxExporter::createArpeggios(const Part* part, const Measure* measure, mnx::part::Measure& mnxMeasure)
-{
-    IF_ASSERT_FAILED(part && measure) {
-        return;
-    }
+void MnxExporter::createArpeggios(const Part *part, const Measure *measure, mnx::part::Measure &mnxMeasure) {
+    IF_ASSERT_FAILED(part && measure) { return; }
 
     const TrackRange trackRange = part->trackRange();
-    std::unordered_set<const Arpeggio*> exportedArpeggios;
+    std::unordered_set<const Arpeggio *> exportedArpeggios;
 
-    auto isExportedChord = [this](const Chord* chord) {
-        return chord && m_crToMnxEvent.find(chord) != m_crToMnxEvent.end();
-    };
+    auto isExportedChord = [this](const Chord *chord) { return chord && m_crToMnxEvent.find(chord) != m_crToMnxEvent.end(); };
 
-    auto isExportableEndpoint = [&](const Note* note) {
+    auto isExportableEndpoint = [&](const Note *note) {
         if (!note || !isExportedChord(note->chord())) {
             return false;
         }
-        const Staff* staff = note->staff();
+        const Staff *staff = note->staff();
         if (staff && staff->isDrumStaff(note->tick())) {
             return pitchIsValid(note->pitch());
         }
         return toMnxPitch(note).has_value();
     };
 
-    auto findBottomChord = [](const Arpeggio* arpeggio) -> Chord* {
-        Chord* chord = arpeggio ? arpeggio->chord() : nullptr;
-        Segment* segment = chord ? chord->segment() : nullptr;
+    auto findBottomChord = [](const Arpeggio *arpeggio) -> Chord * {
+        Chord *chord = arpeggio ? arpeggio->chord() : nullptr;
+        Segment *segment = chord ? chord->segment() : nullptr;
         if (!chord || !segment) {
             return nullptr;
         }
 
-        Chord* bottomChord = chord;
+        Chord *bottomChord = chord;
         for (track_idx_t track = arpeggio->track(); track <= arpeggio->endTrack(); ++track) {
-            EngravingItem* item = segment->element(track);
+            EngravingItem *item = segment->element(track);
             if (!item || !item->isChord()) {
                 continue;
             }
-            Chord* spanChord = toChord(item);
+            Chord *spanChord = toChord(item);
             if (spanChord == chord || spanChord->spanArpeggio() == arpeggio) {
                 bottomChord = spanChord;
             }
@@ -604,18 +548,16 @@ void MnxExporter::createArpeggios(const Part* part, const Measure* measure, mnx:
         return bottomChord;
     };
 
-    auto setMnxGraceIndex = [](mnx::part::ArpeggioBase& item, const MnxChordTargetPosition& position) {
+    auto setMnxGraceIndex = [](mnx::part::ArpeggioBase &item, const MnxChordTargetPosition &position) {
         if (position.graceIndex) {
             item.position().set_graceIndex(position.graceIndex.value());
         }
     };
 
-    auto processArpeggio = [&](Chord* chord) {
-        IF_ASSERT_FAILED(chord) {
-            return;
-        }
+    auto processArpeggio = [&](Chord *chord) {
+        IF_ASSERT_FAILED(chord) { return; }
 
-        Arpeggio* arpeggio = chord->arpeggio();
+        Arpeggio *arpeggio = chord->arpeggio();
         if (!arpeggio || !exportedArpeggios.insert(arpeggio).second) {
             return;
         }
@@ -624,7 +566,7 @@ void MnxExporter::createArpeggios(const Part* part, const Measure* measure, mnx:
             return;
         }
 
-        Chord* bottomChord = chord;
+        Chord *bottomChord = chord;
         if (chord->isGrace()) {
             if (arpeggio->span() != 1) {
                 LOGW() << "Skipping multi-track grace-note arpeggio.";
@@ -643,8 +585,8 @@ void MnxExporter::createArpeggios(const Part* part, const Measure* measure, mnx:
             return;
         }
 
-        Note* topNote = chord->upNote();
-        Note* bottomNote = bottomChord->downNote();
+        Note *topNote = chord->upNote();
+        Note *bottomNote = bottomChord->downNote();
         if (!isExportableEndpoint(topNote) || !isExportableEndpoint(bottomNote)) {
             LOGW() << "Skipping arpeggio with non-exportable endpoint note.";
             return;
@@ -654,53 +596,49 @@ void MnxExporter::createArpeggios(const Part* part, const Measure* measure, mnx:
         if (!position) {
             return;
         }
-        const mnx::IdPair::Required span = mnx::IdPair::make(getOrAssignEID(topNote).toStdString(),
-                                                             getOrAssignEID(bottomNote).toStdString());
+        const mnx::IdPair::Required span =
+            mnx::IdPair::make(getOrAssignEID(topNote).toStdString(), getOrAssignEID(bottomNote).toStdString());
 
         switch (arpeggio->arpeggioType()) {
-        case ArpeggioType::NORMAL: {
-            auto mnxArpeggio = mnxMeasure.ensure_arpeggios().append(position->fraction, span);
-            setMnxGraceIndex(mnxArpeggio, *position);
-            break;
-        }
-        case ArpeggioType::UP:
-        case ArpeggioType::UP_STRAIGHT: {
-            auto mnxArpeggio = mnxMeasure.ensure_arpeggios().append(position->fraction, span);
-            mnxArpeggio.set_arrow(true);
-            mnxArpeggio.set_direction(mnx::MarkingUpDownAuto::Up);
-            setMnxGraceIndex(mnxArpeggio, *position);
-            break;
-        }
-        case ArpeggioType::DOWN:
-        case ArpeggioType::DOWN_STRAIGHT: {
-            auto mnxArpeggio = mnxMeasure.ensure_arpeggios().append(position->fraction, span);
-            mnxArpeggio.set_arrow(true);
-            mnxArpeggio.set_direction(mnx::MarkingUpDownAuto::Down);
-            setMnxGraceIndex(mnxArpeggio, *position);
-            break;
-        }
-        case ArpeggioType::BRACKET: {
-            auto mnxNonArpeggio = mnxMeasure.ensure_nonArpeggios().append(position->fraction, span);
-            setMnxGraceIndex(mnxNonArpeggio, *position);
-            break;
-        }
-        default:
-            LOGW() << "Skipping unsupported arpeggio type: " << static_cast<int>(arpeggio->arpeggioType());
-            break;
+            case ArpeggioType::NORMAL: {
+                auto mnxArpeggio = mnxMeasure.ensure_arpeggios().append(position->fraction, span);
+                setMnxGraceIndex(mnxArpeggio, *position);
+                break;
+            }
+            case ArpeggioType::UP:
+            case ArpeggioType::UP_STRAIGHT: {
+                auto mnxArpeggio = mnxMeasure.ensure_arpeggios().append(position->fraction, span);
+                mnxArpeggio.set_arrow(true);
+                mnxArpeggio.set_direction(mnx::MarkingUpDownAuto::Up);
+                setMnxGraceIndex(mnxArpeggio, *position);
+                break;
+            }
+            case ArpeggioType::DOWN:
+            case ArpeggioType::DOWN_STRAIGHT: {
+                auto mnxArpeggio = mnxMeasure.ensure_arpeggios().append(position->fraction, span);
+                mnxArpeggio.set_arrow(true);
+                mnxArpeggio.set_direction(mnx::MarkingUpDownAuto::Down);
+                setMnxGraceIndex(mnxArpeggio, *position);
+                break;
+            }
+            case ArpeggioType::BRACKET: {
+                auto mnxNonArpeggio = mnxMeasure.ensure_nonArpeggios().append(position->fraction, span);
+                setMnxGraceIndex(mnxNonArpeggio, *position);
+                break;
+            }
+            default: LOGW() << "Skipping unsupported arpeggio type: " << static_cast<int>(arpeggio->arpeggioType()); break;
         }
     };
 
-    for (Segment* segment = measure->first(SegmentType::ChordRest);
-         segment;
-         segment = segment->next(SegmentType::ChordRest)) {
+    for (Segment *segment = measure->first(SegmentType::ChordRest); segment; segment = segment->next(SegmentType::ChordRest)) {
         for (track_idx_t track = trackRange.startTrack; track < trackRange.endTrack; ++track) {
-            EngravingItem* item = segment->element(track);
+            EngravingItem *item = segment->element(track);
             if (!item || !item->isChord()) {
                 continue;
             }
-            Chord* chord = toChord(item);
+            Chord *chord = toChord(item);
             processArpeggio(chord);
-            for (Chord* graceChord : chord->graceNotes()) {
+            for (Chord *graceChord : chord->graceNotes()) {
                 processArpeggio(graceChord);
             }
         }
@@ -710,14 +648,13 @@ void MnxExporter::createArpeggios(const Part* part, const Measure* measure, mnx:
 /// Splits a dynamic's text into leading text, SMuFL glyphs, and trailing text. Returns false,
 /// leaving all three empty, when the text interleaves glyphs and words in a way MNX cannot
 /// describe -- the caller must not export a partial reading of it.
-static bool splitDynamicText(const Dynamic* dynamic, String& prefix, std::vector<SymId>& symIds, String& suffix)
-{
+static bool splitDynamicText(const Dynamic *dynamic, String &prefix, std::vector<SymId> &symIds, String &suffix) {
     const auto engravingFonts = dynamic->score()->services().engravingFonts;
 
     bool gotGlyph{};
     bool gotSuffix{};
-    for (const TextFragment& fragment : dynamic->fragmentList()) {
-        const CharFormat& format = fragment.format;
+    for (const TextFragment &fragment : dynamic->fragmentList()) {
+        const CharFormat &format = fragment.format;
         if (format.fontFamily() == u"ScoreText") {
             if (gotSuffix) {
                 // Can't encode a dynamic with multiple glyph sequences separated by text.
@@ -754,12 +691,8 @@ static bool splitDynamicText(const Dynamic* dynamic, String& prefix, std::vector
 //   export a dynamic text annotation
 //---------------------------------------------------------
 
-static void createDynamic(const Dynamic* dynamic, const Fraction& rTick, int mnxStaffNum,
-                          mnx::part::Measure& mnxMeasure)
-{
-    IF_ASSERT_FAILED(dynamic) {
-        return;
-    }
+static void createDynamic(const Dynamic *dynamic, const Fraction &rTick, int mnxStaffNum, mnx::part::Measure &mnxMeasure) {
+    IF_ASSERT_FAILED(dynamic) { return; }
 
     String prefix{};
     String suffix{};
@@ -771,7 +704,7 @@ static void createDynamic(const Dynamic* dynamic, const Fraction& rTick, int mnx
 
     bool sawIncrease{};
     bool sawDecrease{};
-    auto checkRelative = [&](const String& value) {
+    auto checkRelative = [&](const String &value) {
         if (value == u"piu" || value == u"più") {
             sawIncrease = true;
         }
@@ -861,26 +794,22 @@ static void createDynamic(const Dynamic* dynamic, const Fraction& rTick, int mnx
 //   export dynamics, staff text, etc. for a single measure
 //---------------------------------------------------------
 
-static void exportTextAnnotations(const Part* part, const Measure* measure, mnx::part::Measure& mnxMeasure)
-{
+static void exportTextAnnotations(const Part *part, const Measure *measure, mnx::part::Measure &mnxMeasure) {
     const size_t staves = part->nstaves();
     const track_idx_t partStartTrack = part->trackRange().startTrack;
     constexpr SegmentType timeSegments = SegmentType::Duration;
-    for (Segment* segment = measure->first(timeSegments); segment; segment = segment->next(timeSegments)) {
+    for (Segment *segment = measure->first(timeSegments); segment; segment = segment->next(timeSegments)) {
         const Fraction rTick = segment->rtick();
         for (size_t staffIdx = 0; staffIdx < staves; ++staffIdx) {
             const track_idx_t track = partStartTrack + VOICES * staffIdx;
-            for (EngravingItem* annotation : segment->annotations()) {
+            for (EngravingItem *annotation : segment->annotations()) {
                 if (annotation->track() < track || annotation->track() >= track + VOICES || !annotation->isTextBase()) {
                     continue;
                 }
                 switch (annotation->type()) {
-                case ElementType::DYNAMIC:
-                    createDynamic(toDynamic(annotation), rTick, int(staffIdx) + 1, mnxMeasure);
-                    break;
-                /// @todo other kinds of staff text when defined by MNX
-                default:
-                    break;
+                    case ElementType::DYNAMIC: createDynamic(toDynamic(annotation), rTick, int(staffIdx) + 1, mnxMeasure); break;
+                    /// @todo other kinds of staff text when defined by MNX
+                    default: break;
                 }
             }
         }
@@ -894,13 +823,12 @@ static void exportTextAnnotations(const Part* part, const Measure* measure, mnx:
 
 // Returns true if the measure belongs to a measure repeat group, in which case its content
 // is represented by the repeat rather than by sequences.
-static bool exportMeasureRepeat(const Part* part, const Measure* measure, mnx::part::Measure& mnxMeasure)
-{
+static bool exportMeasureRepeat(const Part *part, const Measure *measure, mnx::part::Measure &mnxMeasure) {
     /// @todo Export MeasureRepeat counter, displayNumber, and staffPosition. MuseScore keeps
     /// none of them per element: the counter comes from the repeat's place in the run,
     /// whether `number` is drawn is fixed for 2- and 4-bar repeats and score-wide styled for
     /// 1-bar ones, and the glyph's staff position is computed from the staff's middle line.
-    const Staff* firstStaff = part->staff(0);
+    const Staff *firstStaff = part->staff(0);
     if (!firstStaff || !measure->isMeasureRepeatGroup(firstStaff->idx())) {
         return false;
     }
@@ -910,7 +838,7 @@ static bool exportMeasureRepeat(const Part* part, const Measure* measure, mnx::p
 
     // MNX attaches a measure repeat to the part, not to one of its staves.
     for (staff_idx_t s = 1; s < part->nstaves(); ++s) {
-        const Staff* staff = part->staff(s);
+        const Staff *staff = part->staff(s);
         if (staff && measure->measureRepeatNumMeasures(staff->idx()) != numMeasures) {
             LOGW() << "Measure repeat differs between staves of a part; exporting the first staff's.";
             break;
@@ -928,8 +856,7 @@ static bool exportMeasureRepeat(const Part* part, const Measure* measure, mnx::p
 //   createParts
 //---------------------------------------------------------
 
-bool MnxExporter::createParts()
-{
+bool MnxExporter::createParts() {
     if (!m_score) {
         return false;
     }
@@ -939,12 +866,12 @@ bool MnxExporter::createParts()
     m_exportedStaves.clear();
     bool hasPart = false;
 
-    for (Part* part : m_score->parts()) {
+    for (Part *part : m_score->parts()) {
         bool hasTabStaff = false;
-        const Measure* firstMeasure = m_score->firstMeasure();
+        const Measure *firstMeasure = m_score->firstMeasure();
         const Fraction tick = firstMeasure ? firstMeasure->tick() : Fraction(0, 1);
         for (staff_idx_t s = 0; s < part->nstaves(); ++s) {
-            if (const Staff* staff = part->staff(s)) {
+            if (const Staff *staff = part->staff(s)) {
                 if (staff->isTabStaff(tick)) {
                     hasTabStaff = true;
                     break;
@@ -972,13 +899,12 @@ bool MnxExporter::createParts()
 
         mnxPart.set_or_clear_staves(static_cast<int>(part->nstaves()));
 
-        const Instrument* instrument = part->instrument();
+        const Instrument *instrument = part->instrument();
         if (instrument) {
             const Interval transpose = instrument->transpose();
             if (!transpose.isZero()) {
                 const Interval mnxTranspose(-transpose.diatonic, -transpose.chromatic);
-                auto mnxTransposition = mnxPart.ensure_transposition(
-                    mnx::Interval::make(mnxTranspose.diatonic, mnxTranspose.chromatic));
+                auto mnxTransposition = mnxPart.ensure_transposition(mnx::Interval::make(mnxTranspose.diatonic, mnxTranspose.chromatic));
                 const PreferSharpFlat prefer = part->preferSharpFlat();
                 const int flipAt = toMnxKeyFifthsFlipValue(prefer, mnxTranspose);
                 mnxTransposition.set_keyFifthsFlipAt(flipAt);
@@ -989,15 +915,14 @@ bool MnxExporter::createParts()
         }
 
         for (staff_idx_t s = 0; s < part->nstaves(); ++s) {
-            if (const Staff* staff = part->staff(s)) {
-                m_staffToPartStaff.emplace(staff->idx(),
-                                           std::make_pair(mnxPart.calcArrayIndex(), static_cast<int>(s + 1)));
+            if (const Staff *staff = part->staff(s)) {
+                m_staffToPartStaff.emplace(staff->idx(), std::make_pair(mnxPart.calcArrayIndex(), static_cast<int>(s + 1)));
                 m_exportedStaves.push_back(m_score->staff(staff->idx()));
             }
         }
 
         auto mnxMeasures = mnxPart.measures();
-        for (const Measure* measure = m_score->firstMeasure(); measure; measure = measure->nextMeasure()) {
+        for (const Measure *measure = m_score->firstMeasure(); measure; measure = measure->nextMeasure()) {
             auto mnxMeasure = mnxMeasures.append();
 
             appendClefsForMeasure(part, measure, mnxMeasure);
@@ -1019,13 +944,12 @@ bool MnxExporter::createParts()
         auto mnxLyricsGlobal = mnxDocument().global().ensure_lyrics();
         /// @todo line metadata if MNX spec expands to include anything we can export.
         auto mnxLineOrder = mnxLyricsGlobal.ensure_lineOrder();
-        for (const auto& lineId : m_lyricLineIds) {
+        for (const auto &lineId : m_lyricLineIds) {
             mnxLineOrder.push_back(lineId);
         }
     }
 
-    std::sort(m_exportedStaves.begin(), m_exportedStaves.end(),
-              [](const Staff* lhs, const Staff* rhs) {
+    std::sort(m_exportedStaves.begin(), m_exportedStaves.end(), [](const Staff *lhs, const Staff *rhs) {
         if (!lhs || !rhs) {
             return lhs != nullptr;
         }

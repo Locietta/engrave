@@ -26,22 +26,23 @@
 #include "engravingitem.h"
 
 namespace mu::engraving {
-class ChordBracket final : public Arpeggio
-{
+class ChordBracket final : public Arpeggio {
     OBJECT_ALLOCATOR(engraving, ChordBracket)
     DECLARE_CLASSOF(ElementType::CHORD_BRACKET)
 
 public:
-    ChordBracket* clone() const override { return new ChordBracket(*this); }
+    ChordBracket *clone() const override { return new ChordBracket(*this); }
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid propertyId) const override;
 
     void reset() override;
 
     Spatium hookLength() const { return m_hookLength; }
+
     DirectionV hookPos() const { return m_hookPos; }
+
     bool rightSide() const { return m_rightSide; }
 
 private:
@@ -53,4 +54,4 @@ private:
     DirectionV m_hookPos = DirectionV::AUTO; // AUTO == both up and down hooks
     bool m_rightSide = false;
 };
-}
+} // namespace mu::engraving

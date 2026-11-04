@@ -32,36 +32,36 @@ class StaffType;
 //   @@ StaffTypeChange
 //---------------------------------------------------------
 
-class StaffTypeChange final : public EngravingItem
-{
+class StaffTypeChange final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, StaffTypeChange)
     DECLARE_CLASSOF(ElementType::STAFFTYPE_CHANGE)
 
 public:
     ~StaffTypeChange() override;
 
-    StaffTypeChange* clone() const override { return new StaffTypeChange(*this); }
+    StaffTypeChange *clone() const override { return new StaffTypeChange(*this); }
 
-    const StaffType* staffType() const { return m_staffType; }
-    void setStaffType(StaffType* st, bool owned);
+    const StaffType *staffType() const { return m_staffType; }
+
+    void setStaffType(StaffType *st, bool owned);
 
     double lw() const { return m_lw; }
 
-    Measure* measure() const { return toMeasure(ownershipParent()); }
+    Measure *measure() const { return toMeasure(ownershipParent()); }
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid) const override;
 
 private:
 
     friend class Factory;
     StaffTypeChange(DummyParentOr<MeasureBase> parent);
-    StaffTypeChange(const StaffTypeChange&);
+    StaffTypeChange(const StaffTypeChange &);
 
     void spatiumChanged(double oldValue, double newValue) override;
 
-    StaffType* m_staffType = nullptr;
+    StaffType *m_staffType = nullptr;
     bool m_ownsStaffType = false;
     double m_lw = 0.0;
 };

@@ -23,14 +23,13 @@
 
 #include <variant>
 
-
 #include "../types/types.h"
 
 #include "paintoptions.h"
 
 namespace muse::draw {
 class Painter;
-}
+} // namespace muse::draw
 
 namespace mu::engraving {
 class Score;
@@ -91,21 +90,19 @@ class Text;
 class TextLineBaseSegment;
 class TieSegment;
 class TimeSig;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::rendering {
-class IScoreRenderer
-{
+class IScoreRenderer {
 public:
     virtual ~IScoreRenderer() = default;
 
     // Main interface
 
-    virtual void layoutScore(Score* score, const Fraction& st, const Fraction& et) const = 0;
-    virtual void layoutHeadersFooters(Score* score) const = 0;
+    virtual void layoutScore(Score *score, const Fraction &st, const Fraction &et) const = 0;
+    virtual void layoutHeadersFooters(Score *score) const = 0;
 
-    struct ScorePaintOptions : public PaintOptions
-    {
+    struct ScorePaintOptions : public PaintOptions {
         bool isSetViewport = true;
         bool isMultiPage = false;
         bool printPageBackground = true;
@@ -116,93 +113,59 @@ public:
         int trimMarginPixelSize = -1;
         int deviceDpi = -1;
 
-        std::function<void(muse::draw::Painter* painter, const Page* page, const RectF& pageRect)> onPaintPageSheet;
+        std::function<void(muse::draw::Painter *painter, const Page *page, const RectF &pageRect)> onPaintPageSheet;
         std::function<void()> onNewPage;
     };
 
-    virtual SizeF pageSizeInch(const Score* score) const = 0;
-    virtual SizeF pageSizeInch(const Score* score, const ScorePaintOptions& opt) const = 0;
-    virtual void paintScore(muse::draw::Painter* painter, Score* score, const ScorePaintOptions& opt) const = 0;
-    virtual void paintItem(muse::draw::Painter& painter, const EngravingItem* item, const PaintOptions& opt) const = 0;
+    virtual SizeF pageSizeInch(const Score *score) const = 0;
+    virtual SizeF pageSizeInch(const Score *score, const ScorePaintOptions &opt) const = 0;
+    virtual void paintScore(muse::draw::Painter *painter, Score *score, const ScorePaintOptions &opt) const = 0;
+    virtual void paintItem(muse::draw::Painter &painter, const EngravingItem *item, const PaintOptions &opt) const = 0;
 
     // Temporary compatibility interface
-    using Supported = std::variant<std::monostate,
-                                   Accidental*,
-                                   ActionIcon*,
-                                   Arpeggio*,
-                                   BarLine*,
-                                   Box*,
-                                   Bracket*,
-                                   Clef*,
-                                   Dynamic*,
-                                   FiguredBassItem*,
-                                   FretDiagram*,
-                                   Harmony*,
-                                   Image*,
-                                   IndicatorIcon*,
-                                   KeySig*,
-                                   LedgerLine*,
-                                   SLine*,
-                                   LineSegment*,
-                                   Lyrics*,
-                                   NoteDot*,
-                                   Parenthesis*,
-                                   Rest*,
-                                   ShadowNote*,
-                                   Spanner*,
-                                   Slur*,
-                                   SlurTie*,
-                                   Spacer*,
-                                   StaffText*,
-                                   Stem*,
-                                   TextBase*,
-                                   Text*,
-                                   TimeSig*
-                                   >;
+    using Supported = std::variant<std::monostate, Accidental *, ActionIcon *, Arpeggio *, BarLine *, Box *, Bracket *, Clef *, Dynamic *,
+                                   FiguredBassItem *, FretDiagram *, Harmony *, Image *, IndicatorIcon *, KeySig *, LedgerLine *, SLine *,
+                                   LineSegment *, Lyrics *, NoteDot *, Parenthesis *, Rest *, ShadowNote *, Spanner *, Slur *, SlurTie *,
+                                   Spacer *, StaffText *, Stem *, TextBase *, Text *, TimeSig *>;
 
-    template<typename T>
-    static void check_supported_static(T item)
-    {
-        if constexpr (std::is_same<T, EngravingItem*>::value) {
+    template <typename T>
+    static void check_supported_static(T item) {
+        if constexpr (std::is_same<T, EngravingItem *>::value) {
             // supported
         } else {
             Supported check(item);
-            (void)check;
+            (void) check;
         }
     }
 
-    template<typename T>
-    void layoutItem(T item)
-    {
+    template <typename T>
+    void layoutItem(T item) {
 #ifndef NDEBUG
         check_supported_static(item);
 #endif
-        doLayoutItem(static_cast<EngravingItem*>(item));
+        doLayoutItem(static_cast<EngravingItem *>(item));
     }
 
     //! TODO Investigation is required, probably these functions or their calls should not be.
     // Other
-    virtual void layoutTextLineBaseSegment(TextLineBaseSegment* item) = 0;
-    virtual void layoutBeam1(Beam* item) = 0;
-    virtual void layoutStem(Chord* item) = 0;
+    virtual void layoutTextLineBaseSegment(TextLineBaseSegment *item) = 0;
+    virtual void layoutBeam1(Beam *item) = 0;
+    virtual void layoutStem(Chord *item) = 0;
 
     // Layout Text 1
-    virtual void layoutText1(TextBase* item, bool base = false) = 0;
+    virtual void layoutText1(TextBase *item, bool base = false) = 0;
 
-    void drawItem(const EngravingItem* item, muse::draw::Painter* p, const PaintOptions& opt)
-    {
-        doDrawItem(item, p, opt);
-    }
+    void drawItem(const EngravingItem *item, muse::draw::Painter *p, const PaintOptions &opt) { doDrawItem(item, p, opt); }
 
-    virtual void computeBezier(TieSegment* tieSeg, PointF shoulderOffset = PointF()) = 0;
-    virtual void computeBezier(SlurSegment* slurSeg, PointF shoulderOffser = PointF()) = 0;
+    virtual void computeBezier(TieSegment *tieSeg, PointF shoulderOffset = PointF()) = 0;
+    virtual void computeBezier(SlurSegment *slurSeg, PointF shoulderOffser = PointF()) = 0;
 
-    virtual bool scoreHasTimestampHeadersFooters(const Score* score) const = 0;
+    virtual bool scoreHasTimestampHeadersFooters(const Score *score) const = 0;
 
 private:
     // Layout Single Item
-    virtual void doLayoutItem(EngravingItem* item) = 0;
+    virtual void doLayoutItem(EngravingItem *item) = 0;
 
-    virtual void doDrawItem(const EngravingItem* item, muse::draw::Painter* p, const PaintOptions& opt) = 0;
+    virtual void doDrawItem(const EngravingItem *item, muse::draw::Painter *p, const PaintOptions &opt) = 0;
 };
-}
+} // namespace mu::engraving::rendering

@@ -31,18 +31,17 @@
 #include "../../../ifxprocessor.h"
 
 namespace muse::audio::fx {
-class ReverbProcessor : public IFxProcessor
-{
+class ReverbProcessor : public IFxProcessor {
 public:
-    ReverbProcessor(const audio::AudioFxParams& params);
+    ReverbProcessor(const audio::AudioFxParams &params);
     ~ReverbProcessor() override;
 
-    void init(const OutputSpec& spec);
+    void init(const OutputSpec &spec);
 
     AudioFxType type() const override;
     std::string name() const override;
-    const AudioFxParams& params() const override;
-    void setOutputSpec(const OutputSpec& spec) override;
+    const AudioFxParams &params() const override;
+    void setOutputSpec(const OutputSpec &spec) override;
 
     bool active() const override;
     void setActive(bool active) override;
@@ -51,11 +50,10 @@ public:
 
     bool shouldProcessDuringSilence() const override;
 
-    void process(float* buffer, samples_t sampleCount, samples_t playbackPositionSamples = 0) override;
+    void process(float *buffer, samples_t sampleCount, samples_t playbackPositionSamples = 0) override;
 
 private:
-    enum Params
-    {
+    enum Params {
         Quality,
         VelvetIn,
         VelvetOut,
@@ -89,13 +87,12 @@ private:
         NumParams,
     };
 
-    struct ParameterInfo
-    {
+    struct ParameterInfo {
         std::string name;
         std::pair<float, float> range;
     };
 
-    void getParameterInfo(int32_t index, ParameterInfo& info);
+    void getParameterInfo(int32_t index, ParameterInfo &info);
 
     float getParameter(int32_t index);
 
@@ -108,18 +105,17 @@ private:
     void reset();
 
     // Base Processor data
-    struct Processor
-    {
-        struct Parameter
-        {
+    struct Processor {
+        struct Parameter {
             std::string name;
-            std::pair<float, float> valueRange = { 0.f, 1.f };
+            std::pair<float, float> valueRange = {0.f, 1.f};
             float currentValue = 0.f;
         };
+
         std::vector<Parameter> _param;
 
         void allocateParameters(int num);
-        void setupParameter(int index, const std::string& name, std::pair<float, float> valueRange, float initialValue);
+        void setupParameter(int index, const std::string &name, std::pair<float, float> valueRange, float initialValue);
         bool setFormat(audioch_t audioChannelsCount, double sampleRate, int32_t maximumBlockSize);
 
         audioch_t _audioChannelsCount = 0;
@@ -127,18 +123,19 @@ private:
         double _sampleT = 0.0;
         int _blockSize = 0;
     };
+
     Processor m_processor;
 
     // Specific effect data
-    template<int num_lines>
-    void _processLines(float** signalPtr, int32_t numSamples);
+    template <int num_lines>
+    void _processLines(float **signalPtr, int32_t numSamples);
     static constexpr int max_num_delays = 24;
 
     void calculateTailParams();
     void calculateModParams();
 
     struct impl;
-    impl* d = nullptr; // aligned pointer
+    impl *d = nullptr; // aligned pointer
 
     float m_lateGain = 0.1f;
     float m_lateGainCorrection = 1.f;
@@ -148,8 +145,8 @@ private:
 
     AudioFxParams m_params;
 
-    float** m_signalBuffers = nullptr;
+    float **m_signalBuffers = nullptr;
 };
-}
+} // namespace muse::audio::fx
 
 #endif // MUSE_AUDIO_REVERBPROCESSOR_H

@@ -101,62 +101,60 @@ class UndoStack;
 /// anywhere in the module is not feasible. We might reserve it for a few
 /// ambiguous places only.
 
-class Transaction
-{
+class Transaction {
 public:
-    Transaction(const Transaction&) = delete;
-    Transaction& operator=(const Transaction&) = delete;
+    Transaction(const Transaction &) = delete;
+    Transaction &operator=(const Transaction &) = delete;
 
-    Transaction(Transaction&&) = default;
-    Transaction& operator=(Transaction&&) = default;
+    Transaction(Transaction &&) = default;
+    Transaction &operator=(Transaction &&) = default;
 
-    void push(UndoableCommand* cmd);
-    void pushWithoutPerforming(UndoableCommand* cmd);
+    void push(UndoableCommand *cmd);
+    void pushWithoutPerforming(UndoableCommand *cmd);
 
     /// Test hook for failure injection: when set, it is called for every command
     /// pushed to a real transaction, once before the command is appended
     /// (`appended` false) and once after it was appended and performed (`appended`
     /// true). A hook that throws on the first call owns `cmd`.
-    using PushHook = void (*)(UndoableCommand* cmd, bool appended);
+    using PushHook = void (*)(UndoableCommand *cmd, bool appended);
     static void setPushHook(PushHook hook);
 
 private:
     friend class TransactionManager;
-    Transaction(UndoableTransaction* undoableTransaction);
+    Transaction(UndoableTransaction *undoableTransaction);
 
-    static Transaction& dummy();
+    static Transaction &dummy();
 
-    UndoableTransaction* m_undoableTransaction = nullptr;
+    UndoableTransaction *m_undoableTransaction = nullptr;
     bool m_isDummy = false;
 
     static inline PushHook s_pushHook = nullptr;
 };
 
-class TransactionManager
-{
+class TransactionManager {
 public:
-    explicit TransactionManager(MasterScore* masterScore);
+    explicit TransactionManager(MasterScore *masterScore);
 
-    UndoStack* undoStack() const;
+    UndoStack *undoStack() const;
 
-    void transaction(const muse::TranslatableString& description, std::function<void(Transaction&)> func);
+    void transaction(const muse::TranslatableString &description, std::function<void(Transaction &)> func);
 
-    void beginTransaction(const muse::TranslatableString& description);
+    void beginTransaction(const muse::TranslatableString &description);
     void endTransaction(bool rollback = false, bool layoutAllParts = false, bool keepRolledBackElements = false);
 
     void reopen();
 
     /// Returns the current transaction, if any is active.
     /// Where possible, prefer using `transaction()` instead of this method.
-    Transaction* currentTransaction() const;
+    Transaction *currentTransaction() const;
 
-    Transaction& currentOrDummyTransaction();
+    Transaction &currentOrDummyTransaction();
 
-    void undoRedo(bool undo, EditData* editData);
+    void undoRedo(bool undo, EditData *editData);
 
 private:
-    MasterScore* m_masterScore = nullptr;
+    MasterScore *m_masterScore = nullptr;
 
     std::unique_ptr<Transaction> m_currentTransaction;
 };
-}
+} // namespace mu::engraving

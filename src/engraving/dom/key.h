@@ -39,8 +39,8 @@ enum class AccidentalVal : signed char;
 
 struct KeySym {
     SymId sym = SymId::noSym;
-    int line = 0;       // relative line position (first staffline: line == 0, first gap: line == 1, ...)
-    Spatium xPos = 0.0_sp;    // x position in staff spatium units
+    int line = 0;          // relative line position (first staffline: line == 0, first gap: line == 1, ...)
+    Spatium xPos = 0.0_sp; // x position in staff spatium units
 };
 
 //---------------------------------------------------------
@@ -49,23 +49,23 @@ struct KeySym {
 //---------------------------------------------------------
 
 struct CustDef {
-    int degree = 0;             // scale degree
+    int degree = 0; // scale degree
     SymId sym = SymId::noSym;
-    Spatium xAlt = 0.0_sp;    // x position alteration in spatium units (default symbol position is based on index)
-    int octAlt = 0;       // octave alteration
+    Spatium xAlt = 0.0_sp; // x position alteration in spatium units (default symbol position is based on index)
+    int octAlt = 0;        // octave alteration
 };
 
 //---------------------------------------------------------
 //   KeySigEvent
 //---------------------------------------------------------
 
-class KeySigEvent
-{
+class KeySigEvent {
 public:
     KeySigEvent() = default;
 
-    bool operator==(const KeySigEvent& e) const;
-    bool operator!=(const KeySigEvent& e) const { return !(*this == e); }
+    bool operator==(const KeySigEvent &e) const;
+
+    bool operator!=(const KeySigEvent &e) const { return !(*this == e); }
 
     void setConcertKey(Key v);
     void setKey(Key v);
@@ -73,26 +73,37 @@ public:
     void print() const;
 
     Key concertKey() const { return m_concertKey; }
+
     Key key() const { return m_key; }
+
     KeyMode mode() const { return m_mode; }
+
     void setMode(KeyMode m) { m_mode = m; }
+
     bool custom() const { return m_custom; }
+
     bool isValid() const { return m_key != Key::INVALID; }
+
     bool isAtonal() const { return m_mode == KeyMode::NONE; }
+
     void setForInstrumentChange(bool forInstrumentChange) { m_forInstrumentChange = forInstrumentChange; }
+
     bool forInstrumentChange() const { return m_forInstrumentChange; }
+
     void initFromSubtype(int);      // for backward compatibility
     int degInKey(int degree) const; // return "absolute degree"
     SymId symInKey(SymId sym, int degree) const;
-    std::vector<CustDef>& customKeyDefs() { return m_customKeyDefs; }
-    const std::vector<CustDef>& customKeyDefs() const { return m_customKeyDefs; }
+
+    std::vector<CustDef> &customKeyDefs() { return m_customKeyDefs; }
+
+    const std::vector<CustDef> &customKeyDefs() const { return m_customKeyDefs; }
 
 private:
 
-    void enforceLimits(bool transposing = false);       // if true, enforce only trnasposing, otherways both
+    void enforceLimits(bool transposing = false); // if true, enforce only trnasposing, otherways both
 
-    Key m_concertKey = Key::INVALID;               // -7 -> +7
-    Key m_key = Key::INVALID;               // actual key, depends on staff transposition
+    Key m_concertKey = Key::INVALID; // -7 -> +7
+    Key m_key = Key::INVALID;        // actual key, depends on staff transposition
     KeyMode m_mode = KeyMode::UNKNOWN;
     bool m_custom = false;
     bool m_forInstrumentChange = false;
@@ -108,13 +119,13 @@ static const int TIE_CONTEXT = 0x10;
 static const int MIN_ACC_STATE = 0;
 static const int MAX_ACC_STATE = 75;
 
-class AccidentalState
-{
+class AccidentalState {
 public:
     AccidentalState() {}
+
     void init(Key key);
-    void init(const KeySigEvent&);
-    AccidentalVal accidentalVal(int line, bool& error) const;
+    void init(const KeySigEvent &);
+    AccidentalVal accidentalVal(int line, bool &error) const;
     AccidentalVal accidentalVal(int line) const;
     bool forceRestateAccidental(int line) const;
     bool tieContext(int line) const;
@@ -123,7 +134,7 @@ public:
 
 private:
 
-    uint8_t m_state[MAX_ACC_STATE] = {};      // (0 -- 4) | TIE_CONTEXT
+    uint8_t m_state[MAX_ACC_STATE] = {}; // (0 -- 4) | TIE_CONTEXT
     std::array<bool, MAX_ACC_STATE> m_forceRestateAccidental;
 };
 

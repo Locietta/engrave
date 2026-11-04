@@ -31,18 +31,16 @@ namespace mu::engraving {
 //    SYSTEM The "never ending page", page break are turned into line break
 //---------------------------------------------------------
 
-enum class LayoutMode : char {
-    PAGE, FLOAT, LINE, SYSTEM, HORIZONTAL_FIXED
-};
+enum class LayoutMode : char { PAGE, FLOAT, LINE, SYSTEM, HORIZONTAL_FIXED };
 
-struct LayoutOptions
-{
+struct LayoutOptions {
     LayoutMode mode = LayoutMode::PAGE;
 
     bool isShowVBox = true;
     double noteHeadWidth = 0.0;
 
     bool isMode(LayoutMode m) const { return mode == m; }
+
     bool isLinearMode() const { return mode == LayoutMode::LINE || mode == LayoutMode::HORIZONTAL_FIXED; }
 };
-}
+} // namespace mu::engraving

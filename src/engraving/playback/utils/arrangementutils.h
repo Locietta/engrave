@@ -31,32 +31,28 @@
 #include "../../types/constants.h"
 
 namespace mu::engraving {
-inline muse::mpe::timestamp_t timestampFromTicks(const Score* score, const int tick)
-{
+inline muse::mpe::timestamp_t timestampFromTicks(const Score *score, const int tick) {
     return score->tempoTimeline().utick2utime(tick) * 1000000;
 }
 
-inline int timestampToTick(const Score* score, const muse::mpe::timestamp_t timestamp)
-{
+inline int timestampToTick(const Score *score, const muse::mpe::timestamp_t timestamp) {
     return score->tempoTimeline().utime2utick(timestamp / 1000000.f);
 }
 
 // Returns the pause at `tick` in microseconds, or 0
-inline muse::mpe::duration_t pauseUs(const Score* score, const int tick, const int tickPositionOffset)
-{
-    const TempoTimeline& timeline = score->tempoTimeline();
+inline muse::mpe::duration_t pauseUs(const Score *score, const int tick, const int tickPositionOffset) {
+    const TempoTimeline &timeline = score->tempoTimeline();
     const auto pauseIt = timeline.pauses().find(tick + tickPositionOffset);
     if (pauseIt == timeline.pauses().end()) {
         return 0;
     }
 
     double secs = pauseIt->second / timeline.tempoMultiplier().val;
-    return muse::RealIsNull(secs) ? 0 : secs* 1000000;
+    return muse::RealIsNull(secs) ? 0 : secs * 1000000;
 }
 
-inline muse::mpe::duration_t durationFromStartAndEndTick(const Score* score, const int startTick, const int endTick,
-                                                         const int tickPositionOffset)
-{
+inline muse::mpe::duration_t durationFromStartAndEndTick(const Score *score, const int startTick, const int endTick,
+                                                         const int tickPositionOffset) {
     muse::mpe::timestamp_t startTimestamp = timestampFromTicks(score, startTick + tickPositionOffset);
     muse::mpe::timestamp_t endTimestamp = timestampFromTicks(score, endTick + tickPositionOffset);
     muse::mpe::duration_t pause = pauseUs(score, endTick, tickPositionOffset);
@@ -64,36 +60,32 @@ inline muse::mpe::duration_t durationFromStartAndEndTick(const Score* score, con
     return endTimestamp - startTimestamp - pause;
 }
 
-inline muse::mpe::duration_t durationFromStartAndTicks(const Score* score, const int startTick, const int durationTicks,
-                                                       const int tickPositionOffset)
-{
+inline muse::mpe::duration_t durationFromStartAndTicks(const Score *score, const int startTick, const int durationTicks,
+                                                       const int tickPositionOffset) {
     return durationFromStartAndEndTick(score, startTick, startTick + durationTicks, tickPositionOffset);
 }
 
-inline muse::mpe::TimestampAndDuration timestampAndDurationFromStartAndDurationTicks(const Score* score,
-                                                                                     const int startTick, const int durationTicks,
-                                                                                     const int tickPositionOffset)
-{
+inline muse::mpe::TimestampAndDuration timestampAndDurationFromStartAndDurationTicks(const Score *score, const int startTick,
+                                                                                     const int durationTicks,
+                                                                                     const int tickPositionOffset) {
     int startTickWithOffset = startTick + tickPositionOffset;
     muse::mpe::timestamp_t startTimestamp = timestampFromTicks(score, startTickWithOffset);
     muse::mpe::timestamp_t endTimestamp = timestampFromTicks(score, startTickWithOffset + durationTicks);
     muse::mpe::duration_t pause = pauseUs(score, startTick + durationTicks, tickPositionOffset);
     muse::mpe::duration_t duration = endTimestamp - startTimestamp - pause;
 
-    return { startTimestamp, duration };
+    return {startTimestamp, duration};
 }
 
 inline muse::mpe::duration_t durationFromTempoAndTicks(const double beatsPerSecond, const int durationTicks,
-                                                       const int ticksPerBeat = Constants::DIVISION)
-{
+                                                       const int ticksPerBeat = Constants::DIVISION) {
     float beatsNumber = static_cast<float>(durationTicks) / static_cast<float>(ticksPerBeat);
 
     return (beatsNumber / beatsPerSecond) * 1000000;
 }
 
 inline int ticksFromTempoAndDuration(const double beatsPerSecond, const muse::mpe::duration_t duration,
-                                     const int ticksPerBeat = Constants::DIVISION)
-{
+                                     const int ticksPerBeat = Constants::DIVISION) {
     return (duration * beatsPerSecond * ticksPerBeat) / 1000000;
 }
 
@@ -110,4 +102,4 @@ static const double ANDANTE_BPS_BOUND = muse::RealRound(76 /*bpm*/ / 60.f /*secs
 static const double ADAGIO_BPS_BOUND = muse::RealRound(66 /*bpm*/ / 60.f /*secs*/, 2);
 static const double LENTO_BPS_BOUND = muse::RealRound(40 /*bpm*/ / 60.f /*secs*/, 2);
 static const double GRAVE_BPS_BOUND = muse::RealRound(20 /*bpm*/ / 60.f /*secs*/, 2);
-}
+} // namespace mu::engraving

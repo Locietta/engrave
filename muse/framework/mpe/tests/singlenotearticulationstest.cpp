@@ -29,16 +29,14 @@ using namespace muse;
 using namespace muse::mpe;
 using namespace muse::mpe::tests;
 
-class MPE_SingleNoteArticulationsTest : public ::testing::Test
-{
+class MPE_SingleNoteArticulationsTest : public ::testing::Test {
 protected:
-    void SetUp() override
-    {
+    void SetUp() override {
         // [GIVEN] Nominal arrangement data of the very first quarter note on the score, with the 120BPM tempo and 4/4 time signature
-        m_nominalTimestamp = 0; // msecs
+        m_nominalTimestamp = 0;  // msecs
         m_nominalDuration = 500; // msecs
-        m_voiceIdx = 0; // first voice
-        m_staffIdx = 0; // first staff
+        m_voiceIdx = 0;          // first voice
+        m_staffIdx = 0;          // first staff
 
         // [GIVEN] Pitch data of the note
         m_pitchClass = PitchClass::A;
@@ -71,8 +69,7 @@ protected:
  * @details In this case we're gonna build a simple note event without any articulation applied on the top of it
  *          So the actual PitchCurve and ExpressionCurve would be equal to the "StandardPattern" from the articulation Profile
  */
-TEST_F(MPE_SingleNoteArticulationsTest, StandardPattern)
-{
+TEST_F(MPE_SingleNoteArticulationsTest, StandardPattern) {
     // [GIVEN] No articulations applied on the top of the note
     ArticulationPattern scope;
     scope.emplace(0, m_standardPattern);
@@ -90,21 +87,14 @@ TEST_F(MPE_SingleNoteArticulationsTest, StandardPattern)
     appliedArticulations.preCalculateAverageData();
 
     // [WHEN] Note event with given parameters being built
-    NoteEvent event(m_nominalTimestamp,
-                    m_nominalDuration,
-                    m_voiceIdx,
-                    m_staffIdx,
-                    pitchLevel(m_pitchClass, m_octave),
-                    m_nominalDynamic,
-                    std::move(appliedArticulations),
-                    0);
+    NoteEvent event(m_nominalTimestamp, m_nominalDuration, m_voiceIdx, m_staffIdx, pitchLevel(m_pitchClass, m_octave), m_nominalDynamic,
+                    std::move(appliedArticulations), 0);
 
     // [THEN] We expect that expression curve will be using default curve from standard patterns
-    EXPECT_EQ(event.expressionCtx().expressionCurve,
-              m_standardPattern.expressionPattern.dynamicOffsetMap);
+    EXPECT_EQ(event.expressionCtx().expressionCurve, m_standardPattern.expressionPattern.dynamicOffsetMap);
 
     // [THEN] We expect that there is no pitch offset at all on this note
-    for (const auto& pair : event.pitchCtx().pitchCurve) {
+    for (const auto &pair : event.pitchCtx().pitchCurve) {
         EXPECT_EQ(pair.second, 0);
     }
 }
@@ -114,14 +104,13 @@ TEST_F(MPE_SingleNoteArticulationsTest, StandardPattern)
  * @details In this case we're gonna build a simple note event with the staccato articulation applied on the top of it
  *          So the actual arrangement context of the note would reflect the parameters from staccato articulation pattern
  */
-TEST_F(MPE_SingleNoteArticulationsTest, StaccatoPattern)
-{
+TEST_F(MPE_SingleNoteArticulationsTest, StaccatoPattern) {
     // [GIVEN] Articulation pattern "Staccato", which instructs a performer to shorten duration of a note
     ArticulationPatternSegment staccatoArticulation;
     staccatoArticulation.arrangementPattern = createArrangementPattern(5 * TEN_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
     staccatoArticulation.pitchPattern = createSimplePitchPattern(0 /*increment_pitch_diff*/);
-    staccatoArticulation.expressionPattern
-        = createSimpleExpressionPattern(m_nominalDynamic /* no dynamic changes comparing to the standard one*/);
+    staccatoArticulation.expressionPattern =
+        createSimpleExpressionPattern(m_nominalDynamic /* no dynamic changes comparing to the standard one*/);
 
     ArticulationPattern scope;
     scope.emplace(0, staccatoArticulation);
@@ -141,14 +130,8 @@ TEST_F(MPE_SingleNoteArticulationsTest, StaccatoPattern)
     appliedArticulations.preCalculateAverageData();
 
     // [WHEN] Note event with given parameters being built
-    NoteEvent event(m_nominalTimestamp,
-                    m_nominalDuration,
-                    m_voiceIdx,
-                    m_staffIdx,
-                    pitchLevel(m_pitchClass, m_octave),
-                    m_nominalDynamic,
-                    std::move(appliedArticulations),
-                    0);
+    NoteEvent event(m_nominalTimestamp, m_nominalDuration, m_voiceIdx, m_staffIdx, pitchLevel(m_pitchClass, m_octave), m_nominalDynamic,
+                    std::move(appliedArticulations), 0);
 
     // [THEN] We expect the nominal duration of a note to be unchanged
     EXPECT_EQ(event.arrangementCtx().nominalDuration, m_nominalDuration);
@@ -162,8 +145,7 @@ TEST_F(MPE_SingleNoteArticulationsTest, StaccatoPattern)
  * @details In this case we're gonna build a simple note event with the accent articulation applied on the top of it
  *          So the actual expression context of the note would reflect the parameters from articulation pattern
  */
-TEST_F(MPE_SingleNoteArticulationsTest, AccentPattern)
-{
+TEST_F(MPE_SingleNoteArticulationsTest, AccentPattern) {
     // [GIVEN] Articulation pattern "Accent", which instructs a performer to play a note louder (usually on 1 dynamic level)
     ArticulationPatternSegment accentArticulation;
     accentArticulation.arrangementPattern = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
@@ -189,14 +171,8 @@ TEST_F(MPE_SingleNoteArticulationsTest, AccentPattern)
     appliedArticulations.preCalculateAverageData();
 
     // [WHEN] Note event with given parameters being built
-    NoteEvent event(m_nominalTimestamp,
-                    m_nominalDuration,
-                    m_voiceIdx,
-                    m_staffIdx,
-                    pitchLevel(m_pitchClass, m_octave),
-                    m_nominalDynamic,
-                    std::move(appliedArticulations),
-                    0);
+    NoteEvent event(m_nominalTimestamp, m_nominalDuration, m_voiceIdx, m_staffIdx, pitchLevel(m_pitchClass, m_octave), m_nominalDynamic,
+                    std::move(appliedArticulations), 0);
 
     // [THEN] We expect the nominal duration of a note to be unchanged,
     //        since accent doesn't affect any arrangement data
@@ -216,8 +192,7 @@ TEST_F(MPE_SingleNoteArticulationsTest, AccentPattern)
  *
  *          The note is marked by "mezzo forte" dynamic already, so accent articulation should increase this value up to one level - "fortissimo"
  */
-TEST_F(MPE_SingleNoteArticulationsTest, AccentPattern_Nominal_MezzoForte)
-{
+TEST_F(MPE_SingleNoteArticulationsTest, AccentPattern_Nominal_MezzoForte) {
     // [GIVEN] The note marked by mezzo forte dynamic
     m_nominalDynamic = dynamicLevelFromType(DynamicType::mf);
 
@@ -225,9 +200,9 @@ TEST_F(MPE_SingleNoteArticulationsTest, AccentPattern_Nominal_MezzoForte)
     ArticulationPatternSegment accentArticulation;
     accentArticulation.arrangementPattern = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
     accentArticulation.pitchPattern = createSimplePitchPattern(0 /*increment_pitch_diff*/);
-    accentArticulation.expressionPattern = createSimpleExpressionPattern(
-        dynamicLevelFromType(DynamicType::Natural)
-        + DYNAMIC_LEVEL_STEP /* increasing a note's dynamic on a single level from Natural dynamic*/);
+    accentArticulation.expressionPattern =
+        createSimpleExpressionPattern(dynamicLevelFromType(DynamicType::Natural) +
+                                      DYNAMIC_LEVEL_STEP /* increasing a note's dynamic on a single level from Natural dynamic*/);
 
     ArticulationPattern scope;
     scope.emplace(0, accentArticulation);
@@ -247,14 +222,8 @@ TEST_F(MPE_SingleNoteArticulationsTest, AccentPattern_Nominal_MezzoForte)
     appliedArticulations.preCalculateAverageData();
 
     // [WHEN] Note event with given parameters being built
-    NoteEvent event(m_nominalTimestamp,
-                    m_nominalDuration,
-                    m_voiceIdx,
-                    m_staffIdx,
-                    pitchLevel(m_pitchClass, m_octave),
-                    m_nominalDynamic,
-                    std::move(appliedArticulations),
-                    0);
+    NoteEvent event(m_nominalTimestamp, m_nominalDuration, m_voiceIdx, m_staffIdx, pitchLevel(m_pitchClass, m_octave), m_nominalDynamic,
+                    std::move(appliedArticulations), 0);
 
     // [THEN] We expect the nominal duration of a note to be unchanged,
     //        since accent doesn't affect any arrangement data
@@ -273,14 +242,13 @@ TEST_F(MPE_SingleNoteArticulationsTest, AccentPattern_Nominal_MezzoForte)
  *          applied on the top of it. So the actual expression context of the note would reflect the average parameters
  *          from articulation patterns
  */
-TEST_F(MPE_SingleNoteArticulationsTest, PocoTenuto)
-{
+TEST_F(MPE_SingleNoteArticulationsTest, PocoTenuto) {
     // [GIVEN] Articulation pattern "Staccato", which instructs a performer to shorten duration of a note
     ArticulationPatternSegment staccatoPattern;
     staccatoPattern.arrangementPattern = createArrangementPattern(5 * TEN_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
     staccatoPattern.pitchPattern = createSimplePitchPattern(0 /*increment_pitch_diff*/);
-    staccatoPattern.expressionPattern
-        = createSimpleExpressionPattern(m_nominalDynamic /* no dynamic changes comparing to the standard one*/);
+    staccatoPattern.expressionPattern =
+        createSimpleExpressionPattern(m_nominalDynamic /* no dynamic changes comparing to the standard one*/);
 
     ArticulationPattern staccatoScope;
     staccatoScope.emplace(0, staccatoPattern);
@@ -319,14 +287,8 @@ TEST_F(MPE_SingleNoteArticulationsTest, PocoTenuto)
     appliedArticulations.preCalculateAverageData();
 
     // [WHEN] Note event with given parameters being built
-    NoteEvent event(m_nominalTimestamp,
-                    m_nominalDuration,
-                    m_voiceIdx,
-                    m_staffIdx,
-                    pitchLevel(m_pitchClass, m_octave),
-                    m_nominalDynamic,
-                    std::move(appliedArticulations),
-                    0);
+    NoteEvent event(m_nominalTimestamp, m_nominalDuration, m_voiceIdx, m_staffIdx, pitchLevel(m_pitchClass, m_octave), m_nominalDynamic,
+                    std::move(appliedArticulations), 0);
 
     // [THEN] We expect the nominal duration of a note to be unchanged
     EXPECT_EQ(event.arrangementCtx().nominalDuration, m_nominalDuration);
@@ -341,17 +303,15 @@ TEST_F(MPE_SingleNoteArticulationsTest, PocoTenuto)
  *          applied on the top of it. So the actual pitch context of the note would reflect the
  *          parameters from articulation pattern
  */
-TEST_F(MPE_SingleNoteArticulationsTest, QuickFall)
-{
+TEST_F(MPE_SingleNoteArticulationsTest, QuickFall) {
     // [GIVEN] Articulation pattern "Tenuto", which instructs a performer to play a note for the whole nominal duration
     ArticulationPatternSegment quickFallPattern;
     quickFallPattern.arrangementPattern = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
 
     // Linear decreasing pitch
-    quickFallPattern.pitchPattern
-        = createSimplePitchPattern(-PITCH_LEVEL_STEP / (MAX_PITCH_LEVEL / TEN_PERCENT) /*increment_pitch_diff*/);
-    quickFallPattern.expressionPattern
-        = createSimpleExpressionPattern(m_nominalDynamic /* no dynamic changes comparing to the standard one*/);
+    quickFallPattern.pitchPattern = createSimplePitchPattern(-PITCH_LEVEL_STEP / (MAX_PITCH_LEVEL / TEN_PERCENT) /*increment_pitch_diff*/);
+    quickFallPattern.expressionPattern =
+        createSimpleExpressionPattern(m_nominalDynamic /* no dynamic changes comparing to the standard one*/);
 
     ArticulationPattern quickFallScope;
     quickFallScope.emplace(0, quickFallPattern);
@@ -371,14 +331,8 @@ TEST_F(MPE_SingleNoteArticulationsTest, QuickFall)
     appliedArticulations.preCalculateAverageData();
 
     // [WHEN] Note event with given parameters being built
-    NoteEvent event(m_nominalTimestamp,
-                    m_nominalDuration,
-                    m_voiceIdx,
-                    m_staffIdx,
-                    pitchLevel(m_pitchClass, m_octave),
-                    m_nominalDynamic,
-                    std::move(appliedArticulations),
-                    0);
+    NoteEvent event(m_nominalTimestamp, m_nominalDuration, m_voiceIdx, m_staffIdx, pitchLevel(m_pitchClass, m_octave), m_nominalDynamic,
+                    std::move(appliedArticulations), 0);
 
     // [THEN] We expect the pitch curve of the note marked by quick fall articulation to be equal to the pitch curve from corresponding pattern
     EXPECT_EQ(event.pitchCtx().pitchCurve, quickFallPattern.pitchPattern.pitchOffsetMap);
@@ -390,8 +344,7 @@ TEST_F(MPE_SingleNoteArticulationsTest, QuickFall)
  *          applied on the top of it. So the actual pitch context of the note would reflect the
  *          parameters from articulation pattern
  */
-TEST_F(MPE_SingleNoteArticulationsTest, Scoop)
-{
+TEST_F(MPE_SingleNoteArticulationsTest, Scoop) {
     // [GIVEN] Articulation pattern "Scoop", which instructs a performer to play ahead of a nominal duration,
     //         starting at a lower pitch, and then placing it on the note being played.
     duration_percentage_t timestampOffset = static_cast<duration_percentage_t>(-2.5 * TEN_PERCENT);
@@ -401,8 +354,7 @@ TEST_F(MPE_SingleNoteArticulationsTest, Scoop)
     scoopPattern.arrangementPattern = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, timestampOffset /*timestamp_offset*/);
 
     // Linear increasing pitch
-    scoopPattern.pitchPattern
-        = createSimplePitchPattern(ArticulationMap::EXPECTED_SIZE /*increment_pitch_diff*/);
+    scoopPattern.pitchPattern = createSimplePitchPattern(ArticulationMap::EXPECTED_SIZE /*increment_pitch_diff*/);
     scoopPattern.expressionPattern = createSimpleExpressionPattern(m_nominalDynamic /* no dynamic changes comparing to the standard one*/);
 
     ArticulationPattern scope;
@@ -423,14 +375,8 @@ TEST_F(MPE_SingleNoteArticulationsTest, Scoop)
     appliedArticulations.preCalculateAverageData();
 
     // [WHEN] Note event with given parameters being built
-    NoteEvent event(m_nominalTimestamp,
-                    m_nominalDuration,
-                    m_voiceIdx,
-                    m_staffIdx,
-                    pitchLevel(m_pitchClass, m_octave),
-                    m_nominalDynamic,
-                    std::move(appliedArticulations),
-                    0);
+    NoteEvent event(m_nominalTimestamp, m_nominalDuration, m_voiceIdx, m_staffIdx, pitchLevel(m_pitchClass, m_octave), m_nominalDynamic,
+                    std::move(appliedArticulations), 0);
 
     // [THEN] We expect the pitch curve of the note marked by scoop articulation to be equal to the pitch curve from corresponding pattern
     EXPECT_EQ(event.pitchCtx().pitchCurve, scoopPattern.pitchPattern.pitchOffsetMap);

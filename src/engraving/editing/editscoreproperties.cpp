@@ -31,8 +31,7 @@ using namespace mu::engraving;
 //   ChangeMetaTags
 //---------------------------------------------------------
 
-void ChangeMetaTags::flip()
-{
+void ChangeMetaTags::flip() {
     std::map<String, String> t = score->metaTags();
     score->setMetaTags(metaTags);
     score->setLayoutAll();
@@ -43,8 +42,7 @@ void ChangeMetaTags::flip()
 //   ChangeMetaText
 //---------------------------------------------------------
 
-void ChangeMetaText::flip()
-{
+void ChangeMetaText::flip() {
     String s = score->metaTag(id);
     score->setMetaTag(id, text);
     score->setLayoutAll();
@@ -55,8 +53,7 @@ void ChangeMetaText::flip()
 //   ChangeScoreOrder
 //---------------------------------------------------------
 
-void ChangeScoreOrder::flip()
-{
+void ChangeScoreOrder::flip() {
     ScoreOrder s = score->scoreOrder();
     score->setScoreOrder(order);
     order = s;
@@ -66,8 +63,7 @@ void ChangeScoreOrder::flip()
 //   ChangePageNumberOffset
 //---------------------------------------------------------
 
-void ChangePageNumberOffset::flip()
-{
+void ChangePageNumberOffset::flip() {
     int po = score->pageNumberOffset();
 
     score->setPageNumberOffset(pageOffset);

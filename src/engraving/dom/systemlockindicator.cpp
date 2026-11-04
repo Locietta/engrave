@@ -31,22 +31,20 @@
 #include "system.h"
 
 namespace mu::engraving {
-SystemLockIndicator::SystemLockIndicator(DummyParentOr<System> parent, const RangeLock* lock)
+SystemLockIndicator::SystemLockIndicator(DummyParentOr<System> parent, const RangeLock *lock)
     : IndicatorIcon(ElementType::SYSTEM_LOCK_INDICATOR, parent, ElementFlag::SYSTEM | ElementFlag::GENERATED), m_systemLock(lock) {}
 
-void SystemLockIndicator::setSelected(bool v)
-{
+void SystemLockIndicator::setSelected(bool v) {
     EngravingItem::setSelected(v);
     renderer()->layoutItem(this);
     system()->page()->invalidateBspTree();
 }
 
-String SystemLockIndicator::formatBarsAndBeats() const
-{
-    const MeasureBase* startMB = m_systemLock->startMB();
-    const MeasureBase* endMB = m_systemLock->endMB();
-    const Measure* startMeasure = startMB->isMeasure() ? toMeasure(startMB) : toMeasure(startMB->prevMeasure());
-    const Measure* endMeasure = endMB->isMeasure() ? toMeasure(endMB) : toMeasure(endMB->prevMeasure());
+String SystemLockIndicator::formatBarsAndBeats() const {
+    const MeasureBase *startMB = m_systemLock->startMB();
+    const MeasureBase *endMB = m_systemLock->endMB();
+    const Measure *startMeasure = startMB->isMeasure() ? toMeasure(startMB) : toMeasure(startMB->prevMeasure());
+    const Measure *endMeasure = endMB->isMeasure() ? toMeasure(endMB) : toMeasure(endMB->prevMeasure());
     const int startMeasureNum = startMeasure ? startMeasure->measureNumber() : -1;
     const int endMeasureNum = endMeasure ? endMeasure->measureNumber() : -1;
     return muse::mtrc("engraving", "Start measure: %1; End measure: %2").arg(startMeasureNum).arg(endMeasureNum);

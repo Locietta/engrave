@@ -25,19 +25,13 @@
 #include <set>
 #include <string>
 
-
-
 namespace mu::engraving {
-class MessageBox
-{
+class MessageBox {
 public:
-    enum Button {
-        Ok,
-        Cancel
-    };
+    enum Button { Ok, Cancel };
 
-    Button warning(const std::string& title, const std::string& text, const std::set<Button>& buttons = { Ok, Cancel });
+    Button warning(const std::string &title, const std::string &text, const std::set<Button> &buttons = {Ok, Cancel});
 };
-}
+} // namespace mu::engraving
 
 #endif // MU_ENGRAVING_MESSAGEBOX_H

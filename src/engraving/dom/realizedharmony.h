@@ -30,23 +30,14 @@ namespace mu::engraving {
 class Harmony;
 
 //voicing modes to use
-enum class Voicing : signed char {
-    INVALID = -1,
-    AUTO = 0,
-    ROOT_ONLY,
-    CLOSE,
-    DROP_2,
-    SIX_NOTE,
-    FOUR_NOTE,
-    THREE_NOTE
-};
+enum class Voicing : signed char { INVALID = -1, AUTO = 0, ROOT_ONLY, CLOSE, DROP_2, SIX_NOTE, FOUR_NOTE, THREE_NOTE };
 
 //duration to realize notes for
 enum class HDuration : signed char {
     INVALID = -1,
-    UNTIL_NEXT_CHORD_SYMBOL = 0,    //lasts until the next chord symbol or end of the schore
-    STOP_AT_MEASURE_END,            //lasts until next chord symbol or measure end
-    SEGMENT_DURATION                //lasts for the duration of the segment
+    UNTIL_NEXT_CHORD_SYMBOL = 0, //lasts until the next chord symbol or end of the schore
+    STOP_AT_MEASURE_END,         //lasts until next chord symbol or measure end
+    SEGMENT_DURATION             //lasts for the duration of the segment
 };
 
 //-----------------------------------------
@@ -56,42 +47,45 @@ enum class HDuration : signed char {
 ///     symbols. This is what is used to
 ///     allow for chord symbol playback
 //-----------------------------------------
-class RealizedHarmony
-{
+class RealizedHarmony {
 public:
-    using PitchMap = std::multimap<int, int>;   //map from pitch to tpc
+    using PitchMap = std::multimap<int, int>; //map from pitch to tpc
 
-    RealizedHarmony()
-        : m_harmony(0), m_notes(PitchMap()), m_dirty(1) {}
-    RealizedHarmony(Harmony* h)
-        : m_harmony(h), m_notes(PitchMap()), m_dirty(1) {}
+    RealizedHarmony() : m_harmony(0), m_notes(PitchMap()), m_dirty(1) {}
+
+    RealizedHarmony(Harmony *h) : m_harmony(h), m_notes(PitchMap()), m_dirty(1) {}
 
     void setVoicing(Voicing);
     void setDuration(HDuration);
     void setLiteral(bool);
-    void setDirty(bool dirty) { cascadeDirty(dirty); }   //set dirty flag and cascade
-    void setHarmony(Harmony* h) { m_harmony = h; }
+
+    void setDirty(bool dirty) { cascadeDirty(dirty); } //set dirty flag and cascade
+
+    void setHarmony(Harmony *h) { m_harmony = h; }
 
     Voicing voicing() const { return m_voicing; }
+
     HDuration duration() const { return m_duration; }
+
     bool literal() const { return m_literal; }
-    Harmony* harmony() { return m_harmony; }
+
+    Harmony *harmony() { return m_harmony; }
 
     bool valid() const { return !m_dirty && m_harmony; }
 
-    const PitchMap& notes() const;
+    const PitchMap &notes() const;
     const PitchMap generateNotes(int rootTpc, int bassTpc, bool literal, Voicing voicing, int transposeOffset) const;
 
-    void update(int rootTpc, int bassTpc, int transposeOffset = 0);   //updates the notes map
+    void update(int rootTpc, int bassTpc, int transposeOffset = 0); //updates the notes map
 
     Fraction getActualDuration(int utick, HDuration durationType = HDuration::INVALID) const;
 
 private:
     PitchMap getIntervals(int rootTpc, bool literal = true) const;
-    PitchMap normalizeNoteMap(const PitchMap& intervals, int rootTpc, int rootPitch, size_t max = 128, bool enforceMaxAsGoal = false) const;
+    PitchMap normalizeNoteMap(const PitchMap &intervals, int rootTpc, int rootPitch, size_t max = 128, bool enforceMaxAsGoal = false) const;
     void cascadeDirty(bool dirty);
 
-    Harmony* m_harmony = nullptr;
+    Harmony *m_harmony = nullptr;
 
     PitchMap m_notes;
 
@@ -100,6 +94,6 @@ private:
 
     //whether or not the current notes QMap is up to date
     bool m_dirty = false;
-    bool m_literal = false;   //use all notes when possible and do not add any notes
+    bool m_literal = false; //use all notes when possible and do not add any notes
 };
-}
+} // namespace mu::engraving

@@ -36,14 +36,13 @@ using namespace mu::engraving;
 //   ChangeInstrument
 //---------------------------------------------------------
 
-void ChangeInstrument::flip()
-{
-    Part* part = is->staff()->part();
+void ChangeInstrument::flip() {
+    Part *part = is->staff()->part();
     Fraction tickStart = is->segment()->tick();
-    Instrument* oi = is->instrument();    //new Instrument(*is->instrument());
+    Instrument *oi = is->instrument(); //new Instrument(*is->instrument());
 
     // set instrument in both part and instrument change element
-    is->setInstrument(instrument);        //*instrument
+    is->setInstrument(instrument); //*instrument
     part->setInstrument(instrument, tickStart);
 
     // update score

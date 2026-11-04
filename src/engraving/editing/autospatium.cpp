@@ -33,16 +33,15 @@ using namespace mu::engraving;
 // staves in the page. Caution: the spatium is expressed in
 // DPI, page dimensions in inches, staff sizes in mm.
 //--------------------------------------------------------
-void AutoSpatium::update(Score* score)
-{
+void AutoSpatium::update(Score *score) {
     static constexpr double breathingSpace = 2.5; // allow breathing space between staves
     static constexpr double minStaffHeight = 2.0; // never make staff smaller than 2.0 mm
     static constexpr double maxStaffHeight = 7.0; // never make staff bigger than 7.0 mm (default value)
 
-    const MStyle& style = score->style();
-    double availableHeight = (style.styleD(Sid::pageHeight)
-                              - style.styleD(Sid::pageOddTopMargin)
-                              - style.styleD(Sid::pageOddBottomMargin)) * DPI; // convert from inches to DPI
+    const MStyle &style = score->style();
+    double availableHeight =
+        (style.styleD(Sid::pageHeight) - style.styleD(Sid::pageOddTopMargin) - style.styleD(Sid::pageOddBottomMargin)) *
+        DPI; // convert from inches to DPI
     double titleHeight = (!score->measures()->empty() && score->measures()->first()->isVBox()) ? score->measures()->first()->height() : 0.0;
     availableHeight -= titleHeight;
     double totalNeededSpaces = 4 * score->nstaves() * breathingSpace;

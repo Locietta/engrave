@@ -31,8 +31,7 @@ using namespace mu::engraving;
 //   updateStored
 //---------------------------------------------------------
 
-FretUndoData::FretUndoData(FretDiagram* fd)
-{
+FretUndoData::FretUndoData(FretDiagram *fd) {
     // We need to store the old barres and markers, since predicting how
     // adding dots, markers, barres etc. will change things is too difficult.
     // Update linked fret diagrams:
@@ -57,8 +56,7 @@ FretUndoData::FretUndoData(FretDiagram* fd)
 //   updateDiagram
 //---------------------------------------------------------
 
-void FretUndoData::updateDiagram()
-{
+void FretUndoData::updateDiagram() {
     if (!m_diagram) {
         ASSERT_X("Tried to undo fret diagram change without ever setting diagram!");
         return;
@@ -86,32 +84,26 @@ void FretUndoData::updateDiagram()
 //   FretDataChange
 //---------------------------------------------------------
 
-void FretDataChange::redo()
-{
+void FretDataChange::redo() {
     m_undoData = FretUndoData(m_diagram);
 
     m_diagram->updateDiagram(m_harmonyName);
 }
 
-void FretDataChange::undo()
-{
-    m_undoData.updateDiagram();
-}
+void FretDataChange::undo() { m_undoData.updateDiagram(); }
 
 //---------------------------------------------------------
 //   FretDot
 //---------------------------------------------------------
 
-void FretDot::redo()
-{
+void FretDot::redo() {
     undoData = FretUndoData(diagram);
 
     diagram->setDot(string, fret, add, dtype);
     diagram->triggerLayout();
 }
 
-void FretDot::undo()
-{
+void FretDot::undo() {
     undoData.updateDiagram();
     diagram->triggerLayout();
 }
@@ -120,16 +112,14 @@ void FretDot::undo()
 //   FretMarker
 //---------------------------------------------------------
 
-void FretMarker::redo()
-{
+void FretMarker::redo() {
     undoData = FretUndoData(diagram);
 
     diagram->setMarker(string, mtype);
     diagram->triggerLayout();
 }
 
-void FretMarker::undo()
-{
+void FretMarker::undo() {
     undoData.updateDiagram();
     diagram->triggerLayout();
 }
@@ -138,16 +128,14 @@ void FretMarker::undo()
 //   FretBarre
 //---------------------------------------------------------
 
-void FretBarre::redo()
-{
+void FretBarre::redo() {
     undoData = FretUndoData(diagram);
 
     diagram->setBarre(string, fret, add);
     diagram->triggerLayout();
 }
 
-void FretBarre::undo()
-{
+void FretBarre::undo() {
     undoData.updateDiagram();
     diagram->triggerLayout();
 }
@@ -156,16 +144,14 @@ void FretBarre::undo()
 //   FretClear
 //---------------------------------------------------------
 
-void FretClear::redo()
-{
+void FretClear::redo() {
     undoData = FretUndoData(diagram);
 
     diagram->clear();
     diagram->triggerLayout();
 }
 
-void FretClear::undo()
-{
+void FretClear::undo() {
     undoData.updateDiagram();
     diagram->triggerLayout();
 }
@@ -174,20 +160,15 @@ void FretClear::undo()
 //   AddFretDiagramToFretBox
 //---------------------------------------------------------
 
-AddFretDiagramToFretBox::AddFretDiagramToFretBox(FretDiagram* f, size_t idx)
-    : m_fretDiagram(f), m_idx(idx)
-{
-}
+AddFretDiagramToFretBox::AddFretDiagramToFretBox(FretDiagram *f, size_t idx) : m_fretDiagram(f), m_idx(idx) {}
 
-void AddFretDiagramToFretBox::redo()
-{
-    FBox* fbox = toFBox(m_fretDiagram->parent());
+void AddFretDiagramToFretBox::redo() {
+    FBox *fbox = toFBox(m_fretDiagram->parent());
     fbox->addAtIdx(m_fretDiagram, m_idx);
 }
 
-void AddFretDiagramToFretBox::undo()
-{
-    FBox* fbox = toFBox(m_fretDiagram->parent());
+void AddFretDiagramToFretBox::undo() {
+    FBox *fbox = toFBox(m_fretDiagram->parent());
     fbox->remove(m_fretDiagram);
 }
 
@@ -195,22 +176,18 @@ void AddFretDiagramToFretBox::undo()
 //   RemoveFretDiagramFromFretBox
 //---------------------------------------------------------
 
-RemoveFretDiagramFromFretBox::RemoveFretDiagramFromFretBox(FretDiagram* f)
-    : m_fretDiagram(f)
-{
-    FBox* fbox = toFBox(f->parent());
-    const ElementList& el = fbox->el();
+RemoveFretDiagramFromFretBox::RemoveFretDiagramFromFretBox(FretDiagram *f) : m_fretDiagram(f) {
+    FBox *fbox = toFBox(f->parent());
+    const ElementList &el = fbox->el();
     m_idx = muse::indexOf(el, m_fretDiagram);
 }
 
-void RemoveFretDiagramFromFretBox::redo()
-{
-    FBox* fbox = toFBox(m_fretDiagram->parent());
+void RemoveFretDiagramFromFretBox::redo() {
+    FBox *fbox = toFBox(m_fretDiagram->parent());
     fbox->remove(m_fretDiagram);
 }
 
-void RemoveFretDiagramFromFretBox::undo()
-{
-    FBox* fbox = toFBox(m_fretDiagram->parent());
+void RemoveFretDiagramFromFretBox::undo() {
+    FBox *fbox = toFBox(m_fretDiagram->parent());
     fbox->addAtIdx(m_fretDiagram, m_idx);
 }

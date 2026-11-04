@@ -26,12 +26,11 @@
 #include "playback/filters/filterbase.h"
 
 namespace mu::engraving {
-class TremoloFilter : public FilterBase<TremoloFilter>
-{
+class TremoloFilter : public FilterBase<TremoloFilter> {
 protected:
     friend class FilterBase<TremoloFilter>;
-    static bool isPlayable(const EngravingItem* item, const RenderingContext& ctx);
+    static bool isPlayable(const EngravingItem *item, const RenderingContext &ctx);
 };
-}
+} // namespace mu::engraving
 
 #endif // MU_ENGRAVING_TREMOLOFILTER_H

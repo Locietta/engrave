@@ -58,32 +58,30 @@ using namespace mu::engraving;
 
 static const String PARTS_DATA_DIR(u"parts_data/");
 
-class Engraving_PartsTests : public ::testing::Test
-{
+class Engraving_PartsTests : public ::testing::Test {
 public:
-    void testPartCreation(const String& test);
-    void createLinkedStaff(MasterScore* score);
+    void testPartCreation(const String &test);
+    void createLinkedStaff(MasterScore *score);
 
-    MasterScore* doAddBreath();
-    MasterScore* doRemoveBreath();
-    MasterScore* doAddFingering();
-    MasterScore* doRemoveFingering();
-    MasterScore* doAddSymbol();
-    MasterScore* doRemoveSymbol();
-    MasterScore* doAddChordline();
-    MasterScore* doRemoveChordline();
-    MasterScore* doAddMeasureRepeat();
-    MasterScore* doRemoveMeasureRepeat();
-    MasterScore* doAddImage();
-    MasterScore* doRemoveImage();
+    MasterScore *doAddBreath();
+    MasterScore *doRemoveBreath();
+    MasterScore *doAddFingering();
+    MasterScore *doRemoveFingering();
+    MasterScore *doAddSymbol();
+    MasterScore *doRemoveSymbol();
+    MasterScore *doAddChordline();
+    MasterScore *doRemoveChordline();
+    MasterScore *doAddMeasureRepeat();
+    MasterScore *doRemoveMeasureRepeat();
+    MasterScore *doAddImage();
+    MasterScore *doRemoveImage();
 };
 
-void Engraving_PartsTests::createLinkedStaff(MasterScore* masterScore)
-{
+void Engraving_PartsTests::createLinkedStaff(MasterScore *masterScore) {
     masterScore->startCmd(TranslatableString::untranslatable("Engraving parts tests"));
-    Staff* sourceStaff = masterScore->staff(0);
+    Staff *sourceStaff = masterScore->staff(0);
     ASSERT_TRUE(sourceStaff);
-    Staff* linkedStaff = Factory::createStaff(sourceStaff->part());
+    Staff *linkedStaff = Factory::createStaff(sourceStaff->part());
     linkedStaff->setPart(sourceStaff->part());
     masterScore->undoInsertStaff(linkedStaff, 1, false);
     Excerpt::cloneStaff(sourceStaff, linkedStaff);
@@ -95,21 +93,20 @@ void Engraving_PartsTests::createLinkedStaff(MasterScore* masterScore)
 //   voicesExcerpt
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, voicesExcerpt)
-{
-    MasterScore* masterScore = ScoreRW::readScore(PARTS_DATA_DIR + u"voices.mscx");
+TEST_F(Engraving_PartsTests, voicesExcerpt) {
+    MasterScore *masterScore = ScoreRW::readScore(PARTS_DATA_DIR + u"voices.mscx");
     ASSERT_TRUE(masterScore);
 
     //
     // create first part
     //
-    std::vector<Part*> parts;
+    std::vector<Part *> parts;
 
     parts.push_back(masterScore->parts().at(0));
-    Score* nscore = masterScore->createScore();
+    Score *nscore = masterScore->createScore();
     ASSERT_TRUE(nscore);
 
-    Excerpt* ex = new Excerpt(masterScore);
+    Excerpt *ex = new Excerpt(masterScore);
     ex->setExcerptScore(nscore);
     nscore->setExcerpt(ex);
     masterScore->excerpts().push_back(ex);
@@ -171,9 +168,8 @@ TEST_F(Engraving_PartsTests, voicesExcerpt)
 //   testPartCreation
 //---------------------------------------------------------
 
-void Engraving_PartsTests::testPartCreation(const String& test)
-{
-    MasterScore* score = ScoreRW::readScore(PARTS_DATA_DIR + test + u".mscx");
+void Engraving_PartsTests::testPartCreation(const String &test) {
+    MasterScore *score = ScoreRW::readScore(PARTS_DATA_DIR + test + u".mscx");
     ASSERT_TRUE(score);
 
     if (muse::io::FileInfo(ScoreRW::rootPath() + u"/" + PARTS_DATA_DIR + test + u"-ref.mscx").exists()) {
@@ -197,9 +193,8 @@ void Engraving_PartsTests::testPartCreation(const String& test)
 //   testAppendMeasure
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, appendMeasure)
-{
-    MasterScore* score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-all.mscx");
+TEST_F(Engraving_PartsTests, appendMeasure) {
+    MasterScore *score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-all.mscx");
     ASSERT_TRUE(score);
 
     TestUtils::createParts(score, 2);
@@ -220,15 +215,14 @@ TEST_F(Engraving_PartsTests, appendMeasure)
 //   testInsertMeasure
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, insertMeasure)
-{
-    MasterScore* score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-all.mscx");
+TEST_F(Engraving_PartsTests, insertMeasure) {
+    MasterScore *score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-all.mscx");
     ASSERT_TRUE(score);
 
     TestUtils::createParts(score, 2);
 
     score->startCmd(TranslatableString::untranslatable("Engraving parts tests"));
-    Measure* m = score->firstMeasure();
+    Measure *m = score->firstMeasure();
     score->insertMeasure(m);
     score->endCmd();
 
@@ -244,9 +238,8 @@ TEST_F(Engraving_PartsTests, insertMeasure)
 //   styleScore
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, styleScore)
-{
-    MasterScore* score = ScoreRW::readScore(PARTS_DATA_DIR + u"partStyle.mscx");
+TEST_F(Engraving_PartsTests, styleScore) {
+    MasterScore *score = ScoreRW::readScore(PARTS_DATA_DIR + u"partStyle.mscx");
     ASSERT_TRUE(score);
 
     TestUtils::createParts(score, 2);
@@ -259,13 +252,12 @@ TEST_F(Engraving_PartsTests, styleScore)
 //   styleScoreReload
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, styleScoreReload)
-{
-    MasterScore* partScore = ScoreRW::readScore(PARTS_DATA_DIR + u"partStyle-score-reload.mscx");
+TEST_F(Engraving_PartsTests, styleScoreReload) {
+    MasterScore *partScore = ScoreRW::readScore(PARTS_DATA_DIR + u"partStyle-score-reload.mscx");
     ASSERT_TRUE(partScore);
 
-    EXPECT_TRUE(ScoreComp::saveCompareScore(partScore, u"partStyle-score-reload-test.mscx",
-                                            PARTS_DATA_DIR + u"partStyle-score-reload-ref.mscx"));
+    EXPECT_TRUE(
+        ScoreComp::saveCompareScore(partScore, u"partStyle-score-reload-test.mscx", PARTS_DATA_DIR + u"partStyle-score-reload-ref.mscx"));
     delete partScore;
 }
 
@@ -273,25 +265,21 @@ TEST_F(Engraving_PartsTests, styleScoreReload)
 //   test part creation
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, createPart1)
-{
-    testPartCreation(u"part-empty");
-}
+TEST_F(Engraving_PartsTests, createPart1) { testPartCreation(u"part-empty"); }
 
-TEST_F(Engraving_PartsTests, createEmptyPart)
-{
+TEST_F(Engraving_PartsTests, createEmptyPart) {
     String sourceFileName = u"part-empty";
-    MasterScore* score = ScoreRW::readScore(PARTS_DATA_DIR + sourceFileName + u".mscx");
+    MasterScore *score = ScoreRW::readScore(PARTS_DATA_DIR + sourceFileName + u".mscx");
     ASSERT_TRUE(score);
     EXPECT_TRUE(ScoreComp::saveCompareScore(score, sourceFileName + u"-1.mscx", PARTS_DATA_DIR + sourceFileName + u".mscx"));
 
     TestUtils::createEmptyPart(score);
 
     // Check that measures have correct ticks set
-    for (Excerpt* excerpt : score->excerpts()) {
-        Score* excerptScore = excerpt->excerptScore();
+    for (Excerpt *excerpt : score->excerpts()) {
+        Score *excerptScore = excerpt->excerptScore();
         ASSERT_TRUE(excerptScore);
-        for (MeasureBase* mb = excerptScore->first(); mb; mb = mb->next()) {
+        for (MeasureBase *mb = excerptScore->first(); mb; mb = mb->next()) {
             if (mb->isMeasure()) {
                 EXPECT_GT(mb->ticks(), Fraction(0, 1));
             }
@@ -302,13 +290,9 @@ TEST_F(Engraving_PartsTests, createEmptyPart)
     }
 }
 
-TEST_F(Engraving_PartsTests, createPart2)
-{
-    testPartCreation(u"part-all");
-}
+TEST_F(Engraving_PartsTests, createPart2) { testPartCreation(u"part-all"); }
 
-TEST_F(Engraving_PartsTests, createPart3)
-{
+TEST_F(Engraving_PartsTests, createPart3) {
     // second part has system text on empty chordrest segment
     testPartCreation(u"part-54346");
 }
@@ -317,35 +301,30 @@ TEST_F(Engraving_PartsTests, createPart3)
 //    Breath
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, createPartBreath)
-{
-    testPartCreation(u"part-breath");
-}
+TEST_F(Engraving_PartsTests, createPartBreath) { testPartCreation(u"part-breath"); }
 
 //---------------------------------------------------------
 //    doAddBreath
 //---------------------------------------------------------
 
-MasterScore* Engraving_PartsTests::doAddBreath()
-{
-    MasterScore* score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-empty-parts.mscx");
+MasterScore *Engraving_PartsTests::doAddBreath() {
+    MasterScore *score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-empty-parts.mscx");
     if (!score) {
         ADD_FAILURE() << "score is null";
         return nullptr;
     }
 
-    Measure* m   = score->firstMeasure();
-    Segment* s   = m->tick2segment(Fraction(1, 4));
-    Chord* chord = toChord(s->element(0));
-    Note* note   = chord->upNote();
+    Measure *m = score->firstMeasure();
+    Segment *s = m->tick2segment(Fraction(1, 4));
+    Chord *chord = toChord(s->element(0));
+    Note *note = chord->upNote();
     EditData dd;
-    Breath* b = Factory::createBreath(score->dummy());
+    Breath *b = Factory::createBreath(score->dummy());
     b->setSymId(SymId::breathMarkComma);
     dd.dropElement = b;
 
-    score->transactionManager()->transaction(TranslatableString::untranslatable("Engraving parts tests"), [&](Transaction& tx) {
-        note->drop(tx, dd);
-    }); // does layout
+    score->transactionManager()->transaction(TranslatableString::untranslatable("Engraving parts tests"),
+                                             [&](Transaction &tx) { note->drop(tx, dd); }); // does layout
 
     return score;
 }
@@ -354,9 +333,8 @@ MasterScore* Engraving_PartsTests::doAddBreath()
 //   addBreath
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, addBreath)
-{
-    MasterScore* score = doAddBreath();
+TEST_F(Engraving_PartsTests, addBreath) {
+    MasterScore *score = doAddBreath();
     ASSERT_TRUE(score);
     EXPECT_TRUE(ScoreComp::saveCompareScore(score, u"part-breath-add.mscx", PARTS_DATA_DIR + u"part-breath-add.mscx"));
     delete score;
@@ -366,9 +344,8 @@ TEST_F(Engraving_PartsTests, addBreath)
 //   undoAddBreath
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, undoAddBreath)
-{
-    MasterScore* score = doAddBreath();
+TEST_F(Engraving_PartsTests, undoAddBreath) {
+    MasterScore *score = doAddBreath();
     ASSERT_TRUE(score);
 
     score->undoRedo(true, 0);
@@ -381,9 +358,8 @@ TEST_F(Engraving_PartsTests, undoAddBreath)
 //   undoRedoAddBreath
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, undoRedoAddBreath)
-{
-    MasterScore* score = doAddBreath();
+TEST_F(Engraving_PartsTests, undoRedoAddBreath) {
+    MasterScore *score = doAddBreath();
     ASSERT_TRUE(score);
 
     score->undoRedo(true, 0);
@@ -397,17 +373,16 @@ TEST_F(Engraving_PartsTests, undoRedoAddBreath)
 //   doRemoveBreath
 //---------------------------------------------------------
 
-MasterScore* Engraving_PartsTests::doRemoveBreath()
-{
-    MasterScore* score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-breath-add.mscx");
+MasterScore *Engraving_PartsTests::doRemoveBreath() {
+    MasterScore *score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-breath-add.mscx");
     if (!score) {
         ADD_FAILURE() << "score is null";
         return nullptr;
     }
 
-    Measure* m   = score->firstMeasure();
-    Segment* s   = m->first()->next(SegmentType::Breath);
-    Breath* b    = toBreath(s->element(0));
+    Measure *m = score->firstMeasure();
+    Segment *s = m->first()->next(SegmentType::Breath);
+    Breath *b = toBreath(s->element(0));
 
     score->select(b);
     score->startCmd(TranslatableString::untranslatable("Engraving parts tests"));
@@ -421,9 +396,8 @@ MasterScore* Engraving_PartsTests::doRemoveBreath()
 //   removeBreath
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, removeBreath)
-{
-    MasterScore* score = doRemoveBreath();
+TEST_F(Engraving_PartsTests, removeBreath) {
+    MasterScore *score = doRemoveBreath();
     ASSERT_TRUE(score);
     EXPECT_TRUE(ScoreComp::saveCompareScore(score, u"part-breath-del.mscx", PARTS_DATA_DIR + u"part-breath-del.mscx"));
     delete score;
@@ -433,9 +407,8 @@ TEST_F(Engraving_PartsTests, removeBreath)
 //   undoRemoveBreath
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, undoRemoveBreath)
-{
-    MasterScore* score = doRemoveBreath();
+TEST_F(Engraving_PartsTests, undoRemoveBreath) {
+    MasterScore *score = doRemoveBreath();
     ASSERT_TRUE(score);
     score->undoRedo(true, 0);
     EXPECT_TRUE(ScoreComp::saveCompareScore(score, u"part-breath-udel.mscx", PARTS_DATA_DIR + u"part-breath-udel.mscx"));
@@ -446,9 +419,8 @@ TEST_F(Engraving_PartsTests, undoRemoveBreath)
 //   undoRedoRemoveBreath
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, undoRedoRemoveBreath)
-{
-    MasterScore* score = doRemoveBreath();
+TEST_F(Engraving_PartsTests, undoRedoRemoveBreath) {
+    MasterScore *score = doRemoveBreath();
     ASSERT_TRUE(score);
     score->undoRedo(true, 0);
     score->undoRedo(false, 0);
@@ -461,35 +433,30 @@ TEST_F(Engraving_PartsTests, undoRedoRemoveBreath)
 //   Fingering
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, createPartFingering)
-{
-    testPartCreation(u"part-fingering");
-}
+TEST_F(Engraving_PartsTests, createPartFingering) { testPartCreation(u"part-fingering"); }
 
 //---------------------------------------------------------
 //   doAddFingering
 //---------------------------------------------------------
 
-MasterScore* Engraving_PartsTests::doAddFingering()
-{
-    MasterScore* score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-empty-parts.mscx");
+MasterScore *Engraving_PartsTests::doAddFingering() {
+    MasterScore *score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-empty-parts.mscx");
     if (!score) {
         ADD_FAILURE() << "score is null";
         return nullptr;
     }
 
-    Measure* m   = score->firstMeasure();
-    Segment* s   = m->tick2segment(Fraction(1, 4));
-    Chord* chord = toChord(s->element(0));
-    Note* note   = chord->upNote();
+    Measure *m = score->firstMeasure();
+    Segment *s = m->tick2segment(Fraction(1, 4));
+    Chord *chord = toChord(s->element(0));
+    Note *note = chord->upNote();
     EditData dd;
-    Fingering* b = Factory::createFingering(note);
+    Fingering *b = Factory::createFingering(note);
     b->setXmlText("3");
     dd.dropElement = b;
 
-    score->transactionManager()->transaction(TranslatableString::untranslatable("Engraving parts tests"), [&](Transaction& tx) {
-        note->drop(tx, dd);
-    }); // does layout
+    score->transactionManager()->transaction(TranslatableString::untranslatable("Engraving parts tests"),
+                                             [&](Transaction &tx) { note->drop(tx, dd); }); // does layout
     return score;
 }
 
@@ -497,9 +464,8 @@ MasterScore* Engraving_PartsTests::doAddFingering()
 //   addFingering
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, addFingering)
-{
-    MasterScore* score = doAddFingering();
+TEST_F(Engraving_PartsTests, addFingering) {
+    MasterScore *score = doAddFingering();
     ASSERT_TRUE(score);
     EXPECT_TRUE(ScoreComp::saveCompareScore(score, u"part-fingering-add.mscx", PARTS_DATA_DIR + u"part-fingering-add.mscx"));
     delete score;
@@ -509,9 +475,8 @@ TEST_F(Engraving_PartsTests, addFingering)
 //   undoAddFingering
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, undoAddFingering)
-{
-    MasterScore* score = doAddFingering();
+TEST_F(Engraving_PartsTests, undoAddFingering) {
+    MasterScore *score = doAddFingering();
     ASSERT_TRUE(score);
     score->undoRedo(true, 0);
     EXPECT_TRUE(ScoreComp::saveCompareScore(score, u"part-fingering-uadd.mscx", PARTS_DATA_DIR + u"part-fingering-uadd.mscx"));
@@ -522,9 +487,8 @@ TEST_F(Engraving_PartsTests, undoAddFingering)
 //   undoRedoAddFingering
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, undoRedoAddFingering)
-{
-    MasterScore* score = doAddFingering();
+TEST_F(Engraving_PartsTests, undoRedoAddFingering) {
+    MasterScore *score = doAddFingering();
     ASSERT_TRUE(score);
     score->undoRedo(true, 0);
     score->undoRedo(false, 0);
@@ -536,20 +500,19 @@ TEST_F(Engraving_PartsTests, undoRedoAddFingering)
 //   doRemoveFingering
 //---------------------------------------------------------
 
-MasterScore* Engraving_PartsTests::doRemoveFingering()
-{
-    MasterScore* score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-fingering-parts.mscx");
+MasterScore *Engraving_PartsTests::doRemoveFingering() {
+    MasterScore *score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-fingering-parts.mscx");
     if (!score) {
         ADD_FAILURE() << "score is null";
         return nullptr;
     }
 
-    Measure* m   = score->firstMeasure();
-    Segment* s   = m->first()->next(SegmentType::ChordRest);
-    Chord* chord = toChord(s->element(0));
-    Note* note   = chord->upNote();
-    EngravingItem* fingering = 0;
-    for (EngravingItem* e : note->el()) {
+    Measure *m = score->firstMeasure();
+    Segment *s = m->first()->next(SegmentType::ChordRest);
+    Chord *chord = toChord(s->element(0));
+    Note *note = chord->upNote();
+    EngravingItem *fingering = 0;
+    for (EngravingItem *e : note->el()) {
         if (e->isFingering()) {
             fingering = e;
             break;
@@ -568,9 +531,8 @@ MasterScore* Engraving_PartsTests::doRemoveFingering()
 //   removeFingering
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, removeFingering)
-{
-    MasterScore* score = doRemoveFingering();
+TEST_F(Engraving_PartsTests, removeFingering) {
+    MasterScore *score = doRemoveFingering();
     ASSERT_TRUE(score);
     EXPECT_TRUE(ScoreComp::saveCompareScore(score, u"part-fingering-del.mscx", PARTS_DATA_DIR + u"part-fingering-del.mscx"));
     delete score;
@@ -580,9 +542,8 @@ TEST_F(Engraving_PartsTests, removeFingering)
 //   undoRemoveFingering
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, undoRemoveFingering)
-{
-    MasterScore* score = doRemoveFingering();
+TEST_F(Engraving_PartsTests, undoRemoveFingering) {
+    MasterScore *score = doRemoveFingering();
     ASSERT_TRUE(score);
     score->undoRedo(true, 0);
     EXPECT_TRUE(ScoreComp::saveCompareScore(score, u"part-fingering-udel.mscx", PARTS_DATA_DIR + u"part-fingering-udel.mscx"));
@@ -593,9 +554,8 @@ TEST_F(Engraving_PartsTests, undoRemoveFingering)
 //   undoRedoRemoveFingering
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, undoRedoRemoveFingering)
-{
-    MasterScore* score = doRemoveFingering();
+TEST_F(Engraving_PartsTests, undoRedoRemoveFingering) {
+    MasterScore *score = doRemoveFingering();
     ASSERT_TRUE(score);
     score->undoRedo(true, 0);
     score->undoRedo(false, 0);
@@ -607,35 +567,30 @@ TEST_F(Engraving_PartsTests, undoRedoRemoveFingering)
 //   Symbol
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, createPartSymbol)
-{
-    testPartCreation(u"part-symbol");
-}
+TEST_F(Engraving_PartsTests, createPartSymbol) { testPartCreation(u"part-symbol"); }
 
 //---------------------------------------------------------
 //   doAddSymbol
 //---------------------------------------------------------
 
-MasterScore* Engraving_PartsTests::doAddSymbol()
-{
-    MasterScore* score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-empty-parts.mscx");
+MasterScore *Engraving_PartsTests::doAddSymbol() {
+    MasterScore *score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-empty-parts.mscx");
     if (!score) {
         ADD_FAILURE() << "score is null";
         return nullptr;
     }
 
-    Measure* m   = score->firstMeasure();
-    Segment* s   = m->tick2segment(Fraction(1, 4));
-    Chord* chord = toChord(s->element(0));
-    Note* note   = chord->upNote();
+    Measure *m = score->firstMeasure();
+    Segment *s = m->tick2segment(Fraction(1, 4));
+    Chord *chord = toChord(s->element(0));
+    Note *note = chord->upNote();
     EditData dd;
-    Symbol* b  = new Symbol(note);
+    Symbol *b = new Symbol(note);
     b->setSym(SymId::gClef);
     dd.dropElement = b;
 
-    score->transactionManager()->transaction(TranslatableString::untranslatable("Engraving parts tests"), [&](Transaction& tx) {
-        note->drop(tx, dd);
-    }); // does layout
+    score->transactionManager()->transaction(TranslatableString::untranslatable("Engraving parts tests"),
+                                             [&](Transaction &tx) { note->drop(tx, dd); }); // does layout
     return score;
 }
 
@@ -643,9 +598,8 @@ MasterScore* Engraving_PartsTests::doAddSymbol()
 //   addSymbol
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, addSymbol)
-{
-    MasterScore* score = doAddSymbol();
+TEST_F(Engraving_PartsTests, addSymbol) {
+    MasterScore *score = doAddSymbol();
     ASSERT_TRUE(score);
     EXPECT_TRUE(ScoreComp::saveCompareScore(score, u"part-symbol-add.mscx", PARTS_DATA_DIR + u"part-symbol-add.mscx"));
     delete score;
@@ -655,9 +609,8 @@ TEST_F(Engraving_PartsTests, addSymbol)
 //   undoAddSymbol
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, undoAddSymbol)
-{
-    MasterScore* score = doAddSymbol();
+TEST_F(Engraving_PartsTests, undoAddSymbol) {
+    MasterScore *score = doAddSymbol();
     ASSERT_TRUE(score);
     score->undoRedo(true, 0);
     EXPECT_TRUE(ScoreComp::saveCompareScore(score, u"part-symbol-uadd.mscx", PARTS_DATA_DIR + u"part-symbol-uadd.mscx"));
@@ -668,9 +621,8 @@ TEST_F(Engraving_PartsTests, undoAddSymbol)
 //   undoRedoAddSymbol
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, undoRedoAddSymbol)
-{
-    MasterScore* score = doAddSymbol();
+TEST_F(Engraving_PartsTests, undoRedoAddSymbol) {
+    MasterScore *score = doAddSymbol();
     ASSERT_TRUE(score);
     score->undoRedo(true, 0);
     score->undoRedo(false, 0);
@@ -682,20 +634,19 @@ TEST_F(Engraving_PartsTests, undoRedoAddSymbol)
 //   doRemoveSymbol
 //---------------------------------------------------------
 
-MasterScore* Engraving_PartsTests::doRemoveSymbol()
-{
-    MasterScore* score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-symbol-parts.mscx");
+MasterScore *Engraving_PartsTests::doRemoveSymbol() {
+    MasterScore *score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-symbol-parts.mscx");
     if (!score) {
         ADD_FAILURE() << "score is null";
         return nullptr;
     }
 
-    Measure* m   = score->firstMeasure();
-    Segment* s   = m->first()->next(SegmentType::ChordRest);
-    Chord* chord = toChord(s->element(0));
-    Note* note   = chord->upNote();
-    EngravingItem* se = 0;
-    for (EngravingItem* e : note->el()) {
+    Measure *m = score->firstMeasure();
+    Segment *s = m->first()->next(SegmentType::ChordRest);
+    Chord *chord = toChord(s->element(0));
+    Note *note = chord->upNote();
+    EngravingItem *se = 0;
+    for (EngravingItem *e : note->el()) {
         if (e->isSymbol()) {
             se = e;
             break;
@@ -714,9 +665,8 @@ MasterScore* Engraving_PartsTests::doRemoveSymbol()
 //   removeSymbol
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, removeSymbol)
-{
-    MasterScore* score = doRemoveSymbol();
+TEST_F(Engraving_PartsTests, removeSymbol) {
+    MasterScore *score = doRemoveSymbol();
     ASSERT_TRUE(score);
     EXPECT_TRUE(ScoreComp::saveCompareScore(score, u"part-symbol-del.mscx", PARTS_DATA_DIR + u"part-symbol-del.mscx"));
     delete score;
@@ -726,9 +676,8 @@ TEST_F(Engraving_PartsTests, removeSymbol)
 //   undoRemoveSymbol
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, undoRemoveSymbol)
-{
-    MasterScore* score = doRemoveSymbol();
+TEST_F(Engraving_PartsTests, undoRemoveSymbol) {
+    MasterScore *score = doRemoveSymbol();
     ASSERT_TRUE(score);
     score->undoRedo(true, 0);
     EXPECT_TRUE(ScoreComp::saveCompareScore(score, u"part-symbol-udel.mscx", PARTS_DATA_DIR + u"part-symbol-udel.mscx"));
@@ -739,9 +688,8 @@ TEST_F(Engraving_PartsTests, undoRemoveSymbol)
 //   undoRedoRemoveSymbol
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, undoRedoRemoveSymbol)
-{
-    MasterScore* score = doRemoveSymbol();
+TEST_F(Engraving_PartsTests, undoRedoRemoveSymbol) {
+    MasterScore *score = doRemoveSymbol();
     ASSERT_TRUE(score);
     score->undoRedo(true, 0);
     score->undoRedo(false, 0);
@@ -753,35 +701,30 @@ TEST_F(Engraving_PartsTests, undoRedoRemoveSymbol)
 //   Chordline
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, createPartChordline)
-{
-    testPartCreation(u"part-chordline");
-}
+TEST_F(Engraving_PartsTests, createPartChordline) { testPartCreation(u"part-chordline"); }
 
 //---------------------------------------------------------
 //   doAddChordline
 //---------------------------------------------------------
 
-MasterScore* Engraving_PartsTests::doAddChordline()
-{
-    MasterScore* score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-empty-parts.mscx");
+MasterScore *Engraving_PartsTests::doAddChordline() {
+    MasterScore *score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-empty-parts.mscx");
     if (!score) {
         ADD_FAILURE() << "score is null";
         return nullptr;
     }
 
-    Measure* m   = score->firstMeasure();
-    Segment* s   = m->tick2segment(Fraction(1, 4));
-    Chord* chord = toChord(s->element(0));
-    Note* note   = chord->upNote();
+    Measure *m = score->firstMeasure();
+    Segment *s = m->tick2segment(Fraction(1, 4));
+    Chord *chord = toChord(s->element(0));
+    Note *note = chord->upNote();
     EditData dd;
-    ChordLine* b  = Factory::createChordLine(chord);
+    ChordLine *b = Factory::createChordLine(chord);
     b->setChordLineType(ChordLineType::FALL);
     dd.dropElement = b;
 
-    score->transactionManager()->transaction(TranslatableString::untranslatable("Engraving parts tests"), [&](Transaction& tx) {
-        note->drop(tx, dd);
-    }); // does layout
+    score->transactionManager()->transaction(TranslatableString::untranslatable("Engraving parts tests"),
+                                             [&](Transaction &tx) { note->drop(tx, dd); }); // does layout
     return score;
 }
 
@@ -789,9 +732,8 @@ MasterScore* Engraving_PartsTests::doAddChordline()
 //   addChordline
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, addChordline)
-{
-    MasterScore* score = doAddChordline();
+TEST_F(Engraving_PartsTests, addChordline) {
+    MasterScore *score = doAddChordline();
     ASSERT_TRUE(score);
     EXPECT_TRUE(ScoreComp::saveCompareScore(score, u"part-chordline-add.mscx", PARTS_DATA_DIR + u"part-chordline-add.mscx"));
     delete score;
@@ -801,9 +743,8 @@ TEST_F(Engraving_PartsTests, addChordline)
 //   undoAddChordline
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, undoAddChordline)
-{
-    MasterScore* score = doAddChordline();
+TEST_F(Engraving_PartsTests, undoAddChordline) {
+    MasterScore *score = doAddChordline();
     ASSERT_TRUE(score);
     score->undoRedo(true, 0);
     EXPECT_TRUE(ScoreComp::saveCompareScore(score, u"part-chordline-uadd.mscx", PARTS_DATA_DIR + u"part-chordline-uadd.mscx"));
@@ -814,9 +755,8 @@ TEST_F(Engraving_PartsTests, undoAddChordline)
 //   undoRedoAddChordline
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, undoRedoAddChordline)
-{
-    MasterScore* score = doAddChordline();
+TEST_F(Engraving_PartsTests, undoRedoAddChordline) {
+    MasterScore *score = doAddChordline();
     ASSERT_TRUE(score);
     score->undoRedo(true, 0);
     score->undoRedo(false, 0);
@@ -828,20 +768,19 @@ TEST_F(Engraving_PartsTests, undoRedoAddChordline)
 //   doRemoveChordline
 //---------------------------------------------------------
 
-MasterScore* Engraving_PartsTests::doRemoveChordline()
-{
-    MasterScore* score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-chordline-parts.mscx");
+MasterScore *Engraving_PartsTests::doRemoveChordline() {
+    MasterScore *score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-chordline-parts.mscx");
     if (!score) {
         ADD_FAILURE() << "score is null";
         return nullptr;
     }
 
-    Measure* m   = score->firstMeasure();
-    Segment* s   = m->first()->next(SegmentType::ChordRest);
-    Chord* chord = toChord(s->element(0));
+    Measure *m = score->firstMeasure();
+    Segment *s = m->first()->next(SegmentType::ChordRest);
+    Chord *chord = toChord(s->element(0));
 
-    EngravingItem* se = 0;
-    for (EngravingItem* e : chord->el()) {
+    EngravingItem *se = 0;
+    for (EngravingItem *e : chord->el()) {
         if (e->isChordLine()) {
             se = e;
             break;
@@ -860,9 +799,8 @@ MasterScore* Engraving_PartsTests::doRemoveChordline()
 //   removeChordline
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, removeChordline)
-{
-    MasterScore* score = doRemoveChordline();
+TEST_F(Engraving_PartsTests, removeChordline) {
+    MasterScore *score = doRemoveChordline();
     ASSERT_TRUE(score);
     EXPECT_TRUE(ScoreComp::saveCompareScore(score, u"part-chordline-del.mscx", PARTS_DATA_DIR + u"part-chordline-del.mscx"));
     delete score;
@@ -872,9 +810,8 @@ TEST_F(Engraving_PartsTests, removeChordline)
 //   undoRemoveChordline
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, undoRemoveChordline)
-{
-    MasterScore* score = doRemoveChordline();
+TEST_F(Engraving_PartsTests, undoRemoveChordline) {
+    MasterScore *score = doRemoveChordline();
     ASSERT_TRUE(score);
     score->undoRedo(true, 0);
     EXPECT_TRUE(ScoreComp::saveCompareScore(score, u"part-chordline-udel.mscx", PARTS_DATA_DIR + u"part-chordline-udel.mscx"));
@@ -885,9 +822,8 @@ TEST_F(Engraving_PartsTests, undoRemoveChordline)
 //   undoRedoRemoveChordline
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, undoRedoRemoveChordline)
-{
-    MasterScore* score = doRemoveChordline();
+TEST_F(Engraving_PartsTests, undoRedoRemoveChordline) {
+    MasterScore *score = doRemoveChordline();
     ASSERT_TRUE(score);
     score->undoRedo(true, 0);
     score->undoRedo(false, 0);
@@ -899,27 +835,24 @@ TEST_F(Engraving_PartsTests, undoRedoRemoveChordline)
 //   MeasureRepeat
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, createPartMeasureRepeat)
-{
-    testPartCreation(u"part-measure-repeat");
-}
+TEST_F(Engraving_PartsTests, createPartMeasureRepeat) { testPartCreation(u"part-measure-repeat"); }
 
 //---------------------------------------------------------
 //   doAddMeasureRepeat
 //---------------------------------------------------------
 
-MasterScore* Engraving_PartsTests::doAddMeasureRepeat()
-{
-    MasterScore* score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-empty-parts.mscx");
+MasterScore *Engraving_PartsTests::doAddMeasureRepeat() {
+    MasterScore *score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-empty-parts.mscx");
     if (!score) {
         ADD_FAILURE() << "score is null";
         return nullptr;
     }
 
-    Measure* m = score->firstMeasure()->nextMeasure();
+    Measure *m = score->firstMeasure()->nextMeasure();
 
     score->startCmd(TranslatableString::untranslatable("Engraving parts tests"));
-    EditMeasureRepeat::addMeasureRepeat(score->transactionManager()->currentOrDummyTransaction(), score, m, 4, 0); // test with 4-measure repeat in first staff
+    EditMeasureRepeat::addMeasureRepeat(score->transactionManager()->currentOrDummyTransaction(), score, m, 4,
+                                        0); // test with 4-measure repeat in first staff
     score->setLayoutAll();
     score->endCmd();
 
@@ -930,9 +863,8 @@ MasterScore* Engraving_PartsTests::doAddMeasureRepeat()
 //   addMeasureRepeat
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, addMeasureRepeat)
-{
-    MasterScore* score = doAddMeasureRepeat();
+TEST_F(Engraving_PartsTests, addMeasureRepeat) {
+    MasterScore *score = doAddMeasureRepeat();
     ASSERT_TRUE(score);
     EXPECT_TRUE(ScoreComp::saveCompareScore(score, u"part-measure-repeat-add.mscx", PARTS_DATA_DIR + u"part-measure-repeat-add.mscx"));
     delete score;
@@ -942,9 +874,8 @@ TEST_F(Engraving_PartsTests, addMeasureRepeat)
 //   undoAddMeasureRepeat
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, undoAddMeasureRepeat)
-{
-    MasterScore* score = doAddMeasureRepeat();
+TEST_F(Engraving_PartsTests, undoAddMeasureRepeat) {
+    MasterScore *score = doAddMeasureRepeat();
     ASSERT_TRUE(score);
 
     score->undoRedo(true, 0);
@@ -957,9 +888,8 @@ TEST_F(Engraving_PartsTests, undoAddMeasureRepeat)
 //   undoRedoAddMeasureRepeat
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, undoRedoAddMeasureRepeat)
-{
-    MasterScore* score = doAddMeasureRepeat();
+TEST_F(Engraving_PartsTests, undoRedoAddMeasureRepeat) {
+    MasterScore *score = doAddMeasureRepeat();
     ASSERT_TRUE(score);
 
     score->undoRedo(true, 0);
@@ -973,16 +903,15 @@ TEST_F(Engraving_PartsTests, undoRedoAddMeasureRepeat)
 //   doRemoveMeasureRepeat
 //---------------------------------------------------------
 
-MasterScore* Engraving_PartsTests::doRemoveMeasureRepeat()
-{
-    MasterScore* score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-measure-repeat-parts.mscx");
+MasterScore *Engraving_PartsTests::doRemoveMeasureRepeat() {
+    MasterScore *score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-measure-repeat-parts.mscx");
     if (!score) {
         ADD_FAILURE() << "score is null";
         return nullptr;
     }
 
-    Measure* m = score->firstMeasure()->nextMeasure()->nextMeasure();
-    MeasureRepeat* mr = m->measureRepeatElement(0);
+    Measure *m = score->firstMeasure()->nextMeasure()->nextMeasure();
+    MeasureRepeat *mr = m->measureRepeatElement(0);
     score->select(mr);
 
     score->startCmd(TranslatableString::untranslatable("Engraving parts tests"));
@@ -996,9 +925,8 @@ MasterScore* Engraving_PartsTests::doRemoveMeasureRepeat()
 //   removeMeasureRepeat
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, removeMeasureRepeat)
-{
-    MasterScore* score = doRemoveMeasureRepeat();
+TEST_F(Engraving_PartsTests, removeMeasureRepeat) {
+    MasterScore *score = doRemoveMeasureRepeat();
     ASSERT_TRUE(score);
     EXPECT_TRUE(ScoreComp::saveCompareScore(score, u"part-measure-repeat-del.mscx", PARTS_DATA_DIR + u"part-measure-repeat-del.mscx"));
     delete score;
@@ -1008,9 +936,8 @@ TEST_F(Engraving_PartsTests, removeMeasureRepeat)
 //   undoRemoveMeasureRepeat
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, undoRemoveMeasureRepeat)
-{
-    MasterScore* score = doRemoveMeasureRepeat();
+TEST_F(Engraving_PartsTests, undoRemoveMeasureRepeat) {
+    MasterScore *score = doRemoveMeasureRepeat();
     ASSERT_TRUE(score);
     score->undoRedo(true, 0);
     EXPECT_TRUE(ScoreComp::saveCompareScore(score, u"part-measure-repeat-udel.mscx", PARTS_DATA_DIR + u"part-measure-repeat-udel.mscx"));
@@ -1021,9 +948,8 @@ TEST_F(Engraving_PartsTests, undoRemoveMeasureRepeat)
 //   undoRedoRemoveMeasureRepeat
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, undoRedoRemoveMeasureRepeat)
-{
-    MasterScore* score = doRemoveMeasureRepeat();
+TEST_F(Engraving_PartsTests, undoRedoRemoveMeasureRepeat) {
+    MasterScore *score = doRemoveMeasureRepeat();
     ASSERT_TRUE(score);
     score->undoRedo(true, 0);
     score->undoRedo(false, 0);
@@ -1036,36 +962,32 @@ TEST_F(Engraving_PartsTests, undoRedoRemoveMeasureRepeat)
 //   Stemless
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, createPartStemless)
-{
-    testPartCreation(u"part-stemless");
-}
+TEST_F(Engraving_PartsTests, createPartStemless) { testPartCreation(u"part-stemless"); }
 
-TEST_F(Engraving_PartsTests, partExclusion)
-{
-    MasterScore* masterScore = ScoreRW::readScore(PARTS_DATA_DIR + u"partExclusion.mscx");
+TEST_F(Engraving_PartsTests, partExclusion) {
+    MasterScore *masterScore = ScoreRW::readScore(PARTS_DATA_DIR + u"partExclusion.mscx");
 
     ASSERT_TRUE(masterScore);
 
-    Score* partScore = TestUtils::createPart(masterScore);
+    Score *partScore = TestUtils::createPart(masterScore);
     ASSERT_TRUE(partScore);
 
     ScoreRW::saveScore(masterScore, u"partExclusion.mscx");
     EXPECT_TRUE(ScoreComp::saveCompareScore(partScore, u"partExclusion-part-0.mscx", PARTS_DATA_DIR + u"partExclusion-part-0.mscx"));
 
     // Collect the relevant items
-    std::vector<EngravingItem*> itemsToExclude;
-    for (MeasureBase* mb = masterScore->first(); mb; mb = mb->next()) {
+    std::vector<EngravingItem *> itemsToExclude;
+    for (MeasureBase *mb = masterScore->first(); mb; mb = mb->next()) {
         if (!mb->isMeasure()) {
             itemsToExclude.push_back(mb);
             continue;
         }
-        for (Segment& segment : toMeasure(mb)->segments()) {
-            EngravingItem* item = segment.element(0);
+        for (Segment &segment : toMeasure(mb)->segments()) {
+            EngravingItem *item = segment.element(0);
             if (item && item->isClef() && !item->generated()) {
                 itemsToExclude.push_back(item);
             }
-            for (EngravingItem* annotation : segment.annotations()) {
+            for (EngravingItem *annotation : segment.annotations()) {
                 if (annotation->isTextBase()) {
                     itemsToExclude.push_back(annotation);
                 }
@@ -1073,14 +995,14 @@ TEST_F(Engraving_PartsTests, partExclusion)
         }
     }
     for (auto pair : masterScore->spanner()) {
-        Spanner* spanner = pair.second;
+        Spanner *spanner = pair.second;
         if (spanner && spanner->isOttava()) {
             itemsToExclude.push_back(spanner);
         }
     }
 
     // Invert exclusion property
-    for (EngravingItem* item : itemsToExclude) {
+    for (EngravingItem *item : itemsToExclude) {
         masterScore->select(item);
         bool exclude = item->getProperty(Pid::EXCLUDE_FROM_OTHER_PARTS).toBool();
         item->undoChangeProperty(Pid::EXCLUDE_FROM_OTHER_PARTS, !exclude);
@@ -1090,7 +1012,7 @@ TEST_F(Engraving_PartsTests, partExclusion)
     EXPECT_TRUE(ScoreComp::saveCompareScore(partScore, u"partExclusion-part-1.mscx", PARTS_DATA_DIR + u"partExclusion-part-1.mscx"));
 
     // Revert again and check it is equal to the initial file again
-    for (EngravingItem* item : itemsToExclude) {
+    for (EngravingItem *item : itemsToExclude) {
         masterScore->select(item);
         bool exclude = item->getProperty(Pid::EXCLUDE_FROM_OTHER_PARTS).toBool();
         item->undoChangeProperty(Pid::EXCLUDE_FROM_OTHER_PARTS, !exclude);
@@ -1100,30 +1022,29 @@ TEST_F(Engraving_PartsTests, partExclusion)
     //EXPECT_TRUE(ScoreComp::saveCompareScore(partScore, u"partExclusion-part-0.mscx", PARTS_DATA_DIR + u"partExclusion-part-0.mscx"));
 }
 
-TEST_F(Engraving_PartsTests, partPropertyLinking)
-{
-    MasterScore* masterScore = ScoreRW::readScore(PARTS_DATA_DIR + u"partPropertyLinking.mscx");
+TEST_F(Engraving_PartsTests, partPropertyLinking) {
+    MasterScore *masterScore = ScoreRW::readScore(PARTS_DATA_DIR + u"partPropertyLinking.mscx");
 
     ASSERT_TRUE(masterScore);
 
-    Score* partScore = TestUtils::createPart(masterScore);
+    Score *partScore = TestUtils::createPart(masterScore);
     ASSERT_TRUE(partScore);
 
     ScoreRW::saveScore(masterScore, u"partPropertyLinking.mscx");
-    EXPECT_TRUE(ScoreComp::saveCompareScore(partScore, u"partPropertyLinking-part-0.mscx",
-                                            PARTS_DATA_DIR + u"partPropertyLinking-part-0.mscx"));
+    EXPECT_TRUE(
+        ScoreComp::saveCompareScore(partScore, u"partPropertyLinking-part-0.mscx", PARTS_DATA_DIR + u"partPropertyLinking-part-0.mscx"));
 
-    Dynamic* dynamic = nullptr;
-    Measure* measure = masterScore->firstMeasure();
-    for (Segment& segment : measure->segments()) {
-        for (EngravingItem* annotation : segment.annotations()) {
+    Dynamic *dynamic = nullptr;
+    Measure *measure = masterScore->firstMeasure();
+    for (Segment &segment : measure->segments()) {
+        for (EngravingItem *annotation : segment.annotations()) {
             if (annotation->isDynamic()) {
                 dynamic = toDynamic(annotation);
                 break;
             }
         }
     }
-    Dynamic* testItem = toDynamic(dynamic->findLinkedInScore(partScore));
+    Dynamic *testItem = toDynamic(dynamic->findLinkedInScore(partScore));
     ASSERT_TRUE(testItem);
 
     testItem->undoChangeProperty(Pid::PLACEMENT, PropertyValue::fromValue(PlacementV::ABOVE), PropertyFlags::NOSTYLE);
@@ -1131,23 +1052,20 @@ TEST_F(Engraving_PartsTests, partPropertyLinking)
     EXPECT_FALSE(testItem->isPositionLinkedToMaster());
     EXPECT_FALSE(testItem->isAppearanceLinkedToMaster());
 
-    EXPECT_TRUE(ScoreComp::saveCompareScore(partScore, u"partPropertyLinking-part-1.mscx",
-                                            PARTS_DATA_DIR + u"partPropertyLinking-part-1.mscx"));
+    EXPECT_TRUE(
+        ScoreComp::saveCompareScore(partScore, u"partPropertyLinking-part-1.mscx", PARTS_DATA_DIR + u"partPropertyLinking-part-1.mscx"));
 
     testItem->undoChangeProperty(Pid::POSITION_LINKED_TO_MASTER, true, PropertyFlags::NOSTYLE);
     testItem->undoChangeProperty(Pid::APPEARANCE_LINKED_TO_MASTER, true, PropertyFlags::NOSTYLE);
-    EXPECT_TRUE(ScoreComp::saveCompareScore(partScore, u"partPropertyLinking-part-0.mscx",
-                                            PARTS_DATA_DIR + u"partPropertyLinking-part-0.mscx"));
+    EXPECT_TRUE(
+        ScoreComp::saveCompareScore(partScore, u"partPropertyLinking-part-0.mscx", PARTS_DATA_DIR + u"partPropertyLinking-part-0.mscx"));
 }
 
-TEST_F(Engraving_PartsTests, partSpanners)
-{
-    testPartCreation(u"part-spanners");
-}
+TEST_F(Engraving_PartsTests, partSpanners) { testPartCreation(u"part-spanners"); }
 
 TEST_F(Engraving_PartsTests, partTies) {
     const String test = u"linked-ties";
-    MasterScore* score = ScoreRW::readScore(PARTS_DATA_DIR + test + u".mscx");
+    MasterScore *score = ScoreRW::readScore(PARTS_DATA_DIR + test + u".mscx");
     ASSERT_TRUE(score);
     createLinkedStaff(score);
     EXPECT_TRUE(ScoreComp::saveCompareScore(score, test + u"-1.mscx", PARTS_DATA_DIR + test + u"-1.mscx"));
@@ -1157,22 +1075,22 @@ TEST_F(Engraving_PartsTests, partTies) {
 }
 
 TEST_F(Engraving_PartsTests, partVisibleTracks) {
-    Score* score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-visible-tracks.mscz");
+    Score *score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-visible-tracks.mscz");
     ASSERT_TRUE(score);
 
-    Score* part = nullptr;
-    for (Score* s : score->scoreList()) {
+    Score *part = nullptr;
+    for (Score *s : score->scoreList()) {
         if (!s->isMaster()) {
             part = s;
             break;
         }
     }
     ASSERT_TRUE(part);
-    Measure* m = part->firstMeasure();
+    Measure *m = part->firstMeasure();
     ASSERT_TRUE(m);
-    Chord* c = m->findChord(Fraction(0, 1), 0);
+    Chord *c = m->findChord(Fraction(0, 1), 0);
     ASSERT_TRUE(c);
-    Note* n = c->downNote();
+    Note *n = c->downNote();
     ASSERT_TRUE(n);
 
     part->startCmd(TranslatableString::untranslatable("Engraving parts tests"));
@@ -1180,28 +1098,27 @@ TEST_F(Engraving_PartsTests, partVisibleTracks) {
     EditVoice::changeSelectedElementsVoice(part->transactionManager()->currentOrDummyTransaction(), part, 1);
     part->endCmd();
 
-    EXPECT_TRUE(ScoreComp::saveCompareScore(score, u"part-visible-tracks-score.mscx",
-                                            PARTS_DATA_DIR + u"part-visible-tracks-score-ref.mscx"));
+    EXPECT_TRUE(
+        ScoreComp::saveCompareScore(score, u"part-visible-tracks-score.mscx", PARTS_DATA_DIR + u"part-visible-tracks-score-ref.mscx"));
 
-    EXPECT_TRUE(ScoreComp::saveCompareScore(part, u"part-visible-tracks-part.mscx",
-                                            PARTS_DATA_DIR + u"part-visible-tracks-part-ref.mscx"));
+    EXPECT_TRUE(ScoreComp::saveCompareScore(part, u"part-visible-tracks-part.mscx", PARTS_DATA_DIR + u"part-visible-tracks-part-ref.mscx"));
 }
 
 TEST_F(Engraving_PartsTests, inputFromParts) {
     // Enter notes *in parts* and check that they are correctly cloned to the score.
 
-    Score* score = ScoreRW::readScore(PARTS_DATA_DIR + u"input-from-parts.mscz");
+    Score *score = ScoreRW::readScore(PARTS_DATA_DIR + u"input-from-parts.mscz");
     ASSERT_TRUE(score);
     staff_idx_t fluteStaff = 0;
     staff_idx_t oboeStaff = 1;
     staff_idx_t clarinetStaff = 2;
     staff_idx_t bassoonStaff = 3;
 
-    Score* flutePart = nullptr;
-    Score* oboePart = nullptr;
-    Score* clarinetPart = nullptr;
-    Score* bassoonPart = nullptr;
-    for (Score* part : score->scoreList()) {
+    Score *flutePart = nullptr;
+    Score *oboePart = nullptr;
+    Score *clarinetPart = nullptr;
+    Score *bassoonPart = nullptr;
+    for (Score *part : score->scoreList()) {
         String partName = part->name();
         if (partName == u"Flute") {
             flutePart = part;
@@ -1219,12 +1136,12 @@ TEST_F(Engraving_PartsTests, inputFromParts) {
     ASSERT_TRUE(bassoonPart);
 
     track_idx_t voice = 3;
-    Segment* partSegment = flutePart->firstMeasure()->findFirstR(SegmentType::ChordRest, Fraction(0, 1));
+    Segment *partSegment = flutePart->firstMeasure()->findFirstR(SegmentType::ChordRest, Fraction(0, 1));
     ASSERT_TRUE(partSegment);
     flutePart->setNoteRest(partSegment, voice, NoteVal(60), Fraction(1, 1));
-    Segment* scoreSegment = score->tick2segment(partSegment->tick(), true, SegmentType::ChordRest);
+    Segment *scoreSegment = score->tick2segment(partSegment->tick(), true, SegmentType::ChordRest);
     ASSERT_TRUE(scoreSegment);
-    Chord* chord = toChord(scoreSegment->element(staff2track(fluteStaff) + voice));
+    Chord *chord = toChord(scoreSegment->element(staff2track(fluteStaff) + voice));
     ASSERT_TRUE(chord);
 
     voice = 2;
@@ -1246,8 +1163,8 @@ TEST_F(Engraving_PartsTests, inputFromParts) {
     ASSERT_TRUE(chord);
 
     voice = 0;
-    partSegment = bassoonPart->firstMeasure()->nextMeasure()->nextMeasure()->nextMeasure()->findFirstR(SegmentType::ChordRest, Fraction(0,
-                                                                                                                                        1));
+    partSegment =
+        bassoonPart->firstMeasure()->nextMeasure()->nextMeasure()->nextMeasure()->findFirstR(SegmentType::ChordRest, Fraction(0, 1));
     ASSERT_TRUE(partSegment);
     bassoonPart->setNoteRest(partSegment, voice, NoteVal(60), Fraction(1, 1));
     scoreSegment = score->tick2segment(partSegment->tick(), true, SegmentType::ChordRest);
@@ -1261,10 +1178,9 @@ TEST_F(Engraving_PartsTests, inputFromParts) {
 //   stems and beams follow each score's own note visibility (#31928)
 //---------------------------------------------------------
 
-static std::vector<Chord*> firstMeasureChords(Score* score, track_idx_t track)
-{
-    std::vector<Chord*> chords;
-    for (Segment* s = score->firstMeasure()->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
+static std::vector<Chord *> firstMeasureChords(Score *score, track_idx_t track) {
+    std::vector<Chord *> chords;
+    for (Segment *s = score->firstMeasure()->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
         if (s->element(track) && s->element(track)->isChord()) {
             chords.push_back(toChord(s->element(track)));
         }
@@ -1272,22 +1188,20 @@ static std::vector<Chord*> firstMeasureChords(Score* score, track_idx_t track)
     return chords;
 }
 
-static void setNoteVisibility(Score* score, track_idx_t track, bool visible)
-{
-    score->transactionManager()->transaction(TranslatableString::untranslatable("Engraving parts tests"), [&](Transaction& tx) {
-        for (Chord* chord : firstMeasureChords(score, track)) {
-            for (Note* note : chord->notes()) {
+static void setNoteVisibility(Score *score, track_idx_t track, bool visible) {
+    score->transactionManager()->transaction(TranslatableString::untranslatable("Engraving parts tests"), [&](Transaction &tx) {
+        for (Chord *chord : firstMeasureChords(score, track)) {
+            for (Note *note : chord->notes()) {
                 EditVisibility::undoChangeVisible(tx, note, visible);
             }
         }
     });
 }
 
-static void expectBeamedChordsVisible(Score* score, track_idx_t track, bool visible)
-{
-    const std::vector<Chord*> chords = firstMeasureChords(score, track);
+static void expectBeamedChordsVisible(Score *score, track_idx_t track, bool visible) {
+    const std::vector<Chord *> chords = firstMeasureChords(score, track);
     ASSERT_EQ(chords.size(), 4u);
-    for (const Chord* chord : chords) {
+    for (const Chord *chord : chords) {
         EXPECT_EQ(chord->notes().front()->visible(), visible);
         ASSERT_TRUE(chord->stem());
         EXPECT_EQ(chord->stem()->visible(), visible);
@@ -1296,11 +1210,10 @@ static void expectBeamedChordsVisible(Score* score, track_idx_t track, bool visi
     }
 }
 
-TEST_F(Engraving_PartsTests, noteVisibilityBeams)
-{
-    MasterScore* score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-visibility-beams.mscx");
+TEST_F(Engraving_PartsTests, noteVisibilityBeams) {
+    MasterScore *score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-visibility-beams.mscx");
     ASSERT_TRUE(score);
-    Score* part = TestUtils::createPart(score);
+    Score *part = TestUtils::createPart(score);
     ASSERT_TRUE(part);
 
     // hide the notes in the score, then show them in the part
@@ -1317,12 +1230,11 @@ TEST_F(Engraving_PartsTests, noteVisibilityBeams)
     delete score;
 }
 
-TEST_F(Engraving_PartsTests, noteVisibilityBeamsTwoParts)
-{
-    MasterScore* score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-visibility-beams.mscx");
+TEST_F(Engraving_PartsTests, noteVisibilityBeamsTwoParts) {
+    MasterScore *score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-visibility-beams.mscx");
     ASSERT_TRUE(score);
-    Score* part1 = TestUtils::createPart(score);
-    Score* part2 = TestUtils::createPart(score);
+    Score *part1 = TestUtils::createPart(score);
+    Score *part2 = TestUtils::createPart(score);
     ASSERT_TRUE(part1 && part2);
 
     // showing the notes in one part leaves the other part alone
@@ -1342,12 +1254,11 @@ TEST_F(Engraving_PartsTests, noteVisibilityBeamsTwoParts)
     delete score;
 }
 
-TEST_F(Engraving_PartsTests, noteVisibilityBeamsVoiceParts)
-{
-    MasterScore* score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-visibility-beams.mscx");
+TEST_F(Engraving_PartsTests, noteVisibilityBeamsVoiceParts) {
+    MasterScore *score = ScoreRW::readScore(PARTS_DATA_DIR + u"part-visibility-beams.mscx");
     ASSERT_TRUE(score);
-    Score* voice1Part = TestUtils::createPart(score);
-    Score* voice2Part = TestUtils::createPart(score);
+    Score *voice1Part = TestUtils::createPart(score);
+    Score *voice2Part = TestUtils::createPart(score);
     ASSERT_TRUE(voice1Part && voice2Part);
 
     // one part per voice
@@ -1380,21 +1291,20 @@ TEST_F(Engraving_PartsTests, noteVisibilityBeamsVoiceParts)
 //   staffStyles
 //---------------------------------------------------------
 
-TEST_F(Engraving_PartsTests, deleteLinkedRestsRemovesEmptySegments)
-{
-    for (bool fromPart : { false, true }) {
+TEST_F(Engraving_PartsTests, deleteLinkedRestsRemovesEmptySegments) {
+    for (bool fromPart : {false, true}) {
         SCOPED_TRACE(fromPart);
-        MasterScore* score = ScoreRW::readScore(PARTS_DATA_DIR + u"delete-linked-rests.mscx");
+        MasterScore *score = ScoreRW::readScore(PARTS_DATA_DIR + u"delete-linked-rests.mscx");
         ASSERT_TRUE(score);
-        Score* part = TestUtils::createPart(score);
+        Score *part = TestUtils::createPart(score);
         ASSERT_TRUE(part);
         auto check = [&](size_t expected) {
-            for (Score* s : { static_cast<Score*>(score), part }) {
+            for (Score *s : {static_cast<Score *>(score), part}) {
                 size_t count = 0;
-                for (Segment* segment = s->firstMeasure()->first(SegmentType::ChordRest); segment;
+                for (Segment *segment = s->firstMeasure()->first(SegmentType::ChordRest); segment;
                      segment = segment->next(SegmentType::ChordRest)) {
                     EXPECT_FALSE(segment->empty());
-                    EngravingItem* item = segment->element(0);
+                    EngravingItem *item = segment->element(0);
                     EXPECT_TRUE(item && item->isRest());
                     if (item && item->isRest()) {
                         EXPECT_EQ(toRest(item)->ticks(), expected == 1 ? Fraction(1, 1) : Fraction(1, 4));
@@ -1405,7 +1315,7 @@ TEST_F(Engraving_PartsTests, deleteLinkedRestsRemovesEmptySegments)
             }
         };
         check(4);
-        Score* owner = fromPart ? part : score;
+        Score *owner = fromPart ? part : score;
         score->startCmd(TranslatableString::untranslatable("Engraving parts tests"));
         owner->select(owner->firstMeasure(), SelectType::SINGLE, 0);
         owner->cmdDeleteSelection();
@@ -1426,20 +1336,19 @@ TEST_F(Engraving_PartsTests, deleteLinkedRestsRemovesEmptySegments)
     }
 }
 
-TEST_F(Engraving_PartsTests, crossMeasureUpwardGlissExcerpt)
-{
-    MasterScore* master = ScoreRW::readScore(PARTS_DATA_DIR + u"cross-measure-gliss.mscx");
+TEST_F(Engraving_PartsTests, crossMeasureUpwardGlissExcerpt) {
+    MasterScore *master = ScoreRW::readScore(PARTS_DATA_DIR + u"cross-measure-gliss.mscx");
     ASSERT_TRUE(master);
-    const Note* original = toChord(master->firstMeasure()->firstChordRest(4))->upNote();
+    const Note *original = toChord(master->firstMeasure()->firstChordRest(4))->upNote();
     ASSERT_EQ(original->pitch(), 48);
     ASSERT_EQ(original->spannerFor().size(), 1u);
     ASSERT_EQ(toNote(original->spannerFor().front()->endElement())->pitch(), 84);
     ASSERT_EQ(original->spannerFor().front()->endElement()->findMeasure(), master->firstMeasure()->nextMeasure());
     ASSERT_EQ(original->spannerFor().front()->endElement()->track(), 0u);
-    Score* part = TestUtils::createPart(master, 0);
+    Score *part = TestUtils::createPart(master, 0);
     ASSERT_TRUE(part);
     part->doLayout();
-    const Note* cloned = toChord(part->firstMeasure()->firstChordRest(4))->upNote();
+    const Note *cloned = toChord(part->firstMeasure()->firstChordRest(4))->upNote();
     ASSERT_EQ(cloned->spannerFor().size(), 1u);
     EXPECT_EQ(cloned->spannerFor().front()->endElement()->track(), 0u);
     EXPECT_EQ(cloned->pitch(), 48);

@@ -47,20 +47,13 @@ static const std::string MSCX = "mscx";
 //! This is a XML file that stores all files from the ZIP container by concatenation (excluding binaries)
 static const std::string MSCS = "mscs";
 
-inline bool isMuseScoreFile(const std::string& suffix)
-{
+inline bool isMuseScoreFile(const std::string &suffix) {
     return suffix == MSCZ || suffix == MSCX || suffix == MSCS || suffix == MSCZ_BACKUP;
 }
 
-enum class MscIoMode : unsigned char {
-    Unknown = 0,
-    Zip,
-    Dir,
-    XmlFile
-};
+enum class MscIoMode : unsigned char { Unknown = 0, Zip, Dir, XmlFile };
 
-inline MscIoMode mscIoModeBySuffix(const std::string& suffix)
-{
+inline MscIoMode mscIoModeBySuffix(const std::string &suffix) {
     if (suffix == MSCZ || suffix == MSCZ_BACKUP) {
         return MscIoMode::Zip;
     } else if (suffix == MSCX) {
@@ -71,8 +64,7 @@ inline MscIoMode mscIoModeBySuffix(const std::string& suffix)
     return MscIoMode::Unknown;
 }
 
-inline muse::io::path_t containerPath(const muse::io::path_t& path)
-{
+inline muse::io::path_t containerPath(const muse::io::path_t &path) {
     if (muse::io::suffix(path) == MSCX) {
         return muse::io::absoluteDirpath(path);
     }
@@ -80,8 +72,7 @@ inline muse::io::path_t containerPath(const muse::io::path_t& path)
     return path;
 }
 
-inline muse::io::path_t mainFilePath(const muse::io::path_t& path)
-{
+inline muse::io::path_t mainFilePath(const muse::io::path_t &path) {
     if (isMuseScoreFile(muse::io::suffix(path))) {
         return path;
     }
@@ -89,10 +80,9 @@ inline muse::io::path_t mainFilePath(const muse::io::path_t& path)
     return path.appendingComponent(muse::io::filename(path)).appendingSuffix(MSCX);
 }
 
-inline muse::io::path_t mainFileName(const muse::io::path_t& path)
-{
+inline muse::io::path_t mainFileName(const muse::io::path_t &path) {
     return muse::io::filename(path, !isMuseScoreFile(muse::io::suffix(path))).appendingSuffix(MSCX);
 }
-}
+} // namespace mu::engraving
 
 #endif // MU_ENGRAVING_MSCIO_H

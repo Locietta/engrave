@@ -9,7 +9,7 @@
 
 namespace mu::engraving {
 class MasterScore;
-}
+} // namespace mu::engraving
 
 namespace music {
 
@@ -18,27 +18,23 @@ namespace music {
 // measures (all staves). When true the caller must treat the entire part as
 // affected because a linked note lives in another master region (for example
 // an excerpt) whose measure coordinates cannot be represented here.
-struct ScoreEditScope
-{
+struct ScoreEditScope {
     size_t part_index = 0;
     size_t first_measure = 0;
     size_t measure_count = 0;
     bool whole_part = false;
 };
 
-struct PitchChange
-{
+struct PitchChange {
     std::string note_id;
     int pitch = 0;
 };
 
-struct NativePitchEdit
-{
+struct NativePitchEdit {
     std::vector<PitchChange> changes;
 };
 
-struct NativePitchResult
-{
+struct NativePitchResult {
     // Requested notes whose sounding MIDI pitch actually changed. Linked notes
     // may also have changed; they are covered by read_scopes/write_scopes.
     size_t changed_notes = 0;
@@ -49,8 +45,8 @@ struct NativePitchResult
 
 class NativeEditFailure : public std::runtime_error {
 public:
-    NativeEditFailure(const std::string& message, bool poisoned)
-        : std::runtime_error(message), poisoned_(poisoned) {}
+    NativeEditFailure(const std::string &message, bool poisoned) : std::runtime_error(message), poisoned_(poisoned) {}
+
     bool poisoned() const noexcept { return poisoned_; }
 private:
     bool poisoned_;
@@ -58,9 +54,9 @@ private:
 
 // Validates and computes scopes without changing pitch or undo history. Caller
 // must inspect, check revisions, then apply on one owner-thread turn without yielding.
-NativePitchResult inspect_score_pitch_edit(mu::engraving::MasterScore*, const NativePitchEdit&);
+NativePitchResult inspect_score_pitch_edit(mu::engraving::MasterScore *, const NativePitchEdit &);
 // Best-effort retirement after publication; never turns a committed edit into failure.
-bool cap_native_edit_history(mu::engraving::MasterScore*, size_t maximum = 128) noexcept;
+bool cap_native_edit_history(mu::engraving::MasterScore *, size_t maximum = 128) noexcept;
 
 // Test-only fault injection for score_edit_test; armed for one apply call, never set otherwise.
 enum class NativeEditTestFault { none, engine_error_after_first, exception_after_first };
@@ -75,6 +71,6 @@ void set_native_edit_test_fault(NativeEditTestFault);
 // larger-than-256 batches and a null score throw std::invalid_argument.
 // Read-only scores and locked or already-active undo stacks are rejected.
 // Requires execution on the master score's owner thread.
-NativePitchResult apply_score_pitch_edit(mu::engraving::MasterScore* score, const NativePitchEdit& edit);
+NativePitchResult apply_score_pitch_edit(mu::engraving::MasterScore *score, const NativePitchEdit &edit);
 
 } // namespace music

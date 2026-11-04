@@ -41,7 +41,7 @@ struct LayoutGroupSpan {
     size_t start{};
     size_t end{};
     size_t column{};
-    BracketType type{ BracketType::NO_BRACKET };
+    BracketType type{BracketType::NO_BRACKET};
 };
 
 struct LayoutGroupNode {
@@ -50,10 +50,10 @@ struct LayoutGroupNode {
 };
 
 struct LayoutBuildContext {
-    MnxExporter* exporter{};
-    const std::vector<Staff*>* staves{};
+    MnxExporter *exporter{};
+    const std::vector<Staff *> *staves{};
     size_t staffCount{};
-    const std::vector<LayoutGroupNode>* nodes{};
+    const std::vector<LayoutGroupNode> *nodes{};
 };
 } // namespace
 
@@ -61,8 +61,7 @@ struct LayoutBuildContext {
 //   containsSpan
 //---------------------------------------------------------
 
-static bool containsSpan(const LayoutGroupSpan& parent, const LayoutGroupSpan& child)
-{
+static bool containsSpan(const LayoutGroupSpan &parent, const LayoutGroupSpan &child) {
     return parent.start <= child.start && parent.end >= child.end;
 }
 
@@ -70,11 +69,10 @@ static bool containsSpan(const LayoutGroupSpan& parent, const LayoutGroupSpan& c
 //   sortChildIndices
 //---------------------------------------------------------
 
-static void sortChildIndices(std::vector<size_t>& childIdxs, const std::vector<LayoutGroupNode>& nodes)
-{
+static void sortChildIndices(std::vector<size_t> &childIdxs, const std::vector<LayoutGroupNode> &nodes) {
     std::sort(childIdxs.begin(), childIdxs.end(), [&](size_t lhs, size_t rhs) {
-        const LayoutGroupSpan& a = nodes[lhs].span;
-        const LayoutGroupSpan& b = nodes[rhs].span;
+        const LayoutGroupSpan &a = nodes[lhs].span;
+        const LayoutGroupSpan &b = nodes[rhs].span;
         if (a.start != b.start) {
             return a.start < b.start;
         }
@@ -89,17 +87,16 @@ static void sortChildIndices(std::vector<size_t>& childIdxs, const std::vector<L
 //   buildGroupSpans
 //---------------------------------------------------------
 
-static std::vector<LayoutGroupSpan> buildGroupSpans(const std::vector<Staff*>& staves, size_t staffCount)
-{
+static std::vector<LayoutGroupSpan> buildGroupSpans(const std::vector<Staff *> &staves, size_t staffCount) {
     std::vector<LayoutGroupSpan> groups;
     groups.reserve(staffCount);
 
     for (size_t staffIdx = 0; staffIdx < staffCount; ++staffIdx) {
-        const Staff* staff = staves[staffIdx];
+        const Staff *staff = staves[staffIdx];
         if (!staff) {
             continue;
         }
-        for (const BracketItem* bracket : staff->score()->brackets(staff->idx())) {
+        for (const BracketItem *bracket : staff->score()->brackets(staff->idx())) {
             if (!bracket) {
                 continue;
             }
@@ -109,8 +106,8 @@ static std::vector<LayoutGroupSpan> buildGroupSpans(const std::vector<Staff*>& s
             }
             size_t end = staffIdx + span - 1;
             if (end >= staffCount) {
-                LOGW() << "Bracket span exceeds staff count; clamping span. Start="
-                       << staffIdx << " span=" << span << " staves=" << staffCount;
+                LOGW() << "Bracket span exceeds staff count; clamping span. Start=" << staffIdx << " span=" << span
+                       << " staves=" << staffCount;
                 end = staffCount - 1;
                 if (end < staffIdx) {
                     continue;
@@ -122,7 +119,7 @@ static std::vector<LayoutGroupSpan> buildGroupSpans(const std::vector<Staff*>& s
                 }
                 bool hasBarlineGrouping = false;
                 for (size_t idx = staffIdx; idx < end; ++idx) {
-                    const Staff* groupedStaff = staves[idx];
+                    const Staff *groupedStaff = staves[idx];
                     if (groupedStaff && groupedStaff->barLineSpan()) {
                         hasBarlineGrouping = true;
                         break;
@@ -132,11 +129,11 @@ static std::vector<LayoutGroupSpan> buildGroupSpans(const std::vector<Staff*>& s
                     continue;
                 }
             }
-            groups.push_back({ staffIdx, end, bracket->column(), bracket->bracketType() });
+            groups.push_back({staffIdx, end, bracket->column(), bracket->bracketType()});
         }
     }
 
-    std::sort(groups.begin(), groups.end(), [](const LayoutGroupSpan& a, const LayoutGroupSpan& b) {
+    std::sort(groups.begin(), groups.end(), [](const LayoutGroupSpan &a, const LayoutGroupSpan &b) {
         if (a.start != b.start) {
             return a.start < b.start;
         }
@@ -153,20 +150,19 @@ static std::vector<LayoutGroupSpan> buildGroupSpans(const std::vector<Staff*>& s
 //   buildGroupNodes
 //---------------------------------------------------------
 
-static void buildGroupNodes(const std::vector<LayoutGroupSpan>& groups, std::vector<LayoutGroupNode>& nodes,
-                            std::vector<size_t>& rootChildren)
-{
+static void buildGroupNodes(const std::vector<LayoutGroupSpan> &groups, std::vector<LayoutGroupNode> &nodes,
+                            std::vector<size_t> &rootChildren) {
     nodes.clear();
     rootChildren.clear();
     nodes.reserve(groups.size());
 
-    for (const LayoutGroupSpan& group : groups) {
+    for (const LayoutGroupSpan &group : groups) {
         const size_t nodeIdx = nodes.size();
-        nodes.push_back({ group, {} });
+        nodes.push_back({group, {}});
 
         std::optional<size_t> parentIdx;
         for (size_t candidate = 0; candidate < nodeIdx; ++candidate) {
-            const LayoutGroupSpan& parentSpan = nodes[candidate].span;
+            const LayoutGroupSpan &parentSpan = nodes[candidate].span;
             if (!containsSpan(parentSpan, group) || parentSpan.column >= group.column) {
                 continue;
             }
@@ -174,7 +170,7 @@ static void buildGroupNodes(const std::vector<LayoutGroupSpan>& groups, std::vec
                 parentIdx = candidate;
                 continue;
             }
-            const LayoutGroupSpan& bestSpan = nodes[*parentIdx].span;
+            const LayoutGroupSpan &bestSpan = nodes[*parentIdx].span;
             if (parentSpan.column > bestSpan.column) {
                 parentIdx = candidate;
                 continue;
@@ -193,7 +189,7 @@ static void buildGroupNodes(const std::vector<LayoutGroupSpan>& groups, std::vec
         }
     }
 
-    for (auto& node : nodes) {
+    for (auto &node : nodes) {
         sortChildIndices(node.children, nodes);
     }
     sortChildIndices(rootChildren, nodes);
@@ -203,15 +199,14 @@ static void buildGroupNodes(const std::vector<LayoutGroupSpan>& groups, std::vec
 //   appendLayoutStaff
 //---------------------------------------------------------
 
-static void appendLayoutStaff(LayoutBuildContext& ctx, mnx::layout::LayoutContent content, size_t staffIdx)
-{
-    Staff* staff = ctx.staves->at(staffIdx);
+static void appendLayoutStaff(LayoutBuildContext &ctx, mnx::layout::LayoutContent content, size_t staffIdx) {
+    Staff *staff = ctx.staves->at(staffIdx);
     if (!staff) {
         LOGW() << "Skipping layout staff " << staffIdx << " with null staff.";
         return;
     }
     const staff_idx_t scoreStaffIdx = staff->idx();
-    const auto& staffToPartStaff = ctx.exporter->staffToPartStaff();
+    const auto &staffToPartStaff = ctx.exporter->staffToPartStaff();
     const auto it = staffToPartStaff.find(scoreStaffIdx);
     if (it == staffToPartStaff.end()) {
         LOGW() << "Skipping layout staff " << staffIdx << " with no part/staff mapping.";
@@ -219,7 +214,7 @@ static void appendLayoutStaff(LayoutBuildContext& ctx, mnx::layout::LayoutConten
     }
     const auto [partIndex, staffNum] = it->second;
     std::string partId;
-    const mnx::Document& document = ctx.exporter->mnxDocument();
+    const mnx::Document &document = ctx.exporter->mnxDocument();
     if (partIndex < document.parts().size()) {
         const auto mnxPart = document.parts()[partIndex];
         if (const auto id = mnxPart.id()) {
@@ -227,7 +222,7 @@ static void appendLayoutStaff(LayoutBuildContext& ctx, mnx::layout::LayoutConten
         }
     }
     if (partId.empty()) {
-        Part* part = staff ? staff->part() : nullptr;
+        Part *part = staff ? staff->part() : nullptr;
         if (part) {
             partId = ctx.exporter->getOrAssignEID(part).toStdString();
         }
@@ -245,11 +240,8 @@ static void appendLayoutStaff(LayoutBuildContext& ctx, mnx::layout::LayoutConten
 //   mensurStricheSpanFrom
 //---------------------------------------------------------
 
-static int mensurStricheSpanFrom(const Staff* staff)
-{
-    IF_ASSERT_FAILED(staff) {
-        return 0;
-    }
+static int mensurStricheSpanFrom(const Staff *staff) {
+    IF_ASSERT_FAILED(staff) { return 0; }
     const int lines = staff->lines(Fraction(0, 1)) - 1;
     return lines <= 0 ? BARLINE_SPAN_1LINESTAFF_TO : 2 * lines;
 }
@@ -258,20 +250,19 @@ static int mensurStricheSpanFrom(const Staff* staff)
 //   isSinglePartGroup
 //---------------------------------------------------------
 
-static bool isSinglePartGroup(const LayoutBuildContext& ctx, const LayoutGroupSpan& span)
-{
+static bool isSinglePartGroup(const LayoutBuildContext &ctx, const LayoutGroupSpan &span) {
     if (span.start >= ctx.staffCount || span.end >= ctx.staffCount) {
         return false;
     }
 
-    const Staff* firstStaff = ctx.staves->at(span.start);
-    const Part* firstPart = firstStaff ? firstStaff->part() : nullptr;
+    const Staff *firstStaff = ctx.staves->at(span.start);
+    const Part *firstPart = firstStaff ? firstStaff->part() : nullptr;
     if (!firstPart) {
         return false;
     }
 
     for (size_t idx = span.start + 1; idx <= span.end; ++idx) {
-        const Staff* staff = ctx.staves->at(idx);
+        const Staff *staff = ctx.staves->at(idx);
         if (!staff || staff->part() != firstPart) {
             return false;
         }
@@ -283,8 +274,7 @@ static bool isSinglePartGroup(const LayoutBuildContext& ctx, const LayoutGroupSp
 //   calcGroupBarlineOverride
 //---------------------------------------------------------
 
-static mnx::StaffGroupBarlineOverride calcGroupBarlineOverride(const LayoutBuildContext& ctx, const LayoutGroupSpan& span)
-{
+static mnx::StaffGroupBarlineOverride calcGroupBarlineOverride(const LayoutBuildContext &ctx, const LayoutGroupSpan &span) {
     if (span.end <= span.start || span.end >= ctx.staffCount) {
         return mnx::StaffGroupBarlineOverride::None;
     }
@@ -293,14 +283,13 @@ static mnx::StaffGroupBarlineOverride calcGroupBarlineOverride(const LayoutBuild
     bool allMensurstrich = true;
 
     for (size_t idx = span.start; idx < span.end; ++idx) {
-        const Staff* staff = ctx.staves->at(idx);
+        const Staff *staff = ctx.staves->at(idx);
         if (!staff || !staff->barLineSpan()) {
             allConnected = false;
             break;
         }
 
-        const bool hasMensurSpan = (staff->barLineTo() == 0)
-                                   && (staff->barLineFrom() == mensurStricheSpanFrom(staff));
+        const bool hasMensurSpan = (staff->barLineTo() == 0) && (staff->barLineFrom() == mensurStricheSpanFrom(staff));
         allMensurstrich = allMensurstrich && hasMensurSpan;
     }
 
@@ -317,33 +306,29 @@ static mnx::StaffGroupBarlineOverride calcGroupBarlineOverride(const LayoutBuild
 //   buildContent
 //---------------------------------------------------------
 
-static void buildContent(LayoutBuildContext& ctx, mnx::layout::LayoutContent content,
-                         size_t start, size_t end, const std::vector<size_t>& children)
-{
+static void buildContent(LayoutBuildContext &ctx, mnx::layout::LayoutContent content, size_t start, size_t end,
+                         const std::vector<size_t> &children) {
     size_t staffIdx = start;
     size_t childPos = 0;
-    const auto& nodes = *ctx.nodes;
+    const auto &nodes = *ctx.nodes;
     while (staffIdx <= end && staffIdx < static_cast<size_t>(ctx.staffCount)) {
-        while (childPos < children.size()
-               && nodes[children[childPos]].span.end < staffIdx) {
+        while (childPos < children.size() && nodes[children[childPos]].span.end < staffIdx) {
             ++childPos;
         }
-        if (childPos < children.size()
-            && nodes[children[childPos]].span.start == staffIdx) {
-            const LayoutGroupNode& node = nodes[children[childPos]];
+        if (childPos < children.size() && nodes[children[childPos]].span.start == staffIdx) {
+            const LayoutGroupNode &node = nodes[children[childPos]];
             auto mnxGroup = content.appendGroup();
             switch (calcGroupBarlineOverride(ctx, node.span)) {
-            case mnx::StaffGroupBarlineOverride::None:
-                mnxGroup.set_or_clear_barlineStyle(mnx::StaffGroupBarlineStyle::Individual);
-                break;
-            case mnx::StaffGroupBarlineOverride::Unified:
-                mnxGroup.set_or_clear_barlineStyle(isSinglePartGroup(ctx, node.span)
-                                                   ? mnx::StaffGroupBarlineStyle::Instrument
-                                                   : mnx::StaffGroupBarlineStyle::Unified);
-                break;
-            case mnx::StaffGroupBarlineOverride::Mensurstrich:
-                mnxGroup.set_or_clear_barlineStyle(mnx::StaffGroupBarlineStyle::Mensurstrich);
-                break;
+                case mnx::StaffGroupBarlineOverride::None:
+                    mnxGroup.set_or_clear_barlineStyle(mnx::StaffGroupBarlineStyle::Individual);
+                    break;
+                case mnx::StaffGroupBarlineOverride::Unified:
+                    mnxGroup.set_or_clear_barlineStyle(isSinglePartGroup(ctx, node.span) ? mnx::StaffGroupBarlineStyle::Instrument :
+                                                                                           mnx::StaffGroupBarlineStyle::Unified);
+                    break;
+                case mnx::StaffGroupBarlineOverride::Mensurstrich:
+                    mnxGroup.set_or_clear_barlineStyle(mnx::StaffGroupBarlineStyle::Mensurstrich);
+                    break;
             }
             const mnx::LayoutSymbol symbol = toMnxLayoutSymbol(node.span.type);
             if (symbol != mnx::LayoutSymbol::NoSymbol) {
@@ -363,8 +348,7 @@ static void buildContent(LayoutBuildContext& ctx, mnx::layout::LayoutContent con
 //   createLayout
 //---------------------------------------------------------
 
-void MnxExporter::createLayout(const std::vector<Staff*>& staves, const std::string& layoutId)
-{
+void MnxExporter::createLayout(const std::vector<Staff *> &staves, const std::string &layoutId) {
     auto mnxLayout = m_mnxDocument.ensure_layouts().append();
     if (!layoutId.empty()) {
         mnxLayout.set_id(layoutId);

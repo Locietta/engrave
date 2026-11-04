@@ -30,10 +30,7 @@
 
 using namespace mu::engraving;
 
-bool LinkedObjects::contains(const EngravingObject* o) const
-{
-    return std::find(this->begin(), this->end(), o) != this->end();
-}
+bool LinkedObjects::contains(const EngravingObject *o) const { return std::find(this->begin(), this->end(), o) != this->end(); }
 
 //---------------------------------------------------------
 //   mainElement
@@ -41,15 +38,14 @@ bool LinkedObjects::contains(const EngravingObject* o) const
 //    be written to the file prior to others.
 //---------------------------------------------------------
 
-EngravingObject* LinkedObjects::mainElement()
-{
+EngravingObject *LinkedObjects::mainElement() {
     if (empty()) {
         return nullptr;
     }
-    MasterScore* ms = front()->score()->masterScore();
+    MasterScore *ms = front()->score()->masterScore();
     const bool elements = front()->isEngravingItem();
     const bool staves = front()->isStaff();
-    return *std::min_element(begin(), end(), [ms, elements, staves](EngravingObject* s1, EngravingObject* s2) {
+    return *std::min_element(begin(), end(), [ms, elements, staves](EngravingObject *s1, EngravingObject *s2) {
         if (s1->score() == ms && s2->score() != ms) {
             return true;
         }
@@ -62,16 +58,16 @@ EngravingObject* LinkedObjects::mainElement()
         if (elements) {
             // Now we compare either two elements from master score
             // or two elements from excerpt.
-            EngravingItem* e1 = toEngravingItem(s1);
-            EngravingItem* e2 = toEngravingItem(s2);
+            EngravingItem *e1 = toEngravingItem(s1);
+            EngravingItem *e2 = toEngravingItem(s2);
             const track_idx_t tr1 = e1->track();
             const track_idx_t tr2 = e2->track();
             if (tr1 == tr2) {
                 const Fraction tick1 = e1->tick();
                 const Fraction tick2 = e2->tick();
                 if (tick1 == tick2) {
-                    Measure* m1 = e1->findMeasure();
-                    Measure* m2 = e2->findMeasure();
+                    Measure *m1 = e1->findMeasure();
+                    Measure *m2 = e2->findMeasure();
                     if (!m1 || !m2) {
                         return false;
                     }

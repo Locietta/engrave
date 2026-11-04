@@ -11,5 +11,6 @@ struct Write470Progress {
     std::uint64_t units = 0;
     std::uint64_t working_bytes = 0;
 };
+
 Write470Progress write470_progress() noexcept;
-}
+} // namespace engrave::testing

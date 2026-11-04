@@ -30,19 +30,18 @@ class Note;
 class Score;
 class Transaction;
 
-class EditParentheses
-{
+class EditParentheses {
 public:
-    static void toggleParentheses(Transaction& tx, Score* score);
+    static void toggleParentheses(Transaction &tx, Score *score);
 
-    static void addParenthesesToNotes(Transaction& tx, const std::vector<Note*>& notes);
-    static void removeParenthesesFromNotes(Transaction& tx, const std::vector<Note*>& notes);
-    static void addParenthesesToNotes(Transaction& tx, Score* score);
-    static void removeParenthesesFromNotes(Transaction& tx, Score* score);
+    static void addParenthesesToNotes(Transaction &tx, const std::vector<Note *> &notes);
+    static void removeParenthesesFromNotes(Transaction &tx, const std::vector<Note *> &notes);
+    static void addParenthesesToNotes(Transaction &tx, Score *score);
+    static void removeParenthesesFromNotes(Transaction &tx, Score *score);
 
-    static void toggleParenthesesOnNotes(Transaction& tx, Score* score);
+    static void toggleParenthesesOnNotes(Transaction &tx, Score *score);
 
 private:
-    static void toggleParenthesesOnItem(Transaction& tx, EngravingItem* el);
+    static void toggleParenthesesOnItem(Transaction &tx, EngravingItem *el);
 };
-}
+} // namespace mu::engraving

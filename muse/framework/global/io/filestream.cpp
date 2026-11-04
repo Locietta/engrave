@@ -28,31 +28,20 @@
 using namespace muse;
 using namespace muse::io;
 
-FileStream::FileStream(const path_t& filePath)
-    : m_filePath(filePath)
-{
-}
+FileStream::FileStream(const path_t &filePath) : m_filePath(filePath) {}
 
-FileStream::~FileStream()
-{
-    doClose();
-}
+FileStream::~FileStream() { doClose(); }
 
-void FileStream::doClose()
-{
+void FileStream::doClose() {
     if (m_streamId != INVALID_STREAM_ID) {
         fileSystem()->closeStream(m_streamId);
         m_streamId = INVALID_STREAM_ID;
     }
 }
 
-const path_t& FileStream::filePath() const
-{
-    return m_filePath;
-}
+const path_t &FileStream::filePath() const { return m_filePath; }
 
-bool FileStream::doOpen(OpenMode m)
-{
+bool FileStream::doOpen(OpenMode m) {
     if (m_streamId != INVALID_STREAM_ID) {
         fileSystem()->closeStream(m_streamId);
         m_streamId = INVALID_STREAM_ID;
@@ -60,19 +49,17 @@ bool FileStream::doOpen(OpenMode m)
 
     io::OpenMode fsMode;
     switch (m) {
-    case OpenMode::WriteOnly:
-        fsMode = io::OpenMode::WriteOnly;
-        m_size = 0;
-        break;
-    case OpenMode::Append: {
-        fsMode = io::OpenMode::Append;
-        RetVal<uint64_t> sz = fileSystem()->fileSize(m_filePath);
-        m_size = sz.ret ? static_cast<size_t>(sz.val) : 0;
-        break;
-    }
-    default:
-        setError(int(Err::FSWriteError), "FileStream supports only WriteOnly and Append modes");
-        return false;
+        case OpenMode::WriteOnly:
+            fsMode = io::OpenMode::WriteOnly;
+            m_size = 0;
+            break;
+        case OpenMode::Append: {
+            fsMode = io::OpenMode::Append;
+            RetVal<uint64_t> sz = fileSystem()->fileSize(m_filePath);
+            m_size = sz.ret ? static_cast<size_t>(sz.val) : 0;
+            break;
+        }
+        default: setError(int(Err::FSWriteError), "FileStream supports only WriteOnly and Append modes"); return false;
     }
 
     RetVal<StreamId> rv = fileSystem()->openStream(m_filePath, fsMode);
@@ -86,27 +73,17 @@ bool FileStream::doOpen(OpenMode m)
     return true;
 }
 
-size_t FileStream::dataSize() const
-{
-    return m_size;
-}
+size_t FileStream::dataSize() const { return m_size; }
 
-const uint8_t* FileStream::rawData() const
-{
-    return nullptr;
-}
+const uint8_t *FileStream::rawData() const { return nullptr; }
 
-bool FileStream::resizeData(size_t size)
-{
+bool FileStream::resizeData(size_t size) {
     m_size = size;
     return true;
 }
 
-size_t FileStream::writeData(const uint8_t* data, size_t len)
-{
-    IF_ASSERT_FAILED(m_streamId != INVALID_STREAM_ID) {
-        return 0;
-    }
+size_t FileStream::writeData(const uint8_t *data, size_t len) {
+    IF_ASSERT_FAILED(m_streamId != INVALID_STREAM_ID) { return 0; }
 
     uint64_t offset = (pos() == m_expectedPos) ? STREAM_POS_CURRENT : static_cast<uint64_t>(pos());
 

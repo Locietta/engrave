@@ -36,8 +36,7 @@
 
 using namespace mu::engraving;
 
-void EditChord::addChordParentheses(Chord* chord, std::vector<Note*> notes, bool addToLinked, bool generated)
-{
+void EditChord::addChordParentheses(Chord *chord, std::vector<Note *> notes, bool addToLinked, bool generated) {
     if (notes.empty()) {
         return;
     }
@@ -49,19 +48,18 @@ void EditChord::addChordParentheses(Chord* chord, std::vector<Note*> notes, bool
 ///   Toggle attribute \a attr for all selected notes/rests.
 //---------------------------------------------------------
 
-void EditChord::toggleArticulation(Score* score, SymId attr)
-{
-    std::set<Chord*> set;
-    for (EngravingItem* el : score->selection().elements()) {
+void EditChord::toggleArticulation(Score *score, SymId attr) {
+    std::set<Chord *> set;
+    for (EngravingItem *el : score->selection().elements()) {
         if (el->isNote() || el->isChord()) {
-            Chord* cr = nullptr;
+            Chord *cr = nullptr;
             if (el->isNote()) {
                 cr = toNote(el)->chord();
                 if (muse::contains(set, cr)) {
                     continue;
                 }
             }
-            Articulation* na = Factory::createArticulation(score->dummy());
+            Articulation *na = Factory::createArticulation(score->dummy());
             na->setSymId(attr);
             if (!EditChord::toggleArticulation(score, el, na)) {
                 delete na;
@@ -73,9 +71,8 @@ void EditChord::toggleArticulation(Score* score, SymId attr)
     }
 }
 
-bool EditChord::toggleArticulation(Score* score, EngravingItem* el, Articulation* a)
-{
-    Chord* c;
+bool EditChord::toggleArticulation(Score *score, EngravingItem *el, Articulation *a) {
+    Chord *c;
     if (el->isNote()) {
         c = toNote(el)->chord();
     } else if (el->isChord()) {
@@ -83,13 +80,13 @@ bool EditChord::toggleArticulation(Score* score, EngravingItem* el, Articulation
     } else {
         return false;
     }
-    Articulation* oa = c->hasArticulation(a);
+    Articulation *oa = c->hasArticulation(a);
     if (oa) {
         score->undoRemoveElement(oa);
         return false;
     }
 
-    Tapping* tap = c->tapping();
+    Tapping *tap = c->tapping();
     if (tap) {
         score->undoRemoveElement(tap);
     }
@@ -101,9 +98,9 @@ bool EditChord::toggleArticulation(Score* score, EngravingItem* el, Articulation
         return true;
     }
 
-    std::set<SymId> newSubComponentIds = splitArticulations({ a->symId() });
-    for (const SymId& id : newSubComponentIds) {
-        Articulation* articCopy = a->clone();
+    std::set<SymId> newSubComponentIds = splitArticulations({a->symId()});
+    for (const SymId &id : newSubComponentIds) {
+        Articulation *articCopy = a->clone();
         articCopy->setSymId(id);
 
         if (!c->hasArticulation(articCopy)) {
@@ -117,16 +114,15 @@ bool EditChord::toggleArticulation(Score* score, EngravingItem* el, Articulation
     return true;
 }
 
-void EditChord::removeChordParentheses(Chord* chord, std::vector<Note*> notes, bool addToLinked, bool generated)
-{
+void EditChord::removeChordParentheses(Chord *chord, std::vector<Note *> notes, bool addToLinked, bool generated) {
     if (notes.empty()) {
         return;
     }
     // Split based on parentheses group
-    std::map<const NoteParenthesisInfo*, std::vector<Note*> > notesByGroup;
+    std::map<const NoteParenthesisInfo *, std::vector<Note *>> notesByGroup;
 
-    for (Note* n : notes) {
-        const NoteParenthesisInfo* noteParenInfo = chord->findNoteParenthesisInfo(n);
+    for (Note *n : notes) {
+        const NoteParenthesisInfo *noteParenInfo = chord->findNoteParenthesisInfo(n);
         if (!noteParenInfo) {
             continue;
         }
@@ -134,7 +130,7 @@ void EditChord::removeChordParentheses(Chord* chord, std::vector<Note*> notes, b
         auto groupIt = notesByGroup.find(noteParenInfo);
 
         if (groupIt == notesByGroup.end()) {
-            std::vector<Note*> noteVec { n };
+            std::vector<Note *> noteVec{n};
             notesByGroup.insert(std::make_pair(noteParenInfo, noteVec));
             continue;
         }
@@ -144,7 +140,7 @@ void EditChord::removeChordParentheses(Chord* chord, std::vector<Note*> notes, b
 
     for (auto pairIterator = notesByGroup.rbegin(); pairIterator != notesByGroup.rend(); pairIterator = std::next(pairIterator)) {
         auto groupNotesPair = *pairIterator;
-        const NoteParenthesisInfo* parenInfo = groupNotesPair.first;
+        const NoteParenthesisInfo *parenInfo = groupNotesPair.first;
         if (parenInfo->notes().size() == groupNotesPair.second.size()) {
             // All notes marked for paren removal, clear parentheses group
             undoClearParenthesisGroup(chord, parenInfo->notes(), parenInfo->leftParen(), parenInfo->rightParen(), addToLinked);
@@ -155,20 +151,20 @@ void EditChord::removeChordParentheses(Chord* chord, std::vector<Note*> notes, b
         for (auto noteIterator = groupNotesPair.second.begin(); noteIterator != groupNotesPair.second.end();
              noteIterator = std::next(noteIterator)) {
             // Remove paren from single note and create new paren group for all notes below
-            Note* note = *noteIterator;
-            const NoteParenthesisInfo* curParenInfo = note->parenthesisInfo();
-            const std::vector<Note*> notesList = curParenInfo->notes();
-            Parenthesis* leftParen = curParenInfo->leftParen();
-            Parenthesis* rightParen = curParenInfo->rightParen();
+            Note *note = *noteIterator;
+            const NoteParenthesisInfo *curParenInfo = note->parenthesisInfo();
+            const std::vector<Note *> notesList = curParenInfo->notes();
+            Parenthesis *leftParen = curParenInfo->leftParen();
+            Parenthesis *rightParen = curParenInfo->rightParen();
             auto notePos = std::find(notesList.begin(), notesList.end(), note);
 
             if (notePos != notesList.end() && std::next(notePos) != notesList.end() && notePos != notesList.begin()) {
                 // Create new group
-                std::vector<Note*> newNoteGroup(notePos + 1, notesList.end());
+                std::vector<Note *> newNoteGroup(notePos + 1, notesList.end());
 
-                for (Note* noteToRemove : newNoteGroup) {
+                for (Note *noteToRemove : newNoteGroup) {
                     if (curParenInfo->notes().size() == 1) {
-                        undoClearParenthesisGroup(chord, { noteToRemove }, leftParen, rightParen, addToLinked);
+                        undoClearParenthesisGroup(chord, {noteToRemove}, leftParen, rightParen, addToLinked);
                     } else {
                         undoRemoveParenthesesFromNote(chord, noteToRemove, leftParen, addToLinked);
                     }
@@ -177,7 +173,7 @@ void EditChord::removeChordParentheses(Chord* chord, std::vector<Note*> notes, b
                 undoAddParenthesesToNotes(chord, newNoteGroup, addToLinked, generated);
             }
             if (curParenInfo->notes().size() == 1) {
-                undoClearParenthesisGroup(chord, { note }, leftParen, rightParen, addToLinked);
+                undoClearParenthesisGroup(chord, {note}, leftParen, rightParen, addToLinked);
             } else {
                 undoRemoveParenthesesFromNote(chord, note, leftParen, addToLinked);
             }
@@ -185,14 +181,13 @@ void EditChord::removeChordParentheses(Chord* chord, std::vector<Note*> notes, b
     }
 }
 
-void EditChord::undoAddParenthesesToNotes(Chord* chord, std::vector<Note*> notes, bool addToLinked, bool generated)
-{
+void EditChord::undoAddParenthesesToNotes(Chord *chord, std::vector<Note *> notes, bool addToLinked, bool generated) {
     track_idx_t track = chord->track();
-    Parenthesis* leftParen = Factory::createParenthesis(chord);
+    Parenthesis *leftParen = Factory::createParenthesis(chord);
     leftParen->setTrack(track);
     leftParen->setDirection(DirectionH::LEFT);
     leftParen->setGenerated(generated);
-    Parenthesis* rightParen = Factory::createParenthesis(chord);
+    Parenthesis *rightParen = Factory::createParenthesis(chord);
     rightParen->setTrack(track);
     rightParen->setDirection(DirectionH::RIGHT);
     rightParen->setGenerated(generated);
@@ -202,20 +197,20 @@ void EditChord::undoAddParenthesesToNotes(Chord* chord, std::vector<Note*> notes
         return;
     }
 
-    for (EngravingObject* linkedObject : chord->linkList()) {
+    for (EngravingObject *linkedObject : chord->linkList()) {
         if (linkedObject == chord) {
             doAddNoteParentheses(chord, notes, leftParen, rightParen);
             continue;
         }
 
-        Chord* linkedChord = toChord(linkedObject);
-        Score* linkedScore = linkedChord->score();
-        Staff* linkedStaff = linkedChord->staff();
+        Chord *linkedChord = toChord(linkedObject);
+        Score *linkedScore = linkedChord->score();
+        Staff *linkedStaff = linkedChord->staff();
 
-        std::vector<Note*> linkedNotes;
+        std::vector<Note *> linkedNotes;
         linkedNotes.reserve(notes.size());
-        for (Note* note : notes) {
-            Note* linkedNote = toNote(note->findLinkedInStaff(linkedStaff));
+        for (Note *note : notes) {
+            Note *linkedNote = toNote(note->findLinkedInStaff(linkedStaff));
             if (!linkedNote) {
                 continue;
             }
@@ -225,11 +220,11 @@ void EditChord::undoAddParenthesesToNotes(Chord* chord, std::vector<Note*> notes
             continue;
         }
 
-        Parenthesis* linkedParenLeft = toParenthesis(leftParen->linkedClone());
+        Parenthesis *linkedParenLeft = toParenthesis(leftParen->linkedClone());
         linkedParenLeft->setScore(linkedScore);
         linkedParenLeft->setOwnershipParent(linkedChord);
         linkedParenLeft->setTrack(linkedChord->track());
-        Parenthesis* linkedParenRight = toParenthesis(rightParen->linkedClone());
+        Parenthesis *linkedParenRight = toParenthesis(rightParen->linkedClone());
         linkedParenRight->setScore(linkedScore);
         linkedParenRight->setOwnershipParent(linkedChord);
         linkedParenRight->setTrack(linkedChord->track());
@@ -238,65 +233,63 @@ void EditChord::undoAddParenthesesToNotes(Chord* chord, std::vector<Note*> notes
     }
 }
 
-void EditChord::undoRemoveParenthesesFromNote(Chord* chord, Note* note, Parenthesis* leftParen, bool removeFromLinked)
-{
+void EditChord::undoRemoveParenthesesFromNote(Chord *chord, Note *note, Parenthesis *leftParen, bool removeFromLinked) {
     if (!removeFromLinked) {
         doRemoveSingleNoteParenthesis(chord, note, leftParen);
         return;
     }
 
-    for (EngravingObject* linkedObject : chord->linkList()) {
+    for (EngravingObject *linkedObject : chord->linkList()) {
         if (linkedObject == chord) {
             doRemoveSingleNoteParenthesis(chord, note, leftParen);
             continue;
         }
 
-        Chord* linkedChord = toChord(linkedObject);
-        Staff* linkedStaff = linkedChord->staff();
-        Parenthesis* linkedLeftParen = toParenthesis(leftParen->findLinkedInStaff(linkedStaff));
+        Chord *linkedChord = toChord(linkedObject);
+        Staff *linkedStaff = linkedChord->staff();
+        Parenthesis *linkedLeftParen = toParenthesis(leftParen->findLinkedInStaff(linkedStaff));
         if (!linkedLeftParen) {
             continue;
         }
 
-        Note* linkedNote = toNote(note->findLinkedInStaff(linkedStaff));
+        Note *linkedNote = toNote(note->findLinkedInStaff(linkedStaff));
         if (!linkedNote) {
             continue;
         }
 
-        const NoteParenthesisInfo* noteParenInfo = linkedChord->findNoteParenthesisInfo(linkedNote);
+        const NoteParenthesisInfo *noteParenInfo = linkedChord->findNoteParenthesisInfo(linkedNote);
         if (noteParenInfo) {
             doRemoveSingleNoteParenthesis(linkedChord, linkedNote, linkedLeftParen);
         }
     }
 }
 
-void EditChord::undoClearParenthesisGroup(Chord* chord, std::vector<Note*> notes, Parenthesis* leftParen, Parenthesis* rightParen,
-                                          bool removeFromLinked)
-{
+void EditChord::undoClearParenthesisGroup(Chord *chord, std::vector<Note *> notes, Parenthesis *leftParen, Parenthesis *rightParen,
+                                          bool removeFromLinked) {
     if (!removeFromLinked) {
         doRemoveAllNoteParentheses(chord, leftParen);
         return;
     }
 
-    for (EngravingObject* linkedObject : chord->linkList()) {
+    for (EngravingObject *linkedObject : chord->linkList()) {
         if (linkedObject == chord) {
             doRemoveAllNoteParentheses(chord, leftParen);
             continue;
         }
 
-        Chord* linkedChord = toChord(linkedObject);
-        Staff* linkedStaff = linkedChord->staff();
-        Parenthesis* linkedLeftParen = toParenthesis(leftParen->findLinkedInStaff(linkedStaff));
-        Parenthesis* linkedRightParen = toParenthesis(rightParen->findLinkedInStaff(linkedStaff));
+        Chord *linkedChord = toChord(linkedObject);
+        Staff *linkedStaff = linkedChord->staff();
+        Parenthesis *linkedLeftParen = toParenthesis(leftParen->findLinkedInStaff(linkedStaff));
+        Parenthesis *linkedRightParen = toParenthesis(rightParen->findLinkedInStaff(linkedStaff));
 
         if (!linkedLeftParen && !linkedRightParen) {
             continue;
         }
 
-        std::vector<Note*> linkedNotes;
+        std::vector<Note *> linkedNotes;
         linkedNotes.reserve(notes.size());
-        for (Note* note : notes) {
-            Note* linkedNote = toNote(note->findLinkedInStaff(linkedStaff));
+        for (Note *note : notes) {
+            Note *linkedNote = toNote(note->findLinkedInStaff(linkedStaff));
             if (!linkedNote) {
                 continue;
             }
@@ -307,33 +300,30 @@ void EditChord::undoClearParenthesisGroup(Chord* chord, std::vector<Note*> notes
     }
 }
 
-void EditChord::doAddNoteParentheses(Chord* chord, std::vector<Note*> notes, Parenthesis* leftParen, Parenthesis* rightParen)
-{
-    NoteParenthesisInfo* parenInfo = new NoteParenthesisInfo(leftParen, rightParen, notes);
+void EditChord::doAddNoteParentheses(Chord *chord, std::vector<Note *> notes, Parenthesis *leftParen, Parenthesis *rightParen) {
+    NoteParenthesisInfo *parenInfo = new NoteParenthesisInfo(leftParen, rightParen, notes);
     if (leftParen->generated()) {
         chord->addNoteParenthesisInfo(parenInfo);
     } else {
-        Score* score = chord->score();
+        Score *score = chord->score();
         score->undo(new AddNoteParenthesisInfo(chord, parenInfo));
     }
 }
 
-void EditChord::doRemoveSingleNoteParenthesis(Chord* chord, Note* note, Parenthesis* leftParen)
-{
+void EditChord::doRemoveSingleNoteParenthesis(Chord *chord, Note *note, Parenthesis *leftParen) {
     if (leftParen->generated()) {
         chord->removeNoteFromParenthesisInfo(note, leftParen);
 
         chord->triggerLayout();
     } else {
-        Score* score = chord->score();
+        Score *score = chord->score();
         score->undo(new RemoveSingleNoteParentheses(chord, note, leftParen));
     }
 }
 
-void EditChord::doRemoveAllNoteParentheses(Chord* chord, Parenthesis* leftParen)
-{
+void EditChord::doRemoveAllNoteParentheses(Chord *chord, Parenthesis *leftParen) {
     if (leftParen->generated()) {
-        const NoteParenthesisInfo* noteParenInfo = chord->findNoteParenthesisInfo(leftParen);
+        const NoteParenthesisInfo *noteParenInfo = chord->findNoteParenthesisInfo(leftParen);
 
         chord->removeNoteParenthesisInfo(noteParenInfo);
         //! HACK: don't delete as it may still be used in PropertiesPanel - see Score::doUndoRemoveElement
@@ -341,8 +331,8 @@ void EditChord::doRemoveAllNoteParentheses(Chord* chord, Parenthesis* leftParen)
 
         chord->triggerLayout();
     } else {
-        Score* score = chord->score();
-        NoteParenthesisInfo* noteParenInfo = chord->findNoteParenthesisInfo(leftParen);
+        Score *score = chord->score();
+        NoteParenthesisInfo *noteParenInfo = chord->findNoteParenthesisInfo(leftParen);
 
         score->undo(new RemoveNoteParenthesisInfo(chord, noteParenInfo));
     }
@@ -352,8 +342,7 @@ void EditChord::doRemoveAllNoteParentheses(Chord* chord, Parenthesis* leftParen)
 //   ChangeChordStaffMove
 //---------------------------------------------------------
 
-void ChangeChordStaffMove::flip()
-{
+void ChangeChordStaffMove::flip() {
     int v = chordRest->staffMove();
     staff_idx_t oldStaff = chordRest->vStaffIdx();
 
@@ -364,8 +353,8 @@ void ChangeChordStaffMove::flip()
         return;
     }
 
-    for (EngravingObject* e : chordRest->linkList()) {
-        ChordRest* cr = toChordRest(e);
+    for (EngravingObject *e : chordRest->linkList()) {
+        ChordRest *cr = toChordRest(e);
         if (cr == chordRest) {
             continue;
         }
@@ -380,22 +369,21 @@ void ChangeChordStaffMove::flip()
 //   SwapCR
 //---------------------------------------------------------
 
-void SwapCR::flip()
-{
-    Segment* s1 = cr1->segment();
-    Segment* s2 = cr2->segment();
+void SwapCR::flip() {
+    Segment *s1 = cr1->segment();
+    Segment *s2 = cr2->segment();
     track_idx_t track = cr1->track();
 
-    if (cr1->isChord() && cr2->isChord() && toChord(cr1)->tremoloTwoChord()
-        && (toChord(cr1)->tremoloTwoChord() == toChord(cr2)->tremoloTwoChord())) {
-        TremoloTwoChord* t = toChord(cr1)->tremoloTwoChord();
-        Chord* c1 = t->chord1();
-        Chord* c2 = t->chord2();
+    if (cr1->isChord() && cr2->isChord() && toChord(cr1)->tremoloTwoChord() &&
+        (toChord(cr1)->tremoloTwoChord() == toChord(cr2)->tremoloTwoChord())) {
+        TremoloTwoChord *t = toChord(cr1)->tremoloTwoChord();
+        Chord *c1 = t->chord1();
+        Chord *c2 = t->chord2();
         t->setOwnershipParent(toChord(c2));
         t->setChords(toChord(c2), toChord(c1));
     }
 
-    EngravingItem* cr = s1->element(track);
+    EngravingItem *cr = s1->element(track);
     s1->setElement(track, s2->element(track));
     s2->setElement(track, cr);
     cr1->score()->setLayout(s1->tick(), cr1->staffIdx(), cr1);
@@ -406,67 +394,58 @@ void SwapCR::flip()
 //   ChangeSpanArpeggio
 //---------------------------------------------------------
 
-void ChangeSpanArpeggio::flip()
-{
-    Arpeggio* f_spanArp = m_chord->spanArpeggio();
+void ChangeSpanArpeggio::flip() {
+    Arpeggio *f_spanArp = m_chord->spanArpeggio();
 
     m_chord->setSpanArpeggio(m_spanArpeggio);
     m_spanArpeggio = f_spanArp;
 }
 
-void AddNoteParenthesisInfo::redo()
-{
+void AddNoteParenthesisInfo::redo() {
     m_chord->addNoteParenthesisInfo(m_noteParenInfo);
 
     m_chord->triggerLayout();
 }
 
-void mu::engraving::AddNoteParenthesisInfo::undo()
-{
+void mu::engraving::AddNoteParenthesisInfo::undo() {
     m_chord->removeNoteParenthesisInfo(m_noteParenInfo);
 
     m_chord->triggerLayout();
 }
 
-void AddNoteParenthesisInfo::cleanup(bool wasDone)
-{
+void AddNoteParenthesisInfo::cleanup(bool wasDone) {
     if (!wasDone) {
         delete m_noteParenInfo;
         m_noteParenInfo = nullptr;
     }
 }
 
-void RemoveNoteParenthesisInfo::redo()
-{
+void RemoveNoteParenthesisInfo::redo() {
     m_chord->removeNoteParenthesisInfo(m_noteParenInfo);
 
     m_chord->triggerLayout();
 }
 
-void RemoveNoteParenthesisInfo::undo()
-{
+void RemoveNoteParenthesisInfo::undo() {
     m_chord->addNoteParenthesisInfo(m_noteParenInfo);
 
     m_chord->triggerLayout();
 }
 
-void RemoveNoteParenthesisInfo::cleanup(bool wasDone)
-{
+void RemoveNoteParenthesisInfo::cleanup(bool wasDone) {
     if (wasDone) {
         delete m_noteParenInfo;
         m_noteParenInfo = nullptr;
     }
 }
 
-void RemoveSingleNoteParentheses::redo()
-{
+void RemoveSingleNoteParentheses::redo() {
     m_chord->removeNoteFromParenthesisInfo(m_note, m_paren);
 
     m_chord->triggerLayout();
 }
 
-void RemoveSingleNoteParentheses::undo()
-{
+void RemoveSingleNoteParentheses::undo() {
     m_chord->addNoteToParenthesisInfo(m_note, m_paren);
 
     m_chord->triggerLayout();

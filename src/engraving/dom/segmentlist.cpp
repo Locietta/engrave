@@ -33,12 +33,11 @@ namespace mu::engraving {
 //   clone
 //---------------------------------------------------------
 
-SegmentList SegmentList::clone() const
-{
+SegmentList SegmentList::clone() const {
     SegmentList dl;
-    Segment* s = m_first;
+    Segment *s = m_first;
     for (int i = 0; i < m_size; ++i) {
-        Segment* ns = s->clone();
+        Segment *ns = s->clone();
         dl.push_back(ns);
         s = s->next();
     }
@@ -46,9 +45,8 @@ SegmentList SegmentList::clone() const
     return dl;
 }
 
-Segment* SegmentList::at(int index) const
-{
-    Segment* s = m_first;
+Segment *SegmentList::at(int index) const {
+    Segment *s = m_first;
     for (int i = 0; i < m_size; ++i) {
         if (i == index) {
             return s;
@@ -58,9 +56,8 @@ Segment* SegmentList::at(int index) const
     return nullptr;
 }
 
-Segment* SegmentList::firstActive() const
-{
-    if (Segment* segment = m_first) {
+Segment *SegmentList::firstActive() const {
+    if (Segment *segment = m_first) {
         return segment->isActive() ? segment : segment->nextActive();
     }
     return nullptr;
@@ -71,47 +68,43 @@ Segment* SegmentList::firstActive() const
 //---------------------------------------------------------
 
 #ifndef NDEBUG
-void SegmentList::check()
-{
+void SegmentList::check() {
     int n = 0;
-    Segment* f = 0;
-    Segment* l = 0;
-    for (Segment* s = m_first; s; s = s->next()) {
+    Segment *f = 0;
+    Segment *l = 0;
+    for (Segment *s = m_first; s; s = s->next()) {
         if (f == 0) {
             f = s;
         }
         l = s;
         ++n;
     }
-    for (Segment* s = m_first; s; s = s->next()) {
+    for (Segment *s = m_first; s; s = s->next()) {
         switch (s->segmentType()) {
-        case SegmentType::Invalid:
-        case SegmentType::BeginBarLine:
-        case SegmentType::HeaderClef:
-        case SegmentType::Clef:
-        case SegmentType::KeySig:
-        case SegmentType::Ambitus:
-        case SegmentType::TimeSig:
-        case SegmentType::StartRepeatBarLine:
-        case SegmentType::BarLine:
-        case SegmentType::ChordRest:
-        case SegmentType::Breath:
-        case SegmentType::ClefRepeatAnnounce:
-        case SegmentType::TimeSigRepeatAnnounce:
-        case SegmentType::KeySigRepeatAnnounce:
-        case SegmentType::ClefStartRepeatAnnounce:
-        case SegmentType::TimeSigStartRepeatAnnounce:
-        case SegmentType::KeySigStartRepeatAnnounce:
-        case SegmentType::EndBarLine:
-        case SegmentType::TimeSigAnnounce:
-        case SegmentType::KeySigAnnounce:
-        case SegmentType::TimeTick:
-            break;
-        default:
-            ASSERT_X(String(u"SegmentList::check: invalid segment type: %1").arg(int(s->segmentType())));
-            break;
+            case SegmentType::Invalid:
+            case SegmentType::BeginBarLine:
+            case SegmentType::HeaderClef:
+            case SegmentType::Clef:
+            case SegmentType::KeySig:
+            case SegmentType::Ambitus:
+            case SegmentType::TimeSig:
+            case SegmentType::StartRepeatBarLine:
+            case SegmentType::BarLine:
+            case SegmentType::ChordRest:
+            case SegmentType::Breath:
+            case SegmentType::ClefRepeatAnnounce:
+            case SegmentType::TimeSigRepeatAnnounce:
+            case SegmentType::KeySigRepeatAnnounce:
+            case SegmentType::ClefStartRepeatAnnounce:
+            case SegmentType::TimeSigStartRepeatAnnounce:
+            case SegmentType::KeySigStartRepeatAnnounce:
+            case SegmentType::EndBarLine:
+            case SegmentType::TimeSigAnnounce:
+            case SegmentType::KeySigAnnounce:
+            case SegmentType::TimeTick: break;
+            default: ASSERT_X(String(u"SegmentList::check: invalid segment type: %1").arg(int(s->segmentType()))); break;
         }
-        Segment* ss = s->next();
+        Segment *ss = s->next();
         while (ss) {
             if (s == ss) {
                 ASSERT_X("SegmentList::check: segment twice in list");
@@ -144,8 +137,7 @@ void SegmentList::check()
 ///   Insert Segment \a e before Segment \a el.
 //---------------------------------------------------------
 
-void SegmentList::insert(Segment* e, Segment* el)
-{
+void SegmentList::insert(Segment *e, Segment *el) {
     if (el == 0) {
         push_back(e);
     } else if (el == first()) {
@@ -164,12 +156,11 @@ void SegmentList::insert(Segment* e, Segment* el)
 //   remove
 //---------------------------------------------------------
 
-void SegmentList::remove(Segment* e)
-{
+void SegmentList::remove(Segment *e) {
 #ifndef NDEBUG
     check();
     bool found = false;
-    for (Segment* s = m_first; s; s = s->next()) {
+    for (Segment *s = m_first; s; s = s->next()) {
         if (e == s) {
             found = true;
             break;
@@ -203,8 +194,7 @@ void SegmentList::remove(Segment* e)
 //   push_back
 //---------------------------------------------------------
 
-void SegmentList::push_back(Segment* e)
-{
+void SegmentList::push_back(Segment *e) {
     ++m_size;
     e->setNext(0);
     if (m_last) {
@@ -221,8 +211,7 @@ void SegmentList::push_back(Segment* e)
 //   push_front
 //---------------------------------------------------------
 
-void SegmentList::push_front(Segment* e)
-{
+void SegmentList::push_front(Segment *e) {
     ++m_size;
     e->setPrev(0);
     if (m_first) {
@@ -239,18 +228,14 @@ void SegmentList::push_front(Segment* e)
 //   firstCRSegment
 //---------------------------------------------------------
 
-Segment* SegmentList::firstCRSegment() const
-{
-    return first(SegmentType::ChordRest);
-}
+Segment *SegmentList::firstCRSegment() const { return first(SegmentType::ChordRest); }
 
 //---------------------------------------------------------
 //   first
 //---------------------------------------------------------
 
-Segment* SegmentList::first(SegmentType types) const
-{
-    for (Segment* s = m_first; s; s = s->next()) {
+Segment *SegmentList::first(SegmentType types) const {
+    for (Segment *s = m_first; s; s = s->next()) {
         if (s->segmentType() & types) {
             return s;
         }
@@ -262,9 +247,8 @@ Segment* SegmentList::first(SegmentType types) const
 //   first
 //---------------------------------------------------------
 
-Segment* SegmentList::first(ElementFlag flags) const
-{
-    for (Segment* s = m_first; s; s = s->next()) {
+Segment *SegmentList::first(ElementFlag flags) const {
+    for (Segment *s = m_first; s; s = s->next()) {
         if (s->flag(flags)) {
             return s;
         }
@@ -276,9 +260,8 @@ Segment* SegmentList::first(ElementFlag flags) const
 //   last
 //---------------------------------------------------------
 
-Segment* SegmentList::last(ElementFlag flags) const
-{
-    for (Segment* s = m_last; s; s = s->prev()) {
+Segment *SegmentList::last(ElementFlag flags) const {
+    for (Segment *s = m_last; s; s = s->prev()) {
         if (s->flag(flags)) {
             return s;
         }
@@ -286,13 +269,12 @@ Segment* SegmentList::last(ElementFlag flags) const
     return nullptr;
 }
 
-Segment* SegmentList::last(SegmentType types) const
-{
-    for (Segment* s = m_last; s; s = s->prev()) {
+Segment *SegmentList::last(SegmentType types) const {
+    for (Segment *s = m_last; s; s = s->prev()) {
         if (s->segmentType() & types) {
             return s;
         }
     }
     return nullptr;
 }
-}
+} // namespace mu::engraving

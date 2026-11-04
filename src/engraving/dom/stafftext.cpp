@@ -30,29 +30,25 @@
 
 using namespace mu::engraving;
 
-static const ElementStyle STAFF_STYLE {
-    { Sid::staffTextPlacement, Pid::PLACEMENT },
-    { Sid::staffTextMinDistance, Pid::MIN_DISTANCE },
+static const ElementStyle STAFF_STYLE{
+    {Sid::staffTextPlacement, Pid::PLACEMENT},
+    {Sid::staffTextMinDistance, Pid::MIN_DISTANCE},
 };
 
 StaffText::StaffText(DummyParentOr<Segment> parent, TextStyleType tid)
-    : StaffTextBase(ElementType::STAFF_TEXT, parent, tid, ElementFlag::MOVABLE | ElementFlag::ON_STAFF)
-{
+    : StaffTextBase(ElementType::STAFF_TEXT, parent, tid, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
     initElementStyle(&STAFF_STYLE);
     resetProperty(Pid::MUSIC_SYMBOL_SIZE);
 }
 
-StaffText::StaffText(const StaffText& t)
-    : StaffTextBase(t)
-{
+StaffText::StaffText(const StaffText &t) : StaffTextBase(t) {
     if (t.m_soundFlag) {
         setSoundFlag(t.m_soundFlag->clone());
     }
 }
 
-EngravingItem* StaffText::linkedClone()
-{
-    StaffText* clone = static_cast<StaffText*>(StaffTextBase::linkedClone());
+EngravingItem *StaffText::linkedClone() {
+    StaffText *clone = static_cast<StaffText *>(StaffTextBase::linkedClone());
 
     if (clone->m_soundFlag && m_soundFlag) {
         score()->undo(new Link(clone->m_soundFlag, m_soundFlag));
@@ -61,18 +57,14 @@ EngravingItem* StaffText::linkedClone()
     return clone;
 }
 
-PropertyValue StaffText::propertyDefault(Pid id) const
-{
+PropertyValue StaffText::propertyDefault(Pid id) const {
     switch (id) {
-    case Pid::TEXT_STYLE:
-        return TextStyleType::STAFF;
-    default:
-        return StaffTextBase::propertyDefault(id);
+        case Pid::TEXT_STYLE: return TextStyleType::STAFF;
+        default: return StaffTextBase::propertyDefault(id);
     }
 }
 
-void StaffText::scanElements(std::function<void(EngravingItem*)> func)
-{
+void StaffText::scanElements(std::function<void(EngravingItem *)> func) {
     if (m_soundFlag) {
         m_soundFlag->scanElements(func);
     }
@@ -80,45 +72,40 @@ void StaffText::scanElements(std::function<void(EngravingItem*)> func)
     StaffTextBase::scanElements(func);
 }
 
-void StaffText::add(EngravingItem* e)
-{
+void StaffText::add(EngravingItem *e) {
     e->setOwnershipParent(this);
     e->setTrack(track());
 
     switch (e->type()) {
-    case ElementType::SOUND_FLAG:
-        setSoundFlag(toSoundFlag(e));
-        e->added();
-        return;
-    default:
-        break;
+        case ElementType::SOUND_FLAG:
+            setSoundFlag(toSoundFlag(e));
+            e->added();
+            return;
+        default: break;
     }
 
     StaffTextBase::add(e);
 }
 
-void StaffText::remove(EngravingItem* e)
-{
+void StaffText::remove(EngravingItem *e) {
     switch (e->type()) {
-    case ElementType::SOUND_FLAG: {
-        if (soundFlag() == e) {
-            setSoundFlag(nullptr);
-            e->removed();
-            return;
-        } else {
-            LOGD("StaffText::remove: %s %p there is already another sound flag", e->typeName(), e);
+        case ElementType::SOUND_FLAG: {
+            if (soundFlag() == e) {
+                setSoundFlag(nullptr);
+                e->removed();
+                return;
+            } else {
+                LOGD("StaffText::remove: %s %p there is already another sound flag", e->typeName(), e);
+            }
+            break;
         }
-        break;
-    }
-    default:
-        break;
+        default: break;
     }
 
     StaffTextBase::remove(e);
 }
 
-void StaffText::setTrack(track_idx_t idx)
-{
+void StaffText::setTrack(track_idx_t idx) {
     StaffTextBase::setTrack(idx);
 
     if (m_soundFlag) {
@@ -126,18 +113,11 @@ void StaffText::setTrack(track_idx_t idx)
     }
 }
 
-bool StaffText::hasSoundFlag() const
-{
-    return m_soundFlag != nullptr;
-}
+bool StaffText::hasSoundFlag() const { return m_soundFlag != nullptr; }
 
-SoundFlag* StaffText::soundFlag() const
-{
-    return m_soundFlag;
-}
+SoundFlag *StaffText::soundFlag() const { return m_soundFlag; }
 
-void StaffText::setSoundFlag(SoundFlag* flag)
-{
+void StaffText::setSoundFlag(SoundFlag *flag) {
     if (m_soundFlag == flag) {
         return;
     }

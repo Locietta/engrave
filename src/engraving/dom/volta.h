@@ -35,19 +35,18 @@ class Measure;
 //   @@ VoltaSegment
 //---------------------------------------------------------
 
-class VoltaSegment final : public TextLineBaseSegment
-{
+class VoltaSegment final : public TextLineBaseSegment {
     OBJECT_ALLOCATOR(engraving, VoltaSegment)
     DECLARE_CLASSOF(ElementType::VOLTA_SEGMENT)
 
 public:
-    VoltaSegment(Volta*);
+    VoltaSegment(Volta *);
 
-    VoltaSegment* clone() const override { return new VoltaSegment(*this); }
+    VoltaSegment *clone() const override { return new VoltaSegment(*this); }
 
-    Volta* volta() const { return (Volta*)spanner(); }
+    Volta *volta() const { return (Volta *) spanner(); }
 
-    EngravingObject* propertyDelegate(Pid) const override;
+    EngravingObject *propertyDelegate(Pid) const override;
 };
 
 //---------------------------------------------------------
@@ -55,49 +54,46 @@ public:
 //   @P voltaType  enum (Volta.CLOSE, Volta.OPEN)
 //---------------------------------------------------------
 
-class Volta final : public TextLineBase
-{
+class Volta final : public TextLineBase {
     OBJECT_ALLOCATOR(engraving, Volta)
     DECLARE_CLASSOF(ElementType::VOLTA)
 
 public:
-    enum class Type : char {
-        OPEN, CLOSED
-    };
+    enum class Type : char { OPEN, CLOSED };
 
     Volta(DummyParentOr<EngravingItem> parent);
 
-    Volta* clone() const override { return new Volta(*this); }
+    Volta *clone() const override { return new Volta(*this); }
 
     Anchor anchor() const override { return Anchor::MEASURE; }
 
-    LineSegment* createLineSegment() override;
+    LineSegment *createLineSegment() override;
 
     bool allowTimeAnchor() const override { return false; }
 
     void setChannel() const;
 
     std::vector<int> endings() const { return m_endings; }
-    std::vector<int>& endings() { return m_endings; }
-    void setEndings(const std::vector<int>& l);
-    void setText(const String& s);
+
+    std::vector<int> &endings() { return m_endings; }
+
+    void setEndings(const std::vector<int> &l);
+    void setText(const String &s);
     String text() const;
 
     bool hasEnding(int repeat) const;
     int firstEnding() const;
     int lastEnding() const;
-    void setVoltaType(Volta::Type);       // deprecated
-    Type voltaType() const;               // deprecated
+    void setVoltaType(Volta::Type); // deprecated
+    Type voltaType() const;         // deprecated
 
     bool isFirstVolta() const { return m_endings.size() == 1 && hasEnding(1); }
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid) const override;
 
-
-
-    PointF linePos(Grip grip, System** system) const override;
+    PointF linePos(Grip grip, System **system) const override;
 
 protected:
     Sid defaultPosSid() const override;
@@ -106,6 +102,5 @@ private:
     std::vector<int> m_endings;
 };
 } // namespace mu::engraving
-
 
 #endif

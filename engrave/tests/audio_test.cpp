@@ -32,27 +32,22 @@
 
 namespace music::test::detail {
 
-std::vector<std::byte> read_file(const std::filesystem::path& path) {
+std::vector<std::byte> read_file(const std::filesystem::path &path) {
     std::ifstream file(path, std::ios::binary);
     const std::string text((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-    const auto* first = reinterpret_cast<const std::byte*>(text.data());
+    const auto *first = reinterpret_cast<const std::byte *>(text.data());
     return std::vector<std::byte>(first, first + text.size());
 }
 
-std::string text_of(std::span<const std::byte> bytes) {
-    return std::string(reinterpret_cast<const char*>(bytes.data()), bytes.size());
+std::string text_of(std::span<const std::byte> bytes) { return std::string(reinterpret_cast<const char *>(bytes.data()), bytes.size()); }
+
+std::uint32_t little32(const std::byte *bytes) {
+    return std::uint32_t(std::to_integer<std::uint8_t>(bytes[0])) | (std::uint32_t(std::to_integer<std::uint8_t>(bytes[1])) << 8) |
+           (std::uint32_t(std::to_integer<std::uint8_t>(bytes[2])) << 16) | (std::uint32_t(std::to_integer<std::uint8_t>(bytes[3])) << 24);
 }
 
-std::uint32_t little32(const std::byte* bytes) {
-    return std::uint32_t(std::to_integer<std::uint8_t>(bytes[0]))
-           | (std::uint32_t(std::to_integer<std::uint8_t>(bytes[1])) << 8)
-           | (std::uint32_t(std::to_integer<std::uint8_t>(bytes[2])) << 16)
-           | (std::uint32_t(std::to_integer<std::uint8_t>(bytes[3])) << 24);
-}
-
-std::uint16_t little16(const std::byte* bytes) {
-    return std::uint16_t(std::to_integer<std::uint8_t>(bytes[0])
-                         | (std::uint16_t(std::to_integer<std::uint8_t>(bytes[1])) << 8));
+std::uint16_t little16(const std::byte *bytes) {
+    return std::uint16_t(std::to_integer<std::uint8_t>(bytes[0]) | (std::uint16_t(std::to_integer<std::uint8_t>(bytes[1])) << 8));
 }
 
 struct Wav {
@@ -70,7 +65,7 @@ struct Wav {
     }
 };
 
-std::optional<Wav> decode_wav(std::span<const std::byte> bytes, std::string& error) {
+std::optional<Wav> decode_wav(std::span<const std::byte> bytes, std::string &error) {
     if (bytes.size() < 12 || text_of(bytes.first(4)) != "RIFF" || text_of(bytes.subspan(8, 4)) != "WAVE") {
         error = "not a RIFF/WAVE file";
         return std::nullopt;
@@ -113,7 +108,7 @@ struct Rendered {
     engrave::AudioRenderResult result;
 };
 
-Rendered render_audio(engrave::Document& document, const engrave::AudioOptions& options) {
+Rendered render_audio(engrave::Document &document, const engrave::AudioOptions &options) {
     Rendered rendered;
     const auto result = document.render_audio(options, [&rendered](std::span<const std::byte> chunk) {
         rendered.chunks.push_back(chunk.size());
@@ -123,7 +118,7 @@ Rendered render_audio(engrave::Document& document, const engrave::AudioOptions& 
     return rendered;
 }
 
-std::unique_ptr<engrave::Document> open_score(const std::string& name) {
+std::unique_ptr<engrave::Document> open_score(const std::string &name) {
     const std::filesystem::path path = corpus_file(name);
     if (path.empty()) return nullptr;
     auto document = g_engine->open(path);
@@ -131,12 +126,12 @@ std::unique_ptr<engrave::Document> open_score(const std::string& name) {
     return std::move(*document);
 }
 
-std::filesystem::path temp_file(const std::string& name) {
+std::filesystem::path temp_file(const std::string &name) {
     static int counter = 0;
     return std::filesystem::temp_directory_path() / ("engrave-audio-test-" + std::to_string(++counter) + "-" + name);
 }
 
-const std::string& audio_score() {
+const std::string &audio_score() {
     static const std::string name = "ghost_note.mscx";
     return name;
 }
@@ -157,7 +152,7 @@ TEST(Audio, EditThenRenderInvalidatesPlayback) {
     ASSERT_TRUE(beforeRender);
     const auto beforeAudio = detail::render_audio(*document, {});
     ASSERT_FALSE(beforeAudio.bytes.empty());
-    const auto notes = document->query(engrave::Query{ .types = { "Note" }, .limit = 1 });
+    const auto notes = document->query(engrave::Query{.types = {"Note"}, .limit = 1});
     ASSERT_TRUE(notes);
     ASSERT_FALSE(notes->elements.empty());
     const auto edited = document->edit(engrave::Batch{{engrave::SetPitch{notes->elements.front().id, 85, std::nullopt}}});
@@ -179,32 +174,30 @@ TEST(Audio, EachEncoderWritesItsContainer) {
     struct Case {
         engrave::AudioFormat format;
         bool (*magic)(std::span<const std::byte>);
-        const char* name;
-    };
-    const Case cases[] = {
-        { engrave::AudioFormat::Wav,
-          [](std::span<const std::byte> b) { return b.size() > 12 && detail::text_of(b.first(4)) == "RIFF"; }, "WAV" },
-        { engrave::AudioFormat::Flac,
-          [](std::span<const std::byte> b) { return b.size() > 4 && detail::text_of(b.first(4)) == "fLaC"; }, "FLAC" },
-        { engrave::AudioFormat::Opus,
-          [](std::span<const std::byte> b) { return b.size() > 4 && detail::text_of(b.first(4)) == "OggS"; }, "Opus in Ogg" },
-        { engrave::AudioFormat::Mp3,
-          [](std::span<const std::byte> b) {
-              return b.size() > 4
-                     && (detail::text_of(b.first(3)) == "ID3"
-                         || (std::to_integer<std::uint8_t>(b[0]) == 0xff
-                             && (std::to_integer<std::uint8_t>(b[1]) & 0xe0) == 0xe0));
-          },
-          "MP3" },
-        { engrave::AudioFormat::Aac,
-          [](std::span<const std::byte> b) {
-              return b.size() > 4 && std::to_integer<std::uint8_t>(b[0]) == 0xff
-                     && (std::to_integer<std::uint8_t>(b[1]) & 0xf0) == 0xf0;
-          },
-          "AAC" },
+        const char *name;
     };
 
-    for (const Case& entry : cases) {
+    const Case cases[] = {
+        {engrave::AudioFormat::Wav, [](std::span<const std::byte> b) { return b.size() > 12 && detail::text_of(b.first(4)) == "RIFF"; },
+         "WAV"},
+        {engrave::AudioFormat::Flac, [](std::span<const std::byte> b) { return b.size() > 4 && detail::text_of(b.first(4)) == "fLaC"; },
+         "FLAC"},
+        {engrave::AudioFormat::Opus, [](std::span<const std::byte> b) { return b.size() > 4 && detail::text_of(b.first(4)) == "OggS"; },
+         "Opus in Ogg"},
+        {engrave::AudioFormat::Mp3,
+         [](std::span<const std::byte> b) {
+             return b.size() > 4 && (detail::text_of(b.first(3)) == "ID3" ||
+                                     (std::to_integer<std::uint8_t>(b[0]) == 0xff && (std::to_integer<std::uint8_t>(b[1]) & 0xe0) == 0xe0));
+         },
+         "MP3"},
+        {engrave::AudioFormat::Aac,
+         [](std::span<const std::byte> b) {
+             return b.size() > 4 && std::to_integer<std::uint8_t>(b[0]) == 0xff && (std::to_integer<std::uint8_t>(b[1]) & 0xf0) == 0xf0;
+         },
+         "AAC"},
+    };
+
+    for (const Case &entry : cases) {
         engrave::AudioOptions options;
         options.format = entry.format;
         const detail::Rendered rendered = detail::render_audio(*document, options);
@@ -243,8 +236,7 @@ TEST(Audio, TheSinkReceivesTheStreamInChunks) {
 TEST(Audio, EncodedFileBudgetDoesNotPublishPartialAudio) {
     auto document = detail::open_score(detail::audio_score());
     ASSERT_TRUE(document);
-    for (const auto format : {engrave::AudioFormat::Wav, engrave::AudioFormat::Flac,
-                              engrave::AudioFormat::Opus, engrave::AudioFormat::Mp3,
+    for (const auto format : {engrave::AudioFormat::Wav, engrave::AudioFormat::Flac, engrave::AudioFormat::Opus, engrave::AudioFormat::Mp3,
                               engrave::AudioFormat::Aac}) {
         SCOPED_TRACE(engrave::to_string(format));
         engrave::AudioOptions options;
@@ -259,9 +251,8 @@ TEST(Audio, EncodedFileBudgetDoesNotPublishPartialAudio) {
         for (const std::size_t limit : {original.bytes.size() / 2, original.bytes.size() - 1}) {
             options.max_bytes = limit;
             std::size_t delivered = 0;
-            const auto failed = document->render_audio(options, [&delivered](std::span<const std::byte> chunk) {
-                delivered += chunk.size();
-            });
+            const auto failed =
+                document->render_audio(options, [&delivered](std::span<const std::byte> chunk) { delivered += chunk.size(); });
             ASSERT_FALSE(failed);
             EXPECT_EQ(failed.error().code, engrave::ErrorCode::ResourceLimit);
             EXPECT_EQ(delivered, 0u);
@@ -279,9 +270,7 @@ TEST(Audio, IntegerWavStopsAtTheByteLimit) {
         options.bit_depth = depth;
         options.max_bytes = 64;
         std::size_t delivered = 0;
-        const auto failed = document->render_audio(options, [&delivered](std::span<const std::byte> bytes) {
-            delivered += bytes.size();
-        });
+        const auto failed = document->render_audio(options, [&delivered](std::span<const std::byte> bytes) { delivered += bytes.size(); });
         ASSERT_FALSE(failed);
         EXPECT_EQ(failed.error().code, engrave::ErrorCode::ResourceLimit);
         EXPECT_EQ(delivered, 0u);
@@ -302,9 +291,7 @@ TEST(Audio, TotalWriteBudgetIncludesWavHeaderPatches) {
     options.max_bytes = original.bytes.size();
     options.max_write_bytes = original.bytes.size();
     std::size_t delivered = 0;
-    const auto failed = document->render_audio(options, [&delivered](std::span<const std::byte> bytes) {
-        delivered += bytes.size();
-    });
+    const auto failed = document->render_audio(options, [&delivered](std::span<const std::byte> bytes) { delivered += bytes.size(); });
     ASSERT_FALSE(failed);
     EXPECT_EQ(failed.error().code, engrave::ErrorCode::ResourceLimit);
     EXPECT_EQ(delivered, 0u);
@@ -322,20 +309,19 @@ TEST(Audio, FailedSinkDoesNotPoisonNextRender) {
     options.format = engrave::AudioFormat::Wav;
     const auto expected = detail::render_audio(*document, options);
     ASSERT_FALSE(expected.bytes.empty());
-    EXPECT_THROW((void)document->render_audio(options, [](std::span<const std::byte>) {
-        throw std::runtime_error("deliberate sink failure");
-    }), std::runtime_error);
+    EXPECT_THROW(
+        (void) document->render_audio(options, [](std::span<const std::byte>) { throw std::runtime_error("deliberate sink failure"); }),
+        std::runtime_error);
     const auto recovered = detail::render_audio(*document, options);
     EXPECT_EQ(expected.bytes, recovered.bytes);
 }
 
 TEST(Audio, OutputOpenFailureReturnsIoAndNextRenderSucceeds) {
     const auto cache = detail::temp_file("blocked-output-cache");
-    std::vector<std::string> arguments = { "--assets=" + music::test::g_assets.string(),
-                                           "--audio=" + music::test::corpus_file(detail::audio_score()).string(),
-                                           "--format=wav", "--out=" + cache.string(),
-                                           "--test-output-open-failure" };
-    for (const auto& soundfont : g_soundfonts) arguments.push_back("--soundfont=" + soundfont.string());
+    std::vector<std::string> arguments = {"--assets=" + music::test::g_assets.string(),
+                                          "--audio=" + music::test::corpus_file(detail::audio_score()).string(), "--format=wav",
+                                          "--out=" + cache.string(), "--test-output-open-failure"};
+    for (const auto &soundfont : g_soundfonts) arguments.push_back("--soundfont=" + soundfont.string());
     EXPECT_EQ(music::test::run_probe(arguments), 0);
     EXPECT_FALSE(std::filesystem::exists(cache));
 }
@@ -352,11 +338,10 @@ TEST(Audio, SecondRenderEqualsAFreshProcess) {
     ASSERT_EQ(second.bytes.size(), first.bytes.size());
     EXPECT_EQ(second.bytes, first.bytes) << "the second render in one process differs from the first";
 
-    ASSERT_TRUE(std::filesystem::is_regular_file(music::test::probe_binary()))
-        << "no probe at " << music::test::probe_binary().string();
+    ASSERT_TRUE(std::filesystem::is_regular_file(music::test::probe_binary())) << "no probe at " << music::test::probe_binary().string();
     const auto out = detail::temp_file("fresh.wav");
-    std::vector<std::string> arguments = { "--assets=" + music::test::g_assets.string() };
-    for (const auto& soundfont : g_soundfonts) arguments.push_back("--soundfont=" + soundfont.string());
+    std::vector<std::string> arguments = {"--assets=" + music::test::g_assets.string()};
+    for (const auto &soundfont : g_soundfonts) arguments.push_back("--soundfont=" + soundfont.string());
     arguments.push_back("--audio=" + music::test::corpus_file(detail::audio_score()).string());
     arguments.push_back("--format=wav");
     arguments.push_back("--out=" + out.string());
@@ -481,11 +466,11 @@ TEST(Audio, OptionsAreValidated) {
     EXPECT_EQ(code_of(options), engrave::ErrorCode::Unsupported) << "a preset";
 
     options = {};
-    options.tracks.push_back(engrave::AudioTrackOptions{ .track = 99 });
+    options.tracks.push_back(engrave::AudioTrackOptions{.track = 99});
     EXPECT_EQ(code_of(options), engrave::ErrorCode::InvalidArgument) << "a track that does not exist";
     options = {};
-    options.tracks.push_back(engrave::AudioTrackOptions{ .track = 0 });
-    options.tracks.push_back(engrave::AudioTrackOptions{ .track = 0 });
+    options.tracks.push_back(engrave::AudioTrackOptions{.track = 0});
+    options.tracks.push_back(engrave::AudioTrackOptions{.track = 0});
     EXPECT_EQ(code_of(options), engrave::ErrorCode::InvalidArgument) << "a track named twice";
 
     options = {};
@@ -514,7 +499,7 @@ TEST(Audio, OptionsAreValidated) {
     options.master_volume_db = 25.0;
     EXPECT_EQ(code_of(options), engrave::ErrorCode::InvalidArgument) << "a master volume above 24 dB";
     options = {};
-    options.tracks.push_back(engrave::AudioTrackOptions{ .track = 0, .balance = 2.0 });
+    options.tracks.push_back(engrave::AudioTrackOptions{.track = 0, .balance = 2.0});
     EXPECT_EQ(code_of(options), engrave::ErrorCode::InvalidArgument) << "a balance outside [-1, 1]";
 }
 
@@ -542,21 +527,19 @@ TEST(Audio, AudioTracksReportTheDefaultsAndTheExcerpt) {
     }
     const auto mix = mixed->audio_tracks();
     ASSERT_TRUE(mix) << mix.error().message;
-    const auto violin = std::find_if(mix->tracks.begin(), mix->tracks.end(), [](const engrave::AudioTrackInfo& track) {
-        return track.instrument_id == "violin";
-    });
+    const auto violin = std::find_if(mix->tracks.begin(), mix->tracks.end(),
+                                     [](const engrave::AudioTrackInfo &track) { return track.instrument_id == "violin"; });
     ASSERT_NE(violin, mix->tracks.end()) << "mix_parts.mscz has no violin track";
     EXPECT_TRUE(violin->mix.mute) << "mix_parts.mscz's muted Violin is not in the default mix";
 
     const auto outline = mixed->outline();
     ASSERT_TRUE(outline);
     ASSERT_GE(outline->excerpts.size(), 2u);
-    const auto excerpt_tracks = mixed->audio_tracks(engrave::ScoreSel{ outline->excerpts.front().id });
+    const auto excerpt_tracks = mixed->audio_tracks(engrave::ScoreSel{outline->excerpts.front().id});
     ASSERT_TRUE(excerpt_tracks) << excerpt_tracks.error().message;
     EXPECT_LT(excerpt_tracks->tracks.size(), mix->tracks.size()) << "an excerpt lists every part of the master";
     ASSERT_FALSE(excerpt_tracks->tracks.empty());
-    EXPECT_FALSE(excerpt_tracks->tracks.front().mix.mute)
-        << "the Violin excerpt kept the master's mute instead of its own audiosettings";
+    EXPECT_FALSE(excerpt_tracks->tracks.front().mix.mute) << "the Violin excerpt kept the master's mute instead of its own audiosettings";
 }
 
 // EngineOptions::audio_sample_rate is the engine's fixed rate: the probe in a
@@ -564,8 +547,8 @@ TEST(Audio, AudioTracksReportTheDefaultsAndTheExcerpt) {
 // duration as the 44100 Hz render here.
 TEST(Audio, TheEngineSampleRateReachesTheEncoder) {
     const auto out = detail::temp_file("48k.wav");
-    std::vector<std::string> arguments = { "--assets=" + music::test::g_assets.string() };
-    for (const auto& soundfont : g_soundfonts) arguments.push_back("--soundfont=" + soundfont.string());
+    std::vector<std::string> arguments = {"--assets=" + music::test::g_assets.string()};
+    for (const auto &soundfont : g_soundfonts) arguments.push_back("--soundfont=" + soundfont.string());
     arguments.push_back("--audio=" + music::test::corpus_file(detail::audio_score()).string());
     arguments.push_back("--format=wav");
     arguments.push_back("--sample-rate=48000");
@@ -599,7 +582,7 @@ TEST(Audio, AnExcerptRendersAsTheMasterWithItsOwnParts) {
     engrave::AudioOptions master;
     master.format = engrave::AudioFormat::Wav;
     engrave::AudioOptions excerpt = master;
-    excerpt.score = engrave::ScoreSel{ outline->excerpts.front().id };
+    excerpt.score = engrave::ScoreSel{outline->excerpts.front().id};
 
     const detail::Rendered full = detail::render_audio(*document, master);
     const detail::Rendered part = detail::render_audio(*document, excerpt);
@@ -611,9 +594,9 @@ TEST(Audio, AnExcerptRendersAsTheMasterWithItsOwnParts) {
 
 TEST(Audio, AnEngineWithoutSoundFontsCannotRender) {
     const auto out = detail::temp_file("nosf.wav");
-    std::vector<std::string> arguments = { "--assets=" + music::test::g_assets.string(),
-                                           "--audio=" + music::test::corpus_file(detail::audio_score()).string(),
-                                           "--format=wav", "--out=" + out.string() };
+    std::vector<std::string> arguments = {"--assets=" + music::test::g_assets.string(),
+                                          "--audio=" + music::test::corpus_file(detail::audio_score()).string(), "--format=wav",
+                                          "--out=" + out.string()};
     EXPECT_EQ(music::test::run_probe(arguments), 2) << "a SoundFont-less Engine rendered audio";
     std::filesystem::remove(out);
 }
@@ -657,7 +640,10 @@ TEST(RuntimeAssets, SoundFontReplacementChangesTheNextRenderAndIsAtomic) {
     ASSERT_FALSE(missing);
     EXPECT_EQ(missing.error().code, engrave::ErrorCode::NotFound);
     const auto bad = detail::temp_file("malformed.sf2");
-    { std::ofstream out(bad, std::ios::binary); out.write("RIFF\x04\0\0\0sfbk", 12); }
+    {
+        std::ofstream out(bad, std::ios::binary);
+        out.write("RIFF\x04\0\0\0sfbk", 12);
+    }
     auto invalid = g_engine->set_soundfonts({bad});
     std::filesystem::remove(bad);
     ASSERT_FALSE(invalid);
@@ -687,7 +673,11 @@ TEST(Audio, SoundFontABAIsByteIdentical) {
     if (g_soundfonts.size() < 2) GTEST_SKIP() << "requires two distinct SoundFonts";
     auto document = detail::open_score(detail::audio_score());
     ASSERT_TRUE(document);
-    struct Restore { ~Restore() { music::test::g_engine->set_soundfonts(g_soundfonts); } } restore;
+
+    struct Restore {
+        ~Restore() { music::test::g_engine->set_soundfonts(g_soundfonts); }
+    } restore;
+
     ASSERT_TRUE(music::test::g_engine->set_soundfonts({g_soundfonts[0]}));
     const auto a = detail::render_audio(*document, {});
     ASSERT_FALSE(a.bytes.empty());

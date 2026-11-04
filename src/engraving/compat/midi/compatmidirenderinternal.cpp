@@ -72,16 +72,10 @@ static PitchWheelSpecs g_wheelSpec;
 static constexpr int LET_RING_MAX_TICKS = Constants::DIVISION * 16;
 // TODO this should be a (configurable?) constant somewhere
 static constexpr Fraction ARTICULATION_CHANGE_TIME_MAX = Fraction(1, 16);
-std::unordered_map<String,
-                   CompatMidiRendererInternal::Context::BuiltInArticulation> CompatMidiRendererInternal::Context::
-s_builtInArticulationsValues = {
-    { u"staccatissimo", { 1.0, 30 } },
-    { u"staccato", { 1.0, 50 } },
-    { u"portato", { 1.0, 67 } },
-    { u"tenuto", { 1.0, 100 } },
-    { u"accent", { 1.2, 100 } },
-    { u"marcato", { 1.44, 100 } },
-    { u"sforzato", { 1.69, 100 } },
+std::unordered_map<String, CompatMidiRendererInternal::Context::BuiltInArticulation>
+    CompatMidiRendererInternal::Context::s_builtInArticulationsValues = {
+        {u"staccatissimo", {1.0, 30}}, {u"staccato", {1.0, 50}},  {u"portato", {1.0, 67}},    {u"tenuto", {1.0, 100}},
+        {u"accent", {1.2, 100}},       {u"marcato", {1.44, 100}}, {u"sforzato", {1.69, 100}},
 };
 
 struct CollectNoteParams {
@@ -93,7 +87,7 @@ struct CollectNoteParams {
     int previousChordTicks = -1;
     bool letRingNote = false;
     MidiInstrumentEffect effect = MidiInstrumentEffect::NONE;
-    bool callAllSoundOff = false;//NoteOn silence channel
+    bool callAllSoundOff = false; //NoteOn silence channel
 };
 
 struct PlayNoteParams {
@@ -105,7 +99,7 @@ struct PlayNoteParams {
     int offset = 0;
     int staffIdx = 0;
     MidiInstrumentEffect effect = MidiInstrumentEffect::NONE;
-    bool callAllSoundOff = false;//NoteOn silence channel
+    bool callAllSoundOff = false; //NoteOn silence channel
 };
 
 struct VibratoParams {
@@ -121,25 +115,24 @@ struct BendPlaybackInfo {
     float endTimeFactor = 1.f;
 };
 
-static uint32_t getChannel(const Instrument* instr, const Note* note, MidiInstrumentEffect effect,
-                           const CompatMidiRendererInternal::Context& context);
+static uint32_t getChannel(const Instrument *instr, const Note *note, MidiInstrumentEffect effect,
+                           const CompatMidiRendererInternal::Context &context);
 
-static void fillScoreVelocities(const Score* score, CompatMidiRendererInternal::Context& context);
-static void fillHairpinVelocities(const Hairpin* h, std::unordered_map<staff_idx_t, VelocityMap>& velocitiesByTrack);
-static void fillVoltaVelocities(const Volta* volta, VelocityMap& veloMap);
+static void fillScoreVelocities(const Score *score, CompatMidiRendererInternal::Context &context);
+static void fillHairpinVelocities(const Hairpin *h, std::unordered_map<staff_idx_t, VelocityMap> &velocitiesByTrack);
+static void fillVoltaVelocities(const Volta *volta, VelocityMap &veloMap);
 
-static double chordVelocityMultiplier(const Chord* chord, const CompatMidiRendererInternal::Context& context);
-static double velocityMultiplierByInstrument(const Instrument* instrument, const String& articulationName,
-                                             const CompatMidiRendererInternal::Context& context);
-static int graceBendDuration(const Chord* chord);
+static double chordVelocityMultiplier(const Chord *chord, const CompatMidiRendererInternal::Context &context);
+static double velocityMultiplierByInstrument(const Instrument *instrument, const String &articulationName,
+                                             const CompatMidiRendererInternal::Context &context);
+static int graceBendDuration(const Chord *chord);
 
 //---------------------------------------------------------
 //   Converts midi time (noteoff - noteon) to milliseconds
 //---------------------------------------------------------
-int toMilliseconds(float tempo, float midiTime)
-{
-    float ticksPerSecond = (float)Constants::DIVISION * tempo;
-    int time = (int)((midiTime / ticksPerSecond) * 1000.0f);
+int toMilliseconds(float tempo, float midiTime) {
+    float ticksPerSecond = (float) Constants::DIVISION * tempo;
+    int time = (int) ((midiTime / ticksPerSecond) * 1000.0f);
     if (time > 0x7fff) { //maximum possible value
         time = 0x7fff;
     }
@@ -149,9 +142,8 @@ int toMilliseconds(float tempo, float midiTime)
 //---------------------------------------------------------
 //   Detects if a note is a start of a glissando
 //---------------------------------------------------------
-bool isGlissandoFor(const Note* note)
-{
-    for (Spanner* spanner : note->spannerFor()) {
+bool isGlissandoFor(const Note *note) {
+    for (Spanner *spanner : note->spannerFor()) {
         if (spanner->isGlissando()) {
             return true;
         }
@@ -162,9 +154,8 @@ bool isGlissandoFor(const Note* note)
 //---------------------------------------------------------
 //   Detects if a note is an end of a glissando
 //---------------------------------------------------------
-bool isGlissandoBack(const Note* note)
-{
-    for (Spanner* spanner : note->spannerBack()) {
+bool isGlissandoBack(const Note *note) {
+    for (Spanner *spanner : note->spannerBack()) {
         if (spanner->isGlissando()) {
             return true;
         }
@@ -172,19 +163,16 @@ bool isGlissandoBack(const Note* note)
     return false;
 }
 
-static void collectGlissando(int channel, MidiInstrumentEffect effect,
-                             int onTime, int offTime,
-                             int pitchDelta,
-                             PitchWheelRenderer& pitchWheelRenderer, staff_idx_t staffIdx)
-{
-    const float scale = (float)g_wheelSpec.mLimit / g_wheelSpec.mAmplitude;
+static void collectGlissando(int channel, MidiInstrumentEffect effect, int onTime, int offTime, int pitchDelta,
+                             PitchWheelRenderer &pitchWheelRenderer, staff_idx_t staffIdx) {
+    const float scale = (float) g_wheelSpec.mLimit / g_wheelSpec.mAmplitude;
 
     PitchWheelRenderer::PitchWheelFunction func;
     func.mStartTick = onTime;
     func.mEndTick = offTime;
 
-    auto linearFunc = [startTick = onTime, endTick = offTime, pitchDelta, scale] (uint32_t tick) {
-        float x = (float)(tick - startTick) / (endTick - startTick);
+    auto linearFunc = [startTick = onTime, endTick = offTime, pitchDelta, scale](uint32_t tick) {
+        float x = (float) (tick - startTick) / (endTick - startTick);
         return pitchDelta * x * scale;
     };
     func.func = linearFunc;
@@ -192,18 +180,17 @@ static void collectGlissando(int channel, MidiInstrumentEffect effect,
     pitchWheelRenderer.addPitchWheelFunction(func, channel, staffIdx, effect);
 }
 
-static Fraction getPlayTicksForBend(const Note* note)
-{
-    Tie* tie = note->tieFor();
+static Fraction getPlayTicksForBend(const Note *note) {
+    Tie *tie = note->tieFor();
     if (!tie || !tie->endNote()) {
         return note->chord()->actualTicks();
     }
 
     Fraction stick = note->chord()->tick();
-    Note* nextNote = tie->endNote();
+    Note *nextNote = tie->endNote();
     while (tie && tie->endNote()) {
         nextNote = tie->endNote();
-        for (EngravingItem* e : nextNote->el()) {
+        for (EngravingItem *e : nextNote->el()) {
             if (e && (e->isBend())) {
                 return nextNote->chord()->tick() - stick;
             }
@@ -218,8 +205,7 @@ static Fraction getPlayTicksForBend(const Note* note)
 //---------------------------------------------------------
 //   playNote
 //---------------------------------------------------------
-static void playNote(EventsHolder& events, const Note* note, PlayNoteParams params, PitchWheelRenderer& pitchWheelRenderer)
-{
+static void playNote(EventsHolder &events, const Note *note, PlayNoteParams params, PitchWheelRenderer &pitchWheelRenderer) {
     if (!note->play()) {
         return;
     }
@@ -244,12 +230,12 @@ static void playNote(EventsHolder& events, const Note* note, PlayNoteParams para
     }
 
     events[params.channel].emplace(std::max(0, params.onTime - params.offset), ev);
-    Accidental* acc = note->accidental();
+    Accidental *acc = note->accidental();
     if (acc) {
         AccidentalType type = acc->accidentalType();
         double cents = Accidental::subtype2centOffset(type);
         if (!muse::RealIsNull(cents)) {
-            double pwValue = cents / 100.0 * (double)g_wheelSpec.mLimit / (double)g_wheelSpec.mAmplitude;
+            double pwValue = cents / 100.0 * (double) g_wheelSpec.mLimit / (double) g_wheelSpec.mAmplitude;
             PitchWheelRenderer::PitchWheelFunction func;
             func.mStartTick = params.onTime - params.offset;
             func.mEndTick = params.offTime - params.offset;
@@ -262,11 +248,11 @@ static void playNote(EventsHolder& events, const Note* note, PlayNoteParams para
         }
     }
     // adds portamento for continuous glissando
-    for (Spanner* spanner : note->spannerFor()) {
+    for (Spanner *spanner : note->spannerFor()) {
         if (spanner->isGlissando()) {
-            Glissando* glissando = toGlissando(spanner);
+            Glissando *glissando = toGlissando(spanner);
             if (glissando->glissandoStyle() == GlissandoStyle::PORTAMENTO) {
-                Note* nextNote = toNote(spanner->endElement());
+                Note *nextNote = toNote(spanner->endElement());
                 double pitchDelta = nextNote->ppitch() - params.pitch;
                 int timeDelta = params.offTime - params.onTime;
                 if (pitchDelta != 0 && timeDelta != 0) {
@@ -283,14 +269,11 @@ static void playNote(EventsHolder& events, const Note* note, PlayNoteParams para
     }
 }
 
-static void collectVibrato(int channel,
-                           int onTime, int offTime,
-                           const VibratoParams& vibratoParams,
-                           PitchWheelRenderer& pitchWheelRenderer, MidiInstrumentEffect effect, staff_idx_t staffIdx)
-{
+static void collectVibrato(int channel, int onTime, int offTime, const VibratoParams &vibratoParams, PitchWheelRenderer &pitchWheelRenderer,
+                           MidiInstrumentEffect effect, staff_idx_t staffIdx) {
     const uint16_t vibratoPeriod = vibratoParams.period;
     const uint32_t duration = offTime - onTime;
-    const float scale = 2 * (float)g_wheelSpec.mLimit / g_wheelSpec.mAmplitude / 100;
+    const float scale = 2 * (float) g_wheelSpec.mLimit / g_wheelSpec.mAmplitude / 100;
 
     if (duration < vibratoPeriod) {
         return;
@@ -300,11 +283,11 @@ static void collectVibrato(int channel,
 
     PitchWheelRenderer::PitchWheelFunction func;
     func.mStartTick = onTime;
-    func.mEndTick = offTime - duration % vibratoPeriod;//removed last points to make more smooth of the end
+    func.mEndTick = offTime - duration % vibratoPeriod; //removed last points to make more smooth of the end
 
     int lowPitch = vibratoParams.lowPitch;
-    auto vibratoFunc = [startTick = onTime, pillarAmplitude, vibratoPeriod, lowPitch, scale] (uint32_t tick) {
-        float x = (float)(tick - startTick) / vibratoPeriod;
+    auto vibratoFunc = [startTick = onTime, pillarAmplitude, vibratoPeriod, lowPitch, scale](uint32_t tick) {
+        float x = (float) (tick - startTick) / vibratoPeriod;
         return (pillarAmplitude * 2 / M_PI * asin(sin(2 * M_PI * x)) + lowPitch) * scale;
     };
     func.func = vibratoFunc;
@@ -312,14 +295,12 @@ static void collectVibrato(int channel,
     pitchWheelRenderer.addPitchWheelFunction(func, channel, staffIdx, effect);
 }
 
-static void addConstPitchWheel(int startTick, int endTick, float value, PitchWheelRenderer& pitchWheelRenderer, int channel,
-                               staff_idx_t staffIdx,
-                               MidiInstrumentEffect effect)
-{
-    const float scale = (float)g_wheelSpec.mLimit / g_wheelSpec.mAmplitude;
+static void addConstPitchWheel(int startTick, int endTick, float value, PitchWheelRenderer &pitchWheelRenderer, int channel,
+                               staff_idx_t staffIdx, MidiInstrumentEffect effect) {
+    const float scale = (float) g_wheelSpec.mLimit / g_wheelSpec.mAmplitude;
 
     PitchWheelRenderer::PitchWheelFunction pitchWheelConstFunc;
-    auto constFunc = [value, scale] (uint32_t tick) {
+    auto constFunc = [value, scale](uint32_t tick) {
         UNUSED(tick)
         return value * scale;
     };
@@ -330,19 +311,18 @@ static void addConstPitchWheel(int startTick, int endTick, float value, PitchWhe
     pitchWheelRenderer.addPitchWheelFunction(pitchWheelConstFunc, channel, staffIdx, effect);
 }
 
-static bool shouldProceedBend(const Note* note)
-{
-    const GuitarBend* bendFor = note->bendFor();
+static bool shouldProceedBend(const Note *note) {
+    const GuitarBend *bendFor = note->bendFor();
 
     if (bendFor->bendType() == GuitarBendType::PRE_DIVE) {
         return true;
     }
 
-    const Note* baseNote = bendFor->startNoteOfChain();
+    const Note *baseNote = bendFor->startNoteOfChain();
 
-    const GuitarBend* firstBend = baseNote->bendFor();
+    const GuitarBend *firstBend = baseNote->bendFor();
     if (firstBend && firstBend->bendType() == GuitarBendType::PRE_BEND) {
-        const Note* nextNote = firstBend->endNote();
+        const Note *nextNote = firstBend->endNote();
         if (nextNote) {
             baseNote = nextNote;
         }
@@ -351,8 +331,7 @@ static bool shouldProceedBend(const Note* note)
     return baseNote->lastTiedNote(false) == note;
 }
 
-static BendPlaybackInfo getBendPlaybackInfo(const GuitarBend* bend, int bendStart, int bendDuration, bool graceBeforeBend)
-{
+static BendPlaybackInfo getBendPlaybackInfo(const GuitarBend *bend, int bendStart, int bendDuration, bool graceBeforeBend) {
     BendPlaybackInfo bendInfo;
 
     // currently ignoring diagram for "grace before" bends
@@ -367,32 +346,30 @@ static BendPlaybackInfo getBendPlaybackInfo(const GuitarBend* bend, int bendStar
     return bendInfo;
 }
 
-static void fillBendDurations(const Note* bendStartNote, const std::unordered_set<const Note*>& currentNotes,
-                              std::unordered_map<const Note*, int>& durations)
-{
+static void fillBendDurations(const Note *bendStartNote, const std::unordered_set<const Note *> &currentNotes,
+                              std::unordered_map<const Note *, int> &durations) {
     if (!bendStartNote || currentNotes.empty()) {
         return;
     }
 
     int eachBendDuration = bendStartNote->chord()->actualTicks().ticks() / static_cast<int>(currentNotes.size());
 
-    for (const Note* note : currentNotes) {
-        durations.insert({ note, eachBendDuration });
+    for (const Note *note : currentNotes) {
+        durations.insert({note, eachBendDuration});
     }
 }
 
-static std::unordered_map<const Note*, int> getGraceNoteBendDurations(const Note* note)
-{
-    std::unordered_map<const Note*, int> durations;
-    const Note* bendStartNote = nullptr;
-    std::unordered_set<const Note*> currentNotes;
+static std::unordered_map<const Note *, int> getGraceNoteBendDurations(const Note *note) {
+    std::unordered_map<const Note *, int> durations;
+    const Note *bendStartNote = nullptr;
+    std::unordered_set<const Note *> currentNotes;
 
     if (note->bendFor() && note->bendFor()->bendType() == GuitarBendType::SLIGHT_BEND) {
         return {};
     }
 
     while (note->tieFor()) {
-        const Tie* tieFor = note->tieFor();
+        const Tie *tieFor = note->tieFor();
         IF_ASSERT_FAILED(tieFor->endNote()) {
             LOGE() << "cannot find tied note for note on track " << note->track() << ", tick " << note->tick().ticks();
             return {};
@@ -401,9 +378,9 @@ static std::unordered_map<const Note*, int> getGraceNoteBendDurations(const Note
     }
 
     while (note->bendFor() || note->tieForNonPartial()) {
-        const GuitarBend* bendFor = note->bendFor();
+        const GuitarBend *bendFor = note->bendFor();
         if (!bendFor) {
-            const Tie* tieFor = note->tieForNonPartial();
+            const Tie *tieFor = note->tieForNonPartial();
             if (tieFor && tieFor->endNote() && tieFor->endNote() != note) {
                 note = tieFor->endNote();
                 continue;
@@ -411,7 +388,7 @@ static std::unordered_map<const Note*, int> getGraceNoteBendDurations(const Note
             break;
         }
 
-        const Note* endNote = bendFor->endNote();
+        const Note *endNote = bendFor->endNote();
         if (!endNote || note == endNote) {
             LOGE() << "cannot find end bend note for note on track " << note->track() << ", tick " << note->tick().ticks();
             return {};
@@ -453,16 +430,13 @@ static std::unordered_map<const Note*, int> getGraceNoteBendDurations(const Note
  * Additional calls (for notes that have already been processed) are filtered out by the function shouldProceedBend(Note*),
  * preventing redundant processing.
 */
-static void collectGuitarBend(const Note* note,
-                              int channel,
-                              int onTime, int graceOffset, int previousChordTicks,
-                              PitchWheelRenderer& pitchWheelRenderer, MidiInstrumentEffect effect)
-{
+static void collectGuitarBend(const Note *note, int channel, int onTime, int graceOffset, int previousChordTicks,
+                              PitchWheelRenderer &pitchWheelRenderer, MidiInstrumentEffect effect) {
     if (!shouldProceedBend(note)) {
         return;
     }
 
-    const auto& graceNoteBendDurations = getGraceNoteBendDurations(note);
+    const auto &graceNoteBendDurations = getGraceNoteBendDurations(note);
 
     int curPitchBendSegmentStart = onTime;
 
@@ -473,13 +447,13 @@ static void collectGuitarBend(const Note* note,
         curPitchBendSegmentStart -= graceOffset;
     }
 
-    const float scale = (float)g_wheelSpec.mLimit / g_wheelSpec.mAmplitude;
+    const float scale = (float) g_wheelSpec.mLimit / g_wheelSpec.mAmplitude;
 
     while (note->bendFor() || note->tieFor()) {
-        GuitarBend* bendFor = note->bendFor();
+        GuitarBend *bendFor = note->bendFor();
         int duration = note->chord()->actualTicks().ticks();
         if (bendFor) {
-            const Note* endNote = bendFor->endNote();
+            const Note *endNote = bendFor->endNote();
             if (!endNote) {
                 break;
             }
@@ -506,8 +480,7 @@ static void collectGuitarBend(const Note* note,
 
                 if (bendPlaybackInfo.startTick > curPitchBendSegmentStart && initialPitchBendValue != 0) {
                     addConstPitchWheel(curPitchBendSegmentStart, bendPlaybackInfo.startTick, initialPitchBendValue, pitchWheelRenderer,
-                                       channel,
-                                       note->staffIdx(), effect);
+                                       channel, note->staffIdx(), effect);
                 }
 
                 double tickDelta = duration * (bendPlaybackInfo.endTimeFactor - bendPlaybackInfo.startTimeFactor);
@@ -519,8 +492,8 @@ static void collectGuitarBend(const Note* note,
                 }
                 double a = currentQuarterTones / 2.0 / (tickDelta * tickDelta);
                 double b = initialPitchBendValue;
-                auto bendFunc = [startTick = bendPlaybackInfo.startTick, scale, a, b] (uint32_t tick) {
-                    float x = (float)(tick - startTick);
+                auto bendFunc = [startTick = bendPlaybackInfo.startTick, scale, a, b](uint32_t tick) {
+                    float x = (float) (tick - startTick);
                     float y = a * x * x + b;
                     return y * scale;
                 };
@@ -537,12 +510,10 @@ static void collectGuitarBend(const Note* note,
 
                 const int curPitchBendSegmentEnd = curPitchBendSegmentStart + duration;
                 if (bendPlaybackInfo.endTick < curPitchBendSegmentEnd) {
-                    int constPitchWheelduration
-                        = (quarterOffsetFromStartNote == 0 ? g_wheelSpec.mStep : curPitchBendSegmentEnd - bendPlaybackInfo.endTick);
+                    int constPitchWheelduration =
+                        (quarterOffsetFromStartNote == 0 ? g_wheelSpec.mStep : curPitchBendSegmentEnd - bendPlaybackInfo.endTick);
                     addConstPitchWheel(bendPlaybackInfo.endTick, bendPlaybackInfo.endTick + constPitchWheelduration,
-                                       quarterOffsetFromStartNote / 2.0, pitchWheelRenderer, channel,
-                                       note->staffIdx(),
-                                       effect);
+                                       quarterOffsetFromStartNote / 2.0, pitchWheelRenderer, channel, note->staffIdx(), effect);
                 }
             }
 
@@ -559,25 +530,25 @@ static void collectGuitarBend(const Note* note,
                     // reset pitchwheel once, no need to keep in for each tick
                     constPitchWheelduration = g_wheelSpec.mStep;
                 } else {
-                    Note* lastTied = note->lastTiedNote(false);
+                    Note *lastTied = note->lastTiedNote(false);
                     IF_ASSERT_FAILED(lastTied) {
-                        LOGE() << "couldn't find tied note for note on track " << note->track() << ", tick " << note->tick().ticks() <<
-                            ", guitar bend midi may be incorrect";
+                        LOGE() << "couldn't find tied note for note on track " << note->track() << ", tick " << note->tick().ticks()
+                               << ", guitar bend midi may be incorrect";
                         constPitchWheelduration = note->chord()->actualTicks().ticks();
-                    } else {
-                        Chord* lastChord = lastTied->chord();
+                    }
+                    else {
+                        Chord *lastChord = lastTied->chord();
                         // keep the last pitchwheel value for the total duration of tied notes
-                        constPitchWheelduration = lastChord->tick().ticks() - noteTick
-                                                  + (lastTied->bendFor() ? 0 : lastChord->actualTicks().ticks());
+                        constPitchWheelduration =
+                            lastChord->tick().ticks() - noteTick + (lastTied->bendFor() ? 0 : lastChord->actualTicks().ticks());
                     }
                 }
 
                 addConstPitchWheel(noteTick, noteTick + constPitchWheelduration, quarterOffsetFromStartNote / 2.0, pitchWheelRenderer,
-                                   channel,
-                                   note->staffIdx(), effect);
+                                   channel, note->staffIdx(), effect);
             }
 
-            const Tie* tie = note->tieFor();
+            const Tie *tie = note->tieFor();
             note = tie->endNote();
             if (!note) {
                 break;
@@ -590,20 +561,16 @@ static void collectGuitarBend(const Note* note,
     // adding pitch wheel to last note of bend/tie chain, if it's end of bend
     if (!note->isGrace() && note->bendBack()) {
         int constPitchWheelduration = (quarterOffsetFromStartNote == 0) ? g_wheelSpec.mStep : note->chord()->actualTicks().ticks();
-        addConstPitchWheel(note->tick().ticks(),
-                           note->tick().ticks() + constPitchWheelduration, quarterOffsetFromStartNote / 2.0, pitchWheelRenderer, channel,
-                           note->staffIdx(), effect);
+        addConstPitchWheel(note->tick().ticks(), note->tick().ticks() + constPitchWheelduration, quarterOffsetFromStartNote / 2.0,
+                           pitchWheelRenderer, channel, note->staffIdx(), effect);
     }
 }
 
-static void collectBend(const PitchValues& playData, staff_idx_t staffIdx,
-                        int channel,
-                        int onTime, int offTime,
-                        PitchWheelRenderer& pitchWheelRenderer, MidiInstrumentEffect effect)
-{
+static void collectBend(const PitchValues &playData, staff_idx_t staffIdx, int channel, int onTime, int offTime,
+                        PitchWheelRenderer &pitchWheelRenderer, MidiInstrumentEffect effect) {
     size_t pitchSize = playData.size();
 
-    const float scale = 2 * (float)g_wheelSpec.mLimit / g_wheelSpec.mAmplitude / PitchValue::PITCH_FOR_SEMITONE;
+    const float scale = 2 * (float) g_wheelSpec.mLimit / g_wheelSpec.mAmplitude / PitchValue::PITCH_FOR_SEMITONE;
     uint32_t duration = offTime - onTime;
 
     for (size_t i = 0; i < pitchSize - 1; i++) {
@@ -611,10 +578,10 @@ static void collectBend(const PitchValues& playData, staff_idx_t staffIdx,
         PitchValue nextValue = playData.at(i + 1);
 
         //! y = a x^2 + b - curve
-        float curTick = (float)curValue.time * duration / PitchValue::MAX_TIME;
-        float nextTick = (float)nextValue.time * duration / PitchValue::MAX_TIME;
+        float curTick = (float) curValue.time * duration / PitchValue::MAX_TIME;
+        float nextTick = (float) nextValue.time * duration / PitchValue::MAX_TIME;
 
-        float a = (float)(nextValue.pitch - curValue.pitch) / ((curTick - nextTick) * (curTick - nextTick));
+        float a = (float) (nextValue.pitch - curValue.pitch) / ((curTick - nextTick) * (curTick - nextTick));
         float b = curValue.pitch;
 
         uint32_t x0 = curValue.time * duration / PitchValue::MAX_TIME;
@@ -624,9 +591,8 @@ static void collectBend(const PitchValues& playData, staff_idx_t staffIdx,
         uint32_t startTimeNextPoint = nextValue.time * duration / PitchValue::MAX_TIME;
         func.mEndTick = onTime + startTimeNextPoint;
 
-        auto bendFunc = [ startTick = func.mStartTick, scale,
-                          a, b] (uint32_t tick) {
-            float x = (float)(tick - startTick);
+        auto bendFunc = [startTick = func.mStartTick, scale, a, b](uint32_t tick) {
+            float x = (float) (tick - startTick);
 
             float y = a * x * x + b;
 
@@ -645,7 +611,7 @@ static void collectBend(const PitchValues& playData, staff_idx_t staffIdx,
 
     //! y = releaseValue linear curve
     uint32_t releaseValue = playData.at(pitchSize - 1).pitch * scale;
-    auto bendFunc = [releaseValue] (uint32_t tick) {
+    auto bendFunc = [releaseValue](uint32_t tick) {
         UNUSED(tick)
         return releaseValue;
     };
@@ -653,8 +619,7 @@ static void collectBend(const PitchValues& playData, staff_idx_t staffIdx,
     pitchWheelRenderer.addPitchWheelFunction(func, channel, staffIdx, effect);
 }
 
-static bool letRingShouldApply(const NoteEvent& event, const Note* note)
-{
+static bool letRingShouldApply(const NoteEvent &event, const Note *note) {
     if (note->hasSlideFromNote()) {
         return false;
     }
@@ -670,18 +635,17 @@ static bool letRingShouldApply(const NoteEvent& event, const Note* note)
     return true;
 }
 
-static void renderSnd(EventsHolder& events, const Chord* chord, int noteChannel, int tickOffset,
-                      const CompatMidiRendererInternal::Context& context)
-{
+static void renderSnd(EventsHolder &events, const Chord *chord, int noteChannel, int tickOffset,
+                      const CompatMidiRendererInternal::Context &context) {
     Fraction stick = chord->tick();
     Fraction etick = stick + chord->ticks();
-    const VelocityMap& veloEvents = context.velocitiesByTrack.at(chord->track());
-    const VelocityMap& multEvents = context.velocityMultiplicationsByTrack.at(chord->track());
+    const VelocityMap &veloEvents = context.velocitiesByTrack.at(chord->track());
+    const VelocityMap &multEvents = context.velocityMultiplicationsByTrack.at(chord->track());
     auto changes = veloEvents.changesInRange(stick, etick);
     auto multChanges = multEvents.changesInRange(stick, etick);
 
     std::map<int, int> velocityMap;
-    for (auto& change : changes) {
+    for (auto &change : changes) {
         int lastVal = -1;
         int endPoint = change.second.ticks();
         for (int t = change.first.ticks(); t <= endPoint; t++) {
@@ -696,7 +660,7 @@ static void renderSnd(EventsHolder& events, const Chord* chord, int noteChannel,
     }
 
     double CONVERSION_FACTOR = CompatMidiRendererInternal::ARTICULATION_CONV_FACTOR;
-    for (auto& change : multChanges) {
+    for (auto &change : multChanges) {
         // Ignore fix events: they are available as cached ramp starts
         // and considering them ends up with multiplying twice effectively
         if (change.first == change.second) {
@@ -739,8 +703,7 @@ static void renderSnd(EventsHolder& events, const Chord* chord, int noteChannel,
     }
 }
 
-int graceBendDuration(const Chord* chord)
-{
+int graceBendDuration(const Chord *chord) {
     int graceDuration = GRACE_BEND_DURATION;
     if (chord) {
         graceDuration = std::min(chord->ticks().ticks() / 2, graceDuration);
@@ -749,15 +712,14 @@ int graceBendDuration(const Chord* chord)
     return graceDuration;
 }
 
-static int calculateTieLength(const Note* note)
-{
+static int calculateTieLength(const Note *note) {
     int tieLen = 0;
 
-    const Note* n = note;
+    const Note *n = note;
     while (n) {
         // Process ties or bends
-        const Tie* tieFor = n->tieForNonPartial();
-        const GuitarBend* bendFor = n->bendFor();
+        const Tie *tieFor = n->tieForNonPartial();
+        const GuitarBend *bendFor = n->bendFor();
 
         if (tieFor && tieFor->endNote() != n) {
             n = tieFor->endNote();
@@ -771,11 +733,9 @@ static int calculateTieLength(const Note* note)
             break;
         }
 
-        IF_ASSERT_FAILED(n) {
-            break;
-        }
+        IF_ASSERT_FAILED(n) { break; }
 
-        const NoteEventList& nel = n->playEvents();
+        const NoteEventList &nel = n->playEvents();
 
         if (!nel.empty() && (!n->chord()->isGrace())) {
             tieLen += nel[0].len() * n->chord()->actualTicks().ticks() / NoteEvent::NOTE_LENGTH;
@@ -789,19 +749,18 @@ static int calculateTieLength(const Note* note)
 //   collectNote
 //---------------------------------------------------------
 
-static void collectNote(EventsHolder& events, const Note* note, const CollectNoteParams& noteParams, Staff* staff,
-                        PitchWheelRenderer& pitchWheelRenderer, const CompatMidiRendererInternal::Context& context)
-{
-    if (!note->play() || note->hidden()) {      // do not play overlapping notes
+static void collectNote(EventsHolder &events, const Note *note, const CollectNoteParams &noteParams, Staff *staff,
+                        PitchWheelRenderer &pitchWheelRenderer, const CompatMidiRendererInternal::Context &context) {
+    if (!note->play() || note->hidden()) { // do not play overlapping notes
         return;
     }
 
-    Chord* chord = note->chord();
-    const Instrument* instr = chord->part()->instrument(chord->tick());
+    Chord *chord = note->chord();
+    const Instrument *instr = chord->part()->instrument(chord->tick());
     MidiInstrumentEffect noteEffect = noteParams.effect;
 
     int noteChannel = getChannel(instr, note, noteEffect, context);
-    auto midiEffectFromEvent = [](const NoteEvent& event) {
+    auto midiEffectFromEvent = [](const NoteEvent &event) {
         if (event.slide()) {
             return MidiInstrumentEffect::SLIDE;
         }
@@ -811,34 +770,36 @@ static void collectNote(EventsHolder& events, const Note* note, const CollectNot
 
     int tieLen = calculateTieLength(note);
     if (chord->isGrace()) {
-        assert(!CompatMidiRendererInternal::graceNotesMerged(chord));      // this function should not be called on a grace note if grace notes are merged
+        assert(!CompatMidiRendererInternal::graceNotesMerged(
+            chord)); // this function should not be called on a grace note if grace notes are merged
         chord = toChord(chord->ownershipParent());
     }
 
-    int ticks = chord->actualTicks().ticks();   // ticks of the actual note
+    int ticks = chord->actualTicks().ticks(); // ticks of the actual note
     // calculate additional length due to ties forward
     // taking NoteEvent length adjustments into account
 
-    int tick1    = note->tick().ticks() + noteParams.tickOffset;
-    const GuitarBend* bendFor = note->bendFor();
-    const GuitarBend* bendBack = note->bendBack();
+    int tick1 = note->tick().ticks() + noteParams.tickOffset;
+    const GuitarBend *bendFor = note->bendFor();
+    const GuitarBend *bendBack = note->bendBack();
 
     NoteEventList nel = note->playEvents();
     size_t nels = nel.size();
     for (size_t i = 0; i < nels; ++i) {
-        const NoteEvent& e = nel[i];     // we make an explicit const ref, not a const copy.  no need to copy as we won't change the original object.
+        const NoteEvent &e =
+            nel[i]; // we make an explicit const ref, not a const copy.  no need to copy as we won't change the original object.
 
         // skip if note has a tie into it and only one NoteEvent
         // its length was already added to previous note
         // if we wish to suppress first note of ornament
         // then change "nels == 1" to "i == 0", and change "break" to "continue"
         if (note->tieBack() && nels == 1 && !isGlissandoFor(note)) {
-            Note* tiedBack = note->tieBack()->startNote();
+            Note *tiedBack = note->tieBack()->startNote();
             if (!tiedBack) {
                 break;
             }
 
-            const auto& eventsList = tiedBack->playEvents();
+            const auto &eventsList = tiedBack->playEvents();
             IF_ASSERT_FAILED(!eventsList.empty()) {
                 LOGE() << "play events are empty for note on track " << tiedBack->track() << ", tick " << tiedBack->tick().ticks();
                 break;
@@ -922,18 +883,18 @@ static void collectNote(EventsHolder& events, const Note* note, const CollectNot
                           noteEffect);
     } else {
         // old bends implementation
-        for (const EngravingItem* e : note->el()) {
+        for (const EngravingItem *e : note->el()) {
             if (!e || (!e->isBend())) {
                 continue;
             }
 
-            const Bend* bend = toBend(e);
+            const Bend *bend = toBend(e);
             if (!bend->playBend()) {
                 break;
             }
 
-            collectBend(bend->points(), bend->staffIdx(), noteChannel, tick1, tick1 + getPlayTicksForBend(
-                            note).ticks(), pitchWheelRenderer, noteEffect);
+            collectBend(bend->points(), bend->staffIdx(), noteChannel, tick1, tick1 + getPlayTicksForBend(note).ticks(), pitchWheelRenderer,
+                        noteEffect);
         }
     }
 }
@@ -942,8 +903,7 @@ static void collectNote(EventsHolder& events, const Note* note, const CollectNot
 //   aeolusSetStop
 //---------------------------------------------------------
 
-static void aeolusSetStop(int tick, int channel, int i, int k, bool val, EventsHolder& events)
-{
+static void aeolusSetStop(int tick, int channel, int i, int k, bool val, EventsHolder &events) {
     NPlayEvent event;
     event.setType(ME_CONTROLLER);
     event.setController(98);
@@ -964,28 +924,27 @@ static void aeolusSetStop(int tick, int channel, int i, int k, bool val, EventsH
 //   collectProgramChanges
 //---------------------------------------------------------
 
-static void collectProgramChanges(EventsHolder& events, Measure const* m, const Staff* staff, int tickOffset)
-{
+static void collectProgramChanges(EventsHolder &events, Measure const *m, const Staff *staff, int tickOffset) {
     int firstStaffIdx = static_cast<int>(staff->idx());
-    int nextStaffIdx  = firstStaffIdx + 1;
+    int nextStaffIdx = firstStaffIdx + 1;
 
     //
     // collect program changes and controller
     //
-    for (Segment* s = m->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
-        for (EngravingItem* e : s->annotations()) {
-            if (!e->isStaffTextBase() || static_cast<int>(e->staffIdx()) < firstStaffIdx
-                || static_cast<int>(e->staffIdx()) >= nextStaffIdx) {
+    for (Segment *s = m->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
+        for (EngravingItem *e : s->annotations()) {
+            if (!e->isStaffTextBase() || static_cast<int>(e->staffIdx()) < firstStaffIdx ||
+                static_cast<int>(e->staffIdx()) >= nextStaffIdx) {
                 continue;
             }
-            const StaffTextBase* st1 = toStaffTextBase(e);
+            const StaffTextBase *st1 = toStaffTextBase(e);
             Fraction tick = s->tick() + Fraction::fromTicks(tickOffset);
 
-            Instrument* instr = e->part()->instrument(tick);
-            for (const ChannelActions& ca : st1->channelActions()) {
+            Instrument *instr = e->part()->instrument(tick);
+            for (const ChannelActions &ca : st1->channelActions()) {
                 int channel = instr->channel().at(ca.channel)->channel();
-                for (const String& ma : ca.midiActionNames) {
-                    NamedEventList* nel = instr->midiAction(ma, ca.channel);
+                for (const String &ma : ca.midiActionNames) {
+                    NamedEventList *nel = instr->midiAction(ma, ca.channel);
                     if (!nel) {
                         continue;
                     }
@@ -1002,12 +961,12 @@ static void collectProgramChanges(EventsHolder& events, Measure const* m, const 
                 }
             }
             if (st1->setAeolusStops()) {
-                Staff* s1 = st1->staff();
-                int voice   = 0;
+                Staff *s1 = st1->staff();
+                int voice = 0;
                 int channel = s1->channel(tick, voice);
 
                 for (int i = 0; i < 4; ++i) {
-                    static int num[4] = { 12, 13, 16, 16 };
+                    static int num[4] = {12, 13, 16, 16};
                     for (int k = 0; k < num[i]; ++k) {
                         aeolusSetStop(tick.ticks(), channel, i, k, st1->getAeolusStop(i, k), events);
                     }
@@ -1021,9 +980,8 @@ static void collectProgramChanges(EventsHolder& events, Measure const* m, const 
 //    renderHarmony
 ///    renders chord symbols
 //---------------------------------------------------------
-static void renderHarmony(EventsHolder& events, Measure const* m, Harmony* h, int tickOffset,
-                          const CompatMidiRendererInternal::Context& context)
-{
+static void renderHarmony(EventsHolder &events, Measure const *m, Harmony *h, int tickOffset,
+                          const CompatMidiRendererInternal::Context &context) {
     if (!h->isRealizable() || context.harmonyChannelSetting == CompatMidiRendererInternal::HarmonyChannelSetting::DISABLED) {
         return;
     }
@@ -1032,8 +990,8 @@ static void renderHarmony(EventsHolder& events, Measure const* m, Harmony* h, in
         return;
     }
 
-    Staff* staff = m->score()->staff(h->track() / VOICES);
-    const InstrChannel* instrChannel = staff->part()->harmonyChannel();
+    Staff *staff = m->score()->staff(h->track() / VOICES);
+    const InstrChannel *instrChannel = staff->part()->harmonyChannel();
     IF_ASSERT_FAILED(instrChannel) {
         LOGE() << "channel for harmony isn't found for part " << staff->part()->partName();
         return;
@@ -1054,7 +1012,7 @@ static void renderHarmony(EventsHolder& events, Measure const* m, Harmony* h, in
 
     int velocity = context.velocitiesByTrack.at(h->track()).val(h->tick());
 
-    const RealizedHarmony& r = h->getRealizedHarmony();
+    const RealizedHarmony &r = h->getRealizedHarmony();
 
     NPlayEvent ev(ME_NOTEON, static_cast<uint8_t>(channel), 0, velocity);
     ev.setHarmony(h);
@@ -1067,8 +1025,8 @@ static void renderHarmony(EventsHolder& events, Measure const* m, Harmony* h, in
     ev.setTuning(0.0);
 
     //add play events
-    const RealizedHarmony::PitchMap& notes = r.notes();
-    for (const auto& [pitch, _] : notes) {
+    const RealizedHarmony::PitchMap &notes = r.notes();
+    for (const auto &[pitch, _] : notes) {
         ev.setPitch(pitch);
         ev.setVelo(velocity);
         events[channel].emplace(onTime, ev);
@@ -1077,17 +1035,14 @@ static void renderHarmony(EventsHolder& events, Measure const* m, Harmony* h, in
     }
 }
 
-void CompatMidiRendererInternal::collectGraceBeforeChordEvents(Chord* chord, Chord* prevChord, EventsHolder& events, double veloMultiplier,
-                                                               Staff* st,
-                                                               int tickOffset,
-                                                               PitchWheelRenderer& pitchWheelRenderer, MidiInstrumentEffect effect)
-{
+void CompatMidiRendererInternal::collectGraceBeforeChordEvents(Chord *chord, Chord *prevChord, EventsHolder &events, double veloMultiplier,
+                                                               Staff *st, int tickOffset, PitchWheelRenderer &pitchWheelRenderer,
+                                                               MidiInstrumentEffect effect) {
     // calculate offset for grace notes here
-    const std::vector<Chord*> grChords = chord->graceNotesBefore(); // create copy
-    std::vector<Chord*> graceNotesBeforeBar;
-    std::copy_if(grChords.begin(), grChords.end(), std::back_inserter(graceNotesBeforeBar), [](Chord* ch) {
-        return ch->noteType() == NoteType::ACCIACCATURA;
-    });
+    const std::vector<Chord *> grChords = chord->graceNotesBefore(); // create copy
+    std::vector<Chord *> graceNotesBeforeBar;
+    std::copy_if(grChords.begin(), grChords.end(), std::back_inserter(graceNotesBeforeBar),
+                 [](Chord *ch) { return ch->noteType() == NoteType::ACCIACCATURA; });
 
     int graceTickSum = 0;
     int graceTickOffset = 0;
@@ -1101,10 +1056,8 @@ void CompatMidiRendererInternal::collectGraceBeforeChordEvents(Chord* chord, Cho
 
         graceTickOffset = graceTickSum / static_cast<int>(acciacaturaGraceSize);
     } else {
-        bool hasGraceBend = std::any_of(grChords.begin(), grChords.end(), [](Chord* ch) {
-            return std::any_of(ch->notes().begin(), ch->notes().end(), [](Note* n) {
-                return n->isGraceBendStart();
-            });
+        bool hasGraceBend = std::any_of(grChords.begin(), grChords.end(), [](Chord *ch) {
+            return std::any_of(ch->notes().begin(), ch->notes().end(), [](Note *n) { return n->isGraceBendStart(); });
         });
 
         if (hasGraceBend) {
@@ -1114,9 +1067,9 @@ void CompatMidiRendererInternal::collectGraceBeforeChordEvents(Chord* chord, Cho
 
     if (!graceNotesMerged(chord)) {
         int currentBeaforeBeatNote = 0;
-        for (Chord* c : grChords) {
-            for (const Note* note : c->notes()) {
-                GuitarBend* bendFor = note->bendFor();
+        for (Chord *c : grChords) {
+            for (const Note *note : c->notes()) {
+                GuitarBend *bendFor = note->bendFor();
                 if (bendFor && bendFor->bendType() == GuitarBendType::PRE_BEND) {
                     continue;
                 }
@@ -1151,18 +1104,17 @@ void CompatMidiRendererInternal::collectGraceBeforeChordEvents(Chord* chord, Cho
     }
 }
 
-bool shouldPlayHammerOn(const Chord* chord)
-{
+bool shouldPlayHammerOn(const Chord *chord) {
     int currentTick = chord->tick().ticks();
-    Chord* firstTiedChord = chord->nextTiedChord(true, false);
-    const Score* score = chord->score();
+    Chord *firstTiedChord = chord->nextTiedChord(true, false);
+    const Score *score = chord->score();
     while (firstTiedChord) {
         currentTick = firstTiedChord->tick().ticks();
         firstTiedChord = firstTiedChord->nextTiedChord(true, false);
     }
 
     for (auto it : score->spannerMap().findOverlapping(currentTick, currentTick + chord->ticks().ticks())) {
-        Spanner* spanner = it.value;
+        Spanner *spanner = it.value;
         if (spanner->track() != chord->track()) {
             continue;
         }
@@ -1175,21 +1127,20 @@ bool shouldPlayHammerOn(const Chord* chord)
     return false;
 }
 
-CompatMidiRendererInternal::ChordParams CompatMidiRendererInternal::collectChordParams(const Chord* chord, int tickOffset) const
-{
+CompatMidiRendererInternal::ChordParams CompatMidiRendererInternal::collectChordParams(const Chord *chord, int tickOffset) const {
     ChordParams chordParams;
 
     int currentTick = chord->tick().ticks();
     for (auto it : score->spannerMap().findOverlapping(currentTick + 1, currentTick + 2)) {
-        Spanner* spanner = it.value;
+        Spanner *spanner = it.value;
         if (spanner->track() != chord->track()) {
             continue;
         }
 
         if (spanner->isLetRing()) {
-            LetRing* letRing = toLetRing(spanner);
+            LetRing *letRing = toLetRing(spanner);
             chordParams.letRing = true;
-            ChordRest* endCR = letRing->endCR();
+            ChordRest *endCR = letRing->endCR();
             chordParams.endLetRingTick = (endCR ? endCR->endTick().ticks() : letRing->tick2().ticks()) + tickOffset;
         } else if (spanner->isPalmMute()) {
             chordParams.palmMute = true;
@@ -1204,29 +1155,28 @@ CompatMidiRendererInternal::ChordParams CompatMidiRendererInternal::collectChord
 //   doCollectMeasureEvents
 //---------------------------------------------------------
 
-void CompatMidiRendererInternal::doCollectMeasureEvents(EventsHolder& events, Measure const* m, const Staff* staff, int tickOffset,
-                                                        PitchWheelRenderer& pitchWheelRenderer, std::array<Chord*, VOICES>& prevChords)
-{
+void CompatMidiRendererInternal::doCollectMeasureEvents(EventsHolder &events, Measure const *m, const Staff *staff, int tickOffset,
+                                                        PitchWheelRenderer &pitchWheelRenderer, std::array<Chord *, VOICES> &prevChords) {
     staff_idx_t firstStaffIdx = staff->idx();
-    for (Staff* st : staff->masterScore()->staves()) {
+    for (Staff *st : staff->masterScore()->staves()) {
         if (staff->id() == st->id()) {
             firstStaffIdx = st->idx();
         }
     }
-    staff_idx_t nextStaffIdx  = firstStaffIdx + 1;
+    staff_idx_t nextStaffIdx = firstStaffIdx + 1;
 
     SegmentType st = SegmentType::ChordRest;
     track_idx_t strack = firstStaffIdx * VOICES;
     track_idx_t etrack = nextStaffIdx * VOICES;
-    for (Segment* seg = m->first(st); seg; seg = seg->next(st)) {
+    for (Segment *seg = m->first(st); seg; seg = seg->next(st)) {
         Fraction tick = seg->tick();
 
         //render harmony
-        for (EngravingItem* e : seg->annotations()) {
+        for (EngravingItem *e : seg->annotations()) {
             if (!e || (e->track() < strack) || (e->track() >= etrack)) {
                 continue;
             }
-            Harmony* h = nullptr;
+            Harmony *h = nullptr;
             if (e->isHarmony()) {
                 h = toHarmony(e);
             } else if (e->isFretDiagram()) {
@@ -1240,20 +1190,20 @@ void CompatMidiRendererInternal::doCollectMeasureEvents(EventsHolder& events, Me
 
         for (track_idx_t track = strack; track < etrack; ++track) {
             // Skip linked staves, except primary
-            Staff* st1 = m->score()->staff(track / VOICES);
+            Staff *st1 = m->score()->staff(track / VOICES);
             if (!st1->isPrimaryStaff()) {
                 track += VOICES - 1;
                 continue;
             }
 
             size_t voice = track % VOICES;
-            EngravingItem* cr = seg->element(track);
+            EngravingItem *cr = seg->element(track);
             if (!cr || !cr->isChord()) {
                 prevChords[voice] = nullptr;
                 continue;
             }
 
-            Chord* chord = toChord(cr);
+            Chord *chord = toChord(cr);
             double veloMultiplier = NoteEvent::DEFAULT_VELOCITY_MULTIPLIER * chordVelocityMultiplier(chord, m_context);
 
             //
@@ -1270,8 +1220,8 @@ void CompatMidiRendererInternal::doCollectMeasureEvents(EventsHolder& events, Me
 
             collectGraceBeforeChordEvents(chord, prevChords[voice], events, veloMultiplier, st1, tickOffset, pitchWheelRenderer, effect);
 
-            Instrument* instr = st1->part()->instrument(tick);
-            for (const Note* note : chord->notes()) {
+            Instrument *instr = st1->part()->instrument(tick);
+            for (const Note *note : chord->notes()) {
                 CollectNoteParams params;
                 params.velocityMultiplier = veloMultiplier;
                 params.tickOffset = tickOffset;
@@ -1289,9 +1239,9 @@ void CompatMidiRendererInternal::doCollectMeasureEvents(EventsHolder& events, Me
             }
 
             if (!graceNotesMerged(chord)) {
-                const std::vector<Chord*> graceAfter = chord->graceNotesAfter(); // create copy
-                for (Chord* c : graceAfter) {
-                    for (const Note* note : c->notes()) {
+                const std::vector<Chord *> graceAfter = chord->graceNotesAfter(); // create copy
+                for (Chord *c : graceAfter) {
+                    for (const Note *note : c->notes()) {
                         CollectNoteParams params;
                         params.velocityMultiplier = veloMultiplier;
                         params.tickOffset = tickOffset;
@@ -1306,19 +1256,15 @@ void CompatMidiRendererInternal::doCollectMeasureEvents(EventsHolder& events, Me
     }
 }
 
-CompatMidiRendererInternal::CompatMidiRendererInternal(Score* s)
-    : score(s)
-{
-}
+CompatMidiRendererInternal::CompatMidiRendererInternal(Score *s) : score(s) {}
 
 //---------------------------------------------------------
 //   collectMeasureEvents
 //    redirects to the correct function based on the passed method
 //---------------------------------------------------------
 
-void CompatMidiRendererInternal::collectMeasureEvents(EventsHolder& events, Measure const* m, const Staff* staff, int tickOffset,
-                                                      PitchWheelRenderer& pitchWheelRenderer, std::array<Chord*, VOICES>& prevChords)
-{
+void CompatMidiRendererInternal::collectMeasureEvents(EventsHolder &events, Measure const *m, const Staff *staff, int tickOffset,
+                                                      PitchWheelRenderer &pitchWheelRenderer, std::array<Chord *, VOICES> &prevChords) {
     doCollectMeasureEvents(events, m, staff, tickOffset, pitchWheelRenderer, prevChords);
 
     collectProgramChanges(events, m, staff, tickOffset);
@@ -1328,23 +1274,22 @@ void CompatMidiRendererInternal::collectMeasureEvents(EventsHolder& events, Meas
 //   renderStaff
 //---------------------------------------------------------
 
-void CompatMidiRendererInternal::renderStaff(EventsHolder& events, const Staff* staff, PitchWheelRenderer& pitchWheelRenderer)
-{
-    Measure const* lastMeasure = nullptr;
+void CompatMidiRendererInternal::renderStaff(EventsHolder &events, const Staff *staff, PitchWheelRenderer &pitchWheelRenderer) {
+    Measure const *lastMeasure = nullptr;
 
-    const RepeatList& repeatList = score->repeatList();
-    std::array<Chord*, VOICES> prevChords = { nullptr };
+    const RepeatList &repeatList = score->repeatList();
+    std::array<Chord *, VOICES> prevChords = {nullptr};
 
-    for (const RepeatSegment* rs : repeatList) {
+    for (const RepeatSegment *rs : repeatList) {
         const int tickOffset = rs->utick - rs->tick;
 
-        Measure const* const start = rs->firstMeasure();
+        Measure const *const start = rs->firstMeasure();
 
-        for (Measure const* m = start; m; m = m->nextMeasure()) {
+        for (Measure const *m = start; m; m = m->nextMeasure()) {
             staff_idx_t staffIdx = staff->idx();
             if (m->isMeasureRepeatGroup(staffIdx)) {
-                MeasureRepeat* mr = m->measureRepeatElement(staffIdx);
-                Measure const* playMeasure = lastMeasure;
+                MeasureRepeat *mr = m->measureRepeatElement(staffIdx);
+                Measure const *playMeasure = lastMeasure;
                 if (!playMeasure || !mr) {
                     continue;
                 }
@@ -1371,10 +1316,9 @@ void CompatMidiRendererInternal::renderStaff(EventsHolder& events, const Staff* 
 //   renderSpanners
 //---------------------------------------------------------
 
-void CompatMidiRendererInternal::renderSpanners(EventsHolder& events, PitchWheelRenderer& pitchWheelRenderer)
-{
-    for (const auto& sp : score->spannerMap().map()) {
-        Spanner* s = sp.second;
+void CompatMidiRendererInternal::renderSpanners(EventsHolder &events, PitchWheelRenderer &pitchWheelRenderer) {
+    for (const auto &sp : score->spannerMap().map()) {
+        Spanner *s = sp.second;
 
         if (!s->staff()->isPrimaryStaff()) {
             continue;
@@ -1382,25 +1326,24 @@ void CompatMidiRendererInternal::renderSpanners(EventsHolder& events, PitchWheel
 
         int idx = s->staff()->channel(s->tick(), 0);
         int channel = s->part()->instrument(s->tick())->channel(idx)->channel();
-        const auto& channels = m_context.channels->channelsMap[channel];
+        const auto &channels = m_context.channels->channelsMap[channel];
         if (channels.empty()) {
             doRenderSpanners(events, s, channel, pitchWheelRenderer, MidiInstrumentEffect::NONE);
         } else {
-            for (const auto& channel2 : channels) {
+            for (const auto &channel2 : channels) {
                 doRenderSpanners(events, s, channel2.second, pitchWheelRenderer, channel2.first.effect);
             }
         }
     }
 }
 
-static std::vector<std::pair<int, int> > collectTicksForEffect(const Score* const score, track_idx_t track, int stick, int etick,
-                                                               MidiInstrumentEffect effect)
-{
-    std::vector<std::pair<int, int> > ticksForEffect;
+static std::vector<std::pair<int, int>> collectTicksForEffect(const Score *const score, track_idx_t track, int stick, int etick,
+                                                              MidiInstrumentEffect effect) {
+    std::vector<std::pair<int, int>> ticksForEffect;
     int curTick = stick;
 
     for (auto it : score->spannerMap().findOverlapping(stick, etick)) {
-        Spanner* spanner = it.value;
+        Spanner *spanner = it.value;
 
         if (spanner->track() != track) {
             continue;
@@ -1413,7 +1356,7 @@ static std::vector<std::pair<int, int> > collectTicksForEffect(const Score* cons
             if (curTick < palmMuteStartTick) {
                 int nextTick = std::min(palmMuteStartTick, etick);
                 if (effect == MidiInstrumentEffect::NONE) {
-                    ticksForEffect.push_back({ curTick, nextTick - 1 });
+                    ticksForEffect.push_back({curTick, nextTick - 1});
                 }
 
                 curTick = nextTick;
@@ -1422,7 +1365,7 @@ static std::vector<std::pair<int, int> > collectTicksForEffect(const Score* cons
             if (palmMuteStartTick <= curTick) {
                 int nextTick = std::min(palmMuteEndTick, etick);
                 if (effect == MidiInstrumentEffect::PALM_MUTE) {
-                    ticksForEffect.push_back({ curTick, nextTick - 1 });
+                    ticksForEffect.push_back({curTick, nextTick - 1});
                 }
 
                 curTick = nextTick;
@@ -1431,65 +1374,58 @@ static std::vector<std::pair<int, int> > collectTicksForEffect(const Score* cons
     }
 
     if (curTick < etick && effect == MidiInstrumentEffect::NONE) {
-        ticksForEffect.push_back({ curTick, etick - 1 });
+        ticksForEffect.push_back({curTick, etick - 1});
     }
 
     return ticksForEffect;
 }
 
-static VibratoParams getVibratoParams(VibratoType type)
-{
+static VibratoParams getVibratoParams(VibratoType type) {
     VibratoParams params;
 
     switch (type) {
-    case VibratoType::GUITAR_VIBRATO:
-        // guitar vibrato, up only
-        params.lowPitch = 0;
-        params.highPitch = 10;
-        params.period = Constants::DIVISION / 3;
-        break;
+        case VibratoType::GUITAR_VIBRATO:
+            // guitar vibrato, up only
+            params.lowPitch = 0;
+            params.highPitch = 10;
+            params.period = Constants::DIVISION / 3;
+            break;
 
-    case VibratoType::GUITAR_VIBRATO_WIDE:
-        params.lowPitch = 0;         // 100 is a semitone
-        params.highPitch = 20;
-        params.period = Constants::DIVISION / 2.5;
-        break;
+        case VibratoType::GUITAR_VIBRATO_WIDE:
+            params.lowPitch = 0; // 100 is a semitone
+            params.highPitch = 20;
+            params.period = Constants::DIVISION / 2.5;
+            break;
 
-    case VibratoType::VIBRATO_SAWTOOTH_WIDE:
-        // vibrato with whammy bar up and down
-        params.lowPitch = -25;         // 1/16
-        params.highPitch = 25;
-        params.period = Constants::DIVISION / 2;
-        break;
+        case VibratoType::VIBRATO_SAWTOOTH_WIDE:
+            // vibrato with whammy bar up and down
+            params.lowPitch = -25; // 1/16
+            params.highPitch = 25;
+            params.period = Constants::DIVISION / 2;
+            break;
 
-    case VibratoType::VIBRATO_SAWTOOTH:
-        params.lowPitch = -12;
-        params.highPitch = 12;
-        params.period = Constants::DIVISION / 2;
-        break;
+        case VibratoType::VIBRATO_SAWTOOTH:
+            params.lowPitch = -12;
+            params.highPitch = 12;
+            params.period = Constants::DIVISION / 2;
+            break;
 
-    default:
-        LOGE() << "vibrato type is not handled in midi renderer";
-        break;
+        default: LOGE() << "vibrato type is not handled in midi renderer"; break;
     }
 
     return params;
 }
 
-void CompatMidiRendererInternal::doRenderSpanners(EventsHolder& events, Spanner* s, uint32_t channel,
-                                                  PitchWheelRenderer& pitchWheelRenderer,
-                                                  MidiInstrumentEffect effect)
-{
+void CompatMidiRendererInternal::doRenderSpanners(EventsHolder &events, Spanner *s, uint32_t channel,
+                                                  PitchWheelRenderer &pitchWheelRenderer, MidiInstrumentEffect effect) {
     struct PedalEvent {
         int tick = 0;
         bool on = true;
         int staffIdx = 0;
 
         PedalEvent() = default;
-        PedalEvent(int tick, bool on, int staffIdx)
-            : tick(tick), on(on), staffIdx(staffIdx)
-        {
-        }
+
+        PedalEvent(int tick, bool on, int staffIdx) : tick(tick), on(on), staffIdx(staffIdx) {}
     };
 
     std::vector<PedalEvent> pedalEventList;
@@ -1502,21 +1438,20 @@ void CompatMidiRendererInternal::doRenderSpanners(EventsHolder& events, Spanner*
         if (!pedalEventList.empty()) {
             lastEvent = pedalEventList.back();
         } else {
-            lastEvent = { 0, true, staffIdx };
+            lastEvent = {0, true, staffIdx};
         }
 
         int st = s->tick().ticks();
 
         if (!lastEvent.on && lastEvent.tick >= (st + 2)) {
-            pedalEventList.emplace(pedalEventList.cend() - 1,
-                                   st + (2 - MScore::pedalEventsMinTicks), false, staffIdx);
+            pedalEventList.emplace(pedalEventList.cend() - 1, st + (2 - MScore::pedalEventsMinTicks), false, staffIdx);
         }
         int a = st + 2;
         pedalEventList.emplace_back(a, true, staffIdx);
 
         int t = s->tick2().ticks() + (2 - MScore::pedalEventsMinTicks);
         if (!score->repeatList().empty()) {
-            const RepeatSegment& lastRepeat = *score->repeatList().back();
+            const RepeatSegment &lastRepeat = *score->repeatList().back();
             if (t > lastRepeat.utick + lastRepeat.len()) {
                 t = lastRepeat.utick + lastRepeat.len();
             }
@@ -1527,17 +1462,17 @@ void CompatMidiRendererInternal::doRenderSpanners(EventsHolder& events, Spanner*
         int etick = s->tick2().ticks();
 
         // from start to end of trill, send bend events at regular interval
-        Vibrato* t = toVibrato(s);
+        Vibrato *t = toVibrato(s);
         VibratoParams vibratoParams = getVibratoParams(t->vibratoType());
 
-        std::vector<std::pair<int, int> > vibratoTicksForEffect = collectTicksForEffect(score, s->track(), stick, etick, effect);
+        std::vector<std::pair<int, int>> vibratoTicksForEffect = collectTicksForEffect(score, s->track(), stick, etick, effect);
 
-        for (const auto& [tickStart, tickEnd] : vibratoTicksForEffect) {
+        for (const auto &[tickStart, tickEnd] : vibratoTicksForEffect) {
             collectVibrato(channel, tickStart, tickEnd, vibratoParams, pitchWheelRenderer, effect, s->staffIdx());
         }
     }
 
-    for (const auto& pe : pedalEventList) {
+    for (const auto &pe : pedalEventList) {
         NPlayEvent event;
         if (pe.on) {
             event = NPlayEvent(ME_CONTROLLER, static_cast<uint8_t>(channel), CTRL_SUSTAIN, 127);
@@ -1556,8 +1491,7 @@ void CompatMidiRendererInternal::doRenderSpanners(EventsHolder& events, Spanner*
 //  which overlaps this chord and is of type ElementType::TRILL
 //---------------------------------------------------------
 
-static Trill* findFirstTrill(Chord* chord)
-{
+static Trill *findFirstTrill(Chord *chord) {
     auto spanners = chord->score()->spannerMap().findOverlapping(1 + chord->tick().ticks(), chord->endTick().ticks() - 1);
     for (auto i : spanners) {
         if (!i.value->isTrill()) {
@@ -1566,7 +1500,7 @@ static Trill* findFirstTrill(Chord* chord)
         if (i.value->track() != chord->track()) {
             continue;
         }
-        Trill* trill = toTrill(i.value);
+        Trill *trill = toTrill(i.value);
         if (!trill->playSpanner()) {
             continue;
         }
@@ -1575,8 +1509,7 @@ static Trill* findFirstTrill(Chord* chord)
     return nullptr;
 }
 
-void CompatMidiRendererInternal::renderScore(EventsHolder& events, const Context& context, bool expandRepeats)
-{
+void CompatMidiRendererInternal::renderScore(EventsHolder &events, const Context &context, bool expandRepeats) {
     UNUSED(expandRepeats);
 
     m_context = context;
@@ -1595,7 +1528,7 @@ void CompatMidiRendererInternal::renderScore(EventsHolder& events, const Context
     fillScoreVelocities(score, m_context);
 
     // create note & other events
-    for (const Staff* st : score->staves()) {
+    for (const Staff *st : score->staves()) {
         renderStaff(events, st, pitchWheelRender);
     }
     events.fixupMIDI();
@@ -1610,19 +1543,16 @@ void CompatMidiRendererInternal::renderScore(EventsHolder& events, const Context
     }
 }
 
-void CompatMidiRendererInternal::fillArticulationsInfo()
-{
-    for (const Part* part : score->parts()) {
-        for (const auto& [tick, instr] : part->instruments()) {
+void CompatMidiRendererInternal::fillArticulationsInfo() {
+    for (const Part *part : score->parts()) {
+        for (const auto &[tick, instr] : part->instruments()) {
             String instrId = instr->id();
             for (auto it = Context::s_builtInArticulationsValues.cbegin(); it != Context::s_builtInArticulationsValues.cend(); it++) {
-                const String& articulationName = it->first;
-                const std::vector<MidiArticulation>& instrArticulations = instr->articulation();
-                bool instrHasArticulation
-                    = std::any_of(instrArticulations.begin(),
-                                  instrArticulations.end(), [articulationName](const MidiArticulation& instrArticulation) {
-                    return instrArticulation.name == articulationName;
-                });
+                const String &articulationName = it->first;
+                const std::vector<MidiArticulation> &instrArticulations = instr->articulation();
+                bool instrHasArticulation = std::any_of(
+                    instrArticulations.begin(), instrArticulations.end(),
+                    [articulationName](const MidiArticulation &instrArticulation) { return instrArticulation.name == articulationName; });
 
                 if (!instrHasArticulation) {
                     m_context.articulationsWithoutValuesByInstrument[instrId].insert(articulationName);
@@ -1632,11 +1562,10 @@ void CompatMidiRendererInternal::fillArticulationsInfo()
     }
 }
 
-double chordVelocityMultiplier(const Chord* chord, const CompatMidiRendererInternal::Context& context)
-{
+double chordVelocityMultiplier(const Chord *chord, const CompatMidiRendererInternal::Context &context) {
     double veloMultiplier = 1.0;
-    Instrument* instr = chord->part()->instrument();
-    for (Articulation* a : chord->articulations()) {
+    Instrument *instr = chord->part()->instrument();
+    for (Articulation *a : chord->articulations()) {
         if (a->playArticulation()) {
             veloMultiplier *= velocityMultiplierByInstrument(instr, a->articulationName(), context);
         }
@@ -1645,9 +1574,8 @@ double chordVelocityMultiplier(const Chord* chord, const CompatMidiRendererInter
     return veloMultiplier;
 }
 
-double velocityMultiplierByInstrument(const Instrument* instrument, const String& articulationName,
-                                      const CompatMidiRendererInternal::Context& context)
-{
+double velocityMultiplierByInstrument(const Instrument *instrument, const String &articulationName,
+                                      const CompatMidiRendererInternal::Context &context) {
     using Ctx = CompatMidiRendererInternal::Context;
     if (context.useDefaultArticulations) {
         auto it = Ctx::s_builtInArticulationsValues.find(articulationName);
@@ -1657,7 +1585,7 @@ double velocityMultiplierByInstrument(const Instrument* instrument, const String
     } else {
         auto articulationsForInstrumentIt = context.articulationsWithoutValuesByInstrument.find(instrument->id());
         if (articulationsForInstrumentIt != context.articulationsWithoutValuesByInstrument.end()) {
-            const auto& articulationsForInstrument = articulationsForInstrumentIt->second;
+            const auto &articulationsForInstrument = articulationsForInstrumentIt->second;
             if (articulationsForInstrument.find(articulationName) != articulationsForInstrument.end()) {
                 return Ctx::s_builtInArticulationsValues[articulationName].velocityMultiplier;
             }
@@ -1668,9 +1596,8 @@ double velocityMultiplierByInstrument(const Instrument* instrument, const String
 }
 
 /* static */
-uint32_t getChannel(const Instrument* instr, const Note* note, MidiInstrumentEffect effect,
-                    const CompatMidiRendererInternal::Context& context)
-{
+uint32_t getChannel(const Instrument *instr, const Note *note, MidiInstrumentEffect effect,
+                    const CompatMidiRendererInternal::Context &context) {
     int subchannel = note->subchannel();
     int channel = instr->channel(subchannel)->channel();
 
@@ -1690,7 +1617,7 @@ uint32_t getChannel(const Instrument* instr, const Note* note, MidiInstrumentEff
         } else {
             int string = 0;
             int fret = 0;
-            const StringData* stringData = instr->stringData();
+            const StringData *stringData = instr->stringData();
             IF_ASSERT_FAILED(stringData && stringData->convertPitch(note->pitch(), note->staff(), &string, &fret)) {
                 LOGE() << "channel isn't calculated for instrument " << instr->nameAsPlainText();
                 return channel;
@@ -1705,22 +1632,20 @@ uint32_t getChannel(const Instrument* instr, const Note* note, MidiInstrumentEff
     return context.channels->getChannel(channel, lookupData);
 }
 
-uint32_t CompatMidiRendererInternal::ChannelLookup::getChannel(uint32_t instrumentChannel, const LookupData& lookupData)
-{
-    auto& channelsForInstrument = channelsMap[instrumentChannel];
+uint32_t CompatMidiRendererInternal::ChannelLookup::getChannel(uint32_t instrumentChannel, const LookupData &lookupData) {
+    auto &channelsForInstrument = channelsMap[instrumentChannel];
 
     auto channelIt = channelsForInstrument.find(lookupData);
     if (channelIt != channelsForInstrument.end()) {
         return channelIt->second;
     }
 
-    channelsForInstrument.insert({ lookupData, maxChannel });
+    channelsForInstrument.insert({lookupData, maxChannel});
     return maxChannel++;
 }
 
-bool CompatMidiRendererInternal::ChannelLookup::LookupData::operator<(const CompatMidiRendererInternal::ChannelLookup::LookupData& other)
-const
-{
+bool CompatMidiRendererInternal::ChannelLookup::LookupData::operator<(
+    const CompatMidiRendererInternal::ChannelLookup::LookupData &other) const {
     if (harmony && !other.harmony) {
         return true;
     }
@@ -1738,13 +1663,12 @@ const
 // So this predicate, graceNotesMerged, checks for this condition to avoid calling
 // functions which would re-emit the grace notes by a different algorithm.
 
-bool CompatMidiRendererInternal::graceNotesMerged(Chord* chord)
-{
+bool CompatMidiRendererInternal::graceNotesMerged(Chord *chord) {
     if (findFirstTrill(chord)) {
         return true;
     }
-    for (Articulation* a : chord->articulations()) {
-        for (auto& oe : excursions) {
+    for (Articulation *a : chord->articulations()) {
+        for (auto &oe : excursions) {
             if (oe.atype == a->symId()) {
                 return true;
             }
@@ -1754,12 +1678,11 @@ bool CompatMidiRendererInternal::graceNotesMerged(Chord* chord)
 }
 
 /* static */
-void fillHairpinVelocities(const Hairpin* h, std::unordered_map<track_idx_t, VelocityMap>& velocitiesByTrack)
-{
-    Staff* st = h->staff();
-    Fraction tick  = h->tick();
+void fillHairpinVelocities(const Hairpin *h, std::unordered_map<track_idx_t, VelocityMap> &velocitiesByTrack) {
+    Staff *st = h->staff();
+    Fraction tick = h->tick();
     Fraction tick2 = h->tick2();
-    int veloChange  = h->veloChange();
+    int veloChange = h->veloChange();
     ChangeMethod method = h->veloChangeMethod();
 
     // Make the change negative when the hairpin is a diminuendo
@@ -1771,47 +1694,46 @@ void fillHairpinVelocities(const Hairpin* h, std::unordered_map<track_idx_t, Vel
     }
 
     switch (h->voiceAssignment()) {
-    case VoiceAssignment::ALL_VOICE_IN_STAFF:
-        if (st->isPrimaryStaff()) {
-            for (track_idx_t track = st->idx() * VOICES; track < (st->idx() + 1) * VOICES; ++track) {
-                velocitiesByTrack[track].addHairpin(tick, tick2, veloChange, method, direction);
+        case VoiceAssignment::ALL_VOICE_IN_STAFF:
+            if (st->isPrimaryStaff()) {
+                for (track_idx_t track = st->idx() * VOICES; track < (st->idx() + 1) * VOICES; ++track) {
+                    velocitiesByTrack[track].addHairpin(tick, tick2, veloChange, method, direction);
+                }
             }
-        }
-        break;
-    case VoiceAssignment::ALL_VOICE_IN_INSTRUMENT:
-        for (Staff* s : st->part()->staves()) {
-            if (!s->isPrimaryStaff()) {
-                continue;
+            break;
+        case VoiceAssignment::ALL_VOICE_IN_INSTRUMENT:
+            for (Staff *s : st->part()->staves()) {
+                if (!s->isPrimaryStaff()) {
+                    continue;
+                }
+                for (track_idx_t track = s->idx() * VOICES; track < (s->idx() + 1) * VOICES; ++track) {
+                    velocitiesByTrack[track].addHairpin(tick, tick2, veloChange, method, direction);
+                }
             }
-            for (track_idx_t track = s->idx() * VOICES; track < (s->idx() + 1) * VOICES; ++track) {
-                velocitiesByTrack[track].addHairpin(tick, tick2, veloChange, method, direction);
+            break;
+        case VoiceAssignment::CURRENT_VOICE_ONLY:
+            if (st->isPrimaryStaff()) {
+                velocitiesByTrack[h->track()].addHairpin(tick, tick2, veloChange, method, direction);
             }
-        }
-        break;
-    case VoiceAssignment::CURRENT_VOICE_ONLY:
-        if (st->isPrimaryStaff()) {
-            velocitiesByTrack[h->track()].addHairpin(tick, tick2, veloChange, method, direction);
-        }
-        break;
+            break;
     }
 }
 
-void fillScoreVelocities(const Score* score, CompatMidiRendererInternal::Context& context)
-{
-    Score* mainScore = score->masterScore();
+void fillScoreVelocities(const Score *score, CompatMidiRendererInternal::Context &context) {
+    Score *mainScore = score->masterScore();
 
     if (!mainScore->firstMeasure()) {
         return;
     }
 
-    for (Segment* s = mainScore->firstMeasure()->first(); s; s = s->next1()) {
+    for (Segment *s = mainScore->firstMeasure()->first(); s; s = s->next1()) {
         Fraction tick = s->tick();
-        for (const EngravingItem* e : s->annotations()) {
+        for (const EngravingItem *e : s->annotations()) {
             if (!e->isDynamic() || !e->staff()->isPrimaryStaff()) {
                 continue;
             }
 
-            const Dynamic* d = toDynamic(e);
+            const Dynamic *d = toDynamic(e);
             int v = d->velocity();
 
             // treat an invalid dynamic as no change, i.e. a dynamic set to 0
@@ -1832,61 +1754,58 @@ void fillScoreVelocities(const Score* score, CompatMidiRendererInternal::Context
             const Fraction etick = change != 0 ? tick + d->velocityChangeLength(mainScore->multipliedTempo(tick)) : tick;
 
             switch (d->voiceAssignment()) {
-            case VoiceAssignment::ALL_VOICE_IN_STAFF: {
-                for (track_idx_t track = d->staffIdx() * VOICES; track < (d->staffIdx() + 1) * VOICES; ++track) {
-                    context.velocitiesByTrack[track].addDynamic(tick, v);
-                }
-                if (change != 0) {
-                    ChangeMethod method = ChangeMethod::NORMAL;
+                case VoiceAssignment::ALL_VOICE_IN_STAFF: {
                     for (track_idx_t track = d->staffIdx() * VOICES; track < (d->staffIdx() + 1) * VOICES; ++track) {
-                        context.velocitiesByTrack[track].addHairpin(tick, etick, change, method, direction);
-                    }
-                }
-            }
-            break;
-            case VoiceAssignment::ALL_VOICE_IN_INSTRUMENT: {
-                Part* part = d->staff()->part();
-                staff_idx_t pStartStaff = part->staves().front()->idx();
-                staff_idx_t pEndStaff = part->staves().back()->idx();
-                if (d->staffIdx() < pStartStaff || d->staffIdx() > pEndStaff) {
-                    break;
-                }
-                for (staff_idx_t staffIdx = pStartStaff; staffIdx <= pEndStaff; ++staffIdx) {
-                    Staff* stp = mainScore->staff(staffIdx);
-                    if (!stp->isPrimaryStaff()) {
-                        continue;
-                    }
-                    for (track_idx_t track = stp->idx() * VOICES; track < (stp->idx() + 1) * VOICES; ++track) {
                         context.velocitiesByTrack[track].addDynamic(tick, v);
                     }
                     if (change != 0) {
                         ChangeMethod method = ChangeMethod::NORMAL;
-                        for (track_idx_t track = stp->idx() * VOICES; track < (stp->idx() + 1) * VOICES; ++track) {
+                        for (track_idx_t track = d->staffIdx() * VOICES; track < (d->staffIdx() + 1) * VOICES; ++track) {
                             context.velocitiesByTrack[track].addHairpin(tick, etick, change, method, direction);
                         }
                     }
-                }
-            }
-            break;
-            case VoiceAssignment::CURRENT_VOICE_ONLY: {
-                context.velocitiesByTrack[d->track()].addDynamic(tick, v);
-                if (change != 0) {
-                    ChangeMethod method = ChangeMethod::NORMAL;
-                    context.velocitiesByTrack[d->track()].addHairpin(tick, etick, change, method, direction);
-                }
-            }
-            break;
+                } break;
+                case VoiceAssignment::ALL_VOICE_IN_INSTRUMENT: {
+                    Part *part = d->staff()->part();
+                    staff_idx_t pStartStaff = part->staves().front()->idx();
+                    staff_idx_t pEndStaff = part->staves().back()->idx();
+                    if (d->staffIdx() < pStartStaff || d->staffIdx() > pEndStaff) {
+                        break;
+                    }
+                    for (staff_idx_t staffIdx = pStartStaff; staffIdx <= pEndStaff; ++staffIdx) {
+                        Staff *stp = mainScore->staff(staffIdx);
+                        if (!stp->isPrimaryStaff()) {
+                            continue;
+                        }
+                        for (track_idx_t track = stp->idx() * VOICES; track < (stp->idx() + 1) * VOICES; ++track) {
+                            context.velocitiesByTrack[track].addDynamic(tick, v);
+                        }
+                        if (change != 0) {
+                            ChangeMethod method = ChangeMethod::NORMAL;
+                            for (track_idx_t track = stp->idx() * VOICES; track < (stp->idx() + 1) * VOICES; ++track) {
+                                context.velocitiesByTrack[track].addHairpin(tick, etick, change, method, direction);
+                            }
+                        }
+                    }
+                } break;
+                case VoiceAssignment::CURRENT_VOICE_ONLY: {
+                    context.velocitiesByTrack[d->track()].addDynamic(tick, v);
+                    if (change != 0) {
+                        ChangeMethod method = ChangeMethod::NORMAL;
+                        context.velocitiesByTrack[d->track()].addHairpin(tick, etick, change, method, direction);
+                    }
+                } break;
             }
         }
 
         if (s->isChordRestType()) {
             for (track_idx_t track = 0; track < mainScore->ntracks(); ++track) {
-                EngravingItem* el = s->element(track);
+                EngravingItem *el = s->element(track);
                 if (!el || !el->isChord() || !el->staff()->isPrimaryStaff()) {
                     continue;
                 }
 
-                Chord* chord = toChord(el);
+                Chord *chord = toChord(el);
 
                 double veloMultiplier = chordVelocityMultiplier(chord, context);
 
@@ -1898,15 +1817,14 @@ void fillScoreVelocities(const Score* score, CompatMidiRendererInternal::Context
                 int start = veloMultiplier * CompatMidiRendererInternal::ARTICULATION_CONV_FACTOR;
                 int change = (veloMultiplier - 1) * CompatMidiRendererInternal::ARTICULATION_CONV_FACTOR;
                 context.velocityMultiplicationsByTrack[track].addDynamic(chord->tick(), start);
-                context.velocityMultiplicationsByTrack[track].addHairpin(chord->tick(),
-                                                                         chord->tick() + ARTICULATION_CHANGE_TIME, change, ChangeMethod::NORMAL,
-                                                                         ChangeDirection::DECREASING);
+                context.velocityMultiplicationsByTrack[track].addHairpin(chord->tick(), chord->tick() + ARTICULATION_CHANGE_TIME, change,
+                                                                         ChangeMethod::NORMAL, ChangeDirection::DECREASING);
             }
         }
     }
 
-    for (const auto& sp : mainScore->spannerMap().map()) {
-        Spanner* s = sp.second;
+    for (const auto &sp : mainScore->spannerMap().map()) {
+        Spanner *s = sp.second;
         if (!s->isHairpin() || !s->staff()->isPrimaryStaff()) {
             continue;
         }
@@ -1914,7 +1832,7 @@ void fillScoreVelocities(const Score* score, CompatMidiRendererInternal::Context
         fillHairpinVelocities(toHairpin(s), context.velocitiesByTrack);
     }
 
-    for (Staff* st : mainScore->staves()) {
+    for (Staff *st : mainScore->staves()) {
         if (!st->isPrimaryStaff()) {
             continue;
         }
@@ -1925,13 +1843,13 @@ void fillScoreVelocities(const Score* score, CompatMidiRendererInternal::Context
     }
 
     for (auto it = mainScore->spanner().cbegin(); it != mainScore->spanner().cend(); ++it) {
-        Spanner* spanner = (*it).second;
+        Spanner *spanner = (*it).second;
         if (!spanner->isVolta()) {
             continue;
         }
 
-        Volta* volta = toVolta(spanner);
-        Staff* st = volta->staff();
+        Volta *volta = toVolta(spanner);
+        Staff *st = volta->staff();
         if (!st->isPrimaryStaff()) {
             continue;
         }
@@ -1942,10 +1860,9 @@ void fillScoreVelocities(const Score* score, CompatMidiRendererInternal::Context
 }
 
 /* static */
-void fillVoltaVelocities(const Volta* volta, VelocityMap& veloMap)
-{
-    Measure* startMeasure = volta->startMeasure();
-    Measure* endMeasure = volta->endMeasure();
+void fillVoltaVelocities(const Volta *volta, VelocityMap &veloMap) {
+    Measure *startMeasure = volta->startMeasure();
+    Measure *endMeasure = volta->endMeasure();
 
     if (startMeasure && endMeasure) {
         if (!endMeasure->repeatEnd()) {
@@ -1958,4 +1875,4 @@ void fillVoltaVelocities(const Volta* volta, VelocityMap& veloMap)
         veloMap.addDynamic(endTick, prevVelo);
     }
 }
-}
+} // namespace mu::engraving

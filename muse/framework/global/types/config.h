@@ -28,11 +28,10 @@ namespace muse {
 //! NOTE Some modules have configuration files, this is their model
 struct Config {
     Config() = default;
-    Config(const ValMap& v)
-        : m_data(v) {}
 
-    const Val& value(const std::string& key, const Val& def = Val()) const
-    {
+    Config(const ValMap &v) : m_data(v) {}
+
+    const Val &value(const std::string &key, const Val &def = Val()) const {
         auto it = m_data.find(key);
         if (it != m_data.end()) {
             return it->second;
@@ -40,23 +39,25 @@ struct Config {
         return def;
     }
 
-    void set(const std::string& key, const Val& val)
-    {
-        m_data[key] = val;
-    }
+    void set(const std::string &key, const Val &val) { m_data[key] = val; }
 
     auto begin() { return m_data.begin(); }
+
     auto end() { return m_data.end(); }
+
     auto begin() const { return m_data.begin(); }
+
     auto end() const { return m_data.end(); }
+
     auto cbegin() const { return m_data.cbegin(); }
+
     auto cend() const { return m_data.cend(); }
 
-    const ValMap& data() const { return m_data; }
+    const ValMap &data() const { return m_data; }
 
 private:
     ValMap m_data;
 };
-}
+} // namespace muse
 
 #endif // MUSE_GLOBAL_CONFIG_H

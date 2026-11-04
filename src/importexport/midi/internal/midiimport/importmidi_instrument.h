@@ -29,7 +29,7 @@
 
 namespace mu::engraving {
 class Score;
-}
+} // namespace mu::engraving
 
 namespace mu::iex::midi {
 class MTrack;
@@ -37,11 +37,11 @@ class MTrack;
 namespace MidiInstr {
 muse::String instrumentName(GM1Program, bool isDrumTrack);
 muse::String msInstrName(int trackIndex);
-muse::String concatenateWithComma(const muse::String& left, const muse::String& right);
-bool isGrandStaff(const MTrack& t1, const MTrack& t2);
-void setGrandStaffProgram(std::vector<MTrack>& tracks);
-void findInstrumentsForAllTracks(const std::vector<MTrack>& tracks, bool forceReload = false);
-void createInstruments(engraving::Score* score, std::vector<MTrack>& tracks);
+muse::String concatenateWithComma(const muse::String &left, const muse::String &right);
+bool isGrandStaff(const MTrack &t1, const MTrack &t2);
+void setGrandStaffProgram(std::vector<MTrack> &tracks);
+void findInstrumentsForAllTracks(const std::vector<MTrack> &tracks, bool forceReload = false);
+void createInstruments(engraving::Score *score, std::vector<MTrack> &tracks);
 
 extern void instrumentTemplatesChanged();
 } // namespace MidiInstr

@@ -25,16 +25,15 @@
 #include "layoutcontext.h"
 
 namespace mu::engraving::rendering::score {
-class ScoreVerticalViewLayout
-{
+class ScoreVerticalViewLayout {
 public:
 
-    static void layoutVerticalView(Score* score, LayoutContext& ctx, const Fraction& stick, const Fraction& etick);
+    static void layoutVerticalView(Score *score, LayoutContext &ctx, const Fraction &stick, const Fraction &etick);
 
 private:
 
-    static void doLayout(LayoutContext& ctx);
+    static void doLayout(LayoutContext &ctx);
 };
-}
+} // namespace mu::engraving::rendering::score
 
 #endif // MU_ENGRAVING_SCOREVERTICALVIEWLAYOUT_DEV_H

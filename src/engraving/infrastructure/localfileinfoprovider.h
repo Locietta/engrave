@@ -27,10 +27,9 @@
 #include "io/ifilesystem.h"
 
 namespace mu::engraving {
-class LocalFileInfoProvider : public IFileInfoProvider
-{
+class LocalFileInfoProvider : public IFileInfoProvider {
 public:
-    explicit LocalFileInfoProvider(const muse::io::path_t& filePath);
+    explicit LocalFileInfoProvider(const muse::io::path_t &filePath);
 
     bool saved() const override;
 
@@ -47,4 +46,4 @@ public:
 private:
     muse::io::path_t m_path;
 };
-}
+} // namespace mu::engraving

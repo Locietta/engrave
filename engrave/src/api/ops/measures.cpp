@@ -51,33 +51,25 @@ using mu::engraving::TimeSigType;
 using mu::engraving::Transaction;
 using mu::engraving::VOICES;
 
-std::unexpected<Error> invalid(std::string message) {
-    return std::unexpected(Error{ErrorCode::InvalidArgument, std::move(message)});
-}
+std::unexpected<Error> invalid(std::string message) { return std::unexpected(Error{ErrorCode::InvalidArgument, std::move(message)}); }
 
-std::unexpected<Error> refused(std::string message) {
-    return std::unexpected(Error{ErrorCode::EditRejected, std::move(message)});
-}
+std::unexpected<Error> refused(std::string message) { return std::unexpected(Error{ErrorCode::EditRejected, std::move(message)}); }
 
 // The transaction the batch runs in; the guard has it open while a step runs.
-Transaction& transaction(EditContext& context) {
-    return context.master().transactionManager()->currentOrDummyTransaction();
-}
+Transaction &transaction(EditContext &context) { return context.master().transactionManager()->currentOrDummyTransaction(); }
 
-std::size_t pushed(EditContext& context) {
-    return context.master().undoStack()->activeTransaction()->commands().size();
-}
+std::size_t pushed(EditContext &context) { return context.master().undoStack()->activeTransaction()->commands().size(); }
 
 // A token of one of the engine's xml tables, and nothing else: an unknown token and
 // the fallback's own token are refused, so a typo is never a silent default.
 template <typename T>
-std::optional<T> token(const std::string& text, T fallback) {
+std::optional<T> token(const std::string &text, T fallback) {
     const T value = TConv::fromXml(muse::AsciiStringView(text), fallback);
     if (muse::AsciiStringView(TConv::toXml(value)) != muse::AsciiStringView(text)) return std::nullopt;
     return value;
 }
 
-Result<Measure*> measure_of(const EditContext& context, const Target& target) {
+Result<Measure *> measure_of(const EditContext &context, const Target &target) {
     auto object = context.object(target);
     if (!object) return std::unexpected(object.error());
     if (!(*object)->isMeasure()) return invalid(std::format("a {} is not a measure", (*object)->typeName()));
@@ -85,12 +77,12 @@ Result<Measure*> measure_of(const EditContext& context, const Target& target) {
 }
 
 // The clef a staff shows at a tick: the last clef at or before it, in this score.
-Clef* clef_in_effect(Score* score, const mu::engraving::Fraction& tick, mu::engraving::track_idx_t track) {
-    for (Measure* measure = score->tick2measure(tick); measure; measure = measure->prevMeasure()) {
-        for (Segment* segment = measure->last(); segment; segment = segment->prev()) {
+Clef *clef_in_effect(Score *score, const mu::engraving::Fraction &tick, mu::engraving::track_idx_t track) {
+    for (Measure *measure = score->tick2measure(tick); measure; measure = measure->prevMeasure()) {
+        for (Segment *segment = measure->last(); segment; segment = segment->prev()) {
             if (!(segment->segmentType() & (SegmentType::Clef | SegmentType::HeaderClef))) continue;
             if (segment->tick() > tick) continue;
-            EngravingItem* item = segment->element(track);
+            EngravingItem *item = segment->element(track);
             if (item && item->isClef()) return mu::engraving::toClef(item);
         }
     }
@@ -99,7 +91,7 @@ Clef* clef_in_effect(Score* score, const mu::engraving::Fraction& tick, mu::engr
 
 } // namespace
 
-Result<Step> prepare(EditContext& context, const InsertMeasures& op) {
+Result<Step> prepare(EditContext &context, const InsertMeasures &op) {
     std::optional<Target> before;
     if (op.before) {
         auto target = context.target(*op.before);
@@ -109,12 +101,12 @@ Result<Step> prepare(EditContext& context, const InsertMeasures& op) {
     if (op.count < 1) return invalid("inserting needs at least one measure");
     const auto kind = token<ElementType>(op.kind, ElementType::INVALID);
     if (!kind) return invalid(std::format("'{}' is not a measure or a frame type", op.kind));
-    if (*kind != ElementType::MEASURE && *kind != ElementType::VBOX && *kind != ElementType::HBOX
-        && *kind != ElementType::TBOX && *kind != ElementType::FBOX) {
+    if (*kind != ElementType::MEASURE && *kind != ElementType::VBOX && *kind != ElementType::HBOX && *kind != ElementType::TBOX &&
+        *kind != ElementType::FBOX) {
         return invalid(std::format("'{}' is not a measure or a frame type", op.kind));
     }
-    return [before, count = op.count, kind = *kind, name = op.kind](EditContext& context) -> Result<void> {
-        MeasureBase* at = nullptr;
+    return [before, count = op.count, kind = *kind, name = op.kind](EditContext &context) -> Result<void> {
+        MeasureBase *at = nullptr;
         if (before) {
             auto object = context.object(*before);
             if (!object) return std::unexpected(object.error());
@@ -125,12 +117,12 @@ Result<Step> prepare(EditContext& context, const InsertMeasures& op) {
         }
         // The master inserts a measure into every score of the document; a frame goes
         // into the master only, which is what the editor does.
-        Score* score = &context.master();
+        Score *score = &context.master();
         Score::InsertMeasureOptions options;
         options.needDeselectAll = false;
         for (int i = 0; i < count; ++i) {
-            MeasureBase* made = kind == ElementType::MEASURE ? score->insertMeasure(kind, at, options)
-                                                            : score->insertBox(kind, at, options);
+            MeasureBase *made =
+                kind == ElementType::MEASURE ? score->insertMeasure(kind, at, options) : score->insertBox(kind, at, options);
             if (!made) return refused(std::format("the engine did not insert a {}", name));
             context.created(made);
         }
@@ -138,12 +130,12 @@ Result<Step> prepare(EditContext& context, const InsertMeasures& op) {
     };
 }
 
-Result<Step> prepare(EditContext& context, const RemoveMeasures& op) {
+Result<Step> prepare(EditContext &context, const RemoveMeasures &op) {
     auto first = context.target(op.first);
     if (!first) return std::unexpected(first.error());
     auto last = context.target(op.last);
     if (!last) return std::unexpected(last.error());
-    return [first = *first, last = *last](EditContext& context) -> Result<void> {
+    return [first = *first, last = *last](EditContext &context) -> Result<void> {
         auto start = measure_of(context, first);
         if (!start) return std::unexpected(start.error());
         auto end = measure_of(context, last);
@@ -157,19 +149,19 @@ Result<Step> prepare(EditContext& context, const RemoveMeasures& op) {
     };
 }
 
-Result<Step> prepare(EditContext& context, const SetTimeSig& op) {
+Result<Step> prepare(EditContext &context, const SetTimeSig &op) {
     auto measure = context.target(op.measure);
     if (!measure) return std::unexpected(measure.error());
     if (op.sig.num <= 0 || op.sig.den <= 0) return invalid("a time signature is a positive fraction");
     if (op.sig.num > INT32_MAX || op.sig.den > INT32_MAX) return invalid("the time signature does not fit in an int");
     const mu::engraving::Fraction sig(int(op.sig.num), int(op.sig.den));
-    return [measure = *measure, sig](EditContext& context) -> Result<void> {
+    return [measure = *measure, sig](EditContext &context) -> Result<void> {
         auto target = measure_of(context, measure);
         if (!target) return std::unexpected(target.error());
-        Score* score = (*target)->score();
+        Score *score = (*target)->score();
         // The engine's own measure rewrite: takes a temporary signature, applies it to
         // every score and staff, and rewrites the measures up to the next signature.
-        TimeSig* temp = mu::engraving::Factory::createTimeSig(score->dummy());
+        TimeSig *temp = mu::engraving::Factory::createTimeSig(score->dummy());
         temp->setSig(sig, TimeSigType::NORMAL);
         const std::size_t before = pushed(context);
         mu::engraving::EditTimeSig::addTimeSig(transaction(context), score, *target, 0, temp, false);
@@ -181,7 +173,7 @@ Result<Step> prepare(EditContext& context, const SetTimeSig& op) {
     };
 }
 
-Result<Step> prepare(EditContext& context, const SetKeySig& op) {
+Result<Step> prepare(EditContext &context, const SetKeySig &op) {
     auto measure = context.target(op.measure);
     if (!measure) return std::unexpected(measure.error());
     std::optional<Target> staff;
@@ -195,66 +187,65 @@ Result<Step> prepare(EditContext& context, const SetKeySig& op) {
     }
     KeySigEvent event;
     event.setConcertKey(static_cast<Key>(op.key));
-    return [measure = *measure, staff, event](EditContext& context) -> Result<void> {
+    return [measure = *measure, staff, event](EditContext &context) -> Result<void> {
         auto target = measure_of(context, measure);
         if (!target) return std::unexpected(target.error());
-        Score* score = (*target)->score();
-        Transaction& tx = transaction(context);
+        Score *score = (*target)->score();
+        Transaction &tx = transaction(context);
         if (staff) {
             auto object = context.object(*staff);
             if (!object) return std::unexpected(object.error());
             if (!(*object)->isStaff()) return invalid(std::format("a {} is not a staff", (*object)->typeName()));
-            Staff* one = mu::engraving::toStaff(*object);
+            Staff *one = mu::engraving::toStaff(*object);
             if (one->score() != score) return invalid("the staff is not in the measure's score");
             mu::engraving::EditKeySig::undoChangeKeySig(tx, score, one, (*target)->tick(), event);
         } else {
-            for (Staff* each : score->staves()) mu::engraving::EditKeySig::undoChangeKeySig(tx, score, each, (*target)->tick(), event);
+            for (Staff *each : score->staves()) mu::engraving::EditKeySig::undoChangeKeySig(tx, score, each, (*target)->tick(), event);
         }
         return {};
     };
 }
 
-Result<Step> prepare(EditContext& context, const InsertClef& op) {
+Result<Step> prepare(EditContext &context, const InsertClef &op) {
     auto target = context.target(Ref{op.at});
     if (!target) return std::unexpected(target.error());
-    const auto* address = std::get_if<SegmentAddress>(&op.at);
+    const auto *address = std::get_if<SegmentAddress>(&op.at);
     if (!address) return invalid("a clef goes at a segment");
     auto value = from_value(mu::engraving::P_TYPE::CLEF_TYPE, Enum{op.clef});
     if (!value) return std::unexpected(value.error());
     const ClefType clef = value->value<ClefType>();
-    return [target = *target, staff = address->staff, voice = address->voice, clef](EditContext& context) -> Result<void> {
+    return [target = *target, staff = address->staff, voice = address->voice, clef](EditContext &context) -> Result<void> {
         auto object = context.object(target);
         if (!object) return std::unexpected(object.error());
         if (!(*object)->isSegment()) return invalid(std::format("a {} is not a segment", (*object)->typeName()));
-        Segment* segment = mu::engraving::toSegment(*object);
-        Score* score = segment->score();
+        Segment *segment = mu::engraving::toSegment(*object);
+        Score *score = segment->score();
         if (staff < 0 || std::size_t(staff) >= score->nstaves()) {
             return invalid(std::format("the score has no staff {}", staff));
         }
         if (voice < 0 || std::size_t(voice) >= VOICES) return invalid(std::format("the score has no voice {}", voice));
-        Staff* staff_of = score->staff(mu::engraving::staff_idx_t(staff));
-        EngravingItem* before = segment->element(mu::engraving::staff2track(mu::engraving::staff_idx_t(staff),
-                                                                           mu::engraving::voice_idx_t(voice)));
+        Staff *staff_of = score->staff(mu::engraving::staff_idx_t(staff));
+        EngravingItem *before =
+            segment->element(mu::engraving::staff2track(mu::engraving::staff_idx_t(staff), mu::engraving::voice_idx_t(voice)));
         if (!before) before = segment;
         const mu::engraving::Fraction tick = before->tick();
-        Clef* was = clef_in_effect(score, tick, mu::engraving::staff2track(mu::engraving::staff_idx_t(staff)));
+        Clef *was = clef_in_effect(score, tick, mu::engraving::staff2track(mu::engraving::staff_idx_t(staff)));
         mu::engraving::EditClef::undoChangeClef(transaction(context), score, staff_of, before, clef);
         // A clef that the change put in place of nothing, or of another clef, is what
         // the operation created; a clef that changed in place was already the caller's.
-        if (Clef* now = clef_in_effect(score, tick, mu::engraving::staff2track(mu::engraving::staff_idx_t(staff)));
-            now && now != was) {
+        if (Clef *now = clef_in_effect(score, tick, mu::engraving::staff2track(mu::engraving::staff_idx_t(staff))); now && now != was) {
             context.created(now);
         }
         return {};
     };
 }
 
-Result<Step> prepare(EditContext& context, const SetLayoutBreak& op) {
+Result<Step> prepare(EditContext &context, const SetLayoutBreak &op) {
     auto measure = context.target(op.measure);
     if (!measure) return std::unexpected(measure.error());
     const auto kind = token<LayoutBreakType>(op.kind, LayoutBreakType::LINE);
     if (!kind) return invalid(std::format("'{}' is not a layout break kind", op.kind));
-    return [measure = *measure, kind = *kind, on = op.on](EditContext& context) -> Result<void> {
+    return [measure = *measure, kind = *kind, on = op.on](EditContext &context) -> Result<void> {
         auto object = context.object(measure);
         if (!object) return std::unexpected(object.error());
         if (!(*object)->isMeasureBase()) {

@@ -40,14 +40,10 @@ using namespace muse::io;
 using namespace mu::engraving;
 using namespace mu::engraving::rw;
 
-bool MscSaver::writeMscz(MasterScore* score, MscWriter& mscWriter,
-                        const write::WriteContext* ctx)
-{
+bool MscSaver::writeMscz(MasterScore *score, MscWriter &mscWriter, const write::WriteContext *ctx) {
     TRACEFUNC;
 
-    IF_ASSERT_FAILED(mscWriter.isOpened()) {
-        return false;
-    }
+    IF_ASSERT_FAILED(mscWriter.isOpened()) { return false; }
 
     // Write style of MasterScore
     {
@@ -78,7 +74,7 @@ bool MscSaver::writeMscz(MasterScore* score, MscWriter& mscWriter,
     // Write Excerpts
     {
         if (!ctx || !ctx->shouldWriteRange()) {
-            const std::vector<Excerpt*>& excerpts = score->excerpts();
+            const std::vector<Excerpt *> &excerpts = score->excerpts();
 
             struct ExcerptData {
                 String fileName;
@@ -86,11 +82,9 @@ bool MscSaver::writeMscz(MasterScore* score, MscWriter& mscWriter,
                 ByteArray scoreData;
             };
 
-            auto serializeExcerpt = [masterWriteOutData, score](Excerpt* excerpt, size_t excerptIndex) -> ExcerptData {
-                Score* partScore = excerpt->excerptScore();
-                IF_ASSERT_FAILED(partScore && partScore != score) {
-                    return ExcerptData();
-                }
+            auto serializeExcerpt = [masterWriteOutData, score](Excerpt *excerpt, size_t excerptIndex) -> ExcerptData {
+                Score *partScore = excerpt->excerptScore();
+                IF_ASSERT_FAILED(partScore && partScore != score) { return ExcerptData(); }
 
                 excerpt->updateFileName(excerptIndex);
 
@@ -108,7 +102,7 @@ bool MscSaver::writeMscz(MasterScore* score, MscWriter& mscWriter,
             };
 
             for (size_t excerptIndex = 0; excerptIndex < excerpts.size(); ++excerptIndex) {
-                Excerpt* excerpt = excerpts.at(excerptIndex);
+                Excerpt *excerpt = excerpts.at(excerptIndex);
 
                 ExcerptData data = serializeExcerpt(excerpt, excerptIndex);
                 mscWriter.addExcerptStyleFile(data.fileName, data.styleData);
@@ -119,7 +113,7 @@ bool MscSaver::writeMscz(MasterScore* score, MscWriter& mscWriter,
 
     // Write ChordList
     {
-        ChordList* chordList = score->chordList();
+        ChordList *chordList = score->chordList();
         if (chordList->customChordList() && !chordList->empty()) {
             ByteArray chlData;
             auto chlBuf = Buffer::opened(IODevice::WriteOnly, &chlData);
@@ -130,7 +124,7 @@ bool MscSaver::writeMscz(MasterScore* score, MscWriter& mscWriter,
 
     // Write images
     {
-        for (ImageStoreItem* ip : imageStore) {
+        for (ImageStoreItem *ip : imageStore) {
             if (!ip->isUsed(score)) {
                 continue;
             }

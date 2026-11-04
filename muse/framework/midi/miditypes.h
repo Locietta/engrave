@@ -38,7 +38,7 @@ using tempo_t = uint32_t;
 using velocity_t = uint16_t;
 using note_idx_t = uint8_t;
 using TempoMap = std::map<tick_t, tempo_t>;
-using Events = std::map<tick_t, std::vector<Event> >;
+using Events = std::map<tick_t, std::vector<Event>>;
 
 static constexpr int MODWHEEL_CONTROLLER = 1;
 static constexpr int EXPRESSION_CONTROLLER = 11;
@@ -46,20 +46,14 @@ static constexpr int SUSTAIN_PEDAL_CONTROLLER = 64;
 static constexpr int SOSTENUTO_PEDAL_CONTROLLER = 66;
 
 struct Program {
-    Program(bank_t b = 0, program_t p = 0)
-        : bank(b), program(p) {}
+    Program(bank_t b = 0, program_t p = 0) : bank(b), program(p) {}
 
     bank_t bank = 0;
     program_t program = 0;
 
-    bool operator==(const Program& other) const
-    {
-        return bank == other.bank
-               && program == other.program;
-    }
+    bool operator==(const Program &other) const { return bank == other.bank && program == other.program; }
 
-    bool operator<(const Program& other) const
-    {
+    bool operator<(const Program &other) const {
         if (bank < other.bank) {
             return true;
         }
@@ -71,6 +65,7 @@ struct Program {
         return false;
     }
 };
+
 using Programs = std::vector<midi::Program>;
 
 struct MidiMapping {
@@ -78,41 +73,31 @@ struct MidiMapping {
     TempoMap tempo;
     Programs programms;
 
-    bool isValid() const
-    {
-        return !programms.empty() && !tempo.empty();
-    }
+    bool isValid() const { return !programms.empty() && !tempo.empty(); }
 
-    bool operator==(const MidiMapping& other) const
-    {
-        return division == other.division
-               && tempo == other.tempo
-               && programms == other.programms;
+    bool operator==(const MidiMapping &other) const {
+        return division == other.division && tempo == other.tempo && programms == other.programms;
     }
 };
 
 static constexpr char NONE_DEVICE_ID[] = "-1";
 
 using MidiDeviceID = std::string;
+
 struct MidiDevice {
     MidiDeviceID id;
     std::string name;
 
-    bool operator==(const MidiDevice& other) const
-    {
-        return id == other.id;
-    }
+    bool operator==(const MidiDevice &other) const { return id == other.id; }
 };
 
 using MidiDeviceList = std::vector<MidiDevice>;
 
-inline MidiDeviceID makeUniqueDeviceId(int index, int arg1, int arg2)
-{
+inline MidiDeviceID makeUniqueDeviceId(int index, int arg1, int arg2) {
     return std::to_string(index) + ":" + std::to_string(arg1) + ":" + std::to_string(arg2);
 }
 
-inline std::vector<int> splitDeviceId(const MidiDeviceID& deviceId)
-{
+inline std::vector<int> splitDeviceId(const MidiDeviceID &deviceId) {
     std::vector<int> result;
 
     std::size_t current, previous = 0;
@@ -129,4 +114,4 @@ inline std::vector<int> splitDeviceId(const MidiDeviceID& deviceId)
 
     return result;
 }
-}
+} // namespace muse::midi

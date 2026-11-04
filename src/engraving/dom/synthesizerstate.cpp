@@ -34,19 +34,18 @@ namespace mu::engraving {
 //   write
 //---------------------------------------------------------
 
-void SynthesizerState::write(XmlWriter& xml, bool force /* = false */) const
-{
+void SynthesizerState::write(XmlWriter &xml, bool force /* = false */) const {
     if (isDefault() && !force) {
         return;
     }
 
     xml.startElement("Synthesizer");
-    for (const SynthesizerGroup& g : *this) {
+    for (const SynthesizerGroup &g : *this) {
         if (!g.name().isEmpty()) {
             muse::ByteArray ba = g.name().toAscii();
             xml.startElement(ba.constChar());
-            for (const IdValue& v : g) {
-                xml.tag("val", { { "id", v.id } }, v.data);
+            for (const IdValue &v : g) {
+                xml.tag("val", {{"id", v.id}}, v.data);
             }
             xml.endElement();
         }
@@ -58,8 +57,7 @@ void SynthesizerState::write(XmlWriter& xml, bool force /* = false */) const
 //   read
 //---------------------------------------------------------
 
-void SynthesizerState::read(XmlReader& e)
-{
+void SynthesizerState::read(XmlReader &e) {
     std::list<SynthesizerGroup> tempGroups;
     while (e.readNextStartElement()) {
         SynthesizerGroup group;
@@ -88,9 +86,8 @@ void SynthesizerState::read(XmlReader& e)
 ///  Get SynthesizerGroup by name
 //---------------------------------------------------------
 
-SynthesizerGroup SynthesizerState::group(const String& name) const
-{
-    for (const SynthesizerGroup& g : *this) {
+SynthesizerGroup SynthesizerState::group(const String &name) const {
+    for (const SynthesizerGroup &g : *this) {
         if (g.name() == name) {
             return g;
         }
@@ -105,8 +102,7 @@ SynthesizerGroup SynthesizerState::group(const String& name) const
 ///  default font only
 //---------------------------------------------------------
 
-bool SynthesizerState::isDefaultSynthSoundfont()
-{
+bool SynthesizerState::isDefaultSynthSoundfont() {
     SynthesizerGroup fluid = group(u"Fluid");
     if (fluid.size() == 1) {
         if (fluid.front().data == u"MS Basic.sf3") {
@@ -120,37 +116,27 @@ bool SynthesizerState::isDefaultSynthSoundfont()
 //   ccToUse
 //---------------------------------------------------------
 
-int SynthesizerState::ccToUse() const
-{
+int SynthesizerState::ccToUse() const {
     SynthesizerGroup g = group(u"master");
 
     int method = 1;
     int cc = -1;
 
-    for (const IdValue& idVal : g) {
+    for (const IdValue &idVal : g) {
         if (idVal.id == 4) {
             method = idVal.data.toInt();
         } else if (idVal.id == 5) {
             switch (idVal.data.toInt()) {
-            case 0:
-                cc = 1;
-                break;
-            case 1:
-                cc = 2;
-                break;
-            case 2:
-                cc = 4;
-                break;
-            case 3:
-                cc = 11;
-                break;
-            default:
-                LOGW("Unrecognised CCToUse index from synthesizer: %d", idVal.data.toInt());
+                case 0: cc = 1; break;
+                case 1: cc = 2; break;
+                case 2: cc = 4; break;
+                case 3: cc = 11; break;
+                default: LOGW("Unrecognised CCToUse index from synthesizer: %d", idVal.data.toInt());
             }
         }
     }
 
-    if (method == 0) {        // velocity only
+    if (method == 0) { // velocity only
         return -1;
     }
 
@@ -161,13 +147,12 @@ int SynthesizerState::ccToUse() const
 //   method
 //---------------------------------------------------------
 
-int SynthesizerState::method() const
-{
+int SynthesizerState::method() const {
     SynthesizerGroup g = group(u"master");
 
     int method = -1;
 
-    for (const IdValue& idVal : g) {
+    for (const IdValue &idVal : g) {
         if (idVal.id == 4) {
             method = idVal.data.toInt();
             break;
@@ -176,4 +161,4 @@ int SynthesizerState::method() const
 
     return method;
 }
-}
+} // namespace mu::engraving

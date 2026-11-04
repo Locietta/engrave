@@ -37,30 +37,20 @@ namespace mu::engraving {
 //   StaffState
 //---------------------------------------------------------
 
-StaffState::StaffState(DummyParentOr<EngravingItem> parent)
-    : EngravingItem(ElementType::STAFF_STATE, parent)
-{
+StaffState::StaffState(DummyParentOr<EngravingItem> parent) : EngravingItem(ElementType::STAFF_STATE, parent) {
     m_staffStateType = StaffStateType::INSTRUMENT;
     m_instrument = new Instrument;
 }
 
-StaffState::StaffState(const StaffState& ss)
-    : EngravingItem(ss)
-{
-    m_instrument = new Instrument(*ss.m_instrument);
-}
+StaffState::StaffState(const StaffState &ss) : EngravingItem(ss) { m_instrument = new Instrument(*ss.m_instrument); }
 
-StaffState::~StaffState()
-{
-    delete m_instrument;
-}
+StaffState::~StaffState() { delete m_instrument; }
 
 //---------------------------------------------------------
 //   setStaffStateType
 //---------------------------------------------------------
 
-void StaffState::setStaffStateType(const String& s)
-{
+void StaffState::setStaffStateType(const String &s) {
     if (s == "instrument") {
         setStaffStateType(StaffStateType::INSTRUMENT);
     } else if (s == "type") {
@@ -76,19 +66,13 @@ void StaffState::setStaffStateType(const String& s)
 //   staffStateTypeName
 //---------------------------------------------------------
 
-String StaffState::staffStateTypeName() const
-{
+String StaffState::staffStateTypeName() const {
     switch (staffStateType()) {
-    case StaffStateType::INSTRUMENT:
-        return u"instrument";
-    case StaffStateType::TYPE:
-        return u"type";
-    case StaffStateType::VISIBLE:
-        return u"visible";
-    case StaffStateType::INVISIBLE:
-        return u"invisible";
-    default:
-        return u"??";
+        case StaffStateType::INSTRUMENT: return u"instrument";
+        case StaffStateType::TYPE: return u"type";
+        case StaffStateType::VISIBLE: return u"visible";
+        case StaffStateType::INVISIBLE: return u"invisible";
+        default: return u"??";
     }
 }
 
@@ -96,19 +80,15 @@ String StaffState::staffStateTypeName() const
 //   acceptDrop
 //---------------------------------------------------------
 
-bool StaffState::acceptDrop(EditData&) const
-{
-    return false;
-}
+bool StaffState::acceptDrop(EditData &) const { return false; }
 
 //---------------------------------------------------------
 //   drop
 //---------------------------------------------------------
 
-EngravingItem* StaffState::drop(Transaction&, EditData& data)
-{
-    EngravingItem* e = data.dropElement;
+EngravingItem *StaffState::drop(Transaction &, EditData &data) {
+    EngravingItem *e = data.dropElement;
     score()->undoChangeElement(this, e);
     return e;
 }
-}
+} // namespace mu::engraving

@@ -27,37 +27,36 @@
 #include "path.h"
 
 namespace muse::io {
-class File : public IODevice
-{
+class File : public IODevice {
 public:
 
     File() = default;
-    File(const path_t& filePath);
+    File(const path_t &filePath);
     ~File() override;
 
-    const path_t& filePath() const;
+    const path_t &filePath() const;
 
     bool exists() const;
     bool remove();
 
-    static bool exists(const path_t& filePath);
-    static bool remove(const path_t& filePath);
-    static bool copy(const path_t& src, const path_t& dst, bool replace = false);
-    static Ret readFile(const io::path_t& filePath, ByteArray& out);
-    static Ret writeFile(const io::path_t& filePath, const ByteArray& data);
-    static bool setPermissionsAllowedForAll(const path_t& filePath);
+    static bool exists(const path_t &filePath);
+    static bool remove(const path_t &filePath);
+    static bool copy(const path_t &src, const path_t &dst, bool replace = false);
+    static Ret readFile(const io::path_t &filePath, ByteArray &out);
+    static Ret writeFile(const io::path_t &filePath, const ByteArray &data);
+    static bool setPermissionsAllowedForAll(const path_t &filePath);
 
 protected:
 
     bool doOpen(OpenMode m) override;
     size_t dataSize() const override;
-    const uint8_t* rawData() const override;
+    const uint8_t *rawData() const override;
     bool resizeData(size_t size) override;
-    size_t writeData(const uint8_t* data, size_t len) override;
+    size_t writeData(const uint8_t *data, size_t len) override;
 
 private:
 
     path_t m_filePath;
     ByteArray m_data;
 };
-}
+} // namespace muse::io

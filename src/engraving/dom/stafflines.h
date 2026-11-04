@@ -34,27 +34,28 @@ namespace mu::engraving {
 ///    it draws the horizontal staff lines.
 //-------------------------------------------------------------------
 
-class StaffLines final : public EngravingItem
-{
+class StaffLines final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, StaffLines)
     DECLARE_CLASSOF(ElementType::STAFF_LINES)
 
 public:
 
-    StaffLines* clone() const override { return new StaffLines(*this); }
+    StaffLines *clone() const override { return new StaffLines(*this); }
 
-    PointF pagePos() const override;      ///< position in page coordinates
-    PointF canvasPos() const override;    ///< position in page coordinates
+    PointF pagePos() const override;   ///< position in page coordinates
+    PointF canvasPos() const override; ///< position in page coordinates
 
-    const std::vector<LineF>& lines() const { return m_lines; }
-    void setLines(const std::vector<LineF>& l) { m_lines = l; }
+    const std::vector<LineF> &lines() const { return m_lines; }
 
-    Measure* measure() const { return (Measure*)ownershipParent(); }
+    void setLines(const std::vector<LineF> &l) { m_lines = l; }
+
+    Measure *measure() const { return (Measure *) ownershipParent(); }
+
     double y1() const;
 
     double lw() const { return m_lw; }
-    void setLw(double w) { m_lw = w; }
 
+    void setLw(double w) { m_lw = w; }
 
     bool collectForDrawing() const override;
 
@@ -65,6 +66,6 @@ private:
     double m_lw = 0.0;
     std::vector<LineF> m_lines;
 };
-}
+} // namespace mu::engraving
 
 #endif // MU_LIBMSCORE_STAFFLINES_H

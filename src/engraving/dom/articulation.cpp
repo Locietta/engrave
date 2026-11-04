@@ -47,21 +47,19 @@ using namespace muse::draw;
 //   articulationStyle
 //---------------------------------------------------------
 
-static const ElementStyle articulationStyle {
-    { Sid::articulationMinDistance, Pid::MIN_DISTANCE },
-    { Sid::articulationAnchorDefault, Pid::ARTICULATION_ANCHOR },
+static const ElementStyle articulationStyle{
+    {Sid::articulationMinDistance, Pid::MIN_DISTANCE},
+    {Sid::articulationAnchorDefault, Pid::ARTICULATION_ANCHOR},
 };
 
 //---------------------------------------------------------
 //   Articulation
 //---------------------------------------------------------
 
-Articulation::Articulation(DummyParentOr<ChordRest> parent, ElementType type)
-    : EngravingItem(type, parent, ElementFlag::MOVABLE)
-{
-    m_symId         = SymId::noSym;
-    m_anchor        = ArticulationAnchor::AUTO;
-    m_direction     = DirectionV::AUTO;
+Articulation::Articulation(DummyParentOr<ChordRest> parent, ElementType type) : EngravingItem(type, parent, ElementFlag::MOVABLE) {
+    m_symId = SymId::noSym;
+    m_anchor = ArticulationAnchor::AUTO;
+    m_direction = DirectionV::AUTO;
     m_ornamentStyle = OrnamentStyle::DEFAULT;
     m_playArticulation = true;
 
@@ -73,9 +71,8 @@ Articulation::Articulation(DummyParentOr<ChordRest> parent, ElementType type)
 //   setSymId
 //---------------------------------------------------------
 
-void Articulation::setSymId(SymId id)
-{
-    m_symId  = id;
+void Articulation::setSymId(SymId id) {
+    m_symId = id;
     computeCategories();
     setupShowOnTabStyles();
     m_anchor = ArticulationAnchor(propertyDefault(Pid::ARTICULATION_ANCHOR).toInt());
@@ -86,13 +83,9 @@ void Articulation::setSymId(SymId id)
 //   setTextType
 //---------------------------------------------------------
 
-void Articulation::setTextType(ArticulationTextType textType)
-{
-    m_textType = textType;
-}
+void Articulation::setTextType(ArticulationTextType textType) { m_textType = textType; }
 
-void Articulation::setSelected(bool f)
-{
+void Articulation::setSelected(bool f) {
     if (m_text) {
         m_text->setSelected(f);
     }
@@ -100,8 +93,7 @@ void Articulation::setSelected(bool f)
     EngravingItem::setSelected(f);
 }
 
-void Articulation::setVisible(bool f)
-{
+void Articulation::setVisible(bool f) {
     if (m_text) {
         m_text->setVisible(f);
     }
@@ -113,8 +105,7 @@ void Articulation::setVisible(bool f)
 //   subtype
 //---------------------------------------------------------
 
-int Articulation::subtype() const
-{
+int Articulation::subtype() const {
     if (m_textType != ArticulationTextType::NO_TEXT) {
         return int(m_textType);
     }
@@ -132,9 +123,8 @@ int Articulation::subtype() const
 //   setUp
 //---------------------------------------------------------
 
-void Articulation::setUp(bool val)
-{
-    Articulation::LayoutData* ldata = mutldata();
+void Articulation::setUp(bool val) {
+    Articulation::LayoutData *ldata = mutldata();
     ldata->up = val;
 
     //! NOTE member of Articulation m_symId - this is `given` data
@@ -167,8 +157,7 @@ void Articulation::setUp(bool val)
 //   typeUserName
 //---------------------------------------------------------
 
-muse::TranslatableString Articulation::typeUserName() const
-{
+muse::TranslatableString Articulation::typeUserName() const {
     if (m_textType != ArticulationTextType::NO_TEXT) {
         return TranslatableString("engraving", "Articulation text");
     }
@@ -180,8 +169,7 @@ muse::TranslatableString Articulation::typeUserName() const
 //   subtypeUserName
 //---------------------------------------------------------
 
-muse::TranslatableString Articulation::subtypeUserName() const
-{
+muse::TranslatableString Articulation::subtypeUserName() const {
     if (m_textType != ArticulationTextType::NO_TEXT) {
         return TConv::userName(m_textType);
     }
@@ -193,22 +181,20 @@ muse::TranslatableString Articulation::subtypeUserName() const
 //   chordRest
 //---------------------------------------------------------
 
-ChordRest* Articulation::chordRest() const
-{
+ChordRest *Articulation::chordRest() const {
     if (ownershipParent() && ownershipParent()->isChordRest()) {
         return toChordRest(ownershipParent());
     }
     return 0;
 }
 
-Segment* Articulation::segment() const
-{
-    ChordRest* cr = chordRest();
+Segment *Articulation::segment() const {
+    ChordRest *cr = chordRest();
     if (!cr) {
         return 0;
     }
 
-    Segment* s = 0;
+    Segment *s = 0;
     if (cr->isGrace()) {
         if (cr->ownershipParent()) {
             s = toSegment(cr->ownershipParent()->ownershipParent());
@@ -220,31 +206,27 @@ Segment* Articulation::segment() const
     return s;
 }
 
-Measure* Articulation::measure() const
-{
-    Segment* s = segment();
+Measure *Articulation::measure() const {
+    Segment *s = segment();
     return toMeasure(s ? s->ownershipParent() : 0);
 }
 
-System* Articulation::system() const
-{
-    Measure* m = measure();
+System *Articulation::system() const {
+    Measure *m = measure();
     return m ? m->system() : nullptr;
 }
 
-Page* Articulation::page() const
-{
-    System* s = system();
+Page *Articulation::page() const {
+    System *s = system();
     return s ? s->page() : nullptr;
 }
 
-bool Articulation::isHiddenOnTabStaff() const
-{
+bool Articulation::isHiddenOnTabStaff() const {
     if (m_showOnTabStyles.first == Sid::NOSTYLE || m_showOnTabStyles.second == Sid::NOSTYLE) {
         return false;
     }
 
-    const StaffType* stType = staffType();
+    const StaffType *stType = staffType();
 
     if (!stType || !stType->isTabStaff()) {
         return false;
@@ -260,9 +242,8 @@ bool Articulation::isHiddenOnTabStaff() const
 //    slur.
 //---------------------------------------------------------
 
-bool Articulation::layoutCloseToNote() const
-{
-    Staff* s = staff();
+bool Articulation::layoutCloseToNote() const {
+    Staff *s = staff();
     if (s && s->staffType()->isTabStaff() && isStaccato()) {
         return false;
     }
@@ -274,16 +255,14 @@ bool Articulation::layoutCloseToNote() const
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Articulation::getProperty(Pid propertyId) const
-{
+PropertyValue Articulation::getProperty(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::SYMBOL:              return PropertyValue::fromValue(m_symId);
-    case Pid::DIRECTION:           return PropertyValue::fromValue<DirectionV>(direction());
-    case Pid::ARTICULATION_ANCHOR: return int(anchor());
-    case Pid::ORNAMENT_STYLE:      return ornamentStyle();
-    case Pid::PLAY:                return playArticulation();
-    default:
-        return EngravingItem::getProperty(propertyId);
+        case Pid::SYMBOL: return PropertyValue::fromValue(m_symId);
+        case Pid::DIRECTION: return PropertyValue::fromValue<DirectionV>(direction());
+        case Pid::ARTICULATION_ANCHOR: return int(anchor());
+        case Pid::ORNAMENT_STYLE: return ornamentStyle();
+        case Pid::PLAY: return playArticulation();
+        default: return EngravingItem::getProperty(propertyId);
     }
 }
 
@@ -291,26 +270,14 @@ PropertyValue Articulation::getProperty(Pid propertyId) const
 //   setProperty
 //---------------------------------------------------------
 
-bool Articulation::setProperty(Pid propertyId, const PropertyValue& v)
-{
+bool Articulation::setProperty(Pid propertyId, const PropertyValue &v) {
     switch (propertyId) {
-    case Pid::SYMBOL:
-        setSymId(v.value<SymId>());
-        break;
-    case Pid::DIRECTION:
-        setDirection(v.value<DirectionV>());
-        break;
-    case Pid::ARTICULATION_ANCHOR:
-        setAnchor(ArticulationAnchor(v.toInt()));
-        break;
-    case Pid::PLAY:
-        setPlayArticulation(v.toBool());
-        break;
-    case Pid::ORNAMENT_STYLE:
-        setOrnamentStyle(v.value<OrnamentStyle>());
-        break;
-    default:
-        return EngravingItem::setProperty(propertyId, v);
+        case Pid::SYMBOL: setSymId(v.value<SymId>()); break;
+        case Pid::DIRECTION: setDirection(v.value<DirectionV>()); break;
+        case Pid::ARTICULATION_ANCHOR: setAnchor(ArticulationAnchor(v.toInt())); break;
+        case Pid::PLAY: setPlayArticulation(v.toBool()); break;
+        case Pid::ORNAMENT_STYLE: setOrnamentStyle(v.value<OrnamentStyle>()); break;
+        default: return EngravingItem::setProperty(propertyId, v);
     }
     triggerLayout();
     return true;
@@ -320,20 +287,15 @@ bool Articulation::setProperty(Pid propertyId, const PropertyValue& v)
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Articulation::propertyDefault(Pid propertyId) const
-{
+PropertyValue Articulation::propertyDefault(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::DIRECTION:
-        return DirectionV::AUTO;
+        case Pid::DIRECTION: return DirectionV::AUTO;
 
-    case Pid::ORNAMENT_STYLE:
-        return OrnamentStyle::DEFAULT;
+        case Pid::ORNAMENT_STYLE: return OrnamentStyle::DEFAULT;
 
-    case Pid::PLAY:
-        return true;
+        case Pid::PLAY: return true;
 
-    default:
-        break;
+        default: break;
     }
     return EngravingItem::propertyDefault(propertyId);
 }
@@ -342,70 +304,65 @@ PropertyValue Articulation::propertyDefault(Pid propertyId) const
 //   anchorGroup
 //---------------------------------------------------------
 
-Articulation::AnchorGroup Articulation::anchorGroup(SymId symId)
-{
+Articulation::AnchorGroup Articulation::anchorGroup(SymId symId) {
     switch (symId) {
-    case SymId::articAccentAbove:
-    case SymId::articAccentBelow:
-    case SymId::articStaccatoAbove:
-    case SymId::articStaccatoBelow:
-    case SymId::articStaccatissimoAbove:
-    case SymId::articStaccatissimoBelow:
-    case SymId::articTenutoAbove:
-    case SymId::articTenutoBelow:
-    case SymId::articTenutoStaccatoAbove:
-    case SymId::articTenutoStaccatoBelow:
-    case SymId::articMarcatoAbove:
-    case SymId::articMarcatoBelow:
+        case SymId::articAccentAbove:
+        case SymId::articAccentBelow:
+        case SymId::articStaccatoAbove:
+        case SymId::articStaccatoBelow:
+        case SymId::articStaccatissimoAbove:
+        case SymId::articStaccatissimoBelow:
+        case SymId::articTenutoAbove:
+        case SymId::articTenutoBelow:
+        case SymId::articTenutoStaccatoAbove:
+        case SymId::articTenutoStaccatoBelow:
+        case SymId::articMarcatoAbove:
+        case SymId::articMarcatoBelow:
 
-    case SymId::articAccentStaccatoAbove:
-    case SymId::articAccentStaccatoBelow:
-    case SymId::articLaissezVibrerAbove:
-    case SymId::articLaissezVibrerBelow:
-    case SymId::articMarcatoStaccatoAbove:
-    case SymId::articMarcatoStaccatoBelow:
-    case SymId::articMarcatoTenutoAbove:
-    case SymId::articMarcatoTenutoBelow:
-    case SymId::articStaccatissimoStrokeAbove:
-    case SymId::articStaccatissimoStrokeBelow:
-    case SymId::articStaccatissimoWedgeAbove:
-    case SymId::articStaccatissimoWedgeBelow:
-    case SymId::articStressAbove:
-    case SymId::articStressBelow:
-    case SymId::articTenutoAccentAbove:
-    case SymId::articTenutoAccentBelow:
-    case SymId::articUnstressAbove:
-    case SymId::articUnstressBelow:
+        case SymId::articAccentStaccatoAbove:
+        case SymId::articAccentStaccatoBelow:
+        case SymId::articLaissezVibrerAbove:
+        case SymId::articLaissezVibrerBelow:
+        case SymId::articMarcatoStaccatoAbove:
+        case SymId::articMarcatoStaccatoBelow:
+        case SymId::articMarcatoTenutoAbove:
+        case SymId::articMarcatoTenutoBelow:
+        case SymId::articStaccatissimoStrokeAbove:
+        case SymId::articStaccatissimoStrokeBelow:
+        case SymId::articStaccatissimoWedgeAbove:
+        case SymId::articStaccatissimoWedgeBelow:
+        case SymId::articStressAbove:
+        case SymId::articStressBelow:
+        case SymId::articTenutoAccentAbove:
+        case SymId::articTenutoAccentBelow:
+        case SymId::articUnstressAbove:
+        case SymId::articUnstressBelow:
 
-    case SymId::articSoftAccentAbove:
-    case SymId::articSoftAccentBelow:
-    case SymId::articSoftAccentStaccatoAbove:
-    case SymId::articSoftAccentStaccatoBelow:
-    case SymId::articSoftAccentTenutoAbove:
-    case SymId::articSoftAccentTenutoBelow:
-    case SymId::articSoftAccentTenutoStaccatoAbove:
-    case SymId::articSoftAccentTenutoStaccatoBelow:
+        case SymId::articSoftAccentAbove:
+        case SymId::articSoftAccentBelow:
+        case SymId::articSoftAccentStaccatoAbove:
+        case SymId::articSoftAccentStaccatoBelow:
+        case SymId::articSoftAccentTenutoAbove:
+        case SymId::articSoftAccentTenutoBelow:
+        case SymId::articSoftAccentTenutoStaccatoAbove:
+        case SymId::articSoftAccentTenutoStaccatoBelow:
 
-    case SymId::wiggleSawtooth:
-    case SymId::wiggleSawtoothWide:
-    case SymId::wiggleVibratoLargeFaster:
-    case SymId::wiggleVibratoLargeSlowest:
-        return AnchorGroup::ARTICULATION;
+        case SymId::wiggleSawtooth:
+        case SymId::wiggleSawtoothWide:
+        case SymId::wiggleVibratoLargeFaster:
+        case SymId::wiggleVibratoLargeSlowest: return AnchorGroup::ARTICULATION;
 
-    case SymId::luteFingeringRHThumb:
-    case SymId::luteFingeringRHFirst:
-    case SymId::luteFingeringRHSecond:
-    case SymId::luteFingeringRHThird:
-        return AnchorGroup::LUTE_FINGERING;
+        case SymId::luteFingeringRHThumb:
+        case SymId::luteFingeringRHFirst:
+        case SymId::luteFingeringRHSecond:
+        case SymId::luteFingeringRHThird: return AnchorGroup::LUTE_FINGERING;
 
-    case SymId::tremoloDivisiDots2:
-    case SymId::tremoloDivisiDots3:
-    case SymId::tremoloDivisiDots4:
-    case SymId::tremoloDivisiDots6:
-        return AnchorGroup::ARTICULATION;
+        case SymId::tremoloDivisiDots2:
+        case SymId::tremoloDivisiDots3:
+        case SymId::tremoloDivisiDots4:
+        case SymId::tremoloDivisiDots6: return AnchorGroup::ARTICULATION;
 
-    default:
-        break;
+        default: break;
     }
     return AnchorGroup::OTHER;
 }
@@ -414,75 +371,58 @@ Articulation::AnchorGroup Articulation::anchorGroup(SymId symId)
 //   symId2ArticulationName
 //---------------------------------------------------------
 
-String Articulation::symId2ArticulationName(SymId symId)
-{
+String Articulation::symId2ArticulationName(SymId symId) {
     switch (symId) {
-    case SymId::articStaccatissimoAbove:
-    case SymId::articStaccatissimoBelow:
-    case SymId::articStaccatissimoStrokeAbove:
-    case SymId::articStaccatissimoStrokeBelow:
-    case SymId::articStaccatissimoWedgeAbove:
-    case SymId::articStaccatissimoWedgeBelow:
-        return u"staccatissimo";
+        case SymId::articStaccatissimoAbove:
+        case SymId::articStaccatissimoBelow:
+        case SymId::articStaccatissimoStrokeAbove:
+        case SymId::articStaccatissimoStrokeBelow:
+        case SymId::articStaccatissimoWedgeAbove:
+        case SymId::articStaccatissimoWedgeBelow: return u"staccatissimo";
 
-    case SymId::articStaccatoAbove:
-    case SymId::articStaccatoBelow:
-    case SymId::tremoloDivisiDots2:
-    case SymId::tremoloDivisiDots3:
-    case SymId::tremoloDivisiDots4:
-    case SymId::tremoloDivisiDots6:
-        return u"staccato";
+        case SymId::articStaccatoAbove:
+        case SymId::articStaccatoBelow:
+        case SymId::tremoloDivisiDots2:
+        case SymId::tremoloDivisiDots3:
+        case SymId::tremoloDivisiDots4:
+        case SymId::tremoloDivisiDots6: return u"staccato";
 
-    case SymId::articAccentStaccatoAbove:
-    case SymId::articAccentStaccatoBelow:
-        return u"sforzatoStaccato";
+        case SymId::articAccentStaccatoAbove:
+        case SymId::articAccentStaccatoBelow: return u"sforzatoStaccato";
 
-    case SymId::articMarcatoStaccatoAbove:
-    case SymId::articMarcatoStaccatoBelow:
-        return u"marcatoStaccato";
+        case SymId::articMarcatoStaccatoAbove:
+        case SymId::articMarcatoStaccatoBelow: return u"marcatoStaccato";
 
-    case SymId::articTenutoStaccatoAbove:
-    case SymId::articTenutoStaccatoBelow:
-        return u"portato";
+        case SymId::articTenutoStaccatoAbove:
+        case SymId::articTenutoStaccatoBelow: return u"portato";
 
-    case SymId::articTenutoAccentAbove:
-    case SymId::articTenutoAccentBelow:
-        return u"sforzatoTenuto";
+        case SymId::articTenutoAccentAbove:
+        case SymId::articTenutoAccentBelow: return u"sforzatoTenuto";
 
-    case SymId::articMarcatoTenutoAbove:
-    case SymId::articMarcatoTenutoBelow:
-        return u"marcatoTenuto";
+        case SymId::articMarcatoTenutoAbove:
+        case SymId::articMarcatoTenutoBelow: return u"marcatoTenuto";
 
-    case SymId::articTenutoAbove:
-    case SymId::articTenutoBelow:
-        return u"tenuto";
+        case SymId::articTenutoAbove:
+        case SymId::articTenutoBelow: return u"tenuto";
 
-    case SymId::articMarcatoAbove:
-    case SymId::articMarcatoBelow:
-        return u"marcato";
+        case SymId::articMarcatoAbove:
+        case SymId::articMarcatoBelow: return u"marcato";
 
-    case SymId::articAccentAbove:
-    case SymId::articAccentBelow:
-        return u"accent";
+        case SymId::articAccentAbove:
+        case SymId::articAccentBelow: return u"accent";
 
-    case SymId::dynamicSforzato:
-    case SymId::dynamicSforzando:
-        return u"sforzato";
+        case SymId::dynamicSforzato:
+        case SymId::dynamicSforzando: return u"sforzato";
 
-    case SymId::brassMuteOpen:
-        return u"open";
+        case SymId::brassMuteOpen: return u"open";
 
-    case SymId::brassMuteClosed:
-        return u"closed";
+        case SymId::brassMuteClosed: return u"closed";
 
-    case SymId::stringsHarmonic:
-        return u"harmonic";
+        case SymId::stringsHarmonic: return u"harmonic";
 
-    case SymId::ornamentMordent:
-        return u"mordent";
+        case SymId::ornamentMordent: return u"mordent";
 
-    default:
-        return u"---";
+        default: return u"---";
     }
 }
 
@@ -490,39 +430,30 @@ String Articulation::symId2ArticulationName(SymId symId)
 //   articulationName
 //---------------------------------------------------------
 
-String Articulation::articulationName() const
-{
-    return symId2ArticulationName(m_symId);
-}
+String Articulation::articulationName() const { return symId2ArticulationName(m_symId); }
 
 //---------------------------------------------------------
 //   getPropertyStyle
 //---------------------------------------------------------
 
-Sid Articulation::getPropertyStyle(Pid id) const
-{
+Sid Articulation::getPropertyStyle(Pid id) const {
     switch (id) {
-    case Pid::MIN_DISTANCE:
-        return EngravingItem::getPropertyStyle(id);
+        case Pid::MIN_DISTANCE: return EngravingItem::getPropertyStyle(id);
 
-    case Pid::ARTICULATION_ANCHOR: {
-        if (isHandbellsArticulation()) {
-            return Sid::articulationAnchorDefault;
-        }
+        case Pid::ARTICULATION_ANCHOR: {
+            if (isHandbellsArticulation()) {
+                return Sid::articulationAnchorDefault;
+            }
 
-        switch (anchorGroup(m_symId)) {
-        case AnchorGroup::ARTICULATION:
-            return Sid::articulationAnchorDefault;
-        case AnchorGroup::LUTE_FINGERING:
-            return Sid::articulationAnchorLuteFingering;
-        case AnchorGroup::OTHER:
-            return Sid::articulationAnchorOther;
+            switch (anchorGroup(m_symId)) {
+                case AnchorGroup::ARTICULATION: return Sid::articulationAnchorDefault;
+                case AnchorGroup::LUTE_FINGERING: return Sid::articulationAnchorLuteFingering;
+                case AnchorGroup::OTHER: return Sid::articulationAnchorOther;
+            }
         }
-    }
-        assert(false);           // should never be reached
-    // fallthrough
-    default:
-        return Sid::NOSTYLE;
+            assert(false); // should never be reached
+        // fallthrough
+        default: return Sid::NOSTYLE;
     }
 }
 
@@ -530,19 +461,13 @@ Sid Articulation::getPropertyStyle(Pid id) const
 //   resetProperty
 //---------------------------------------------------------
 
-void Articulation::resetProperty(Pid id)
-{
+void Articulation::resetProperty(Pid id) {
     switch (id) {
-    case Pid::DIRECTION:
-    case Pid::ORNAMENT_STYLE:
-        setProperty(id, propertyDefault(id));
-        return;
-    case Pid::ARTICULATION_ANCHOR:
-        setProperty(id, propertyDefault(id));
-        return;
+        case Pid::DIRECTION:
+        case Pid::ORNAMENT_STYLE: setProperty(id, propertyDefault(id)); return;
+        case Pid::ARTICULATION_ANCHOR: setProperty(id, propertyDefault(id)); return;
 
-    default:
-        break;
+        default: break;
     }
     EngravingItem::resetProperty(id);
 }
@@ -551,75 +476,80 @@ void Articulation::resetProperty(Pid id)
 //   mag
 //---------------------------------------------------------
 
-double Articulation::mag() const
-{
-    return layoutParent() ? layoutParent()->mag() * style().styleD(Sid::articulationMag) : 1.0;
-}
+double Articulation::mag() const { return layoutParent() ? layoutParent()->mag() * style().styleD(Sid::articulationMag) : 1.0; }
 
-void Articulation::computeCategories()
-{
+void Articulation::computeCategories() {
     m_categories.setFlag(ArticulationCategory::DOUBLE,
-                         m_symId == SymId::articMarcatoStaccatoAbove || m_symId == SymId::articMarcatoStaccatoBelow
-                         || m_symId == SymId::articTenutoStaccatoAbove || m_symId == SymId::articTenutoStaccatoBelow
-                         || m_symId == SymId::articAccentStaccatoAbove || m_symId == SymId::articAccentStaccatoBelow
-                         || m_symId == SymId::articMarcatoTenutoAbove || m_symId == SymId::articMarcatoTenutoBelow
-                         || m_symId == SymId::articTenutoAccentAbove || m_symId == SymId::articTenutoAccentBelow);
+                         m_symId == SymId::articMarcatoStaccatoAbove || m_symId == SymId::articMarcatoStaccatoBelow ||
+                             m_symId == SymId::articTenutoStaccatoAbove || m_symId == SymId::articTenutoStaccatoBelow ||
+                             m_symId == SymId::articAccentStaccatoAbove || m_symId == SymId::articAccentStaccatoBelow ||
+                             m_symId == SymId::articMarcatoTenutoAbove || m_symId == SymId::articMarcatoTenutoBelow ||
+                             m_symId == SymId::articTenutoAccentAbove || m_symId == SymId::articTenutoAccentBelow);
 
     m_categories.setFlag(ArticulationCategory::TENUTO,
-                         m_symId == SymId::articTenutoAbove || m_symId == SymId::articTenutoBelow
-                         || m_symId == SymId::articMarcatoTenutoAbove || m_symId == SymId::articMarcatoTenutoBelow
-                         || m_symId == SymId::articTenutoAccentAbove || m_symId == SymId::articTenutoAccentBelow);
+                         m_symId == SymId::articTenutoAbove || m_symId == SymId::articTenutoBelow ||
+                             m_symId == SymId::articMarcatoTenutoAbove || m_symId == SymId::articMarcatoTenutoBelow ||
+                             m_symId == SymId::articTenutoAccentAbove || m_symId == SymId::articTenutoAccentBelow);
 
     m_categories.setFlag(ArticulationCategory::STACCATO,
-                         m_symId == SymId::articStaccatoAbove || m_symId == SymId::articStaccatoBelow
-                         || m_symId == SymId::articMarcatoStaccatoAbove || m_symId == SymId::articMarcatoStaccatoBelow
-                         || m_symId == SymId::articTenutoStaccatoAbove || m_symId == SymId::articTenutoStaccatoBelow
-                         || m_symId == SymId::articAccentStaccatoAbove || m_symId == SymId::articAccentStaccatoBelow
-                         || m_symId == SymId::tremoloDivisiDots2 || m_symId == SymId::tremoloDivisiDots3
-                         || m_symId == SymId::tremoloDivisiDots4 || m_symId == SymId::tremoloDivisiDots6);
+                         m_symId == SymId::articStaccatoAbove || m_symId == SymId::articStaccatoBelow ||
+                             m_symId == SymId::articMarcatoStaccatoAbove || m_symId == SymId::articMarcatoStaccatoBelow ||
+                             m_symId == SymId::articTenutoStaccatoAbove || m_symId == SymId::articTenutoStaccatoBelow ||
+                             m_symId == SymId::articAccentStaccatoAbove || m_symId == SymId::articAccentStaccatoBelow ||
+                             m_symId == SymId::tremoloDivisiDots2 || m_symId == SymId::tremoloDivisiDots3 ||
+                             m_symId == SymId::tremoloDivisiDots4 || m_symId == SymId::tremoloDivisiDots6);
 
-    m_categories.setFlag(ArticulationCategory::ACCENT,
-                         m_symId == SymId::articAccentAbove || m_symId == SymId::articAccentBelow
-                         || m_symId == SymId::articAccentStaccatoAbove || m_symId == SymId::articAccentStaccatoBelow);
+    m_categories.setFlag(ArticulationCategory::ACCENT, m_symId == SymId::articAccentAbove || m_symId == SymId::articAccentBelow ||
+                                                           m_symId == SymId::articAccentStaccatoAbove ||
+                                                           m_symId == SymId::articAccentStaccatoBelow);
 
     m_categories.setFlag(ArticulationCategory::MARCATO,
-                         m_symId == SymId::articMarcatoAbove || m_symId == SymId::articMarcatoBelow
-                         || m_symId == SymId::articMarcatoStaccatoAbove || m_symId == SymId::articMarcatoStaccatoBelow
-                         || m_symId == SymId::articMarcatoTenutoAbove || m_symId == SymId::articMarcatoTenutoBelow);
+                         m_symId == SymId::articMarcatoAbove || m_symId == SymId::articMarcatoBelow ||
+                             m_symId == SymId::articMarcatoStaccatoAbove || m_symId == SymId::articMarcatoStaccatoBelow ||
+                             m_symId == SymId::articMarcatoTenutoAbove || m_symId == SymId::articMarcatoTenutoBelow);
 
     m_categories.setFlag(ArticulationCategory::LUTE_FINGERING,
-                         m_symId == SymId::stringsThumbPosition || m_symId == SymId::luteFingeringRHThumb
-                         || m_symId == SymId::luteFingeringRHFirst || m_symId == SymId::luteFingeringRHSecond
-                         || m_symId == SymId::luteFingeringRHThird);
+                         m_symId == SymId::stringsThumbPosition || m_symId == SymId::luteFingeringRHThumb ||
+                             m_symId == SymId::luteFingeringRHFirst || m_symId == SymId::luteFingeringRHSecond ||
+                             m_symId == SymId::luteFingeringRHThird);
     m_categories.setFlag(ArticulationCategory::LAISSEZ_VIB,
                          m_symId == SymId::articLaissezVibrerAbove || m_symId == SymId::articLaissezVibrerBelow);
 
     m_categories.setFlag(ArticulationCategory::HANDBELLS,
-                         (static_cast<int>(m_symId) >= static_cast<int>(SymId::handbellsBelltree)
-                          && static_cast<int>(m_symId) <= static_cast<int>(SymId::handbellsTableSingleBell))
-                         || (static_cast<int>(m_textType) >= static_cast<int>(ArticulationTextType::TD)
-                             && static_cast<int>(m_textType) <= static_cast<int>(ArticulationTextType::VIB))
-                         );
+                         (static_cast<int>(m_symId) >= static_cast<int>(SymId::handbellsBelltree) &&
+                          static_cast<int>(m_symId) <= static_cast<int>(SymId::handbellsTableSingleBell)) ||
+                             (static_cast<int>(m_textType) >= static_cast<int>(ArticulationTextType::TD) &&
+                              static_cast<int>(m_textType) <= static_cast<int>(ArticulationTextType::VIB)));
 }
 
-bool Articulation::isBasicArticulation() const
-{
-    static const std::set<SymId> articulations{
-        SymId::articAccentAbove, SymId::articAccentBelow,
-        SymId::articStaccatoAbove, SymId::articStaccatoBelow,
-        SymId::articTenutoAbove, SymId::articTenutoBelow,
-        SymId::articMarcatoAbove, SymId::articMarcatoBelow,
+bool Articulation::isBasicArticulation() const {
+    static const std::set<SymId> articulations{SymId::articAccentAbove,
+                                               SymId::articAccentBelow,
+                                               SymId::articStaccatoAbove,
+                                               SymId::articStaccatoBelow,
+                                               SymId::articTenutoAbove,
+                                               SymId::articTenutoBelow,
+                                               SymId::articMarcatoAbove,
+                                               SymId::articMarcatoBelow,
 
-        SymId::articAccentStaccatoAbove, SymId::articAccentStaccatoBelow,
-        SymId::articMarcatoStaccatoAbove, SymId::articMarcatoStaccatoBelow,
-        SymId::articMarcatoTenutoAbove, SymId::articMarcatoTenutoBelow,
-        SymId::articTenutoStaccatoAbove, SymId::articTenutoStaccatoBelow,
-        SymId::articTenutoAccentAbove, SymId::articTenutoAccentBelow,
-        SymId::articStaccatissimoAbove, SymId::articStaccatissimoBelow,
-        SymId::articStaccatissimoStrokeAbove, SymId::articStaccatissimoStrokeBelow,
-        SymId::articStaccatissimoWedgeAbove, SymId::articStaccatissimoWedgeBelow,
-        SymId::articStressAbove, SymId::articStressBelow
-    };
+                                               SymId::articAccentStaccatoAbove,
+                                               SymId::articAccentStaccatoBelow,
+                                               SymId::articMarcatoStaccatoAbove,
+                                               SymId::articMarcatoStaccatoBelow,
+                                               SymId::articMarcatoTenutoAbove,
+                                               SymId::articMarcatoTenutoBelow,
+                                               SymId::articTenutoStaccatoAbove,
+                                               SymId::articTenutoStaccatoBelow,
+                                               SymId::articTenutoAccentAbove,
+                                               SymId::articTenutoAccentBelow,
+                                               SymId::articStaccatissimoAbove,
+                                               SymId::articStaccatissimoBelow,
+                                               SymId::articStaccatissimoStrokeAbove,
+                                               SymId::articStaccatissimoStrokeBelow,
+                                               SymId::articStaccatissimoWedgeAbove,
+                                               SymId::articStaccatissimoWedgeBelow,
+                                               SymId::articStressAbove,
+                                               SymId::articStressBelow};
     SymId symId = static_cast<SymId>(subtype());
     return articulations.find(symId) != articulations.end();
 }
@@ -628,41 +558,39 @@ bool Articulation::isBasicArticulation() const
 //   accessibleInfo
 //---------------------------------------------------------
 
-void Articulation::setupShowOnTabStyles()
-{
+void Articulation::setupShowOnTabStyles() {
     /// staccato
     if (isStaccato()) {
-        m_showOnTabStyles = { Sid::staccatoShowTabCommon, Sid::staccatoShowTabSimple };
+        m_showOnTabStyles = {Sid::staccatoShowTabCommon, Sid::staccatoShowTabSimple};
     }
 
     /// accent
     if (isAccent() || isMarcato()) {
-        m_showOnTabStyles = { Sid::accentShowTabCommon, Sid::accentShowTabSimple };
+        m_showOnTabStyles = {Sid::accentShowTabCommon, Sid::accentShowTabSimple};
     }
 
     /// turn
     if (m_symId == SymId::ornamentTurn || m_symId == SymId::ornamentTurnInverted) {
-        m_showOnTabStyles = { Sid::turnShowTabCommon, Sid::turnShowTabSimple };
+        m_showOnTabStyles = {Sid::turnShowTabCommon, Sid::turnShowTabSimple};
     }
 
     /// mordent
     if (m_symId == SymId::ornamentMordent || m_symId == SymId::ornamentShortTrill) {
-        m_showOnTabStyles = { Sid::mordentShowTabCommon, Sid::mordentShowTabSimple };
+        m_showOnTabStyles = {Sid::mordentShowTabCommon, Sid::mordentShowTabSimple};
     }
 
     /// wah
     if (m_symId == SymId::brassMuteOpen || m_symId == SymId::brassMuteClosed) {
-        m_showOnTabStyles = { Sid::wahShowTabCommon, Sid::wahShowTabSimple };
+        m_showOnTabStyles = {Sid::wahShowTabCommon, Sid::wahShowTabSimple};
     }
 
     /// golpe
     if (m_symId == SymId::guitarGolpe) {
-        m_showOnTabStyles = { Sid::golpeShowTabCommon, Sid::golpeShowTabSimple };
+        m_showOnTabStyles = {Sid::golpeShowTabCommon, Sid::golpeShowTabSimple};
     }
 }
 
-void Articulation::styleChanged()
-{
+void Articulation::styleChanged() {
     if (m_text) {
         m_text->styleChanged();
     }
@@ -674,34 +602,29 @@ void Articulation::styleChanged()
     }
 }
 
-bool Articulation::isOnCrossBeamSide() const
-{
-    ChordRest* cr = chordRest();
+bool Articulation::isOnCrossBeamSide() const {
+    ChordRest *cr = chordRest();
     if (!cr || !cr->isChord()) {
         return false;
     }
-    Chord* chord = toChord(cr);
+    Chord *chord = toChord(cr);
     return chord->beam() && (chord->beam()->cross() || chord->staffMove() != 0) && (up() == chord->up());
 }
 
-staff_idx_t Articulation::vStaffIdx() const
-{
-    ChordRest* cr = chordRest();
+staff_idx_t Articulation::vStaffIdx() const {
+    ChordRest *cr = chordRest();
     if (!cr) {
         return staffIdx();
     }
     return cr->vStaffIdx();
 }
 
-struct ArticulationGroup
-{
+struct ArticulationGroup {
     SymId first;
     SymId second;
 
-    bool operator <(const ArticulationGroup& other) const
-    {
-        if ((first == other.first && second == other.second)
-            || (first == other.second && second == other.first)) {
+    bool operator<(const ArticulationGroup &other) const {
+        if ((first == other.first && second == other.second) || (first == other.second && second == other.first)) {
             return false;
         }
 
@@ -715,59 +638,56 @@ struct ArticulationGroup
 
 namespace mu::engraving {
 static const std::map<SymId, ArticulationGroup> ARTICULATION_ABOVE_SPLIT_GROUPS = {
-    { SymId::articAccentStaccatoAbove, { SymId::articStaccatoAbove, SymId::articAccentAbove } },
-    { SymId::articTenutoAccentAbove, { SymId::articTenutoAbove, SymId::articAccentAbove } },
-    { SymId::articTenutoStaccatoAbove, { SymId::articTenutoAbove, SymId::articStaccatoAbove } },
-    { SymId::articMarcatoStaccatoAbove, { SymId::articStaccatoAbove, SymId::articMarcatoAbove } },
-    { SymId::articMarcatoTenutoAbove, { SymId::articTenutoAbove, SymId::articMarcatoAbove } },
+    {SymId::articAccentStaccatoAbove, {SymId::articStaccatoAbove, SymId::articAccentAbove}},
+    {SymId::articTenutoAccentAbove, {SymId::articTenutoAbove, SymId::articAccentAbove}},
+    {SymId::articTenutoStaccatoAbove, {SymId::articTenutoAbove, SymId::articStaccatoAbove}},
+    {SymId::articMarcatoStaccatoAbove, {SymId::articStaccatoAbove, SymId::articMarcatoAbove}},
+    {SymId::articMarcatoTenutoAbove, {SymId::articTenutoAbove, SymId::articMarcatoAbove}},
 };
 
 static const std::map<SymId, ArticulationGroup> ARTICULATION_BELOW_SPLIT_GROUP = {
-    { SymId::articAccentStaccatoBelow, { SymId::articStaccatoBelow, SymId::articAccentBelow } },
-    { SymId::articTenutoAccentBelow, { SymId::articTenutoBelow, SymId::articAccentBelow } },
-    { SymId::articTenutoStaccatoBelow, { SymId::articTenutoBelow, SymId::articStaccatoBelow } },
-    { SymId::articMarcatoStaccatoBelow, { SymId::articStaccatoBelow, SymId::articMarcatoBelow } },
-    { SymId::articMarcatoTenutoBelow, { SymId::articTenutoBelow, SymId::articMarcatoBelow } },
+    {SymId::articAccentStaccatoBelow, {SymId::articStaccatoBelow, SymId::articAccentBelow}},
+    {SymId::articTenutoAccentBelow, {SymId::articTenutoBelow, SymId::articAccentBelow}},
+    {SymId::articTenutoStaccatoBelow, {SymId::articTenutoBelow, SymId::articStaccatoBelow}},
+    {SymId::articMarcatoStaccatoBelow, {SymId::articStaccatoBelow, SymId::articMarcatoBelow}},
+    {SymId::articMarcatoTenutoBelow, {SymId::articTenutoBelow, SymId::articMarcatoBelow}},
 };
 
 static const std::map<ArticulationGroup, SymId> ARTICULATION_ABOVE_JOIN_GROUPS = {
-    { { SymId::articStaccatoAbove, SymId::articAccentAbove }, SymId::articAccentStaccatoAbove },
-    { { SymId::articTenutoAbove, SymId::articAccentAbove }, SymId::articTenutoAccentAbove },
-    { { SymId::articTenutoAbove, SymId::articStaccatoAbove }, SymId::articTenutoStaccatoAbove },
-    { { SymId::articStaccatoAbove, SymId::articMarcatoAbove }, SymId::articMarcatoStaccatoAbove },
-    { { SymId::articTenutoAbove, SymId::articMarcatoAbove }, SymId::articMarcatoTenutoAbove },
+    {{SymId::articStaccatoAbove, SymId::articAccentAbove}, SymId::articAccentStaccatoAbove},
+    {{SymId::articTenutoAbove, SymId::articAccentAbove}, SymId::articTenutoAccentAbove},
+    {{SymId::articTenutoAbove, SymId::articStaccatoAbove}, SymId::articTenutoStaccatoAbove},
+    {{SymId::articStaccatoAbove, SymId::articMarcatoAbove}, SymId::articMarcatoStaccatoAbove},
+    {{SymId::articTenutoAbove, SymId::articMarcatoAbove}, SymId::articMarcatoTenutoAbove},
 };
 
-static const std::map<SymId, SymId> ARTICULATION_PLACEMENTS = {
-    { SymId::articStaccatissimoAbove, SymId::articStaccatissimoBelow },
-    { SymId::articStaccatissimoStrokeAbove, SymId::articStaccatissimoStrokeBelow },
-    { SymId::articStaccatissimoWedgeAbove, SymId::articStaccatissimoWedgeBelow },
-    { SymId::articStaccatoAbove, SymId::articStaccatoBelow },
-    { SymId::articAccentStaccatoAbove, SymId::articAccentStaccatoBelow },
-    { SymId::articMarcatoStaccatoAbove, SymId::articMarcatoStaccatoBelow },
-    { SymId::articTenutoStaccatoAbove, SymId::articTenutoStaccatoBelow },
-    { SymId::articTenutoAccentAbove, SymId::articTenutoAccentBelow },
-    { SymId::articMarcatoTenutoAbove, SymId::articMarcatoTenutoBelow },
-    { SymId::articTenutoAbove, SymId::articTenutoBelow },
-    { SymId::articMarcatoAbove, SymId::articMarcatoBelow },
-    { SymId::articAccentAbove, SymId::articAccentBelow }
-};
+static const std::map<SymId, SymId> ARTICULATION_PLACEMENTS = {{SymId::articStaccatissimoAbove, SymId::articStaccatissimoBelow},
+                                                               {SymId::articStaccatissimoStrokeAbove, SymId::articStaccatissimoStrokeBelow},
+                                                               {SymId::articStaccatissimoWedgeAbove, SymId::articStaccatissimoWedgeBelow},
+                                                               {SymId::articStaccatoAbove, SymId::articStaccatoBelow},
+                                                               {SymId::articAccentStaccatoAbove, SymId::articAccentStaccatoBelow},
+                                                               {SymId::articMarcatoStaccatoAbove, SymId::articMarcatoStaccatoBelow},
+                                                               {SymId::articTenutoStaccatoAbove, SymId::articTenutoStaccatoBelow},
+                                                               {SymId::articTenutoAccentAbove, SymId::articTenutoAccentBelow},
+                                                               {SymId::articMarcatoTenutoAbove, SymId::articMarcatoTenutoBelow},
+                                                               {SymId::articTenutoAbove, SymId::articTenutoBelow},
+                                                               {SymId::articMarcatoAbove, SymId::articMarcatoBelow},
+                                                               {SymId::articAccentAbove, SymId::articAccentBelow}};
 
-std::set<SymId> splitArticulations(const std::set<SymId>& articulationSymbolIds)
-{
+std::set<SymId> splitArticulations(const std::set<SymId> &articulationSymbolIds) {
     std::set<SymId> result;
-    for (const SymId& articulationSymbolId : articulationSymbolIds) {
+    for (const SymId &articulationSymbolId : articulationSymbolIds) {
         auto artic = ARTICULATION_ABOVE_SPLIT_GROUPS.find(articulationSymbolId);
         if (artic != ARTICULATION_ABOVE_SPLIT_GROUPS.end()) {
             // check above
-            const ArticulationGroup& group = artic->second;
+            const ArticulationGroup &group = artic->second;
             result.insert(group.first);
             result.insert(group.second);
         } else {
             // check below
             artic = ARTICULATION_BELOW_SPLIT_GROUP.find(articulationSymbolId);
             if (artic != ARTICULATION_BELOW_SPLIT_GROUP.end()) {
-                const ArticulationGroup& group = artic->second;
+                const ArticulationGroup &group = artic->second;
                 result.insert(group.first);
                 result.insert(group.second);
             } else {
@@ -779,19 +699,16 @@ std::set<SymId> splitArticulations(const std::set<SymId>& articulationSymbolIds)
     return result;
 }
 
-std::set<SymId> joinArticulations(const std::set<SymId>& articulationSymbolIds)
-{
+std::set<SymId> joinArticulations(const std::set<SymId> &articulationSymbolIds) {
     SymIdList result;
 
     SymIdList vsymbolIds(articulationSymbolIds.begin(), articulationSymbolIds.end());
 
-    std::sort(vsymbolIds.begin(), vsymbolIds.end(), [](SymId l, SymId r) {
-        return l > r;
-    });
+    std::sort(vsymbolIds.begin(), vsymbolIds.end(), [](SymId l, SymId r) { return l > r; });
 
     std::set<SymId> splittedSymbols;
 
-    auto symbolSelected = [&splittedSymbols](const SymId& symbolId) -> bool {
+    auto symbolSelected = [&splittedSymbols](const SymId &symbolId) -> bool {
         return splittedSymbols.find(symbolId) != splittedSymbols.end();
     };
 
@@ -806,7 +723,7 @@ std::set<SymId> joinArticulations(const std::set<SymId>& articulationSymbolIds)
                 continue;
             }
 
-            ArticulationGroup group = { vsymbolIds[i], vsymbolIds[j] };
+            ArticulationGroup group = {vsymbolIds[i], vsymbolIds[j]};
             auto joinArticulation = ARTICULATION_ABOVE_JOIN_GROUPS.find(group);
             if (joinArticulation != ARTICULATION_ABOVE_JOIN_GROUPS.end()) {
                 result.push_back(joinArticulation->second);
@@ -822,124 +739,114 @@ std::set<SymId> joinArticulations(const std::set<SymId>& articulationSymbolIds)
         }
     }
 
-    std::sort(result.begin(), result.end(), [](SymId l, SymId r) {
-        return l < r;
-    });
+    std::sort(result.begin(), result.end(), [](SymId l, SymId r) { return l < r; });
 
     return std::set<SymId>(result.begin(), result.end());
 }
 
-std::set<SymId> updateArticulations(const std::set<SymId>& articulationSymbolIds, SymId articulationSymbolId,
-                                    ArticulationsUpdateMode updateMode)
-{
+std::set<SymId> updateArticulations(const std::set<SymId> &articulationSymbolIds, SymId articulationSymbolId,
+                                    ArticulationsUpdateMode updateMode) {
     std::set<SymId> splittedArticulations = splitArticulations(articulationSymbolIds);
 
     switch (articulationSymbolId) {
-    case SymId::articMarcatoAbove: {
-        if (splittedArticulations.find(SymId::articAccentAbove) != splittedArticulations.end()) {
-            splittedArticulations.erase(SymId::articAccentAbove);
-            splittedArticulations.insert(SymId::articMarcatoAbove);
-        } else if (splittedArticulations.find(SymId::articMarcatoAbove) != splittedArticulations.end()) {
-            if (updateMode == ArticulationsUpdateMode::Remove) {
-                splittedArticulations.erase(SymId::articMarcatoAbove);
-            }
-        } else {
-            splittedArticulations.insert(SymId::articMarcatoAbove);
-        }
-        break;
-    }
-    case SymId::articAccentAbove: {
-        if (splittedArticulations.find(SymId::articMarcatoAbove) != splittedArticulations.end()) {
-            splittedArticulations.erase(SymId::articMarcatoAbove);
-            splittedArticulations.insert(SymId::articAccentAbove);
-        } else if (splittedArticulations.find(SymId::articAccentAbove) != splittedArticulations.end()) {
-            if (updateMode == ArticulationsUpdateMode::Remove) {
+        case SymId::articMarcatoAbove: {
+            if (splittedArticulations.find(SymId::articAccentAbove) != splittedArticulations.end()) {
                 splittedArticulations.erase(SymId::articAccentAbove);
+                splittedArticulations.insert(SymId::articMarcatoAbove);
+            } else if (splittedArticulations.find(SymId::articMarcatoAbove) != splittedArticulations.end()) {
+                if (updateMode == ArticulationsUpdateMode::Remove) {
+                    splittedArticulations.erase(SymId::articMarcatoAbove);
+                }
+            } else {
+                splittedArticulations.insert(SymId::articMarcatoAbove);
             }
-        } else {
-            splittedArticulations.insert(SymId::articAccentAbove);
+            break;
         }
-        break;
-    }
-    case SymId::articTenutoAbove: {
-        if (splittedArticulations.find(SymId::articTenutoAbove) != splittedArticulations.end()) {
-            if (updateMode == ArticulationsUpdateMode::Remove) {
-                splittedArticulations.erase(SymId::articTenutoAbove);
+        case SymId::articAccentAbove: {
+            if (splittedArticulations.find(SymId::articMarcatoAbove) != splittedArticulations.end()) {
+                splittedArticulations.erase(SymId::articMarcatoAbove);
+                splittedArticulations.insert(SymId::articAccentAbove);
+            } else if (splittedArticulations.find(SymId::articAccentAbove) != splittedArticulations.end()) {
+                if (updateMode == ArticulationsUpdateMode::Remove) {
+                    splittedArticulations.erase(SymId::articAccentAbove);
+                }
+            } else {
+                splittedArticulations.insert(SymId::articAccentAbove);
             }
-        } else {
-            splittedArticulations.insert(SymId::articTenutoAbove);
+            break;
         }
-        break;
-    }
-    case SymId::articStaccatoAbove: {
-        if (splittedArticulations.find(SymId::articStaccatoAbove) != splittedArticulations.end()) {
-            if (updateMode == ArticulationsUpdateMode::Remove) {
-                splittedArticulations.erase(SymId::articStaccatoAbove);
+        case SymId::articTenutoAbove: {
+            if (splittedArticulations.find(SymId::articTenutoAbove) != splittedArticulations.end()) {
+                if (updateMode == ArticulationsUpdateMode::Remove) {
+                    splittedArticulations.erase(SymId::articTenutoAbove);
+                }
+            } else {
+                splittedArticulations.insert(SymId::articTenutoAbove);
             }
-        } else {
-            splittedArticulations.insert(SymId::articStaccatoAbove);
+            break;
         }
-        break;
-    }
-    default:
-        break;
+        case SymId::articStaccatoAbove: {
+            if (splittedArticulations.find(SymId::articStaccatoAbove) != splittedArticulations.end()) {
+                if (updateMode == ArticulationsUpdateMode::Remove) {
+                    splittedArticulations.erase(SymId::articStaccatoAbove);
+                }
+            } else {
+                splittedArticulations.insert(SymId::articStaccatoAbove);
+            }
+            break;
+        }
+        default: break;
     }
     // we no longer want to join articulations when adding or removing individual ones. combined articulations can still
     // be added by the palette (which doesn't perform any of this splitting)
     return splittedArticulations;
 }
 
-std::set<SymId> flipArticulations(const std::set<SymId>& articulationSymbolIds, PlacementV placement)
-{
+std::set<SymId> flipArticulations(const std::set<SymId> &articulationSymbolIds, PlacementV placement) {
     std::set<SymId> result;
     switch (placement) {
-    case PlacementV::ABOVE:
-        for (const SymId& articulationSymbolId: articulationSymbolIds) {
-            bool found = false;
-            for (auto it = ARTICULATION_PLACEMENTS.begin(); it != ARTICULATION_PLACEMENTS.end(); ++it) {
-                if (it->second == articulationSymbolId) {
-                    result.insert(it->first);
-                    found = true;
-                    break;
+        case PlacementV::ABOVE:
+            for (const SymId &articulationSymbolId : articulationSymbolIds) {
+                bool found = false;
+                for (auto it = ARTICULATION_PLACEMENTS.begin(); it != ARTICULATION_PLACEMENTS.end(); ++it) {
+                    if (it->second == articulationSymbolId) {
+                        result.insert(it->first);
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    result.insert(articulationSymbolId);
                 }
             }
+            break;
+        case PlacementV::BELOW:
+            for (const SymId &articulationSymbolId : articulationSymbolIds) {
+                bool found = false;
+                for (auto it = ARTICULATION_PLACEMENTS.begin(); it != ARTICULATION_PLACEMENTS.end(); ++it) {
+                    if (it->first == articulationSymbolId) {
+                        result.insert(it->second);
+                        found = true;
+                        break;
+                    }
+                }
 
-            if (!found) {
-                result.insert(articulationSymbolId);
-            }
-        }
-        break;
-    case PlacementV::BELOW:
-        for (const SymId& articulationSymbolId: articulationSymbolIds) {
-            bool found = false;
-            for (auto it = ARTICULATION_PLACEMENTS.begin(); it != ARTICULATION_PLACEMENTS.end(); ++it) {
-                if (it->first == articulationSymbolId) {
-                    result.insert(it->second);
-                    found = true;
-                    break;
+                if (!found) {
+                    result.insert(articulationSymbolId);
                 }
             }
-
-            if (!found) {
-                result.insert(articulationSymbolId);
-            }
-        }
     }
 
     return result;
 }
 
-double Articulation::LayoutData::opticalCenter() const
-{
+double Articulation::LayoutData::opticalCenter() const {
     switch (symId.value()) {
-    case SymId::handbellsMartellatoLift:
-        return 0.5 * m_item->symWidth(SymId::handbellsMartellato);
-    case SymId::handbellsMalletLft:
-        return 0.5 * m_item->symWidth(SymId::handbellsMalletBellOnTable);
-    case SymId::handbellsPluckLift:
-        return 0.5 * m_item->symWidth(SymId::articStaccatoAbove);
-    default:
-        return 0.5 * bbox().width();
+        case SymId::handbellsMartellatoLift: return 0.5 * m_item->symWidth(SymId::handbellsMartellato);
+        case SymId::handbellsMalletLft: return 0.5 * m_item->symWidth(SymId::handbellsMalletBellOnTable);
+        case SymId::handbellsPluckLift: return 0.5 * m_item->symWidth(SymId::articStaccatoAbove);
+        default: return 0.5 * bbox().width();
     }
 }
-}
+} // namespace mu::engraving

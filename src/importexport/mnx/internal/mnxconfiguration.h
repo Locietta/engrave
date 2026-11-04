@@ -23,11 +23,8 @@
 
 #include "../imnxconfiguration.h"
 
-
-
 namespace mu::iex::mnxio {
-class MnxConfiguration : public IMnxConfiguration
-{
+class MnxConfiguration : public IMnxConfiguration {
 public:
     void init();
 
@@ -43,4 +40,4 @@ public:
     bool mnxRequireExactSchemaValidation() const override;
     void setMnxRequireExactSchemaValidation(bool value) override;
 };
-}
+} // namespace mu::iex::mnxio

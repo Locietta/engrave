@@ -30,16 +30,15 @@ namespace mu::engraving {
 class ChordBracket;
 class Segment;
 class Shape;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class ChordBracketLayout
-{
+class ChordBracketLayout {
 public:
-    static void layoutSegment(Segment* segment, LayoutContext& ctx);
-    static void updateHorizontalSpacing(const Segment* firstSegment, const Segment* secondSegment, staff_idx_t staffIdx,
-                                        double squeezeFactor, double& minDistance);
-    static void updateVerticalGeometry(ChordBracket* bracket, LayoutContext& ctx);
+    static void layoutSegment(Segment *segment, LayoutContext &ctx);
+    static void updateHorizontalSpacing(const Segment *firstSegment, const Segment *secondSegment, staff_idx_t staffIdx,
+                                        double squeezeFactor, double &minDistance);
+    static void updateVerticalGeometry(ChordBracket *bracket, LayoutContext &ctx);
 
 private:
     struct BracketVisualSpan {
@@ -51,9 +50,9 @@ private:
         double bottomY = 0.0;
     };
 
-    static std::vector<ChordBracket*> chordBracketsInSegment(const Segment* segment);
-    static BracketVisualSpan bracketVisualSpan(const ChordBracket* bracket);
-    static Shape bracketCollisionShape(const ChordBracket* bracket, const BracketVisualSpan& span, staff_idx_t staffIdx, double x);
-    static void layoutHorizontal(ChordBracket* bracket);
+    static std::vector<ChordBracket *> chordBracketsInSegment(const Segment *segment);
+    static BracketVisualSpan bracketVisualSpan(const ChordBracket *bracket);
+    static Shape bracketCollisionShape(const ChordBracket *bracket, const BracketVisualSpan &span, staff_idx_t staffIdx, double x);
+    static void layoutHorizontal(ChordBracket *bracket);
 };
 } // namespace mu::engraving::rendering::score

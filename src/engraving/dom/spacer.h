@@ -32,40 +32,39 @@ class Factory;
 //   SpacerType
 //---------------------------------------------------------
 
-enum class SpacerType : char {
-    UP, DOWN, FIXED
-};
+enum class SpacerType : char { UP, DOWN, FIXED };
 
 //-------------------------------------------------------------------
 //   @@ Spacer
 ///    Vertical spacer element to adjust the distance of staves.
 //-------------------------------------------------------------------
 
-class Spacer final : public EngravingItem
-{
+class Spacer final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, Spacer)
     DECLARE_CLASSOF(ElementType::SPACER)
 
 public:
 
-    Spacer* clone() const override { return new Spacer(*this); }
-    Measure* measure() const { return toMeasure(ownershipParent()); }
+    Spacer *clone() const override { return new Spacer(*this); }
+
+    Measure *measure() const { return toMeasure(ownershipParent()); }
 
     SpacerType spacerType() const { return m_spacerType; }
+
     void setSpacerType(SpacerType t) { m_spacerType = t; }
 
     int subtype() const override { return int(m_spacerType); }
+
     TranslatableString subtypeUserName() const override;
 
-
     void setGap(Spatium sp);
+
     Spatium gap() const { return m_gap; }
 
     double absoluteGap() const { return absoluteFromSpatium(m_gap); }
 
-
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid id) const override;
     void triggerLayout() const override;
 
@@ -78,9 +77,9 @@ private:
 
     friend class Factory;
     Spacer(DummyParentOr<Measure> parent);
-    Spacer(const Spacer&);
+    Spacer(const Spacer &);
 
     SpacerType m_spacerType = SpacerType::UP;
     Spatium m_gap;
 };
-}
+} // namespace mu::engraving

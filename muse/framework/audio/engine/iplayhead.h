@@ -27,20 +27,18 @@
 #include "audio/common/timeposition.h"
 
 namespace muse::audio::engine {
-class IPlayheadPosition
-{
+class IPlayheadPosition {
 public:
     virtual ~IPlayheadPosition() = default;
-    virtual const TimePosition& currentPosition() const = 0;
+    virtual const TimePosition &currentPosition() const = 0;
 };
 
-class IPlayhead : public IPlayheadPosition
-{
+class IPlayhead : public IPlayheadPosition {
 public:
 
-    virtual void forward(const TimePosition& delta) = 0;
+    virtual void forward(const TimePosition &delta) = 0;
 };
 
 using PlayheadPositionPtr = std::shared_ptr<IPlayheadPosition>;
 using PlayheadPtr = std::shared_ptr<IPlayhead>;
-}
+} // namespace muse::audio::engine

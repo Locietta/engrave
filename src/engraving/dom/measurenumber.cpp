@@ -32,19 +32,16 @@ namespace mu::engraving {
 //   measureNumberStyle
 //---------------------------------------------------------
 
-static const ElementStyle measureNumberStyle {
-    { Sid::measureNumberVPlacement, Pid::PLACEMENT },
-    { Sid::measureNumberMinDistance, Pid::MIN_DISTANCE },
-    { Sid::measureNumberTextStyle, Pid::TEXT_STYLE }
-};
+static const ElementStyle measureNumberStyle{{Sid::measureNumberVPlacement, Pid::PLACEMENT},
+                                             {Sid::measureNumberMinDistance, Pid::MIN_DISTANCE},
+                                             {Sid::measureNumberTextStyle, Pid::TEXT_STYLE}};
 
 //---------------------------------------------------------
 //   MeasureNumber
 //---------------------------------------------------------
 
 MeasureNumber::MeasureNumber(DummyParentOr<Measure> parent, TextStyleType tid)
-    : MeasureNumberBase(ElementType::MEASURE_NUMBER, parent, tid)
-{
+    : MeasureNumberBase(ElementType::MEASURE_NUMBER, parent, tid) {
     initElementStyle(&measureNumberStyle);
 }
 
@@ -53,15 +50,10 @@ MeasureNumber::MeasureNumber(DummyParentOr<Measure> parent, TextStyleType tid)
 //     Copy constructor
 //---------------------------------------------------------
 
-MeasureNumber::MeasureNumber(const MeasureNumber& other)
-    : MeasureNumberBase(other)
-{
-    initElementStyle(&measureNumberStyle);
-}
+MeasureNumber::MeasureNumber(const MeasureNumber &other) : MeasureNumberBase(other) { initElementStyle(&measureNumberStyle); }
 
-bool MeasureNumber::isSystemObjectBelowBottomStaff() const
-{
-    return style().styleV(Sid::measureNumberPlacementMode).value<MeasureNumberPlacement>() == MeasureNumberPlacement::BELOW_SYSTEM
-           || EngravingItem::isSystemObjectBelowBottomStaff();
+bool MeasureNumber::isSystemObjectBelowBottomStaff() const {
+    return style().styleV(Sid::measureNumberPlacementMode).value<MeasureNumberPlacement>() == MeasureNumberPlacement::BELOW_SYSTEM ||
+           EngravingItem::isSystemObjectBelowBottomStaff();
 }
-} // namespace MS
+} // namespace mu::engraving

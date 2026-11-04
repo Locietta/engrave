@@ -41,15 +41,14 @@
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-void ScoreVerticalViewLayout::layoutVerticalView(Score* score, LayoutContext& ctx, const Fraction& stick, const Fraction& etick)
-{
+void ScoreVerticalViewLayout::layoutVerticalView(Score *score, LayoutContext &ctx, const Fraction &stick, const Fraction &etick) {
     ctx.mutState().setEndTick(etick);
 
     //---------------------------------------------------
     //    initialize layout context lc
     //---------------------------------------------------
 
-    MeasureBase* m = score->tick2measure(stick);
+    MeasureBase *m = score->tick2measure(stick);
     if (m == 0) {
         m = score->first();
     }
@@ -73,7 +72,7 @@ void ScoreVerticalViewLayout::layoutVerticalView(Score* score, LayoutContext& ct
     }
 
     if (!ctx.state().isLayoutAll() && m->system()) {
-        System* system = m->system();
+        System *system = m->system();
         system_idx_t systemIndex = muse::indexOf(score->systems(), system);
         ctx.mutState().setPage(system->page());
         ctx.mutState().setPageIdx(score->pageIdx(ctx.state().page()));
@@ -86,7 +85,7 @@ void ScoreVerticalViewLayout::layoutVerticalView(Score* score, LayoutContext& ct
         if (systemIndex == 0) {
             ctx.mutState().setNextMeasure(ctx.conf().isShowVBox() ? score->first() : score->firstMeasure());
         } else {
-            System* prevSystem = score->systems()[systemIndex - 1];
+            System *prevSystem = score->systems()[systemIndex - 1];
             ctx.mutState().setNextMeasure(prevSystem->measures().back()->next());
         }
 
@@ -95,29 +94,30 @@ void ScoreVerticalViewLayout::layoutVerticalView(Score* score, LayoutContext& ct
             ctx.mutState().setMeasureNumber(0);
             ctx.mutState().setTick(Fraction(0, 1));
         } else {
-            const MeasureBase* mb = ctx.state().nextMeasure()->prev();
+            const MeasureBase *mb = ctx.state().nextMeasure()->prev();
             if (mb) {
                 mb = mb->mbWithPrecedingSectionBreak();
             }
 
-            const LayoutBreak* layoutBreak = mb->sectionBreakElement();
+            const LayoutBreak *layoutBreak = mb->sectionBreakElement();
             // TODO: also use mb in else clause here?
             // probably not, only actual measures have meaningful numbers
             if (layoutBreak && layoutBreak->startWithMeasureOne()) {
                 ctx.mutState().setMeasureNumber(0);
             } else {
-                ctx.mutState().setMeasureNumber(ctx.state().nextMeasure()->prevMeasure()->measureNumber()                      // will be adjusted later with respect
-                                                + (ctx.state().nextMeasure()->prevMeasure()->excludeFromNumbering() ? 0 : 1)); // to the user-defined offset.
+                ctx.mutState().setMeasureNumber(
+                    ctx.state().nextMeasure()->prevMeasure()->measureNumber()                      // will be adjusted later with respect
+                    + (ctx.state().nextMeasure()->prevMeasure()->excludeFromNumbering() ? 0 : 1)); // to the user-defined offset.
             }
             ctx.mutState().setTick(ctx.state().nextMeasure()->tick());
         }
     } else {
-        for (System* s : score->systems()) {
-            for (Bracket* b : s->brackets()) {
+        for (System *s : score->systems()) {
+            for (Bracket *b : s->brackets()) {
                 if (b->selected()) {
                     bool selected = b->selected();
                     score->selection().remove(b);
-                    BracketItem* item = b->bracketItem();
+                    BracketItem *item = b->bracketItem();
                     item->setSelected(selected);
                     score->setSelectionChanged(true);
                 }
@@ -125,7 +125,7 @@ void ScoreVerticalViewLayout::layoutVerticalView(Score* score, LayoutContext& ct
             // no need to clear the page placement: the systems are deleted below,
             // and ~System unlinks itself from its page
         }
-        for (MeasureBase* mb = score->first(); mb; mb = mb->next()) {
+        for (MeasureBase *mb = score->first(); mb; mb = mb->next()) {
             mb->setSystem(nullptr);
             if (mb->isMeasure() && toMeasure(mb)->mmRest()) {
                 toMeasure(mb)->mmRest()->setSystem(nullptr);
@@ -156,9 +156,8 @@ void ScoreVerticalViewLayout::layoutVerticalView(Score* score, LayoutContext& ct
     doLayout(ctx);
 }
 
-void ScoreVerticalViewLayout::doLayout(LayoutContext& ctx)
-{
-    const MeasureBase* lmb = nullptr;
+void ScoreVerticalViewLayout::doLayout(LayoutContext &ctx) {
+    const MeasureBase *lmb = nullptr;
     do {
         PageLayout::getNextPage(ctx);
         PageLayout::collectPage(ctx);
@@ -189,12 +188,12 @@ void ScoreVerticalViewLayout::doLayout(LayoutContext& ctx)
         ctx.mutState().systemList().clear();
         // ...and the remaining pages too
         while (ctx.dom().npages() > ctx.state().pageIdx()) {
-            Page* p = ctx.mutDom().pages().back();
+            Page *p = ctx.mutDom().pages().back();
             ctx.mutDom().pages().pop_back();
             delete p;
         }
     } else {
-        Page* p = ctx.mutState().curSystem()->page();
+        Page *p = ctx.mutState().curSystem()->page();
         if (p && (p != ctx.state().page())) {
             p->invalidateBspTree();
         }

@@ -28,27 +28,20 @@
 #include "circularsamplebuffer.h"
 
 namespace muse::audio::fx {
-template<typename SampleT, int maxNumChannels>
-class SampleDelay
-{
+template <typename SampleT, int maxNumChannels>
+class SampleDelay {
 public:
-    SampleDelay()
-    {
-    }
+    SampleDelay() {}
 
-    ~SampleDelay()
-    {
-    }
+    ~SampleDelay() {}
 
-    void allocateForMaxDelaySamples(int maxDelaySamples)
-    {
+    void allocateForMaxDelaySamples(int maxDelaySamples) {
         for (auto ch = 0; ch < maxNumChannels; ++ch) {
             m_buffer[ch].setSize(maxDelaySamples);
         }
     }
 
-    void setDelaySamples(int samples)
-    {
+    void setDelaySamples(int samples) {
         if (m_delaySamples == samples) {
             return;
         }
@@ -58,20 +51,15 @@ public:
         reset();
     }
 
-    int getDelaySamples() const
-    {
-        return m_delaySamples;
-    }
+    int getDelaySamples() const { return m_delaySamples; }
 
-    void reset()
-    {
+    void reset() {
         for (auto ch = 0; ch < maxNumChannels; ++ch) {
             m_buffer[ch].reset();
         }
     }
 
-    SampleT processSample(const SampleT& sample, int ch)
-    {
+    SampleT processSample(const SampleT &sample, int ch) {
         if (m_delaySamples == 0) {
             return sample;
         }
@@ -82,8 +70,7 @@ public:
         return s;
     }
 
-    void processBlock(SampleT** smp, int numCh, int numSamples)
-    {
+    void processBlock(SampleT **smp, int numCh, int numSamples) {
         assert(numCh <= maxNumChannels);
         if (m_delaySamples == 0) {
             return;

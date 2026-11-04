@@ -25,7 +25,7 @@
 namespace mu::engraving {
 class MasterScore;
 class Score;
-}
+} // namespace mu::engraving
 
 namespace music {
 struct ExcerptInfo {
@@ -39,17 +39,17 @@ struct ExcerptInfo {
 // Returns true only when excerpts were added. Existing excerpts, including
 // excerpts loaded from a file, are left untouched, so repeated calls are
 // idempotent. Throws std::invalid_argument when score is null.
-bool generate_score_excerpts(mu::engraving::MasterScore* score);
+bool generate_score_excerpts(mu::engraving::MasterScore *score);
 
 // Lists excerpts in MasterScore::excerpts() order. "pages" is the excerpt
 // score's current layout page count (0 when that score has no layout). This
 // never generates excerpts. Throws std::invalid_argument when score is null.
-std::vector<ExcerptInfo> list_score_excerpts(mu::engraving::MasterScore* score);
+std::vector<ExcerptInfo> list_score_excerpts(mu::engraving::MasterScore *score);
 
 // Returns the full score for excerpt_id == -1, otherwise the excerpt score at
 // that index. The selected score is laid out first when it has no pages.
 // Throws std::invalid_argument when score is null, std::out_of_range for an
 // invalid id, and std::runtime_error when the excerpt has no usable,
 // document-owned score.
-mu::engraving::Score* select_score(mu::engraving::MasterScore* score, int excerpt_id = -1);
-}
+mu::engraving::Score *select_score(mu::engraving::MasterScore *score, int excerpt_id = -1);
+} // namespace music

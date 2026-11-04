@@ -39,10 +39,7 @@ using namespace muse::audio;
 using namespace muse::audio::synth;
 using namespace muse::mpe;
 
-void muse::audio::synth::releaseSoundFontCache()
-{
-    SoundFontCache::instance()->clearUnused();
-}
+void muse::audio::synth::releaseSoundFontCache() { SoundFontCache::instance()->clearUnused(); }
 
 static constexpr bool FLUID_DEBUG = false;
 
@@ -61,51 +58,43 @@ static constexpr bool STAFF_TO_MIDIOUT_CHANNEL = true;
 static constexpr midi::channel_t MIDI_CHANNEL_COUNT = 16;
 
 struct muse::audio::synth::Fluid {
-    fluid_settings_t* settings = nullptr;
-    fluid_synth_t* synth = nullptr;
+    fluid_settings_t *settings = nullptr;
+    fluid_synth_t *synth = nullptr;
 
-    ~Fluid()
-    {
+    ~Fluid() {
         delete_fluid_synth(synth);
         delete_fluid_settings(settings);
     }
 };
 
-FluidSynth::FluidSynth(const AudioSourceParams& params, const engine::IAudioEngineConfiguration& config,
-                       midi::IMidiOutPort* midiOutPort)
-    : AbstractSynthesizer(params, config)
-{
+FluidSynth::FluidSynth(const AudioSourceParams &params, const engine::IAudioEngineConfiguration &config, midi::IMidiOutPort *midiOutPort)
+    : AbstractSynthesizer(params, config) {
     m_fluid = std::make_shared<Fluid>();
     m_midiOutPort = midiOutPort;
 }
 
-bool FluidSynth::isValid() const
-{
-    return m_fluid->synth != nullptr;
-}
+bool FluidSynth::isValid() const { return m_fluid->synth != nullptr; }
 
-Ret FluidSynth::init(const OutputSpec& spec)
-{
-    auto fluid_log_out = [](int level, const char* message, void*) {
+Ret FluidSynth::init(const OutputSpec &spec) {
+    auto fluid_log_out = [](int level, const char *message, void *) {
 #undef LOG_TAG
 #define LOG_TAG "FluidSynth"
-
         switch (level) {
-        case FLUID_PANIC:
-        case FLUID_ERR:  {
-            LOGE() << message;
-        } break;
-        case FLUID_WARN: {
-            LOGW() << message;
-        } break;
-        case FLUID_INFO: {
-            LOGI() << message;
-        } break;
-        case FLUID_DBG:  {
-            if (FLUID_DEBUG) {
-                LOGD() << message;
-            }
-        } break;
+            case FLUID_PANIC:
+            case FLUID_ERR: {
+                LOGE() << message;
+            } break;
+            case FLUID_WARN: {
+                LOGW() << message;
+            } break;
+            case FLUID_INFO: {
+                LOGI() << message;
+            } break;
+            case FLUID_DBG: {
+                if (FLUID_DEBUG) {
+                    LOGD() << message;
+                }
+            } break;
         }
 
 #undef LOG_TAG
@@ -113,7 +102,7 @@ Ret FluidSynth::init(const OutputSpec& spec)
 
         if (level < FLUID_DBG) {
             bool debugme = true;
-            (void)debugme;
+            (void) debugme;
         }
     };
 
@@ -148,30 +137,24 @@ Ret FluidSynth::init(const OutputSpec& spec)
 
     createFluidInstance();
 
-    m_sequencer.setOnOffStreamFlushed([this]() {
-        m_flushSoundRequested = true;
-    });
+    m_sequencer.setOnOffStreamFlushed([this]() { m_flushSoundRequested = true; });
 
     LOGD() << "synth inited\n";
     return true;
 }
 
-void FluidSynth::createFluidInstance()
-{
+void FluidSynth::createFluidInstance() {
     OfflineTimer timer(OfflineTiming::current().create);
     m_fluid->synth = new_fluid_synth(m_fluid->settings);
 
-    fluid_sfloader_t* sfloader = new_fluid_sfloader(loadSoundFont, delete_fluid_sfloader);
+    fluid_sfloader_t *sfloader = new_fluid_sfloader(loadSoundFont, delete_fluid_sfloader);
 
     fluid_sfloader_set_data(sfloader, m_fluid->settings);
     fluid_synth_add_sfloader(m_fluid->synth, sfloader);
 }
 
-void FluidSynth::doFlushSound()
-{
-    IF_ASSERT_FAILED(m_fluid->synth) {
-        return;
-    }
+void FluidSynth::doFlushSound() {
+    IF_ASSERT_FAILED(m_fluid->synth) { return; }
 
     fluid_synth_all_notes_off(m_fluid->synth, -1);
 
@@ -222,32 +205,31 @@ void FluidSynth::doFlushSound()
     }
 }
 
-bool FluidSynth::handleEvent(const midi::Event& event)
-{
+bool FluidSynth::handleEvent(const midi::Event &event) {
     int ret = FLUID_OK;
     switch (event.opcode()) {
-    case Event::Opcode::NoteOn: {
-        // fluid_synth_noteon expects 0...127
-        ret = fluid_synth_noteon(m_fluid->synth, event.channel(), event.note(), event.velocity7());
-        m_tuning.add(event.note(), event.pitchTuningCents());
-    } break;
-    case Event::Opcode::NoteOff: {
-        ret = fluid_synth_noteoff(m_fluid->synth, event.channel(), event.note());
-        m_tuning.add(event.note(), event.pitchTuningCents());
-    } break;
-    case Event::Opcode::ControlChange: {
-        ret = fluid_synth_cc(m_fluid->synth, event.channel(), event.index(), event.data7());
-    } break;
-    case Event::Opcode::ProgramChange: {
-        fluid_synth_program_change(m_fluid->synth, event.channel(), event.program());
-    } break;
-    case Event::Opcode::PitchBend: {
-        ret = setPitchBend(event.channel(), event.pitchBend14());
-    } break;
-    default: {
-        LOGD() << "not supported event type: " << event.opcodeString();
-        ret = FLUID_FAILED;
-    }
+        case Event::Opcode::NoteOn: {
+            // fluid_synth_noteon expects 0...127
+            ret = fluid_synth_noteon(m_fluid->synth, event.channel(), event.note(), event.velocity7());
+            m_tuning.add(event.note(), event.pitchTuningCents());
+        } break;
+        case Event::Opcode::NoteOff: {
+            ret = fluid_synth_noteoff(m_fluid->synth, event.channel(), event.note());
+            m_tuning.add(event.note(), event.pitchTuningCents());
+        } break;
+        case Event::Opcode::ControlChange: {
+            ret = fluid_synth_cc(m_fluid->synth, event.channel(), event.index(), event.data7());
+        } break;
+        case Event::Opcode::ProgramChange: {
+            fluid_synth_program_change(m_fluid->synth, event.channel(), event.program());
+        } break;
+        case Event::Opcode::PitchBend: {
+            ret = setPitchBend(event.channel(), event.pitchBend14());
+        } break;
+        default: {
+            LOGD() << "not supported event type: " << event.opcodeString();
+            ret = FLUID_FAILED;
+        }
     }
 
     if (m_midiOutPort) {
@@ -267,8 +249,7 @@ bool FluidSynth::handleEvent(const midi::Event& event)
     return ret == FLUID_OK;
 }
 
-void FluidSynth::setMode(const ProcessMode mode)
-{
+void FluidSynth::setMode(const ProcessMode mode) {
     if (m_mode == mode) {
         return;
     }
@@ -279,8 +260,7 @@ void FluidSynth::setMode(const ProcessMode mode)
     updateExpressionLevels();
 }
 
-void FluidSynth::setOutputSpec(const OutputSpec& spec)
-{
+void FluidSynth::setOutputSpec(const OutputSpec &spec) {
     if (m_outputSpec == spec) {
         return;
     }
@@ -303,15 +283,12 @@ void FluidSynth::setOutputSpec(const OutputSpec& spec)
     }
 }
 
-Ret FluidSynth::addSoundFonts(const std::vector<io::path_t>& sfonts)
-{
+Ret FluidSynth::addSoundFonts(const std::vector<io::path_t> &sfonts) {
     OfflineTimer timer(OfflineTiming::current().fonts);
-    IF_ASSERT_FAILED(m_fluid->synth) {
-        return make_ret(Err::SynthNotInited);
-    }
+    IF_ASSERT_FAILED(m_fluid->synth) { return make_ret(Err::SynthNotInited); }
 
     bool ok = true;
-    for (const io::path_t& sfont : sfonts) {
+    for (const io::path_t &sfont : sfonts) {
         if (fluid_synth_sfload(m_fluid->synth, sfont.c_str(), 0) == FLUID_FAILED) {
             LOGE() << "failed load soundfont: " << sfont;
             ok = false;
@@ -325,30 +302,18 @@ Ret FluidSynth::addSoundFonts(const std::vector<io::path_t>& sfonts)
     return ok ? make_ret(Err::NoError) : make_ret(Err::SoundFontFailedLoad);
 }
 
-void FluidSynth::setPreset(const std::optional<midi::Program>& preset)
-{
-    m_preset = preset;
-}
+void FluidSynth::setPreset(const std::optional<midi::Program> &preset) { m_preset = preset; }
 
-std::string FluidSynth::name() const
-{
-    return "Fluid";
-}
+std::string FluidSynth::name() const { return "Fluid"; }
 
-AudioSourceType FluidSynth::type() const
-{
-    return AudioSourceType::Fluid;
-}
+AudioSourceType FluidSynth::type() const { return AudioSourceType::Fluid; }
 
-void FluidSynth::setupSound(const PlaybackSetupData& setupData)
-{
-    IF_ASSERT_FAILED(m_fluid->synth) {
-        return;
-    }
+void FluidSynth::setupSound(const PlaybackSetupData &setupData) {
+    IF_ASSERT_FAILED(m_fluid->synth) { return; }
 
     fluid_synth_activate_key_tuning(m_fluid->synth, 0, 0, "standard", NULL, true);
 
-    auto setupChannel = [this](const midi::channel_t channelIdx, const midi::Program& program) {
+    auto setupChannel = [this](const midi::channel_t channelIdx, const midi::Program &program) {
         if (OfflineCancellation::requested()) return;
         fluid_synth_set_interp_method(m_fluid->synth, channelIdx, FLUID_INTERP_DEFAULT);
         fluid_synth_pitch_wheel_sens(m_fluid->synth, channelIdx, 24);
@@ -366,40 +331,29 @@ void FluidSynth::setupSound(const PlaybackSetupData& setupData)
 
     m_sequencer.init(setupData, m_preset, setupData.supportsSingleNoteDynamics, MIDI_CHANNEL_COUNT);
 
-    for (const auto& voice : m_sequencer.channels().data()) {
-        for (const auto& pair : voice.second) {
-            const ChannelMap::ChannelMapping& channelMapping = pair.second;
+    for (const auto &voice : m_sequencer.channels().data()) {
+        for (const auto &pair : voice.second) {
+            const ChannelMap::ChannelMapping &channelMapping = pair.second;
             setupChannel(channelMapping.first, channelMapping.second);
         }
     }
 }
 
-void FluidSynth::setupEvents(const mpe::PlaybackData& playbackData)
-{
-    m_sequencer.load(playbackData);
-}
+void FluidSynth::setupEvents(const mpe::PlaybackData &playbackData) { m_sequencer.load(playbackData); }
 
-const mpe::PlaybackData& FluidSynth::playbackData() const
-{
-    return m_sequencer.playbackData();
-}
+const mpe::PlaybackData &FluidSynth::playbackData() const { return m_sequencer.playbackData(); }
 
-void FluidSynth::flushSound()
-{
+void FluidSynth::flushSound() {
     m_sequencer.flushOffstream();
     m_flushSoundRequested = true;
 }
 
-TimePosition FluidSynth::playbackPosition() const
-{
+TimePosition FluidSynth::playbackPosition() const {
     return TimePosition::fromTime(muse::usecs_to_secs(m_sequencer.playbackPosition().raw()), m_outputSpec.sampleRate);
 }
 
-void FluidSynth::setPlaybackPosition(const TimePosition& position)
-{
-    IF_ASSERT_FAILED(position.isValid()) {
-        return;
-    }
+void FluidSynth::setPlaybackPosition(const TimePosition &position) {
+    IF_ASSERT_FAILED(position.isValid()) { return; }
 
     //! NOTE Don't trust that msecs_t is used everywhere here,
     // in fact, usecs_t (microseconds) is stored there.
@@ -411,11 +365,8 @@ void FluidSynth::setPlaybackPosition(const TimePosition& position)
     }
 }
 
-samples_t FluidSynth::process(float* buffer, samples_t samplesPerChannel)
-{
-    IF_ASSERT_FAILED(samplesPerChannel > 0) {
-        return 0;
-    }
+samples_t FluidSynth::process(float *buffer, samples_t samplesPerChannel) {
+    IF_ASSERT_FAILED(samplesPerChannel > 0) { return 0; }
 
     if (OfflineCancellation::requested()) return 0;
     if (m_flushSoundRequested) {
@@ -437,9 +388,7 @@ samples_t FluidSynth::process(float* buffer, samples_t samplesPerChannel)
             durationInSamples = microSecsToSamples(duration, m_outputSpec.sampleRate);
         }
 
-        IF_ASSERT_FAILED(sampleOffset + durationInSamples <= samplesPerChannel) {
-            break;
-        }
+        IF_ASSERT_FAILED(sampleOffset + durationInSamples <= samplesPerChannel) { break; }
 
         if (!processSequence(it->second, durationInSamples, buffer + sampleOffset * FLUID_AUDIO_CHANNELS_COUNT)) {
             return 0;
@@ -451,14 +400,13 @@ samples_t FluidSynth::process(float* buffer, samples_t samplesPerChannel)
     return samplesPerChannel;
 }
 
-bool FluidSynth::processSequence(const FluidSequencer::EventSequence& sequence, const samples_t samples, float* buffer)
-{
+bool FluidSynth::processSequence(const FluidSequencer::EventSequence &sequence, const samples_t samples, float *buffer) {
     OfflineCancellation::SynthesisScope synthesisScope;
     if (!sequence.empty()) {
         m_tuning.reset();
     }
 
-    for (const FluidSequencer::EventType& event : sequence) {
+    for (const FluidSequencer::EventType &event : sequence) {
         if (OfflineCancellation::requested()) return false;
         handleEvent(std::get<midi::Event>(event));
     }
@@ -475,20 +423,17 @@ bool FluidSynth::processSequence(const FluidSequencer::EventSequence& sequence, 
     for (samples_t offset = 0; offset < samples;) {
         if (OfflineCancellation::requested()) return false;
         const samples_t count = std::min<samples_t>(64, samples - offset);
-        float* out = buffer + offset * FLUID_AUDIO_CHANNELS_COUNT;
-        if (fluid_synth_write_float(m_fluid->synth, count,
-                                   out, 0, FLUID_AUDIO_CHANNELS_COUNT,
-                                   out, 1, FLUID_AUDIO_CHANNELS_COUNT) != FLUID_OK) return false;
+        float *out = buffer + offset * FLUID_AUDIO_CHANNELS_COUNT;
+        if (fluid_synth_write_float(m_fluid->synth, count, out, 0, FLUID_AUDIO_CHANNELS_COUNT, out, 1, FLUID_AUDIO_CHANNELS_COUNT) !=
+            FLUID_OK)
+            return false;
         offset += count;
     }
     return true;
 }
 
-void FluidSynth::updateExpressionLevels()
-{
-    IF_ASSERT_FAILED(m_fluid->synth) {
-        return;
-    }
+void FluidSynth::updateExpressionLevels() {
+    IF_ASSERT_FAILED(m_fluid->synth) { return; }
 
     std::vector<FluidSequencer::ChannelExpressionLevel> levels;
     if (m_sequencer.isActive()) {
@@ -507,7 +452,7 @@ void FluidSynth::updateExpressionLevels()
 
     std::vector<bool> covered(channelCount, false);
 
-    for (const FluidSequencer::ChannelExpressionLevel& expressionLevel : levels) {
+    for (const FluidSequencer::ChannelExpressionLevel &expressionLevel : levels) {
         fluid_synth_cc(m_fluid->synth, expressionLevel.channel, muse::midi::EXPRESSION_CONTROLLER, expressionLevel.level);
         if (expressionLevel.channel < channelCount) {
             covered[expressionLevel.channel] = true;
@@ -521,8 +466,7 @@ void FluidSynth::updateExpressionLevels()
     }
 }
 
-int FluidSynth::setControllerValue(int channel, int ctrl, int value)
-{
+int FluidSynth::setControllerValue(int channel, int ctrl, int value) {
     int currentValue = 0;
     fluid_synth_get_cc(m_fluid->synth, channel, ctrl, &currentValue);
 
@@ -533,8 +477,7 @@ int FluidSynth::setControllerValue(int channel, int ctrl, int value)
     return fluid_synth_cc(m_fluid->synth, channel, ctrl, value);
 }
 
-int FluidSynth::setPitchBend(int channel, int pitchBend)
-{
+int FluidSynth::setPitchBend(int channel, int pitchBend) {
     int currentValue = 0;
     fluid_synth_get_pitch_bend(m_fluid->synth, channel, &currentValue);
 

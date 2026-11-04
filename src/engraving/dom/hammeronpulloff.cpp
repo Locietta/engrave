@@ -32,28 +32,15 @@
 #include "system.h"
 
 namespace mu::engraving {
-HammerOnPullOff::HammerOnPullOff(DummyParentOr<EngravingItem> parent)
-    : Slur(parent, ElementType::HAMMER_ON_PULL_OFF)
-{
-}
+HammerOnPullOff::HammerOnPullOff(DummyParentOr<EngravingItem> parent) : Slur(parent, ElementType::HAMMER_ON_PULL_OFF) {}
 
-HammerOnPullOff::HammerOnPullOff(const HammerOnPullOff& other)
-    : Slur(other)
-{
-}
+HammerOnPullOff::HammerOnPullOff(const HammerOnPullOff &other) : Slur(other) {}
 
-HammerOnPullOffSegment::HammerOnPullOffSegment(HammerOnPullOff* sp)
-    : SlurSegment(sp, ElementType::HAMMER_ON_PULL_OFF_SEGMENT)
-{
-}
+HammerOnPullOffSegment::HammerOnPullOffSegment(HammerOnPullOff *sp) : SlurSegment(sp, ElementType::HAMMER_ON_PULL_OFF_SEGMENT) {}
 
-HammerOnPullOffSegment::HammerOnPullOffSegment(const HammerOnPullOffSegment& other)
-    : SlurSegment(other)
-{
-}
+HammerOnPullOffSegment::HammerOnPullOffSegment(const HammerOnPullOffSegment &other) : SlurSegment(other) {}
 
-Color HammerOnPullOffSegment::curColor(const rendering::PaintOptions& opt) const
-{
+Color HammerOnPullOffSegment::curColor(const rendering::PaintOptions &opt) const {
     if (!opt.isPrinting && MScore::warnGuitarBends && !isValid()) {
         return selected() ? configuration()->criticalSelectedColor() : configuration()->criticalColor();
     }
@@ -61,50 +48,46 @@ Color HammerOnPullOffSegment::curColor(const rendering::PaintOptions& opt) const
     return SlurSegment::curColor(opt);
 }
 
-void HammerOnPullOffSegment::scanElements(std::function<void(EngravingItem*)> func)
-{
-    for (HammerOnPullOffText* hopo : m_hopoText) {
+void HammerOnPullOffSegment::scanElements(std::function<void(EngravingItem *)> func) {
+    for (HammerOnPullOffText *hopo : m_hopoText) {
         hopo->scanElements(func);
     }
 
     EngravingItem::scanElements(func);
 }
 
-void HammerOnPullOffSegment::setTrack(track_idx_t idx)
-{
+void HammerOnPullOffSegment::setTrack(track_idx_t idx) {
     m_track = idx;
-    for (HammerOnPullOffText* hopo : m_hopoText) {
+    for (HammerOnPullOffText *hopo : m_hopoText) {
         hopo->setTrack(idx);
     }
 }
 
-void HammerOnPullOffSegment::setSelected(bool f)
-{
-    for (HammerOnPullOffText* text : m_hopoText) {
+void HammerOnPullOffSegment::setSelected(bool f) {
+    for (HammerOnPullOffText *text : m_hopoText) {
         text->setSelected(f);
     }
 
     SlurTieSegment::setSelected(f);
 }
 
-void HammerOnPullOffSegment::updateHopoText()
-{
-    Chord* startChord = nullptr;
+void HammerOnPullOffSegment::updateHopoText() {
+    Chord *startChord = nullptr;
     if (isSingleBeginType()) {
-        EngravingItem* startEl = hammerOnPullOff()->startElement();
+        EngravingItem *startEl = hammerOnPullOff()->startElement();
         startChord = startEl && startEl->isChord() ? toChord(startEl) : nullptr;
     } else {
-        ChordRest* firstCR = system()->firstChordRest(track());
+        ChordRest *firstCR = system()->firstChordRest(track());
         startChord = firstCR && firstCR->isChord() ? toChord(firstCR) : nullptr;
     }
 
-    Chord* endChord = nullptr;
+    Chord *endChord = nullptr;
     if (isSingleEndType()) {
-        EngravingItem* endEl = hammerOnPullOff()->endElement();
+        EngravingItem *endEl = hammerOnPullOff()->endElement();
         endChord = endEl && endEl->isChord() ? toChord(endEl) : nullptr;
     } else {
         // If the segment doesn't end in this system, the endChord is the first chord of next system
-        ChordRest* lastCR = system()->lastChordRest(track());
+        ChordRest *lastCR = system()->lastChordRest(track());
         if (lastCR) {
             lastCR = toChordRest(lastCR->segment()->next1WithElemsOnTrack(track())->element(track()));
         }
@@ -124,7 +107,7 @@ void HammerOnPullOffSegment::updateHopoText()
     for (; curRegionIdx < regionCount; ++curRegionIdx) {
         HopoTextRegion curRegion = hopoTextRegions[curRegionIdx];
 
-        HammerOnPullOffText* curHopoText;
+        HammerOnPullOffText *curHopoText;
         if (curRegionIdx < m_hopoText.size()) {
             // Reuse existing, if available
             curHopoText = m_hopoText[curRegionIdx];
@@ -137,7 +120,8 @@ void HammerOnPullOffSegment::updateHopoText()
         curHopoText->setTrack(track());
         curHopoText->setIsValid(curRegion.isValid);
         curHopoText->setIsHammerOn(curRegion.isHammerOn);
-        curHopoText->setXmlText(style().styleB(Sid::hopoUpperCase) ? (curRegion.isHammerOn ? "H" : "P") : (curRegion.isHammerOn ? "h" : "p"));
+        curHopoText->setXmlText(style().styleB(Sid::hopoUpperCase) ? (curRegion.isHammerOn ? "H" : "P") :
+                                                                     (curRegion.isHammerOn ? "h" : "p"));
         curHopoText->setStartChord(curRegion.startChord);
         curHopoText->setEndChord(curRegion.endChord);
     }
@@ -152,26 +136,23 @@ void HammerOnPullOffSegment::updateHopoText()
     }
 }
 
-std::vector<HammerOnPullOffSegment::HopoTextRegion> HammerOnPullOffSegment::computeHopoTextRegions(Chord* startChord, Chord* endChord)
-{
+std::vector<HammerOnPullOffSegment::HopoTextRegion> HammerOnPullOffSegment::computeHopoTextRegions(Chord *startChord, Chord *endChord) {
     std::vector<HopoTextRegion> result;
     bool isTabStaff = staffType()->isTabStaff();
     if ((isTabStaff && !style().styleB(Sid::hopoShowOnTabStaves)) || (!isTabStaff && !style().styleB(Sid::hopoShowOnStandardStaves))) {
         return result;
     }
 
-    for (Chord* curChord = startChord; curChord != endChord;) {
-        IF_ASSERT_FAILED(curChord->tick() <= endChord->tick()) {
-            break;
-        }
+    for (Chord *curChord = startChord; curChord != endChord;) {
+        IF_ASSERT_FAILED(curChord->tick() <= endChord->tick()) { break; }
 
-        Chord* nextChord = curChord->next();
+        Chord *nextChord = curChord->next();
         if (!nextChord) {
             break;
         }
 
-        Note* curNote = nullptr;
-        Note* nextNote = nullptr;
+        Note *curNote = nullptr;
+        Note *nextNote = nullptr;
         resolveStartEndNotes(&curNote, &nextNote, curChord, nextChord, isTabStaff);
 
         bool isValid = isTabStaff ? nextNote->string() == curNote->string() : nextNote->pitch() != curNote->pitch();
@@ -187,7 +168,7 @@ std::vector<HammerOnPullOffSegment::HopoTextRegion> HammerOnPullOffSegment::comp
             region.isHammerOn = isHammerOn;
             result.push_back(region);
         } else {
-            HopoTextRegion& curRegion = result.back();
+            HopoTextRegion &curRegion = result.back();
             curRegion.endChord = nextChord;
             curRegion.isValid = curRegion.isValid && isValid;
         }
@@ -198,13 +179,12 @@ std::vector<HammerOnPullOffSegment::HopoTextRegion> HammerOnPullOffSegment::comp
     return result;
 }
 
-void HammerOnPullOffSegment::resolveStartEndNotes(Note** startNote, Note** endNote, Chord* startChord, Chord* endChord, bool isTabStaff)
-{
+void HammerOnPullOffSegment::resolveStartEndNotes(Note **startNote, Note **endNote, Chord *startChord, Chord *endChord, bool isTabStaff) {
     // In future we need the ability to draw slurs between individual notes. For now, slurs are
     // attached to chords so we just try to guess which notes to consider for this HOPO
 
-    const std::vector<Note*>& startNotes = startChord->notes();
-    const std::vector<Note*>& endNotes = endChord->notes();
+    const std::vector<Note *> &startNotes = startChord->notes();
+    const std::vector<Note *> &endNotes = endChord->notes();
     int startNotesSize = static_cast<int>(startNotes.size());
     int endNotesSize = static_cast<int>(endNotes.size());
     int largerNoteCount = startNotesSize > endNotesSize ? startNotesSize : endNotesSize;
@@ -212,8 +192,8 @@ void HammerOnPullOffSegment::resolveStartEndNotes(Note** startNote, Note** endNo
     for (int i = largerNoteCount - 1; i >= 0; --i) {
         int startNoteIdx = std::min(i, startNotesSize - 1);
         int endNoteIdx = std::min(i, endNotesSize - 1);
-        Note* sNote = startNotes[startNoteIdx];
-        Note* eNote = endNotes[endNoteIdx];
+        Note *sNote = startNotes[startNoteIdx];
+        Note *eNote = endNotes[endNoteIdx];
         if (sNote->tieFor() && sNote->tieFor() == eNote->tieBack()) {
             continue;
         }
@@ -235,9 +215,8 @@ void HammerOnPullOffSegment::resolveStartEndNotes(Note** startNote, Note** endNo
     *endNote = endChord->upNote();
 }
 
-bool HammerOnPullOffSegment::isUserModified() const
-{
-    for (const HammerOnPullOffText* hopoText : m_hopoText) {
+bool HammerOnPullOffSegment::isUserModified() const {
+    for (const HammerOnPullOffText *hopoText : m_hopoText) {
         if (hopoText->isUserModified()) {
             return true;
         }
@@ -246,9 +225,8 @@ bool HammerOnPullOffSegment::isUserModified() const
     return SlurSegment::isUserModified();
 }
 
-bool HammerOnPullOffSegment::isValid() const
-{
-    for (const HammerOnPullOffText* hopoText : m_hopoText) {
+bool HammerOnPullOffSegment::isValid() const {
+    for (const HammerOnPullOffText *hopoText : m_hopoText) {
         if (!hopoText->isValid()) {
             return false;
         }
@@ -257,9 +235,8 @@ bool HammerOnPullOffSegment::isValid() const
     return true;
 }
 
-void HammerOnPullOffSegment::reset()
-{
-    for (HammerOnPullOffText* hopoText : m_hopoText) {
+void HammerOnPullOffSegment::reset() {
+    for (HammerOnPullOffText *hopoText : m_hopoText) {
         hopoText->reset();
     }
 
@@ -268,22 +245,17 @@ void HammerOnPullOffSegment::reset()
 
 static ElementStyle hopoStyle;
 
-HammerOnPullOffText::HammerOnPullOffText(HammerOnPullOffSegment* parent)
+HammerOnPullOffText::HammerOnPullOffText(HammerOnPullOffSegment *parent)
     : TextBase(ElementType::HAMMER_ON_PULL_OFF_TEXT, parent, TextStyleType::HAMMER_ON_PULL_OFF,
-               ElementFlag::MOVABLE | ElementFlag::GENERATED | ElementFlag::ON_STAFF)
-{
+               ElementFlag::MOVABLE | ElementFlag::GENERATED | ElementFlag::ON_STAFF) {
     resetProperty(Pid::PLACEMENT);
     initElementStyle(&hopoStyle);
 }
 
-HammerOnPullOffText::HammerOnPullOffText(const HammerOnPullOffText& h)
-    : TextBase(h)
-{
-}
+HammerOnPullOffText::HammerOnPullOffText(const HammerOnPullOffText &h) : TextBase(h) {}
 
-bool HammerOnPullOffText::isUserModified() const
-{
-    for (const TextStyleProperty& p : *textStyle(textStyleType())) {
+bool HammerOnPullOffText::isUserModified() const {
+    for (const TextStyleProperty &p : *textStyle(textStyleType())) {
         if (getProperty(p.pid) != propertyDefault(p.pid)) {
             return true;
         }
@@ -292,8 +264,7 @@ bool HammerOnPullOffText::isUserModified() const
     return TextBase::isUserModified();
 }
 
-Color HammerOnPullOffText::curColor(const rendering::PaintOptions& opt) const
-{
+Color HammerOnPullOffText::curColor(const rendering::PaintOptions &opt) const {
     if (!isValid() && MScore::warnGuitarBends && !opt.isPrinting) {
         return selected() ? configuration()->criticalSelectedColor() : configuration()->criticalColor();
     }
@@ -301,13 +272,10 @@ Color HammerOnPullOffText::curColor(const rendering::PaintOptions& opt) const
     return TextBase::curColor(opt);
 }
 
-PropertyValue HammerOnPullOffText::propertyDefault(Pid id) const
-{
+PropertyValue HammerOnPullOffText::propertyDefault(Pid id) const {
     switch (id) {
-    case Pid::PLACEMENT:
-        return PlacementV::ABOVE;
-    default:
-        return TextBase::propertyDefault(id);
+        case Pid::PLACEMENT: return PlacementV::ABOVE;
+        default: return TextBase::propertyDefault(id);
     }
 }
 } // namespace mu::engraving

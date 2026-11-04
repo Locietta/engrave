@@ -55,8 +55,7 @@ namespace kors::funcinfo {
 //! * ReturnType some_ns::maybesub::funcName(...)
 //! * ReturnType Class::funcName(...)
 //! * ReturnType some_ns::maybesub::Class::funcName(...)
-constexpr std::string_view funcNameBySig(const std::string_view& sig)
-{
+constexpr std::string_view funcNameBySig(const std::string_view &sig) {
     constexpr std::string_view Colon("::");
     constexpr std::string_view ArgBegin("(");
     constexpr std::string_view Space(" ");
@@ -83,8 +82,7 @@ constexpr std::string_view funcNameBySig(const std::string_view& sig)
 //! NOTE Signature maybe like:
 //! * ReturnType Class::funcName(...)
 //! * ReturnType some_ns::maybesub::Class::funcName(...)
-constexpr std::string_view classNameBySig(const std::string_view& sig)
-{
+constexpr std::string_view classNameBySig(const std::string_view &sig) {
     constexpr std::string_view Colon("::");
     constexpr std::string_view ArgBegin("(");
     constexpr std::string_view Space(" ");
@@ -123,8 +121,7 @@ constexpr std::string_view classNameBySig(const std::string_view& sig)
 //! NOTE Signature maybe like:
 //! * ReturnType Class::funcName(...)
 //! * ReturnType some_ns::maybesub::Class::funcName(...)
-constexpr std::string_view classFuncBySig(const std::string_view& sig)
-{
+constexpr std::string_view classFuncBySig(const std::string_view &sig) {
     constexpr std::string_view Colon("::");
     constexpr std::string_view ArgBegin("(");
     constexpr std::string_view Space(" ");
@@ -162,8 +159,7 @@ constexpr std::string_view classFuncBySig(const std::string_view& sig)
 
 //! NOTE Signature should be like
 //! ReturnType xxx::modulename::maybesub::ClassName::methodName()
-constexpr std::string_view moduleNameBySig(const std::string_view& sig)
-{
+constexpr std::string_view moduleNameBySig(const std::string_view &sig) {
     constexpr std::string_view ArgBegin("(");
     constexpr std::string_view Space(" ");
     constexpr std::string_view Colon("::");
@@ -197,8 +193,7 @@ constexpr std::string_view moduleNameBySig(const std::string_view& sig)
 //! * ReturnType some_ns::maybesub::funcName(...)
 //! * ReturnType Class::funcName(...)
 //! * ReturnType some_ns::maybesub::Class::funcName(...)
-inline std::string_view funcNameBySig(const std::string_view& sig)
-{
+inline std::string_view funcNameBySig(const std::string_view &sig) {
     static const std::string_view Colon("::");
     static const std::string_view ArgBegin("(");
     static const std::string_view Space(" ");
@@ -225,8 +220,7 @@ inline std::string_view funcNameBySig(const std::string_view& sig)
 //! NOTE Signature maybe like:
 //! * ReturnType Class::funcName(...)
 //! * ReturnType some_ns::maybesub::Class::funcName(...)
-inline std::string_view classNameBySig(const std::string_view& sig)
-{
+inline std::string_view classNameBySig(const std::string_view &sig) {
     static const std::string_view Colon("::");
     static const std::string_view ArgBegin("(");
     static const std::string_view Space(" ");
@@ -265,8 +259,7 @@ inline std::string_view classNameBySig(const std::string_view& sig)
 //! NOTE Signature maybe like:
 //! * ReturnType Class::funcName(...)
 //! * ReturnType some_ns::maybesub::Class::funcName(...)
-inline std::string_view classFuncBySig(const std::string_view& sig)
-{
+inline std::string_view classFuncBySig(const std::string_view &sig) {
     static const std::string_view Colon("::");
     static const std::string_view ArgBegin("(");
     static const std::string_view Space(" ");
@@ -304,8 +297,7 @@ inline std::string_view classFuncBySig(const std::string_view& sig)
 
 //! NOTE Signature should be like
 //! ReturnType xxx::modulename::maybesub::ClassName::methodName()
-inline std::string_view moduleNameBySig(const std::string_view& sig)
-{
+inline std::string_view moduleNameBySig(const std::string_view &sig) {
     static const std::string_view ArgBegin("(");
     static const std::string_view Space(" ");
     static const std::string_view Colon("::");
@@ -334,6 +326,6 @@ inline std::string_view moduleNameBySig(const std::string_view& sig)
 }
 
 #endif // _KORS_NO_STRINGVIEW_CONSTEXPR_METHODS
-}
+} // namespace kors::funcinfo
 
 #endif // KORS__FI_H

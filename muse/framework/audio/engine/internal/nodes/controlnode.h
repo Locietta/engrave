@@ -25,15 +25,13 @@
 #include "audionode.h"
 
 namespace muse::audio {
-struct ControlTag
-{
-    static constexpr const char* name = "Control";
+struct ControlTag {
+    static constexpr const char *name = "Control";
 };
-}
+} // namespace muse::audio
 
 namespace muse::audio::engine {
-class ControlNode : public AudioNode<ControlTag>
-{
+class ControlNode : public AudioNode<ControlTag> {
 public:
 
     void setVolume(float value);
@@ -47,8 +45,8 @@ protected:
 
     void updateChannelGains();
 
-    void onOutputSpecChanged(const OutputSpec& spec) override;
-    void doSelfProcess(float* buffer, samples_t samplesPerChannel) override;
+    void onOutputSpecChanged(const OutputSpec &spec) override;
+    void doSelfProcess(float *buffer, samples_t samplesPerChannel) override;
 
     std::vector<float> m_channelGains;
 
@@ -57,4 +55,4 @@ protected:
 };
 
 using ControlNodePtr = std::shared_ptr<ControlNode>;
-}
+} // namespace muse::audio::engine

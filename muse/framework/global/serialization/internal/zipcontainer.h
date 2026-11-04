@@ -29,27 +29,19 @@
 #include "io/iodevice.h"
 
 namespace muse {
-class ZipContainer
-{
+class ZipContainer {
 public:
-    static bool startsWithEntry(const uint8_t* data, size_t size, std::span<const uint8_t> name);
+    static bool startsWithEntry(const uint8_t *data, size_t size, std::span<const uint8_t> name);
 
-    explicit ZipContainer(io::IODevice* device);
+    explicit ZipContainer(io::IODevice *device);
     ~ZipContainer();
 
-    enum Status {
-        NoError,
-        FileOpenError,
-        FileReadError,
-        FileWriteError,
-        FileError
-    };
+    enum Status { NoError, FileOpenError, FileReadError, FileWriteError, FileError };
 
-    struct FileInfo
-    {
+    struct FileInfo {
         std::string filePath;
         bool isDir = false;
-        bool isFile  = false;
+        bool isFile = false;
         bool isSymLink = false;
         unsigned int crc = 0;
         int64_t size = 0;
@@ -66,27 +58,23 @@ public:
     std::vector<FileInfo> fileInfoList() const;
     int count() const;
 
-    bool fileExists(const std::string& fileName) const;
-    ByteArray fileData(const std::string& fileName) const;
+    bool fileExists(const std::string &fileName) const;
+    ByteArray fileData(const std::string &fileName) const;
 
     // Write
-    enum CompressionPolicy {
-        AlwaysCompress,
-        NeverCompress,
-        AutoCompress
-    };
+    enum CompressionPolicy { AlwaysCompress, NeverCompress, AutoCompress };
 
     void setCompressionPolicy(CompressionPolicy policy);
     CompressionPolicy compressionPolicy() const;
 
-    void addFile(const std::string& fileName, const ByteArray& data);
-    void addDirectory(const std::string& dirName);
+    void addFile(const std::string &fileName, const ByteArray &data);
+    void addDirectory(const std::string &dirName);
 
 private:
 
     struct Impl;
-    Impl* p = nullptr;
+    Impl *p = nullptr;
 };
-}
+} // namespace muse
 
 #endif // MUSE_GLOBAL_ZIPCONTAINER_H

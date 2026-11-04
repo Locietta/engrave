@@ -35,51 +35,34 @@ using namespace muse;
 int ObjectAllocator::s_used = 0;
 size_t ObjectAllocator::DEFAULT_BLOCK_SIZE(1024 * 256); // 256 kB
 
-static inline size_t align(size_t n)
-{
-    return (n + sizeof(intptr_t) - 1) & ~(sizeof(intptr_t) - 1);
-}
+static inline size_t align(size_t n) { return (n + sizeof(intptr_t) - 1) & ~(sizeof(intptr_t) - 1); }
 
 // ============================================
 // ObjectAllocator
 // ============================================
-void ObjectAllocator::used()
-{
+void ObjectAllocator::used() {
 #ifdef MUSE_ENABLE_CUSTOM_ALLOCATOR
     s_used++;
 #endif
 }
 
-void ObjectAllocator::unused()
-{
+void ObjectAllocator::unused() {
 #ifdef MUSE_ENABLE_CUSTOM_ALLOCATOR
     s_used--;
 #endif
 }
 
-ObjectAllocator::ObjectAllocator(const char* module, const char* name, destroyer_t dtor)
-    : m_module(module), m_name(name), m_dtor(dtor)
-{
+ObjectAllocator::ObjectAllocator(const char *module, const char *name, destroyer_t dtor) : m_module(module), m_name(name), m_dtor(dtor) {
     AllocatorsRegister::instance()->reg(this);
 }
 
-ObjectAllocator::~ObjectAllocator()
-{
-    AllocatorsRegister::instance()->unreg(this);
-}
+ObjectAllocator::~ObjectAllocator() { AllocatorsRegister::instance()->unreg(this); }
 
-const char* ObjectAllocator::module() const
-{
-    return m_module;
-}
+const char *ObjectAllocator::module() const { return m_module; }
 
-const char* ObjectAllocator::name() const
-{
-    return m_name;
-}
+const char *ObjectAllocator::name() const { return m_name; }
 
-void* ObjectAllocator::alloc(size_t size)
-{
+void *ObjectAllocator::alloc(size_t size) {
     size = align(size);
 
     if (!m_chunkSize) {
@@ -96,7 +79,7 @@ void* ObjectAllocator::alloc(size_t size)
 
     // The return value is the current position of
     // the allocation pointer:
-    Chunk* freeChunk = m_free;
+    Chunk *freeChunk = m_free;
 
     // Advance (bump) the allocation pointer to the next chunk.
     //
@@ -109,28 +92,26 @@ void* ObjectAllocator::alloc(size_t size)
     return freeChunk;
 }
 
-void ObjectAllocator::free(void* chunk)
-{
+void ObjectAllocator::free(void *chunk) {
     // The freed chunk's next pointer points to the
     // current allocation pointer:
-    reinterpret_cast<Chunk*>(chunk)->next = m_free;
+    reinterpret_cast<Chunk *>(chunk)->next = m_free;
 
     // And the allocation pointer is now set
     // to the returned (free) chunk:
-    m_free = reinterpret_cast<Chunk*>(chunk);
+    m_free = reinterpret_cast<Chunk *>(chunk);
 
     m_statistic.totalFreeCount++;
 }
 
-void ObjectAllocator::cleanup()
-{
+void ObjectAllocator::cleanup() {
     if (m_blocks.empty()) {
         return;
     }
 
-    std::set<Chunk*> freeChunks;
+    std::set<Chunk *> freeChunks;
     {
-        Chunk* free = m_free;
+        Chunk *free = m_free;
         while (free) {
             freeChunks.insert(free);
             free = free->next;
@@ -138,20 +119,20 @@ void ObjectAllocator::cleanup()
     }
 
     for (size_t bi = 0; bi < m_blocks.size(); ++bi) {
-        const Block& b = m_blocks.at(bi);
-        Chunk* chunk = b.begin;
+        const Block &b = m_blocks.at(bi);
+        Chunk *chunk = b.begin;
         for (size_t i = 0; i < b.chunkCount - 1; ++i) {
             // if not free chunk, then destroy object
             if (freeChunks.find(chunk) == freeChunks.cend()) {
-                m_dtor(reinterpret_cast<void*>(chunk));
+                m_dtor(reinterpret_cast<void *>(chunk));
             }
 
-            chunk->next = reinterpret_cast<Chunk*>(reinterpret_cast<uint8_t*>(chunk) + b.chunkSize);
+            chunk->next = reinterpret_cast<Chunk *>(reinterpret_cast<uint8_t *>(chunk) + b.chunkSize);
             chunk = chunk->next;
         }
 
         if (freeChunks.find(chunk) == freeChunks.cend()) {
-            m_dtor(reinterpret_cast<void*>(chunk));
+            m_dtor(reinterpret_cast<void *>(chunk));
         }
 
         if (bi < (m_blocks.size() - 1)) {
@@ -164,23 +145,22 @@ void ObjectAllocator::cleanup()
     m_free = m_blocks.front().begin;
 }
 
-ObjectAllocator::Block ObjectAllocator::allocateBlock(size_t chunkSize) const
-{
+ObjectAllocator::Block ObjectAllocator::allocateBlock(size_t chunkSize) const {
     size_t blockSize = std::max(DEFAULT_BLOCK_SIZE, chunkSize);
     size_t chunkCount = blockSize / chunkSize;
 
     Block b;
-    b.begin = reinterpret_cast<Chunk*>(malloc(blockSize));
+    b.begin = reinterpret_cast<Chunk *>(malloc(blockSize));
     b.chunkCount = chunkCount;
     b.chunkSize = chunkSize;
 
     // Once the block is allocated, we need to chain all
     // the chunks in this block:
 
-    Chunk* chunk = b.begin;
+    Chunk *chunk = b.begin;
 
     for (size_t i = 0; i < chunkCount - 1; ++i) {
-        chunk->next = reinterpret_cast<Chunk*>(reinterpret_cast<uint8_t*>(chunk) + chunkSize);
+        chunk->next = reinterpret_cast<Chunk *>(reinterpret_cast<uint8_t *>(chunk) + chunkSize);
         chunk = chunk->next;
     }
 
@@ -189,15 +169,13 @@ ObjectAllocator::Block ObjectAllocator::allocateBlock(size_t chunkSize) const
     return b;
 }
 
-void* ObjectAllocator::not_supported(const char* info)
-{
+void *ObjectAllocator::not_supported(const char *info) {
     LOGE() << m_name << ": " << info << " not supported";
     std::abort();
     //return nullptr; // NOTREACHED
 }
 
-ObjectAllocator::Info ObjectAllocator::stateInfo() const
-{
+ObjectAllocator::Info ObjectAllocator::stateInfo() const {
     Info info;
     info.module = m_module;
     info.name = m_name;
@@ -206,11 +184,11 @@ ObjectAllocator::Info ObjectAllocator::stateInfo() const
     info.totalAllocatedCount = m_statistic.totalAllocatedCount;
     info.totalFreeCount = m_statistic.totalFreeCount;
 
-    for (const Block& b : m_blocks) {
+    for (const Block &b : m_blocks) {
         info.totalChunks += b.chunkCount;
     }
 
-    Chunk* free = m_free;
+    Chunk *free = m_free;
     while (free) {
         ++info.freeChunks;
         free = free->next;
@@ -222,19 +200,12 @@ ObjectAllocator::Info ObjectAllocator::stateInfo() const
 // ============================================
 // AllocatorsRegister
 // ============================================
-void AllocatorsRegister::reg(ObjectAllocator* a)
-{
-    m_allocators.push_back(a);
-}
+void AllocatorsRegister::reg(ObjectAllocator *a) { m_allocators.push_back(a); }
 
-void AllocatorsRegister::unreg(ObjectAllocator* a)
-{
-    m_allocators.remove(a);
-}
+void AllocatorsRegister::unreg(ObjectAllocator *a) { m_allocators.remove(a); }
 
-void AllocatorsRegister::cleanupAll(const std::string& module)
-{
-    for (ObjectAllocator* a : m_allocators) {
+void AllocatorsRegister::cleanupAll(const std::string &module) {
+    for (ObjectAllocator *a : m_allocators) {
         if (a->module() == module) {
             a->cleanup();
         }
@@ -245,8 +216,7 @@ void AllocatorsRegister::cleanupAll(const std::string& module)
 #define TITLE(str) FORMAT(std::string(str), 20)
 #define VALUE(val) FORMAT(std::to_string(val), 20)
 
-void AllocatorsRegister::printStatistic(const std::string& title)
-{
+void AllocatorsRegister::printStatistic(const std::string &title) {
     std::stringstream stream;
     stream << "\n\n";
     stream << title << "\n";
@@ -257,14 +227,10 @@ void AllocatorsRegister::printStatistic(const std::string& title)
     uint64_t totalAllocatedCount = 0;
     uint64_t totalFreeCount = 0;
     uint64_t totalUsedCount = 0;
-    for (ObjectAllocator* a : m_allocators) {
+    for (ObjectAllocator *a : m_allocators) {
         ObjectAllocator::Info info = a->stateInfo();
-        stream << FORMAT(info.name, 20)
-               << VALUE(info.totalAllocatedCount)
-               << VALUE(info.totalFreeCount)
-               << VALUE(info.usedChunks())
-               << VALUE(info.chunkSize)
-               << "\n";
+        stream << FORMAT(info.name, 20) << VALUE(info.totalAllocatedCount) << VALUE(info.totalFreeCount) << VALUE(info.usedChunks())
+               << VALUE(info.chunkSize) << "\n";
 
         totalAllocatedCount += info.totalAllocatedCount;
         totalFreeCount += info.totalFreeCount;
@@ -279,8 +245,7 @@ void AllocatorsRegister::printStatistic(const std::string& title)
     LOGD() << stream.str() << '\n';
 }
 
-void AllocatorsRegister::printState(const std::string& title)
-{
+void AllocatorsRegister::printState(const std::string &title) {
     std::stringstream stream;
     stream << "\n\n";
     stream << title << "\n";
@@ -289,15 +254,10 @@ void AllocatorsRegister::printState(const std::string& title)
            << TITLE("allocatedBytes") << "\n";
 
     uint64_t totalBytes = 0;
-    for (ObjectAllocator* a : m_allocators) {
+    for (ObjectAllocator *a : m_allocators) {
         ObjectAllocator::Info info = a->stateInfo();
-        stream << FORMAT(info.name, 20)
-               << VALUE(info.blockCount)
-               << VALUE(info.totalChunks)
-               << VALUE(info.freeChunks)
-               << VALUE(info.chunkSize)
-               << VALUE(info.allocatedBytes())
-               << "\n";
+        stream << FORMAT(info.name, 20) << VALUE(info.blockCount) << VALUE(info.totalChunks) << VALUE(info.freeChunks)
+               << VALUE(info.chunkSize) << VALUE(info.allocatedBytes()) << "\n";
 
         totalBytes += info.allocatedBytes();
     }

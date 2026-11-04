@@ -29,15 +29,15 @@
 namespace mu::engraving {
 class MasterScore;
 class Score;
-}
+} // namespace mu::engraving
 
 namespace mu::iex::musicxml {
 class IMusicXmlConfiguration;
 
-engraving::Err importMusicXmlfromBuffer(engraving::Score* score, const muse::String&, const muse::ByteArray& data,
-                                        const IMusicXmlConfiguration& configuration);
-engraving::Err importCompressedMusicXml(engraving::MasterScore* score, const muse::String& name, bool forceMode,
-                                        const IMusicXmlConfiguration& configuration);
-engraving::Err importMusicXml(engraving::MasterScore* score, const muse::String& name, bool forceMode,
-                              const IMusicXmlConfiguration& configuration);
-}
+engraving::Err importMusicXmlfromBuffer(engraving::Score *score, const muse::String &, const muse::ByteArray &data,
+                                        const IMusicXmlConfiguration &configuration);
+engraving::Err importCompressedMusicXml(engraving::MasterScore *score, const muse::String &name, bool forceMode,
+                                        const IMusicXmlConfiguration &configuration);
+engraving::Err importMusicXml(engraving::MasterScore *score, const muse::String &name, bool forceMode,
+                              const IMusicXmlConfiguration &configuration);
+} // namespace mu::iex::musicxml

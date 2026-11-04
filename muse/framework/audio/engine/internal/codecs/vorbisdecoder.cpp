@@ -24,20 +24,19 @@
 
 #include <algorithm>
 
-#if (defined (_MSCVER) || defined (_MSC_VER))
+#if (defined(_MSCVER) || defined(_MSC_VER))
 #pragma warning(push)
-#pragma warning(disable: 4456) // declaration hides previous local declaration
+#pragma warning(disable : 4456) // declaration hides previous local declaration
 #endif
 #include "thirdparty/stb/stb_vorbis.c"
-#if (defined (_MSCVER) || defined (_MSC_VER))
+#if (defined(_MSCVER) || defined(_MSC_VER))
 #pragma warning(pop)
 #endif
 
 using namespace muse::audio::codec;
 
-int VorbisDecoder::decode_memory(const unsigned char* mem, unsigned int len, short** output, unsigned int* channels,
-                                 unsigned int* sample_rate)
-{
+int VorbisDecoder::decode_memory(const unsigned char *mem, unsigned int len, short **output, unsigned int *channels,
+                                 unsigned int *sample_rate) {
     int channels_ = 0;
     int sample_rate_ = 0;
     int samples = stb_vorbis_decode_memory(mem, len, &channels_, &sample_rate_, output);
@@ -52,10 +51,9 @@ int VorbisDecoder::decode_memory(const unsigned char* mem, unsigned int len, sho
     return samples;
 }
 
-int VorbisDecoder::decode_file(const std::string& filepath, std::vector<float>& output, unsigned int* channels, unsigned int* sample_rate)
-{
+int VorbisDecoder::decode_file(const std::string &filepath, std::vector<float> &output, unsigned int *channels, unsigned int *sample_rate) {
     int vorbis_error;
-    stb_vorbis* decoder = stb_vorbis_open_filename(filepath.c_str(), &vorbis_error, NULL);
+    stb_vorbis *decoder = stb_vorbis_open_filename(filepath.c_str(), &vorbis_error, NULL);
 
     if (!decoder) {
         return -1;

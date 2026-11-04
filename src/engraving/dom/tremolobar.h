@@ -34,40 +34,36 @@ namespace mu::engraving {
 //   @P play       bool         play tremolo bar
 //---------------------------------------------------------
 
-enum class TremoloBarType : unsigned char {
-    DIP = 0,
-    DIVE,
-    RELEASE_UP,
-    INVERTED_DIP,
-    RETURN,
-    RELEASE_DOWN,
-    CUSTOM
-};
+enum class TremoloBarType : unsigned char { DIP = 0, DIVE, RELEASE_UP, INVERTED_DIP, RETURN, RELEASE_DOWN, CUSTOM };
 
-class TremoloBar final : public EngravingItem
-{
+class TremoloBar final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, TremoloBar)
     DECLARE_CLASSOF(ElementType::TREMOLOBAR)
 
 public:
 
-    TremoloBar* clone() const override { return new TremoloBar(*this); }
+    TremoloBar *clone() const override { return new TremoloBar(*this); }
 
-    PitchValues& points() { return m_points; }
-    const PitchValues& points() const { return m_points; }
-    void setPoints(const PitchValues& p) { m_points = p; }
+    PitchValues &points() { return m_points; }
+
+    const PitchValues &points() const { return m_points; }
+
+    void setPoints(const PitchValues &p) { m_points = p; }
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid) const override;
 
     double userMag() const { return m_userMag; }
+
     void setUserMag(double m) { m_userMag = m; }
 
     void setLineWidth(Spatium v) { m_lw = v; }
+
     Spatium lineWidth() const { return m_lw; }
 
     bool play() const { return m_play; }
+
     void setPlay(bool val) { m_play = val; }
 
     struct LayoutData : public EngravingItem::LayoutData {
@@ -80,11 +76,11 @@ private:
     friend class Factory;
     TremoloBar(DummyParentOr<EngravingItem> parent);
 
-    TremoloBarType parseTremoloBarTypeFromCurve(const PitchValues& curve) const;
+    TremoloBarType parseTremoloBarTypeFromCurve(const PitchValues &curve) const;
     void updatePointsByTremoloBarType(const TremoloBarType type);
 
     Spatium m_lw;
-    double m_userMag = 1.0;           // allowed 0.1 - 10.0
+    double m_userMag = 1.0; // allowed 0.1 - 10.0
     bool m_play = true;
 
     PitchValues m_points;

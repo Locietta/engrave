@@ -26,8 +26,7 @@
 #include "soundfonttypes.h"
 
 namespace muse::audio {
-inline AudioResourceMeta makeReverbMeta()
-{
+inline AudioResourceMeta makeReverbMeta() {
     AudioResourceMeta meta;
     meta.id = MUSE_REVERB_ID;
     meta.type = NATIVE_EFFECT_TYPE_NAME;
@@ -37,8 +36,7 @@ inline AudioResourceMeta makeReverbMeta()
     return meta;
 }
 
-inline String audioResourceTypeToString(const muse::audioplugins::PluginType& metaType)
-{
+inline String audioResourceTypeToString(const muse::audioplugins::PluginType &metaType) {
     AudioResourceType type = resourceTypeFromString(metaType);
     auto search = RESOURCE_TYPE_MAP.find(type);
 
@@ -49,19 +47,18 @@ inline String audioResourceTypeToString(const muse::audioplugins::PluginType& me
     return RESOURCE_TYPE_MAP.at(AudioResourceType::Undefined);
 }
 
-inline String audioSourceName(const AudioInputParams& params)
-{
+inline String audioSourceName(const AudioInputParams &params) {
     if (params.type() == AudioSourceType::MuseSampler) {
         return params.resourceMeta.attributeVal(u"museName");
     }
 
     if (isResourceType(params.resourceMeta, AudioResourceType::FluidSoundfont)) {
-        const String& presetName = params.resourceMeta.attributeVal(synth::PRESET_NAME_ATTRIBUTE);
+        const String &presetName = params.resourceMeta.attributeVal(synth::PRESET_NAME_ATTRIBUTE);
         if (!presetName.empty()) {
             return presetName;
         }
 
-        const String& soundFontName = params.resourceMeta.attributeVal(synth::SOUNDFONT_NAME_ATTRIBUTE);
+        const String &soundFontName = params.resourceMeta.attributeVal(synth::SOUNDFONT_NAME_ATTRIBUTE);
         if (!soundFontName.empty()) {
             return soundFontName;
         }
@@ -70,8 +67,7 @@ inline String audioSourceName(const AudioInputParams& params)
     return String::fromStdString(params.resourceMeta.id);
 }
 
-inline String audioSourcePackName(const AudioInputParams& params)
-{
+inline String audioSourcePackName(const AudioInputParams &params) {
     if (params.type() == AudioSourceType::MuseSampler) {
         return params.resourceMeta.attributeVal(u"musePack");
     }
@@ -79,8 +75,7 @@ inline String audioSourcePackName(const AudioInputParams& params)
     return String();
 }
 
-inline String audioSourceCategoryName(const AudioInputParams& params)
-{
+inline String audioSourceCategoryName(const AudioInputParams &params) {
     if (params.type() == AudioSourceType::MuseSampler) {
         return params.resourceMeta.attributeVal(u"museCategory");
     }
@@ -92,8 +87,7 @@ inline String audioSourceCategoryName(const AudioInputParams& params)
     return String::fromStdString(params.resourceMeta.id);
 }
 
-inline AudioFxCategories audioFxCategoriesFromString(const String& str)
-{
+inline AudioFxCategories audioFxCategoriesFromString(const String &str) {
     if (str.empty()) {
         return {};
     }
@@ -101,15 +95,12 @@ inline AudioFxCategories audioFxCategoriesFromString(const String& str)
     StringList list = str.split('|');
 
     AudioFxCategories result;
-    for (const String& name : list) {
+    for (const String &name : list) {
         result.insert(muse::key(AUDIO_FX_CATEGORY_TO_STRING_MAP, name, AudioFxCategory::FxOther));
     }
 
     return result;
 }
 
-inline bool isOnlineAudioResource(const AudioResourceMeta& meta)
-{
-    return boolAttribute(meta, u"isOnline");
-}
-}
+inline bool isOnlineAudioResource(const AudioResourceMeta &meta) { return boolAttribute(meta, u"isOnline"); }
+} // namespace muse::audio

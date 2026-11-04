@@ -44,8 +44,7 @@ static const String UNSORTED_ID(u"<unsorted>");
 //   clone
 //---------------------------------------------------------
 
-ScoreOrder ScoreOrder::clone() const
-{
+ScoreOrder ScoreOrder::clone() const {
     ScoreOrder newOrder;
 
     newOrder.id = id;
@@ -53,7 +52,7 @@ ScoreOrder ScoreOrder::clone() const
     newOrder.customized = customized;
     newOrder.instrumentMap = instrumentMap;
 
-    for (const ScoreGroup& sg : groups) {
+    for (const ScoreGroup &sg : groups) {
         ScoreGroup newGroup;
 
         newGroup.family = sg.family;
@@ -74,22 +73,15 @@ ScoreOrder ScoreOrder::clone() const
 //   readBoolAttribute
 //---------------------------------------------------------
 
-bool ScoreOrder::operator==(const ScoreOrder& order) const
-{
-    return id == order.id;
-}
+bool ScoreOrder::operator==(const ScoreOrder &order) const { return id == order.id; }
 
-bool ScoreOrder::operator!=(const ScoreOrder& order) const
-{
-    return !(*this == order);
-}
+bool ScoreOrder::operator!=(const ScoreOrder &order) const { return !(*this == order); }
 
-bool ScoreOrder::readBoolAttribute(XmlReader& reader, const char* attrName, bool defvalue)
-{
+bool ScoreOrder::readBoolAttribute(XmlReader &reader, const char *attrName, bool defvalue) {
     if (!reader.hasAttribute(attrName)) {
         return defvalue;
     }
-    String attr { reader.attribute(attrName) };
+    String attr{reader.attribute(attrName)};
     if (attr.toLower() == "false") {
         return false;
     } else if (attr.toLower() == "true") {
@@ -103,9 +95,8 @@ bool ScoreOrder::readBoolAttribute(XmlReader& reader, const char* attrName, bool
 //   readInstrument
 //---------------------------------------------------------
 
-void ScoreOrder::readInstrument(XmlReader& reader)
-{
-    String instrumentId { reader.attribute("id") };
+void ScoreOrder::readInstrument(XmlReader &reader) {
+    String instrumentId{reader.attribute("id")};
     if (!mu::engraving::searchTemplate(instrumentId)) {
         LOGD("cannot find instrument templates for <%s>", muPrintable(instrumentId));
         reader.skipCurrentElement();
@@ -116,7 +107,7 @@ void ScoreOrder::readInstrument(XmlReader& reader)
             InstrumentOverwrite io;
             io.id = reader.attribute("id");
             io.name = reader.readText();
-            instrumentMap.insert({ instrumentId, io });
+            instrumentMap.insert({instrumentId, io});
         } else {
             reader.unknown();
         }
@@ -127,8 +118,7 @@ void ScoreOrder::readInstrument(XmlReader& reader)
 //   readSoloists
 //---------------------------------------------------------
 
-void ScoreOrder::readSoloists(XmlReader& reader, const String section)
-{
+void ScoreOrder::readSoloists(XmlReader &reader, const String section) {
     reader.skipCurrentElement();
     if (hasGroup(SOLOISTS_ID)) {
         return;
@@ -143,9 +133,8 @@ void ScoreOrder::readSoloists(XmlReader& reader, const String section)
 //   readSection
 //---------------------------------------------------------
 
-void ScoreOrder::readSection(XmlReader& reader)
-{
-    String sectionId { reader.attribute("id") };
+void ScoreOrder::readSection(XmlReader &reader) {
+    String sectionId{reader.attribute("id")};
     bool barLineSpan = readBoolAttribute(reader, "barLineSpan", true);
     bool thinBrackets = readBoolAttribute(reader, "thinBrackets", true);
     while (reader.readNextStartElement()) {
@@ -158,7 +147,7 @@ void ScoreOrder::readSection(XmlReader& reader)
             sg.thinBracket = thinBrackets;
             groups.push_back(sg);
         } else if (reader.name() == "unsorted") {
-            String group { reader.attribute("group", String()) };
+            String group{reader.attribute("group", String())};
 
             if (hasGroup(UNSORTED_ID, group)) {
                 reader.skipCurrentElement();
@@ -185,9 +174,8 @@ void ScoreOrder::readSection(XmlReader& reader)
 //   hasGroup
 //---------------------------------------------------------
 
-bool ScoreOrder::hasGroup(const String& familyId, const String& group) const
-{
-    for (const ScoreGroup& sg : groups) {
+bool ScoreOrder::hasGroup(const String &familyId, const String &group) const {
+    for (const ScoreGroup &sg : groups) {
         if ((sg.family == familyId) && (group == sg.unsorted)) {
             return true;
         }
@@ -199,26 +187,19 @@ bool ScoreOrder::hasGroup(const String& familyId, const String& group) const
 //   isValid
 //---------------------------------------------------------
 
-bool ScoreOrder::isValid() const
-{
-    return !id.empty();
-}
+bool ScoreOrder::isValid() const { return !id.empty(); }
 
 //---------------------------------------------------------
 //   isCustom
 //---------------------------------------------------------
 
-bool ScoreOrder::isCustom() const
-{
-    return id == String(u"custom");
-}
+bool ScoreOrder::isCustom() const { return id == String(u"custom"); }
 
 //---------------------------------------------------------
 //   getName
 //---------------------------------------------------------
 
-TranslatableString ScoreOrder::getName() const
-{
+TranslatableString ScoreOrder::getName() const {
     return customized ? TranslatableString("engraving/scoreorder", "%1 (Customized)").arg(name) : name;
 }
 
@@ -226,8 +207,7 @@ TranslatableString ScoreOrder::getName() const
 //   getFamilyName
 //---------------------------------------------------------
 
-String ScoreOrder::getFamilyName(const InstrumentTemplate* instrTemplate, bool soloist) const
-{
+String ScoreOrder::getFamilyName(const InstrumentTemplate *instrTemplate, bool soloist) const {
     if (!instrTemplate) {
         return String(u"<unsorted>");
     }
@@ -246,8 +226,7 @@ String ScoreOrder::getFamilyName(const InstrumentTemplate* instrTemplate, bool s
 //   newUnsortedGroup
 //---------------------------------------------------------
 
-ScoreGroup ScoreOrder::newUnsortedGroup(const String group, const String section) const
-{
+ScoreGroup ScoreOrder::newUnsortedGroup(const String group, const String section) const {
     ScoreGroup sg;
     sg.family = String(UNSORTED_ID);
     sg.section = section;
@@ -263,12 +242,11 @@ ScoreGroup ScoreOrder::newUnsortedGroup(const String group, const String section
 //   getGroup
 //---------------------------------------------------------
 
-ScoreGroup ScoreOrder::getGroup(const String family, const String instrumentGroup) const
-{
+ScoreGroup ScoreOrder::getGroup(const String family, const String instrumentGroup) const {
     static const String UNSORTED = String(u"<unsorted>");
 
     ScoreGroup unsortedScoreGroup;
-    for (const ScoreGroup& sg : groups) {
+    for (const ScoreGroup &sg : groups) {
         if ((sg.family == UNSORTED) && sg.unsorted.isEmpty()) {
             unsortedScoreGroup = sg;
             break;
@@ -279,7 +257,7 @@ ScoreGroup ScoreOrder::getGroup(const String family, const String instrumentGrou
         return unsortedScoreGroup;
     }
 
-    for (const ScoreGroup& sg : groups) {
+    for (const ScoreGroup &sg : groups) {
         if (sg.family == family) {
             return sg;
         }
@@ -294,20 +272,13 @@ ScoreGroup ScoreOrder::getGroup(const String family, const String instrumentGrou
 //   instrumentSortingIndex
 //---------------------------------------------------------
 
-int ScoreOrder::instrumentSortingIndex(const String& instrumentId, bool isSoloist) const
-{
+int ScoreOrder::instrumentSortingIndex(const String &instrumentId, bool isSoloist) const {
     static const String SoloistsGroup(u"<soloists>");
     static const String UnsortedGroup(u"<unsorted>");
 
-    enum class Priority : unsigned char {
-        Undefined,
-        Unsorted,
-        UnsortedGroup,
-        Family,
-        Soloist
-    };
+    enum class Priority : unsigned char { Undefined, Unsorted, UnsortedGroup, Family, Soloist };
 
-    InstrumentIndex ii { searchTemplateIndexForId(instrumentId) };
+    InstrumentIndex ii{searchTemplateIndexForId(instrumentId)};
     if (!ii.instrTemplate) {
         return 0;
     }
@@ -316,26 +287,22 @@ int ScoreOrder::instrumentSortingIndex(const String& instrumentId, bool isSolois
 
     size_t index = groups.size();
 
-    auto calculateIndex = [instrumentId, &ii](size_t index) {
-        return index * ii.templateCount + ii.instrTemplate->sequenceOrder;
-    };
+    auto calculateIndex = [instrumentId, &ii](size_t index) { return index * ii.templateCount + ii.instrTemplate->sequenceOrder; };
 
     Priority priority = Priority::Undefined;
 
     for (size_t i = 0; i < groups.size(); ++i) {
-        const ScoreGroup& sg = groups.at(i);
+        const ScoreGroup &sg = groups.at(i);
 
         if ((sg.family == SoloistsGroup) && isSoloist) {
             return static_cast<int>(calculateIndex(i));
         } else if ((priority < Priority::Family) && (sg.family == family)) {
             index = i;
             priority = Priority::Family;
-        } else if ((priority < Priority::UnsortedGroup) && (sg.family == UnsortedGroup)
-                   && (sg.unsorted == ii.instrTemplate->groupId)) {
+        } else if ((priority < Priority::UnsortedGroup) && (sg.family == UnsortedGroup) && (sg.unsorted == ii.instrTemplate->groupId)) {
             index = i;
             priority = Priority::UnsortedGroup;
-        } else if ((priority < Priority::Unsorted) && (sg.family == UnsortedGroup)
-                   && (sg.unsorted.empty())) {
+        } else if ((priority < Priority::Unsorted) && (sg.family == UnsortedGroup) && (sg.unsorted.empty())) {
             index = i;
             priority = Priority::Unsorted;
         }
@@ -348,13 +315,12 @@ int ScoreOrder::instrumentSortingIndex(const String& instrumentId, bool isSolois
 //   isScoreOrder
 //---------------------------------------------------------
 
-bool ScoreOrder::isScoreOrder(const std::vector<int>& indices) const
-{
+bool ScoreOrder::isScoreOrder(const std::vector<int> &indices) const {
     if (isCustom()) {
         return true;
     }
 
-    int prvIndex { -1 };
+    int prvIndex{-1};
     for (int curIndex : indices) {
         if (curIndex < prvIndex) {
             return false;
@@ -364,11 +330,10 @@ bool ScoreOrder::isScoreOrder(const std::vector<int>& indices) const
     return true;
 }
 
-bool ScoreOrder::isScoreOrder(const Score* score) const
-{
+bool ScoreOrder::isScoreOrder(const Score *score) const {
     std::vector<int> indices;
     indices.reserve(score->parts().size());
-    for (const Part* part : score->parts()) {
+    for (const Part *part : score->parts()) {
         indices.push_back(instrumentSortingIndex(part->instrument()->id(), part->soloist()));
     }
 
@@ -379,46 +344,45 @@ bool ScoreOrder::isScoreOrder(const Score* score) const
 //   setBracketsAndBarlines
 //---------------------------------------------------------
 
-void ScoreOrder::setBracketsAndBarlines(Score* score)
-{
+void ScoreOrder::setBracketsAndBarlines(Score *score) {
     if (groups.size() <= 0) {
         return;
     }
 
-    bool prvThnBracket { false };
-    bool prvBarLineSpan { false };
+    bool prvThnBracket{false};
+    bool prvBarLineSpan{false};
     String prvSection;
-    int prvInstrument { -1 };
-    Staff* prvStaff { nullptr };
+    int prvInstrument{-1};
+    Staff *prvStaff{nullptr};
 
-    Staff* thkBracketStaff { nullptr };
-    Staff* thnBracketStaff { nullptr };
-    int thkBracketSpan { 0 };
-    int thnBracketSpan { 0 };
+    Staff *thkBracketStaff{nullptr};
+    Staff *thnBracketStaff{nullptr};
+    int thkBracketSpan{0};
+    int thnBracketSpan{0};
 
-    for (Part* part : score->parts()) {
+    for (Part *part : score->parts()) {
         InstrumentIndex ii = searchTemplateIndexForId(part->instrument()->id());
-        const InstrumentTemplate* instrTemplate = ii.instrTemplate;
+        const InstrumentTemplate *instrTemplate = ii.instrTemplate;
         if (!instrTemplate) {
             continue;
         }
 
-        String family { getFamilyName(instrTemplate, part->soloist()) };
+        String family{getFamilyName(instrTemplate, part->soloist())};
         const ScoreGroup sg = getGroup(family, instrumentGroups[ii.groupIndex]->id);
 
-        staff_idx_t staffIdx { 0 };
+        staff_idx_t staffIdx{0};
         const bool isMultiStaffInstrument = instrTemplate->staffCount > 1;
         const size_t partStaffCount = part->nstaves();
 
         const int templateBracketSpan = std::accumulate(instrTemplate->bracketSpan, instrTemplate->bracketSpan + MAX_STAVES, 0);
-        const bool bracketSpansAllStaves = templateBracketSpan == (int)instrTemplate->staffCount;
+        const bool bracketSpansAllStaves = templateBracketSpan == (int) instrTemplate->staffCount;
         const int templateBarlineSpan = std::count(instrTemplate->barlineSpan.begin(), instrTemplate->barlineSpan.end(), true);
-        const bool barlineSpansAllStaves = templateBarlineSpan == (int)instrTemplate->staffCount - 1;
-        for (Staff* staff : part->staves()) {
+        const bool barlineSpansAllStaves = templateBarlineSpan == (int) instrTemplate->staffCount - 1;
+        for (Staff *staff : part->staves()) {
             // Create copy, because the original is modified while we are iterating over it
-            std::vector<BracketItem*> brackets = score->brackets(staff->idx());
+            std::vector<BracketItem *> brackets = score->brackets(staff->idx());
 
-            for (BracketItem* bi : brackets) {
+            for (BracketItem *bi : brackets) {
                 if (bi->bracketType() == BracketType::GROUP) {
                     continue;
                 }
@@ -443,7 +407,7 @@ void ScoreOrder::setBracketsAndBarlines(Score* score)
                 }
                 if (!staffIdx) {
                     thkBracketStaff = sg.bracket ? staff : nullptr;
-                    thkBracketSpan  = 0;
+                    thkBracketSpan = 0;
                 }
             }
             if (sg.bracket && !staffIdx) {
@@ -456,12 +420,12 @@ void ScoreOrder::setBracketsAndBarlines(Score* score)
                 }
                 if (ii.instrIndex != prvInstrument || isMultiStaffInstrument) {
                     thnBracketStaff = nullptr;
-                    thnBracketSpan  = 0;
+                    thnBracketSpan = 0;
                 }
             }
             if (!thnBracketStaff && sg.thinBracket && !isMultiStaffInstrument && !staffIdx) {
                 thnBracketStaff = staff;
-                thnBracketSpan  = 0;
+                thnBracketSpan = 0;
             }
 
             if (isMultiStaffInstrument) {
@@ -500,8 +464,7 @@ void ScoreOrder::setBracketsAndBarlines(Score* score)
 //   read
 //---------------------------------------------------------
 
-void ScoreOrder::read(XmlReader& reader)
-{
+void ScoreOrder::read(XmlReader &reader) {
     id = reader.attribute("id");
     const String sectionId;
     while (reader.readNextStartElement()) {
@@ -522,7 +485,7 @@ void ScoreOrder::read(XmlReader& reader)
         } else if (reader.name() == "soloists") {
             readSoloists(reader, sectionId);
         } else if (reader.name() == "unsorted") {
-            String group { reader.attribute("group", String()) };
+            String group{reader.attribute("group", String())};
 
             if (!hasGroup(UNSORTED_ID, group)) {
                 groups.push_back(newUnsortedGroup(group, sectionId));
@@ -544,32 +507,31 @@ void ScoreOrder::read(XmlReader& reader)
 //   write
 //---------------------------------------------------------
 
-void ScoreOrder::write(XmlWriter& xml) const
-{
+void ScoreOrder::write(XmlWriter &xml) const {
     if (!isValid()) {
         return;
     }
 
-    xml.startElement("Order", { { "id", id } });
+    xml.startElement("Order", {{"id", id}});
     xml.tag("name", name.str);
 
-    for (const auto& p : instrumentMap) {
-        xml.startElement("instrument", { { "id", p.first } });
-        xml.tag("family", { { "id", p.second.id } }, p.second.name);
+    for (const auto &p : instrumentMap) {
+        xml.startElement("instrument", {{"id", p.first}});
+        xml.tag("family", {{"id", p.second.id}}, p.second.name);
         xml.endElement();
     }
 
-    String section { u"" };
-    for (const ScoreGroup& sg : groups) {
+    String section{u""};
+    for (const ScoreGroup &sg : groups) {
         if (sg.section != section) {
             if (!section.isEmpty()) {
                 xml.endElement();
             }
             if (!sg.section.isEmpty()) {
-                xml.startElement("section", { { "id", sg.section },
-                                     { "brackets", sg.bracket ? "true" : "false" },
-                                     { "barLineSpan", sg.barLineSpan ? "true" : "false" },
-                                     { "thinBrackets", sg.thinBracket ? "true" : "false" } });
+                xml.startElement("section", {{"id", sg.section},
+                                             {"brackets", sg.bracket ? "true" : "false"},
+                                             {"barLineSpan", sg.barLineSpan ? "true" : "false"},
+                                             {"thinBrackets", sg.thinBracket ? "true" : "false"}});
             }
             section = sg.section;
         }
@@ -580,7 +542,7 @@ void ScoreOrder::write(XmlWriter& xml) const
         } else if (sg.unsorted.isEmpty()) {
             xml.tag("unsorted");
         } else {
-            xml.tag("unsorted", { { "group", sg.unsorted } });
+            xml.tag("unsorted", {{"group", sg.unsorted}});
         }
     }
     if (!section.isEmpty()) {
@@ -593,9 +555,8 @@ void ScoreOrder::write(XmlWriter& xml) const
 //   updateInstruments
 //---------------------------------------------------------
 
-void ScoreOrder::updateInstruments(const Score* score)
-{
-    for (const Part* part : score->parts()) {
+void ScoreOrder::updateInstruments(const Score *score) {
+    for (const Part *part : score->parts()) {
         InstrumentIndex ii = searchTemplateIndexForId(part->instrument()->id());
         if (!ii.instrTemplate || !ii.instrTemplate->family) {
             continue;
@@ -607,4 +568,4 @@ void ScoreOrder::updateInstruments(const Score* score)
         instrumentMap.emplace(ii.instrTemplate->id, std::move(io));
     }
 }
-}
+} // namespace mu::engraving

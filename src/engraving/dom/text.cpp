@@ -35,20 +35,18 @@ namespace mu::engraving {
 //   defaultStyle
 //---------------------------------------------------------
 
-static const ElementStyle defaultStyle {
-    { Sid::defaultSystemFlag, Pid::SYSTEM_FLAG },
+static const ElementStyle defaultStyle{
+    {Sid::defaultSystemFlag, Pid::SYSTEM_FLAG},
 };
 
-static bool styleIsSelectable(TextStyleType style)
-{
+static bool styleIsSelectable(TextStyleType style) {
     switch (style) {
-    case TextStyleType::HEADER:
-    case TextStyleType::FOOTER:
-    case TextStyleType::COPYRIGHT:
-    case TextStyleType::PAGE_NUMBER:
-    case TextStyleType::GROUP_BRACKET:
-        return false;
-    default: break;
+        case TextStyleType::HEADER:
+        case TextStyleType::FOOTER:
+        case TextStyleType::COPYRIGHT:
+        case TextStyleType::PAGE_NUMBER:
+        case TextStyleType::GROUP_BRACKET: return false;
+        default: break;
     }
     return true;
 }
@@ -58,13 +56,11 @@ static bool styleIsSelectable(TextStyleType style)
 //---------------------------------------------------------
 
 Text::Text(DummyParentOr<EngravingItem> parent, TextStyleType tid)
-    : TextBase(ElementType::TEXT, parent, tid, styleIsSelectable(tid) ? ElementFlag::NOTHING : ElementFlag::NOT_SELECTABLE)
-{
+    : TextBase(ElementType::TEXT, parent, tid, styleIsSelectable(tid) ? ElementFlag::NOTHING : ElementFlag::NOT_SELECTABLE) {
     initElementStyle(&defaultStyle);
 }
 
-EngravingObject* Text::propertyDelegate(Pid id) const
-{
+EngravingObject *Text::propertyDelegate(Pid id) const {
     if (id == Pid::TEXT_STYLE && parent() && parent()->isTextLineBaseSegment()) {
         return parent();
     }
@@ -76,60 +72,49 @@ EngravingObject* Text::propertyDelegate(Pid id) const
 //   propertyDefault
 //---------------------------------------------------------
 
-engraving::PropertyValue Text::propertyDefault(Pid id) const
-{
-    if (EngravingObject* item = propertyDelegate(id)) {
+engraving::PropertyValue Text::propertyDefault(Pid id) const {
+    if (EngravingObject *item = propertyDelegate(id)) {
         return item->propertyDefault(id);
     }
 
     switch (id) {
-    case Pid::TEXT_STYLE:
-        return TextStyleType::DEFAULT;
-    default:
-        return TextBase::propertyDefault(id);
+        case Pid::TEXT_STYLE: return TextStyleType::DEFAULT;
+        default: return TextBase::propertyDefault(id);
     }
 }
 
-PropertyValue Text::getProperty(Pid id) const
-{
+PropertyValue Text::getProperty(Pid id) const {
     switch (id) {
-    case Pid::VOICE_ASSIGNMENT:
-        if (hasVoiceAssignmentProperties()) {
-            return ownershipParent()->getProperty(id);
-        }
-    // fallthrough
-    default:
-        return TextBase::getProperty(id);
+        case Pid::VOICE_ASSIGNMENT:
+            if (hasVoiceAssignmentProperties()) {
+                return ownershipParent()->getProperty(id);
+            }
+        // fallthrough
+        default: return TextBase::getProperty(id);
     }
 }
 
-String Text::readXmlText(XmlReader& xml, Score* score)
-{
+String Text::readXmlText(XmlReader &xml, Score *score) {
     Text t(score->dummy());
     rw::RWRegister::reader()->readItem(&t, xml);
     return t.xmlText();
 }
 
-bool Text::hasVoiceAssignmentProperties() const
-{
-    const EngravingItem* parent = ownershipParentItem();
+bool Text::hasVoiceAssignmentProperties() const {
+    const EngravingItem *parent = ownershipParentItem();
     if (parent && parent->isTextLineBaseSegment()) {
         return parent->hasVoiceAssignmentProperties();
     }
     return false;
 }
 
-bool mu::engraving::Text::collectForDrawing() const
-{
-    return !(parent() && parent()->isTuplet());
-}
+bool mu::engraving::Text::collectForDrawing() const { return !(parent() && parent()->isTuplet()); }
 
-bool Text::positionRelativeToNoteheadRest() const
-{
+bool Text::positionRelativeToNoteheadRest() const {
     if (parent()->isBox() || parent()->isTuplet() || parent()->isSpannerSegment() || parent()->isBracket()) {
         return false;
     }
 
     return true;
 }
-}
+} // namespace mu::engraving

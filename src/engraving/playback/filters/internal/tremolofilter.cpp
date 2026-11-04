@@ -28,16 +28,15 @@
 
 using namespace mu::engraving;
 
-bool TremoloFilter::isPlayable(const EngravingItem* item, const RenderingContext& /*ctx*/)
-{
+bool TremoloFilter::isPlayable(const EngravingItem *item, const RenderingContext & /*ctx*/) {
     if (!item->isChord() && !item->isNote()) {
         return false;
     }
 
     if (item->isChord()) {
-        const Chord* chord = item_cast<const Chord*>(item);
-        TremoloSingleChord* tremoloSingle = chord->tremoloSingleChord();
-        TremoloTwoChord* tremoloTwo = chord->tremoloTwoChord();
+        const Chord *chord = item_cast<const Chord *>(item);
+        TremoloSingleChord *tremoloSingle = chord->tremoloSingleChord();
+        TremoloTwoChord *tremoloTwo = chord->tremoloTwoChord();
 
         if (!tremoloSingle && !tremoloTwo) {
             return true;

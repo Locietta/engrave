@@ -39,15 +39,12 @@ namespace mu::engraving {
 //   MeasureRepeat
 //---------------------------------------------------------
 
-MeasureRepeat::MeasureRepeat(DummyParentOr<Segment> parent)
-    : Rest(ElementType::MEASURE_REPEAT, parent), m_numMeasures(0)
-{
+MeasureRepeat::MeasureRepeat(DummyParentOr<Segment> parent) : Rest(ElementType::MEASURE_REPEAT, parent), m_numMeasures(0) {
     // however many measures the group, the element itself is always exactly the duration of its containing measure
     setDurationType(DurationType::V_MEASURE);
 }
 
-void MeasureRepeat::setNumMeasures(int n)
-{
+void MeasureRepeat::setNumMeasures(int n) {
     IF_ASSERT_FAILED(n <= MAX_NUM_MEASURES) {
         m_numMeasures = MAX_NUM_MEASURES;
         return;
@@ -60,23 +57,17 @@ void MeasureRepeat::setNumMeasures(int n)
 //   firstMeasureOfGroup
 //---------------------------------------------------------
 
-Measure* MeasureRepeat::firstMeasureOfGroup() const
-{
-    return measure()->firstOfMeasureRepeatGroup(staffIdx());
-}
+Measure *MeasureRepeat::firstMeasureOfGroup() const { return measure()->firstOfMeasureRepeatGroup(staffIdx()); }
 
-const Measure* MeasureRepeat::referringMeasure(const Measure* measure) const
-{
-    IF_ASSERT_FAILED(measure) {
-        return nullptr;
-    }
+const Measure *MeasureRepeat::referringMeasure(const Measure *measure) const {
+    IF_ASSERT_FAILED(measure) { return nullptr; }
 
-    const Measure* firstMeasure = firstMeasureOfGroup();
+    const Measure *firstMeasure = firstMeasureOfGroup();
     if (!firstMeasure) {
         return nullptr;
     }
 
-    const Measure* referringMeasure = firstMeasure->prevMeasure();
+    const Measure *referringMeasure = firstMeasure->prevMeasure();
 
     int measuresBack = m_numMeasures - measure->measureRepeatCount(staffIdx());
 
@@ -92,8 +83,7 @@ const Measure* MeasureRepeat::referringMeasure(const Measure* measure) const
 ///   returns the measure repeat number's bounding rectangle
 //---------------------------------------------------------
 
-PointF MeasureRepeat::numberPosition(const RectF& numberBbox) const
-{
+PointF MeasureRepeat::numberPosition(const RectF &numberBbox) const {
     double x = (symBbox(ldata()->symId).width() - numberBbox.width()) * .5;
     // -pos().y(): relative to topmost staff line
     // - 0.5 * r.height(): relative to the baseline of the number symbol
@@ -109,8 +99,7 @@ PointF MeasureRepeat::numberPosition(const RectF& numberBbox) const
     return PointF(x, y);
 }
 
-RectF MeasureRepeat::numberRect() const
-{
+RectF MeasureRepeat::numberRect() const {
     RectF r = symBbox(ldata()->numberSym);
     r.translate(numberPosition(r));
     return r;
@@ -120,13 +109,10 @@ RectF MeasureRepeat::numberRect() const
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue MeasureRepeat::propertyDefault(Pid propertyId) const
-{
+PropertyValue MeasureRepeat::propertyDefault(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::MEASURE_REPEAT_NUMBER_OFFSET:
-        return 0.0_sp;
-    default:
-        return Rest::propertyDefault(propertyId);
+        case Pid::MEASURE_REPEAT_NUMBER_OFFSET: return 0.0_sp;
+        default: return Rest::propertyDefault(propertyId);
     }
 }
 
@@ -134,15 +120,11 @@ PropertyValue MeasureRepeat::propertyDefault(Pid propertyId) const
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue MeasureRepeat::getProperty(Pid propertyId) const
-{
+PropertyValue MeasureRepeat::getProperty(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::SUBTYPE:
-        return numMeasures();
-    case Pid::MEASURE_REPEAT_NUMBER_OFFSET:
-        return m_numberOffset;
-    default:
-        return Rest::getProperty(propertyId);
+        case Pid::SUBTYPE: return numMeasures();
+        case Pid::MEASURE_REPEAT_NUMBER_OFFSET: return m_numberOffset;
+        default: return Rest::getProperty(propertyId);
     }
 }
 
@@ -150,18 +132,14 @@ PropertyValue MeasureRepeat::getProperty(Pid propertyId) const
 //   setProperty
 //---------------------------------------------------------
 
-bool MeasureRepeat::setProperty(Pid propertyId, const PropertyValue& v)
-{
+bool MeasureRepeat::setProperty(Pid propertyId, const PropertyValue &v) {
     switch (propertyId) {
-    case Pid::SUBTYPE:
-        setNumMeasures(v.toInt());
-        break;
-    case Pid::MEASURE_REPEAT_NUMBER_OFFSET:
-        setNumberOffset(v.value<Spatium>());
-        triggerLayout();
-        break;
-    default:
-        return Rest::setProperty(propertyId, v);
+        case Pid::SUBTYPE: setNumMeasures(v.toInt()); break;
+        case Pid::MEASURE_REPEAT_NUMBER_OFFSET:
+            setNumberOffset(v.value<Spatium>());
+            triggerLayout();
+            break;
+        default: return Rest::setProperty(propertyId, v);
     }
     return true;
 }
@@ -170,8 +148,7 @@ bool MeasureRepeat::setProperty(Pid propertyId, const PropertyValue& v)
 //   ticks
 //---------------------------------------------------------
 
-Fraction MeasureRepeat::ticks() const
-{
+Fraction MeasureRepeat::ticks() const {
     if (measure()) {
         return measure()->stretchedLen(staff());
     }
@@ -182,14 +159,11 @@ Fraction MeasureRepeat::ticks() const
 //   accessibleInfo
 //---------------------------------------------------------
 
-
-
 //---------------------------------------------------------
 //   subtypeUserName
 //---------------------------------------------------------
 
-muse::TranslatableString MeasureRepeat::subtypeUserName() const
-{
+muse::TranslatableString MeasureRepeat::subtypeUserName() const {
     return muse::TranslatableString("engraving", "%Ln measure(s)", nullptr, numMeasures());
 }
-}
+} // namespace mu::engraving

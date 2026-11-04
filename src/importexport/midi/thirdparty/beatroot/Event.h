@@ -18,27 +18,17 @@
 
 #include <list>
 
+struct Event {
+    double time;
+    double salience;
 
-struct Event
-      {
-      double time;
-      double salience;
+    Event() : time(0), salience(0) {}
 
-      Event()
-            : time(0), salience(0)
-            {}
-      Event(double t, double s)
-            : time(t), salience(s)
-            {}
+    Event(double t, double s) : time(t), salience(s) {}
 
-      bool operator!=(const Event &e)
-            {
-            return time != e.time || salience != e.salience;
-            }
-      };
+    bool operator!=(const Event &e) { return time != e.time || salience != e.salience; }
+};
 
 typedef std::list<Event> EventList;
 
-
 #endif
-

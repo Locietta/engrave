@@ -29,174 +29,164 @@
 #include "../dom/staff.h"
 
 namespace mu::engraving {
-class InsertStaff : public UndoableCommand
-{
+class InsertStaff : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, InsertStaff)
 
-    Staff* staff = nullptr;
+    Staff *staff = nullptr;
     staff_idx_t ridx = muse::nidx;
 
 public:
-    InsertStaff(Staff*, staff_idx_t idx);
+    InsertStaff(Staff *, staff_idx_t idx);
     void undo() override;
     void redo() override;
     void cleanup(bool) override;
 
     UNDO_TYPE(CommandType::InsertStaff)
     UNDO_NAME("InsertStaff")
-    UNDO_CHANGED_OBJECTS({ staff })
+    UNDO_CHANGED_OBJECTS({staff})
 };
 
-class RemoveStaff : public UndoableCommand
-{
+class RemoveStaff : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, RemoveStaff)
 
-    Staff* staff = nullptr;
+    Staff *staff = nullptr;
     staff_idx_t ridx = muse::nidx;
     bool wasSystemObjectStaff = false;
 
 public:
-    RemoveStaff(Staff*);
+    RemoveStaff(Staff *);
     void undo() override;
     void redo() override;
     void cleanup(bool) override;
 
     UNDO_TYPE(CommandType::RemoveStaff)
     UNDO_NAME("RemoveStaff")
-    UNDO_CHANGED_OBJECTS({ staff })
+    UNDO_CHANGED_OBJECTS({staff})
 };
 
-class AddSystemObjectStaff : public UndoableCommand
-{
+class AddSystemObjectStaff : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, AddSystemObjectStaff)
 
-    Staff* staff = nullptr;
+    Staff *staff = nullptr;
 
 public:
-    AddSystemObjectStaff(Staff*);
+    AddSystemObjectStaff(Staff *);
     void undo() override;
     void redo() override;
 
     UNDO_TYPE(CommandType::AddSystemObjectStaff)
     UNDO_NAME("AddSystemObjectStaff")
-    UNDO_CHANGED_OBJECTS({ staff })
+    UNDO_CHANGED_OBJECTS({staff})
 };
 
-class RemoveSystemObjectStaff : public UndoableCommand
-{
+class RemoveSystemObjectStaff : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, RemoveSystemObjectStaff)
 
-    Staff* staff = nullptr;
+    Staff *staff = nullptr;
 
 public:
-    RemoveSystemObjectStaff(Staff*);
+    RemoveSystemObjectStaff(Staff *);
     void undo() override;
     void redo() override;
 
     UNDO_TYPE(CommandType::RemoveSystemObjectStaff)
     UNDO_NAME("RemoveSystemObjectStaff")
-    UNDO_CHANGED_OBJECTS({ staff })
+    UNDO_CHANGED_OBJECTS({staff})
 };
 
-class InsertMStaff : public UndoableCommand
-{
+class InsertMStaff : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, InsertMStaff)
 
-    Measure* measure = nullptr;
-    MStaff* mstaff = nullptr;
+    Measure *measure = nullptr;
+    MStaff *mstaff = nullptr;
     staff_idx_t idx = muse::nidx;
 
 public:
-    InsertMStaff(Measure*, MStaff*, staff_idx_t);
+    InsertMStaff(Measure *, MStaff *, staff_idx_t);
     void undo() override;
     void redo() override;
 
     UNDO_TYPE(CommandType::InsertMStaff)
     UNDO_NAME("InsertMStaff")
-    UNDO_CHANGED_OBJECTS({ measure })
+    UNDO_CHANGED_OBJECTS({measure})
 };
 
-class RemoveMStaff : public UndoableCommand
-{
+class RemoveMStaff : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, RemoveMStaff)
 
-    Measure* measure = nullptr;
-    MStaff* mstaff = nullptr;
+    Measure *measure = nullptr;
+    MStaff *mstaff = nullptr;
     int idx = 0;
 
 public:
-    RemoveMStaff(Measure*, MStaff*, int);
+    RemoveMStaff(Measure *, MStaff *, int);
     void undo() override;
     void redo() override;
 
     UNDO_TYPE(CommandType::RemoveMStaff)
     UNDO_NAME("RemoveMStaff")
-    UNDO_CHANGED_OBJECTS({ measure })
+    UNDO_CHANGED_OBJECTS({measure})
 };
 
-class InsertStaves : public UndoableCommand
-{
+class InsertStaves : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, InsertStaves)
 
-    Measure* measure = nullptr;
+    Measure *measure = nullptr;
     staff_idx_t a = muse::nidx;
     staff_idx_t b = muse::nidx;
 
 public:
-    InsertStaves(Measure*, staff_idx_t, staff_idx_t);
+    InsertStaves(Measure *, staff_idx_t, staff_idx_t);
     void undo() override;
     void redo() override;
 
     UNDO_TYPE(CommandType::InsertStaves)
     UNDO_NAME("InsertStaves")
-    UNDO_CHANGED_OBJECTS({ measure })
+    UNDO_CHANGED_OBJECTS({measure})
 };
 
-class RemoveStaves : public UndoableCommand
-{
+class RemoveStaves : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, RemoveStaves)
 
-    Measure* measure = nullptr;
+    Measure *measure = nullptr;
     staff_idx_t a = muse::nidx;
     staff_idx_t b = muse::nidx;
 
 public:
-    RemoveStaves(Measure*, staff_idx_t, staff_idx_t);
+    RemoveStaves(Measure *, staff_idx_t, staff_idx_t);
     void undo() override;
     void redo() override;
 
     UNDO_TYPE(CommandType::RemoveStaves)
     UNDO_NAME("RemoveStaves")
-    UNDO_CHANGED_OBJECTS({ measure })
+    UNDO_CHANGED_OBJECTS({measure})
 };
 
-class SortStaves : public UndoableCommand
-{
+class SortStaves : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, SortStaves)
 
-    Score* score = nullptr;
+    Score *score = nullptr;
     std::vector<staff_idx_t> list;
     std::vector<staff_idx_t> rlist;
 
 public:
-    SortStaves(Score*, const std::vector<staff_idx_t>&);
+    SortStaves(Score *, const std::vector<staff_idx_t> &);
     void undo() override;
     void redo() override;
 
     UNDO_TYPE(CommandType::SortStaves)
     UNDO_NAME("SortStaves")
-    UNDO_CHANGED_OBJECTS({ score })
+    UNDO_CHANGED_OBJECTS({score})
 };
 
 //---------------------------------------------------------
 //   ChangeStaff
 //---------------------------------------------------------
 
-class ChangeStaff : public UndoableCommand
-{
+class ChangeStaff : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeStaff)
 
-    Staff* staff = nullptr;
+    Staff *staff = nullptr;
 
     bool visible = false;
     ClefTypeList clefType;
@@ -209,44 +199,41 @@ class ChangeStaff : public UndoableCommand
     void flip() override;
 
 public:
-    ChangeStaff(Staff*);
+    ChangeStaff(Staff *);
 
-    ChangeStaff(Staff*, bool _visible, ClefTypeList _clefType, Spatium userDist, bool _cutaway, bool _hideSystemBarLine,
+    ChangeStaff(Staff *, bool _visible, ClefTypeList _clefType, Spatium userDist, bool _cutaway, bool _hideSystemBarLine,
                 AutoOnOff _mergeRests, bool _reflectTranspositionInLinkedTab);
 
     UNDO_TYPE(CommandType::ChangeStaff)
     UNDO_NAME("ChangeStaff")
-    UNDO_CHANGED_OBJECTS({ staff })
+    UNDO_CHANGED_OBJECTS({staff})
 };
 
 //---------------------------------------------------------
 //   ChangeStaffType
 //---------------------------------------------------------
 
-class ChangeStaffType : public UndoableCommand
-{
+class ChangeStaffType : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeStaffType)
 
-    Staff* staff = nullptr;
+    Staff *staff = nullptr;
     StaffType staffType;
     Fraction tick;
 
     void flip() override;
 
 public:
-    ChangeStaffType(Staff* s, const StaffType& t, Fraction tick = Fraction(0, 1))
-        : staff(s), staffType(t), tick(tick) {}
+    ChangeStaffType(Staff *s, const StaffType &t, Fraction tick = Fraction(0, 1)) : staff(s), staffType(t), tick(tick) {}
 
     UNDO_TYPE(CommandType::ChangeStaffType)
     UNDO_NAME("ChangeStaffType")
-    UNDO_CHANGED_OBJECTS({ staff })
+    UNDO_CHANGED_OBJECTS({staff})
 };
 
-class ChangeMStaffProperties : public UndoableCommand
-{
+class ChangeMStaffProperties : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeMStaffProperties)
 
-    Measure* measure = nullptr;
+    Measure *measure = nullptr;
     staff_idx_t staffIdx = 0;
     bool visible = false;
     bool stemless = false;
@@ -254,28 +241,27 @@ class ChangeMStaffProperties : public UndoableCommand
     void flip() override;
 
 public:
-    ChangeMStaffProperties(Measure*, staff_idx_t staffIdx, bool visible, bool stemless);
+    ChangeMStaffProperties(Measure *, staff_idx_t staffIdx, bool visible, bool stemless);
 
     UNDO_TYPE(CommandType::ChangeMStaffProperties)
     UNDO_NAME("ChangeMStaffProperties")
-    UNDO_CHANGED_OBJECTS({ measure })
+    UNDO_CHANGED_OBJECTS({measure})
 };
 
-class ChangeMStaffHideIfEmpty : public UndoableCommand
-{
+class ChangeMStaffHideIfEmpty : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeMStaffHideIfEmpty)
 
-    Measure* measure = nullptr;
+    Measure *measure = nullptr;
     staff_idx_t staffIdx = 0;
     AutoOnOff hideIfEmpty = AutoOnOff::AUTO;
 
     void flip() override;
 
 public:
-    ChangeMStaffHideIfEmpty(Measure*, staff_idx_t staffIdx, AutoOnOff hideIfEmpty);
+    ChangeMStaffHideIfEmpty(Measure *, staff_idx_t staffIdx, AutoOnOff hideIfEmpty);
 
     UNDO_TYPE(CommandType::ChangeMStaffHideIfEmpty)
     UNDO_NAME("ChangeMStaffHideIfEmpty")
-    UNDO_CHANGED_OBJECTS({ measure })
+    UNDO_CHANGED_OBJECTS({measure})
 };
-}
+} // namespace mu::engraving

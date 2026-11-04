@@ -31,87 +31,61 @@
 using namespace mu;
 using namespace mu::engraving;
 
-static const ElementStyle annotationStyle {
-    { Sid::staffTextPlacement, Pid::PLACEMENT },
-    { Sid::staffTextMinDistance, Pid::MIN_DISTANCE },
+static const ElementStyle annotationStyle{
+    {Sid::staffTextPlacement, Pid::PLACEMENT},
+    {Sid::staffTextMinDistance, Pid::MIN_DISTANCE},
 };
 
 PlayTechAnnotation::PlayTechAnnotation(DummyParentOr<Segment> parent, PlayingTechniqueType techniqueType, TextStyleType tid)
     : StaffTextBase(ElementType::PLAYTECH_ANNOTATION, parent, tid, ElementFlag::MOVABLE | ElementFlag::ON_STAFF),
-    m_techniqueType(techniqueType)
-{
+      m_techniqueType(techniqueType) {
     initElementStyle(&annotationStyle);
 }
 
-PlayingTechniqueType PlayTechAnnotation::techniqueType() const
-{
-    return m_techniqueType;
-}
+PlayingTechniqueType PlayTechAnnotation::techniqueType() const { return m_techniqueType; }
 
-void PlayTechAnnotation::setTechniqueType(const PlayingTechniqueType techniqueType)
-{
+void PlayTechAnnotation::setTechniqueType(const PlayingTechniqueType techniqueType) {
     m_techniqueType = techniqueType;
     resetProperty(Pid::TEXT_STYLE);
 }
 
-PlayTechAnnotation* PlayTechAnnotation::clone() const
-{
-    return new PlayTechAnnotation(*this);
+PlayTechAnnotation *PlayTechAnnotation::clone() const { return new PlayTechAnnotation(*this); }
+
+TranslatableString PlayTechAnnotation::subtypeUserName() const { return TConv::userName(m_techniqueType); }
+
+bool PlayTechAnnotation::isHandbellsSymbol() const {
+    return static_cast<int>(m_techniqueType) >= static_cast<int>(PlayingTechniqueType::HandbellsSwing) &&
+           static_cast<int>(m_techniqueType) <= static_cast<int>(PlayingTechniqueType::HandbellsR);
 }
 
-TranslatableString PlayTechAnnotation::subtypeUserName() const
-{
-    return TConv::userName(m_techniqueType);
-}
-
-bool PlayTechAnnotation::isHandbellsSymbol() const
-{
-    return static_cast<int>(m_techniqueType) >= static_cast<int>(PlayingTechniqueType::HandbellsSwing)
-           && static_cast<int>(m_techniqueType) <= static_cast<int>(PlayingTechniqueType::HandbellsR);
-}
-
-PropertyValue PlayTechAnnotation::getProperty(Pid id) const
-{
+PropertyValue PlayTechAnnotation::getProperty(Pid id) const {
     switch (id) {
-    case Pid::PLAY_TECH_TYPE:
-        return m_techniqueType;
-    case Pid::PLAY:
-        return m_playPlayTechAnnotation;
-    default:
-        return StaffTextBase::getProperty(id);
+        case Pid::PLAY_TECH_TYPE: return m_techniqueType;
+        case Pid::PLAY: return m_playPlayTechAnnotation;
+        default: return StaffTextBase::getProperty(id);
     }
 }
 
-bool PlayTechAnnotation::setProperty(Pid propertyId, const PropertyValue& val)
-{
+bool PlayTechAnnotation::setProperty(Pid propertyId, const PropertyValue &val) {
     switch (propertyId) {
-    case Pid::PLAY_TECH_TYPE:
-        setTechniqueType(PlayingTechniqueType(val.toInt()));
-        break;
-    case Pid::PLAY:
-        setPlayPlayTechAnnotation(val.toBool());
-        break;
-    default:
-        if (!StaffTextBase::setProperty(propertyId, val)) {
-            return false;
-        }
-        break;
+        case Pid::PLAY_TECH_TYPE: setTechniqueType(PlayingTechniqueType(val.toInt())); break;
+        case Pid::PLAY: setPlayPlayTechAnnotation(val.toBool()); break;
+        default:
+            if (!StaffTextBase::setProperty(propertyId, val)) {
+                return false;
+            }
+            break;
     }
 
     triggerLayout();
     return true;
 }
 
-PropertyValue PlayTechAnnotation::propertyDefault(Pid id) const
-{
+PropertyValue PlayTechAnnotation::propertyDefault(Pid id) const {
     switch (id) {
-    case Pid::TEXT_STYLE:
-        return isHandbellsSymbol() ? TextStyleType::ARTICULATION : TextStyleType::STAFF;
-    case Pid::PLAY_TECH_TYPE:
-        return PlayingTechniqueType::Natural;
-    case Pid::PLAY:
-        return true;
-    default:
-        return StaffTextBase::propertyDefault(id);
+        case Pid::TEXT_STYLE: return isHandbellsSymbol() ? TextStyleType::ARTICULATION : TextStyleType::STAFF;
+        case Pid::PLAY_TECH_TYPE: return PlayingTechniqueType::Natural;
+        case Pid::PLAY: return true;
+        default: return StaffTextBase::propertyDefault(id);
     }
 }

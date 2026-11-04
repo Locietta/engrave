@@ -28,46 +28,42 @@
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-void PassLayoutIndependentItems::doRun(Score* score, LayoutContext& ctx)
-{
-    for (EngravingObject* child : score->children()) {
+void PassLayoutIndependentItems::doRun(Score *score, LayoutContext &ctx) {
+    for (EngravingObject *child : score->children()) {
         if (child->isEngravingItem()) {
             scan(toEngravingItem(child), ctx);
         }
     }
 }
 
-void PassLayoutIndependentItems::scan(EngravingItem* item, LayoutContext& ctx)
-{
+void PassLayoutIndependentItems::scan(EngravingItem *item, LayoutContext &ctx) {
     //! NOTE These items are independent
     switch (item->type()) {
-    case ElementType::ACCIDENTAL:
-    case ElementType::ACTION_ICON:
-    case ElementType::AMBITUS:
-    case ElementType::BREATH:
-    case ElementType::CLEF:
-    case ElementType::DEAD_SLAPPED:
-    case ElementType::HARMONY:
-    case ElementType::HOOK:
-    case ElementType::INSTRUMENT_NAME:
-    case ElementType::KEYSIG:
-    case ElementType::LAYOUT_BREAK:
-    case ElementType::NOTE:
-    case ElementType::NOTEDOT:
-    case ElementType::STAFF_STATE:
-    case ElementType::STAFFTYPE_CHANGE:
-    case ElementType::STEM:
-    case ElementType::SYMBOL:
-    case ElementType::FSYMBOL:
-    case ElementType::SYSTEM_DIVIDER:
-    case ElementType::TIMESIG:
-    case ElementType::TREMOLOBAR:
-        TLayout::layoutItem(item, ctx);
-    default:
-        break;
+        case ElementType::ACCIDENTAL:
+        case ElementType::ACTION_ICON:
+        case ElementType::AMBITUS:
+        case ElementType::BREATH:
+        case ElementType::CLEF:
+        case ElementType::DEAD_SLAPPED:
+        case ElementType::HARMONY:
+        case ElementType::HOOK:
+        case ElementType::INSTRUMENT_NAME:
+        case ElementType::KEYSIG:
+        case ElementType::LAYOUT_BREAK:
+        case ElementType::NOTE:
+        case ElementType::NOTEDOT:
+        case ElementType::STAFF_STATE:
+        case ElementType::STAFFTYPE_CHANGE:
+        case ElementType::STEM:
+        case ElementType::SYMBOL:
+        case ElementType::FSYMBOL:
+        case ElementType::SYSTEM_DIVIDER:
+        case ElementType::TIMESIG:
+        case ElementType::TREMOLOBAR: TLayout::layoutItem(item, ctx);
+        default: break;
     }
 
-    for (EngravingItem* ch : item->childrenItems()) {
+    for (EngravingItem *ch : item->childrenItems()) {
         scan(ch, ctx);
     }
 }

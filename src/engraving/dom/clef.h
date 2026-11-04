@@ -46,12 +46,13 @@ struct ClefTypeList {
     ClefType transposingClef = ClefType::G;
 
     ClefTypeList() {}
-    ClefTypeList(ClefType a, ClefType b)
-        : concertClef(a), transposingClef(b) {}
-    ClefTypeList(ClefType a)
-        : concertClef(a), transposingClef(a) {}
-    bool operator==(const ClefTypeList& t) const;
-    bool operator!=(const ClefTypeList& t) const;
+
+    ClefTypeList(ClefType a, ClefType b) : concertClef(a), transposingClef(b) {}
+
+    ClefTypeList(ClefType a) : concertClef(a), transposingClef(a) {}
+
+    bool operator==(const ClefTypeList &t) const;
+    bool operator!=(const ClefTypeList &t) const;
 };
 
 //---------------------------------------------------------
@@ -59,21 +60,24 @@ struct ClefTypeList {
 ///   Info about a clef.
 //---------------------------------------------------------
 
-struct ClefInfo
-{
+struct ClefInfo {
     static const ClefInfo clefTable[];
 
     ClefType m_type = ClefType::INVALID;
-    int m_line = 0;                 ///< Line positioning on the staff
-    int m_pitchOffset = 0;          ///< Pitch offset for line 0.
+    int m_line = 0;        ///< Line positioning on the staff
+    int m_pitchOffset = 0; ///< Pitch offset for line 0.
     signed char m_lines[14];
     SymId m_symId = SymId::noSym;
     StaffGroup m_staffGroup = StaffGroup::STANDARD;
 
     static int line(ClefType t) { return clefTable[int(t)].m_line; }
+
     static int pitchOffset(ClefType t) { return clefTable[int(t)].m_pitchOffset; }
+
     static SymId symId(ClefType t) { return clefTable[int(t)].m_symId; }
-    static const signed char* lines(ClefType t) { return clefTable[int(t)].m_lines; }
+
+    static const signed char *lines(ClefType t) { return clefTable[int(t)].m_lines; }
+
     static StaffGroup staffGroup(ClefType t) { return clefTable[int(t)].m_staffGroup; }
 };
 
@@ -85,75 +89,91 @@ struct ClefInfo
 //   @P isSmall       bool    small, mid-staff clef (read only, set by layout)
 //---------------------------------------------------------
 
-class Clef final : public EngravingItem
-{
+class Clef final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, Clef)
     DECLARE_CLASSOF(ElementType::CLEF)
 
 public:
 
-    Clef* clone() const override { return new Clef(*this); }
+    Clef *clone() const override { return new Clef(*this); }
+
     double mag() const override;
 
-    Segment* segment() const { return (Segment*)ownershipParent(); }
-    Measure* measure() const { return (Measure*)ownershipParent()->ownershipParent(); }
+    Segment *segment() const { return (Segment *) ownershipParent(); }
 
-    bool acceptDrop(EditData&) const override;
-    EngravingItem* drop(Transaction& tx, EditData&) override;
+    Measure *measure() const { return (Measure *) ownershipParent()->ownershipParent(); }
 
+    bool acceptDrop(EditData &) const override;
+    EngravingItem *drop(Transaction &tx, EditData &) override;
 
     bool isSmall() const { return m_isSmall; }
+
     void setSmall(bool val);
 
     bool showCourtesy() const { return m_showCourtesy; }
+
     void setShowCourtesy(bool v) { m_showCourtesy = v; }
+
     void undoSetShowCourtesy(bool v);
-    Clef* otherClef();
+    Clef *otherClef();
 
     ClefType clefType() const;
     void setClefType(ClefType i);
 
     bool isCourtesy() const { return m_isCourtesy; }
+
     void setIsCourtesy(const bool v) { m_isCourtesy = v; }
 
     int subtype() const override { return int(clefType()); }
+
     TranslatableString subtypeUserName() const override;
 
     void setForInstrumentChange(bool forInstrumentChange) { m_forInstrumentChange = forInstrumentChange; }
+
     bool forInstrumentChange() const { return m_forInstrumentChange; }
 
     ClefTypeList clefTypeList() const { return m_clefTypes; }
+
     ClefType concertClef() const { return m_clefTypes.concertClef; }
+
     ClefType transposingClef() const { return m_clefTypes.transposingClef; }
+
     void setConcertClef(ClefType val);
     void setTransposingClef(ClefType val);
-    void setClefType(const ClefTypeList& ctl) { m_clefTypes = ctl; }
+
+    void setClefType(const ClefTypeList &ctl) { m_clefTypes = ctl; }
+
     void spatiumChanged(double oldValue, double newValue) override;
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid id) const override;
 
-    EngravingItem* nextSegmentElement() override;
-    EngravingItem* prevSegmentElement() override;
+    EngravingItem *nextSegmentElement() override;
+    EngravingItem *prevSegmentElement() override;
 
     void clear();
 
     void changeClefToBarlinePos(ClefToBarlinePosition newPos);
 
-    void undoChangeProperty(Pid id, const PropertyValue& v) { EngravingObject::undoChangeProperty(id, v); }
-    void undoChangeProperty(Pid id, const PropertyValue& v, PropertyFlags ps) override;
+    void undoChangeProperty(Pid id, const PropertyValue &v) { EngravingObject::undoChangeProperty(id, v); }
+
+    void undoChangeProperty(Pid id, const PropertyValue &v, PropertyFlags ps) override;
 
     ClefToBarlinePosition clefToBarlinePosition() const { return m_clefToBarlinePosition; }
+
     void setClefToBarlinePosition(ClefToBarlinePosition val) { m_clefToBarlinePosition = val; }
+
     bool isHeader() const;
 
     bool isTrailer() const { return m_isTrailer; }
+
     void setIsTrailer(bool val) { m_isTrailer = val; }
 
     bool isMidMeasureClef() const;
 
     bool canBeExcludedFromOtherParts() const override { return !isHeader(); }
+
     void manageExclusionFromParts(bool exclude) override;
 
     struct LayoutData : public EngravingItem::LayoutData {

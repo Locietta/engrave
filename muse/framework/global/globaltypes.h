@@ -23,12 +23,11 @@
 #define MUSE_GLOBAL_GLOBALTYPES_H
 
 namespace muse {
-enum class Orientation
-{
+enum class Orientation {
     // Note: values from Qt::Orientation
     Horizontal = 1,
     Vertical = 2
 };
-}
+} // namespace muse
 
 #endif // MUSE_GLOBAL_GLOBALTYPES_H

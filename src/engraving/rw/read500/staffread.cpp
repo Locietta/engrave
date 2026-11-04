@@ -33,8 +33,7 @@
 using namespace mu::engraving;
 using namespace mu::engraving::read500;
 
-void StaffRead::readStaff(Score* score, XmlReader& e, ReadContext& ctx)
-{
+void StaffRead::readStaff(Score *score, XmlReader &e, ReadContext &ctx) {
     int staff = e.intAttribute("id", 1) - 1;
     int measureIdx = 0;
     ctx.setCurrentMeasureIndex(0);
@@ -46,15 +45,14 @@ void StaffRead::readStaff(Score* score, XmlReader& e, ReadContext& ctx)
             const AsciiStringView tag(e.name());
 
             if (tag == "Measure") {
-                Measure* measure = Factory::createMeasure(ctx.score());
+                Measure *measure = Factory::createMeasure(ctx.score());
                 measure->setTick(ctx.tick());
                 ctx.setCurrentMeasureIndex(measureIdx++);
                 //
                 // inherit timesig from previous measure
                 //
-                Measure* m = ctx.lastMeasure();             // measure->prevMeasure();
-                Fraction f(ctx.timeSigForNextMeasure() != Fraction(0, 1) ? ctx.timeSigForNextMeasure()
-                           : m ? m->timesig() : Fraction(4, 4));
+                Measure *m = ctx.lastMeasure(); // measure->prevMeasure();
+                Fraction f(ctx.timeSigForNextMeasure() != Fraction(0, 1) ? ctx.timeSigForNextMeasure() : m ? m->timesig() : Fraction(4, 4));
                 measure->setTicks(f);
                 measure->setTimesig(f);
                 ctx.setTimeSigForNextMeasure(Fraction(0, 1));
@@ -69,7 +67,7 @@ void StaffRead::readStaff(Score* score, XmlReader& e, ReadContext& ctx)
                 } else {
                     // this is a multi measure rest
                     // always preceded by the first measure it replaces
-                    Measure* m1 = ctx.lastMeasure();
+                    Measure *m1 = ctx.lastMeasure();
 
                     if (m1) {
                         m1->setMMRest(measure);
@@ -78,7 +76,7 @@ void StaffRead::readStaff(Score* score, XmlReader& e, ReadContext& ctx)
                     }
                 }
             } else if (tag == "HBox" || tag == "VBox" || tag == "TBox" || tag == "FBox") {
-                MeasureBase* mb = toMeasureBase(Factory::createItemByName(tag, ctx.dummy()));
+                MeasureBase *mb = toMeasureBase(Factory::createItemByName(tag, ctx.dummy()));
                 mb->setTick(ctx.tick());
                 score->measures()->append(mb);
 
@@ -93,7 +91,7 @@ void StaffRead::readStaff(Score* score, XmlReader& e, ReadContext& ctx)
             }
         }
     } else {
-        Measure* measure = score->firstMeasure();
+        Measure *measure = score->firstMeasure();
         while (e.readNextStartElement()) {
             const AsciiStringView tag(e.name());
 

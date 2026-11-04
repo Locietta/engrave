@@ -71,36 +71,26 @@ using mu::engraving::Staff;
 using mu::engraving::StaffGroup;
 using mu::engraving::StaffType;
 
-std::unexpected<Error> fail(ErrorCode code, std::string message) {
-    return std::unexpected(Error{code, std::move(message)});
-}
+std::unexpected<Error> fail(ErrorCode code, std::string message) { return std::unexpected(Error{code, std::move(message)}); }
 
 // Ticks per whole note: the engine divides a quarter note into Constants::DIVISION.
 constexpr std::int64_t whole_note_ticks = 4 * mu::engraving::Constants::DIVISION;
 
 // A position or length in ticks, as a fraction of a whole note.  Not reduced, so
 // that a tick is the same fraction wherever it is reported.
-Fraction whole_notes(int ticks) {
-    return {ticks, whole_note_ticks};
-}
+Fraction whole_notes(int ticks) { return {ticks, whole_note_ticks}; }
 
 // Whether a is before b. Inputs have positive denominators; comparisons cover
 // the full int64 range without overflowing on unreduced fractions.
-bool before(const Fraction& a, const Fraction& b) {
-    return a < b;
-}
+bool before(const Fraction &a, const Fraction &b) { return a < b; }
 
-Fraction fraction_of(const mu::engraving::Fraction& value) {
-    return {value.numerator(), value.denominator()};
-}
+Fraction fraction_of(const mu::engraving::Fraction &value) { return {value.numerator(), value.denominator()}; }
 
-std::string plain_text(const muse::String& text) {
-    return text.toStdString();
-}
+std::string plain_text(const muse::String &text) { return text.toStdString(); }
 
 // --- properties -----------------------------------------------------------
 
-PropertyRead read_property(const EngravingObject& object, Pid pid) {
+PropertyRead read_property(const EngravingObject &object, Pid pid) {
     const mu::engraving::P_TYPE type = mu::engraving::propertyType(pid);
     PropertyRead read;
     read.name = api::name_of(pid);
@@ -108,12 +98,12 @@ PropertyRead read_property(const EngravingObject& object, Pid pid) {
     const mu::engraving::PropertyValue fallback = object.propertyDefault(pid);
     if (fallback.isValid()) {
         const Value default_value = api::to_value(type, fallback);
-        const auto* actual_fraction = std::get_if<Fraction>(&read.value);
-        const auto* default_fraction = std::get_if<Fraction>(&default_value);
+        const auto *actual_fraction = std::get_if<Fraction>(&read.value);
+        const auto *default_fraction = std::get_if<Fraction>(&default_value);
         // A written signature can carry meaning in its unreduced terms.
-        read.is_default = actual_fraction && default_fraction
-            ? actual_fraction->num == default_fraction->num && actual_fraction->den == default_fraction->den
-            : read.value == default_value;
+        read.is_default = actual_fraction && default_fraction ?
+                              actual_fraction->num == default_fraction->num && actual_fraction->den == default_fraction->den :
+                              read.value == default_value;
     }
     read.styled = object.isStyled(pid);
     return read;
@@ -121,10 +111,10 @@ PropertyRead read_property(const EngravingObject& object, Pid pid) {
 
 // The Pids a list of catalogue names names.  NotFound for a name the catalogue does
 // not know, before anything is read.
-Result<std::vector<Pid>> named_pids(const std::vector<std::string>& names) {
+Result<std::vector<Pid>> named_pids(const std::vector<std::string> &names) {
     std::vector<Pid> pids;
     pids.reserve(names.size());
-    for (const std::string& name : names) {
+    for (const std::string &name : names) {
         const Pid pid = api::pid_of(name);
         if (pid == Pid::END) return fail(ErrorCode::NotFound, std::format("no property '{}'", name));
         pids.push_back(pid);
@@ -132,15 +122,13 @@ Result<std::vector<Pid>> named_pids(const std::vector<std::string>& names) {
     return pids;
 }
 
-bool has_property(const std::vector<Pid>& pids, Pid pid) {
-    return std::ranges::find(pids, pid) != pids.end();
-}
+bool has_property(const std::vector<Pid> &pids, Pid pid) { return std::ranges::find(pids, pid) != pids.end(); }
 
 // --- where an element is --------------------------------------------------
 
-int score_index(MasterScore& master, const Score* score) {
+int score_index(MasterScore &master, const Score *score) {
     int index = 0;
-    for (const Score* candidate : master.scoreList()) {
+    for (const Score *candidate : master.scoreList()) {
         if (candidate == score) return index;
         ++index;
     }
@@ -150,11 +138,11 @@ int score_index(MasterScore& master, const Score* score) {
 // The measures of one score in score order, with the start tick of each, so that the
 // measure an element sits in is one search rather than a walk per element.
 struct MeasureIndex {
-    std::vector<Measure*> measures;
+    std::vector<Measure *> measures;
     std::vector<int> ticks;
 
-    explicit MeasureIndex(Score& score) {
-        for (Measure* measure = score.firstMeasure(); measure; measure = measure->nextMeasure()) {
+    explicit MeasureIndex(Score &score) {
+        for (Measure *measure = score.firstMeasure(); measure; measure = measure->nextMeasure()) {
             measures.push_back(measure);
             ticks.push_back(measure->tick().ticks());
         }
@@ -166,20 +154,20 @@ struct MeasureIndex {
         return static_cast<std::int32_t>(found - ticks.begin() - 1);
     }
 
-    std::int32_t index_of(const Measure* measure) const {
+    std::int32_t index_of(const Measure *measure) const {
         const auto found = std::ranges::find(measures, measure);
         return found == measures.end() ? -1 : static_cast<std::int32_t>(found - measures.begin());
     }
 };
 
-int duration_ticks(const EngravingItem& item) {
+int duration_ticks(const EngravingItem &item) {
     if (item.isChordRest()) {
-        const auto& rest = static_cast<const ChordRest&>(item);
+        const auto &rest = static_cast<const ChordRest &>(item);
         // A grace note has no length of its own in this model.
         if (rest.isChord() && mu::engraving::toChord(&rest)->isGrace()) return 0;
         return rest.actualTicks().ticks();
     }
-    if (item.isSpanner()) return static_cast<const Spanner&>(item).ticks().ticks();
+    if (item.isSpanner()) return static_cast<const Spanner &>(item).ticks().ticks();
     return 0;
 }
 
@@ -191,15 +179,15 @@ struct Where {
     std::optional<ElementId> measure;
 };
 
-Where where_of(const EngravingObject& object, const MeasureIndex& index) {
+Where where_of(const EngravingObject &object, const MeasureIndex &index) {
     Where where;
     if (object.isMeasure()) {
-        const Measure* measure = mu::engraving::toMeasure(&object);
+        const Measure *measure = mu::engraving::toMeasure(&object);
         where.tick = whole_notes(measure->tick().ticks());
         where.duration = whole_notes(measure->ticks().ticks());
         where.measure_index = index.index_of(measure);
     } else if (object.isEngravingItem()) {
-        const auto& item = static_cast<const EngravingItem&>(object);
+        const auto &item = static_cast<const EngravingItem &>(object);
         where.tick = whole_notes(item.tick().ticks());
         where.duration = whole_notes(duration_ticks(item));
         where.measure_index = index.index_of_tick(item.tick().ticks());
@@ -207,24 +195,24 @@ Where where_of(const EngravingObject& object, const MeasureIndex& index) {
         return where; // the score, a part or a staff: not at a position
     }
     if (where.measure_index >= 0) {
-        const Measure* measure = index.measures[static_cast<std::size_t>(where.measure_index)];
+        const Measure *measure = index.measures[static_cast<std::size_t>(where.measure_index)];
         if (measure->eid().isValid()) where.measure = from_engine(measure->eid());
     }
     return where;
 }
+
 // The staff and voice an element sits on; both -1 for an element that is not on one.
-std::pair<std::int32_t, std::int32_t> staff_and_voice(const EngravingObject& object) {
+std::pair<std::int32_t, std::int32_t> staff_and_voice(const EngravingObject &object) {
     if (!object.isEngravingItem()) return {-1, -1};
-    const auto track = static_cast<const EngravingItem&>(object).track();
+    const auto track = static_cast<const EngravingItem &>(object).track();
     if (track == muse::nidx) return {-1, -1};
-    return {static_cast<std::int32_t>(track / mu::engraving::VOICES),
-            static_cast<std::int32_t>(track % mu::engraving::VOICES)};
+    return {static_cast<std::int32_t>(track / mu::engraving::VOICES), static_cast<std::int32_t>(track % mu::engraving::VOICES)};
 }
 
 // The nearest element above this one that has an id.  The score itself is not one:
 // it is the document, not the element's parent.
-std::optional<ElementId> parent_of(const EngravingObject& object) {
-    for (EngravingObject* parent = object.ownershipParent(); parent; parent = parent->ownershipParent()) {
+std::optional<ElementId> parent_of(const EngravingObject &object) {
+    for (EngravingObject *parent = object.ownershipParent(); parent; parent = parent->ownershipParent()) {
         if (parent->type() == mu::engraving::ElementType::SCORE) return std::nullopt;
         if (parent->eid().isValid()) return from_engine(parent->eid());
     }
@@ -232,24 +220,24 @@ std::optional<ElementId> parent_of(const EngravingObject& object) {
 }
 
 // The ids of an element's link group, master first.  Empty when it has no links.
-std::vector<ElementId> links_of(const EngravingObject& object, MasterScore& master) {
+std::vector<ElementId> links_of(const EngravingObject &object, MasterScore &master) {
     std::vector<ElementId> links;
-    const mu::engraving::LinkedObjects* group = object.links();
+    const mu::engraving::LinkedObjects *group = object.links();
     if (!group) return links;
     std::vector<std::pair<int, ElementId>> ordered;
-    for (const EngravingObject* member : *group) {
+    for (const EngravingObject *member : *group) {
         if (!member || !member->eid().isValid()) continue;
         ordered.emplace_back(score_index(master, member->score()), from_engine(member->eid()));
     }
     std::ranges::sort(ordered);
     links.reserve(ordered.size());
-    for (const auto& [index, id] : ordered) links.push_back(id);
+    for (const auto &[index, id] : ordered) links.push_back(id);
     return links;
 }
 
-std::optional<LayoutBox> box_of(const EngravingItem& item, const Score& score) {
-    const MeasureBase* base = const_cast<EngravingItem&>(item).findMeasureBase();
-    const Page* page = base ? base->page() : nullptr;
+std::optional<LayoutBox> box_of(const EngravingItem &item, const Score &score) {
+    const MeasureBase *base = const_cast<EngravingItem &>(item).findMeasureBase();
+    const Page *page = base ? base->page() : nullptr;
     if (!page) return std::nullopt;
     const mu::engraving::page_idx_t index = score.pageIdx(page);
     if (index == muse::nidx) return std::nullopt;
@@ -261,32 +249,32 @@ std::optional<LayoutBox> box_of(const EngravingItem& item, const Score& score) {
 
 std::string_view staff_group(StaffGroup group) {
     switch (group) {
-    case StaffGroup::STANDARD: return "pitched";
-    case StaffGroup::PERCUSSION: return "percussion";
-    case StaffGroup::TAB: return "tablature";
+        case StaffGroup::STANDARD: return "pitched";
+        case StaffGroup::PERCUSSION: return "percussion";
+        case StaffGroup::TAB: return "tablature";
     }
     return "unknown";
 }
 
 // A part's index in its score's part list, which is what StaffInfo::part means.
-std::int32_t part_index(const Score& score, const Part* part) {
-    const std::vector<Part*>& parts = score.parts();
+std::int32_t part_index(const Score &score, const Part *part) {
+    const std::vector<Part *> &parts = score.parts();
     const auto found = std::ranges::find(parts, part);
     return found == parts.end() ? -1 : static_cast<std::int32_t>(found - parts.begin());
 }
 
-void fill_parts(Outline& outline, Score& score) {
-    for (Part* part : score.parts()) {
+void fill_parts(Outline &outline, Score &score) {
+    for (Part *part : score.parts()) {
         PartInfo info;
         if (part->eid().isValid()) info.id = from_engine(part->eid());
         info.name = plain_text(part->longName());
         info.instrument_id = part->instrumentId().toStdString();
-        for (Staff* staff : part->staves()) {
+        for (Staff *staff : part->staves()) {
             StaffInfo row;
             if (staff->eid().isValid()) row.id = from_engine(staff->eid());
             row.index = static_cast<std::int32_t>(staff->idx());
             row.part = part_index(score, part);
-            const StaffType* type = staff->staffType(mu::engraving::Fraction(0, 1));
+            const StaffType *type = staff->staffType(mu::engraving::Fraction(0, 1));
             if (type) {
                 row.group = staff_group(type->group());
                 row.lines = type->lines();
@@ -298,8 +286,8 @@ void fill_parts(Outline& outline, Score& score) {
     }
 }
 
-void fill_measures(Outline& outline, Score& score) {
-    for (Measure* measure = score.firstMeasure(); measure; measure = measure->nextMeasure()) {
+void fill_measures(Outline &outline, Score &score) {
+    for (Measure *measure = score.firstMeasure(); measure; measure = measure->nextMeasure()) {
         MeasureInfo info;
         if (measure->eid().isValid()) info.id = from_engine(measure->eid());
         info.index = static_cast<std::int32_t>(outline.measures.size());
@@ -311,10 +299,10 @@ void fill_measures(Outline& outline, Score& score) {
 
 // The time signatures, key signatures and tempo markings of a score, in the order a
 // score shows them: by tick, then staff, then type.
-void fill_signatures(Outline& outline, Score& score) {
-    for (Measure* measure = score.firstMeasure(); measure; measure = measure->nextMeasure()) {
-        for (Segment* segment = measure->first(); segment; segment = segment->next()) {
-            for (EngravingItem* item : segment->elist()) {
+void fill_signatures(Outline &outline, Score &score) {
+    for (Measure *measure = score.firstMeasure(); measure; measure = measure->nextMeasure()) {
+        for (Segment *segment = measure->first(); segment; segment = segment->next()) {
+            for (EngravingItem *item : segment->elist()) {
                 // A generated signature is layout's (the clef of a header, a courtesy
                 // signature), not one the score holds.
                 if (!item || item->generated()) continue;
@@ -331,9 +319,9 @@ void fill_signatures(Outline& outline, Score& score) {
                 }
                 outline.signatures.push_back(std::move(info));
             }
-            for (EngravingItem* item : segment->annotations()) {
+            for (EngravingItem *item : segment->annotations()) {
                 if (!item || item->generated() || !item->isTempoText()) continue;
-                const auto* tempo = mu::engraving::toTempoText(item);
+                const auto *tempo = mu::engraving::toTempoText(item);
                 SignatureInfo info;
                 info.type = "Tempo";
                 info.tick = whole_notes(item->tick().ticks());
@@ -343,16 +331,16 @@ void fill_signatures(Outline& outline, Score& score) {
             }
         }
     }
-    std::ranges::sort(outline.signatures, [](const SignatureInfo& a, const SignatureInfo& b) {
+    std::ranges::sort(outline.signatures, [](const SignatureInfo &a, const SignatureInfo &b) {
         if (before(a.tick, b.tick)) return true;
         if (before(b.tick, a.tick)) return false;
         return std::tie(a.staff, a.type) < std::tie(b.staff, b.type);
     });
 }
 
-void fill_excerpts(Outline& outline, MasterScore& master) {
-    for (const mu::engraving::Excerpt* excerpt : master.excerpts()) {
-        Score* score = excerpt ? excerpt->excerptScore() : nullptr;
+void fill_excerpts(Outline &outline, MasterScore &master) {
+    for (const mu::engraving::Excerpt *excerpt : master.excerpts()) {
+        Score *score = excerpt ? excerpt->excerptScore() : nullptr;
         if (!score) continue;
         ExcerptInfo info;
         if (score->eid().isValid()) info.id = from_engine(score->eid());
@@ -371,7 +359,7 @@ struct MeasureWindow {
     bool given = false;
 };
 
-Result<MeasureWindow> measure_window(const Query& request, Score& score, MasterScore& master) {
+Result<MeasureWindow> measure_window(const Query &request, Score &score, MasterScore &master) {
     const std::size_t count = score.nmeasures();
     const auto last_index = static_cast<std::int64_t>(count);
     MeasureWindow window;
@@ -381,7 +369,7 @@ Result<MeasureWindow> measure_window(const Query& request, Score& score, MasterS
     if (!request.first_measure && !request.measure_count && !request.from_measure && !request.to_measure) {
         return window; // the whole score
     }
-    const auto index_of = [&](const ElementId& id, std::string_view what) -> Result<std::int32_t> {
+    const auto index_of = [&](const ElementId &id, std::string_view what) -> Result<std::int32_t> {
         const Result<Resolved> found = resolve(master, id);
         if (!found) return std::unexpected(found.error());
         if (found->object->type() != mu::engraving::ElementType::MEASURE) {
@@ -412,20 +400,16 @@ Result<MeasureWindow> measure_window(const Query& request, Score& score, MasterS
     window.given = true;
     if (window.first < 0 || last < window.first || last > last_index || last > std::numeric_limits<std::int32_t>::max()) {
         return fail(ErrorCode::InvalidArgument,
-                    std::format("the measure window [{}, {}) is not inside the score's {} measure(s)", window.first,
-                                last, count));
+                    std::format("the measure window [{}, {}) is not inside the score's {} measure(s)", window.first, last, count));
     }
     window.last = static_cast<std::int32_t>(last);
     if (static_cast<std::size_t>(window.last - window.first) > max_query_measures) {
-        return fail(ErrorCode::InvalidArgument,
-                    std::format("a measure window is at most {} measures wide", max_query_measures));
+        return fail(ErrorCode::InvalidArgument, std::format("a measure window is at most {} measures wide", max_query_measures));
     }
     return window;
 }
 
-bool contains(const std::vector<std::int32_t>& values, std::int32_t value) {
-    return std::ranges::find(values, value) != values.end();
-}
+bool contains(const std::vector<std::int32_t> &values, std::int32_t value) { return std::ranges::find(values, value) != values.end(); }
 
 // The sort key of a result: score, measure, tick, staff, voice, type, id.  Every field
 // is a value of the element itself, so the order survives paging and repeated calls.
@@ -438,30 +422,30 @@ struct Order {
     std::string type;
     ElementId id;
 
-    auto operator<=>(const Order&) const = default;
+    auto operator<=>(const Order &) const = default;
 };
 
-Order order_of(const ElementInfo& element, int score) {
+Order order_of(const ElementInfo &element, int score) {
     return Order{score, element.measure_index, element.tick, element.staff, element.voice, element.type, element.id};
 }
 
 } // namespace
 
-Result<Outline> Document::outline(const ScoreSel& selection) {
+Result<Outline> Document::outline(const ScoreSel &selection) {
     impl_->engine->check_thread();
     if (!impl_->poisoned) impl_->refresh_fonts();
     if (impl_->poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
-    MasterScore& master = *impl_->project->masterScore();
-    const Result<Score*> selected = select_score(master, selection);
+    MasterScore &master = *impl_->project->masterScore();
+    const Result<Score *> selected = select_score(master, selection);
     if (!selected) return std::unexpected(selected.error());
-    Score& score = **selected;
+    Score &score = **selected;
 
     Outline outline;
     // The metadata is the engine's own derivation (title recognition, the tempo and
     // time signature summary, the page and measure counts); only the track list is
     // left out, because it is the audio engine's.
     const nlohmann::json metadata = music::score_metadata(&score, std::vector<music::ScoreMetadataTrack>{});
-    const auto text = [&metadata](const char* key) { return metadata.at(key).get<std::string>(); };
+    const auto text = [&metadata](const char *key) { return metadata.at(key).get<std::string>(); };
     outline.title = text("title");
     outline.subtitle = text("subtitle");
     outline.composer = text("composer");
@@ -481,21 +465,20 @@ Result<Outline> Document::outline(const ScoreSel& selection) {
     return outline;
 }
 
-Result<QueryResult> Document::query(const Query& request) {
+Result<QueryResult> Document::query(const Query &request) {
     impl_->engine->check_thread();
     if (!impl_->poisoned && request.layout_boxes) impl_->refresh_fonts();
     if (impl_->poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
-    MasterScore& master = *impl_->project->masterScore();
-    const Result<Score*> selected = select_score(master, request.score);
+    MasterScore &master = *impl_->project->masterScore();
+    const Result<Score *> selected = select_score(master, request.score);
     if (!selected) return std::unexpected(selected.error());
-    Score& score = **selected;
+    Score &score = **selected;
 
     if (request.limit == 0) return fail(ErrorCode::InvalidArgument, "a query limit is at least 1");
     if (request.limit > max_query_results) {
-        return fail(ErrorCode::ResourceLimit,
-                    std::format("a query reports at most {} elements at a time", max_query_results));
+        return fail(ErrorCode::ResourceLimit, std::format("a query reports at most {} elements at a time", max_query_results));
     }
-    for (const std::string& type : request.types) {
+    for (const std::string &type : request.types) {
         if (!api::has_type(type)) return fail(ErrorCode::InvalidArgument, std::format("no element type '{}'", type));
     }
     const Result<std::vector<Pid>> props = named_pids(request.props);
@@ -508,8 +491,7 @@ Result<QueryResult> Document::query(const Query& request) {
     }
     for (const std::int32_t voice : request.voices) {
         if (voice < 0 || voice >= static_cast<std::int32_t>(mu::engraving::VOICES)) {
-            return fail(ErrorCode::InvalidArgument,
-                        std::format("voice {} is not in 0..{}", voice, mu::engraving::VOICES - 1));
+            return fail(ErrorCode::InvalidArgument, std::format("voice {} is not in 0..{}", voice, mu::engraving::VOICES - 1));
         }
     }
     if ((request.from_tick && request.from_tick->den <= 0) || (request.to_tick && request.to_tick->den <= 0)) {
@@ -529,8 +511,8 @@ Result<QueryResult> Document::query(const Query& request) {
     std::unordered_map<std::string, std::vector<Pid>> type_props;
 
     std::vector<std::pair<Order, ElementInfo>> rows;
-    for (const LiveId& entry : live_ids(master)) {
-        EngravingObject& object = *entry.object;
+    for (const LiveId &entry : live_ids(master)) {
+        EngravingObject &object = *entry.object;
         if (entry.placement.score != index) continue;
         const std::string type = object.typeName();
         if (!request.types.empty() && std::ranges::find(request.types, type) == request.types.end()) continue;
@@ -555,11 +537,11 @@ Result<QueryResult> Document::query(const Query& request) {
         info.parent = parent_of(object);
         info.links = links_of(object, master);
         if (object.isEngravingItem()) {
-            const auto& item = static_cast<const EngravingItem&>(object);
+            const auto &item = static_cast<const EngravingItem &>(object);
             if (request.layout_boxes) info.box = box_of(item, score);
         }
         if (!props->empty()) {
-            auto& known = type_props[type];
+            auto &known = type_props[type];
             if (known.empty()) known = api::pids_of(type);
             for (const Pid pid : *props) {
                 if (has_property(known, pid)) info.props.push_back(read_property(object, pid));
@@ -570,8 +552,7 @@ Result<QueryResult> Document::query(const Query& request) {
 
     if (rows.size() > max_query_results) {
         return fail(ErrorCode::ResourceLimit,
-                    std::format("the query matches {} elements; one query reports at most {}", rows.size(),
-                                max_query_results));
+                    std::format("the query matches {} elements; one query reports at most {}", rows.size(), max_query_results));
     }
     std::ranges::sort(rows, {}, &std::pair<Order, ElementInfo>::first);
     if (request.cursor > rows.size()) {
@@ -588,13 +569,13 @@ Result<QueryResult> Document::query(const Query& request) {
     return result;
 }
 
-Result<std::vector<PropertyRead>> Document::get(const Ref& target, const std::vector<std::string>& props) {
+Result<std::vector<PropertyRead>> Document::get(const Ref &target, const std::vector<std::string> &props) {
     impl_->engine->check_thread();
     if (!impl_->poisoned) impl_->refresh_fonts();
     if (impl_->poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
-    MasterScore& master = *impl_->project->masterScore();
+    MasterScore &master = *impl_->project->masterScore();
     const Result<Resolved> resolved = std::visit(
-        [&master](const auto& value) -> Result<Resolved> {
+        [&master](const auto &value) -> Result<Resolved> {
             using T = std::decay_t<decltype(value)>;
             if constexpr (std::is_same_v<T, OpRef>) {
                 return fail(ErrorCode::InvalidArgument, "an OpRef names an element of a batch, not of the document");
@@ -604,7 +585,7 @@ Result<std::vector<PropertyRead>> Document::get(const Ref& target, const std::ve
         },
         target);
     if (!resolved) return std::unexpected(resolved.error());
-    const EngravingObject& object = *resolved->object;
+    const EngravingObject &object = *resolved->object;
 
     const std::vector<Pid> known = api::pids_of(object.typeName());
     if (props.empty()) {
@@ -618,8 +599,7 @@ Result<std::vector<PropertyRead>> Document::get(const Ref& target, const std::ve
     if (!named) return std::unexpected(named.error());
     for (std::size_t i = 0; i < named->size(); ++i) {
         if (!has_property(known, (*named)[i])) {
-            return fail(ErrorCode::InvalidArgument,
-                        std::format("a {} has no property '{}'", object.typeName(), props[i]));
+            return fail(ErrorCode::InvalidArgument, std::format("a {} has no property '{}'", object.typeName(), props[i]));
         }
     }
     std::vector<PropertyRead> reads;

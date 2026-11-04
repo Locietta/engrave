@@ -29,17 +29,16 @@
 namespace mu::engraving {
 class Measure;
 class Segment;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::write {
-class MeasureWrite
-{
+class MeasureWrite {
 public:
 
-    static void writeMeasure(const Measure* measure, XmlWriter& xml, WriteContext& ctx, staff_idx_t staff, bool writeSystemElements,
+    static void writeMeasure(const Measure *measure, XmlWriter &xml, WriteContext &ctx, staff_idx_t staff, bool writeSystemElements,
                              bool forceTimeSig);
 
 private:
-    static std::vector<Segment*> segmentsToWrite(const Measure* measure);
+    static std::vector<Segment *> segmentsToWrite(const Measure *measure);
 };
-}
+} // namespace mu::engraving::write

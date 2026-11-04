@@ -30,31 +30,29 @@ namespace mu::engraving {
 class Score;
 class Transaction;
 
-class EditStaffBrackets
-{
+class EditStaffBrackets {
 public:
-    static void undoAddBracket(Score* score, Staff* staff, size_t level, BracketType type, size_t span);
-    static void undoRemoveBracket(Score* score, Bracket* bracket);
+    static void undoAddBracket(Score *score, Staff *staff, size_t level, BracketType type, size_t span);
+    static void undoRemoveBracket(Score *score, Bracket *bracket);
 
-    static void fillBrackets(Score* score, staff_idx_t staffIdx, size_t idx);
-    static void cleanBrackets(Score* score, staff_idx_t staffIdx);
+    static void fillBrackets(Score *score, staff_idx_t staffIdx, size_t idx);
+    static void cleanBrackets(Score *score, staff_idx_t staffIdx);
 
-    static void adjustBracketsDel(Score* score, size_t sidx, size_t eidx);
-    static void adjustBracketsIns(Score* score, size_t sidx, size_t eidx);
+    static void adjustBracketsDel(Score *score, size_t sidx, size_t eidx);
+    static void adjustBracketsIns(Score *score, size_t sidx, size_t eidx);
 
-    static void setBracketType(Score* score, staff_idx_t staffIdx, size_t idx, BracketType val);
-    static void setBracketSpan(Score* score, staff_idx_t staffIdx, size_t idx, size_t val);
-    static void setBracketVisible(Score* score, staff_idx_t staffIdx, size_t idx, bool v);
-    static void changeBracketColumn(Score* score, staff_idx_t staffIdx, size_t oldColumn, size_t newColumn);
-    static void addBracket(Score* score, staff_idx_t staffIdx, BracketItem*);
-    static void insertBracket(Score* score, staff_idx_t staffIdx, BracketItem* b);
+    static void setBracketType(Score *score, staff_idx_t staffIdx, size_t idx, BracketType val);
+    static void setBracketSpan(Score *score, staff_idx_t staffIdx, size_t idx, size_t val);
+    static void setBracketVisible(Score *score, staff_idx_t staffIdx, size_t idx, bool v);
+    static void changeBracketColumn(Score *score, staff_idx_t staffIdx, size_t oldColumn, size_t newColumn);
+    static void addBracket(Score *score, staff_idx_t staffIdx, BracketItem *);
+    static void insertBracket(Score *score, staff_idx_t staffIdx, BracketItem *b);
 };
 
-class RemoveBracket : public UndoableCommand
-{
+class RemoveBracket : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, RemoveBracket)
 
-    Staff* staff = nullptr;
+    Staff *staff = nullptr;
     size_t level = 0;
     BracketType bracketType = BracketType::NORMAL;
     size_t span = 0;
@@ -63,18 +61,16 @@ class RemoveBracket : public UndoableCommand
     void redo() override;
 
 public:
-    RemoveBracket(Staff* s, size_t l, BracketType t, size_t sp)
-        : staff(s), level(l), bracketType(t), span(sp) {}
+    RemoveBracket(Staff *s, size_t l, BracketType t, size_t sp) : staff(s), level(l), bracketType(t), span(sp) {}
 
     UNDO_TYPE(CommandType::RemoveBracket)
     UNDO_NAME("RemoveBracket")
 };
 
-class AddBracket : public UndoableCommand
-{
+class AddBracket : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, AddBracket)
 
-    Staff* staff = nullptr;
+    Staff *staff = nullptr;
     size_t level = 0;
     BracketType bracketType = BracketType::NORMAL;
     size_t span = 0;
@@ -83,10 +79,9 @@ class AddBracket : public UndoableCommand
     void redo() override;
 
 public:
-    AddBracket(Staff* s, size_t l, BracketType t, size_t sp)
-        : staff(s), level(l), bracketType(t), span(sp) {}
+    AddBracket(Staff *s, size_t l, BracketType t, size_t sp) : staff(s), level(l), bracketType(t), span(sp) {}
 
     UNDO_TYPE(CommandType::AddBracket)
     UNDO_NAME("AddBracket")
 };
-}
+} // namespace mu::engraving

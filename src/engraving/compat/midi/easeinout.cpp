@@ -46,8 +46,7 @@ namespace mu::engraving {
 // transfer curve. The code could be simplified because the Bezier curve is constrained as a well
 // defined transfer function. It is not suitable for general or arbitrary Bezier curve work. -YP
 //-------------------------------------------------------------------------------------------------
-double EaseInOut::tFromX(const double x) const
-{
+double EaseInOut::tFromX(const double x) const {
     const double pi = 3.14159265358979323846;
     double w1 = m_easeIn - x;
     double w2 = 1.0 - m_easeOut - x;
@@ -100,17 +99,13 @@ double EaseInOut::tFromX(const double x) const
 // constant. Thus, when computing the Y root there is only one case and the math simplifies to the
 // following simple expression.
 //-------------------------------------------------------------------------------------------------
-double EaseInOut::tFromY(const double y) const
-{
-    return 0.5 + std::cos((4.0 * M_PI + std::acos(1.0 - 2.0 * y)) / 3.0);
-}
+double EaseInOut::tFromY(const double y) const { return 0.5 + std::cos((4.0 * M_PI + std::acos(1.0 - 2.0 * y)) / 3.0); }
 
 //-------------------------------------------------------------------------------------------------
 // Given a number of note to place within the given duration, return the list of on-times for each
 // note given the current ease-in and ease-out parameters. The first note is at time 0 while the
 //-------------------------------------------------------------------------------------------------
-void EaseInOut::timeList(const int nbNotes, const int duration, std::vector<int>* times) const
-{
+void EaseInOut::timeList(const int nbNotes, const int duration, std::vector<int> *times) const {
     double nNotes = double(nbNotes);
     double space = double(duration);
     if (RealIsNull(m_easeIn) && RealIsNull(m_easeOut)) {
@@ -123,4 +118,4 @@ void EaseInOut::timeList(const int nbNotes, const int duration, std::vector<int>
         }
     }
 }
-}
+} // namespace mu::engraving

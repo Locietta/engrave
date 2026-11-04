@@ -26,7 +26,7 @@
 
 namespace mu::engraving {
 class Score;
-}
+} // namespace mu::engraving
 
 namespace mu::iex::midi {
 class MTrack;
@@ -34,8 +34,8 @@ class ReducedFraction;
 
 namespace MidiTempo {
 ReducedFraction time2Tick(double time, double ticksPerSec);
-double findBasicTempo(const std::multimap<int, MTrack>& tracks, bool isHumanPerformance);
-void setTempo(const std::multimap<int, MTrack>& tracks, engraving::Score* score);
+double findBasicTempo(const std::multimap<int, MTrack> &tracks, bool isHumanPerformance);
+void setTempo(const std::multimap<int, MTrack> &tracks, engraving::Score *score);
 } // namespace MidiTempo
 } // namespace mu::iex::midi
 

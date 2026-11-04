@@ -44,26 +44,22 @@ using namespace mu::engraving;
 //   Ambitus
 //---------------------------------------------------------
 
-Ambitus::Ambitus(DummyParentOr<Segment> parent)
-    : EngravingItem(ElementType::AMBITUS, parent, ElementFlag::ON_STAFF)
-{
-    m_noteHeadGroup    = NOTEHEADGROUP_DEFAULT;
-    m_noteHeadType     = NOTEHEADTYPE_DEFAULT;
-    m_direction        = DIRECTION_DEFAULT;
-    m_hasLine          = HASLINE_DEFAULT;
-    m_lineWidth        = LINEWIDTH_DEFAULT;
-    m_topPitch         = INVALID_PITCH;
-    m_bottomPitch      = INVALID_PITCH;
-    m_topTpc           = Tpc::TPC_INVALID;
-    m_bottomTpc        = Tpc::TPC_INVALID;
+Ambitus::Ambitus(DummyParentOr<Segment> parent) : EngravingItem(ElementType::AMBITUS, parent, ElementFlag::ON_STAFF) {
+    m_noteHeadGroup = NOTEHEADGROUP_DEFAULT;
+    m_noteHeadType = NOTEHEADTYPE_DEFAULT;
+    m_direction = DIRECTION_DEFAULT;
+    m_hasLine = HASLINE_DEFAULT;
+    m_lineWidth = LINEWIDTH_DEFAULT;
+    m_topPitch = INVALID_PITCH;
+    m_bottomPitch = INVALID_PITCH;
+    m_topTpc = Tpc::TPC_INVALID;
+    m_bottomTpc = Tpc::TPC_INVALID;
 
     m_topAccidental = Factory::createAccidental(this, false);
     m_bottomAccidental = Factory::createAccidental(this, false);
 }
 
-Ambitus::Ambitus(const Ambitus& a)
-    : EngravingItem(a)
-{
+Ambitus::Ambitus(const Ambitus &a) : EngravingItem(a) {
     m_noteHeadGroup = a.m_noteHeadGroup;
     m_noteHeadType = a.m_noteHeadType;
     m_direction = a.m_direction;
@@ -82,8 +78,7 @@ Ambitus::Ambitus(const Ambitus& a)
     m_bottomTpc = a.m_bottomTpc;
 }
 
-Ambitus::~Ambitus()
-{
+Ambitus::~Ambitus() {
     delete m_topAccidental;
     delete m_bottomAccidental;
 }
@@ -92,26 +87,22 @@ Ambitus::~Ambitus()
 //   mag
 //---------------------------------------------------------
 
-double Ambitus::mag() const
-{
-    return staff() ? staff()->staffMag(tick()) : 1.0;
-}
+double Ambitus::mag() const { return staff() ? staff()->staffMag(tick()) : 1.0; }
 
 //---------------------------------------------------------
 //   initFrom
 //---------------------------------------------------------
 
-void Ambitus::initFrom(Ambitus* a)
-{
-    m_noteHeadGroup   = a->m_noteHeadGroup;
-    m_noteHeadType    = a->m_noteHeadType;
-    m_direction       = a->m_direction;
-    m_hasLine         = a->m_hasLine;
-    m_lineWidth       = a->m_lineWidth;
-    m_topPitch        = a->m_topPitch;
-    m_bottomPitch     = a->m_bottomPitch;
-    m_topTpc          = a->m_topTpc;
-    m_bottomTpc       = a->m_bottomTpc;
+void Ambitus::initFrom(Ambitus *a) {
+    m_noteHeadGroup = a->m_noteHeadGroup;
+    m_noteHeadType = a->m_noteHeadType;
+    m_direction = a->m_direction;
+    m_hasLine = a->m_hasLine;
+    m_lineWidth = a->m_lineWidth;
+    m_topPitch = a->m_topPitch;
+    m_bottomPitch = a->m_bottomPitch;
+    m_topTpc = a->m_topTpc;
+    m_bottomTpc = a->m_bottomTpc;
 }
 
 //---------------------------------------------------------
@@ -121,15 +112,13 @@ void Ambitus::initFrom(Ambitus* a)
 //    initialize top and bottom 'notes' to top and bottom staff lines
 //---------------------------------------------------------
 
-void Ambitus::setTrack(track_idx_t t)
-{
+void Ambitus::setTrack(track_idx_t t) {
     EngravingItem::setTrack(t);
 
     // if not initialized and there is a segment and a staff,
     // initialize pitches and tpc's to first and last staff line
     // (for use in palettes)
-    if (!pitchIsValid(m_topPitch) || !tpcIsValid(m_topTpc)
-        || !pitchIsValid(m_bottomPitch) || !tpcIsValid(m_bottomTpc)) {
+    if (!pitchIsValid(m_topPitch) || !tpcIsValid(m_topTpc) || !pitchIsValid(m_bottomPitch) || !tpcIsValid(m_bottomTpc)) {
         if (segment() && staff()) {
             Ambitus::Ranges ranges = estimateRanges();
             m_topTpc = ranges.topTpc;
@@ -149,8 +138,7 @@ void Ambitus::setTrack(track_idx_t t)
 //    setting either pitch requires to adjust the corresponding tpc
 //---------------------------------------------------------
 
-void Ambitus::setTopPitch(int val, bool applyLogic)
-{
+void Ambitus::setTopPitch(int val, bool applyLogic) {
     if (!applyLogic) {
         m_topPitch = val;
         return;
@@ -166,8 +154,7 @@ void Ambitus::setTopPitch(int val, bool applyLogic)
     normalize();
 }
 
-void Ambitus::setBottomPitch(int val, bool applyLogic)
-{
+void Ambitus::setBottomPitch(int val, bool applyLogic) {
     if (!applyLogic) {
         m_bottomPitch = val;
         return;
@@ -190,8 +177,7 @@ void Ambitus::setBottomPitch(int val, bool applyLogic)
 //    (but remaining in the same octave)
 //---------------------------------------------------------
 
-void Ambitus::setTopTpc(int val, bool applyLogic)
-{
+void Ambitus::setTopTpc(int val, bool applyLogic) {
     m_topTpc = val;
 
     if (!applyLogic) {
@@ -204,8 +190,7 @@ void Ambitus::setTopTpc(int val, bool applyLogic)
     normalize();
 }
 
-void Ambitus::setBottomTpc(int val, bool applyLogic)
-{
+void Ambitus::setBottomTpc(int val, bool applyLogic) {
     m_bottomTpc = val;
 
     if (!applyLogic) {
@@ -222,8 +207,7 @@ void Ambitus::setBottomTpc(int val, bool applyLogic)
 //   scanElements
 //---------------------------------------------------------
 
-void Ambitus::scanElements(std::function<void(EngravingItem*)> func)
-{
+void Ambitus::scanElements(std::function<void(EngravingItem *)> func) {
     func(this);
     if (m_topAccidental->accidentalType() != AccidentalType::NONE) {
         func(m_topAccidental);
@@ -238,10 +222,9 @@ void Ambitus::scanElements(std::function<void(EngravingItem*)> func)
 //   noteHead
 //---------------------------------------------------------
 
-SymId Ambitus::noteHead() const
-{
+SymId Ambitus::noteHead() const {
     int hg = 1;
-    NoteHeadType ht  = NoteHeadType::HEAD_QUARTER;
+    NoteHeadType ht = NoteHeadType::HEAD_QUARTER;
 
     if (m_noteHeadType != NoteHeadType::HEAD_AUTO) {
         ht = m_noteHeadType;
@@ -261,10 +244,7 @@ SymId Ambitus::noteHead() const
 //    returns the width of the notehead symbol
 //---------------------------------------------------------
 
-double Ambitus::headWidth() const
-{
-    return symWidth(noteHead());
-}
+double Ambitus::headWidth() const { return symWidth(noteHead()); }
 
 //---------------------------------------------------------
 //   normalize
@@ -272,8 +252,7 @@ double Ambitus::headWidth() const
 //    makes sure topPitch is not < bottomPitch
 //---------------------------------------------------------
 
-void Ambitus::normalize()
-{
+void Ambitus::normalize() {
     if (m_topPitch < m_bottomPitch) {
         std::swap(m_topPitch, m_bottomPitch);
         std::swap(m_topTpc, m_bottomTpc);
@@ -286,30 +265,29 @@ void Ambitus::normalize()
 //    scans the staff contents up to next section break to update the range pitches/tpc's
 //---------------------------------------------------------
 
-Ambitus::Ranges Ambitus::estimateRanges() const
-{
+Ambitus::Ranges Ambitus::estimateRanges() const {
     Ambitus::Ranges result;
 
-    Segment* s = segment() ? segment()->measure()->findSegment(SegmentType::ChordRest, segment()->tick()) : nullptr;
+    Segment *s = segment() ? segment()->measure()->findSegment(SegmentType::ChordRest, segment()->tick()) : nullptr;
     for (; s && !s->measure()->sectionBreak(); s = s->nextCR()) {
         for (track_idx_t t = track(); t < track() + VOICES; t++) {
-            EngravingItem* e = s->element(t);
+            EngravingItem *e = s->element(t);
             if (!e || !e->isChord()) {
                 continue;
             }
-            Chord* chord = toChord(e);
-            for (Note* n : chord->notes()) {
+            Chord *chord = toChord(e);
+            for (Note *n : chord->notes()) {
                 if (!n->play()) {
                     continue;
                 }
                 int pitch = n->epitch() + n->ottaveCapoFret(); // written pitch, accounting for octave offset
                 if (pitch > result.topPitch) {
                     result.topPitch = pitch;
-                    result.topTpc   = n->tpc();
+                    result.topTpc = n->tpc();
                 }
                 if (pitch < result.bottomPitch) {
                     result.bottomPitch = pitch;
-                    result.bottomTpc   = n->tpc();
+                    result.bottomTpc = n->tpc();
                 }
             }
         }
@@ -318,8 +296,7 @@ Ambitus::Ranges Ambitus::estimateRanges() const
     return result;
 }
 
-void Ambitus::remove(EngravingItem* e)
-{
+void Ambitus::remove(EngravingItem *e) {
     if (e->isAccidental()) {
         //! NOTE Do nothing (removing _topAccid or _bottomAccid)
         return;
@@ -332,33 +309,25 @@ void Ambitus::remove(EngravingItem* e)
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Ambitus::getProperty(Pid propertyId) const
-{
+PropertyValue Ambitus::getProperty(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::HEAD_GROUP:
-        return noteHeadGroup();
-    case Pid::HEAD_TYPE:
-        return noteHeadType();
-    case Pid::MIRROR_HEAD:
-        return direction();
-    case Pid::GHOST:                         // recycled property = _hasLine
-        return hasLine();
-    case Pid::LINE_WIDTH:
-        return lineWidth();
-    case Pid::TPC1:
-        return topTpc();
-    case Pid::FBPARENTHESIS1:                // recycled property = _bottomTpc
-        return bottomTpc();
-    case Pid::PITCH:
-        return topPitch();
-    case Pid::FBPARENTHESIS2:                // recycled property = _bottomPitch
-        return bottomPitch();
-    case Pid::FBPARENTHESIS3:                // recycled property = octave of _topPitch
-        return topOctave();
-    case Pid::FBPARENTHESIS4:                // recycled property = octave of _bottomPitch
-        return bottomOctave();
-    default:
-        return EngravingItem::getProperty(propertyId);
+        case Pid::HEAD_GROUP: return noteHeadGroup();
+        case Pid::HEAD_TYPE: return noteHeadType();
+        case Pid::MIRROR_HEAD: return direction();
+        case Pid::GHOST: // recycled property = _hasLine
+            return hasLine();
+        case Pid::LINE_WIDTH: return lineWidth();
+        case Pid::TPC1: return topTpc();
+        case Pid::FBPARENTHESIS1: // recycled property = _bottomTpc
+            return bottomTpc();
+        case Pid::PITCH: return topPitch();
+        case Pid::FBPARENTHESIS2: // recycled property = _bottomPitch
+            return bottomPitch();
+        case Pid::FBPARENTHESIS3: // recycled property = octave of _topPitch
+            return topOctave();
+        case Pid::FBPARENTHESIS4: // recycled property = octave of _bottomPitch
+            return bottomOctave();
+        default: return EngravingItem::getProperty(propertyId);
     }
 }
 
@@ -366,50 +335,36 @@ PropertyValue Ambitus::getProperty(Pid propertyId) const
 //   setProperty
 //---------------------------------------------------------
 
-bool Ambitus::setProperty(Pid propertyId, const PropertyValue& v)
-{
+bool Ambitus::setProperty(Pid propertyId, const PropertyValue &v) {
     switch (propertyId) {
-    case Pid::HEAD_GROUP:
-        setNoteHeadGroup(v.value<NoteHeadGroup>());
-        break;
-    case Pid::HEAD_TYPE:
-        setNoteHeadType(v.value<NoteHeadType>());
-        break;
-    case Pid::MIRROR_HEAD:
-        setDirection(v.value<DirectionH>());
-        break;
-    case Pid::GHOST:                         // recycled property = _hasLine
-        setHasLine(v.toBool());
-        break;
-    case Pid::LINE_WIDTH:
-        setLineWidth(v.value<Spatium>());
-        break;
-    case Pid::TPC1:
-        setTopTpc(v.toInt());
-        break;
-    case Pid::FBPARENTHESIS1:                // recycled property = _bottomTpc
-        setBottomTpc(v.toInt());
-        break;
-    case Pid::PITCH:
-        setTopPitch(v.toInt());
-        break;
-    case Pid::FBPARENTHESIS2:                // recycled property = _bottomPitch
-        setBottomPitch(v.toInt());
-        break;
-    case Pid::FBPARENTHESIS3:                // recycled property = octave of _topPitch
-        setTopPitch(topPitch() % PITCH_DELTA_OCTAVE + (v.toInt() + 1) * PITCH_DELTA_OCTAVE);
-        break;
-    case Pid::FBPARENTHESIS4:                // recycled property = octave of _bottomPitch
-        setBottomPitch(bottomPitch() % PITCH_DELTA_OCTAVE + (v.toInt() + 1) * PITCH_DELTA_OCTAVE);
-        break;
-    case Pid::COLOR:
-    case Pid::VISIBLE:
-        m_topAccidental->setProperty(propertyId, v);
-        m_bottomAccidental->setProperty(propertyId, v);
-        EngravingItem::setProperty(propertyId, v);
-        break;
-    default:
-        return EngravingItem::setProperty(propertyId, v);
+        case Pid::HEAD_GROUP: setNoteHeadGroup(v.value<NoteHeadGroup>()); break;
+        case Pid::HEAD_TYPE: setNoteHeadType(v.value<NoteHeadType>()); break;
+        case Pid::MIRROR_HEAD: setDirection(v.value<DirectionH>()); break;
+        case Pid::GHOST: // recycled property = _hasLine
+            setHasLine(v.toBool());
+            break;
+        case Pid::LINE_WIDTH: setLineWidth(v.value<Spatium>()); break;
+        case Pid::TPC1: setTopTpc(v.toInt()); break;
+        case Pid::FBPARENTHESIS1: // recycled property = _bottomTpc
+            setBottomTpc(v.toInt());
+            break;
+        case Pid::PITCH: setTopPitch(v.toInt()); break;
+        case Pid::FBPARENTHESIS2: // recycled property = _bottomPitch
+            setBottomPitch(v.toInt());
+            break;
+        case Pid::FBPARENTHESIS3: // recycled property = octave of _topPitch
+            setTopPitch(topPitch() % PITCH_DELTA_OCTAVE + (v.toInt() + 1) * PITCH_DELTA_OCTAVE);
+            break;
+        case Pid::FBPARENTHESIS4: // recycled property = octave of _bottomPitch
+            setBottomPitch(bottomPitch() % PITCH_DELTA_OCTAVE + (v.toInt() + 1) * PITCH_DELTA_OCTAVE);
+            break;
+        case Pid::COLOR:
+        case Pid::VISIBLE:
+            m_topAccidental->setProperty(propertyId, v);
+            m_bottomAccidental->setProperty(propertyId, v);
+            EngravingItem::setProperty(propertyId, v);
+            break;
+        default: return EngravingItem::setProperty(propertyId, v);
     }
     triggerLayout();
     return true;
@@ -419,33 +374,20 @@ bool Ambitus::setProperty(Pid propertyId, const PropertyValue& v)
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Ambitus::propertyDefault(Pid id) const
-{
+PropertyValue Ambitus::propertyDefault(Pid id) const {
     switch (id) {
-    case Pid::HEAD_GROUP:
-        return NOTEHEADGROUP_DEFAULT;
-    case Pid::HEAD_TYPE:
-        return NOTEHEADTYPE_DEFAULT;
-    case Pid::MIRROR_HEAD:
-        return DIRECTION_DEFAULT;
-    case Pid::GHOST:
-        return HASLINE_DEFAULT;
-    case Pid::LINE_WIDTH:
-        return LINEWIDTH_DEFAULT;
-    case Pid::TPC1:
-        return estimateRanges().topTpc;
-    case Pid::FBPARENTHESIS1:
-        return estimateRanges().bottomTpc;
-    case Pid::PITCH:
-        return estimateRanges().topPitch;
-    case Pid::FBPARENTHESIS2:
-        return estimateRanges().bottomPitch;
-    case Pid::FBPARENTHESIS3:
-        return int(estimateRanges().topPitch / PITCH_DELTA_OCTAVE) - 1;
-    case Pid::FBPARENTHESIS4:
-        return int(estimateRanges().bottomPitch / PITCH_DELTA_OCTAVE) - 1;
-    default:
-        return EngravingItem::propertyDefault(id);
+        case Pid::HEAD_GROUP: return NOTEHEADGROUP_DEFAULT;
+        case Pid::HEAD_TYPE: return NOTEHEADTYPE_DEFAULT;
+        case Pid::MIRROR_HEAD: return DIRECTION_DEFAULT;
+        case Pid::GHOST: return HASLINE_DEFAULT;
+        case Pid::LINE_WIDTH: return LINEWIDTH_DEFAULT;
+        case Pid::TPC1: return estimateRanges().topTpc;
+        case Pid::FBPARENTHESIS1: return estimateRanges().bottomTpc;
+        case Pid::PITCH: return estimateRanges().topPitch;
+        case Pid::FBPARENTHESIS2: return estimateRanges().bottomPitch;
+        case Pid::FBPARENTHESIS3: return int(estimateRanges().topPitch / PITCH_DELTA_OCTAVE) - 1;
+        case Pid::FBPARENTHESIS4: return int(estimateRanges().bottomPitch / PITCH_DELTA_OCTAVE) - 1;
+        default: return EngravingItem::propertyDefault(id);
     }
     //return QVariant();
 }
@@ -454,28 +396,19 @@ PropertyValue Ambitus::propertyDefault(Pid id) const
 //   nextSegmentElement
 //---------------------------------------------------------
 
-EngravingItem* Ambitus::nextSegmentElement()
-{
-    return segment()->firstInNextSegments(staffIdx());
-}
+EngravingItem *Ambitus::nextSegmentElement() { return segment()->firstInNextSegments(staffIdx()); }
 
 //---------------------------------------------------------
 //   prevSegmentElement
 //---------------------------------------------------------
 
-EngravingItem* Ambitus::prevSegmentElement()
-{
-    return segment()->lastInPrevSegments(staffIdx());
-}
+EngravingItem *Ambitus::prevSegmentElement() { return segment()->lastInPrevSegments(staffIdx()); }
 
 //---------------------------------------------------------
 //   accessibleInfo
 //---------------------------------------------------------
 
-
-
-AccidentalType Ambitus::accidentalType(int tpc, Key key)
-{
+AccidentalType Ambitus::accidentalType(int tpc, Key key) {
     AccidentalType accidType = AccidentalType::NONE;
     // if (13 <= (tpc - key) <= 19) there is no accidental)
     if (tpc - int(key) >= 13 && tpc - int(key) <= 19) {
@@ -492,8 +425,7 @@ AccidentalType Ambitus::accidentalType(int tpc, Key key)
 }
 
 //! TODO Seems to need to be moved to utilities
-int Ambitus::staffLine(int tpc, int pitch, ClefType clf)
-{
+int Ambitus::staffLine(int tpc, int pitch, ClefType clf) {
     int line = absStep(tpc, pitch);
     line = relStep(line, clf);
     return line;

@@ -31,11 +31,10 @@
 using namespace muse;
 using namespace muse::audio::synth;
 
-RetVal<SoundFontMeta> FluidSoundFontParser::parseSoundFont(const SoundFontPath& path)
-{
-    fluid_settings_t* settings = nullptr;
-    fluid_sfloader_t* loader = nullptr;
-    fluid_sfont_t* sfont = nullptr;
+RetVal<SoundFontMeta> FluidSoundFontParser::parseSoundFont(const SoundFontPath &path) {
+    fluid_settings_t *settings = nullptr;
+    fluid_sfloader_t *loader = nullptr;
+    fluid_sfont_t *sfont = nullptr;
 
     DEFER {
         if (sfont) {
@@ -72,11 +71,11 @@ RetVal<SoundFontMeta> FluidSoundFontParser::parseSoundFont(const SoundFontPath& 
 
     fluid_defsfont_sfont_iteration_start(sfont);
 
-    fluid_preset_t* fluid_preset;
+    fluid_preset_t *fluid_preset;
     while ((fluid_preset = fluid_defsfont_sfont_iteration_next(sfont))) {
         int bank = fluid_defpreset_preset_get_banknum(fluid_preset);
         int program = fluid_defpreset_preset_get_num(fluid_preset);
-        const char* name = fluid_defpreset_preset_get_name(fluid_preset);
+        const char *name = fluid_defpreset_preset_get_name(fluid_preset);
 
         SoundFontPreset preset;
         preset.program = midi::Program(bank, program);

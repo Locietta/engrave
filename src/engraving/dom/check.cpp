@@ -46,18 +46,17 @@ namespace mu::engraving {
 //   checkScore
 //---------------------------------------------------------
 
-void Score::checkScore()
-{
+void Score::checkScore() {
     if (!firstMeasure()) {
         return;
     }
 
-    for (Segment* s = firstMeasure()->first(); s;) {
-        Segment* ns = s->next1();
+    for (Segment *s = firstMeasure()->first(); s;) {
+        Segment *ns = s->next1();
 
         if (s->segmentType() & (SegmentType::ChordRest)) {
             bool empty = true;
-            for (EngravingItem* e : s->elist()) {
+            for (EngravingItem *e : s->elist()) {
                 if (e) {
                     empty = false;
                     break;
@@ -70,13 +69,13 @@ void Score::checkScore()
         s = ns;
     }
 
-    ChordRest* lcr = 0;
+    ChordRest *lcr = 0;
     for (size_t staffIdx = 0; staffIdx < m_staves.size(); ++staffIdx) {
         size_t track = staffIdx * VOICES;
-        Fraction tick  = Fraction(0, 1);
-        Staff* st = staff(staffIdx);
-        for (Segment* s = firstMeasure()->first(SegmentType::ChordRest); s; s = s->next1(SegmentType::ChordRest)) {
-            ChordRest* cr = toChordRest(s->element(static_cast<int>(track)));
+        Fraction tick = Fraction(0, 1);
+        Staff *st = staff(staffIdx);
+        for (Segment *s = firstMeasure()->first(SegmentType::ChordRest); s; s = s->next1(SegmentType::ChordRest)) {
+            ChordRest *cr = toChordRest(s->element(static_cast<int>(track)));
             if (!cr) {
                 continue;
             }
@@ -85,9 +84,8 @@ void Score::checkScore()
                     Fraction timeStretch = st->timeStretch(lcr->tick());
                     Fraction f = cr->globalTicks() * timeStretch;
                     LOGD() << "Chord/Rest gap at tick " << tick.ticks() << "(" << lcr->typeName() << "+" << f.ticks() << ")-"
-                           << s->tick().ticks() << "(" << cr->typeName() << ") staffIdx " << staffIdx
-                           << " measure " << cr->measure()->measureNumber()
-                           << " (len = " << (cr->tick() - tick).ticks() << ")";
+                           << s->tick().ticks() << "(" << cr->typeName() << ") staffIdx " << staffIdx << " measure "
+                           << cr->measure()->measureNumber() << " (len = " << (cr->tick() - tick).ticks() << ")";
                 } else {
                     LOGD() << "Chord/Rest gap at tick " << tick.ticks() << "-" << s->tick().ticks() << "(" << cr->typeName() << ") "
                            << "staffIdx " << staffIdx << " measure " << cr->measure()->measureNumber()
@@ -98,8 +96,8 @@ void Score::checkScore()
 
             Fraction timeStretch = st->timeStretch(tick);
             Fraction f = cr->globalTicks() * timeStretch;
-            tick      += f;
-            lcr        = cr;
+            tick += f;
+            lcr = cr;
         }
     }
 }
@@ -110,11 +108,10 @@ void Score::checkScore()
 ///    Check that voices > 1 contains less than measure duration
 //---------------------------------------------------------
 
-Ret MasterScore::sanityCheck()
-{
+Ret MasterScore::sanityCheck() {
     std::string accumulatedErrors;
 
-    for (Score* score : scoreList()) {
+    for (Score *score : scoreList()) {
         Ret ret = score->sanityCheckLocal();
         if (ret) {
             // everything is fine in this part, let's continue
@@ -134,8 +131,7 @@ Ret MasterScore::sanityCheck()
     return Ret(static_cast<int>(Err::FileCorrupted), accumulatedErrors);
 }
 
-Ret Score::sanityCheckLocal()
-{
+Ret Score::sanityCheckLocal() {
     TRACEFUNC;
 
     StringList errors;
@@ -152,27 +148,27 @@ Ret Score::sanityCheckLocal()
 
     setHasCorruptedMeasures(false);
 
-    for (Measure* m = firstMeasure(); m; m = m->nextMeasure()) {
+    for (Measure *m = firstMeasure(); m; m = m->nextMeasure()) {
         Fraction mLen = m->ticks();
-        size_t endStaff  = staves().size();
+        size_t endStaff = staves().size();
 
         for (size_t staffIdx = 0; staffIdx < endStaff; ++staffIdx) {
-            Rest* fmrest0 = nullptr; // full measure rest in voice 0
+            Rest *fmrest0 = nullptr; // full measure rest in voice 0
             Fraction voices[VOICES];
 
             m->setCorrupted(staffIdx, false);
 
-            for (Segment* s = m->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
+            for (Segment *s = m->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
                 for (voice_idx_t v = 0; v < VOICES; ++v) {
-                    EngravingItem* element = s->element(staffIdx * VOICES + v);
+                    EngravingItem *element = s->element(staffIdx * VOICES + v);
                     if (!element) {
                         continue;
                     }
 
-                    ChordRest* cr = toChordRest(element);
+                    ChordRest *cr = toChordRest(element);
                     voices[v] += cr->actualTicks();
                     if (v == 0 && cr->isRest()) {
-                        Rest* r = toRest(cr);
+                        Rest *r = toRest(cr);
                         if (r->durationType().isMeasure()) {
                             fmrest0 = r;
                         }
@@ -189,7 +185,9 @@ Ret Score::sanityCheckLocal()
 
             if (!repeatsIsValid) {
                 errors << muse::mtrc("engraving", "<b>Corrupted measure</b>: %1, measure %2, staff %3.")
-                    .arg(excerptInfo()).arg(mNumber).arg(staffIdx + 1);
+                              .arg(excerptInfo())
+                              .arg(mNumber)
+                              .arg(staffIdx + 1);
                 m->setCorrupted(staffIdx, true);
                 setHasCorruptedMeasures(true);
             }
@@ -197,7 +195,10 @@ Ret Score::sanityCheckLocal()
             if (voices[0] != mLen) {
                 //: %1 describes in which score the corruption is (either `Full score` or `"[part name]" part score`)
                 errors << muse::mtrc("engraving", "<b>Incomplete measure</b>: %1, measure %2, staff %3. Found: %4. Expected: %5.")
-                    .arg(excerptInfo()).arg(mNumber).arg(staffIdx + 1).arg(voices[0].toString(), mLen.toString());
+                              .arg(excerptInfo())
+                              .arg(mNumber)
+                              .arg(staffIdx + 1)
+                              .arg(voices[0].toString(), mLen.toString());
                 m->setCorrupted(staffIdx, true);
                 setHasCorruptedMeasures(true);
                 // try to fix a bad full measure rest
@@ -211,19 +212,27 @@ Ret Score::sanityCheckLocal()
                 if (voices[v] > mLen) {
                     //: %1 describes in which score the corruption is (either `Full score` or `"[part name]" part score`)
                     errors << muse::mtrc("engraving", "<b>Voice too long</b>: %1, measure %2, staff %3, voice %4. Found: %5. Expected: %6.")
-                        .arg(excerptInfo()).arg(mNumber).arg(staffIdx + 1).arg(v + 1).arg(voices[v].toString(), mLen.toString());
+                                  .arg(excerptInfo())
+                                  .arg(mNumber)
+                                  .arg(staffIdx + 1)
+                                  .arg(v + 1)
+                                  .arg(voices[v].toString(), mLen.toString());
                     m->setCorrupted(staffIdx, true);
                     setHasCorruptedMeasures(true);
                 }
             }
 
-            for (Segment* s = m->first(); s; s = s->next()) {
+            for (Segment *s = m->first(); s; s = s->next()) {
                 const Fraction rtick = s->rtick();
                 if ((rtick.negative() || rtick > mLen) && s->hasAnnotationOrElement(staffIdx)) {
                     //: %1 describes in which score the corruption is (either `Full score` or `"[part name]" part score`)
-                    errors << muse::mtrc("engraving",
-                                         "<b>Element outside measure</b>: %1, measure %2, staff %3. Found at: %4. Expected between 0 and %5.")
-                        .arg(excerptInfo()).arg(mNumber).arg(staffIdx + 1).arg(rtick.toString(), mLen.toString());
+                    errors << muse::mtrc(
+                                  "engraving",
+                                  "<b>Element outside measure</b>: %1, measure %2, staff %3. Found at: %4. Expected between 0 and %5.")
+                                  .arg(excerptInfo())
+                                  .arg(mNumber)
+                                  .arg(staffIdx + 1)
+                                  .arg(rtick.toString(), mLen.toString());
                     m->setCorrupted(staffIdx, true);
                     setHasCorruptedMeasures(true);
                     break;
@@ -246,22 +255,20 @@ Ret Score::sanityCheckLocal()
 ///    check that key map is in sync with actual keys
 //---------------------------------------------------------
 
-bool Score::checkKeys()
-{
+bool Score::checkKeys() {
     bool rc = true;
     for (size_t i = 0; i < nstaves(); ++i) {
         Key k = staff(i)->key(Fraction(0, 1));
-        for (Measure* m = firstMeasure(); m; m = m->nextMeasure()) {
-            Segment* s = m->findSegment(SegmentType::KeySig, m->tick());
+        for (Measure *m = firstMeasure(); m; m = m->nextMeasure()) {
+            Segment *s = m->findSegment(SegmentType::KeySig, m->tick());
             if (s) {
-                EngravingItem* element = s->element(static_cast<int>(i) * VOICES);
+                EngravingItem *element = s->element(static_cast<int>(i) * VOICES);
                 if (element) {
                     k = toKeySig(element)->key();
                 }
             }
             if (staff(i)->key(m->tick()) != k) {
-                LOGD("measure %d (tick %d) : key %d, map %d", m->measureNumber(), m->tick().ticks(), int(k),
-                     int(staff(i)->key(m->tick())));
+                LOGD("measure %d (tick %d) : key %d, map %d", m->measureNumber(), m->tick().ticks(), int(k), int(staff(i)->key(m->tick())));
                 rc = false;
             }
         }
@@ -273,21 +280,16 @@ bool Score::checkKeys()
 //   fillGap
 //---------------------------------------------------------
 
-void Measure::fillGap(const Fraction& rtickStart, const Fraction& len, track_idx_t track, const Fraction& stretch, bool useGapRests)
-{
-    LOGN("measure %6d pos %d, len %d/%d, stretch %d/%d track %zu",
-         tick().ticks(),
-         rtickStart.ticks(),
-         len.numerator(), len.denominator(),
-         stretch.numerator(), stretch.denominator(),
-         track);
+void Measure::fillGap(const Fraction &rtickStart, const Fraction &len, track_idx_t track, const Fraction &stretch, bool useGapRests) {
+    LOGN("measure %6d pos %d, len %d/%d, stretch %d/%d track %zu", tick().ticks(), rtickStart.ticks(), len.numerator(), len.denominator(),
+         stretch.numerator(), stretch.denominator(), track);
 
     // break the gap into shorter durations if necessary
     std::vector<TDuration> durationList = toRhythmicDurationList(len, true, rtickStart, timesig(), this, 0, stretch);
 
     Fraction curTick = tick() + actualTicks(rtickStart, nullptr, stretch);
     for (TDuration d : durationList) {
-        Rest* rest = Factory::createRest(score()->dummy());
+        Rest *rest = Factory::createRest(score()->dummy());
         rest->setTicks(d.isMeasure() ? ticks() * stretch : d.fraction());
         rest->setDurationType(d);
         rest->setTrack(track);
@@ -304,8 +306,7 @@ void Measure::fillGap(const Fraction& rtickStart, const Fraction& len, track_idx
 //    with invisible rests
 //---------------------------------------------------------
 
-void Measure::checkMeasure(staff_idx_t staffIdx, bool useGapRests)
-{
+void Measure::checkMeasure(staff_idx_t staffIdx, bool useGapRests) {
     if (isMMRest()) {
         return;
     }
@@ -313,39 +314,39 @@ void Measure::checkMeasure(staff_idx_t staffIdx, bool useGapRests)
     track_idx_t strack = staffIdx * VOICES;
     track_idx_t dtrack = strack + (hasVoices(staffIdx) ? VOICES : 1);
     Fraction stretch = score()->staff(staffIdx)->timeStretch(tick());
-    Fraction f       = ticks() * stretch;
+    Fraction f = ticks() * stretch;
 
     for (track_idx_t track = strack; track < dtrack; track++) {
         Fraction expectedPos = Fraction(0, 1);
-        Fraction currentPos  = Fraction(0, 1);
+        Fraction currentPos = Fraction(0, 1);
 
-        for (Segment* seg = first(SegmentType::ChordRest); seg; seg = seg->next(SegmentType::ChordRest)) {
-            EngravingItem* e = seg->element(track);
+        for (Segment *seg = first(SegmentType::ChordRest); seg; seg = seg->next(SegmentType::ChordRest)) {
+            EngravingItem *e = seg->element(track);
             if (!e) {
                 continue;
             }
 
-            ChordRest* cr = toChordRest(e);
-            currentPos    = seg->rtick() * stretch;
+            ChordRest *cr = toChordRest(e);
+            currentPos = seg->rtick() * stretch;
 
             if (currentPos < expectedPos) {
-                LOGN("in measure overrun %6d at %d-%d track %zu", tick().ticks(),
-                     (currentPos / stretch).ticks(), (expectedPos / stretch).ticks(), track);
+                LOGN("in measure overrun %6d at %d-%d track %zu", tick().ticks(), (currentPos / stretch).ticks(),
+                     (expectedPos / stretch).ticks(), track);
                 break;
             } else if (currentPos > expectedPos) {
-                LOGN("in measure underrun %6d at %d-%d track %zu", tick().ticks(),
-                     (currentPos / stretch).ticks(), (expectedPos / stretch).ticks(), track);
+                LOGN("in measure underrun %6d at %d-%d track %zu", tick().ticks(), (currentPos / stretch).ticks(),
+                     (expectedPos / stretch).ticks(), track);
                 fillGap(expectedPos, currentPos - expectedPos, track, stretch, useGapRests);
                 if (currentPos >= f) {
                     break;
                 }
             }
 
-            DurationElement* de = cr;
-            Tuplet* tuplet = cr->topTuplet();
+            DurationElement *de = cr;
+            Tuplet *tuplet = cr->topTuplet();
             if (tuplet) {
                 seg = skipTuplet(tuplet);
-                de  = tuplet;
+                de = tuplet;
             }
             expectedPos = currentPos + de->ticks();
         }
@@ -360,4 +361,4 @@ void Measure::checkMeasure(staff_idx_t staffIdx, bool useGapRests)
         }
     }
 }
-}
+} // namespace mu::engraving

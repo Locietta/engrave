@@ -30,16 +30,15 @@ namespace mu::engraving {
 //   MeasureNumber
 //---------------------------------------------------------
 
-class MeasureNumber : public MeasureNumberBase
-{
+class MeasureNumber : public MeasureNumberBase {
     OBJECT_ALLOCATOR(engraving, MeasureNumber)
     DECLARE_CLASSOF(ElementType::MEASURE_NUMBER)
 
 public:
     MeasureNumber(DummyParentOr<Measure> parent, TextStyleType tid = TextStyleType::MEASURE_NUMBER);
-    MeasureNumber(const MeasureNumber& other);
+    MeasureNumber(const MeasureNumber &other);
 
-    virtual MeasureNumber* clone() const override { return new MeasureNumber(*this); }
+    virtual MeasureNumber *clone() const override { return new MeasureNumber(*this); }
 
     bool isSystemObjectBelowBottomStaff() const override;
 };

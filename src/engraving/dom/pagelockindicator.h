@@ -27,29 +27,29 @@
 namespace mu::engraving {
 class RangeLock;
 
-class PageLockIndicator : public IndicatorIcon
-{
+class PageLockIndicator : public IndicatorIcon {
     OBJECT_ALLOCATOR(engraving, PageLockIndicator)
     DECLARE_CLASSOF(ElementType::PAGE_LOCK_INDICATOR)
 
 public:
-    PageLockIndicator(DummyParentOr<System> parent, const RangeLock* lock);
+    PageLockIndicator(DummyParentOr<System> parent, const RangeLock *lock);
 
     void setSelected(bool v) override;
 
-    const RangeLock* pageLock() const { return m_pageLock; }
-    const Page* page() const;
+    const RangeLock *pageLock() const { return m_pageLock; }
+
+    const Page *page() const;
 
     char16_t iconCode() const override { return 0xF4C3; }
 
     String formatBarsAndBeats() const override;
 
     struct LayoutData : public IndicatorIcon::LayoutData {
-        ld_field<RectF> innerRangeRect = { "[PageLockIndicator] innerRangeRect", RectF() };
+        ld_field<RectF> innerRangeRect = {"[PageLockIndicator] innerRangeRect", RectF()};
     };
     DECLARE_LAYOUTDATA_METHODS(PageLockIndicator)
 
 private:
-    const RangeLock* m_pageLock = nullptr;
+    const RangeLock *m_pageLock = nullptr;
 };
 } // namespace mu::engraving

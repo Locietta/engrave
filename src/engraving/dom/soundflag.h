@@ -27,20 +27,19 @@
 #include "draw/types/font.h"
 
 namespace mu::engraving {
-class SoundFlag final : public EngravingItem
-{
+class SoundFlag final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, SoundFlag)
     DECLARE_CLASSOF(ElementType::SOUND_FLAG)
 
 public:
     explicit SoundFlag(DummyParentOr<EngravingItem> parent);
 
-    SoundFlag* clone() const override;
+    SoundFlag *clone() const override;
 
     void setSelected(bool f) override;
 
     PropertyValue getProperty(Pid id) const override;
-    bool setProperty(Pid id, const PropertyValue& value) override;
+    bool setProperty(Pid id, const PropertyValue &value) override;
     PropertyValue propertyDefault(Pid id) const override;
 
     bool canBeExcludedFromOtherParts() const override { return false; }
@@ -48,11 +47,11 @@ public:
     using PresetCodes = StringList;
     using PlayingTechniqueCode = String;
 
-    const PresetCodes& soundPresets() const;
-    void setSoundPresets(const PresetCodes& soundPresets);
+    const PresetCodes &soundPresets() const;
+    void setSoundPresets(const PresetCodes &soundPresets);
 
-    const PlayingTechniqueCode& playingTechnique() const;
-    void setPlayingTechnique(const PlayingTechniqueCode& technique);
+    const PlayingTechniqueCode &playingTechnique() const;
+    void setPlayingTechnique(const PlayingTechniqueCode &technique);
 
     bool play() const;
     void setPlay(bool play);
@@ -64,7 +63,7 @@ public:
 
     bool shouldHide() const;
 
-    void undoChangeSoundFlag(const PresetCodes& presets, const PlayingTechniqueCode& technique);
+    void undoChangeSoundFlag(const PresetCodes &presets, const PlayingTechniqueCode &technique);
 
     char16_t iconCode() const;
     muse::draw::Font iconFont() const;
@@ -80,4 +79,4 @@ private:
     bool m_play = true;
     bool m_applyToAllStaves = true;
 };
-}
+} // namespace mu::engraving

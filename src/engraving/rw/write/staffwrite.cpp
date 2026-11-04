@@ -31,11 +31,8 @@
 using namespace mu::engraving;
 using namespace mu::engraving::write;
 
-static void writeMeasure(XmlWriter& xml, WriteContext& ctx, MeasureBase* m,
-                         staff_idx_t staffIdx,
-                         bool writeSystemElements,
-                         bool forceTimeSig)
-{
+static void writeMeasure(XmlWriter &xml, WriteContext &ctx, MeasureBase *m, staff_idx_t staffIdx, bool writeSystemElements,
+                         bool forceTimeSig) {
     //
     // special case multi measure rest
     //
@@ -54,11 +51,9 @@ static void writeMeasure(XmlWriter& xml, WriteContext& ctx, MeasureBase* m,
     ctx.setCurTick(m->endTick());
 }
 
-void StaffWrite::writeStaff(const Staff* staff, XmlWriter& xml, write::WriteContext& ctx,
-                            MeasureBase* measureStart, MeasureBase* measureEnd,
-                            staff_idx_t staffStart, staff_idx_t staffIdx)
-{
-    xml.startElement(staff, { { "id", static_cast<int>(staffIdx + 1 - staffStart) } });
+void StaffWrite::writeStaff(const Staff *staff, XmlWriter &xml, write::WriteContext &ctx, MeasureBase *measureStart,
+                            MeasureBase *measureEnd, staff_idx_t staffStart, staff_idx_t staffIdx) {
+    xml.startElement(staff, {{"id", static_cast<int>(staffIdx + 1 - staffStart)}});
 
     ctx.setCurTick(measureStart->tick());
     ctx.setTickDiff(ctx.curTick());
@@ -66,7 +61,7 @@ void StaffWrite::writeStaff(const Staff* staff, XmlWriter& xml, write::WriteCont
     bool writeSystemElements = (staffIdx == staffStart);
     bool firstMeasureWritten = false;
     bool forceTimeSig = false;
-    for (MeasureBase* m = measureStart; m != measureEnd; m = m->next()) {
+    for (MeasureBase *m = measureStart; m != measureEnd; m = m->next()) {
         // force timesig if first measure and range is set
         if (ctx.shouldWriteRange() && m->isMeasure()) {
             if (!firstMeasureWritten) {

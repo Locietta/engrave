@@ -30,28 +30,25 @@ namespace mu::engraving {
 //   @@ RehearsalMark
 //---------------------------------------------------------
 
-class RehearsalMark final : public TextBase
-{
+class RehearsalMark final : public TextBase {
     OBJECT_ALLOCATOR(engraving, RehearsalMark)
     DECLARE_CLASSOF(ElementType::REHEARSAL_MARK)
 
 public:
-    enum class Type : unsigned char {
-        Main = 0,
-        Additional
-    };
+    enum class Type : unsigned char { Main = 0, Additional };
 
     RehearsalMark(DummyParentOr<Segment> parent);
 
     bool allowTimeAnchor() const override { return false; }
 
-    RehearsalMark* clone() const override { return new RehearsalMark(*this); }
+    RehearsalMark *clone() const override { return new RehearsalMark(*this); }
 
-    Segment* segment() const { return (Segment*)ownershipParent(); }
+    Segment *segment() const { return (Segment *) ownershipParent(); }
 
     PropertyValue propertyDefault(Pid id) const override;
 
     void setType(Type type);
+
     Type type() const { return m_type; }
 
     void styleChanged() override;

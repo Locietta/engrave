@@ -27,29 +27,28 @@
 #include "style.h"
 
 namespace mu::engraving {
-class DefaultStyle
-{
+class DefaultStyle {
 public:
-    static DefaultStyle* instance();
+    static DefaultStyle *instance();
 
-    void init(const muse::io::path_t& defaultStyleFilePath, const muse::io::path_t& partStyleFilePath, const SizeF& defaultPageSize);
+    void init(const muse::io::path_t &defaultStyleFilePath, const muse::io::path_t &partStyleFilePath, const SizeF &defaultPageSize);
 
-    static const MStyle& baseStyle();
+    static const MStyle &baseStyle();
 
-    static const MStyle& defaultStyle();
-    static const MStyle* defaultStyleForParts();
+    static const MStyle &defaultStyle();
+    static const MStyle *defaultStyleForParts();
 
-    static const MStyle& resolveStyleDefaults(const int defaultsVersion);
+    static const MStyle &resolveStyleDefaults(const int defaultsVersion);
 
 private:
     DefaultStyle() = default;
 
-    static bool doLoadStyle(MStyle* style, const muse::io::path_t& filePath);
+    static bool doLoadStyle(MStyle *style, const muse::io::path_t &filePath);
 
-    MStyle m_baseStyle; // builtin initial style
+    MStyle m_baseStyle;    // builtin initial style
     MStyle m_defaultStyle; // builtin modified by preferences
-    MStyle* m_defaultStyleForParts = nullptr;
+    MStyle *m_defaultStyleForParts = nullptr;
 };
-}
+} // namespace mu::engraving
 
 #endif // MU_ENGRAVING_DEFAULTSTYLE_H

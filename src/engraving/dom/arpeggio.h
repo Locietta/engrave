@@ -33,38 +33,39 @@ class Transaction;
 //   @@ Arpeggio
 //---------------------------------------------------------
 
-enum class AnchorRebaseDirection : unsigned char {
-    UP,
-    DOWN
-};
+enum class AnchorRebaseDirection : unsigned char { UP, DOWN };
 
-class Arpeggio : public EngravingItem
-{
+class Arpeggio : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, Arpeggio)
     DECLARE_CLASSOF(ElementType::ARPEGGIO)
 
 public:
 
     ~Arpeggio() override;
-    Arpeggio* clone() const override { return new Arpeggio(*this); }
+
+    Arpeggio *clone() const override { return new Arpeggio(*this); }
 
     ArpeggioType arpeggioType() const { return m_arpeggioType; }
+
     void setArpeggioType(ArpeggioType v) { m_arpeggioType = v; }
-    const TranslatableString& arpeggioTypeName() const;
+
+    const TranslatableString &arpeggioTypeName() const;
 
     int subtype() const override { return int(m_arpeggioType); }
+
     TranslatableString subtypeUserName() const override;
 
-    Chord* chord() const { return (Chord*)ownershipParent(); }
+    Chord *chord() const { return (Chord *) ownershipParent(); }
 
-    bool acceptDrop(EditData&) const override;
-    EngravingItem* drop(Transaction& tx, EditData&) override;
-
+    bool acceptDrop(EditData &) const override;
+    EngravingItem *drop(Transaction &tx, EditData &) override;
 
     void reset() override;
 
     int span() const { return m_span; }
+
     void setSpan(int val) { m_span = val; }
+
     track_idx_t endTrack() const { return track() + m_span - 1; }
 
     bool crossStaff() const;
@@ -75,20 +76,24 @@ public:
     void rebaseEndAnchor(AnchorRebaseDirection direction);
 
     double userLen1() const { return m_userLen1; }
+
     double userLen2() const { return m_userLen2; }
+
     void setUserLen1(double v) { m_userLen1 = v; }
+
     void setUserLen2(double v) { m_userLen2 = v; }
 
     bool playArpeggio() const { return m_playArpeggio; }
+
     void setPlayArpeggio(bool p) { m_playArpeggio = p; }
 
     double Stretch() const { return m_stretch; }
+
     void setStretch(double val) { m_stretch = val; }
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid propertyId) const override;
-
 
     struct LayoutData : public EngravingItem::LayoutData {
         // cache
@@ -117,9 +122,9 @@ private:
     double m_userLen1 = 0.0;
     double m_userLen2 = 0.0;
 
-    int m_span = 1;                // how many voices the arpeggio spans
+    int m_span = 1; // how many voices the arpeggio spans
     bool m_playArpeggio = true;
 
     double m_stretch = 1.0;
 };
-}
+} // namespace mu::engraving

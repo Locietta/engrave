@@ -29,13 +29,12 @@ enum class Key : signed char;
 enum class Prefer : char;
 class Score;
 
-class EditEnharmonicSpelling
-{
+class EditEnharmonicSpelling {
 public:
-    static void spell(Score* score);
-    static void spellWithSharpsOrFlats(Score* score, Prefer prefer);
-    static void changeEnharmonicSpelling(Score* score, bool both);
+    static void spell(Score *score);
+    static void spellWithSharpsOrFlats(Score *score, Prefer prefer);
+    static void changeEnharmonicSpelling(Score *score, bool both);
 
     static int bestEnharmonicFit(const std::vector<int> tpcs, Key key);
 };
-}
+} // namespace mu::engraving

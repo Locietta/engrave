@@ -32,17 +32,16 @@ class PickScrape;
 //   @@ PickScrapeSegment
 //---------------------------------------------------------
 
-class PickScrapeSegment final : public TextLineBaseSegment
-{
+class PickScrapeSegment final : public TextLineBaseSegment {
     OBJECT_ALLOCATOR(engraving, PickScrapeSegment)
     DECLARE_CLASSOF(ElementType::PICK_SCRAPE_SEGMENT)
 
 public:
-    PickScrapeSegment(PickScrape* sp);
+    PickScrapeSegment(PickScrape *sp);
 
-    PickScrapeSegment* clone() const override { return new PickScrapeSegment(*this); }
+    PickScrapeSegment *clone() const override { return new PickScrapeSegment(*this); }
 
-    PickScrape* pickScrape() const { return (PickScrape*)spanner(); }
+    PickScrape *pickScrape() const { return (PickScrape *) spanner(); }
 
     friend class PickScrape;
 };
@@ -51,19 +50,18 @@ public:
 //   @@ PickScrape
 //---------------------------------------------------------
 
-class PickScrape final : public ChordTextLineBase
-{
+class PickScrape final : public ChordTextLineBase {
     OBJECT_ALLOCATOR(engraving, PickScrape)
     DECLARE_CLASSOF(ElementType::PICK_SCRAPE)
 
 public:
     PickScrape(DummyParentOr<EngravingItem> parent);
 
-    PickScrape* clone() const override { return new PickScrape(*this); }
+    PickScrape *clone() const override { return new PickScrape(*this); }
 
     Anchor anchor() const override { return Anchor::SEGMENT; }
 
-    LineSegment* createLineSegment() override;
+    LineSegment *createLineSegment() override;
 
     PropertyValue propertyDefault(Pid propertyId) const override;
     Sid getPropertyStyle(Pid) const override;

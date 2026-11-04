@@ -31,22 +31,22 @@ class Factory;
 class Segment;
 class Transaction;
 
-static constexpr int MIN_BARLINE_FROMTO_DIST        = 2;
-static constexpr int MIN_BARLINE_SPAN_FROMTO        = -2;
+static constexpr int MIN_BARLINE_FROMTO_DIST = 2;
+static constexpr int MIN_BARLINE_SPAN_FROMTO = -2;
 
 // bar line span for 1-line staves is special: goes from 2sp above the line to 2sp below the line;
-static constexpr int BARLINE_SPAN_1LINESTAFF_FROM   = -4;
-static constexpr int BARLINE_SPAN_1LINESTAFF_TO     = 4;
+static constexpr int BARLINE_SPAN_1LINESTAFF_FROM = -4;
+static constexpr int BARLINE_SPAN_1LINESTAFF_TO = 4;
 
 // data for some preset bar line span types
-static constexpr int BARLINE_SPAN_TICK1_FROM        = -1;
-static constexpr int BARLINE_SPAN_TICK1_TO          = -7;
-static constexpr int BARLINE_SPAN_TICK2_FROM        = -2;
-static constexpr int BARLINE_SPAN_TICK2_TO          = -6;
-static constexpr int BARLINE_SPAN_SHORT1_FROM       = 2;
-static constexpr int BARLINE_SPAN_SHORT1_TO         = -2;
-static constexpr int BARLINE_SPAN_SHORT2_FROM       = 1;
-static constexpr int BARLINE_SPAN_SHORT2_TO         = -1;
+static constexpr int BARLINE_SPAN_TICK1_FROM = -1;
+static constexpr int BARLINE_SPAN_TICK1_TO = -7;
+static constexpr int BARLINE_SPAN_TICK2_FROM = -2;
+static constexpr int BARLINE_SPAN_TICK2_TO = -6;
+static constexpr int BARLINE_SPAN_SHORT1_FROM = 2;
+static constexpr int BARLINE_SPAN_SHORT1_TO = -2;
+static constexpr int BARLINE_SPAN_SHORT2_FROM = 1;
+static constexpr int BARLINE_SPAN_SHORT2_TO = -1;
 
 //---------------------------------------------------------
 //   BarLineTableItem
@@ -54,7 +54,7 @@ static constexpr int BARLINE_SPAN_SHORT2_TO         = -1;
 
 struct BarLineTableItem {
     BarLineType type;
-    const muse::TranslatableString& userName;
+    const muse::TranslatableString &userName;
 };
 
 //---------------------------------------------------------
@@ -63,68 +63,79 @@ struct BarLineTableItem {
 //   @P barLineType  enum  (BarLineType.NORMAL, .DOUBLE, .START_REPEAT, .END_REPEAT, .BROKEN, .END, .END_START_REPEAT, .DOTTED)
 //---------------------------------------------------------
 
-class BarLine final : public EngravingItem
-{
+class BarLine final : public EngravingItem {
     OBJECT_ALLOCATOR(engraving, BarLine)
     DECLARE_CLASSOF(ElementType::BAR_LINE)
 
 public:
     ~BarLine() override;
 
-    BarLine& operator=(const BarLine&) = delete;
+    BarLine &operator=(const BarLine &) = delete;
 
     void setOwnershipParent(DummyParentOr<Segment> parent);
 
-    BarLine* clone() const override { return new BarLine(*this); }
-    PointF canvasPos() const override;      ///< position in canvas coordinates
-    PointF pagePos() const override;        ///< position in page coordinates
+    BarLine *clone() const override { return new BarLine(*this); }
 
-    void scanElements(std::function<void(EngravingItem*)> func) override;
+    PointF canvasPos() const override; ///< position in canvas coordinates
+    PointF pagePos() const override;   ///< position in page coordinates
+
+    void scanElements(std::function<void(EngravingItem *)> func) override;
     void setTrack(track_idx_t t) override;
-    void add(EngravingItem*) override;
-    void remove(EngravingItem*) override;
-    bool acceptDrop(EditData&) const override;
-    EngravingItem* drop(Transaction& tx, EditData&) override;
+    void add(EngravingItem *) override;
+    void remove(EngravingItem *) override;
+    bool acceptDrop(EditData &) const override;
+    EngravingItem *drop(Transaction &tx, EditData &) override;
 
-    Segment* segment() const { return toSegment(ownershipParent()); }
-    Measure* measure() const { return ownershipParent() ? toMeasure(ownershipParent()->ownershipParent()) : nullptr; }
+    Segment *segment() const { return toSegment(ownershipParent()); }
+
+    Measure *measure() const { return ownershipParent() ? toMeasure(ownershipParent()->ownershipParent()) : nullptr; }
 
     void setSpanStaff(const bool val) { m_spanStaff = val; }
+
     void setSpanFrom(int val) { m_spanFrom = val; }
+
     void setSpanTo(int val) { m_spanTo = val; }
+
     void setShowTips(bool val);
+
     bool spanStaff() const { return m_spanStaff; }
+
     int spanFrom() const { return m_spanFrom; }
+
     int spanTo() const { return m_spanTo; }
+
     bool showTips() const;
 
-    const ElementList* el() const { return &m_el; }
+    const ElementList *el() const { return &m_el; }
 
     static String translatedUserTypeName(BarLineType);
 
     void setBarLineType(BarLineType i) { m_barLineType = i; }
+
     BarLineType barLineType() const { return m_barLineType; }
 
     bool isTop() const;
     bool isBottom() const;
 
     int subtype() const override { return int(m_barLineType); }
+
     TranslatableString subtypeUserName() const override;
 
     PropertyValue getProperty(Pid propertyId) const override;
-    bool setProperty(Pid propertyId, const PropertyValue&) override;
+    bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid propertyId) const override;
-    void undoChangeProperty(Pid id, const PropertyValue&, PropertyFlags ps) override;
+    void undoChangeProperty(Pid id, const PropertyValue &, PropertyFlags ps) override;
     using EngravingObject::undoChangeProperty;
-    EngravingObject* propertyDelegate(Pid) const override;
+    EngravingObject *propertyDelegate(Pid) const override;
 
     void setPlayCount(int playCount) { m_playCount = playCount; }
+
     int playCount() const { return m_playCount; }
 
-    PlayCountText* playCountText() const;
+    PlayCountText *playCountText() const;
 
-    EngravingItem* nextSegmentElement() override;
-    EngravingItem* prevSegmentElement() override;
+    EngravingItem *nextSegmentElement() override;
+    EngravingItem *prevSegmentElement() override;
 
     void setSelected(bool f) override;
 
@@ -145,15 +156,15 @@ private:
 
     friend class Factory;
     BarLine(DummyParentOr<Segment> parent);
-    BarLine(const BarLine&);
+    BarLine(const BarLine &);
 
-    bool m_spanStaff = false;         // span barline to next staff if true
-    int m_spanFrom = 0;          // line number on start and end staves
+    bool m_spanStaff = false; // span barline to next staff if true
+    int m_spanFrom = 0;       // line number on start and end staves
     int m_spanTo = 0;
     BarLineType m_barLineType = BarLineType::NORMAL;
 
-    ElementList m_el;          ///< fermata or other articulations
+    ElementList m_el; ///< fermata or other articulations
 
-    int m_playCount = -1;                 // For use during copy & paste
+    int m_playCount = -1; // For use during copy & paste
 };
 } // namespace mu::engraving

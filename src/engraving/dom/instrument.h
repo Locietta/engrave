@@ -52,7 +52,7 @@ struct NamedEventList {
     String descr;
     std::vector<MidiCoreEvent> events;
 
-    bool operator==(const NamedEventList& i) const { return i.name == name && i.events == events; }
+    bool operator==(const NamedEventList &i) const { return i.name == name && i.events == events; }
 };
 
 //---------------------------------------------------------
@@ -62,69 +62,81 @@ struct NamedEventList {
 struct MidiArticulation {
     String name;
     String descr;
-    int velocity = 0;         // velocity change: -100% - +100%
-    int gateTime = 0;         // gate time change: -100% - +100%
+    int velocity = 0; // velocity change: -100% - +100%
+    int gateTime = 0; // gate time change: -100% - +100%
 
     MidiArticulation() {}
-    MidiArticulation(const String& n, const String& d, int v, int g)
-        : name(n), descr(d), velocity(v), gateTime(g) {}
 
-    bool operator==(const MidiArticulation& i) const;
+    MidiArticulation(const String &n, const String &d, int v, int g) : name(n), descr(d), velocity(v), gateTime(g) {}
+
+    bool operator==(const MidiArticulation &i) const;
 };
 
 //---------------------------------------------------------
 //   Channel
 //---------------------------------------------------------
 
-class InstrChannel
-{
+class InstrChannel {
 public:
-    static const char* DEFAULT_NAME;
-    static const char* HARMONY_NAME;
-    static const char* PALM_MUTE_NAME;
+    static const char *DEFAULT_NAME;
+    static const char *HARMONY_NAME;
+    static const char *PALM_MUTE_NAME;
     static const int DEFAULT_COLOR = 0x3399ff;
     static constexpr char defaultVolume = 100;
 
-    enum class A : char {
-        HBANK, LBANK, PROGRAM, VOLUME, PAN, CHORUS, REVERB,
-        INIT_COUNT
-    };
+    enum class A : char { HBANK, LBANK, PROGRAM, VOLUME, PAN, CHORUS, REVERB, INIT_COUNT };
 
-    enum class Prop : char {
-        VOLUME, PAN, CHORUS, REVERB, NAME, PROGRAM, BANK, COLOR,
-        SYNTI, CHANNEL, USER_BANK_CONTROL
-    };
+    enum class Prop : char { VOLUME, PAN, CHORUS, REVERB, NAME, PROGRAM, BANK, COLOR, SYNTI, CHANNEL, USER_BANK_CONTROL };
 
-    std::vector<MidiCoreEvent>& initList() const;
+    std::vector<MidiCoreEvent> &initList() const;
 
     String name() const { return m_name; }
-    void setName(const String& value);
+
+    void setName(const String &value);
+
     String synti() const { return m_synti; }
-    void setSynti(const String& value);
+
+    void setSynti(const String &value);
+
     int color() const { return m_color; }
+
     void setColor(int value);
 
     char volume() const { return m_volume; }
+
     void setVolume(char value);
+
     char pan() const { return m_pan; }
+
     void setPan(char value);
+
     char chorus() const { return m_chorus; }
+
     void setChorus(char value);
+
     char reverb() const { return m_reverb; }
+
     void setReverb(char value);
 
-    void addToInit(const MidiCoreEvent& e) { m_init.push_back(e); }
+    void addToInit(const MidiCoreEvent &e) { m_init.push_back(e); }
+
     void setMustUpdateInit(bool arg) { m_mustUpdateInit = arg; }
 
     int program() const { return m_program; }
+
     void setProgram(int value);
+
     int bank() const { return m_bank; }
+
     void setBank(int value);
+
     int channel() const { return m_channel; }
+
     void setChannel(int value);
 
     // If the bank controller is set by the user or not
     bool userBankController() const { return m_userBankController; }
+
     void setUserBankController(bool val);
 
     bool isHarmonyChannel() const { return m_name == String::fromUtf8(InstrChannel::HARMONY_NAME); }
@@ -135,19 +147,20 @@ public:
     InstrChannel();
 
     void updateInitList() const;
-    bool operator==(const InstrChannel& c) const { return (m_name == c.m_name) && (m_channel == c.m_channel); }
-    bool operator!=(const InstrChannel& c) const { return !(*this == c); }
 
-    void addListener(ChannelListener* l);
-    void removeListener(ChannelListener* l);
+    bool operator==(const InstrChannel &c) const { return (m_name == c.m_name) && (m_channel == c.m_channel); }
 
-    void switchExpressive(Synthesizer* synth, bool expressive, bool force = false);
+    bool operator!=(const InstrChannel &c) const { return !(*this == c); }
+
+    void addListener(ChannelListener *l);
+    void removeListener(ChannelListener *l);
+
+    void switchExpressive(Synthesizer *synth, bool expressive, bool force = false);
 
     void setNotifyAboutChangedEnabled(bool arg) { m_notifyAboutChangedEnabled = arg; }
 
 private:
-    void firePropertyChanged(InstrChannel::Prop prop)
-    {
+    void firePropertyChanged(InstrChannel::Prop prop) {
         if (m_notifyAboutChangedEnabled) {
             m_notifier.notify(prop);
         }
@@ -160,7 +173,7 @@ private:
     // Channel init EventList (maybe zero)
     String m_name;
 
-    int m_color = 0;    //rgb
+    int m_color = 0; //rgb
 
     String m_synti;
 
@@ -170,13 +183,13 @@ private:
     char m_chorus = 0;
     char m_reverb = 0;
 
-    int m_program = 0;       // current values as shown in mixer
-    int m_bank = 0;          // initialized from "init"
-    int m_channel = 0;       // mscore channel number, mapped to midi port/channel
+    int m_program = 0; // current values as shown in mixer
+    int m_bank = 0;    // initialized from "init"
+    int m_channel = 0; // mscore channel number, mapped to midi port/channel
 
     // MuseScore General-specific SND flags:
     //! TODO Needs porting to MU4
-    bool m_userBankController = false;     // if the user has changed the bank controller as opposed to switchExpressive
+    bool m_userBankController = false; // if the user has changed the bank controller as opposed to switchExpressive
     //bool _switchedToExpressive = false;   // if the patch has been automatically switched to an expr variant
 
     mutable std::vector<MidiCoreEvent> m_init;
@@ -187,13 +200,12 @@ private:
 //   ChannelListener
 //---------------------------------------------------------
 
-class ChannelListener : public Listener<InstrChannel::Prop>
-{
+class ChannelListener : public Listener<InstrChannel::Prop> {
     OBJECT_ALLOCATOR(engraving, ChannelListener)
 public:
     virtual void propertyChanged(InstrChannel::Prop property) = 0;
-    void setNotifier(InstrChannel* ch)
-    {
+
+    void setNotifier(InstrChannel *ch) {
         Listener::setNotifier(nullptr);
         if (ch) {
             ch->addListener(this);
@@ -208,26 +220,26 @@ private:
 //   PartChannelSettingsLink
 //---------------------------------------------------------
 
-class PartChannelSettingsLink final : private ChannelListener
-{
+class PartChannelSettingsLink final : private ChannelListener {
 public:
     PartChannelSettingsLink() = default;
-    PartChannelSettingsLink(InstrChannel* main, InstrChannel* bound, bool excerpt);
-    PartChannelSettingsLink(const PartChannelSettingsLink&) = delete;
-    PartChannelSettingsLink(PartChannelSettingsLink&&);
-    PartChannelSettingsLink& operator=(const PartChannelSettingsLink&) = delete;
-    PartChannelSettingsLink& operator=(PartChannelSettingsLink&&);
+    PartChannelSettingsLink(InstrChannel *main, InstrChannel *bound, bool excerpt);
+    PartChannelSettingsLink(const PartChannelSettingsLink &) = delete;
+    PartChannelSettingsLink(PartChannelSettingsLink &&);
+    PartChannelSettingsLink &operator=(const PartChannelSettingsLink &) = delete;
+    PartChannelSettingsLink &operator=(PartChannelSettingsLink &&);
+
     ~PartChannelSettingsLink() {}
 
-    friend void swap(PartChannelSettingsLink&, PartChannelSettingsLink&);
+    friend void swap(PartChannelSettingsLink &, PartChannelSettingsLink &);
 
 private:
 
-    static void applyProperty(InstrChannel::Prop p, const InstrChannel* from, InstrChannel* to);
+    static void applyProperty(InstrChannel::Prop p, const InstrChannel *from, InstrChannel *to);
     void propertyChanged(InstrChannel::Prop p) override;
 
-    InstrChannel* m_main = nullptr;
-    InstrChannel* m_bound = nullptr;
+    InstrChannel *m_main = nullptr;
+    InstrChannel *m_bound = nullptr;
     bool m_excerpt = false;
 };
 
@@ -235,16 +247,9 @@ private:
 //   Trait
 //---------------------------------------------------------
 
-enum class TraitType : unsigned char
-{
-    Unknown,
-    Tuning,
-    Transposition,
-    Course
-};
+enum class TraitType : unsigned char { Unknown, Tuning, Transposition, Course };
 
-struct Trait
-{
+struct Trait {
     String name;
 
     TraitType type = TraitType::Unknown;
@@ -259,87 +264,129 @@ struct Trait
 //   Instrument
 //---------------------------------------------------------
 
-class Instrument
-{
+class Instrument {
 public:
     Instrument(String id = String());
-    Instrument(const Instrument&);
+    Instrument(const Instrument &);
     ~Instrument();
 
-    NamedEventList* midiAction(const String& s, int channel) const;
-    int channelIdx(const String& s) const;
-    double getVelocityMultiplier(const String& name) const;
-    void updateGateTime(int* gateTime, const String& name) const;
+    NamedEventList *midiAction(const String &s, int channel) const;
+    int channelIdx(const String &s) const;
+    double getVelocityMultiplier(const String &name) const;
+    void updateGateTime(int *gateTime, const String &name) const;
 
     String recognizeMusicXmlId() const;
     String recognizeId() const;
     int recognizeMidiProgram() const;
 
-    void operator=(const Instrument&);
-    bool operator==(const Instrument&) const;
-    bool operator!=(const Instrument&) const;
+    void operator=(const Instrument &);
+    bool operator==(const Instrument &) const;
+    bool operator!=(const Instrument &) const;
 
-    bool isDifferentInstrument(const Instrument& i) const;
+    bool isDifferentInstrument(const Instrument &i) const;
 
-    const String& id() const { return m_id; }
-    const String& soundId() const { return m_soundId; }
-    void setSoundId(const String& id) { m_soundId = id; }
+    const String &id() const { return m_id; }
+
+    const String &soundId() const { return m_soundId; }
+
+    void setSoundId(const String &id) { m_soundId = id; }
+
     String family() const;
     String group() const;
-    void setId(const String& id) { m_id = id; }
-    void setMinPitchP(int v) { m_minPitchP = v; }
-    void setMaxPitchP(int v) { m_maxPitchP = v; }
-    void setMinPitchA(int v) { m_minPitchA = v; }
-    void setMaxPitchA(int v) { m_maxPitchA = v; }
-    Interval transpose() const { return m_transpose; }
-    void setTranspose(const Interval& v) { m_transpose = v; }
-    void setMusicXmlId(const String& musicXmlId) { m_musicXmlId = musicXmlId; }
 
-    void setDrumset(const Drumset* ds);
-    const Drumset* drumset() const { return m_drumset; }
-    Drumset* drumset() { return m_drumset; }
+    void setId(const String &id) { m_id = id; }
+
+    void setMinPitchP(int v) { m_minPitchP = v; }
+
+    void setMaxPitchP(int v) { m_maxPitchP = v; }
+
+    void setMinPitchA(int v) { m_minPitchA = v; }
+
+    void setMaxPitchA(int v) { m_maxPitchA = v; }
+
+    Interval transpose() const { return m_transpose; }
+
+    void setTranspose(const Interval &v) { m_transpose = v; }
+
+    void setMusicXmlId(const String &musicXmlId) { m_musicXmlId = musicXmlId; }
+
+    void setDrumset(const Drumset *ds);
+
+    const Drumset *drumset() const { return m_drumset; }
+
+    Drumset *drumset() { return m_drumset; }
+
     bool useDrumset() const { return m_useDrumset; }
+
     void setUseDrumset(bool val);
-    void setAmateurPitchRange(int a, int b) { m_minPitchA = a; m_maxPitchA = b; }
-    void setProfessionalPitchRange(int a, int b) { m_minPitchP = a; m_maxPitchP = b; }
-    InstrChannel* channel(int idx) { return muse::value(m_channel, idx); }
-    const InstrChannel* channel(int idx) const { return muse::value(m_channel, idx); }
-    InstrChannel* playbackChannel(int idx, MasterScore*);
-    const InstrChannel* playbackChannel(int idx, const MasterScore*) const;
+
+    void setAmateurPitchRange(int a, int b) {
+        m_minPitchA = a;
+        m_maxPitchA = b;
+    }
+
+    void setProfessionalPitchRange(int a, int b) {
+        m_minPitchP = a;
+        m_maxPitchP = b;
+    }
+
+    InstrChannel *channel(int idx) { return muse::value(m_channel, idx); }
+
+    const InstrChannel *channel(int idx) const { return muse::value(m_channel, idx); }
+
+    InstrChannel *playbackChannel(int idx, MasterScore *);
+    const InstrChannel *playbackChannel(int idx, const MasterScore *) const;
     size_t cleffTypeCount() const;
     ClefTypeList clefType(size_t staffIdx) const;
-    void setClefType(size_t staffIdx, const ClefTypeList& c);
+    void setClefType(size_t staffIdx, const ClefTypeList &c);
 
-    const std::vector<NamedEventList>& midiActions() const { return m_midiActions; }
-    void addMidiAction(const NamedEventList& l) { m_midiActions.push_back(l); }
+    const std::vector<NamedEventList> &midiActions() const { return m_midiActions; }
 
-    const std::vector<MidiArticulation>& articulation() const { return m_articulation; }
-    void addMidiArticulation(const MidiArticulation& a) { m_articulation.push_back(a); }
+    void addMidiAction(const NamedEventList &l) { m_midiActions.push_back(l); }
 
-    const std::vector<InstrChannel*>& channel() const { return m_channel; }
-    void appendChannel(InstrChannel* c) { m_channel.push_back(c); }
-    void removeChannel(InstrChannel* c) { muse::remove(m_channel, c); }
+    const std::vector<MidiArticulation> &articulation() const { return m_articulation; }
+
+    void addMidiArticulation(const MidiArticulation &a) { m_articulation.push_back(a); }
+
+    const std::vector<InstrChannel *> &channel() const { return m_channel; }
+
+    void appendChannel(InstrChannel *c) { m_channel.push_back(c); }
+
+    void removeChannel(InstrChannel *c) { muse::remove(m_channel, c); }
+
     void clearChannels() { m_channel.clear(); }
 
-    void setMidiActions(const std::vector<NamedEventList>& l) { m_midiActions = l; }
-    void setArticulation(const std::vector<MidiArticulation>& l) { m_articulation = l; }
-    const StringData* stringData() const { return &m_stringData; }
-    void setStringData(const StringData& d) { m_stringData.set(d); }
+    void setMidiActions(const std::vector<NamedEventList> &l) { m_midiActions = l; }
+
+    void setArticulation(const std::vector<MidiArticulation> &l) { m_articulation = l; }
+
+    const StringData *stringData() const { return &m_stringData; }
+
+    void setStringData(const StringData &d) { m_stringData.set(d); }
+
     bool hasStrings() const { return m_stringData.strings() > 0; }
 
-    void setLongName(const String& f) { m_instrumentLabel.setLongName(f); }
-    void setShortName(const String& f) { m_instrumentLabel.setShortName(f); }
-    void setInstrumentName(const InstrumentLabel& n) { m_instrumentLabel = n; }
-    const String& longName() const { return m_instrumentLabel.longName(); }
-    const String& shortName() const { return m_instrumentLabel.shortName(); }
-    const InstrumentLabel& instrumentLabel() const { return m_instrumentLabel; }
-    InstrumentLabel& instrumentLabel() { return m_instrumentLabel; }
+    void setLongName(const String &f) { m_instrumentLabel.setLongName(f); }
+
+    void setShortName(const String &f) { m_instrumentLabel.setShortName(f); }
+
+    void setInstrumentName(const InstrumentLabel &n) { m_instrumentLabel = n; }
+
+    const String &longName() const { return m_instrumentLabel.longName(); }
+
+    const String &shortName() const { return m_instrumentLabel.shortName(); }
+
+    const InstrumentLabel &instrumentLabel() const { return m_instrumentLabel; }
+
+    InstrumentLabel &instrumentLabel() { return m_instrumentLabel; }
 
     int number() const { return m_instrumentLabel.number(); }
+
     void setNumber(int v) { return m_instrumentLabel.setNumber(v); }
 
-    const String& transposition() const { return m_instrumentLabel.transposition(); }
-    void setTransposition(const String& s) { m_instrumentLabel.setTransposition(s); }
+    const String &transposition() const { return m_instrumentLabel.transposition(); }
+
+    void setTransposition(const String &s) { m_instrumentLabel.setTransposition(s); }
 
     int minPitchP() const;
     int maxPitchP() const;
@@ -348,15 +395,15 @@ public:
     String musicXmlId() const;
 
     String trackName() const;
-    void setTrackName(const String& s);
+    void setTrackName(const String &s);
     String nameAsXmlText() const;
     String nameAsPlainText() const;
     String abbreviatureAsXmlText() const;
     String abbreviatureAsPlainText() const;
-    static Instrument fromTemplate(const InstrumentTemplate* t);
+    static Instrument fromTemplate(const InstrumentTemplate *t);
 
     Trait trait() const;
-    void setTrait(const Trait& trait);
+    void setTrait(const Trait &trait);
 
     bool isPrimary() const;
     void setIsPrimary(bool isPrimary);
@@ -364,10 +411,12 @@ public:
     void updateInstrumentId();
 
     bool singleNoteDynamics() const { return m_singleNoteDynamics; }
+
     void setSingleNoteDynamics(bool val) { m_singleNoteDynamics = val; }
+
     void setSingleNoteDynamicsFromTemplate();
     bool getSingleNoteDynamicsFromTemplate() const;
-    void switchExpressive(MasterScore* score, Synthesizer* synth, bool expressive, bool force = false);
+    void switchExpressive(MasterScore *score, Synthesizer *synth, bool expressive, bool force = false);
 
     bool isVocalInstrument() const;
     bool isNormallyMultiStaveInstrument() const;
@@ -391,12 +440,12 @@ private:
     String m_musicXmlId;
 
     bool m_useDrumset = false;
-    Drumset* m_drumset = nullptr;
+    Drumset *m_drumset = nullptr;
     StringData m_stringData;
 
     std::vector<NamedEventList> m_midiActions;
     std::vector<MidiArticulation> m_articulation;
-    std::vector<InstrChannel*> m_channel;        // at least one entry
+    std::vector<InstrChannel *> m_channel; // at least one entry
     std::vector<ClefTypeList> m_clefType;
 
     bool m_singleNoteDynamics = false;
@@ -414,19 +463,19 @@ private:
 //   InstrumentList
 //---------------------------------------------------------
 
-class InstrumentList : public std::map<const int, Instrument*>
-{
+class InstrumentList : public std::map<const int, Instrument *> {
     OBJECT_ALLOCATOR(engraving, InstrumentList)
 
 public:
     InstrumentList() {}
-    const Instrument* instrument(int tick) const;
-    Instrument* instrument(int tick);
-    void setInstrument(Instrument*, int tick);
-    bool contains(const String& instrumentId) const;
+
+    const Instrument *instrument(int tick) const;
+    Instrument *instrument(int tick);
+    void setInstrument(Instrument *, int tick);
+    bool contains(const String &instrumentId) const;
 
 private:
 
     static Instrument defaultInstrument;
 };
-}
+} // namespace mu::engraving

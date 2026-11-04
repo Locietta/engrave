@@ -25,14 +25,11 @@
 #include <functional>
 
 namespace muse {
-struct Defer
-{
-    template<class F>
-    Defer(F f)
-        : m_f(f) {}
+struct Defer {
+    template <class F>
+    Defer(F f) : m_f(f) {}
 
-    ~Defer()
-    {
+    ~Defer() {
         if (m_f) {
             m_f();
         }
@@ -40,7 +37,7 @@ struct Defer
 
     std::function<void()> m_f;
 };
-}
+} // namespace muse
 
 #define CONCAT_IMPL(x, y) x##y
 #define MACRO_CONCAT(x, y) CONCAT_IMPL(x, y)

@@ -29,7 +29,6 @@
 #include "types/bytearray.h"
 #include "io/path.h"
 
-
 namespace mu::engraving {
 class Image;
 class Score;
@@ -38,26 +37,36 @@ class Score;
 //   ImageStoreItem
 //---------------------------------------------------------
 
-class ImageStoreItem
-{
+class ImageStoreItem {
 public:
-    ImageStoreItem(const std::string& p);
-    void dereference(Image*);
-    void reference(Image*);
+    ImageStoreItem(const std::string &p);
+    void dereference(Image *);
+    void reference(Image *);
 
-    muse::ByteArray& buffer() { return m_buffer; }
-    const muse::ByteArray& buffer() const { return m_buffer; }
+    muse::ByteArray &buffer() { return m_buffer; }
+
+    const muse::ByteArray &buffer() const { return m_buffer; }
+
     bool loaded() const { return !m_buffer.empty(); }
-    bool isUsed(Score*) const;
+
+    bool isUsed(Score *) const;
+
     bool isUsed() const { return !m_references.empty(); }
+
     std::string hashName() const;
-    const muse::ByteArray& hash() const { return m_hash; }
-    const std::string& type() const { return m_type; }
-    void set(const muse::ByteArray& b, const muse::ByteArray& h) { m_buffer = b; m_hash = h; }
+
+    const muse::ByteArray &hash() const { return m_hash; }
+
+    const std::string &type() const { return m_type; }
+
+    void set(const muse::ByteArray &b, const muse::ByteArray &h) {
+        m_buffer = b;
+        m_hash = h;
+    }
 
 private:
 
-    std::list<Image*> m_references;
+    std::list<Image *> m_references;
     std::string m_type; // image type (file extension)
     muse::ByteArray m_buffer;
     muse::ByteArray m_hash; // 16 byte content key of m_buffer
@@ -67,25 +76,27 @@ private:
 //   ImageStore
 //---------------------------------------------------------
 
-class ImageStore
-{
+class ImageStore {
 public:
     ImageStore() = default;
-    ImageStore(const ImageStore&) = delete;
-    ImageStore& operator=(const ImageStore&) = delete;
+    ImageStore(const ImageStore &) = delete;
+    ImageStore &operator=(const ImageStore &) = delete;
     ~ImageStore();
 
-    ImageStoreItem* getImage(std::string name) const;
-    ImageStoreItem* add(const std::string& name, const muse::ByteArray&);
+    ImageStoreItem *getImage(std::string name) const;
+    ImageStoreItem *add(const std::string &name, const muse::ByteArray &);
     void clearUnused();
 
-    typedef std::vector<ImageStoreItem*> ItemList;
+    typedef std::vector<ImageStoreItem *> ItemList;
     typedef ItemList::iterator iterator;
     typedef ItemList::const_iterator const_iterator;
 
     iterator begin() { return m_items.begin(); }
+
     const_iterator begin() const { return m_items.begin(); }
+
     iterator end() { return m_items.end(); }
+
     const_iterator end() const { return m_items.end(); }
 
 private:
@@ -93,5 +104,5 @@ private:
     ItemList m_items;
 };
 
-extern ImageStore imageStore;       // this is the global imageStore
+extern ImageStore imageStore; // this is the global imageStore
 } // namespace mu::engraving

@@ -48,66 +48,61 @@ namespace mu::engraving {
 // variant with ligatures, works for both emmentaler and bravura:
 const std::vector<Dyn> Dynamic::DYN_LIST = {
     // dynamic:
-    { DynamicType::OTHER,  -1, 0,   true, "" },
-    { DynamicType::PPPPPP,  1, 0,   false,
-      "<sym>dynamicPiano</sym><sym>dynamicPiano</sym><sym>dynamicPiano</sym><sym>dynamicPiano</sym><sym>dynamicPiano</sym><sym>dynamicPiano</sym>" },
-    { DynamicType::PPPPP,   5, 0,   false,
-      "<sym>dynamicPiano</sym><sym>dynamicPiano</sym><sym>dynamicPiano</sym><sym>dynamicPiano</sym><sym>dynamicPiano</sym>" },
-    { DynamicType::PPPP,    10, 0,  false,
-      "<sym>dynamicPiano</sym><sym>dynamicPiano</sym><sym>dynamicPiano</sym><sym>dynamicPiano</sym>" },
-    { DynamicType::PPP,     16, 0,  false,
-      "<sym>dynamicPiano</sym><sym>dynamicPiano</sym><sym>dynamicPiano</sym>" },
-    { DynamicType::PP,      33, 0,  false,  "<sym>dynamicPiano</sym><sym>dynamicPiano</sym>" },
-    { DynamicType::P,       49, 0,  false,  "<sym>dynamicPiano</sym>" },
+    {DynamicType::OTHER, -1, 0, true, ""},
+    {DynamicType::PPPPPP, 1, 0, false,
+     "<sym>dynamicPiano</sym><sym>dynamicPiano</sym><sym>dynamicPiano</sym><sym>dynamicPiano</sym><sym>dynamicPiano</"
+     "sym><sym>dynamicPiano</sym>"},
+    {DynamicType::PPPPP, 5, 0, false,
+     "<sym>dynamicPiano</sym><sym>dynamicPiano</sym><sym>dynamicPiano</sym><sym>dynamicPiano</sym><sym>dynamicPiano</sym>"},
+    {DynamicType::PPPP, 10, 0, false, "<sym>dynamicPiano</sym><sym>dynamicPiano</sym><sym>dynamicPiano</sym><sym>dynamicPiano</sym>"},
+    {DynamicType::PPP, 16, 0, false, "<sym>dynamicPiano</sym><sym>dynamicPiano</sym><sym>dynamicPiano</sym>"},
+    {DynamicType::PP, 33, 0, false, "<sym>dynamicPiano</sym><sym>dynamicPiano</sym>"},
+    {DynamicType::P, 49, 0, false, "<sym>dynamicPiano</sym>"},
 
-    { DynamicType::MP,      64, 0,   false, "<sym>dynamicMezzo</sym><sym>dynamicPiano</sym>" },
-    { DynamicType::MF,      80, 0,   false, "<sym>dynamicMezzo</sym><sym>dynamicForte</sym>" },
+    {DynamicType::MP, 64, 0, false, "<sym>dynamicMezzo</sym><sym>dynamicPiano</sym>"},
+    {DynamicType::MF, 80, 0, false, "<sym>dynamicMezzo</sym><sym>dynamicForte</sym>"},
 
-    { DynamicType::F,       96, 0,   false, "<sym>dynamicForte</sym>" },
-    { DynamicType::FF,      112, 0,  false, "<sym>dynamicForte</sym><sym>dynamicForte</sym>" },
-    { DynamicType::FFF,     126, 0,  false, "<sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym>" },
-    { DynamicType::FFFF,    127, 0,  false,
-      "<sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym>" },
-    { DynamicType::FFFFF,   127, 0,  false,
-      "<sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym>" },
-    { DynamicType::FFFFFF,  127, 0,  false,
-      "<sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym>" },
+    {DynamicType::F, 96, 0, false, "<sym>dynamicForte</sym>"},
+    {DynamicType::FF, 112, 0, false, "<sym>dynamicForte</sym><sym>dynamicForte</sym>"},
+    {DynamicType::FFF, 126, 0, false, "<sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym>"},
+    {DynamicType::FFFF, 127, 0, false, "<sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym>"},
+    {DynamicType::FFFFF, 127, 0, false,
+     "<sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym>"},
+    {DynamicType::FFFFFF, 127, 0, false,
+     "<sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</"
+     "sym><sym>dynamicForte</sym>"},
 
-    { DynamicType::FP,      96, -47,  true, "<sym>dynamicForte</sym><sym>dynamicPiano</sym>" },
-    { DynamicType::PF,      49, 47,   true, "<sym>dynamicPiano</sym><sym>dynamicForte</sym>" },
+    {DynamicType::FP, 96, -47, true, "<sym>dynamicForte</sym><sym>dynamicPiano</sym>"},
+    {DynamicType::PF, 49, 47, true, "<sym>dynamicPiano</sym><sym>dynamicForte</sym>"},
 
-    { DynamicType::SF,      112, -18, true, "<sym>dynamicSforzando</sym><sym>dynamicForte</sym>" },
-    { DynamicType::SFZ,     112, -18, true, "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicZ</sym>" },
-    { DynamicType::SFF,     126, -18, true, "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicForte</sym>" },
-    { DynamicType::SFFZ,    126, -18, true,
-      "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicZ</sym>" },
-    { DynamicType::SFFF,    127, -18, true,
-      "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym>" },
-    { DynamicType::SFFFZ,   127, -18, true,
-      "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicZ</sym>" },
-    { DynamicType::SFP,     112, -47, true, "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicPiano</sym>" },
-    { DynamicType::SFPP,    112, -79, true,
-      "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicPiano</sym><sym>dynamicPiano</sym>" },
+    {DynamicType::SF, 112, -18, true, "<sym>dynamicSforzando</sym><sym>dynamicForte</sym>"},
+    {DynamicType::SFZ, 112, -18, true, "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicZ</sym>"},
+    {DynamicType::SFF, 126, -18, true, "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicForte</sym>"},
+    {DynamicType::SFFZ, 126, -18, true, "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicZ</sym>"},
+    {DynamicType::SFFF, 127, -18, true, "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym>"},
+    {DynamicType::SFFFZ, 127, -18, true,
+     "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicForte</sym><sym>dynamicZ</sym>"},
+    {DynamicType::SFP, 112, -47, true, "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicPiano</sym>"},
+    {DynamicType::SFPP, 112, -79, true, "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicPiano</sym><sym>dynamicPiano</sym>"},
 
-    { DynamicType::RFZ,     112, -18, true, "<sym>dynamicRinforzando</sym><sym>dynamicForte</sym><sym>dynamicZ</sym>" },
-    { DynamicType::RF,      112, -18, true, "<sym>dynamicRinforzando</sym><sym>dynamicForte</sym>" },
-    { DynamicType::FZ,      112, -18, true, "<sym>dynamicForte</sym><sym>dynamicZ</sym>" },
+    {DynamicType::RFZ, 112, -18, true, "<sym>dynamicRinforzando</sym><sym>dynamicForte</sym><sym>dynamicZ</sym>"},
+    {DynamicType::RF, 112, -18, true, "<sym>dynamicRinforzando</sym><sym>dynamicForte</sym>"},
+    {DynamicType::FZ, 112, -18, true, "<sym>dynamicForte</sym><sym>dynamicZ</sym>"},
 
-    { DynamicType::M,       96, -16,  true, "<sym>dynamicMezzo</sym>" },
-    { DynamicType::R,       112, -18, true, "<sym>dynamicRinforzando</sym>" },
-    { DynamicType::S,       112, -18, true, "<sym>dynamicSforzando</sym>" },
-    { DynamicType::Z,       80, 0,    true, "<sym>dynamicZ</sym>" },
-    { DynamicType::N,       49, -48,  true, "<sym>dynamicNiente</sym>" }
-};
+    {DynamicType::M, 96, -16, true, "<sym>dynamicMezzo</sym>"},
+    {DynamicType::R, 112, -18, true, "<sym>dynamicRinforzando</sym>"},
+    {DynamicType::S, 112, -18, true, "<sym>dynamicSforzando</sym>"},
+    {DynamicType::Z, 80, 0, true, "<sym>dynamicZ</sym>"},
+    {DynamicType::N, 49, -48, true, "<sym>dynamicNiente</sym>"}};
 
 //---------------------------------------------------------
 //   dynamicsStyle
 //---------------------------------------------------------
 
-static const ElementStyle dynamicsStyle {
-    { Sid::dynamicsMinDistance, Pid::MIN_DISTANCE },
-    { Sid::avoidBarLines, Pid::AVOID_BARLINES },
-    { Sid::centerOnNotehead, Pid::CENTER_ON_NOTEHEAD },
+static const ElementStyle dynamicsStyle{
+    {Sid::dynamicsMinDistance, Pid::MIN_DISTANCE},
+    {Sid::avoidBarLines, Pid::AVOID_BARLINES},
+    {Sid::centerOnNotehead, Pid::CENTER_ON_NOTEHEAD},
 };
 
 //---------------------------------------------------------
@@ -115,20 +110,17 @@ static const ElementStyle dynamicsStyle {
 //---------------------------------------------------------
 
 Dynamic::Dynamic(DummyParentOr<Segment> parent)
-    : TextBase(ElementType::DYNAMIC, parent, TextStyleType::DYNAMICS, ElementFlag::MOVABLE | ElementFlag::ON_STAFF)
-{
-    m_velocity    = -1;
+    : TextBase(ElementType::DYNAMIC, parent, TextStyleType::DYNAMICS, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
+    m_velocity = -1;
     m_dynamicType = DynamicType::OTHER;
     m_changeInVelocity = 128;
     m_velChangeSpeed = DynamicSpeed::NORMAL;
     initElementStyle(&dynamicsStyle);
 }
 
-Dynamic::Dynamic(const Dynamic& d)
-    : TextBase(d)
-{
+Dynamic::Dynamic(const Dynamic &d) : TextBase(d) {
     m_dynamicType = d.m_dynamicType;
-    m_velocity    = d.m_velocity;
+    m_velocity = d.m_velocity;
     m_changeInVelocity = d.m_changeInVelocity;
     m_velChangeSpeed = d.m_velChangeSpeed;
     _avoidBarLines = d._avoidBarLines;
@@ -139,17 +131,13 @@ Dynamic::Dynamic(const Dynamic& d)
 //   velocity
 //---------------------------------------------------------
 
-int Dynamic::velocity() const
-{
-    return m_velocity <= 0 ? DYN_LIST[int(dynamicType())].velocity : m_velocity;
-}
+int Dynamic::velocity() const { return m_velocity <= 0 ? DYN_LIST[int(dynamicType())].velocity : m_velocity; }
 
 //---------------------------------------------------------
 //   changeInVelocity
 //---------------------------------------------------------
 
-int Dynamic::changeInVelocity() const
-{
+int Dynamic::changeInVelocity() const {
     return m_changeInVelocity >= 128 ? DYN_LIST[int(dynamicType())].changeInVelocity : m_changeInVelocity;
 }
 
@@ -157,8 +145,7 @@ int Dynamic::changeInVelocity() const
 //   setChangeInVelocity
 //---------------------------------------------------------
 
-void Dynamic::setChangeInVelocity(int val)
-{
+void Dynamic::setChangeInVelocity(int val) {
     if (DYN_LIST[int(dynamicType())].changeInVelocity == val) {
         m_changeInVelocity = 128;
     } else {
@@ -171,8 +158,7 @@ void Dynamic::setChangeInVelocity(int val)
 //    the time over which the velocity change occurs
 //---------------------------------------------------------
 
-Fraction Dynamic::velocityChangeLength(BeatsPerSecond tempo) const
-{
+Fraction Dynamic::velocityChangeLength(BeatsPerSecond tempo) const {
     if (changeInVelocity() == 0) {
         return Fraction::fromTicks(0);
     }
@@ -180,16 +166,10 @@ Fraction Dynamic::velocityChangeLength(BeatsPerSecond tempo) const
     double ratio = tempo.val / Constants::DEFAULT_TEMPO.val;
     double speedMult;
     switch (velChangeSpeed()) {
-    case DynamicSpeed::SLOW:
-        speedMult = 1.3;
-        break;
-    case DynamicSpeed::FAST:
-        speedMult = 0.5;
-        break;
-    case DynamicSpeed::NORMAL:
-    default:
-        speedMult = 0.8;
-        break;
+        case DynamicSpeed::SLOW: speedMult = 1.3; break;
+        case DynamicSpeed::FAST: speedMult = 0.5; break;
+        case DynamicSpeed::NORMAL:
+        default: speedMult = 0.8; break;
     }
 
     return Fraction::fromTicks(int(ratio * (speedMult * double(Constants::DIVISION))));
@@ -199,27 +179,24 @@ Fraction Dynamic::velocityChangeLength(BeatsPerSecond tempo) const
 //   isVelocityChangeAvailable
 //---------------------------------------------------------
 
-bool Dynamic::isVelocityChangeAvailable() const
-{
+bool Dynamic::isVelocityChangeAvailable() const {
     switch (dynamicType()) {
-    case DynamicType::FP:
-    case DynamicType::SF:
-    case DynamicType::SFZ:
-    case DynamicType::SFF:
-    case DynamicType::SFFZ:
-    case DynamicType::SFFF:
-    case DynamicType::SFFFZ:
-    case DynamicType::SFP:
-    case DynamicType::SFPP:
-    case DynamicType::RFZ:
-    case DynamicType::RF:
-    case DynamicType::FZ:
-    case DynamicType::M:
-    case DynamicType::R:
-    case DynamicType::S:
-        return true;
-    default:
-        return false;
+        case DynamicType::FP:
+        case DynamicType::SF:
+        case DynamicType::SFZ:
+        case DynamicType::SFF:
+        case DynamicType::SFFZ:
+        case DynamicType::SFFF:
+        case DynamicType::SFFFZ:
+        case DynamicType::SFP:
+        case DynamicType::SFPP:
+        case DynamicType::RFZ:
+        case DynamicType::RF:
+        case DynamicType::FZ:
+        case DynamicType::M:
+        case DynamicType::R:
+        case DynamicType::S: return true;
+        default: return false;
     }
 }
 
@@ -227,8 +204,7 @@ bool Dynamic::isVelocityChangeAvailable() const
 //   setDynamicType
 //---------------------------------------------------------
 
-void Dynamic::setDynamicType(const String& tag)
-{
+void Dynamic::setDynamicType(const String &tag) {
     const auto dynamicInfo = parseDynamicText(tag);
 
     if (dynamicInfo.first == DynamicType::OTHER) {
@@ -239,8 +215,7 @@ void Dynamic::setDynamicType(const String& tag)
     setXmlText(dynamicInfo.second);
 }
 
-std::pair<DynamicType, String> Dynamic::parseDynamicText(const String& tag) const
-{
+std::pair<DynamicType, String> Dynamic::parseDynamicText(const String &tag) const {
     std::string utf8Tag = tag.toStdString();
     const std::regex dynamicRegex(R"((?:<sym>.*?</sym>)+|(?:\b)[fmnprsz]+(?:\b(?=[^>]|$)))");
     auto begin = std::sregex_iterator(utf8Tag.begin(), utf8Tag.end(), dynamicRegex);
@@ -251,47 +226,42 @@ std::pair<DynamicType, String> Dynamic::parseDynamicText(const String& tag) cons
         for (size_t i = 0; i < n; ++i) {
             if (TConv::toXml(DynamicType(i)).ascii() == matchStr || DYN_LIST[i].text == matchStr) {
                 utf8Tag.replace(match.position(0), match.length(0), DYN_LIST[i].text);
-                return { DynamicType(i), String::fromStdString(utf8Tag) };
+                return {DynamicType(i), String::fromStdString(utf8Tag)};
             }
         }
     }
-    return { DynamicType::OTHER, tag };
+    return {DynamicType::OTHER, tag};
 }
 
-String Dynamic::dynamicText(DynamicType t)
-{
-    return String::fromUtf8(DYN_LIST[int(t)].text);
-}
+String Dynamic::dynamicText(DynamicType t) { return String::fromUtf8(DYN_LIST[int(t)].text); }
 
-Expression* Dynamic::snappedExpression() const
-{
-    EngravingItem* item = ldata()->itemSnappedAfter();
+Expression *Dynamic::snappedExpression() const {
+    EngravingItem *item = ldata()->itemSnappedAfter();
     return item && item->isExpression() ? toExpression(item) : nullptr;
 }
 
-HairpinSegment* Dynamic::findSnapBeforeHairpinAcrossSystemBreak() const
-{
+HairpinSegment *Dynamic::findSnapBeforeHairpinAcrossSystemBreak() const {
     /* Normally it is the hairpin which looks for a snappable dynamic. Except if this dynamic
      * is on the first beat of next system, in which case it needs to look back for a hairpin. */
-    Segment* seg = segment();
-    Measure* measure = seg ? seg->measure() : nullptr;
-    System* system = measure ? measure->system() : nullptr;
+    Segment *seg = segment();
+    Measure *measure = seg ? seg->measure() : nullptr;
+    System *system = measure ? measure->system() : nullptr;
     bool isOnFirstBeatOfSystem = system && system->firstMeasure() == measure && seg->rtick().isZero();
     if (!isOnFirstBeatOfSystem) {
         return nullptr;
     }
 
-    Measure* prevMeasure = measure->prevMeasure();
-    System* prevSystem = prevMeasure ? prevMeasure->system() : nullptr;
+    Measure *prevMeasure = measure->prevMeasure();
+    System *prevSystem = prevMeasure ? prevMeasure->system() : nullptr;
     if (!prevSystem) {
         return nullptr;
     }
 
-    for (SpannerSegment* spannerSeg : prevSystem->spannerSegments()) {
+    for (SpannerSegment *spannerSeg : prevSystem->spannerSegments()) {
         if (!spannerSeg->isHairpinSegment() || spannerSeg->track() != track() || spannerSeg->spanner()->tick2() != tick()) {
             continue;
         }
-        HairpinSegment* hairpinSeg = toHairpinSegment(spannerSeg);
+        HairpinSegment *hairpinSeg = toHairpinSegment(spannerSeg);
         if (hairpinSeg->findElementToSnapAfter() == this) {
             return hairpinSeg;
         }
@@ -300,15 +270,13 @@ HairpinSegment* Dynamic::findSnapBeforeHairpinAcrossSystemBreak() const
     return nullptr;
 }
 
-bool Dynamic::acceptDrop(EditData& ed) const
-{
+bool Dynamic::acceptDrop(EditData &ed) const {
     ElementType droppedType = ed.dropElement->type();
     return droppedType == ElementType::DYNAMIC || droppedType == ElementType::EXPRESSION || droppedType == ElementType::HAIRPIN;
 }
 
-EngravingItem* Dynamic::drop(Transaction& tx, EditData& ed)
-{
-    EngravingItem* item = ed.dropElement;
+EngravingItem *Dynamic::drop(Transaction &tx, EditData &ed) {
+    EngravingItem *item = ed.dropElement;
 
     if (item->isHairpin()) {
         EditHairpin::addHairpinToDynamic(tx, score(), toHairpin(item), this);
@@ -316,7 +284,7 @@ EngravingItem* Dynamic::drop(Transaction& tx, EditData& ed)
     }
 
     if (item->isDynamic()) {
-        Dynamic* dynamic = toDynamic(item);
+        Dynamic *dynamic = toDynamic(item);
         undoChangeProperty(Pid::DYNAMIC_TYPE, dynamic->dynamicType());
         undoChangeProperty(Pid::TEXT, dynamic->xmlText());
         delete dynamic;
@@ -335,13 +303,9 @@ EngravingItem* Dynamic::drop(Transaction& tx, EditData& ed)
     return nullptr;
 }
 
-int Dynamic::dynamicVelocity(DynamicType t)
-{
-    return DYN_LIST[int(t)].velocity;
-}
+int Dynamic::dynamicVelocity(DynamicType t) { return DYN_LIST[int(t)].velocity; }
 
-TranslatableString Dynamic::subtypeUserName() const
-{
+TranslatableString Dynamic::subtypeUserName() const {
     if (dynamicType() == DynamicType::OTHER) {
         String s = plainText().simplified();
         if (s.size() > 20) {
@@ -358,12 +322,11 @@ TranslatableString Dynamic::subtypeUserName() const
 //   reset
 //---------------------------------------------------------
 
-void Dynamic::reset()
-{
+void Dynamic::reset() {
     undoResetProperty(Pid::DIRECTION);
     undoResetProperty(Pid::CENTER_BETWEEN_STAVES);
     TextBase::reset();
-    Expression* snappedExp = snappedExpression();
+    Expression *snappedExp = snappedExpression();
     if (snappedExp && !snappedExp->offset().isNull()) {
         snappedExp->reset();
     }
@@ -373,31 +336,22 @@ void Dynamic::reset()
 //   getProperty
 //---------------------------------------------------------
 
-PropertyValue Dynamic::getProperty(Pid propertyId) const
-{
+PropertyValue Dynamic::getProperty(Pid propertyId) const {
     switch (propertyId) {
-    case Pid::DYNAMIC_TYPE:
-        return m_dynamicType;
-    case Pid::VELOCITY:
-        return velocity();
-    case Pid::VELO_CHANGE:
-        if (isVelocityChangeAvailable()) {
-            return changeInVelocity();
-        } else {
-            return PropertyValue();
-        }
-    case Pid::VELO_CHANGE_SPEED:
-        return m_velChangeSpeed;
-    case Pid::AVOID_BARLINES:
-        return avoidBarLines();
-    case Pid::CENTER_ON_NOTEHEAD:
-        return _centerOnNotehead;
-    case Pid::PLAY:
-        return playDynamic();
-    case Pid::ANCHOR_TO_END_OF_PREVIOUS:
-        return anchorToEndOfPrevious();
-    default:
-        return TextBase::getProperty(propertyId);
+        case Pid::DYNAMIC_TYPE: return m_dynamicType;
+        case Pid::VELOCITY: return velocity();
+        case Pid::VELO_CHANGE:
+            if (isVelocityChangeAvailable()) {
+                return changeInVelocity();
+            } else {
+                return PropertyValue();
+            }
+        case Pid::VELO_CHANGE_SPEED: return m_velChangeSpeed;
+        case Pid::AVOID_BARLINES: return avoidBarLines();
+        case Pid::CENTER_ON_NOTEHEAD: return _centerOnNotehead;
+        case Pid::PLAY: return playDynamic();
+        case Pid::ANCHOR_TO_END_OF_PREVIOUS: return anchorToEndOfPrevious();
+        default: return TextBase::getProperty(propertyId);
     }
 }
 
@@ -405,44 +359,31 @@ PropertyValue Dynamic::getProperty(Pid propertyId) const
 //   setProperty
 //---------------------------------------------------------
 
-bool Dynamic::setProperty(Pid propertyId, const PropertyValue& v)
-{
+bool Dynamic::setProperty(Pid propertyId, const PropertyValue &v) {
     switch (propertyId) {
-    case Pid::DYNAMIC_TYPE:
-        if (v.type() == P_TYPE::DYNAMIC_TYPE) {
-            setDynamicType(v.value<DynamicType>());
+        case Pid::DYNAMIC_TYPE:
+            if (v.type() == P_TYPE::DYNAMIC_TYPE) {
+                setDynamicType(v.value<DynamicType>());
+                break;
+            }
+            setDynamicType(v.value<String>());
             break;
-        }
-        setDynamicType(v.value<String>());
-        break;
-    case Pid::VELOCITY:
-        m_velocity = v.toInt();
-        break;
-    case Pid::VELO_CHANGE:
-        if (isVelocityChangeAvailable()) {
-            setChangeInVelocity(v.toInt());
-        }
-        break;
-    case Pid::VELO_CHANGE_SPEED:
-        m_velChangeSpeed = v.value<DynamicSpeed>();
-        break;
-    case Pid::AVOID_BARLINES:
-        setAvoidBarLines(v.toBool());
-        break;
-    case Pid::CENTER_ON_NOTEHEAD:
-        _centerOnNotehead = v.toBool();
-        break;
-    case Pid::PLAY:
-        setPlayDynamic(v.toBool());
-        break;
-    case Pid::ANCHOR_TO_END_OF_PREVIOUS:
-        setAnchorToEndOfPrevious(v.toBool());
-        break;
-    default:
-        if (!TextBase::setProperty(propertyId, v)) {
-            return false;
-        }
-        break;
+        case Pid::VELOCITY: m_velocity = v.toInt(); break;
+        case Pid::VELO_CHANGE:
+            if (isVelocityChangeAvailable()) {
+                setChangeInVelocity(v.toInt());
+            }
+            break;
+        case Pid::VELO_CHANGE_SPEED: m_velChangeSpeed = v.value<DynamicSpeed>(); break;
+        case Pid::AVOID_BARLINES: setAvoidBarLines(v.toBool()); break;
+        case Pid::CENTER_ON_NOTEHEAD: _centerOnNotehead = v.toBool(); break;
+        case Pid::PLAY: setPlayDynamic(v.toBool()); break;
+        case Pid::ANCHOR_TO_END_OF_PREVIOUS: setAnchorToEndOfPrevious(v.toBool()); break;
+        default:
+            if (!TextBase::setProperty(propertyId, v)) {
+                return false;
+            }
+            break;
     }
     triggerLayout();
     return true;
@@ -452,37 +393,27 @@ bool Dynamic::setProperty(Pid propertyId, const PropertyValue& v)
 //   propertyDefault
 //---------------------------------------------------------
 
-PropertyValue Dynamic::propertyDefault(Pid id) const
-{
+PropertyValue Dynamic::propertyDefault(Pid id) const {
     switch (id) {
-    case Pid::TEXT_STYLE:
-        return TextStyleType::DYNAMICS;
-    case Pid::VELOCITY:
-        return -1;
-    case Pid::VELO_CHANGE:
-        if (isVelocityChangeAvailable()) {
-            return DYN_LIST[int(dynamicType())].changeInVelocity;
-        } else {
-            return PropertyValue();
-        }
-    case Pid::VELO_CHANGE_SPEED:
-        return DynamicSpeed::NORMAL;
-    case Pid::PLAY:
-        return true;
-    case Pid::ANCHOR_TO_END_OF_PREVIOUS:
-        return false;
-    default:
-        return TextBase::propertyDefault(id);
+        case Pid::TEXT_STYLE: return TextStyleType::DYNAMICS;
+        case Pid::VELOCITY: return -1;
+        case Pid::VELO_CHANGE:
+            if (isVelocityChangeAvailable()) {
+                return DYN_LIST[int(dynamicType())].changeInVelocity;
+            } else {
+                return PropertyValue();
+            }
+        case Pid::VELO_CHANGE_SPEED: return DynamicSpeed::NORMAL;
+        case Pid::PLAY: return true;
+        case Pid::ANCHOR_TO_END_OF_PREVIOUS: return false;
+        default: return TextBase::propertyDefault(id);
     }
 }
 
-Sid Dynamic::getPropertyStyle(Pid pid) const
-{
+Sid Dynamic::getPropertyStyle(Pid pid) const {
     switch (pid) {
-    case Pid::PLACEMENT:
-        return Sid::dynamicsPlacement;
-    default:
-        return TextBase::getPropertyStyle(pid);
+        case Pid::PLACEMENT: return Sid::dynamicsPlacement;
+        default: return TextBase::getPropertyStyle(pid);
     }
 }
 
@@ -490,14 +421,13 @@ Sid Dynamic::getPropertyStyle(Pid pid) const
 //   screenReaderInfo
 //---------------------------------------------------------
 
-}
+} // namespace mu::engraving
 
 //---------------------------------------------------------
 //   hasLeftHairpin
 //---------------------------------------------------------
 
-bool Dynamic::hasLeftGrip() const
-{
+bool Dynamic::hasLeftGrip() const {
     if (segment()->tick().isZero()) {
         return false; // Don't show the left grip for the leftmost dynamic with tick zero
     }
@@ -508,28 +438,24 @@ bool Dynamic::hasLeftGrip() const
 //   hasRightHairpin
 //---------------------------------------------------------
 
-bool Dynamic::hasRightGrip() const
-{
-    return m_rightHairpin == nullptr;
-}
+bool Dynamic::hasRightGrip() const { return m_rightHairpin == nullptr; }
 
 //---------------------------------------------------------
 //   findAdjacentHairpins
 //---------------------------------------------------------
 
-void Dynamic::findAdjacentHairpins()
-{
+void Dynamic::findAdjacentHairpins() {
     m_leftHairpin = nullptr;
     m_rightHairpin = nullptr;
 
     const Fraction tick = segment()->tick();
     const int intTick = tick.ticks();
 
-    const auto& spanners = score()->spannerMap().findOverlapping(intTick - 1, intTick + 1);
+    const auto &spanners = score()->spannerMap().findOverlapping(intTick - 1, intTick + 1);
     for (auto i : spanners) {
-        Spanner* sp = i.value;
+        Spanner *sp = i.value;
         if (sp->track() == track() && sp->isHairpin()) {
-            Hairpin* hp = toHairpin(sp);
+            Hairpin *hp = toHairpin(sp);
             if (hp->tick() == tick) {
                 m_rightHairpin = hp;
             } else if (hp->tick2() == tick) {
@@ -539,19 +465,15 @@ void Dynamic::findAdjacentHairpins()
     }
 }
 
-Shape Dynamic::symShapeWithCutouts(SymId id) const
-{
-    Staff* stf = staff();
+Shape Dynamic::symShapeWithCutouts(SymId id) const {
+    Staff *stf = staff();
     double staffMag = stf ? stf->staffMag(tick()) : 1.0;
     Shape shape = score()->engravingFont()->shapeWithCutouts(id, magS() * staffMag * symbolScale());
-    for (ShapeElement& element : shape.elements()) {
+    for (ShapeElement &element : shape.elements()) {
         element.setItem(this);
     }
 
     return shape;
 }
 
-Dyn Dynamic::dynInfo(DynamicType type)
-{
-    return DYN_LIST[static_cast<int>(type)];
-}
+Dyn Dynamic::dynInfo(DynamicType type) { return DYN_LIST[static_cast<int>(type)]; }

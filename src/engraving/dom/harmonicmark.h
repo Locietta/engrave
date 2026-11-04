@@ -32,17 +32,16 @@ class HarmonicMark;
 //   @@ HarmonicMarkSegment
 //---------------------------------------------------------
 
-class HarmonicMarkSegment final : public TextLineBaseSegment
-{
+class HarmonicMarkSegment final : public TextLineBaseSegment {
     OBJECT_ALLOCATOR(engraving, HarmonicMarkSegment)
     DECLARE_CLASSOF(ElementType::HARMONIC_MARK_SEGMENT)
 
 public:
-    HarmonicMarkSegment(HarmonicMark* sp);
+    HarmonicMarkSegment(HarmonicMark *sp);
 
-    HarmonicMarkSegment* clone() const override { return new HarmonicMarkSegment(*this); }
+    HarmonicMarkSegment *clone() const override { return new HarmonicMarkSegment(*this); }
 
-    HarmonicMark* harmonicMark() const { return (HarmonicMark*)spanner(); }
+    HarmonicMark *harmonicMark() const { return (HarmonicMark *) spanner(); }
 
     friend class HarmonicMark;
 };
@@ -51,23 +50,22 @@ public:
 //   @@ HarmonicMark
 //---------------------------------------------------------
 
-class HarmonicMark final : public ChordTextLineBase
-{
+class HarmonicMark final : public ChordTextLineBase {
     OBJECT_ALLOCATOR(engraving, HarmonicMark)
     DECLARE_CLASSOF(ElementType::HARMONIC_MARK)
 
 public:
     HarmonicMark(DummyParentOr<EngravingItem> parent);
 
-    HarmonicMark* clone() const override { return new HarmonicMark(*this); }
+    HarmonicMark *clone() const override { return new HarmonicMark(*this); }
 
     Anchor anchor() const override { return Anchor::SEGMENT; }
 
-    LineSegment* createLineSegment() override;
+    LineSegment *createLineSegment() override;
 
     PropertyValue propertyDefault(Pid propertyId) const override;
     Sid getPropertyStyle(Pid) const override;
-    bool setProperty(Pid propertyId, const PropertyValue& value) override;
+    bool setProperty(Pid propertyId, const PropertyValue &value) override;
 
 protected:
     Sid defaultPosSid() const override;

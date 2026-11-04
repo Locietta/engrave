@@ -22,23 +22,20 @@
 
 #pragma once
 
-
-
 #include "audio/common/soundfonttypes.h"
 
 namespace muse::audio::synth {
-class ISoundFontRepository
-{
+class ISoundFontRepository {
 public:
     virtual ~ISoundFontRepository() = default;
 
-    virtual void loadSoundFonts(const std::vector<SoundFontUri>& uris) = 0;
-    virtual void addSoundFont(const SoundFontUri& uri) = 0;
-    virtual void addSoundFontData(const SoundFontUri& uri, const ByteArray& data) = 0;
+    virtual void loadSoundFonts(const std::vector<SoundFontUri> &uris) = 0;
+    virtual void addSoundFont(const SoundFontUri &uri) = 0;
+    virtual void addSoundFontData(const SoundFontUri &uri, const ByteArray &data) = 0;
 
-    virtual bool isSoundFontLoaded(const std::string& name) const = 0;
+    virtual bool isSoundFontLoaded(const std::string &name) const = 0;
     virtual bool isLoadingSoundFonts() const = 0;
 
-    virtual const SoundFontsMap& soundFonts() const = 0;
+    virtual const SoundFontsMap &soundFonts() const = 0;
 };
-}
+} // namespace muse::audio::synth

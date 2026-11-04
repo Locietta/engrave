@@ -30,17 +30,16 @@
 
 using namespace mu::engraving;
 
-Score* TestUtils::createPart(MasterScore* masterScore, size_t partNumber)
-{
-    std::vector<Part*> parts;
+Score *TestUtils::createPart(MasterScore *masterScore, size_t partNumber) {
+    std::vector<Part *> parts;
     parts.push_back(masterScore->parts().at(partNumber));
-    Score* nscore = masterScore->createScore();
+    Score *nscore = masterScore->createScore();
     if (!nscore) {
         ADD_FAILURE() << "nscore is null";
         return nullptr;
     }
 
-    Excerpt* ex = new Excerpt(masterScore);
+    Excerpt *ex = new Excerpt(masterScore);
     ex->setExcerptScore(nscore);
     ex->setParts(parts);
     ex->setName(parts.front()->partName());
@@ -52,15 +51,14 @@ Score* TestUtils::createPart(MasterScore* masterScore, size_t partNumber)
     return nscore;
 }
 
-Score* TestUtils::createEmptyPart(MasterScore* masterScore)
-{
-    Score* nscore = masterScore->createScore();
+Score *TestUtils::createEmptyPart(MasterScore *masterScore) {
+    Score *nscore = masterScore->createScore();
     if (!nscore) {
         ADD_FAILURE() << "nscore is null";
         return nullptr;
     }
 
-    Excerpt* ex = new Excerpt(masterScore);
+    Excerpt *ex = new Excerpt(masterScore);
     ex->setExcerptScore(nscore);
 
     Excerpt::createExcerpt(ex);
@@ -71,8 +69,7 @@ Score* TestUtils::createEmptyPart(MasterScore* masterScore)
     return nscore;
 }
 
-void TestUtils::createParts(MasterScore* masterScore, size_t numberOfParts)
-{
+void TestUtils::createParts(MasterScore *masterScore, size_t numberOfParts) {
     EXPECT_TRUE(numberOfParts > 0);
 
     for (size_t part = 0; part < numberOfParts; part++) {

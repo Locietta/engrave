@@ -41,21 +41,12 @@ using namespace muse;
 using namespace muse::io;
 using namespace mu::engraving;
 
-MscWriter::MscWriter(const Params& params)
-    : m_params(params)
-{
-}
+MscWriter::MscWriter(const Params &params) : m_params(params) {}
 
-MscWriter::~MscWriter()
-{
-    close();
-}
+MscWriter::~MscWriter() { close(); }
 
-void MscWriter::setParams(const Params& params)
-{
-    IF_ASSERT_FAILED(!isOpened()) {
-        return;
-    }
+void MscWriter::setParams(const Params &params) {
+    IF_ASSERT_FAILED(!isOpened()) { return; }
 
     if (m_writer) {
         m_hadError = m_writer->hasError();
@@ -66,25 +57,17 @@ void MscWriter::setParams(const Params& params)
     m_params = params;
 }
 
-const MscWriter::Params& MscWriter::params() const
-{
-    return m_params;
-}
+const MscWriter::Params &MscWriter::params() const { return m_params; }
 
-Ret MscWriter::open()
-{
-    return writer()->open(m_params.device, m_params.filePath);
-}
+Ret MscWriter::open() { return writer()->open(m_params.device, m_params.filePath); }
 
-void MscWriter::close()
-{
+void MscWriter::close() {
     if (m_writer) {
         if (m_writer->isOpened()) {
             // A failed bounded write may unwind through this destructor. Do
             // not build archive metadata while an exception or budget failure
             // is already in flight: its text writer can interrupt as well.
-            if (std::uncaught_exceptions() == 0
-                && (!activeWriteBudget || activeWriteBudget->failure == WriteBudget::Failure::None)) {
+            if (std::uncaught_exceptions() == 0 && (!activeWriteBudget || activeWriteBudget->failure == WriteBudget::Failure::None)) {
                 writeMeta();
             }
             m_writer->close();
@@ -96,40 +79,24 @@ void MscWriter::close()
     }
 }
 
-bool MscWriter::isOpened() const
-{
-    return m_writer ? m_writer->isOpened() : false;
-}
+bool MscWriter::isOpened() const { return m_writer ? m_writer->isOpened() : false; }
 
-bool MscWriter::hasError() const
-{
-    return m_writer ? m_writer->hasError() : m_hadError;
-}
+bool MscWriter::hasError() const { return m_writer ? m_writer->hasError() : m_hadError; }
 
-MscWriter::IWriter* MscWriter::writer() const
-{
+MscWriter::IWriter *MscWriter::writer() const {
     if (!m_writer) {
         switch (m_params.mode) {
-        case MscIoMode::Zip:
-            m_writer = new ZipFileWriter();
-            break;
-        case MscIoMode::Dir:
-            m_writer = new DirWriter();
-            break;
-        case MscIoMode::XmlFile:
-            m_writer = new XmlFileWriter();
-            break;
-        case MscIoMode::Unknown:
-            UNREACHABLE;
-            break;
+            case MscIoMode::Zip: m_writer = new ZipFileWriter(); break;
+            case MscIoMode::Dir: m_writer = new DirWriter(); break;
+            case MscIoMode::XmlFile: m_writer = new XmlFileWriter(); break;
+            case MscIoMode::Unknown: UNREACHABLE; break;
         }
     }
 
     return m_writer;
 }
 
-bool MscWriter::addFileData(const String& fileName, const ByteArray& data)
-{
+bool MscWriter::addFileData(const String &fileName, const ByteArray &data) {
     if (!writer()->addFileData(fileName, data)) {
         LOGE() << "failed write file: " << fileName;
         return false;
@@ -140,13 +107,9 @@ bool MscWriter::addFileData(const String& fileName, const ByteArray& data)
     return true;
 }
 
-void MscWriter::writeStyleFile(const ByteArray& data)
-{
-    addFileData(u"score_style.mss", data);
-}
+void MscWriter::writeStyleFile(const ByteArray &data) { addFileData(u"score_style.mss", data); }
 
-String MscWriter::mainFileName() const
-{
+String MscWriter::mainFileName() const {
     if (!m_params.mainFileName.isEmpty()) {
         return m_params.mainFileName;
     }
@@ -164,55 +127,35 @@ String MscWriter::mainFileName() const
     return completeBaseName + u".mscx";
 }
 
-void MscWriter::writeScoreFile(const ByteArray& data)
-{
-    addFileData(mainFileName(), data);
-}
+void MscWriter::writeScoreFile(const ByteArray &data) { addFileData(mainFileName(), data); }
 
-void MscWriter::addExcerptStyleFile(const String& excerptFileName, const ByteArray& data)
-{
+void MscWriter::addExcerptStyleFile(const String &excerptFileName, const ByteArray &data) {
     String fileName = excerptFileName + u".mss";
     addFileData(u"Excerpts/" + excerptFileName + u"/" + fileName, data);
 }
 
-void MscWriter::addExcerptFile(const String& excerptFileName, const ByteArray& data)
-{
+void MscWriter::addExcerptFile(const String &excerptFileName, const ByteArray &data) {
     String fileName = excerptFileName + u".mscx";
     addFileData(u"Excerpts/" + excerptFileName + u"/" + fileName, data);
 }
 
-void MscWriter::writeChordListFile(const ByteArray& data)
-{
-    addFileData(u"chordlist.xml", data);
-}
+void MscWriter::writeChordListFile(const ByteArray &data) { addFileData(u"chordlist.xml", data); }
 
-void MscWriter::writeThumbnailFile(const ByteArray& data)
-{
-    addFileData(u"Thumbnails/thumbnail.png", data);
-}
+void MscWriter::writeThumbnailFile(const ByteArray &data) { addFileData(u"Thumbnails/thumbnail.png", data); }
 
-void MscWriter::addImageFile(const String& fileName, const ByteArray& data)
-{
-    addFileData(u"Pictures/" + fileName, data);
-}
+void MscWriter::addImageFile(const String &fileName, const ByteArray &data) { addFileData(u"Pictures/" + fileName, data); }
 
-void MscWriter::writeAudioSettingsJsonFile(const ByteArray& data, const muse::io::path_t& pathPrefix)
-{
+void MscWriter::writeAudioSettingsJsonFile(const ByteArray &data, const muse::io::path_t &pathPrefix) {
     addFileData(pathPrefix.toString() + u"audiosettings.json", data);
 }
 
-void MscWriter::writeViewSettingsJsonFile(const ByteArray& data, const muse::io::path_t& pathPrefix)
-{
+void MscWriter::writeViewSettingsJsonFile(const ByteArray &data, const muse::io::path_t &pathPrefix) {
     addFileData(pathPrefix.toString() + u"viewsettings.json", data);
 }
 
-void MscWriter::writeAutomationJsonFile(const muse::ByteArray& data)
-{
-    addFileData(u"automation.json", data);
-}
+void MscWriter::writeAutomationJsonFile(const muse::ByteArray &data) { addFileData(u"automation.json", data); }
 
-void MscWriter::writeMeta()
-{
+void MscWriter::writeMeta() {
     if (m_meta.isWritten) {
         return;
     }
@@ -222,8 +165,7 @@ void MscWriter::writeMeta()
     m_meta.isWritten = true;
 }
 
-void MscWriter::writeContainer(const std::vector<String>& paths)
-{
+void MscWriter::writeContainer(const std::vector<String> &paths) {
     ByteArray data;
     auto buf = Buffer::opened(IODevice::WriteOnly, &data);
     XmlStreamWriter xml(&buf);
@@ -231,8 +173,8 @@ void MscWriter::writeContainer(const std::vector<String>& paths)
     xml.startElement("container");
     xml.startElement("rootfiles");
 
-    for (const String& f : paths) {
-        xml.element("rootfile", { { "full-path", f } });
+    for (const String &f : paths) {
+        xml.element("rootfile", {{"full-path", f}});
     }
 
     xml.endElement();
@@ -242,16 +184,14 @@ void MscWriter::writeContainer(const std::vector<String>& paths)
     addFileData(u"META-INF/container.xml", data);
 }
 
-bool MscWriter::Meta::contains(const String& file) const
-{
+bool MscWriter::Meta::contains(const String &file) const {
     if (std::find(files.begin(), files.end(), file) != files.end()) {
         return true;
     }
     return false;
 }
 
-void MscWriter::Meta::addFile(const String& file)
-{
+void MscWriter::Meta::addFile(const String &file) {
     if (!contains(file)) {
         files.push_back(file);
     }
@@ -261,16 +201,10 @@ void MscWriter::Meta::addFile(const String& file)
 // Writers
 // =======================================================================
 
-MscWriter::ZipFileWriter::~ZipFileWriter()
-{
-    delete m_zip;
-}
+MscWriter::ZipFileWriter::~ZipFileWriter() { delete m_zip; }
 
-Ret MscWriter::ZipFileWriter::open(io::IODevice* device, const path_t&)
-{
-    IF_ASSERT_FAILED(device) {
-        return make_ret(Ret::Code::InternalError);
-    }
+Ret MscWriter::ZipFileWriter::open(io::IODevice *device, const path_t &) {
+    IF_ASSERT_FAILED(device) { return make_ret(Ret::Code::InternalError); }
     m_device = device;
 
     if (!m_device->isOpen()) {
@@ -285,8 +219,7 @@ Ret MscWriter::ZipFileWriter::open(io::IODevice* device, const path_t&)
     return true;
 }
 
-void MscWriter::ZipFileWriter::close()
-{
+void MscWriter::ZipFileWriter::close() {
     if (m_zip) {
         m_zip->close();
     }
@@ -296,21 +229,12 @@ void MscWriter::ZipFileWriter::close()
     }
 }
 
-bool MscWriter::ZipFileWriter::isOpened() const
-{
-    return m_device ? m_device->isOpen() : false;
-}
+bool MscWriter::ZipFileWriter::isOpened() const { return m_device ? m_device->isOpen() : false; }
 
-bool MscWriter::ZipFileWriter::hasError() const
-{
-    return (m_device ? m_device->hasError() : false) || (m_zip ? m_zip->hasError() : false);
-}
+bool MscWriter::ZipFileWriter::hasError() const { return (m_device ? m_device->hasError() : false) || (m_zip ? m_zip->hasError() : false); }
 
-bool MscWriter::ZipFileWriter::addFileData(const String& fileName, const ByteArray& data)
-{
-    IF_ASSERT_FAILED(m_zip) {
-        return false;
-    }
+bool MscWriter::ZipFileWriter::addFileData(const String &fileName, const ByteArray &data) {
+    IF_ASSERT_FAILED(m_zip) { return false; }
 
     m_zip->addFile(fileName.toStdString(), data);
     if (m_zip->hasError()) {
@@ -321,8 +245,7 @@ bool MscWriter::ZipFileWriter::addFileData(const String& fileName, const ByteArr
     return true;
 }
 
-Ret MscWriter::DirWriter::open(io::IODevice* device, const muse::io::path_t& filePath)
-{
+Ret MscWriter::DirWriter::open(io::IODevice *device, const muse::io::path_t &filePath) {
     IF_ASSERT_FAILED(!device) {
         m_hasError = true;
         return make_ret(Ret::Code::InternalError);
@@ -354,23 +277,15 @@ Ret MscWriter::DirWriter::open(io::IODevice* device, const muse::io::path_t& fil
     return true;
 }
 
-void MscWriter::DirWriter::close()
-{
+void MscWriter::DirWriter::close() {
     // noop
 }
 
-bool MscWriter::DirWriter::isOpened() const
-{
-    return FileInfo::exists(m_rootPath);
-}
+bool MscWriter::DirWriter::isOpened() const { return FileInfo::exists(m_rootPath); }
 
-bool MscWriter::DirWriter::hasError() const
-{
-    return m_hasError;
-}
+bool MscWriter::DirWriter::hasError() const { return m_hasError; }
 
-bool MscWriter::DirWriter::addFileData(const String& fileName, const ByteArray& data)
-{
+bool MscWriter::DirWriter::addFileData(const String &fileName, const ByteArray &data) {
     muse::io::path_t filePath = m_rootPath + "/" + fileName;
 
     Dir fileDir(FileInfo(filePath).absolutePath());
@@ -392,16 +307,10 @@ bool MscWriter::DirWriter::addFileData(const String& fileName, const ByteArray& 
     return true;
 }
 
-MscWriter::XmlFileWriter::~XmlFileWriter()
-{
-    delete m_stream;
-}
+MscWriter::XmlFileWriter::~XmlFileWriter() { delete m_stream; }
 
-Ret MscWriter::XmlFileWriter::open(io::IODevice* device, const path_t&)
-{
-    IF_ASSERT_FAILED(device) {
-        return make_ret(Ret::Code::InternalError);
-    }
+Ret MscWriter::XmlFileWriter::open(io::IODevice *device, const path_t &) {
+    IF_ASSERT_FAILED(device) { return make_ret(Ret::Code::InternalError); }
     m_device = device;
 
     if (!m_device->isOpen()) {
@@ -420,8 +329,7 @@ Ret MscWriter::XmlFileWriter::open(io::IODevice* device, const path_t&)
     return true;
 }
 
-void MscWriter::XmlFileWriter::close()
-{
+void MscWriter::XmlFileWriter::close() {
     if (m_stream) {
         *m_stream << "</files>\n";
         m_stream->flush();
@@ -429,30 +337,23 @@ void MscWriter::XmlFileWriter::close()
     }
 }
 
-bool MscWriter::XmlFileWriter::isOpened() const
-{
-    return m_device ? m_device->isOpen() : false;
-}
+bool MscWriter::XmlFileWriter::isOpened() const { return m_device ? m_device->isOpen() : false; }
 
-bool MscWriter::XmlFileWriter::hasError() const
-{
-    return m_device ? m_device->hasError() : false;
-}
+bool MscWriter::XmlFileWriter::hasError() const { return m_device ? m_device->hasError() : false; }
 
-bool MscWriter::XmlFileWriter::addFileData(const String& fileName, const ByteArray& data)
-{
+bool MscWriter::XmlFileWriter::addFileData(const String &fileName, const ByteArray &data) {
     if (!m_stream) {
         return false;
     }
 
-    static const std::vector<String> supportedExts = { u"mscx", u"json", u"mss" };
+    static const std::vector<String> supportedExts = {u"mscx", u"json", u"mss"};
     String ext = FileInfo::suffix(fileName);
     if (!muse::contains(supportedExts, ext)) {
         NOT_SUPPORTED << fileName;
         return true; // not error
     }
 
-    TextStream& ts = *m_stream;
+    TextStream &ts = *m_stream;
     ts << "<file name=\"" << fileName << "\">\n";
     ts << "<![CDATA[";
     ts << data;

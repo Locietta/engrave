@@ -25,21 +25,20 @@
 #include "../iaudiosource.h"
 
 namespace muse::audio::engine {
-class AbstractAudioSource : public IAudioSource
-{
+class AbstractAudioSource : public IAudioSource {
 public:
     virtual ~AbstractAudioSource() = default;
 
     virtual void setMode(const ProcessMode mode) override;
     ProcessMode mode() const override;
 
-    virtual void setOutputSpec(const OutputSpec& spec) override;
+    virtual void setOutputSpec(const OutputSpec &spec) override;
 
 
 protected:
     ProcessMode m_mode = ProcessMode::Undefined;
     OutputSpec m_outputSpec;
 };
-}
+} // namespace muse::audio::engine
 
 #endif // MUSE_AUDIO_ABSTRACTAUDIOSOURCE_H

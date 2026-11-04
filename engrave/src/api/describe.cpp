@@ -27,11 +27,11 @@ struct PidEntry {
 
 struct PidName {
     Pid pid;
-    const char* name;
+    const char *name;
 };
 
 struct TypePids {
-    const char* type;
+    const char *type;
     std::size_t first;
     std::size_t count;
 };
@@ -40,26 +40,26 @@ struct TypePids {
 
 std::string_view group_name(PropertyGroup group) {
     switch (group) {
-    case PropertyGroup::POSITION: return "position";
-    case PropertyGroup::TEXT: return "text";
-    case PropertyGroup::APPEARANCE: return "appearance";
-    case PropertyGroup::NONE: return "none";
+        case PropertyGroup::POSITION: return "position";
+        case PropertyGroup::TEXT: return "text";
+        case PropertyGroup::APPEARANCE: return "appearance";
+        case PropertyGroup::NONE: return "none";
     }
     return "none";
 }
 
 template <typename Info>
-void fill_value_shape(Info& info, api::P_TYPE type) {
+void fill_value_shape(Info &info, api::P_TYPE type) {
     info.kind = api::kind_of(type);
     info.unit = api::unit_of(type);
     for (const std::string_view token : api::enum_tokens(type)) info.enum_tokens.emplace_back(token);
 }
 
-TypeInfo type_info(const TypePids& row) {
+TypeInfo type_info(const TypePids &row) {
     TypeInfo info{.type = row.type};
     info.props.reserve(row.count);
     for (std::size_t i = row.first; i < row.first + row.count; ++i) {
-        const PidEntry& entry = pid_support[i];
+        const PidEntry &entry = pid_support[i];
         PropInfo prop;
         prop.name = api::name_of(entry.pid);
         fill_value_shape(prop, mu::engraving::propertyType(entry.pid));
@@ -74,7 +74,7 @@ TypeInfo type_info(const TypePids& row) {
 } // namespace
 
 std::string_view api::name_of(Pid pid) {
-    for (const PidName& row : pid_names)
+    for (const PidName &row : pid_names)
         if (row.pid == pid) return row.name;
     return mu::engraving::propertyName(pid);
 }
@@ -85,9 +85,7 @@ Pid api::pid_of(std::string_view name) {
     return Pid::END;
 }
 
-bool api::has_type(std::string_view type) {
-    return std::ranges::find(type_pids, type, &TypePids::type) != std::end(type_pids);
-}
+bool api::has_type(std::string_view type) { return std::ranges::find(type_pids, type, &TypePids::type) != std::end(type_pids); }
 
 std::vector<Pid> api::pids_of(std::string_view type) {
     const auto row = std::ranges::find(type_pids, type, &TypePids::type);
@@ -110,15 +108,14 @@ std::vector<TypeInfo> Engine::describe() const {
     impl_->state.check_thread();
     std::vector<TypeInfo> types;
     types.reserve(std::size(type_pids));
-    for (const TypePids& row : type_pids) types.push_back(type_info(row));
+    for (const TypePids &row : type_pids) types.push_back(type_info(row));
     return types;
 }
 
 Result<TypeInfo> Engine::describe(std::string_view type) const {
     impl_->state.check_thread();
     const auto it = std::ranges::find(type_pids, type, &TypePids::type);
-    if (it == std::end(type_pids))
-        return std::unexpected(Error{ErrorCode::NotFound, std::format("no element type '{}'", type)});
+    if (it == std::end(type_pids)) return std::unexpected(Error{ErrorCode::NotFound, std::format("no element type '{}'", type)});
     return type_info(*it);
 }
 
@@ -126,7 +123,7 @@ std::vector<StyleInfo> Engine::describe_styles() const {
     impl_->state.check_thread();
     std::vector<StyleInfo> styles;
     styles.reserve(StyleDef::styleValues.size());
-    for (const StyleDef::StyleValue& value : StyleDef::styleValues) {
+    for (const StyleDef::StyleValue &value : StyleDef::styleValues) {
         StyleInfo info;
         info.name = value.xmlName.ascii();
         fill_value_shape(info, value.valueType());

@@ -26,16 +26,15 @@
 
 namespace mu::engraving {
 class Score;
-}
+} // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class DumpLayoutData
-{
+class DumpLayoutData {
 public:
     DumpLayoutData();
 
-    static std::string dump(const Score* s);
+    static std::string dump(const Score *s);
 };
-}
+} // namespace mu::engraving::rendering::score
 
 #endif // MU_ENGRAVING_DUMPLAYOUTDATA_DEV_H

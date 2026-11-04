@@ -30,11 +30,11 @@ namespace mu::engraving {
 //   ClefList
 //---------------------------------------------------------
 
-class ClefList : public std::map<int, ClefTypeList>
-{
+class ClefList : public std::map<int, ClefTypeList> {
     OBJECT_ALLOCATOR(engraving, ClefList)
 public:
     ClefList() {}
+
     ClefTypeList clef(int tick) const;
     void setClef(int tick, ClefTypeList);
     int nextClefTick(int tick) const;

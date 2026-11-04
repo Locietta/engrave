@@ -7,7 +7,9 @@
 
 #include "engrave/src/runtime/noqt_runtime.h"
 
-namespace mu::engraving { class Score; }
+namespace mu::engraving {
+class Score;
+} // namespace mu::engraving
 
 namespace engrave::write470 {
 
@@ -16,8 +18,7 @@ void set_warning_identity_test_fault(ExportWarning);
 
 // Deliberately restricted adapter: unknown score structures and non-default
 // 5.00-only styles refuse the export with object-specific warnings.
-Result<ExportOutput> export_score(const music::EngineContext&, const music::ScoreProject&,
-                                  mu::engraving::Score&, const std::string& format,
-                                  const music::ExportOptions&);
+Result<ExportOutput> export_score(const music::EngineContext &, const music::ScoreProject &, mu::engraving::Score &,
+                                  const std::string &format, const music::ExportOptions &);
 
 } // namespace engrave::write470

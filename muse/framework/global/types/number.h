@@ -11,8 +11,7 @@ namespace muse {
 // default
 inline constexpr int COMPARE_REAL_PREC(7);
 
-inline constexpr double _pow_minus10(int prec)
-{
+inline constexpr double _pow_minus10(int prec) {
     double result = 1.0;
     for (int i = 0; i < prec; ++i) {
         result /= 10;
@@ -23,9 +22,8 @@ inline constexpr double _pow_minus10(int prec)
 // use
 inline constexpr double _compare_real_epsilon = _pow_minus10(COMPARE_REAL_PREC);
 
-template<typename T>
-inline constexpr bool is_zero(T v)
-{
+template <typename T>
+inline constexpr bool is_zero(T v) {
     if constexpr (std::numeric_limits<T>::is_integer) {
         return v == 0;
     } else {
@@ -33,9 +31,8 @@ inline constexpr bool is_zero(T v)
     }
 }
 
-template<typename T>
-inline constexpr bool is_equal(T v1, T v2)
-{
+template <typename T>
+inline constexpr bool is_equal(T v1, T v2) {
     if constexpr (std::numeric_limits<T>::is_integer) {
         return v1 == v2;
     } else {
@@ -43,9 +40,8 @@ inline constexpr bool is_equal(T v1, T v2)
     }
 }
 
-template<typename T>
-inline T check_valid(T v, T def = T())
-{
+template <typename T>
+inline T check_valid(T v, T def = T()) {
     if constexpr (std::numeric_limits<T>::is_integer) {
         return v;
     } else {
@@ -58,104 +54,177 @@ inline T check_valid(T v, T def = T())
     }
 }
 
-template<typename T>
-class number_t
-{
+template <typename T>
+class number_t {
 public:
 
     using value_type = T;
 
     constexpr number_t() = default;
-    number_t(T v)
-        : m_val(muse::check_valid(v)) {}
+
+    number_t(T v) : m_val(muse::check_valid(v)) {}
 
     //! NOTE At the moment, not all compilers have std::is_nan is constexpr,
     //! so we can't make check_valid is constexpr,
     //! so we can't make a copy constructor is constexpr.
     //! This function is a helper for creating constexpr variables.
-    static constexpr number_t<T> make(T v) { number_t<T> n; n.m_val = v; return n; }
-
-    number_t<T>& operator=(T v) { m_val = muse::check_valid(v); return *this; }
-
-    inline operator T() const {
-        return m_val;
+    static constexpr number_t<T> make(T v) {
+        number_t<T> n;
+        n.m_val = v;
+        return n;
     }
 
-    template<typename V>
-    static T cast(V v) { return static_cast<T>(v); }
+    number_t<T> &operator=(T v) {
+        m_val = muse::check_valid(v);
+        return *this;
+    }
+
+    inline operator T() const { return m_val; }
+
+    template <typename V>
+    static T cast(V v) {
+        return static_cast<T>(v);
+    }
 
     inline constexpr T raw() const { return m_val; }
-    inline T& raw() { return m_val; }
+
+    inline T &raw() { return m_val; }
+
     inline double to_double() const { return static_cast<double>(m_val); }
+
     inline number_t<T> operator-() const { return number_t<T>(-m_val); }
 
     inline bool is_zero() const { return muse::is_zero(m_val); }
+
     inline bool is_negative() const { return m_val < static_cast<T>(0); }
+
     inline bool is_positive() const { return m_val > static_cast<T>(0); }
 
-    inline bool operator ==(const number_t<T>& n) const { return muse::is_equal(m_val, n.m_val); }
-    inline bool operator !=(const number_t<T>& n) const { return !muse::is_equal(m_val, n.m_val); }
-    inline bool operator ==(T n) const { return muse::is_equal(m_val, n); }
-    inline bool operator !=(T n) const { return !muse::is_equal(m_val, n); }
+    inline bool operator==(const number_t<T> &n) const { return muse::is_equal(m_val, n.m_val); }
 
-    inline bool operator>(const number_t<T>& n) const { return m_val > n.m_val; }
-    inline bool operator<(const number_t<T>& n) const { return m_val < n.m_val; }
+    inline bool operator!=(const number_t<T> &n) const { return !muse::is_equal(m_val, n.m_val); }
+
+    inline bool operator==(T n) const { return muse::is_equal(m_val, n); }
+
+    inline bool operator!=(T n) const { return !muse::is_equal(m_val, n); }
+
+    inline bool operator>(const number_t<T> &n) const { return m_val > n.m_val; }
+
+    inline bool operator<(const number_t<T> &n) const { return m_val < n.m_val; }
+
     inline bool operator>(T n) const { return m_val > n; }
+
     inline bool operator<(T n) const { return m_val < n; }
 
-    inline bool operator>=(const number_t<T>& n) const { return m_val > n.m_val || muse::is_equal(m_val, n.m_val); }
-    inline bool operator<=(const number_t<T>& n) const { return m_val < n.m_val || muse::is_equal(m_val, n.m_val); }
+    inline bool operator>=(const number_t<T> &n) const { return m_val > n.m_val || muse::is_equal(m_val, n.m_val); }
+
+    inline bool operator<=(const number_t<T> &n) const { return m_val < n.m_val || muse::is_equal(m_val, n.m_val); }
+
     inline bool operator>=(T n) const { return m_val > n || muse::is_equal(m_val, n); }
+
     inline bool operator<=(T n) const { return m_val < n || muse::is_equal(m_val, n); }
 
-    inline number_t<T> operator+(const number_t<T>& n) const { return number_t<T>(m_val + n.m_val); }
-    inline number_t<T> operator-(const number_t<T>& n) const { return number_t<T>(m_val - n.m_val); }
+    inline number_t<T> operator+(const number_t<T> &n) const { return number_t<T>(m_val + n.m_val); }
+
+    inline number_t<T> operator-(const number_t<T> &n) const { return number_t<T>(m_val - n.m_val); }
+
     inline number_t<T> operator+(T n) const { return number_t<T>(m_val + n); }
+
     inline number_t<T> operator-(T n) const { return number_t<T>(m_val - n); }
 
-    inline number_t<T>& operator+=(const number_t<T>& n) { m_val += muse::check_valid(n.m_val); return *this; }
-    inline number_t<T>& operator-=(const number_t<T>& n) { m_val -= muse::check_valid(n.m_val); return *this; }
-    inline number_t<T>& operator+=(T n) { m_val += muse::check_valid(n); return *this; }
-    inline number_t<T>& operator-=(T n) { m_val -= muse::check_valid(n); return *this; }
+    inline number_t<T> &operator+=(const number_t<T> &n) {
+        m_val += muse::check_valid(n.m_val);
+        return *this;
+    }
 
-    inline number_t<T> operator/(const number_t<T>& n) const { return number_t<T>(m_val / n.m_val); }
-    inline number_t<T> operator*(const number_t<T>& n) const { return number_t<T>(m_val * n.m_val); }
+    inline number_t<T> &operator-=(const number_t<T> &n) {
+        m_val -= muse::check_valid(n.m_val);
+        return *this;
+    }
+
+    inline number_t<T> &operator+=(T n) {
+        m_val += muse::check_valid(n);
+        return *this;
+    }
+
+    inline number_t<T> &operator-=(T n) {
+        m_val -= muse::check_valid(n);
+        return *this;
+    }
+
+    inline number_t<T> operator/(const number_t<T> &n) const { return number_t<T>(m_val / n.m_val); }
+
+    inline number_t<T> operator*(const number_t<T> &n) const { return number_t<T>(m_val * n.m_val); }
+
     inline number_t<T> operator/(T n) const { return number_t<T>(m_val / n); }
+
     inline number_t<T> operator*(T n) const { return number_t<T>(m_val * n); }
 
-    inline number_t<T>& operator/=(const number_t<T>& n) { m_val /= muse::check_valid(n.m_val, T(1)); return *this; }
-    inline number_t<T>& operator*=(const number_t<T>& n) { m_val *= muse::check_valid(n.m_val); return *this; }
-    inline number_t<T>& operator/=(T n) { m_val /= muse::check_valid(n, T(1)); return *this; }
-    inline number_t<T>& operator*=(T n) { m_val *= muse::check_valid(n); return *this; }
+    inline number_t<T> &operator/=(const number_t<T> &n) {
+        m_val /= muse::check_valid(n.m_val, T(1));
+        return *this;
+    }
+
+    inline number_t<T> &operator*=(const number_t<T> &n) {
+        m_val *= muse::check_valid(n.m_val);
+        return *this;
+    }
+
+    inline number_t<T> &operator/=(T n) {
+        m_val /= muse::check_valid(n, T(1));
+        return *this;
+    }
+
+    inline number_t<T> &operator*=(T n) {
+        m_val *= muse::check_valid(n);
+        return *this;
+    }
 
 protected:
 
     T m_val = T();
 };
 
-template<typename T>
-inline number_t<T> operator*(T a, const number_t<T>& b) { return number_t<T>(a * b.raw()); }
+template <typename T>
+inline number_t<T> operator*(T a, const number_t<T> &b) {
+    return number_t<T>(a * b.raw());
+}
 
 using integer_t = number_t<int>;
 using real_t = number_t<double>;
 
-template<typename T>
-const T& min(const T& a, const T& b) { return std::min(a, b); }
-template<typename T>
-const T& min(const number_t<T>& a, const T& b) { return std::min(a.raw(), b); }
-template<typename T>
-const T& min(const T& a, const number_t<T>& b) { return std::min(a, b.raw()); }
+template <typename T>
+const T &min(const T &a, const T &b) {
+    return std::min(a, b);
+}
 
-template<typename T>
-const T& max(const T& a, const T& b) { return std::max(a, b); }
-template<typename T>
-const T& max(const number_t<T>& a, const T& b) { return std::max(a.raw(), b); }
-template<typename T>
-const T& max(const T& a, const number_t<T>& b) { return std::max(a, b.raw()); }
+template <typename T>
+const T &min(const number_t<T> &a, const T &b) {
+    return std::min(a.raw(), b);
+}
 
-template<typename T>
-inline T divide(const T& dividend, const T& divisor)
-{
+template <typename T>
+const T &min(const T &a, const number_t<T> &b) {
+    return std::min(a, b.raw());
+}
+
+template <typename T>
+const T &max(const T &a, const T &b) {
+    return std::max(a, b);
+}
+
+template <typename T>
+const T &max(const number_t<T> &a, const T &b) {
+    return std::max(a.raw(), b);
+}
+
+template <typename T>
+const T &max(const T &a, const number_t<T> &b) {
+    return std::max(a, b.raw());
+}
+
+template <typename T>
+inline T divide(const T &dividend, const T &divisor) {
     if (is_zero(divisor)) {
         assert(!is_zero(divisor));
         return T();
@@ -163,36 +232,33 @@ inline T divide(const T& dividend, const T& divisor)
     return dividend / divisor;
 }
 
-#if (defined (_MSCVER) || defined (_MSC_VER))
+#if (defined(_MSCVER) || defined(_MSC_VER))
 #pragma warning(push)
-#pragma warning(disable: 4723) // potential divide by 0
+#pragma warning(disable : 4723) // potential divide by 0
 #endif
-template<typename T>
-inline T divide(const T& dividend, const T& divisor, const T& def)
-{
+template <typename T>
+inline T divide(const T &dividend, const T &divisor, const T &def) {
     if (is_zero(divisor)) {
         return def;
     }
     return dividend / divisor;
 }
 
-#if (defined (_MSCVER) || defined (_MSC_VER))
+#if (defined(_MSCVER) || defined(_MSC_VER))
 #pragma warning(pop)
 #endif
 
-template<typename T>
-inline number_t<T> divide(const number_t<T>& dividend, const number_t<T>& divisor, const number_t<T>& def)
-{
+template <typename T>
+inline number_t<T> divide(const number_t<T> &dividend, const number_t<T> &divisor, const number_t<T> &def) {
     if (divisor.is_zero()) {
         return def;
     }
     return dividend / divisor;
 }
-}
+} // namespace muse
 
-template<typename T>
-inline muse::logger::Stream& operator<<(muse::logger::Stream& s, const muse::number_t<T>& n)
-{
+template <typename T>
+inline muse::logger::Stream &operator<<(muse::logger::Stream &s, const muse::number_t<T> &n) {
     s << n.raw();
     return s;
 }

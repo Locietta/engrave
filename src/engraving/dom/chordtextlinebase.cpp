@@ -37,13 +37,9 @@ namespace mu::engraving {
 //   ChordTextLineBase
 //---------------------------------------------------------
 
-ChordTextLineBase::ChordTextLineBase(const ElementType& type, EngravingObject* parent, ElementFlags f)
-    : TextLineBase(type, parent, f)
-{
-}
+ChordTextLineBase::ChordTextLineBase(const ElementType &type, EngravingObject *parent, ElementFlags f) : TextLineBase(type, parent, f) {}
 
-void ChordTextLineBase::doComputeEndElement()
-{
+void ChordTextLineBase::doComputeEndElement() {
     setEndElement(score()->findChordRestEndingBeforeTickInStaff(tick2(), track2staff(track2())));
 }
-}
+} // namespace mu::engraving

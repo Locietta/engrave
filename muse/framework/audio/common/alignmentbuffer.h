@@ -28,29 +28,17 @@ namespace muse::audio {
 //! NOTE This is a ring buffer, not thread-safe.
 //! Designed to align processed audio blocks
 //! For example, we expect block 512, but the driver requests 470
-class AlignmentBuffer
-{
+class AlignmentBuffer {
 public:
-    AlignmentBuffer(size_t capacity)
-        : m_buf(capacity) {}
+    AlignmentBuffer(size_t capacity) : m_buf(capacity) {}
 
-    inline size_t capacity() const
-    {
-        return m_buf.size();
-    }
+    inline size_t capacity() const { return m_buf.size(); }
 
-    inline size_t availableRead() const
-    {
-        return m_availableRead;
-    }
+    inline size_t availableRead() const { return m_availableRead; }
 
-    inline size_t availableWrite() const
-    {
-        return m_buf.size() - m_availableRead;
-    }
+    inline size_t availableWrite() const { return m_buf.size() - m_availableRead; }
 
-    bool write(const float* data, size_t size)
-    {
+    bool write(const float *data, size_t size) {
         assert(size <= availableWrite());
         if (!(size <= availableWrite())) {
             return false;
@@ -70,8 +58,7 @@ public:
         return true;
     }
 
-    bool read(float* dest, size_t size)
-    {
+    bool read(float *dest, size_t size) {
         if (size == 0) {
             return true;
         }
@@ -101,4 +88,4 @@ private:
     size_t m_head = 0;
     size_t m_tail = 0;
 };
-}
+} // namespace muse::audio

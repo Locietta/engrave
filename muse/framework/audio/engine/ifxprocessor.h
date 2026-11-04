@@ -27,17 +27,16 @@
 #include "audio/common/audiotypes.h"
 
 namespace muse::audio {
-class IFxProcessor
-{
+class IFxProcessor {
 public:
     virtual ~IFxProcessor() = default;
 
     virtual AudioFxType type() const = 0;
     virtual std::string name() const = 0;
 
-    virtual const AudioFxParams& params() const = 0;
+    virtual const AudioFxParams &params() const = 0;
 
-    virtual void setOutputSpec(const OutputSpec& spec) = 0;
+    virtual void setOutputSpec(const OutputSpec &spec) = 0;
 
     virtual bool active() const = 0;
     virtual void setActive(bool active) = 0;
@@ -46,8 +45,8 @@ public:
 
     virtual bool shouldProcessDuringSilence() const = 0;
 
-    virtual void process(float* buffer, samples_t sampleCount, samples_t playbackPositionSamples = 0) = 0;
+    virtual void process(float *buffer, samples_t sampleCount, samples_t playbackPositionSamples = 0) = 0;
 };
 
 using IFxProcessorPtr = std::shared_ptr<IFxProcessor>;
-}
+} // namespace muse::audio

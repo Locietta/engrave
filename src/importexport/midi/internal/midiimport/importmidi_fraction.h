@@ -27,46 +27,55 @@
 #include "engraving/types/fraction.h"
 
 namespace mu::iex::midi {
-class ReducedFraction
-{
+class ReducedFraction {
 public:
     ReducedFraction();
     ReducedFraction(int z, int n);
-    explicit ReducedFraction(const engraving::Fraction&);
+    explicit ReducedFraction(const engraving::Fraction &);
 
     engraving::Fraction fraction() const { return engraving::Fraction(numerator_, denominator_); }
+
     int numerator() const { return numerator_; }
+
     int denominator() const { return denominator_; }
 
     static ReducedFraction fromTicks(int ticks);
     ReducedFraction reduced() const;
+
     ReducedFraction absValue() const { return ReducedFraction(std::abs(numerator_), std::abs(denominator_)); }
+
     double toDouble() const { return numerator_ * 1.0 / denominator_; }
+
     int ticks() const;
     void reduce();
-    bool isIdenticalTo(const ReducedFraction& f) const
-    { return f.numerator_ == numerator_ && f.denominator_ == denominator_; }
 
-    ReducedFraction& operator+=(const ReducedFraction&);
-    ReducedFraction& operator-=(const ReducedFraction&);
-    ReducedFraction& operator*=(const ReducedFraction&);
-    ReducedFraction& operator*=(int);
-    ReducedFraction& operator/=(const ReducedFraction&);
-    ReducedFraction& operator/=(int);
+    bool isIdenticalTo(const ReducedFraction &f) const { return f.numerator_ == numerator_ && f.denominator_ == denominator_; }
 
-    ReducedFraction operator+(const ReducedFraction& v) const { return ReducedFraction(*this) += v; }
-    ReducedFraction operator-(const ReducedFraction& v) const { return ReducedFraction(*this) -= v; }
-    ReducedFraction operator*(const ReducedFraction& v) const { return ReducedFraction(*this) *= v; }
-    ReducedFraction operator*(int v)                    const { return ReducedFraction(*this) *= v; }
-    ReducedFraction operator/(const ReducedFraction& v) const { return ReducedFraction(*this) /= v; }
-    ReducedFraction operator/(int v)                    const { return ReducedFraction(*this) /= v; }
+    ReducedFraction &operator+=(const ReducedFraction &);
+    ReducedFraction &operator-=(const ReducedFraction &);
+    ReducedFraction &operator*=(const ReducedFraction &);
+    ReducedFraction &operator*=(int);
+    ReducedFraction &operator/=(const ReducedFraction &);
+    ReducedFraction &operator/=(int);
 
-    bool operator<(const ReducedFraction&) const;
-    bool operator<=(const ReducedFraction&) const;
-    bool operator>=(const ReducedFraction&) const;
-    bool operator>(const ReducedFraction&) const;
-    bool operator==(const ReducedFraction&) const;
-    bool operator!=(const ReducedFraction&) const;
+    ReducedFraction operator+(const ReducedFraction &v) const { return ReducedFraction(*this) += v; }
+
+    ReducedFraction operator-(const ReducedFraction &v) const { return ReducedFraction(*this) -= v; }
+
+    ReducedFraction operator*(const ReducedFraction &v) const { return ReducedFraction(*this) *= v; }
+
+    ReducedFraction operator*(int v) const { return ReducedFraction(*this) *= v; }
+
+    ReducedFraction operator/(const ReducedFraction &v) const { return ReducedFraction(*this) /= v; }
+
+    ReducedFraction operator/(int v) const { return ReducedFraction(*this) /= v; }
+
+    bool operator<(const ReducedFraction &) const;
+    bool operator<=(const ReducedFraction &) const;
+    bool operator>=(const ReducedFraction &) const;
+    bool operator>(const ReducedFraction &) const;
+    bool operator==(const ReducedFraction &) const;
+    bool operator!=(const ReducedFraction &) const;
 
 private:
     void preventOverflow();

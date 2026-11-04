@@ -25,10 +25,10 @@ std::span<const std::string_view> enum_tokens(P_TYPE type) noexcept;
 
 // Mirrors TRead::readPropertyValue and XmlWriter::tagProperty: the switch is over
 // the property value type, not over the type the value happens to be stored as.
-Value to_value(P_TYPE type, const PropertyValue& value);
+Value to_value(P_TYPE type, const PropertyValue &value);
 
 // The inverse.  InvalidArgument when value does not fit the type; a bad enum
 // token is InvalidArgument too, never a silent default.
-Result<PropertyValue> from_value(P_TYPE type, const Value& value);
+Result<PropertyValue> from_value(P_TYPE type, const Value &value);
 
 } // namespace engrave::api

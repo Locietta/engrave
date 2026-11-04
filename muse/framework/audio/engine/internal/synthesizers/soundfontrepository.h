@@ -27,17 +27,16 @@
 #include "audio/engine/isoundfontrepository.h"
 
 namespace muse::audio::synth {
-class SoundFontRepository : public ISoundFontRepository
-{
+class SoundFontRepository : public ISoundFontRepository {
 public:
-    void loadSoundFonts(const std::vector<SoundFontUri>& uris) override;
-    void addSoundFont(const SoundFontUri& uri) override;
-    void addSoundFontData(const SoundFontUri& uri, const ByteArray& data) override;
+    void loadSoundFonts(const std::vector<SoundFontUri> &uris) override;
+    void addSoundFont(const SoundFontUri &uri) override;
+    void addSoundFontData(const SoundFontUri &uri, const ByteArray &data) override;
 
-    bool isSoundFontLoaded(const std::string& name) const override;
+    bool isSoundFontLoaded(const std::string &name) const override;
     bool isLoadingSoundFonts() const override;
 
-    const SoundFontsMap& soundFonts() const override;
+    const SoundFontsMap &soundFonts() const override;
 
     // Called synchronously after the SoundFonts changed, where upstream sent
     // soundFontsChanged; the audio services refresh the synth resolvers here.
@@ -46,11 +45,11 @@ public:
 private:
     void notifySoundFontsChanged();
 
-    void doAddSoundFont(const SoundFontUri& uri, const SoundFontsMap* cache = nullptr, std::function<void()> onFinished = nullptr);
+    void doAddSoundFont(const SoundFontUri &uri, const SoundFontsMap *cache = nullptr, std::function<void()> onFinished = nullptr);
 
     SoundFontsMap m_soundFonts;
 
     size_t m_loadingSoundFontCount = 0;
     std::function<void()> m_onSoundFontsChanged;
 };
-}
+} // namespace muse::audio::synth

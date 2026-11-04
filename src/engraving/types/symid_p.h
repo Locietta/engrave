@@ -2969,12 +2969,12 @@ enum class SymId {
     windWeakAirPressure,
     // SMuFL standard symbol IDs }}}
 
-//    EXTENSIONS
-//    SMuFL stylistic alternates which we need to access directly
+    //    EXTENSIONS
+    //    SMuFL stylistic alternates which we need to access directly
 
-    noteheadDoubleWholeAlt,               // double whole with double side bars
-    fourStringTabClefSerif,               // TAB clef in script style
-    sixStringTabClefSerif,                // TAB clef in script style
+    noteheadDoubleWholeAlt, // double whole with double side bars
+    fourStringTabClefSerif, // TAB clef in script style
+    sixStringTabClefSerif,  // TAB clef in script style
     cClefFrench,
     cClefFrench20C,
     fClefFrench,
@@ -3083,18 +3083,18 @@ enum class SymId {
     timeSigCut3Large,
     timeSigCut3Narrow,
 
-//    MuseScore-local symbols, precomposed symbols to mimic some Emmentaler glyphs
+    //    MuseScore-local symbols, precomposed symbols to mimic some Emmentaler glyphs
 
     ornamentPrallMordent,
     ornamentUpPrall,
     ornamentUpMordent,
     ornamentPrallDown,
-//      ornamentDownPrall,
+    //      ornamentDownPrall,
     ornamentDownMordent,
     ornamentPrallUp,
     ornamentLinePrall,
 
-//    additional symbols
+    //    additional symbols
 
     accidentalDoubleFlatParens,
     accidentalFlatParens,
@@ -3108,7 +3108,7 @@ enum class SymId {
     noteLongaSquareDown,
     space,
 
-//    END OF TABLE
+    //    END OF TABLE
 
     lastSym
 };

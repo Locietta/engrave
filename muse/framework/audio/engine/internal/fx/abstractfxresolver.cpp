@@ -27,22 +27,20 @@
 using namespace muse::audio;
 using namespace muse::audio::fx;
 
-std::vector<IFxProcessorPtr> AbstractFxResolver::resolveFxList(const TrackId trackId, const AudioFxChain& fxChain,
-                                                               const OutputSpec& outputSpec)
-{
+std::vector<IFxProcessorPtr> AbstractFxResolver::resolveFxList(const TrackId trackId, const AudioFxChain &fxChain,
+                                                               const OutputSpec &outputSpec) {
     if (fxChain.empty()) {
         LOGE() << "invalid fx chain for trackId: " << trackId;
         return {};
     }
 
-    FxMap& fxMap = m_tracksFxMap[trackId];
+    FxMap &fxMap = m_tracksFxMap[trackId];
     updateTrackFxMap(fxMap, trackId, fxChain, outputSpec);
 
     return muse::values(fxMap);
 }
 
-std::vector<IFxProcessorPtr> AbstractFxResolver::resolveMasterFxList(const AudioFxChain& fxChain, const OutputSpec& outputSpec)
-{
+std::vector<IFxProcessorPtr> AbstractFxResolver::resolveMasterFxList(const AudioFxChain &fxChain, const OutputSpec &outputSpec) {
     if (fxChain.empty()) {
         LOGE() << "invalid master fx params";
         return {};
@@ -53,28 +51,24 @@ std::vector<IFxProcessorPtr> AbstractFxResolver::resolveMasterFxList(const Audio
     return muse::values(m_masterFxMap);
 }
 
-void AbstractFxResolver::refresh()
-{
-}
+void AbstractFxResolver::refresh() {}
 
-void AbstractFxResolver::clearAllFx()
-{
+void AbstractFxResolver::clearAllFx() {
     m_tracksFxMap.clear();
     m_masterFxMap.clear();
 }
 
-void AbstractFxResolver::updateTrackFxMap(FxMap& fxMap, const audio::TrackId trackId, const AudioFxChain& newFxChain,
-                                          const OutputSpec& outputSpec)
-{
+void AbstractFxResolver::updateTrackFxMap(FxMap &fxMap, const audio::TrackId trackId, const AudioFxChain &newFxChain,
+                                          const OutputSpec &outputSpec) {
     AudioFxChain currentFxChain;
-    for (const auto& pair : fxMap) {
+    for (const auto &pair : fxMap) {
         currentFxChain.emplace(pair.first, pair.second->params());
     }
 
     audio::AudioFxChain fxToRemove;
     fxChainToRemove(currentFxChain, newFxChain, fxToRemove);
 
-    for (const auto& pair : fxToRemove) {
+    for (const auto &pair : fxToRemove) {
         removeTrackFx(trackId, pair.second.resourceMeta.id, pair.second.chainOrder);
 
         currentFxChain.erase(pair.first);
@@ -84,7 +78,7 @@ void AbstractFxResolver::updateTrackFxMap(FxMap& fxMap, const audio::TrackId tra
     audio::AudioFxChain fxToCreate;
     fxChainToCreate(currentFxChain, newFxChain, fxToCreate);
 
-    for (const auto& pair : fxToCreate) {
+    for (const auto &pair : fxToCreate) {
         IFxProcessorPtr fxPtr = createTrackFx(trackId, pair.second, outputSpec);
         if (fxPtr) {
             fxMap.emplace(pair.first, std::move(fxPtr));
@@ -92,17 +86,16 @@ void AbstractFxResolver::updateTrackFxMap(FxMap& fxMap, const audio::TrackId tra
     }
 }
 
-void AbstractFxResolver::updateMasterFxMap(const AudioFxChain& newFxChain, const OutputSpec& outputSpec)
-{
+void AbstractFxResolver::updateMasterFxMap(const AudioFxChain &newFxChain, const OutputSpec &outputSpec) {
     AudioFxChain currentFxChain;
-    for (const auto& pair : m_masterFxMap) {
+    for (const auto &pair : m_masterFxMap) {
         currentFxChain.emplace(pair.first, pair.second->params());
     }
 
     audio::AudioFxChain fxToRemove;
     fxChainToRemove(currentFxChain, newFxChain, fxToRemove);
 
-    for (const auto& pair : fxToRemove) {
+    for (const auto &pair : fxToRemove) {
         removeMasterFx(pair.second.resourceMeta.id, pair.second.chainOrder);
 
         currentFxChain.erase(pair.first);
@@ -112,7 +105,7 @@ void AbstractFxResolver::updateMasterFxMap(const AudioFxChain& newFxChain, const
     audio::AudioFxChain fxToCreate;
     fxChainToCreate(currentFxChain, newFxChain, fxToCreate);
 
-    for (const auto& pair : fxToCreate) {
+    for (const auto &pair : fxToCreate) {
         IFxProcessorPtr fx = createMasterFx(pair.second, outputSpec);
         if (fx) {
             m_masterFxMap.emplace(pair.first, fx);
@@ -120,43 +113,33 @@ void AbstractFxResolver::updateMasterFxMap(const AudioFxChain& newFxChain, const
     }
 }
 
-void AbstractFxResolver::removeMasterFx(const AudioResourceId&, AudioFxChainOrder)
-{
-}
+void AbstractFxResolver::removeMasterFx(const AudioResourceId &, AudioFxChainOrder) {}
 
-void AbstractFxResolver::removeTrackFx(const audio::TrackId, const AudioResourceId&, AudioFxChainOrder)
-{
-}
+void AbstractFxResolver::removeTrackFx(const audio::TrackId, const AudioResourceId &, AudioFxChainOrder) {}
 
-void AbstractFxResolver::fxChainToRemove(const AudioFxChain& currentFxChain,
-                                         const AudioFxChain& newFxChain,
-                                         AudioFxChain& resultChain)
-{
+void AbstractFxResolver::fxChainToRemove(const AudioFxChain &currentFxChain, const AudioFxChain &newFxChain, AudioFxChain &resultChain) {
     for (auto it = currentFxChain.cbegin(); it != currentFxChain.cend(); ++it) {
         auto newIt = newFxChain.find(it->first);
 
         if (newIt == newFxChain.cend()) {
-            resultChain.insert({ it->first, it->second });
+            resultChain.insert({it->first, it->second});
             continue;
         }
 
         if (it->second.resourceMeta != newIt->second.resourceMeta) {
-            resultChain.insert({ it->first, it->second });
+            resultChain.insert({it->first, it->second});
         }
     }
 }
 
-void AbstractFxResolver::fxChainToCreate(const AudioFxChain& currentFxChain,
-                                         const AudioFxChain& newFxChain,
-                                         AudioFxChain& resultChain)
-{
+void AbstractFxResolver::fxChainToCreate(const AudioFxChain &currentFxChain, const AudioFxChain &newFxChain, AudioFxChain &resultChain) {
     for (auto it = newFxChain.cbegin(); it != newFxChain.cend(); ++it) {
         if (currentFxChain.find(it->first) != currentFxChain.cend()) {
             continue;
         }
 
         if (it->second.isValid()) {
-            resultChain.insert({ it->first, it->second });
+            resultChain.insert({it->first, it->second});
         }
     }
 }
