@@ -6004,6 +6004,26 @@ static String singleDynamicSmufl(const String& text)
     return canonical == name ? canonical : String();
 }
 
+static void writeDynamicOtherText(XmlWriter& xml, const String& value)
+{
+    if (value.empty()) {
+        return;
+    }
+    const bool whitespace = value.trimmed().empty();
+    if (!whitespace && !value.contains(u'\r')) {
+        xml.tag("other-dynamics", value);
+        return;
+    }
+    // References keep whitespace-only nodes visible to the importer and
+    // prevent XML end-of-line normalization from changing carriage returns.
+    String raw;
+    for (size_t i = 0; i < value.size(); ++i) {
+        const char16_t c = value.at(i).unicode();
+        raw += whitespace || c == u'\r' ? String(u"&#%1;").arg(static_cast<int>(c)) : String::toXmlEscaped(c);
+    }
+    xml.writeXml(u"other-dynamics", raw);
+}
+
 // Preserve named SMuFL symbols in grouped dynamics, including plain text around
 // them. Formatted or non-standard symbols still use the existing fallback.
 static bool writeGroupedDynamicSmufl(XmlWriter& xml, const String& text)
@@ -6037,7 +6057,9 @@ static bool writeGroupedDynamicSmufl(XmlWriter& xml, const String& text)
             }
             // Sentinels keep whitespace-only fragments from being discarded by
             // the generic XML reader while entities are decoded.
-            XmlStreamReader reader((String(u"<text>X") + literal + u"X</text>").toUtf8());
+            String encodedLiteral = literal;
+            encodedLiteral.replace(u"\r", u"&#13;");
+            XmlStreamReader reader((String(u"<text>X") + encodedLiteral + u"X</text>").toUtf8());
             String decoded;
             while (!reader.atEnd()) {
                 reader.readNext();
@@ -6055,30 +6077,48 @@ static bool writeGroupedDynamicSmufl(XmlWriter& xml, const String& text)
     if (!hasNamedSymbol) {
         return false;
     }
-    for (const auto& [value, symbol] : parts) {
-        if (symbol) {
-            const auto letter = letterSymbols.find(value);
-            if (letter == letterSymbols.end()) {
-                xml.tagRaw(u"other-dynamics smufl=\"" + value + u"\"");
-            } else if (letter->second == u"p" || letter->second == u"f" || letter->second == u"n") {
-                xml.tagRaw(letter->second);
-            } else {
-                xml.tag("other-dynamics", letter->second);
+    size_t i = 0;
+    while (i < parts.size()) {
+        const auto& [value, symbol] = parts[i];
+        if (symbol && !muse::contains(letterSymbols, value)) {
+            xml.tagRaw(u"other-dynamics smufl=\"" + value + u"\"");
+            ++i;
+            continue;
+        }
+        size_t end = i;
+        bool hasProse = false;
+        while (end < parts.size()) {
+            const auto& [part, isSymbol] = parts[end];
+            if (isSymbol && !muse::contains(letterSymbols, part)) {
+                break;
             }
-        } else if (!value.empty()) {
-            if (value.trimmed().empty()) {
-                // The importer's XML reader discards whitespace-only text
-                // nodes. Character references keep these separators visible
-                // to that reader without adding characters to the score.
-                String references;
-                for (size_t i = 0; i < value.size(); ++i) {
-                    references += String(u"&#%1;").arg(static_cast<int>(value.at(i).unicode()));
+            hasProse = hasProse || (!isSymbol && !part.trimmed().empty());
+            ++end;
+        }
+        if (hasProse) {
+            // Keep prose and its dynamic letters together, so reimport uses
+            // the same classification instead of joining adjacent symbols.
+            String combined;
+            for (size_t j = i; j < end; ++j) {
+                combined += parts[j].second ? letterSymbols.at(parts[j].first) : parts[j].first;
+            }
+            writeDynamicOtherText(xml, combined);
+        } else {
+            for (size_t j = i; j < end; ++j) {
+                const auto& [part, isSymbol] = parts[j];
+                if (!isSymbol) {
+                    writeDynamicOtherText(xml, part);
+                    continue;
                 }
-                xml.writeXml(u"other-dynamics", references);
-            } else {
-                xml.tag("other-dynamics", value);
+                const String& letter = letterSymbols.at(part);
+                if (letter == u"p" || letter == u"f" || letter == u"n") {
+                    xml.tagRaw(letter);
+                } else {
+                    xml.tag("other-dynamics", letter);
+                }
             }
         }
+        i = end;
     }
     return true;
 }
@@ -6109,6 +6149,9 @@ void ExportMusicXml::dynamic(Dynamic const* const dyn, staff_idx_t staff)
 
     if (muse::contains(validMusicXmlDynamics, dynTypeName) && !hasCustomText) {
         m_xml.tagRaw(dynTypeName);
+    } else if (!hasCustomText && (dynTypeName == u"m" || dynTypeName == u"r"
+                                  || dynTypeName == u"s" || dynTypeName == u"z")) {
+        m_xml.tag("other-dynamics", dynTypeName);
     } else if (const String smufl = singleDynamicSmufl(dyn->xmlText()); !smufl.empty()) {
         m_xml.tagRaw(u"other-dynamics smufl=\"" + smufl + u"\"");
     } else if (writeGroupedDynamicSmufl(m_xml, dyn->xmlText())) {

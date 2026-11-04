@@ -2042,6 +2042,7 @@ TEST(Read, MusicXmlDynamicsContainersAndLiteralSafety) {
         {"<other-dynamics>&lt;subito&gt; f &lt;dolce&gt;</other-dynamics>", "&lt;subito&gt; <sym>dynamicForte</sym> &lt;dolce&gt;", DynamicType::F},
         {"<other-dynamics>dolce &lt; f</other-dynamics>", "dolce &lt; <sym>dynamicForte</sym>", DynamicType::F},
         {"<other-dynamics>&lt;b&gt;&lt;b&gt;x&lt;/b&gt; f &lt;/b&gt; p</other-dynamics>", "&lt;b&gt;&lt;b&gt;x&lt;/b&gt; f &lt;/b&gt; <sym>dynamicPiano</sym>", DynamicType::P},
+        {"<other-dynamics>~LITERAL_0_0~ &lt;x/&gt; ~LITERAL_1_0~ &lt;y/&gt; f</other-dynamics>", "~LITERAL_0_0~ &lt;x/&gt; ~LITERAL_1_0~ &lt;y/&gt; <sym>dynamicForte</sym>", DynamicType::F},
         {"<sf/><mp/>", "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicMezzo</sym><sym>dynamicPiano</sym>", DynamicType::OTHER},
         {"<sfz/>", "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicZ</sym>", DynamicType::SFZ},
         {"<sf/><p/>", "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicPiano</sym>", DynamicType::SFP},
@@ -2092,6 +2093,21 @@ TEST(Read, MusicXmlDynamicsContainersAndLiteralSafety) {
             }
         }
     }
+}
+
+TEST(Read, MusicXmlManyLiteralSpansPreserveText) {
+    std::string literal;
+    for (int i = 0; i < 2000; ++i) {
+        literal += "&lt;b/&gt; x ";
+    }
+    const auto direction = "<direction><direction-type><dynamics><other-dynamics>" + literal
+                           + "f</other-dynamics></dynamics></direction-type></direction>";
+    auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
+    ASSERT_TRUE(opened);
+    const auto dynamics = imported_dynamics(**opened);
+    ASSERT_EQ(dynamics.size(), 1u);
+    EXPECT_EQ(dynamics.front()->dynamicType(), mu::engraving::DynamicType::F);
+    EXPECT_EQ(dynamics.front()->xmlText().toStdString(), literal + "<sym>dynamicForte</sym>");
 }
 
 TEST(Read, MusicXmlDynamicsSeparateContainersKeepStyleAndTiming) {
@@ -2317,8 +2333,11 @@ TEST(Read, MusicXmlGroupedSmuflDynamicsExportReimport) {
     for (const std::string children : {
              "<f/><other-dynamics smufl=\"dynamicSforzato\"/><p/>",
              "<other-dynamics>sempre </other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/><p/>",
+             "<other-dynamics>sempre f</other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>",
              "<other-dynamics>f </other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>",
              "<other-dynamics>f &#x9;</other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>",
+             "<other-dynamics>f &#13;</other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>",
+             "<other-dynamics>sempre &#13; f</other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>",
              "<other-dynamics>&lt;sym&gt;f&lt;/sym&gt; &amp; </other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>"}) {
         SCOPED_TRACE(children);
         const auto direction = std::format("<direction><direction-type><dynamics>{}</dynamics></direction-type></direction>", children);
@@ -2344,6 +2363,27 @@ TEST(Read, MusicXmlGroupedSmuflDynamicsExportReimport) {
         ASSERT_EQ(dynamics.size(), 1u);
         EXPECT_EQ(dynamics.front()->xmlText(), text);
         EXPECT_EQ(dynamics.front()->dynamicType(), type);
+    }
+}
+
+TEST(Read, MusicXmlSingleOtherDynamicLettersExportText) {
+    for (const std::string letter : {"m", "r", "s", "z"}) {
+        const auto direction = std::format("<direction><direction-type><dynamics><other-dynamics>{}</other-dynamics></dynamics></direction-type></direction>", letter);
+        auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
+        ASSERT_TRUE(opened);
+        const auto original = imported_dynamics(**opened);
+        ASSERT_EQ(original.size(), 1u);
+        const auto type = original.front()->dynamicType();
+        const auto saved = (*opened)->export_score({.format = engrave::Format::MusicXml});
+        ASSERT_TRUE(saved);
+        const std::string xml(reinterpret_cast<const char*>(saved->data()), saved->size());
+        EXPECT_NE(xml.find(std::format("<other-dynamics>{}</other-dynamics>", letter)), std::string::npos);
+        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MusicXml});
+        ASSERT_TRUE(reopened);
+        const auto dynamics = imported_dynamics(**reopened);
+        ASSERT_EQ(dynamics.size(), 1u);
+        EXPECT_EQ(dynamics.front()->dynamicType(), type);
+        EXPECT_EQ(dynamics.front()->xmlText(), original.front()->xmlText());
     }
 }
 
