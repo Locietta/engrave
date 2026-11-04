@@ -2036,6 +2036,9 @@ TEST(Read, MusicXmlDynamicsContainersAndLiteralSafety) {
         {"<other-dynamics> f </other-dynamics>", " <sym>dynamicForte</sym> ", DynamicType::F},
         {"<other-dynamics>s<![CDATA[f]]>z</other-dynamics>", "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicZ</sym>", DynamicType::SFZ},
         {"<other-dynamics>sempre f</other-dynamics>", "sempre <sym>dynamicForte</sym>", DynamicType::F},
+        {"<other-dynamics>sempre f &lt;subito&gt;</other-dynamics>", "sempre <sym>dynamicForte</sym> &lt;subito&gt;", DynamicType::F},
+        {"<other-dynamics>&lt;subito&gt; f</other-dynamics>", "&lt;subito&gt; <sym>dynamicForte</sym>", DynamicType::F},
+        {"<other-dynamics>p&lt;sym&gt;f&lt;/sym&gt;</other-dynamics>", "<sym>dynamicPiano</sym>&lt;sym&gt;f&lt;/sym&gt;", DynamicType::P},
         {"<sf/><mp/>", "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicMezzo</sym><sym>dynamicPiano</sym>", DynamicType::OTHER},
         {"<sfz/>", "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicZ</sym>", DynamicType::SFZ},
         {"<sf/><p/>", "<sym>dynamicSforzando</sym><sym>dynamicForte</sym><sym>dynamicPiano</sym>", DynamicType::SFP},
@@ -2106,7 +2109,7 @@ TEST(Read, MusicXmlDynamicsSeparateContainersKeepStyleAndTiming) {
             for (const auto* dynamic : dynamics) {
                 types.insert(dynamic->dynamicType());
                 const bool piano = dynamic->dynamicType() == DynamicType::P;
-                EXPECT_EQ(dynamic->visible(), !piano);
+                EXPECT_TRUE(dynamic->visible());
                 EXPECT_EQ(dynamic->color(), muse::Color::fromString(piano ? "#FF0000" : "#0000FF"));
                 EXPECT_EQ(dynamic->placement(), notation && piano ? PlacementV::ABOVE : PlacementV::BELOW);
                 EXPECT_EQ(dynamic->frameType(), piano ? FrameType::CIRCLE : FrameType::RECTANGLE);
@@ -2307,6 +2310,32 @@ TEST(Read, MusicXmlSingleSmuflDynamicsExportReimport) {
     }
 }
 
+TEST(Read, MusicXmlGroupedSmuflDynamicsExportReimport) {
+    for (const std::string children : {
+             "<f/><other-dynamics smufl=\"dynamicSforzato\"/><p/>",
+             "<other-dynamics>sempre </other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/><p/>",
+             "<other-dynamics>&lt;sym&gt;f&lt;/sym&gt; &amp; </other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>"}) {
+        SCOPED_TRACE(children);
+        const auto direction = std::format("<direction><direction-type><dynamics>{}</dynamics></direction-type></direction>", children);
+        auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
+        ASSERT_TRUE(opened);
+        const auto original = imported_dynamics(**opened);
+        ASSERT_EQ(original.size(), 1u);
+        const auto text = original.front()->xmlText();
+        const auto type = original.front()->dynamicType();
+        const auto saved = (*opened)->export_score({.format = engrave::Format::MusicXml});
+        ASSERT_TRUE(saved);
+        const std::string xml(reinterpret_cast<const char*>(saved->data()), saved->size());
+        EXPECT_NE(xml.find("smufl=\"dynamicSforzato\""), std::string::npos);
+        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MusicXml});
+        ASSERT_TRUE(reopened);
+        const auto dynamics = imported_dynamics(**reopened);
+        ASSERT_EQ(dynamics.size(), 1u);
+        EXPECT_EQ(dynamics.front()->xmlText(), text);
+        EXPECT_EQ(dynamics.front()->dynamicType(), type);
+    }
+}
+
 TEST(Read, MusicXmlEngineLocalSymbolIsNotExportedAsSmufl) {
     const auto direction = R"(<direction><direction-type><dynamics><f/></dynamics></direction-type></direction>)";
     auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
@@ -2321,14 +2350,14 @@ TEST(Read, MusicXmlEngineLocalSymbolIsNotExportedAsSmufl) {
     EXPECT_EQ(xml.find("smufl=\"ornamentPrallMordent\""), std::string::npos);
 }
 
-TEST(Read, MusicXmlNotationDynamicsHonorParentVisibility) {
+TEST(Read, MusicXmlNotationDynamicsKeepExistingVisibility) {
     auto xml = dynamics_musicxml("", "<dynamics><f/><p/></dynamics>");
     xml.replace(xml.find("<notations>"), std::string("<notations>").size(), "<notations print-object=\"no\">");
     auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::MusicXml});
     ASSERT_TRUE(opened);
     const auto dynamics = imported_dynamics(**opened);
     ASSERT_EQ(dynamics.size(), 1u);
-    EXPECT_FALSE(dynamics.front()->visible());
+    EXPECT_TRUE(dynamics.front()->visible());
     EXPECT_EQ(dynamics.front()->dynamicType(), mu::engraving::DynamicType::FP);
 }
 

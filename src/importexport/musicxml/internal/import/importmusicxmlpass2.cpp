@@ -1020,13 +1020,12 @@ static String dynamicLettersToXml(const String& text)
 }
 
 // Keep literal text distinct from markup generated from the symbol table.
-static MusicXmlDynamic parseDynamicsContainer(XmlStreamReader& e, bool visible, MusicXmlLogger* logger)
+static MusicXmlDynamic parseDynamicsContainer(XmlStreamReader& e, MusicXmlLogger* logger)
 {
     MusicXmlDynamic result;
     result.color = Color::fromString(e.attribute("color"));
     result.placement = e.attribute("placement");
     result.enclosure = e.attribute("enclosure");
-    result.visible = visible && e.asciiAttribute("print-object") != "no";
     while (e.readNextStartElement()) {
         if (e.name() == "other-dynamics") {
             const String smufl = e.attribute("smufl");
@@ -1047,11 +1046,20 @@ static MusicXmlDynamic parseDynamicsContainer(XmlStreamReader& e, bool visible, 
                 if (smufl.empty() && !symbols.empty()) {
                     result.text += symbols;
                 } else {
-                    const String literal = TextBase::plainToXmlText(value);
-                    if (value.contains(u'<') || value.contains(u'>')) {
+                    const size_t begin = value.indexOf(u'<');
+                    if (begin == muse::nidx) {
+                        result.text += TextBase::plainToXmlText(value);
+                    } else {
+                        size_t end = value.lastIndexOf(u'>');
+                        if (end == muse::nidx || end < begin) {
+                            end = value.size() - 1;
+                        }
+                        result.text += TextBase::plainToXmlText(value.left(begin));
+                        const String literal = TextBase::plainToXmlText(value.mid(begin, end - begin + 1));
                         result.protectedLiteralRanges.emplace_back(result.text.size(), literal.size());
+                        result.text += literal;
+                        result.text += TextBase::plainToXmlText(value.mid(end + 1));
                     }
-                    result.text += literal;
                 }
             }
         } else {
@@ -1080,7 +1088,7 @@ static Dynamic* createImportedDynamic(Score* score, const MusicXmlDynamic& entry
         size_t nonce = 0;
         String marker;
         do {
-            marker = String(u"__LITERAL_%1_%2__").arg(i).arg(nonce++);
+            marker = String(u"~LITERAL_%1_%2~").arg(i).arg(nonce++);
         } while (entry.text.contains(marker));
         classificationText += marker;
         protectedLiterals.emplace_back(marker, entry.text.mid(start, length));
@@ -1108,7 +1116,6 @@ static Dynamic* createImportedDynamic(Score* score, const MusicXmlDynamic& entry
         dynamic->setPropertyFlags(Pid::FRAME_TYPE, PropertyFlags::UNSTYLED);
         dynamic->setPropertyFlags(Pid::FRAME_ROUND, PropertyFlags::UNSTYLED);
     }
-    dynamic->setVisible(entry.visible);
     return dynamic;
 }
 
@@ -3900,6 +3907,8 @@ void MusicXmlParserDirection::direction(const String& partId,
     // do dynamics
     for (auto it = m_dynamicsList.begin(); it != m_dynamicsList.end(); ++it) {
         Dynamic* dynamic = createImportedDynamic(m_score, *it);
+        // Preserve the existing direction visibility policy.
+        dynamic->setVisible(m_visible);
 
         if (isDynamicRange) {
             if (it == m_dynamicsList.begin()) {
@@ -4387,7 +4396,7 @@ void MusicXmlParserDirection::swing()
 
 void MusicXmlParserDirection::dynamics()
 {
-    MusicXmlDynamic dynamic = parseDynamicsContainer(m_e, m_visible, m_logger);
+    MusicXmlDynamic dynamic = parseDynamicsContainer(m_e, m_logger);
     // MusicXML dynamics placement is ignored in directions; the parent wins.
     dynamic.placement = placement();
     dynamic.hasTotalY = hasTotalY();
@@ -4710,7 +4719,6 @@ void MusicXmlParserDirection::textToDynamic(String& text)
             dynamic.text = Dynamic::dynamicText(dt);
             dynamic.placement = placement();
             dynamic.enclosure = m_enclosure;
-            dynamic.visible = m_visible;
             dynamic.hasTotalY = hasTotalY();
             dynamic.totalY = totalY();
             m_dynamicsList.push_back(dynamic);
@@ -8684,7 +8692,9 @@ void MusicXmlParserNotations::tied()
 
 void MusicXmlParserNotations::dynamics()
 {
-    const MusicXmlDynamic dynamic = parseDynamicsContainer(m_e, m_visible, m_logger);
+    // The existing notation importer does not apply the parent visibility to
+    // note-attached dynamics; preserve that policy when grouping children.
+    const MusicXmlDynamic dynamic = parseDynamicsContainer(m_e, m_logger);
     if (!dynamic.text.empty()) {
         m_dynamicsList.push_back(dynamic);
     }
