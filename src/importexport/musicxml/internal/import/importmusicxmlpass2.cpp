@@ -20,6 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <algorithm>
 #include <cmath>
 #include <memory>
 #include <charconv>
@@ -1019,6 +1020,65 @@ static String dynamicLettersToXml(const String& text)
     return result;
 }
 
+// Protect literal tag-like spans and the contents of matched pairs from the
+// dynamic classifier, while allowing ordinary text between spans to classify.
+static void appendDynamicLiteral(MusicXmlDynamic& result, const String& value)
+{
+    std::vector<std::pair<size_t, size_t>> spans;
+    std::vector<std::pair<String, size_t>> openTags;
+    size_t scan = 0;
+    while (scan < value.size()) {
+        const size_t begin = value.indexOf(u'<', scan);
+        const size_t end = begin == muse::nidx ? muse::nidx : value.indexOf(u'>', begin + 1);
+        if (end == muse::nidx) {
+            break;
+        }
+        spans.emplace_back(begin, end + 1);
+        size_t nameBegin = begin + 1;
+        const bool closing = nameBegin < end && value.at(nameBegin).unicode() == u'/';
+        if (closing) {
+            ++nameBegin;
+        }
+        size_t nameEnd = nameBegin;
+        while (nameEnd < end) {
+            const char16_t c = value.at(nameEnd).unicode();
+            if (!((c >= u'a' && c <= u'z') || (c >= u'A' && c <= u'Z')
+                  || (c >= u'0' && c <= u'9') || c == u'_' || c == u'-' || c == u':')) {
+                break;
+            }
+            ++nameEnd;
+        }
+        if (nameEnd > nameBegin) {
+            const String name = value.mid(nameBegin, nameEnd - nameBegin);
+            if (closing && !openTags.empty() && openTags.back().first == name) {
+                spans.emplace_back(openTags.back().second, end + 1);
+                openTags.pop_back();
+            } else if (!closing && value.at(end - 1).unicode() != u'/') {
+                openTags.emplace_back(name, begin);
+            }
+        }
+        scan = end + 1;
+    }
+    std::sort(spans.begin(), spans.end());
+    std::vector<std::pair<size_t, size_t>> merged;
+    for (const auto& span : spans) {
+        if (!merged.empty() && span.first <= merged.back().second) {
+            merged.back().second = std::max(merged.back().second, span.second);
+        } else {
+            merged.push_back(span);
+        }
+    }
+    size_t cursor = 0;
+    for (const auto& [begin, end] : merged) {
+        result.text += TextBase::plainToXmlText(value.mid(cursor, begin - cursor));
+        const String literal = TextBase::plainToXmlText(value.mid(begin, end - begin));
+        result.protectedLiteralRanges.emplace_back(result.text.size(), literal.size());
+        result.text += literal;
+        cursor = end;
+    }
+    result.text += TextBase::plainToXmlText(value.mid(cursor));
+}
+
 // Keep literal text distinct from markup generated from the symbol table.
 static MusicXmlDynamic parseDynamicsContainer(XmlStreamReader& e, MusicXmlLogger* logger)
 {
@@ -1046,20 +1106,7 @@ static MusicXmlDynamic parseDynamicsContainer(XmlStreamReader& e, MusicXmlLogger
                 if (smufl.empty() && !symbols.empty()) {
                     result.text += symbols;
                 } else {
-                    const size_t begin = value.indexOf(u'<');
-                    if (begin == muse::nidx) {
-                        result.text += TextBase::plainToXmlText(value);
-                    } else {
-                        size_t end = value.lastIndexOf(u'>');
-                        if (end == muse::nidx || end < begin) {
-                            end = value.size() - 1;
-                        }
-                        result.text += TextBase::plainToXmlText(value.left(begin));
-                        const String literal = TextBase::plainToXmlText(value.mid(begin, end - begin + 1));
-                        result.protectedLiteralRanges.emplace_back(result.text.size(), literal.size());
-                        result.text += literal;
-                        result.text += TextBase::plainToXmlText(value.mid(end + 1));
-                    }
+                    appendDynamicLiteral(result, value);
                 }
             }
         } else {

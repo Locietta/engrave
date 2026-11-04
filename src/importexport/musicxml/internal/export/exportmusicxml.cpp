@@ -6008,9 +6008,10 @@ static String singleDynamicSmufl(const String& text)
 // them. Formatted or non-standard symbols still use the existing fallback.
 static bool writeGroupedDynamicSmufl(XmlWriter& xml, const String& text)
 {
-    static const std::set<String> letterSymbols {
-        u"dynamicPiano", u"dynamicMezzo", u"dynamicForte", u"dynamicRinforzando",
-        u"dynamicSforzando", u"dynamicZ", u"dynamicNiente"
+    static const std::map<String, String> letterSymbols {
+        { u"dynamicPiano", u"p" }, { u"dynamicMezzo", u"m" }, { u"dynamicForte", u"f" },
+        { u"dynamicRinforzando", u"r" }, { u"dynamicSforzando", u"s" },
+        { u"dynamicZ", u"z" }, { u"dynamicNiente", u"n" }
     };
     std::vector<std::pair<String, bool>> parts;
     bool hasNamedSymbol = false;
@@ -6056,9 +6057,27 @@ static bool writeGroupedDynamicSmufl(XmlWriter& xml, const String& text)
     }
     for (const auto& [value, symbol] : parts) {
         if (symbol) {
-            xml.tagRaw(u"other-dynamics smufl=\"" + value + u"\"");
+            const auto letter = letterSymbols.find(value);
+            if (letter == letterSymbols.end()) {
+                xml.tagRaw(u"other-dynamics smufl=\"" + value + u"\"");
+            } else if (letter->second == u"p" || letter->second == u"f" || letter->second == u"n") {
+                xml.tagRaw(letter->second);
+            } else {
+                xml.tag("other-dynamics", letter->second);
+            }
         } else if (!value.empty()) {
-            xml.tag("other-dynamics", value);
+            if (value.trimmed().empty()) {
+                // The importer's XML reader discards whitespace-only text
+                // nodes. Character references keep these separators visible
+                // to that reader without adding characters to the score.
+                String references;
+                for (size_t i = 0; i < value.size(); ++i) {
+                    references += String(u"&#%1;").arg(static_cast<int>(value.at(i).unicode()));
+                }
+                xml.writeXml(u"other-dynamics", references);
+            } else {
+                xml.tag("other-dynamics", value);
+            }
         }
     }
     return true;
