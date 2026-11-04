@@ -70,6 +70,21 @@ namespace mu::iex::musicxml {
 //   support enums / structs / classes
 //---------------------------------------------------------
 
+// One nonempty container, or one existing word-inferred marking. Text contains
+// escaped literals and symbol-table-generated markup only; no private metadata.
+struct MusicXmlDynamic {
+    muse::String text;
+    // Escaped literal text with markup-looking content must not be parsed as
+    // dynamic symbols. Ranges exist only while importing, not in the score.
+    std::vector<std::pair<size_t, size_t>> protectedLiteralRanges;
+    engraving::Color color;
+    muse::String placement;
+    muse::String enclosure;
+    bool visible = true;
+    bool hasTotalY = false;
+    double totalY = 0.0;
+};
+
 using GraceChordList = std::vector<engraving::Chord*>;
 using FiguredBassList = std::vector<engraving::FiguredBass*>;
 using Tuplets = std::map<muse::String, engraving::Tuplet*>;
@@ -384,9 +399,7 @@ private:
     MusicXmlLogger* m_logger = nullptr;                              // the error logger
     muse::String m_errors;                    // errors to present to the user
     MusicXmlTupletDesc m_tupletDesc;
-    engraving::Color m_dynamicsColor;
-    muse::String m_dynamicsPlacement;
-    engraving::StringList m_dynamicsList;
+    std::vector<MusicXmlDynamic> m_dynamicsList;
     std::vector<Notation> m_notations;
     bool m_hasTremolo = false;
     muse::String m_tremoloType;
@@ -628,9 +641,7 @@ private:
     engraving::Color m_color;
     engraving::Hairpin* m_inferredHairpinStart = nullptr;
     engraving::GradualTempoChange* m_inferredTempoLineStart = nullptr;
-    engraving::Color m_dynamicsColor;
-    muse::String m_dynamicsPlacement;
-    muse::StringList m_dynamicsList;
+    std::vector<MusicXmlDynamic> m_dynamicsList;
     muse::String m_fontFamily;
     muse::String m_enclosure;
     muse::String m_wordsText;

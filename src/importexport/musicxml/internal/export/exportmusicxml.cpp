@@ -5988,6 +5988,21 @@ inline std::set<String>& operator<<(std::set<String>& s, const T& v)
     return s;
 }
 
+static String singleDynamicSmufl(const String& text)
+{
+    if (!text.startsWith(u"<sym>") || !text.endsWith(u"</sym>")) {
+        return {};
+    }
+    const String name = text.mid(5, text.size() - 11);
+    const SymId id = SymNames::symIdByName(name);
+    // Font extensions and engine-local symbols are not SMuFL standard names.
+    if (id == SymId::noSym || id >= SymId::noteheadDoubleWholeAlt) {
+        return {};
+    }
+    const String canonical = String::fromAscii(SymNames::nameForSymId(id).ascii());
+    return canonical == name ? canonical : String();
+}
+
 void ExportMusicXml::dynamic(Dynamic const* const dyn, staff_idx_t staff)
 {
     static const std::set<String> validMusicXmlDynamics {
@@ -6014,6 +6029,8 @@ void ExportMusicXml::dynamic(Dynamic const* const dyn, staff_idx_t staff)
 
     if (muse::contains(validMusicXmlDynamics, dynTypeName) && !hasCustomText) {
         m_xml.tagRaw(dynTypeName);
+    } else if (const String smufl = singleDynamicSmufl(dyn->xmlText()); !smufl.empty()) {
+        m_xml.tagRaw(u"other-dynamics smufl=\"" + smufl + u"\"");
     } else if (!dynTypeName.empty()) {
         static const std::map<unsigned short, Char> map = {
             { 0xE520, u'p' },
