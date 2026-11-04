@@ -2334,6 +2334,7 @@ TEST(Read, MusicXmlGroupedSmuflDynamicsExportReimport) {
              "<f/><other-dynamics smufl=\"dynamicSforzato\"/><p/>",
              "<other-dynamics>sempre </other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/><p/>",
              "<other-dynamics>sempre f</other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>",
+             "<other-dynamics>sempre f</other-dynamics><p/><other-dynamics smufl=\"dynamicSforzato\"/>",
              "<other-dynamics>sempre </other-dynamics><f/><other-dynamics smufl=\"dynamicSforzato\"/>",
              "<p/><other-dynamics> subito </other-dynamics><f/><other-dynamics smufl=\"dynamicSforzato\"/>",
              "<other-dynamics>f </other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>",
@@ -2350,6 +2351,7 @@ TEST(Read, MusicXmlGroupedSmuflDynamicsExportReimport) {
         const auto text = original.front()->xmlText();
         const auto type = original.front()->dynamicType();
         const auto velocity = original.front()->velocity();
+        const auto velocityChange = original.front()->changeInVelocity();
         if (children.starts_with("<other-dynamics>sempre f</other-dynamics>")) {
             EXPECT_EQ(type, mu::engraving::DynamicType::F);
         } else if (children.starts_with("<other-dynamics>sempre </other-dynamics><f/>")) {
@@ -2374,7 +2376,27 @@ TEST(Read, MusicXmlGroupedSmuflDynamicsExportReimport) {
         EXPECT_EQ(dynamics.front()->xmlText(), text);
         EXPECT_EQ(dynamics.front()->dynamicType(), type);
         EXPECT_EQ(dynamics.front()->velocity(), velocity);
+        EXPECT_EQ(dynamics.front()->changeInVelocity(), velocityChange);
     }
+}
+
+TEST(Read, MusicXmlGroupedProseRetainsTypeWithoutNamedSymbol) {
+    const auto direction = R"(<direction><direction-type><dynamics><other-dynamics>sempre f</other-dynamics><p/></dynamics></direction-type></direction>)";
+    auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
+    ASSERT_TRUE(opened);
+    const auto original = imported_dynamics(**opened);
+    ASSERT_EQ(original.size(), 1u);
+    EXPECT_EQ(original.front()->dynamicType(), mu::engraving::DynamicType::F);
+    const auto saved = (*opened)->export_score({.format = engrave::Format::MusicXml});
+    ASSERT_TRUE(saved);
+    auto reopened = g_engine->open(*saved, {.format = engrave::Format::MusicXml});
+    ASSERT_TRUE(reopened);
+    const auto dynamics = imported_dynamics(**reopened);
+    ASSERT_EQ(dynamics.size(), 1u);
+    EXPECT_EQ(dynamics.front()->dynamicType(), original.front()->dynamicType());
+    EXPECT_EQ(dynamics.front()->xmlText(), original.front()->xmlText());
+    EXPECT_EQ(dynamics.front()->velocity(), original.front()->velocity());
+    EXPECT_EQ(dynamics.front()->changeInVelocity(), original.front()->changeInVelocity());
 }
 
 TEST(Read, MusicXmlSingleOtherDynamicLettersExportText) {

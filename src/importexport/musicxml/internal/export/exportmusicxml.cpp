@@ -6075,9 +6075,6 @@ static bool writeGroupedDynamicSmufl(XmlWriter& xml, const Dynamic* source)
             cursor = next == muse::nidx ? text.size() : next;
         }
     }
-    if (!hasNamedSymbol) {
-        return false;
-    }
     // Distinct source representations can have the same rendered text but
     // different dynamic types. Combine a prose run only when the existing
     // classifier verifies both the type and the exact resulting text.
@@ -6120,6 +6117,7 @@ static bool writeGroupedDynamicSmufl(XmlWriter& xml, const Dynamic* source)
             size_t symbolRuns = 0;
             String glyphs;
             String combined;
+            size_t candidateEnd = muse::nidx;
             while (end < parts.size()) {
                 const auto& [part, isSymbol] = parts[end];
                 if (isSymbol && !muse::contains(letterSymbols, part)) {
@@ -6135,13 +6133,18 @@ static bool writeGroupedDynamicSmufl(XmlWriter& xml, const Dynamic* source)
                 }
                 previousSymbol = isSymbol;
                 ++end;
+                if (hasProse && isSymbol && symbolRuns == 1
+                    && glyphs == Dynamic::dynamicText(source->dynamicType())) {
+                    candidateEnd = end;
+                    break;
+                }
             }
-            if (hasProse && symbolRuns == 1 && glyphs == Dynamic::dynamicText(source->dynamicType())) {
+            if (candidateEnd != muse::nidx) {
                 String candidate;
                 for (size_t j = 0; j < parts.size();) {
                     if (j == begin) {
                         candidate += TextBase::plainToXmlText(combined);
-                        j = end;
+                        j = candidateEnd;
                     } else {
                         candidate += parts[j].second ? u"<sym>" + parts[j].first + u"</sym>"
                                                       : TextBase::plainToXmlText(parts[j].first);
@@ -6151,13 +6154,16 @@ static bool writeGroupedDynamicSmufl(XmlWriter& xml, const Dynamic* source)
                 probe.setDynamicType(candidate);
                 if (probe.dynamicType() == source->dynamicType() && probe.xmlText() == text) {
                     mergeBegin = begin;
-                    mergeEnd = end;
+                    mergeEnd = candidateEnd;
                     mergedText = combined;
                 }
                 break;
             }
             begin = end;
         }
+    }
+    if (!hasNamedSymbol && mergeBegin == muse::nidx) {
+        return false;
     }
     size_t i = 0;
     while (i < parts.size()) {
