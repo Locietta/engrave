@@ -6026,8 +6026,9 @@ static void writeDynamicOtherText(XmlWriter& xml, const String& value)
 
 // Preserve named SMuFL symbols in grouped dynamics, including plain text around
 // them. Formatted or non-standard symbols still use the existing fallback.
-static bool writeGroupedDynamicSmufl(XmlWriter& xml, const String& text)
+static bool writeGroupedDynamicSmufl(XmlWriter& xml, const Dynamic* source)
 {
+    const String text = source->xmlText();
     static const std::map<String, String> letterSymbols {
         { u"dynamicPiano", u"p" }, { u"dynamicMezzo", u"m" }, { u"dynamicForte", u"f" },
         { u"dynamicRinforzando", u"r" }, { u"dynamicSforzando", u"s" },
@@ -6077,48 +6078,108 @@ static bool writeGroupedDynamicSmufl(XmlWriter& xml, const String& text)
     if (!hasNamedSymbol) {
         return false;
     }
-    size_t i = 0;
-    while (i < parts.size()) {
-        const auto& [value, symbol] = parts[i];
-        if (symbol && !muse::contains(letterSymbols, value)) {
-            xml.tagRaw(u"other-dynamics smufl=\"" + value + u"\"");
-            ++i;
+    // Distinct source representations can have the same rendered text but
+    // different dynamic types. Combine a prose run only when the existing
+    // classifier verifies both the type and the exact resulting text.
+    size_t mergeBegin = muse::nidx;
+    size_t mergeEnd = muse::nidx;
+    String mergedText;
+    Dynamic probe(source->score()->dummy());
+    probe.setDynamicType(text);
+    bool safeToProbe = true;
+    for (const auto& [part, isSymbol] : parts) {
+        if (isSymbol) {
             continue;
         }
-        size_t end = i;
-        bool hasProse = false;
-        while (end < parts.size()) {
-            const auto& [part, isSymbol] = parts[end];
-            if (isSymbol && !muse::contains(letterSymbols, part)) {
+        if (part.contains(u'<') || part.contains(u'>')) {
+            safeToProbe = false;
+            break;
+        }
+        bool onlyLetters = !part.empty();
+        for (size_t k = 0; k < part.size() && onlyLetters; ++k) {
+            const char16_t c = part.at(k).unicode();
+            onlyLetters = c == u'p' || c == u'm' || c == u'f' || c == u'r'
+                          || c == u's' || c == u'z' || c == u'n';
+        }
+        if (onlyLetters) {
+            safeToProbe = false;
+            break;
+        }
+    }
+    if (safeToProbe && source->dynamicType() != DynamicType::OTHER
+        && probe.dynamicType() != source->dynamicType()) {
+        size_t begin = 0;
+        while (begin < parts.size()) {
+            if (parts[begin].second && !muse::contains(letterSymbols, parts[begin].first)) {
+                ++begin;
+                continue;
+            }
+            size_t end = begin;
+            bool hasProse = false;
+            bool previousSymbol = false;
+            size_t symbolRuns = 0;
+            String glyphs;
+            String combined;
+            while (end < parts.size()) {
+                const auto& [part, isSymbol] = parts[end];
+                if (isSymbol && !muse::contains(letterSymbols, part)) {
+                    break;
+                }
+                hasProse = hasProse || (!isSymbol && !part.trimmed().empty());
+                if (isSymbol) {
+                    symbolRuns += !previousSymbol;
+                    glyphs += u"<sym>" + part + u"</sym>";
+                    combined += letterSymbols.at(part);
+                } else {
+                    combined += part;
+                }
+                previousSymbol = isSymbol;
+                ++end;
+            }
+            if (hasProse && symbolRuns == 1 && glyphs == Dynamic::dynamicText(source->dynamicType())) {
+                String candidate;
+                for (size_t j = 0; j < parts.size();) {
+                    if (j == begin) {
+                        candidate += TextBase::plainToXmlText(combined);
+                        j = end;
+                    } else {
+                        candidate += parts[j].second ? u"<sym>" + parts[j].first + u"</sym>"
+                                                      : TextBase::plainToXmlText(parts[j].first);
+                        ++j;
+                    }
+                }
+                probe.setDynamicType(candidate);
+                if (probe.dynamicType() == source->dynamicType() && probe.xmlText() == text) {
+                    mergeBegin = begin;
+                    mergeEnd = end;
+                    mergedText = combined;
+                }
                 break;
             }
-            hasProse = hasProse || (!isSymbol && !part.trimmed().empty());
-            ++end;
+            begin = end;
         }
-        if (hasProse) {
-            // Keep prose and its dynamic letters together, so reimport uses
-            // the same classification instead of joining adjacent symbols.
-            String combined;
-            for (size_t j = i; j < end; ++j) {
-                combined += parts[j].second ? letterSymbols.at(parts[j].first) : parts[j].first;
-            }
-            writeDynamicOtherText(xml, combined);
+    }
+    size_t i = 0;
+    while (i < parts.size()) {
+        if (i == mergeBegin) {
+            writeDynamicOtherText(xml, mergedText);
+            i = mergeEnd;
+            continue;
+        }
+        const auto& [value, symbol] = parts[i];
+        if (!symbol) {
+            writeDynamicOtherText(xml, value);
+        } else if (!muse::contains(letterSymbols, value)) {
+            xml.tagRaw(u"other-dynamics smufl=\"" + value + u"\"");
         } else {
-            for (size_t j = i; j < end; ++j) {
-                const auto& [part, isSymbol] = parts[j];
-                if (!isSymbol) {
-                    writeDynamicOtherText(xml, part);
-                    continue;
-                }
-                const String& letter = letterSymbols.at(part);
-                if (letter == u"p" || letter == u"f" || letter == u"n") {
-                    xml.tagRaw(letter);
-                } else {
-                    xml.tag("other-dynamics", letter);
-                }
+            const String& letter = letterSymbols.at(value);
+            if (letter == u"p" || letter == u"f" || letter == u"n") {
+                xml.tagRaw(letter);
+            } else {
+                xml.tag("other-dynamics", letter);
             }
         }
-        i = end;
+        ++i;
     }
     return true;
 }
@@ -6154,7 +6215,7 @@ void ExportMusicXml::dynamic(Dynamic const* const dyn, staff_idx_t staff)
         m_xml.tag("other-dynamics", dynTypeName);
     } else if (const String smufl = singleDynamicSmufl(dyn->xmlText()); !smufl.empty()) {
         m_xml.tagRaw(u"other-dynamics smufl=\"" + smufl + u"\"");
-    } else if (writeGroupedDynamicSmufl(m_xml, dyn->xmlText())) {
+    } else if (writeGroupedDynamicSmufl(m_xml, dyn)) {
         // Already written as a single MusicXML dynamics container.
     } else if (!dynTypeName.empty()) {
         static const std::map<unsigned short, Char> map = {

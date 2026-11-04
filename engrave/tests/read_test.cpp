@@ -2334,6 +2334,8 @@ TEST(Read, MusicXmlGroupedSmuflDynamicsExportReimport) {
              "<f/><other-dynamics smufl=\"dynamicSforzato\"/><p/>",
              "<other-dynamics>sempre </other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/><p/>",
              "<other-dynamics>sempre f</other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>",
+             "<other-dynamics>sempre </other-dynamics><f/><other-dynamics smufl=\"dynamicSforzato\"/>",
+             "<p/><other-dynamics> subito </other-dynamics><f/><other-dynamics smufl=\"dynamicSforzato\"/>",
              "<other-dynamics>f </other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>",
              "<other-dynamics>f &#x9;</other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>",
              "<other-dynamics>f &#13;</other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>",
@@ -2347,6 +2349,14 @@ TEST(Read, MusicXmlGroupedSmuflDynamicsExportReimport) {
         ASSERT_EQ(original.size(), 1u);
         const auto text = original.front()->xmlText();
         const auto type = original.front()->dynamicType();
+        const auto velocity = original.front()->velocity();
+        if (children.starts_with("<other-dynamics>sempre f</other-dynamics>")) {
+            EXPECT_EQ(type, mu::engraving::DynamicType::F);
+        } else if (children.starts_with("<other-dynamics>sempre </other-dynamics><f/>")) {
+            EXPECT_EQ(type, mu::engraving::DynamicType::OTHER);
+        } else if (children.starts_with("<p/><other-dynamics> subito ")) {
+            EXPECT_EQ(type, mu::engraving::DynamicType::P);
+        }
         const auto saved = (*opened)->export_score({.format = engrave::Format::MusicXml});
         ASSERT_TRUE(saved);
         const std::string xml(reinterpret_cast<const char*>(saved->data()), saved->size());
@@ -2363,6 +2373,7 @@ TEST(Read, MusicXmlGroupedSmuflDynamicsExportReimport) {
         ASSERT_EQ(dynamics.size(), 1u);
         EXPECT_EQ(dynamics.front()->xmlText(), text);
         EXPECT_EQ(dynamics.front()->dynamicType(), type);
+        EXPECT_EQ(dynamics.front()->velocity(), velocity);
     }
 }
 
