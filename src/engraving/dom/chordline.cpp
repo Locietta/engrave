@@ -34,6 +34,7 @@
 #include "../types/typesconv.h"
 
 #include "chord.h"
+#include "score.h"
 #include "note.h"
 
 #include "log.h"
@@ -281,9 +282,52 @@ PropertyValue ChordLine::getProperty(Pid propertyId) const
 //   setProperty
 //---------------------------------------------------------
 
+ChordLine::AppearanceState ChordLine::appearanceState() const
+{
+    AppearanceState state;
+    for (size_t i = 0; i < appearanceProperties.size(); ++i) {
+        state.values[i] = getProperty(appearanceProperties[i]);
+        state.flags[i] = propertyFlags(appearanceProperties[i]);
+    }
+    state.linked = isAppearanceLinkedToMaster();
+    state.offsets = m_hasSourceOffsets;
+    state.controls = m_sourceOffsets;
+    state.modified = m_modified;
+    state.lengthX = m_lengthX;
+    state.lengthY = m_lengthY;
+    return state;
+}
+
+void ChordLine::restoreAppearance(const AppearanceState& state)
+{
+    for (size_t i = 0; i < appearanceProperties.size(); ++i) {
+        setProperty(appearanceProperties[i], state.values[i]);
+        setPropertyFlags(appearanceProperties[i], state.flags[i]);
+    }
+    setAppearanceLinkedToMaster(state.linked);
+    m_hasSourceOffsets = state.offsets;
+    m_sourceOffsets = state.controls;
+    m_modified = state.modified;
+    m_lengthX = state.lengthX;
+    m_lengthY = state.lengthY;
+    triggerLayout();
+}
+
 bool ChordLine::setProperty(Pid propertyId, const PropertyValue& val)
 {
     switch (propertyId) {
+    case Pid::APPEARANCE_LINKED_TO_MASTER:
+        if (val.toBool() && !isAppearanceLinkedToMaster()) {
+            for (EngravingObject* object : linkListForPropertyPropagation()) {
+                if (object->isChordLine() && object->score()->isMaster()) {
+                    restoreAppearance(toChordLine(object)->appearanceState());
+                    break;
+                }
+            }
+        }
+        setAppearanceLinkedToMaster(val.toBool());
+        triggerLayout();
+        return true;
     case Pid::PATH:
         mutldata()->path = val.value<PainterPath>();
         m_hasSourceOffsets = false;
@@ -313,9 +357,24 @@ bool ChordLine::setProperty(Pid propertyId, const PropertyValue& val)
 //   propertyDefault
 //---------------------------------------------------------
 
+void ChordLine::resetProperty(Pid pid)
+{
+    if (pid != Pid::PATH) {
+        EngravingItem::resetProperty(pid);
+        return;
+    }
+    // Keep the source representation; both kinds return to their default shape.
+    m_sourceOffsets = {};
+    m_modified = false;
+    mutldata()->path = PainterPath();
+    triggerLayout();
+}
+
 PropertyValue ChordLine::propertyDefault(Pid pid) const
 {
     switch (pid) {
+    case Pid::PATH:
+        return PropertyValue::fromValue(PainterPath());
     case Pid::CHORD_LINE_STRAIGHT:
         return false;
     case Pid::CHORD_LINE_WAVY:

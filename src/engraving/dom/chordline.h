@@ -73,6 +73,7 @@ public:
     PropertyValue getProperty(Pid propertyId) const override;
     bool setProperty(Pid propertyId, const PropertyValue&) override;
     PropertyValue propertyDefault(Pid) const override;
+    void resetProperty(Pid) override;
 
 
     bool isToTheLeft() const { return m_chordLineType == ChordLineType::PLOP || m_chordLineType == ChordLineType::SCOOP; }
@@ -88,12 +89,33 @@ public:
 
     // Physical drawing-unit sources, independent of the derived layout cache.
     bool hasSourceOffsets() const { return m_hasSourceOffsets; }
+    bool hasDefaultPath() const
+    {
+        return !m_modified && (!m_hasSourceOffsets || m_sourceOffsets == std::array<PointF, 4> {});
+    }
     const std::array<PointF, 4>& sourceOffsets() const { return m_sourceOffsets; }
     void readSourceOffsets(const std::array<PointF, 4>& xml, double unit);
     std::array<PointF, 4> xmlSourceOffsets() const;
     PainterPath sourceOffsetPath(double spatium, double mag) const;
     void spatiumChanged(double oldValue, double newValue) override;
     void localSpatiumChanged(double oldValue, double newValue) override;
+
+    static constexpr std::array<Pid, 8> appearanceProperties {
+        Pid::COLOR, Pid::VISIBLE, Pid::Z, Pid::SIZE_SPATIUM_DEPENDENT,
+        Pid::CHORD_LINE_TYPE, Pid::CHORD_LINE_STRAIGHT, Pid::CHORD_LINE_WAVY, Pid::PATH
+    };
+    struct AppearanceState {
+        std::array<PropertyValue, 8> values;
+        std::array<PropertyFlags, 8> flags;
+        bool linked;
+        bool offsets;
+        bool modified;
+        double lengthX;
+        double lengthY;
+        std::array<PointF, 4> controls;
+    };
+    AppearanceState appearanceState() const;
+    void restoreAppearance(const AppearanceState&);
 
     struct LayoutData : public EngravingItem::LayoutData {
         muse::draw::PainterPath path;

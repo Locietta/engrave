@@ -352,11 +352,22 @@ void EngravingObject::resetProperty(Pid pid)
 //   undoResetProperty
 //---------------------------------------------------------
 
+static void changeProperties(EngravingObject*, Pid, const PropertyValue&, PropertyFlags, bool resetPath = false);
+
 void EngravingObject::undoResetProperty(Pid id)
 {
     PropertyFlags f = propertyFlags(id);
     if (f == PropertyFlags::UNSTYLED) {
         f = PropertyFlags::STYLED;
+    }
+    if (isChordLine() && id == Pid::PATH) {
+        if (toChordLine(this)->hasDefaultPath() && propertyFlags(id) == f) {
+            return;
+        }
+        // A reset must run even when the layout cache is already empty.
+        changeProperties(this, id, propertyDefault(id), f, true);
+        changeProperties(this, Pid::GENERATED, false, PropertyFlags::NOSTYLE);
+        return;
     }
     undoChangeProperty(id, propertyDefault(id), f);
 }
@@ -375,14 +386,15 @@ bool EngravingObject::isStyled(Pid pid) const
 //   changeProperty
 //---------------------------------------------------------
 
-static void changeProperty(EngravingObject* e, Pid t, const PropertyValue& st, PropertyFlags ps)
+static void changeProperty(EngravingObject* e, Pid t, const PropertyValue& st, PropertyFlags ps, bool resetPath = false)
 {
-    if (e->getProperty(t) != st || e->propertyFlags(t) != ps) {
+    if (resetPath || (e->isChordLine() && t == Pid::PATH && toChordLine(e)->hasSourceOffsets())
+        || e->getProperty(t) != st || e->propertyFlags(t) != ps) {
         if (e->isBracketItem()) {
             BracketItem* bi = toBracketItem(e);
             e->score()->undo(new ChangeBracketProperty(bi->startStaff(), bi->column(), t, st, ps));
         } else {
-            e->score()->undo(new ChangeProperty(e, t, st, ps));
+            e->score()->undo(new ChangeProperty(e, t, st, ps, resetPath));
         }
     }
 }
@@ -391,12 +403,12 @@ static void changeProperty(EngravingObject* e, Pid t, const PropertyValue& st, P
 //   changeProperties
 //---------------------------------------------------------
 
-static void changeProperties(EngravingObject* object, Pid propertyId, const PropertyValue& propertyValue, PropertyFlags propertyFlag)
+static void changeProperties(EngravingObject* object, Pid propertyId, const PropertyValue& propertyValue, PropertyFlags propertyFlag, bool resetPath)
 {
     const std::list<EngravingObject*> linkList = object->linkListForPropertyPropagation();
     for (EngravingObject* linkedObject : linkList) {
         if (linkedObject == object) {
-            changeProperty(object, propertyId, propertyValue, propertyFlag);
+            changeProperty(object, propertyId, propertyValue, propertyFlag, resetPath);
             continue;
         }
 
@@ -411,7 +423,7 @@ static void changeProperties(EngravingObject* object, Pid propertyId, const Prop
         case PropertyPropagation::NONE:
             break;
         case PropertyPropagation::PROPAGATE:
-            changeProperty(linkedObject, propertyId, propertyValue, propertyFlag);
+            changeProperty(linkedObject, propertyId, propertyValue, propertyFlag, resetPath);
             break;
         case PropertyPropagation::UNLINK:
             item->unlinkPropertyFromMaster(propertyId);
@@ -428,11 +440,11 @@ static void changeProperties(EngravingObject* object, Pid propertyId, const Prop
     EngravingItem* item = toEngravingItem(object);
     for (EngravingItem* originItem : item->originItems()) {
         // This is a shared item: propagate to all origin items
-        changeProperty(originItem, propertyId, propertyValue, propertyFlag);
+        changeProperty(originItem, propertyId, propertyValue, propertyFlag, resetPath);
     }
     if (EngravingItem* sharedItem = item->sharedItem(); sharedItem && sharedItem->originItems().front() == item) {
         // This is the first origin item of the shared item: propagate to shared item
-        changeProperty(sharedItem, propertyId, propertyValue, propertyFlag);
+        changeProperty(sharedItem, propertyId, propertyValue, propertyFlag, resetPath);
     }
 }
 
@@ -447,7 +459,8 @@ void EngravingObject::undoChangeProperty(Pid id, const PropertyValue& v)
 
 void EngravingObject::undoChangeProperty(Pid id, const PropertyValue& v, PropertyFlags ps)
 {
-    if ((getProperty(id) == v) && (propertyFlags(id) == ps)) {
+    const bool changesChordLinePathSource = isChordLine() && id == Pid::PATH && toChordLine(this)->hasSourceOffsets();
+    if ((getProperty(id) == v) && (propertyFlags(id) == ps) && !changesChordLinePathSource) {
         return;
     }
     if (id == Pid::TEXT_STYLE) {
