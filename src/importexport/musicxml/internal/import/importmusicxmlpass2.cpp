@@ -25,6 +25,7 @@
 #include <memory>
 #include <charconv>
 #include <cstdint>
+#include <set>
 #include <utility>
 #include <vector>
 
@@ -1120,6 +1121,31 @@ static MusicXmlDynamic parseDynamicsContainer(XmlStreamReader& e, MusicXmlLogger
     return result;
 }
 
+// Pick one marker prefix absent from the input with a single scan, so many
+// protected spans do not cause repeated whole-string searches.
+static String dynamicLiteralMarkerPrefix(const String& text)
+{
+    const std::string input = text.toStdString();
+    const std::string prefix = "~LITERAL_";
+    std::set<size_t> used;
+    size_t offset = 0;
+    while ((offset = input.find(prefix, offset)) != std::string::npos) {
+        const size_t begin = offset + prefix.size();
+        size_t number = 0;
+        const auto parsed = std::from_chars(input.data() + begin, input.data() + input.size(), number);
+        if (parsed.ec == std::errc() && parsed.ptr != input.data() + begin
+            && parsed.ptr != input.data() + input.size() && *parsed.ptr == '_') {
+            used.insert(number);
+        }
+        offset = begin;
+    }
+    size_t nonce = 0;
+    while (used.contains(nonce)) {
+        ++nonce;
+    }
+    return String(u"~LITERAL_%1_").arg(nonce);
+}
+
 static Dynamic* createImportedDynamic(Score* score, const MusicXmlDynamic& entry)
 {
     Dynamic* dynamic = Factory::createDynamic(score->dummy());
@@ -1128,15 +1154,12 @@ static Dynamic* createImportedDynamic(Score* score, const MusicXmlDynamic& entry
     // ordinary prose in the rest of the container.
     String classificationText;
     std::vector<std::pair<String, String>> protectedLiterals;
+    const String markerPrefix = entry.protectedLiteralRanges.empty() ? String() : dynamicLiteralMarkerPrefix(entry.text);
     size_t cursor = 0;
     for (size_t i = 0; i < entry.protectedLiteralRanges.size(); ++i) {
         const auto [start, length] = entry.protectedLiteralRanges[i];
         classificationText += entry.text.mid(cursor, start - cursor);
-        size_t nonce = 0;
-        String marker;
-        do {
-            marker = String(u"~LITERAL_%1_%2~").arg(i).arg(nonce++);
-        } while (entry.text.contains(marker));
+        const String marker = markerPrefix + String::number(i) + u"~";
         classificationText += marker;
         protectedLiterals.emplace_back(marker, entry.text.mid(start, length));
         cursor = start + length;
@@ -1144,11 +1167,25 @@ static Dynamic* createImportedDynamic(Score* score, const MusicXmlDynamic& entry
     classificationText += entry.text.mid(cursor);
     dynamic->setDynamicType(classificationText);
     if (!protectedLiterals.empty()) {
-        String text = dynamic->xmlText();
+        const String text = dynamic->xmlText();
+        String restored;
+        restored.reserve(entry.text.size());
+        size_t position = 0;
+        bool valid = true;
         for (const auto& [marker, literal] : protectedLiterals) {
-            text.replace(marker, literal);
+            const size_t next = text.indexOf(marker, position);
+            if (next == muse::nidx) {
+                valid = false;
+                break;
+            }
+            restored += text.mid(position, next - position);
+            restored += literal;
+            position = next + marker.size();
         }
-        dynamic->setXmlText(text);
+        if (valid) {
+            restored += text.mid(position);
+        }
+        dynamic->setXmlText(valid ? restored : entry.text);
     }
     colorItem(dynamic, entry.color);
     if (entry.enclosure == u"circle") {
