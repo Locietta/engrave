@@ -981,6 +981,137 @@ static int musicXmlDynamicVelocity(const String& value, int minimum, int fallbac
     return static_cast<int>(std::round(percent * 0.9));
 }
 
+// readText() keeps only the last character token. Accumulate the tokens
+// locally for other-dynamics (including CDATA/comments); never interpret input
+// text as TextBase markup. Nested elements are outside MusicXML simple content.
+static String readDynamicsText(XmlStreamReader& e)
+{
+    String text;
+    while (!e.atEnd()) {
+        e.readNext();
+        if (e.isEndElement()) {
+            break;
+        }
+        if (e.isCharacters()) {
+            text += e.text();
+        } else if (e.isStartElement()) {
+            e.skipCurrentElement();
+        }
+    }
+    return text;
+}
+
+static String dynamicLettersToXml(const String& text)
+{
+    String result;
+    for (size_t i = 0; i < text.size(); ++i) {
+        switch (text.at(i).unicode()) {
+        case u'p': result += u"<sym>dynamicPiano</sym>"; break;
+        case u'm': result += u"<sym>dynamicMezzo</sym>"; break;
+        case u'f': result += u"<sym>dynamicForte</sym>"; break;
+        case u'r': result += u"<sym>dynamicRinforzando</sym>"; break;
+        case u's': result += u"<sym>dynamicSforzando</sym>"; break;
+        case u'z': result += u"<sym>dynamicZ</sym>"; break;
+        case u'n': result += u"<sym>dynamicNiente</sym>"; break;
+        default: return {};
+        }
+    }
+    return result;
+}
+
+// Keep literal text distinct from markup generated from the symbol table.
+static MusicXmlDynamic parseDynamicsContainer(XmlStreamReader& e, bool visible, MusicXmlLogger* logger)
+{
+    MusicXmlDynamic result;
+    result.color = Color::fromString(e.attribute("color"));
+    result.placement = e.attribute("placement");
+    result.enclosure = e.attribute("enclosure");
+    result.visible = visible && e.asciiAttribute("print-object") != "no";
+    while (e.readNextStartElement()) {
+        if (e.name() == "other-dynamics") {
+            const String smufl = e.attribute("smufl");
+            const String value = readDynamicsText(e);
+            const SymId id = SymNames::symIdByName(smufl);
+            // symIdByName(String) converts to ASCII and then uses a C string.
+            // Require an exact round trip to reject lossy/truncated names too.
+            const String canonical = id == SymId::noSym ? String()
+                : String::fromAscii(SymNames::nameForSymId(id).ascii());
+            // The generated standard block ends before engine/font extensions.
+            if (!smufl.empty() && id != SymId::noSym && id < SymId::noteheadDoubleWholeAlt && canonical == smufl) {
+                result.text += u"<sym>" + canonical + u"</sym>";
+            } else {
+                if (!smufl.empty() && logger) {
+                    logger->logError(String(u"Unsupported dynamics SMuFL name '%1'; using literal text").arg(smufl), &e);
+                }
+                const String symbols = dynamicLettersToXml(value);
+                if (smufl.empty() && !symbols.empty()) {
+                    result.text += symbols;
+                } else {
+                    const String literal = TextBase::plainToXmlText(value);
+                    if (value.contains(u'<') || value.contains(u'>')) {
+                        result.protectedLiteralRanges.emplace_back(result.text.size(), literal.size());
+                    }
+                    result.text += literal;
+                }
+            }
+        } else {
+            const String name = String::fromAscii(e.name().ascii());
+            const String symbols = dynamicLettersToXml(name);
+            // Upstream retains unrecognized tag names as literal dynamics text.
+            result.text += symbols.empty() ? TextBase::plainToXmlText(name) : symbols;
+            e.skipCurrentElement();
+        }
+    }
+    return result;
+}
+
+static Dynamic* createImportedDynamic(Score* score, const MusicXmlDynamic& entry)
+{
+    Dynamic* dynamic = Factory::createDynamic(score->dummy());
+    // The dynamic classifier also recognizes plain words. Hide markup-looking
+    // literals from it temporarily, while still classifying genuine symbols and
+    // ordinary prose in the rest of the container.
+    String classificationText;
+    std::vector<std::pair<String, String>> protectedLiterals;
+    size_t cursor = 0;
+    for (size_t i = 0; i < entry.protectedLiteralRanges.size(); ++i) {
+        const auto [start, length] = entry.protectedLiteralRanges[i];
+        classificationText += entry.text.mid(cursor, start - cursor);
+        size_t nonce = 0;
+        String marker;
+        do {
+            marker = String(u"__LITERAL_%1_%2__").arg(i).arg(nonce++);
+        } while (entry.text.contains(marker));
+        classificationText += marker;
+        protectedLiterals.emplace_back(marker, entry.text.mid(start, length));
+        cursor = start + length;
+    }
+    classificationText += entry.text.mid(cursor);
+    dynamic->setDynamicType(classificationText);
+    if (!protectedLiterals.empty()) {
+        String text = dynamic->xmlText();
+        for (const auto& [marker, literal] : protectedLiterals) {
+            text.replace(marker, literal);
+        }
+        dynamic->setXmlText(text);
+    }
+    colorItem(dynamic, entry.color);
+    if (entry.enclosure == u"circle") {
+        dynamic->setFrameType(FrameType::CIRCLE);
+        dynamic->setPropertyFlags(Pid::FRAME_TYPE, PropertyFlags::UNSTYLED);
+    } else if (entry.enclosure == u"none") {
+        dynamic->setFrameType(FrameType::NO_FRAME);
+        dynamic->setPropertyFlags(Pid::FRAME_TYPE, PropertyFlags::UNSTYLED);
+    } else if (entry.enclosure == u"rectangle") {
+        dynamic->setFrameType(FrameType::RECTANGLE);
+        dynamic->setFrameRound(0_sp);
+        dynamic->setPropertyFlags(Pid::FRAME_TYPE, PropertyFlags::UNSTYLED);
+        dynamic->setPropertyFlags(Pid::FRAME_ROUND, PropertyFlags::UNSTYLED);
+    }
+    dynamic->setVisible(entry.visible);
+    return dynamic;
+}
+
 //---------------------------------------------------------
 //   addLyric
 //---------------------------------------------------------
@@ -3767,20 +3898,8 @@ void MusicXmlParserDirection::direction(const String& partId,
     Dynamic* firstDyn = nullptr;
 
     // do dynamics
-    // LVIFIX: check import/export of <other-dynamics>unknown_text</...>
-    for (StringList::iterator it = m_dynamicsList.begin(); it != m_dynamicsList.end(); ++it) {
-        Dynamic* dynamic = Factory::createDynamic(m_score->dummy());
-        dynamic->setDynamicType(*it);
-        colorItem(dynamic, m_dynamicsColor);
-
-        if (m_enclosure == "circle") {
-            dynamic->setFrameType(FrameType::CIRCLE);
-        } else if (m_enclosure == "none") {
-            dynamic->setFrameType(FrameType::NO_FRAME);
-        } else if (m_enclosure == "rectangle") {
-            dynamic->setFrameType(FrameType::RECTANGLE);
-            dynamic->setFrameRound(0_sp);
-        }
+    for (auto it = m_dynamicsList.begin(); it != m_dynamicsList.end(); ++it) {
+        Dynamic* dynamic = createImportedDynamic(m_score, *it);
 
         if (isDynamicRange) {
             if (it == m_dynamicsList.begin()) {
@@ -3797,9 +3916,7 @@ void MusicXmlParserDirection::direction(const String& partId,
             dynamic->setVelocity(musicXmlDynamicVelocity(m_dynaVelocity, 0, 0));
         }
 
-        dynamic->setVisible(m_visible);
-
-        String dynamicsPlacement = placement();
+        String dynamicsPlacement = it->placement;
         // Case-based defaults
         if (dynamicsPlacement.empty()) {
             dynamicsPlacement = isVocalStaff ? u"above" : u"below";
@@ -3812,7 +3929,7 @@ void MusicXmlParserDirection::direction(const String& partId,
         // Add element to score later, after collecting all the others and sorting by default-y
         // This allows default-y to be at least respected by the order of elements
         MusicXmlDelayedDirectionElement* delayedDirection = new MusicXmlDelayedDirectionElement(
-            hasTotalY() ? totalY() : 100, dynamic, m_track, dynamicsPlacement, measure, tick + m_offset);
+            it->hasTotalY ? it->totalY : 100, dynamic, m_track, dynamicsPlacement, measure, tick + m_offset);
         delayedDirections.push_back(delayedDirection);
     }
 
@@ -4270,17 +4387,13 @@ void MusicXmlParserDirection::swing()
 
 void MusicXmlParserDirection::dynamics()
 {
-    m_dynamicsColor = Color::fromString(m_e.attribute("color"));
-    m_enclosure = m_e.attribute("enclosure");
-    m_dynamicsPlacement = m_e.attribute("placement");
-
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "other-dynamics") {
-            m_dynamicsList.push_back(m_e.readText());
-        } else {
-            m_dynamicsList.push_back(String::fromAscii(m_e.name().ascii()));
-            m_e.skipCurrentElement();
-        }
+    MusicXmlDynamic dynamic = parseDynamicsContainer(m_e, m_visible, m_logger);
+    // MusicXML dynamics placement is ignored in directions; the parent wins.
+    dynamic.placement = placement();
+    dynamic.hasTotalY = hasTotalY();
+    dynamic.totalY = totalY();
+    if (!dynamic.text.empty()) {
+        m_dynamicsList.push_back(dynamic);
     }
 }
 
@@ -4593,7 +4706,14 @@ void MusicXmlParserDirection::textToDynamic(String& text)
         DynamicType dt = TConv::fromXml(simplifiedText.toStdString(), DynamicType::OTHER);
         if (dt != DynamicType::OTHER) {
             m_dynaVelocity = String::number(round(Dynamic::dynamicVelocity(dt) / 0.9));
-            m_dynamicsList.push_back(Dynamic::dynamicText(dt));
+            MusicXmlDynamic dynamic;
+            dynamic.text = Dynamic::dynamicText(dt);
+            dynamic.placement = placement();
+            dynamic.enclosure = m_enclosure;
+            dynamic.visible = m_visible;
+            dynamic.hasTotalY = hasTotalY();
+            dynamic.totalY = totalY();
+            m_dynamicsList.push_back(dynamic);
             text.clear();
         }
     }
@@ -8564,16 +8684,9 @@ void MusicXmlParserNotations::tied()
 
 void MusicXmlParserNotations::dynamics()
 {
-    m_dynamicsColor = Color::fromString(m_e.attribute("color"));
-    m_dynamicsPlacement = m_e.attribute("placement");
-
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "other-dynamics") {
-            m_dynamicsList.push_back(m_e.readText());
-        } else {
-            m_dynamicsList.push_back(String::fromAscii(m_e.name().ascii()));
-            m_e.skipCurrentElement();  // skip but don't log
-        }
+    const MusicXmlDynamic dynamic = parseDynamicsContainer(m_e, m_visible, m_logger);
+    if (!dynamic.text.empty()) {
+        m_dynamicsList.push_back(dynamic);
     }
 }
 
@@ -9612,14 +9725,9 @@ void MusicXmlParserNotations::addToScore(ChordRest* const cr, Note* const note, 
         }
     }
 
-    // more than one dynamic ???
-    // LVIFIX: check import/export of <other-dynamics>unknown_text</...>
-    // TODO: remove duplicate code (see MusicXml::direction)
-    for (const String& d : std::as_const(m_dynamicsList)) {
-        Dynamic* dynamic = Factory::createDynamic(m_score->dummy());
-        dynamic->setDynamicType(d);
-        colorItem(dynamic, m_dynamicsColor);
-        m_pass2.addElemOffset(dynamic, cr->track(), m_dynamicsPlacement, cr->measure(), tick);
+    for (const MusicXmlDynamic& d : std::as_const(m_dynamicsList)) {
+        Dynamic* dynamic = createImportedDynamic(m_score, d);
+        m_pass2.addElemOffset(dynamic, cr->track(), d.placement, cr->measure(), tick);
     }
 }
 
