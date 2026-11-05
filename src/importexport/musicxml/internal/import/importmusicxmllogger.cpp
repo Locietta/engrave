@@ -69,7 +69,7 @@ static void to_xml_log(MusicXmlLogger::Level level, const String &text, const Xm
  */
 
 void MusicXmlLogger::logDebugTrace(const String &trace, const muse::XmlStreamReader *xmlreader) {
-    if (m_level <= Level::MXML_TRACE) {
+    if (level_ <= Level::MXML_TRACE) {
         to_xml_log(Level::MXML_TRACE, trace, xmlreader);
     }
 }
@@ -83,7 +83,7 @@ void MusicXmlLogger::logDebugTrace(const String &trace, const muse::XmlStreamRea
  */
 
 void MusicXmlLogger::logDebugInfo(const String &info, const XmlStreamReader *xmlreader) {
-    if (m_level <= Level::MXML_INFO) {
+    if (level_ <= Level::MXML_INFO) {
         to_xml_log(Level::MXML_INFO, info, xmlreader);
     }
 }
@@ -97,7 +97,7 @@ void MusicXmlLogger::logDebugInfo(const String &info, const XmlStreamReader *xml
  */
 
 void MusicXmlLogger::logError(const String &error, const XmlStreamReader *xmlreader) {
-    if (m_level <= Level::MXML_ERROR) {
+    if (level_ <= Level::MXML_ERROR) {
         to_xml_log(Level::MXML_ERROR, error, xmlreader);
     }
 }

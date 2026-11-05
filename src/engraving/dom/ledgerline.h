@@ -50,13 +50,13 @@ public:
 
     Chord *chord() const { return toChord(ownershipParent()); }
 
-    double len() const { return m_len; }
+    double len() const { return len_; }
 
-    void setLen(double v) { m_len = v; }
+    void setLen(double v) { len_ = v; }
 
-    void setVertical(bool v) { m_vertical = v; }
+    void setVertical(bool v) { vertical_ = v; }
 
-    bool vertical() const { return m_vertical; }
+    bool vertical() const { return vertical_; }
 
     void spatiumChanged(double /*oldValue*/, double /*newValue*/) override;
 
@@ -68,8 +68,8 @@ public:
 
 private:
 
-    double m_len = 0.0;
-    bool m_vertical = false;
+    double len_ = 0.0;
+    bool vertical_ = false;
 };
 } // namespace mu::engraving
 #endif

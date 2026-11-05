@@ -45,9 +45,9 @@ public:
     ConnectorInfoReader(XmlReader &e, ReadContext *ctx, EngravingItem *current, int track = -1);
     ConnectorInfoReader(XmlReader &e, ReadContext *ctx, Score *current, int track = -1);
 
-    ConnectorInfoReader *prev() const { return static_cast<ConnectorInfoReader *>(m_prev); }
+    ConnectorInfoReader *prev() const { return static_cast<ConnectorInfoReader *>(prev_); }
 
-    ConnectorInfoReader *next() const { return static_cast<ConnectorInfoReader *>(m_next); }
+    ConnectorInfoReader *next() const { return static_cast<ConnectorInfoReader *>(next_); }
 
     EngravingItem *connector();
     const EngravingItem *connector() const;
@@ -69,9 +69,9 @@ private:
     void readEndpointLocation(Location &l);
     Fraction curTick() const;
 
-    XmlReader *m_reader = nullptr;
-    ReadContext *m_ctx = nullptr;
-    EngravingItem *m_connector = nullptr;
-    EngravingObject *m_connectorReceiver = nullptr;
+    XmlReader *reader_ = nullptr;
+    ReadContext *ctx_ = nullptr;
+    EngravingItem *connector_ = nullptr;
+    EngravingObject *connectorReceiver_ = nullptr;
 };
 } // namespace mu::engraving::read460

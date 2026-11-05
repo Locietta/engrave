@@ -29,19 +29,19 @@
 namespace mu::engraving {
 class RangeLock {
 public:
-    RangeLock(MeasureBase *start, MeasureBase *end) : m_startMB(start), m_endMB(end) {
-        assert(m_startMB->isBefore(m_endMB) || m_startMB == m_endMB);
+    RangeLock(MeasureBase *start, MeasureBase *end) : startMB_(start), endMB_(end) {
+        assert(startMB_->isBefore(endMB_) || startMB_ == endMB_);
     }
 
-    MeasureBase *startMB() const { return m_startMB; }
+    MeasureBase *startMB() const { return startMB_; }
 
-    MeasureBase *endMB() const { return m_endMB; }
+    MeasureBase *endMB() const { return endMB_; }
 
     bool contains(const MeasureBase *mb) const;
 
 private:
-    MeasureBase *m_startMB;
-    MeasureBase *m_endMB;
+    MeasureBase *startMB_;
+    MeasureBase *endMB_;
 };
 
 class RangeLocks {
@@ -49,9 +49,9 @@ public:
     void add(const RangeLock *lock);
     void remove(const RangeLock *lock);
 
-    void removeLockStartingAt(const MeasureBase *mb) { m_rangeLocks.erase(mb); }
+    void removeLockStartingAt(const MeasureBase *mb) { rangeLocks_.erase(mb); }
 
-    void clear() { m_rangeLocks.clear(); }
+    void clear() { rangeLocks_.clear(); }
 
     const RangeLock *lockStartingAt(const MeasureBase *mb) const;
     const RangeLock *lockContaining(const MeasureBase *mb) const;
@@ -69,6 +69,6 @@ private:
         bool operator()(const MeasureBase *a, const MeasureBase *b) const { return a->isBefore(b); }
     };
 
-    std::map<const MeasureBase *, const RangeLock *, Ordering> m_rangeLocks;
+    std::map<const MeasureBase *, const RangeLock *, Ordering> rangeLocks_;
 };
 } // namespace mu::engraving

@@ -15,9 +15,9 @@ ChordBracket::ChordBracket(DummyParentOr<Chord> parent) : Arpeggio(parent, Eleme
 
 PropertyValue ChordBracket::getProperty(Pid propertyId) const {
     switch (propertyId) {
-        case Pid::BRACKET_HOOK_LEN: return m_hookLength;
-        case Pid::BRACKET_HOOK_POS: return m_hookPos;
-        case Pid::BRACKET_RIGHT_SIDE: return m_rightSide;
+        case Pid::BRACKET_HOOK_LEN: return hookLength_;
+        case Pid::BRACKET_HOOK_POS: return hookPos_;
+        case Pid::BRACKET_RIGHT_SIDE: return rightSide_;
         default: break;
     }
     return Arpeggio::getProperty(propertyId);
@@ -29,9 +29,9 @@ PropertyValue ChordBracket::getProperty(Pid propertyId) const {
 
 bool ChordBracket::setProperty(Pid propertyId, const PropertyValue &val) {
     switch (propertyId) {
-        case Pid::BRACKET_HOOK_LEN: m_hookLength = val.value<Spatium>(); break;
-        case Pid::BRACKET_HOOK_POS: m_hookPos = val.value<DirectionV>(); break;
-        case Pid::BRACKET_RIGHT_SIDE: m_rightSide = val.toBool(); break;
+        case Pid::BRACKET_HOOK_LEN: hookLength_ = val.value<Spatium>(); break;
+        case Pid::BRACKET_HOOK_POS: hookPos_ = val.value<DirectionV>(); break;
+        case Pid::BRACKET_RIGHT_SIDE: rightSide_ = val.toBool(); break;
         default:
             if (!Arpeggio::setProperty(propertyId, val)) {
                 return false;

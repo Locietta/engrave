@@ -80,14 +80,14 @@ static ChordRest *searchCR(Segment *segment, track_idx_t startTrack, track_idx_t
 
 bool SlurSegment::isEdited() const {
     for (int i = 0; i < int(Grip::GRIPS); ++i) {
-        if (!m_ups[i].off.isNull()) {
+        if (!ups_[i].off.isNull()) {
             return true;
         }
     }
     return false;
 }
 
-bool SlurSegment::isEndPointsEdited() const { return !(m_ups[int(Grip::START)].off.isNull() && m_ups[int(Grip::END)].off.isNull()); }
+bool SlurSegment::isEndPointsEdited() const { return !(ups_[int(Grip::START)].off.isNull() && ups_[int(Grip::END)].off.isNull()); }
 
 double SlurSegment::endWidth() const { return style().styleAbsolute(Sid::slurEndWidth); }
 

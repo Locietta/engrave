@@ -119,51 +119,51 @@ public:
     bool parse(String &text);
 
     // getters / setters
-    int ord() const { return m_ord; }
+    int ord() const { return ord_; }
 
-    Modifier prefix() const { return m_prefix; }
+    Modifier prefix() const { return prefix_; }
 
-    void setPrefix(const Modifier &v) { m_prefix = v; }
+    void setPrefix(const Modifier &v) { prefix_ = v; }
 
     void undoSetPrefix(Modifier pref);
 
-    int digit() const { return m_digit; }
+    int digit() const { return digit_; }
 
-    void setDigit(int val) { m_digit = val; }
+    void setDigit(int val) { digit_ = val; }
 
     void undoSetDigit(int digit);
 
-    Modifier suffix() const { return m_suffix; }
+    Modifier suffix() const { return suffix_; }
 
-    void setSuffix(const Modifier &v) { m_suffix = v; }
+    void setSuffix(const Modifier &v) { suffix_ = v; }
 
     void undoSetSuffix(Modifier suff);
 
-    ContLine contLine() const { return m_contLine; }
+    ContLine contLine() const { return contLine_; }
 
-    void setContLine(const ContLine &v) { m_contLine = v; }
+    void setContLine(const ContLine &v) { contLine_ = v; }
 
     void undoSetContLine(ContLine val);
 
-    Parenthesis parenth1() const { return m_parenth[0]; }
+    Parenthesis parenth1() const { return parenth_[0]; }
 
-    Parenthesis parenth2() const { return m_parenth[1]; }
+    Parenthesis parenth2() const { return parenth_[1]; }
 
-    Parenthesis parenth3() const { return m_parenth[2]; }
+    Parenthesis parenth3() const { return parenth_[2]; }
 
-    Parenthesis parenth4() const { return m_parenth[3]; }
+    Parenthesis parenth4() const { return parenth_[3]; }
 
-    Parenthesis parenth5() const { return m_parenth[4]; }
+    Parenthesis parenth5() const { return parenth_[4]; }
 
-    void setParenth1(Parenthesis v) { m_parenth[0] = v; }
+    void setParenth1(Parenthesis v) { parenth_[0] = v; }
 
-    void setParenth2(Parenthesis v) { m_parenth[1] = v; }
+    void setParenth2(Parenthesis v) { parenth_[1] = v; }
 
-    void setParenth3(Parenthesis v) { m_parenth[2] = v; }
+    void setParenth3(Parenthesis v) { parenth_[2] = v; }
 
-    void setParenth4(Parenthesis v) { m_parenth[3] = v; }
+    void setParenth4(Parenthesis v) { parenth_[3] = v; }
 
-    void setParenth5(Parenthesis v) { m_parenth[4] = v; }
+    void setParenth5(Parenthesis v) { parenth_[4] = v; }
 
     void undoSetParenth1(Parenthesis par);
     void undoSetParenth2(Parenthesis par);
@@ -198,13 +198,13 @@ private:
 
     static const Char NORM_PARENTH_TO_CHAR[int(Parenthesis::NUMOF)];
 
-    int m_ord = 0;                        // the line ordinal of this element in the FB stack
-                                          // the parts making a FiguredBassItem up
-    Modifier m_prefix = Modifier::NONE;   // the accidental coming before the body
-    int m_digit = 0;                      // the main digit (if present)
-    Modifier m_suffix = Modifier::NONE;   // the accidental coming after the body
-    ContLine m_contLine = ContLine::NONE; // whether the item has continuation line or not
-    Parenthesis m_parenth[5];             // each of the parenthesis: before, between and after parts
+    int ord_ = 0;                        // the line ordinal of this element in the FB stack
+                                         // the parts making a FiguredBassItem up
+    Modifier prefix_ = Modifier::NONE;   // the accidental coming before the body
+    int digit_ = 0;                      // the main digit (if present)
+    Modifier suffix_ = Modifier::NONE;   // the accidental coming after the body
+    ContLine contLine_ = ContLine::NONE; // whether the item has continuation line or not
+    Parenthesis parenth_[5];             // each of the parenthesis: before, between and after parts
 };
 
 //---------------------------------------------------------
@@ -262,15 +262,15 @@ public:
     void setVisible(bool f) override;
     void regenerateText();
 
-    bool onNote() const { return m_onNote; }
+    bool onNote() const { return onNote_; }
 
-    void setOnNote(bool val) { m_onNote = val; }
+    void setOnNote(bool val) { onNote_ = val; }
 
     Segment *segment() const { return (Segment *) (ownershipParent()); }
 
-    const Fraction &ticks() const { return m_ticks; }
+    const Fraction &ticks() const { return ticks_; }
 
-    void setTicks(const Fraction &v) { m_ticks = v; }
+    void setTicks(const Fraction &v) { ticks_ = v; }
 
     double additionalContLineX(double pagePosY) const; // returns the X coord (in page coord) of cont. line at pagePosY, if any
     FiguredBass *nextFiguredBass() const;              // returns next *adjacent* f.b. item, if any
@@ -281,11 +281,11 @@ public:
 
     bool positionRelativeToNoteheadRest() const override { return true; }
 
-    size_t itemsCount() const { return m_items.size(); }
+    size_t itemsCount() const { return items_.size(); }
 
-    void appendItem(FiguredBassItem *item) { m_items.push_back(item); }
+    void appendItem(FiguredBassItem *item) { items_.push_back(item); }
 
-    const std::vector<FiguredBassItem *> &items() const { return m_items; }
+    const std::vector<FiguredBassItem *> &items() const { return items_; }
 
     void clearItems();
     void addItemToLinked(FiguredBassItem *item);
@@ -316,11 +316,11 @@ private:
 
     Sid getPropertyStyle(Pid) const override;
 
-    std::vector<FiguredBassItem *> m_items; // the individual lines of the F.B.
+    std::vector<FiguredBassItem *> items_; // the individual lines of the F.B.
 
-    bool m_onNote = true; // true if this element is on a staff note | false if it is between notes
-    Fraction m_ticks;     // the duration (used for cont. lines and for multiple F.B.
-                          // under the same note)
+    bool onNote_ = true; // true if this element is on a staff note | false if it is between notes
+    Fraction ticks_;     // the duration (used for cont. lines and for multiple F.B.
+                         // under the same note)
 };
 } // namespace mu::engraving
 

@@ -66,13 +66,13 @@ using namespace mu::engraving;
 //---------------------------------------------------------
 
 MasterScore::MasterScore(const EngravingServices &services, std::weak_ptr<engraving::EngravingProject> project) : Score(services) {
-    m_project = project;
-    m_transactionManager = std::make_unique<TransactionManager>(this);
-    m_undoStack = new UndoStack();
-    m_sigmap = new TimeSigMap();
-    m_automationController = new ScoreAutomationController();
-    m_expandedRepeatList = new RepeatList(this);
-    m_nonExpandedRepeatList = new RepeatList(this);
+    project_ = project;
+    transactionManager_ = std::make_unique<TransactionManager>(this);
+    undoStack_ = new UndoStack();
+    sigmap_ = new TimeSigMap();
+    automationController_ = new ScoreAutomationController();
+    expandedRepeatList_ = new RepeatList(this);
+    nonExpandedRepeatList_ = new RepeatList(this);
     setMasterScore(this);
 
 #if defined(_WIN32)
@@ -103,44 +103,44 @@ MasterScore::MasterScore(const EngravingServices &services, const MStyle &s, std
 }
 
 MasterScore::~MasterScore() {
-    if (m_project.lock()) {
-        m_project.lock()->m_masterScore = nullptr;
+    if (project_.lock()) {
+        project_.lock()->masterScore_ = nullptr;
     }
 
-    delete m_expandedRepeatList;
-    delete m_nonExpandedRepeatList;
-    delete m_sigmap;
-    delete m_undoStack;
-    delete m_automationController;
-    muse::DeleteAll(m_excerpts);
+    delete expandedRepeatList_;
+    delete nonExpandedRepeatList_;
+    delete sigmap_;
+    delete undoStack_;
+    delete automationController_;
+    muse::DeleteAll(excerpts_);
 }
 
 //---------------------------------------------------------
 //   fileInfo
 //---------------------------------------------------------
 
-IFileInfoProviderPtr MasterScore::fileInfo() const { return m_fileInfoProvider; }
+IFileInfoProviderPtr MasterScore::fileInfo() const { return fileInfoProvider_; }
 
-void MasterScore::setFileInfoProvider(IFileInfoProviderPtr fileInfoProvider) { m_fileInfoProvider = fileInfoProvider; }
+void MasterScore::setFileInfoProvider(IFileInfoProviderPtr fileInfoProvider) { fileInfoProvider_ = fileInfoProvider; }
 
 String MasterScore::name() const { return fileInfo()->displayName(); }
 
-AutomationDataConstPtr MasterScore::automationData() const { return m_automationController->automationData(); }
+AutomationDataConstPtr MasterScore::automationData() const { return automationController_->automationData(); }
 
-void MasterScore::setAutomationData(AutomationDataPtr data) { m_automationController->setAutomationData(std::move(data)); }
+void MasterScore::setAutomationData(AutomationDataPtr data) { automationController_->setAutomationData(std::move(data)); }
 
 void MasterScore::editAutomationPoints(const AutomationCurveKey &key, AutomationPointEdits &edits, bool undoable) {
     IF_ASSERT_FAILED(key.isValid() && !edits.empty()) { return; }
 
     if (undoable) {
-        undo(new EditAutomationPoints(this, m_automationController, key, edits));
+        undo(new EditAutomationPoints(this, automationController_, key, edits));
     } else {
-        m_automationController->editPoints(key, edits);
+        automationController_->editPoints(key, edits);
     }
 }
 
 void MasterScore::onTimeInserted(const Fraction &tick, const Fraction &len, const std::vector<RepeatSegmentInfo> &oldSegments) {
-    m_automationController->insertTime(tick, len, oldSegments);
+    automationController_->insertTime(tick, len, oldSegments);
 }
 
 //---------------------------------------------------------
@@ -148,8 +148,8 @@ void MasterScore::onTimeInserted(const Fraction &tick, const Fraction &len, cons
 //---------------------------------------------------------
 
 void MasterScore::invalidateRepeatList() {
-    m_expandedRepeatList->setScoreChanged();
-    m_nonExpandedRepeatList->setScoreChanged();
+    expandedRepeatList_->setScoreChanged();
+    nonExpandedRepeatList_->setScoreChanged();
 }
 
 //---------------------------------------------------------
@@ -157,10 +157,10 @@ void MasterScore::invalidateRepeatList() {
 //---------------------------------------------------------
 
 void MasterScore::setExpandRepeats(bool expand) {
-    if (m_expandRepeats == expand) {
+    if (expandRepeats_ == expand) {
         return;
     }
-    m_expandRepeats = expand;
+    expandRepeats_ = expand;
     invalidateRepeatList();
 }
 
@@ -170,13 +170,13 @@ void MasterScore::setExpandRepeats(bool expand) {
 //---------------------------------------------------------
 
 void MasterScore::updateRepeatListTempo() {
-    m_expandedRepeatList->updateUticks();
-    m_nonExpandedRepeatList->updateUticks();
+    expandedRepeatList_->updateUticks();
+    nonExpandedRepeatList_->updateUticks();
 }
 
 void MasterScore::updateRepeatList() {
-    m_expandedRepeatList->update(true);
-    m_nonExpandedRepeatList->update(false);
+    expandedRepeatList_->update(true);
+    nonExpandedRepeatList_->update(false);
 }
 
 //---------------------------------------------------------
@@ -184,45 +184,45 @@ void MasterScore::updateRepeatList() {
 //---------------------------------------------------------
 
 const RepeatList &MasterScore::repeatList() const {
-    if (m_expandRepeats) {
-        m_expandedRepeatList->update(true);
-        return *m_expandedRepeatList;
+    if (expandRepeats_) {
+        expandedRepeatList_->update(true);
+        return *expandedRepeatList_;
     }
 
-    m_nonExpandedRepeatList->update(false);
-    return *m_nonExpandedRepeatList;
+    nonExpandedRepeatList_->update(false);
+    return *nonExpandedRepeatList_;
 }
 
 const RepeatList &MasterScore::repeatList(bool expandRepeats, bool updateTies) const {
     if (expandRepeats) {
-        m_expandedRepeatList->update(true, updateTies);
-        return *m_expandedRepeatList;
+        expandedRepeatList_->update(true, updateTies);
+        return *expandedRepeatList_;
     }
 
-    m_nonExpandedRepeatList->update(false, updateTies);
-    return *m_nonExpandedRepeatList;
+    nonExpandedRepeatList_->update(false, updateTies);
+    return *nonExpandedRepeatList_;
 }
 
 const TempoTimeline &MasterScore::tempoTimeline() const { return tempoTimeline(masterScore()->expandRepeats()); }
 
 const TempoTimeline &MasterScore::tempoTimeline(bool expandRepeats) const {
-    m_automationController->ensureInitialized(const_cast<MasterScore *>(this));
-    return m_automationController->tempoTimeline(expandRepeats);
+    automationController_->ensureInitialized(const_cast<MasterScore *>(this));
+    return automationController_->tempoTimeline(expandRepeats);
 }
 
 bool MasterScore::setTempoMultiplier(BeatsPerSecond val) {
     IF_ASSERT_FAILED(val > BeatsPerSecond(0.0)) { return false; }
 
-    if (m_automationController->tempoTimeline().tempoMultiplier() == val) {
+    if (automationController_->tempoTimeline().tempoMultiplier() == val) {
         return false;
     }
 
-    m_automationController->setTempoMultiplier(val);
+    automationController_->setTempoMultiplier(val);
     return true;
 }
 
 void MasterScore::setTempoTimelineOverride(std::optional<TempoTimeline> timeline) {
-    m_automationController->setTempoTimelineOverride(std::move(timeline));
+    automationController_->setTempoTimelineOverride(std::move(timeline));
 }
 
 //---------------------------------------------------------
@@ -263,7 +263,7 @@ MasterScore *MasterScore::clone() {
     buffer.close();
 
     muse::ByteArray scoreData = buffer.data();
-    MasterScore *score = new MasterScore(services(), style(), m_project);
+    MasterScore *score = new MasterScore(services(), style(), project_);
 
     XmlReader r(scoreData);
     MscLoader().readMasterScore(score, r, true);
@@ -282,7 +282,7 @@ Score *MasterScore::createScore(const MStyle &s) { return new Score(this, s); }
 
 Fraction MasterScore::loopBoundaryTick(LoopBoundaryType type) const {
     IF_ASSERT_FAILED(type != LoopBoundaryType::Unknown) { return Fraction(); }
-    return m_loopBoundaries[size_t(type)];
+    return loopBoundaries_[size_t(type)];
 }
 
 void MasterScore::setLoopBoundaryTick(LoopBoundaryType type, Fraction tick) {
@@ -295,24 +295,24 @@ void MasterScore::setLoopBoundaryTick(LoopBoundaryType type, Fraction tick) {
         tick = lastMeasure()->endTick();
     }
 
-    m_loopBoundaries[size_t(type)] = tick;
+    loopBoundaries_[size_t(type)] = tick;
 }
 
 void MasterScore::addChangesListener(IScoreChangesListener *listener) {
-    if (std::find(m_changesListeners.begin(), m_changesListeners.end(), listener) == m_changesListeners.end()) {
-        m_changesListeners.push_back(listener);
+    if (std::find(changesListeners_.begin(), changesListeners_.end(), listener) == changesListeners_.end()) {
+        changesListeners_.push_back(listener);
     }
 }
 
 void MasterScore::removeChangesListener(IScoreChangesListener *listener) {
-    m_changesListeners.erase(std::remove(m_changesListeners.begin(), m_changesListeners.end(), listener), m_changesListeners.end());
+    changesListeners_.erase(std::remove(changesListeners_.begin(), changesListeners_.end(), listener), changesListeners_.end());
 }
 
 void MasterScore::notifyChanges(const ScoreChanges &changes) {
     // A listener may detach while it handles the changes.
-    const std::vector<IScoreChangesListener *> listeners = m_changesListeners;
+    const std::vector<IScoreChangesListener *> listeners = changesListeners_;
     for (IScoreChangesListener *listener : listeners) {
-        if (std::find(m_changesListeners.begin(), m_changesListeners.end(), listener) != m_changesListeners.end()) {
+        if (std::find(changesListeners_.begin(), changesListeners_.end(), listener) != changesListeners_.end()) {
             listener->onScoreChanges(changes);
         }
     }
@@ -322,24 +322,24 @@ void MasterScore::notifyChanges(const ScoreChanges &changes) {
 //   setUpdateAll
 //---------------------------------------------------------
 
-void MasterScore::setUpdateAll() { m_cmdState.setUpdateMode(UpdateMode::UpdateAll); }
+void MasterScore::setUpdateAll() { cmdState_.setUpdateMode(UpdateMode::UpdateAll); }
 
 //---------------------------------------------------------
 //   setLayoutAll
 //---------------------------------------------------------
 
 void MasterScore::setLayoutAll(staff_idx_t staff, const EngravingItem *e) {
-    m_cmdState.setTick(Fraction(0, 1));
-    m_cmdState.setTick(Fraction::max());
+    cmdState_.setTick(Fraction(0, 1));
+    cmdState_.setTick(Fraction::max());
 
     if (e && e->score() == this) {
         // TODO: map staff number properly
         const staff_idx_t startStaff = staff == muse::nidx ? 0 : staff;
         const staff_idx_t endStaff = staff == muse::nidx ? (nstaves() - 1) : staff;
-        m_cmdState.setStaff(startStaff);
-        m_cmdState.setStaff(endStaff);
+        cmdState_.setStaff(startStaff);
+        cmdState_.setStaff(endStaff);
 
-        m_cmdState.setElement(e);
+        cmdState_.setElement(e);
     }
 }
 
@@ -349,53 +349,53 @@ void MasterScore::setLayoutAll(staff_idx_t staff, const EngravingItem *e) {
 
 void MasterScore::setLayout(const Fraction &t, staff_idx_t staff, const EngravingItem *e) {
     if (t >= Fraction(0, 1)) {
-        m_cmdState.setTick(t);
+        cmdState_.setTick(t);
     }
 
     if (e && e->score() == this) {
         // TODO: map staff number properly
-        m_cmdState.setStaff(staff);
-        m_cmdState.setElement(e);
+        cmdState_.setStaff(staff);
+        cmdState_.setElement(e);
     }
 }
 
 void MasterScore::setLayout(const Fraction &tick1, const Fraction &tick2, staff_idx_t staff1, staff_idx_t staff2, const EngravingItem *e) {
     if (tick1 >= Fraction(0, 1)) {
-        m_cmdState.setTick(tick1);
+        cmdState_.setTick(tick1);
     }
     if (tick2 >= Fraction(0, 1)) {
-        m_cmdState.setTick(tick2);
+        cmdState_.setTick(tick2);
     }
 
     if (e && e->score() == this) {
         // TODO: map staff number properly
-        m_cmdState.setStaff(staff1);
-        m_cmdState.setStaff(staff2);
+        cmdState_.setStaff(staff1);
+        cmdState_.setStaff(staff2);
 
-        m_cmdState.setElement(e);
+        cmdState_.setElement(e);
     }
 }
 
 void MasterScore::initAutomation() {
-    IF_ASSERT_FAILED(m_automationController) { return; }
-    m_automationController->init(this);
+    IF_ASSERT_FAILED(automationController_) { return; }
+    automationController_->init(this);
 }
 
-void MasterScore::updateAutomation(const ScoreChanges &changes) { m_automationController->update(changes); }
+void MasterScore::updateAutomation(const ScoreChanges &changes) { automationController_->update(changes); }
 
 //---------------------------------------------------------
 //   setPlaybackScore
 //---------------------------------------------------------
 
 void MasterScore::setPlaybackScore(Score *score) {
-    if (m_playbackScore == score) {
+    if (playbackScore_ == score) {
         return;
     }
 
-    m_playbackScore = score;
-    m_playbackSettingsLinks.clear();
+    playbackScore_ = score;
+    playbackSettingsLinks_.clear();
 
-    if (!m_playbackScore) {
+    if (!playbackScore_) {
         return;
     }
 
@@ -405,7 +405,7 @@ void MasterScore::setPlaybackScore(Score *score) {
             for (InstrChannel *ch : instr->channel()) {
                 InstrChannel *pChannel = playbackChannel(ch);
                 IF_ASSERT_FAILED(pChannel) { continue; }
-                m_playbackSettingsLinks.emplace_back(pChannel, ch, /* excerpt */ true);
+                playbackSettingsLinks_.emplace_back(pChannel, ch, /* excerpt */ true);
             }
         }
     }

@@ -36,9 +36,9 @@ using namespace mu::engraving;
 
 SoundFlag::SoundFlag(DummyParentOr<EngravingItem> parent) : EngravingItem(ElementType::SOUND_FLAG, parent) {
     String fontFamily = configuration()->iconsFontFamily();
-    m_iconFontValid = !fontFamily.empty();
-    m_iconFont = Font(fontFamily, Font::Type::Icon);
-    m_iconFont.setPointSizeF(UI_ICONS_DEFAULT_FONT_SIZE);
+    iconFontValid_ = !fontFamily.empty();
+    iconFont_ = Font(fontFamily, Font::Type::Icon);
+    iconFont_.setPointSizeF(UI_ICONS_DEFAULT_FONT_SIZE);
 
     //! draw on top of all elements
     setZ(INT_MAX);
@@ -57,22 +57,22 @@ void SoundFlag::setSelected(bool f) {
 
 PropertyValue SoundFlag::getProperty(Pid id) const {
     switch (id) {
-        case Pid::PLAY: return m_play;
+        case Pid::PLAY: return play_;
         case Pid::VISIBLE:
         case Pid::AUTOPLACE:
         case Pid::SMALL: return PropertyValue();
-        case Pid::APPLY_TO_ALL_STAVES: return m_applyToAllStaves;
+        case Pid::APPLY_TO_ALL_STAVES: return applyToAllStaves_;
         default: return EngravingItem::getProperty(id);
     }
 }
 
 bool SoundFlag::setProperty(Pid id, const PropertyValue &value) {
     switch (id) {
-        case Pid::PLAY: m_play = value.toBool(); return true;
+        case Pid::PLAY: play_ = value.toBool(); return true;
         case Pid::VISIBLE:
         case Pid::AUTOPLACE:
         case Pid::SMALL: return false;
-        case Pid::APPLY_TO_ALL_STAVES: m_applyToAllStaves = value.toBool(); return true;
+        case Pid::APPLY_TO_ALL_STAVES: applyToAllStaves_ = value.toBool(); return true;
         default: return EngravingItem::setProperty(id, value);
     }
 }
@@ -88,35 +88,35 @@ PropertyValue SoundFlag::propertyDefault(Pid id) const {
     }
 }
 
-const SoundFlag::PresetCodes &SoundFlag::soundPresets() const { return m_soundPresets; }
+const SoundFlag::PresetCodes &SoundFlag::soundPresets() const { return soundPresets_; }
 
-void SoundFlag::setSoundPresets(const PresetCodes &soundPresets) { m_soundPresets = soundPresets; }
+void SoundFlag::setSoundPresets(const PresetCodes &soundPresets) { soundPresets_ = soundPresets; }
 
-const SoundFlag::PlayingTechniqueCode &SoundFlag::playingTechnique() const { return m_playingTechnique; }
+const SoundFlag::PlayingTechniqueCode &SoundFlag::playingTechnique() const { return playingTechnique_; }
 
-void SoundFlag::setPlayingTechnique(const PlayingTechniqueCode &technique) { m_playingTechnique = technique; }
+void SoundFlag::setPlayingTechnique(const PlayingTechniqueCode &technique) { playingTechnique_ = technique; }
 
-bool SoundFlag::play() const { return m_play; }
+bool SoundFlag::play() const { return play_; }
 
-void mu::engraving::SoundFlag::setPlay(bool play) { m_play = play; }
+void mu::engraving::SoundFlag::setPlay(bool play) { play_ = play; }
 
-bool SoundFlag::applyToAllStaves() const { return m_applyToAllStaves; }
+bool SoundFlag::applyToAllStaves() const { return applyToAllStaves_; }
 
-void SoundFlag::setApplyToAllStaves(bool apply) { m_applyToAllStaves = apply; }
+void SoundFlag::setApplyToAllStaves(bool apply) { applyToAllStaves_ = apply; }
 
 void SoundFlag::clear() {
-    if (m_soundPresets.empty() && m_playingTechnique.empty()) {
+    if (soundPresets_.empty() && playingTechnique_.empty()) {
         return;
     }
 
-    m_soundPresets.clear();
-    m_playingTechnique.clear();
+    soundPresets_.clear();
+    playingTechnique_.clear();
 
     triggerLayout();
 }
 
 bool SoundFlag::shouldHide() const {
-    if (!m_iconFontValid) {
+    if (!iconFontValid_) {
         return true;
     }
 
@@ -130,7 +130,7 @@ bool SoundFlag::shouldHide() const {
         }
     }
 
-    if (!m_soundPresets.empty() || !m_playingTechnique.empty()) {
+    if (!soundPresets_.empty() || !playingTechnique_.empty()) {
         return false;
     }
 
@@ -147,7 +147,7 @@ bool SoundFlag::shouldHide() const {
 }
 
 void SoundFlag::undoChangeSoundFlag(const PresetCodes &presets, const PlayingTechniqueCode &technique) {
-    if (m_soundPresets == presets && m_playingTechnique == technique) {
+    if (soundPresets_ == presets && playingTechnique_ == technique) {
         return;
     }
 
@@ -171,7 +171,7 @@ void SoundFlag::undoChangeSoundFlag(const PresetCodes &presets, const PlayingTec
 char16_t SoundFlag::iconCode() const { return 0xEF4E; }
 
 Font SoundFlag::iconFont() const {
-    Font font = m_iconFont;
+    Font font = iconFont_;
     font.setPointSizeF(UI_ICONS_DEFAULT_FONT_SIZE * magS());
     return font;
 }

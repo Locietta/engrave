@@ -15,11 +15,11 @@ class StreamingFileDevice final : public IODevice {
 public:
     explicit StreamingFileDevice(std::filesystem::path path, std::optional<std::uint64_t> maxBytes = {},
                                  std::optional<std::uint64_t> maxWriteBytes = {}, std::function<bool()> cancelled = {})
-        : m_path(std::move(path)), m_maxBytes(maxBytes), m_maxWriteBytes(maxWriteBytes), m_cancelled(std::move(cancelled)) {}
+        : path_(std::move(path)), maxBytes_(maxBytes), maxWriteBytes_(maxWriteBytes), cancelled_(std::move(cancelled)) {}
 
     ~StreamingFileDevice() override { close(); }
 
-    bool limitExceeded() const { return m_limitExceeded; }
+    bool limitExceeded() const { return limitExceeded_; }
 
 protected:
     bool doOpen(OpenMode mode) override {
@@ -30,55 +30,55 @@ protected:
 
         // The path is UTF-8; std::filesystem::path keeps it away from the
         // process ANSI code page on Windows.
-        m_stream.open(m_path, std::ios::binary | std::ios::trunc);
-        if (!m_stream.is_open()) {
+        stream_.open(path_, std::ios::binary | std::ios::trunc);
+        if (!stream_.is_open()) {
             setError(static_cast<int>(io::Err::FSWriteError), "cannot open audio output for writing");
             return false;
         }
 
-        m_size = 0;
-        m_streamPos = 0;
-        m_written = 0;
-        m_limitExceeded = false;
+        size_ = 0;
+        streamPos_ = 0;
+        written_ = 0;
+        limitExceeded_ = false;
         return true;
     }
 
     void doClose() override {
-        if (m_stream.is_open()) {
-            m_stream.flush();
-            const bool flushed = m_stream.good();
-            m_stream.close();
-            if (!flushed || m_stream.fail()) {
+        if (stream_.is_open()) {
+            stream_.flush();
+            const bool flushed = stream_.good();
+            stream_.close();
+            if (!flushed || stream_.fail()) {
                 setError(static_cast<int>(io::Err::FSWriteError), "cannot finalize audio output");
             }
         }
     }
 
-    size_t dataSize() const override { return m_size; }
+    size_t dataSize() const override { return size_; }
 
     const uint8_t *rawData() const override { return nullptr; }
 
     bool resizeData(size_t size) override {
-        if (m_limitExceeded || (m_maxBytes && size > *m_maxBytes)) {
-            m_limitExceeded = true;
+        if (limitExceeded_ || (maxBytes_ && size > *maxBytes_)) {
+            limitExceeded_ = true;
             return false;
         }
         if (size > static_cast<size_t>(std::numeric_limits<std::streamoff>::max())) return false;
-        m_size = std::max(m_size, size);
+        size_ = std::max(size_, size);
         return true;
     }
 
     size_t writeData(const uint8_t *data, size_t len) override {
-        if (m_cancelled && m_cancelled()) return 0;
+        if (cancelled_ && cancelled_()) return 0;
         // IODevice can overwrite already allocated space without resizeData.
         // Check both limits before touching the file, including final header
         // rewrites and writes after a previously rejected operation.
-        if (m_limitExceeded || (m_maxBytes && (pos() > *m_maxBytes || len > *m_maxBytes - pos())) ||
-            (m_maxWriteBytes && (m_written > *m_maxWriteBytes || len > *m_maxWriteBytes - m_written))) {
-            m_limitExceeded = true;
+        if (limitExceeded_ || (maxBytes_ && (pos() > *maxBytes_ || len > *maxBytes_ - pos())) ||
+            (maxWriteBytes_ && (written_ > *maxWriteBytes_ || len > *maxWriteBytes_ - written_))) {
+            limitExceeded_ = true;
             return 0;
         }
-        if (!m_stream.is_open() || len > static_cast<size_t>(std::numeric_limits<std::streamsize>::max())) {
+        if (!stream_.is_open() || len > static_cast<size_t>(std::numeric_limits<std::streamsize>::max())) {
             setError(static_cast<int>(io::Err::FSWriteError), "invalid stream write");
             return 0;
         }
@@ -86,9 +86,9 @@ protected:
         // Only seek for the non-sequential writes (the WAV header patch);
         // std::ofstream::seekp flushes the put buffer, so doing it per write
         // would turn a buffered stream into one syscall per sample.
-        if (m_streamPos != pos()) {
-            m_stream.seekp(static_cast<std::streamoff>(pos()));
-            if (!m_stream) {
+        if (streamPos_ != pos()) {
+            stream_.seekp(static_cast<std::streamoff>(pos()));
+            if (!stream_) {
                 setError(static_cast<int>(io::Err::FSWriteError), "cannot seek output");
                 return 0;
             }
@@ -96,31 +96,30 @@ protected:
 
         // Bound each file write, including writes issued inside codec flushes.
         for (size_t offset = 0; offset < len;) {
-            if (offset && m_cancelled && m_cancelled()) return 0;
+            if (offset && cancelled_ && cancelled_()) return 0;
             const size_t count = std::min<size_t>(4096, len - offset);
-            m_stream.write(reinterpret_cast<const char *>(data + offset), static_cast<std::streamsize>(count));
-            if (!m_stream) {
+            stream_.write(reinterpret_cast<const char *>(data + offset), static_cast<std::streamsize>(count));
+            if (!stream_) {
                 setError(static_cast<int>(io::Err::FSWriteError), "cannot write output");
                 return 0;
             }
             offset += count;
         }
 
-        m_streamPos = pos() + len;
-        m_written =
-            len > std::numeric_limits<std::uint64_t>::max() - m_written ? std::numeric_limits<std::uint64_t>::max() : m_written + len;
+        streamPos_ = pos() + len;
+        written_ = len > std::numeric_limits<std::uint64_t>::max() - written_ ? std::numeric_limits<std::uint64_t>::max() : written_ + len;
         return len;
     }
 
 private:
-    std::filesystem::path m_path;
-    std::ofstream m_stream;
-    size_t m_size = 0;
-    size_t m_streamPos = 0;
-    std::optional<std::uint64_t> m_maxBytes;
-    std::optional<std::uint64_t> m_maxWriteBytes;
-    std::uint64_t m_written = 0;
-    bool m_limitExceeded = false;
-    std::function<bool()> m_cancelled;
+    std::filesystem::path path_;
+    std::ofstream stream_;
+    size_t size_ = 0;
+    size_t streamPos_ = 0;
+    std::optional<std::uint64_t> maxBytes_;
+    std::optional<std::uint64_t> maxWriteBytes_;
+    std::uint64_t written_ = 0;
+    bool limitExceeded_ = false;
+    std::function<bool()> cancelled_;
 };
 } // namespace muse::io

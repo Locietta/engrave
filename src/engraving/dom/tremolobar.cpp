@@ -70,8 +70,8 @@ PropertyValue TremoloBar::getProperty(Pid propertyId) const {
         case Pid::LINE_WIDTH: return lineWidth();
         case Pid::MAG: return userMag();
         case Pid::PLAY: return play();
-        case Pid::TREMOLOBAR_TYPE: return static_cast<int>(parseTremoloBarTypeFromCurve(m_points));
-        case Pid::TREMOLOBAR_CURVE: return m_points;
+        case Pid::TREMOLOBAR_TYPE: return static_cast<int>(parseTremoloBarTypeFromCurve(points_));
+        case Pid::TREMOLOBAR_CURVE: return points_;
         default: return EngravingItem::getProperty(propertyId);
     }
 }
@@ -136,12 +136,12 @@ TremoloBarType TremoloBar::parseTremoloBarTypeFromCurve(const PitchValues &curve
 
 void TremoloBar::updatePointsByTremoloBarType(const TremoloBarType type) {
     switch (type) {
-        case TremoloBarType::DIP: m_points = DIP_CURVE; break;
-        case TremoloBarType::DIVE: m_points = DIVE_CURVE; break;
-        case TremoloBarType::RELEASE_UP: m_points = RELEASE_UP_CURVE; break;
-        case TremoloBarType::INVERTED_DIP: m_points = INVERTED_DIP_CURVE; break;
-        case TremoloBarType::RETURN: m_points = RETURN_CURVE; break;
-        case TremoloBarType::RELEASE_DOWN: m_points = RELEASE_DOWN_CURVE; break;
+        case TremoloBarType::DIP: points_ = DIP_CURVE; break;
+        case TremoloBarType::DIVE: points_ = DIVE_CURVE; break;
+        case TremoloBarType::RELEASE_UP: points_ = RELEASE_UP_CURVE; break;
+        case TremoloBarType::INVERTED_DIP: points_ = INVERTED_DIP_CURVE; break;
+        case TremoloBarType::RETURN: points_ = RETURN_CURVE; break;
+        case TremoloBarType::RELEASE_DOWN: points_ = RELEASE_DOWN_CURVE; break;
         case TremoloBarType::CUSTOM: break;
     }
 }

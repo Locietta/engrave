@@ -33,7 +33,7 @@ namespace mu::engraving {
 //   SpannerMap
 //---------------------------------------------------------
 
-SpannerMap::SpannerMap() : std::multimap<int, Spanner *>() { m_dirty = true; }
+SpannerMap::SpannerMap() : std::multimap<int, Spanner *>() { dirty_ = true; }
 
 //---------------------------------------------------------
 //   update
@@ -47,9 +47,9 @@ void SpannerMap::update() const {
 
     collectIntervals(regularIntervals, collisionFreeIntervals);
 
-    m_tree = interval_tree::IntervalTree<Spanner *>(std::move(regularIntervals));
-    m_collisionFreeTree = interval_tree::IntervalTree<Spanner *>(std::move(collisionFreeIntervals));
-    m_dirty = false;
+    tree_ = interval_tree::IntervalTree<Spanner *>(std::move(regularIntervals));
+    collisionFreeTree_ = interval_tree::IntervalTree<Spanner *>(std::move(collisionFreeIntervals));
+    dirty_ = false;
 }
 
 //---------------------------------------------------------
@@ -57,19 +57,19 @@ void SpannerMap::update() const {
 //---------------------------------------------------------
 
 const SpannerMap::IntervalList &SpannerMap::findContained(int start, int stop, bool excludeCollisions) const {
-    if (m_dirty) {
+    if (dirty_) {
         update();
     }
 
-    m_results.clear();
+    results_.clear();
 
     if (excludeCollisions) {
-        m_results = m_collisionFreeTree.findContained(start, stop);
+        results_ = collisionFreeTree_.findContained(start, stop);
     } else {
-        m_results = m_tree.findContained(start, stop);
+        results_ = tree_.findContained(start, stop);
     }
 
-    return m_results;
+    return results_;
 }
 
 //---------------------------------------------------------
@@ -77,19 +77,19 @@ const SpannerMap::IntervalList &SpannerMap::findContained(int start, int stop, b
 //---------------------------------------------------------
 
 const SpannerMap::IntervalList &SpannerMap::findOverlapping(int start, int stop, bool excludeCollisions) const {
-    if (m_dirty) {
+    if (dirty_) {
         update();
     }
 
-    m_results.clear();
+    results_.clear();
 
     if (excludeCollisions) {
-        m_results = m_collisionFreeTree.findOverlapping(start, stop);
+        results_ = collisionFreeTree_.findOverlapping(start, stop);
     } else {
-        m_results = m_tree.findOverlapping(start, stop);
+        results_ = tree_.findOverlapping(start, stop);
     }
 
-    return m_results;
+    return results_;
 }
 
 void SpannerMap::collectIntervals(IntervalList &regularIntervals, IntervalList &collisionFreeIntervals) const {
@@ -139,7 +139,7 @@ void SpannerMap::collectIntervals(IntervalList &regularIntervals, IntervalList &
 
 void SpannerMap::addSpanner(Spanner *s) {
     insert(std::pair<int, Spanner *>(s->tick().ticks(), s));
-    m_dirty = true;
+    dirty_ = true;
 }
 
 //---------------------------------------------------------
@@ -150,7 +150,7 @@ bool SpannerMap::removeSpanner(Spanner *s) {
     for (auto i = begin(); i != end(); ++i) {
         if (i->second == s) {
             erase(i);
-            m_dirty = true;
+            dirty_ = true;
             return true;
         }
     }

@@ -111,18 +111,18 @@ static const ElementStyle dynamicsStyle{
 
 Dynamic::Dynamic(DummyParentOr<Segment> parent)
     : TextBase(ElementType::DYNAMIC, parent, TextStyleType::DYNAMICS, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
-    m_velocity = -1;
-    m_dynamicType = DynamicType::OTHER;
-    m_changeInVelocity = 128;
-    m_velChangeSpeed = DynamicSpeed::NORMAL;
+    velocity_ = -1;
+    dynamicType_ = DynamicType::OTHER;
+    changeInVelocity_ = 128;
+    velChangeSpeed_ = DynamicSpeed::NORMAL;
     initElementStyle(&dynamicsStyle);
 }
 
 Dynamic::Dynamic(const Dynamic &d) : TextBase(d) {
-    m_dynamicType = d.m_dynamicType;
-    m_velocity = d.m_velocity;
-    m_changeInVelocity = d.m_changeInVelocity;
-    m_velChangeSpeed = d.m_velChangeSpeed;
+    dynamicType_ = d.dynamicType_;
+    velocity_ = d.velocity_;
+    changeInVelocity_ = d.changeInVelocity_;
+    velChangeSpeed_ = d.velChangeSpeed_;
     _avoidBarLines = d._avoidBarLines;
     _centerOnNotehead = d._centerOnNotehead;
 }
@@ -131,14 +131,14 @@ Dynamic::Dynamic(const Dynamic &d) : TextBase(d) {
 //   velocity
 //---------------------------------------------------------
 
-int Dynamic::velocity() const { return m_velocity <= 0 ? DYN_LIST[int(dynamicType())].velocity : m_velocity; }
+int Dynamic::velocity() const { return velocity_ <= 0 ? DYN_LIST[int(dynamicType())].velocity : velocity_; }
 
 //---------------------------------------------------------
 //   changeInVelocity
 //---------------------------------------------------------
 
 int Dynamic::changeInVelocity() const {
-    return m_changeInVelocity >= 128 ? DYN_LIST[int(dynamicType())].changeInVelocity : m_changeInVelocity;
+    return changeInVelocity_ >= 128 ? DYN_LIST[int(dynamicType())].changeInVelocity : changeInVelocity_;
 }
 
 //---------------------------------------------------------
@@ -147,9 +147,9 @@ int Dynamic::changeInVelocity() const {
 
 void Dynamic::setChangeInVelocity(int val) {
     if (DYN_LIST[int(dynamicType())].changeInVelocity == val) {
-        m_changeInVelocity = 128;
+        changeInVelocity_ = 128;
     } else {
-        m_changeInVelocity = val;
+        changeInVelocity_ = val;
     }
 }
 
@@ -338,7 +338,7 @@ void Dynamic::reset() {
 
 PropertyValue Dynamic::getProperty(Pid propertyId) const {
     switch (propertyId) {
-        case Pid::DYNAMIC_TYPE: return m_dynamicType;
+        case Pid::DYNAMIC_TYPE: return dynamicType_;
         case Pid::VELOCITY: return velocity();
         case Pid::VELO_CHANGE:
             if (isVelocityChangeAvailable()) {
@@ -346,7 +346,7 @@ PropertyValue Dynamic::getProperty(Pid propertyId) const {
             } else {
                 return PropertyValue();
             }
-        case Pid::VELO_CHANGE_SPEED: return m_velChangeSpeed;
+        case Pid::VELO_CHANGE_SPEED: return velChangeSpeed_;
         case Pid::AVOID_BARLINES: return avoidBarLines();
         case Pid::CENTER_ON_NOTEHEAD: return _centerOnNotehead;
         case Pid::PLAY: return playDynamic();
@@ -368,13 +368,13 @@ bool Dynamic::setProperty(Pid propertyId, const PropertyValue &v) {
             }
             setDynamicType(v.value<String>());
             break;
-        case Pid::VELOCITY: m_velocity = v.toInt(); break;
+        case Pid::VELOCITY: velocity_ = v.toInt(); break;
         case Pid::VELO_CHANGE:
             if (isVelocityChangeAvailable()) {
                 setChangeInVelocity(v.toInt());
             }
             break;
-        case Pid::VELO_CHANGE_SPEED: m_velChangeSpeed = v.value<DynamicSpeed>(); break;
+        case Pid::VELO_CHANGE_SPEED: velChangeSpeed_ = v.value<DynamicSpeed>(); break;
         case Pid::AVOID_BARLINES: setAvoidBarLines(v.toBool()); break;
         case Pid::CENTER_ON_NOTEHEAD: _centerOnNotehead = v.toBool(); break;
         case Pid::PLAY: setPlayDynamic(v.toBool()); break;
@@ -431,22 +431,22 @@ bool Dynamic::hasLeftGrip() const {
     if (segment()->tick().isZero()) {
         return false; // Don't show the left grip for the leftmost dynamic with tick zero
     }
-    return m_leftHairpin == nullptr;
+    return leftHairpin_ == nullptr;
 }
 
 //---------------------------------------------------------
 //   hasRightHairpin
 //---------------------------------------------------------
 
-bool Dynamic::hasRightGrip() const { return m_rightHairpin == nullptr; }
+bool Dynamic::hasRightGrip() const { return rightHairpin_ == nullptr; }
 
 //---------------------------------------------------------
 //   findAdjacentHairpins
 //---------------------------------------------------------
 
 void Dynamic::findAdjacentHairpins() {
-    m_leftHairpin = nullptr;
-    m_rightHairpin = nullptr;
+    leftHairpin_ = nullptr;
+    rightHairpin_ = nullptr;
 
     const Fraction tick = segment()->tick();
     const int intTick = tick.ticks();
@@ -457,9 +457,9 @@ void Dynamic::findAdjacentHairpins() {
         if (sp->track() == track() && sp->isHairpin()) {
             Hairpin *hp = toHairpin(sp);
             if (hp->tick() == tick) {
-                m_rightHairpin = hp;
+                rightHairpin_ = hp;
             } else if (hp->tick2() == tick) {
-                m_leftHairpin = hp;
+                leftHairpin_ = hp;
             }
         }
     }

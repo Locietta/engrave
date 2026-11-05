@@ -60,9 +60,9 @@ public:
 
     void editPoints(const AutomationCurveKey &key, AutomationPointEdits &edits);
 
-    AutomationDataConstPtr automationData() const { return m_automationData; }
+    AutomationDataConstPtr automationData() const { return automationData_; }
 
-    void setAutomationData(AutomationDataPtr data) { m_automationData = std::move(data); }
+    void setAutomationData(AutomationDataPtr data) { automationData_ = std::move(data); }
 
     const TempoTimeline &tempoTimeline(bool expandRepeats = true) const;
     void setTempoMultiplier(const BeatsPerSecond &bps);
@@ -204,10 +204,10 @@ private:
     static void mirrorToMeasureRepeats(const RepeatSegment *targetSeg, const StaffRange &range, const AutomationPointEdit &localEdit,
                                        AutomationPointEdits &allEdits);
 
-    Score *m_score = nullptr;
-    AutomationDataPtr m_automationData;
-    TempoTimeline m_tempoTimeline;
-    TempoTimeline m_flattenedTempoTimeline;
-    std::optional<TempoTimeline> m_tempoTimelineOverride;
+    Score *score_ = nullptr;
+    AutomationDataPtr automationData_;
+    TempoTimeline tempoTimeline_;
+    TempoTimeline flattenedTempoTimeline_;
+    std::optional<TempoTimeline> tempoTimelineOverride_;
 };
 } // namespace mu::engraving

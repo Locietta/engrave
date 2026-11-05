@@ -44,7 +44,7 @@ public:
     Ret end() override;
 
 private:
-    std::unique_ptr<AacEncoderHandler> m_handler;
-    io::IODevice *m_dstDevice = nullptr;
+    std::unique_ptr<AacEncoderHandler> handler_;
+    io::IODevice *dstDevice_ = nullptr;
 };
 } // namespace muse::audio::encode

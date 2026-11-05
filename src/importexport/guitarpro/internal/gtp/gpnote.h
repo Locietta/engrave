@@ -142,9 +142,9 @@ public:
 
     const muse::String &rightFingering() const { return _rightFingering; }
 
-    void setShowStringNumber(bool show) { m_showStringNumber = show; }
+    void setShowStringNumber(bool show) { showStringNumber_ = show; }
 
-    bool showStringNumber() const { return m_showStringNumber; }
+    bool showStringNumber() const { return showStringNumber_; }
 
     void setVibratoType(VibratoType v) { _vibrato = v; }
 
@@ -202,7 +202,7 @@ private:
     bool _leftHandTapped = false;
     HammerOn _hammer{HammerOn::None};
     PickScrape _pickScrape{PickScrape::None};
-    bool m_showStringNumber = false;
+    bool showStringNumber_ = false;
 };
 } // namespace mu::iex::guitarpro
 

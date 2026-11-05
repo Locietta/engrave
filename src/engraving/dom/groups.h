@@ -41,23 +41,23 @@ class Groups {
 public:
     Groups() {}
 
-    Groups(const GroupNodes &nodes) : m_nodes(nodes) {}
+    Groups(const GroupNodes &nodes) : nodes_(nodes) {}
 
-    const GroupNodes &nodes() const { return m_nodes; }
+    const GroupNodes &nodes() const { return nodes_; }
 
-    bool empty() const { return m_nodes.empty(); }
+    bool empty() const { return nodes_.empty(); }
 
-    void addNode(const GroupNode &n) { m_nodes.push_back(n); }
+    void addNode(const GroupNode &n) { nodes_.push_back(n); }
 
     BeamMode beamMode(int tick, DurationType d) const;
     void addStop(int pos, DurationType d, BeamMode bm);
 
     bool operator==(const Groups &g) const {
-        if (g.m_nodes.size() != m_nodes.size()) {
+        if (g.nodes_.size() != nodes_.size()) {
             return false;
         }
-        for (size_t i = 0; i < m_nodes.size(); ++i) {
-            if (!(g.m_nodes.at(i) == m_nodes.at(i))) {
+        for (size_t i = 0; i < nodes_.size(); ++i) {
+            if (!(g.nodes_.at(i) == nodes_.at(i))) {
                 return false;
             }
         }
@@ -72,7 +72,7 @@ public:
     static BeamMode actualBeamMode(const ChordRest *cr, const ChordRest *prev, const std::unordered_map<int, TDuration> *beatSubdivision);
 
 private:
-    GroupNodes m_nodes;
+    GroupNodes nodes_;
 };
 } // namespace mu::engraving
 

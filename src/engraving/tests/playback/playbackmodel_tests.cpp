@@ -54,15 +54,15 @@ static constexpr duration_t WHOLE_NOTE_DURATION = QUARTER_NOTE_DURATION * 4; // 
 class Engraving_PlaybackModelTests : public ::testing::Test {
 protected:
     void SetUp() override {
-        m_dummyPatternSegment.arrangementPattern =
+        dummyPatternSegment_.arrangementPattern =
             tests::createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
-        m_dummyPatternSegment.pitchPattern = tests::createSimplePitchPattern(0 /*increment_pitch_diff*/);
-        m_dummyPatternSegment.expressionPattern = tests::createSimpleExpressionPattern(dynamicLevelFromType(mpe::DynamicType::Natural));
-        m_dummyPattern.emplace(0, m_dummyPatternSegment);
+        dummyPatternSegment_.pitchPattern = tests::createSimplePitchPattern(0 /*increment_pitch_diff*/);
+        dummyPatternSegment_.expressionPattern = tests::createSimpleExpressionPattern(dynamicLevelFromType(mpe::DynamicType::Natural));
+        dummyPattern_.emplace(0, dummyPatternSegment_);
 
-        m_defaultProfile = std::make_shared<ArticulationsProfile>();
+        defaultProfile_ = std::make_shared<ArticulationsProfile>();
 
-        m_repositoryMock = std::make_shared<NiceMock<ArticulationProfilesRepositoryMock>>();
+        repositoryMock_ = std::make_shared<NiceMock<ArticulationProfilesRepositoryMock>>();
     }
 
     ArticulationPattern buildTestArticulationPattern() const {
@@ -76,12 +76,12 @@ protected:
         return pattern;
     }
 
-    ArticulationsProfilePtr m_defaultProfile = nullptr;
+    ArticulationsProfilePtr defaultProfile_ = nullptr;
 
-    ArticulationPattern m_dummyPattern;
-    ArticulationPatternSegment m_dummyPatternSegment;
+    ArticulationPattern dummyPattern_;
+    ArticulationPatternSegment dummyPatternSegment_;
 
-    std::shared_ptr<NiceMock<ArticulationProfilesRepositoryMock>> m_repositoryMock = nullptr;
+    std::shared_ptr<NiceMock<ArticulationProfilesRepositoryMock>> repositoryMock_ = nullptr;
 };
 
 /**
@@ -104,10 +104,10 @@ TEST_F(Engraving_PlaybackModelTests, SimpleRepeat) {
     int expectedSize = 24;
 
     // [WHEN] The articulation profiles repository will be returning profiles for StringsArticulation family
-    EXPECT_CALL(*m_repositoryMock, defaultProfile(_)).WillRepeatedly(Return(m_defaultProfile));
+    EXPECT_CALL(*repositoryMock_, defaultProfile(_)).WillRepeatedly(Return(defaultProfile_));
 
     // [WHEN] The playback model requested to be loaded
-    PlaybackModel model(m_repositoryMock.get());
+    PlaybackModel model(repositoryMock_.get());
     model.load(score);
 
     const PlaybackEventsMap &result = model.resolveTrackPlaybackData(part->id(), part->instrumentId()).originEvents;
@@ -137,10 +137,10 @@ TEST_F(Engraving_PlaybackModelTests, Two_Ending_Repeat) {
     int expectedSize = 28;
 
     // [WHEN] The articulation profiles repository will be returning profiles for StringsArticulation family
-    EXPECT_CALL(*m_repositoryMock, defaultProfile(_)).WillRepeatedly(Return(m_defaultProfile));
+    EXPECT_CALL(*repositoryMock_, defaultProfile(_)).WillRepeatedly(Return(defaultProfile_));
 
     // [WHEN] The playback model requested to be loaded
-    PlaybackModel model(m_repositoryMock.get());
+    PlaybackModel model(repositoryMock_.get());
     model.load(score);
 
     const PlaybackEventsMap &result = model.resolveTrackPlaybackData(part->id(), part->instrumentId()).originEvents;
@@ -165,10 +165,10 @@ TEST_F(Engraving_PlaybackModelTests, Repeat_And_Tremolo) {
     ASSERT_EQ(part->instruments().size(), 1);
 
     // [WHEN] The articulation profiles repository will be returning profiles
-    m_defaultProfile->setPattern(ArticulationType::Standard, buildTestArticulationPattern());
-    m_defaultProfile->setPattern(ArticulationType::Tremolo32nd, buildTestArticulationPattern());
+    defaultProfile_->setPattern(ArticulationType::Standard, buildTestArticulationPattern());
+    defaultProfile_->setPattern(ArticulationType::Tremolo32nd, buildTestArticulationPattern());
 
-    EXPECT_CALL(*m_repositoryMock, defaultProfile(_)).WillRepeatedly(Return(m_defaultProfile));
+    EXPECT_CALL(*repositoryMock_, defaultProfile(_)).WillRepeatedly(Return(defaultProfile_));
 
     // [GIVEN] Expected amount of events per timestamp
     const std::map<timestamp_t, size_t> expectedSizePerTimestamp{
@@ -192,10 +192,10 @@ TEST_F(Engraving_PlaybackModelTests, Repeat_And_Tremolo) {
     };
 
     // [WHEN] The articulation profiles repository will be returning profiles for StringsArticulation family
-    EXPECT_CALL(*m_repositoryMock, defaultProfile(_)).WillRepeatedly(Return(m_defaultProfile));
+    EXPECT_CALL(*repositoryMock_, defaultProfile(_)).WillRepeatedly(Return(defaultProfile_));
 
     // [WHEN] The playback model requested to be loaded
-    PlaybackModel model(m_repositoryMock.get());
+    PlaybackModel model(repositoryMock_.get());
     model.load(score);
 
     const PlaybackEventsMap &result = model.resolveTrackPlaybackData(part->id(), part->instrumentId()).originEvents;
@@ -248,12 +248,12 @@ TEST_F(Engraving_PlaybackModelTests, Repeat_Tempo_Changes_And_Tie) {
     ASSERT_EQ(part->instruments().size(), 1);
 
     // [WHEN] The articulation profiles repository will be returning profiles
-    m_defaultProfile->setPattern(ArticulationType::Standard, buildTestArticulationPattern());
+    defaultProfile_->setPattern(ArticulationType::Standard, buildTestArticulationPattern());
 
-    EXPECT_CALL(*m_repositoryMock, defaultProfile(_)).WillRepeatedly(Return(m_defaultProfile));
+    EXPECT_CALL(*repositoryMock_, defaultProfile(_)).WillRepeatedly(Return(defaultProfile_));
 
     // [WHEN] The playback model requested to be loaded
-    PlaybackModel model(m_repositoryMock.get());
+    PlaybackModel model(repositoryMock_.get());
     model.load(score);
 
     const PlaybackEventsMap &result = model.resolveTrackPlaybackData(part->id(), part->instrumentId()).originEvents;
@@ -296,10 +296,10 @@ TEST_F(Engraving_PlaybackModelTests, Da_Capo_Al_Fine) {
     int expectedSize = 32;
 
     // [WHEN] The articulation profiles repository will be returning profiles for StringsArticulation family
-    EXPECT_CALL(*m_repositoryMock, defaultProfile(_)).WillRepeatedly(Return(m_defaultProfile));
+    EXPECT_CALL(*repositoryMock_, defaultProfile(_)).WillRepeatedly(Return(defaultProfile_));
 
     // [WHEN] The playback model requested to be loaded
-    PlaybackModel model(m_repositoryMock.get());
+    PlaybackModel model(repositoryMock_.get());
     model.load(score);
 
     const PlaybackEventsMap &result = model.resolveTrackPlaybackData(part->id(), part->instrumentId()).originEvents;
@@ -330,10 +330,10 @@ TEST_F(Engraving_PlaybackModelTests, Dal_Segno_Al_Coda) {
     int expectedSize = 32;
 
     // [WHEN] The articulation profiles repository will be returning profiles for StringsArticulation family
-    EXPECT_CALL(*m_repositoryMock, defaultProfile(_)).WillRepeatedly(Return(m_defaultProfile));
+    EXPECT_CALL(*repositoryMock_, defaultProfile(_)).WillRepeatedly(Return(defaultProfile_));
 
     // [WHEN] The playback model requested to be loaded
-    PlaybackModel model(m_repositoryMock.get());
+    PlaybackModel model(repositoryMock_.get());
     model.load(score);
 
     const PlaybackEventsMap &result = model.resolveTrackPlaybackData(part->id(), part->instrumentId()).originEvents;
@@ -363,10 +363,10 @@ TEST_F(Engraving_PlaybackModelTests, Dal_Segno_Al_Fine) {
     int expectedSize = 36;
 
     // [WHEN] The articulation profiles repository will be returning profiles for StringsArticulation family
-    EXPECT_CALL(*m_repositoryMock, defaultProfile(_)).WillRepeatedly(Return(m_defaultProfile));
+    EXPECT_CALL(*repositoryMock_, defaultProfile(_)).WillRepeatedly(Return(defaultProfile_));
 
     // [WHEN] The playback model requested to be loaded
-    PlaybackModel model(m_repositoryMock.get());
+    PlaybackModel model(repositoryMock_.get());
     model.load(score);
 
     const PlaybackEventsMap &result = model.resolveTrackPlaybackData(part->id(), part->instrumentId()).originEvents;
@@ -396,10 +396,10 @@ TEST_F(Engraving_PlaybackModelTests, Da_Capo_Al_Coda) {
     int expectedSize = 44;
 
     // [WHEN] The articulation profiles repository will be returning profiles for StringsArticulation family
-    EXPECT_CALL(*m_repositoryMock, defaultProfile(_)).WillRepeatedly(Return(m_defaultProfile));
+    EXPECT_CALL(*repositoryMock_, defaultProfile(_)).WillRepeatedly(Return(defaultProfile_));
 
     // [WHEN] The playback model requested to be loaded
-    PlaybackModel model(m_repositoryMock.get());
+    PlaybackModel model(repositoryMock_.get());
     model.load(score);
 
     const PlaybackEventsMap &result = model.resolveTrackPlaybackData(part->id(), part->instrumentId()).originEvents;
@@ -428,15 +428,15 @@ TEST_F(Engraving_PlaybackModelTests, Spanners) {
     static constexpr int expectedNumberOfEvents = 3 * 4;
 
     // [WHEN] The articulation profiles repository will be returning profiles
-    m_defaultProfile->setPattern(ArticulationType::Standard, buildTestArticulationPattern());
-    m_defaultProfile->setPattern(ArticulationType::Pedal, buildTestArticulationPattern());
-    m_defaultProfile->setPattern(ArticulationType::Trill, buildTestArticulationPattern());
-    m_defaultProfile->setPattern(ArticulationType::Legato, buildTestArticulationPattern());
+    defaultProfile_->setPattern(ArticulationType::Standard, buildTestArticulationPattern());
+    defaultProfile_->setPattern(ArticulationType::Pedal, buildTestArticulationPattern());
+    defaultProfile_->setPattern(ArticulationType::Trill, buildTestArticulationPattern());
+    defaultProfile_->setPattern(ArticulationType::Legato, buildTestArticulationPattern());
 
-    EXPECT_CALL(*m_repositoryMock, defaultProfile(_)).WillRepeatedly(Return(m_defaultProfile));
+    EXPECT_CALL(*repositoryMock_, defaultProfile(_)).WillRepeatedly(Return(defaultProfile_));
 
     // [WHEN] The playback model requested to be loaded
-    PlaybackModel model(m_repositoryMock.get());
+    PlaybackModel model(repositoryMock_.get());
     model.load(score);
 
     const PlaybackEventsMap &result = model.resolveTrackPlaybackData(part->id(), part->instrumentId()).originEvents;
@@ -503,15 +503,15 @@ TEST_F(Engraving_PlaybackModelTests, Dynamics) {
     ASSERT_EQ(part->instruments().size(), 1);
 
     // [WHEN] The articulation profiles repository will be returning profiles
-    m_defaultProfile->setPattern(ArticulationType::Standard, buildTestArticulationPattern());
+    defaultProfile_->setPattern(ArticulationType::Standard, buildTestArticulationPattern());
 
-    EXPECT_CALL(*m_repositoryMock, defaultProfile(_)).WillRepeatedly(Return(m_defaultProfile));
+    EXPECT_CALL(*repositoryMock_, defaultProfile(_)).WillRepeatedly(Return(defaultProfile_));
 
     // [WHEN] Init automation
     score->initAutomation();
 
     // [WHEN] The playback model requested to be loaded
-    PlaybackModel model(m_repositoryMock.get());
+    PlaybackModel model(repositoryMock_.get());
     model.load(score);
 
     const DynamicAutomationLayers &dynamics = model.resolveTrackPlaybackData(part->id(), part->instrumentId()).dynamics;
@@ -578,14 +578,14 @@ TEST_F(Engraving_PlaybackModelTests, Pizz_To_Arco_Technique) {
     int expectedSize = 4;
 
     // [WHEN] The articulation profiles repository will be returning profiles for StringsArticulation family
-    m_defaultProfile->setPattern(ArticulationType::Standard, buildTestArticulationPattern());
-    m_defaultProfile->setPattern(ArticulationType::Pizzicato, buildTestArticulationPattern());
-    m_defaultProfile->setPattern(ArticulationType::Staccatissimo, buildTestArticulationPattern());
+    defaultProfile_->setPattern(ArticulationType::Standard, buildTestArticulationPattern());
+    defaultProfile_->setPattern(ArticulationType::Pizzicato, buildTestArticulationPattern());
+    defaultProfile_->setPattern(ArticulationType::Staccatissimo, buildTestArticulationPattern());
 
-    EXPECT_CALL(*m_repositoryMock, defaultProfile(_)).WillRepeatedly(Return(m_defaultProfile));
+    EXPECT_CALL(*repositoryMock_, defaultProfile(_)).WillRepeatedly(Return(defaultProfile_));
 
     // [WHEN] The playback model requested to be loaded
-    PlaybackModel model(m_repositoryMock.get());
+    PlaybackModel model(repositoryMock_.get());
     model.load(score);
 
     const PlaybackEventsMap &result = model.resolveTrackPlaybackData(part->id(), part->instrumentId()).originEvents;
@@ -639,12 +639,12 @@ TEST_F(Engraving_PlaybackModelTests, FallbackToStandardArticulation) {
     constexpr int NOTE_COUNT = 8;
 
     // [WHEN] The articulation profiles repository will be returning profiles for Winds/Voices families
-    m_defaultProfile->setPattern(ArticulationType::Standard, buildTestArticulationPattern());
+    defaultProfile_->setPattern(ArticulationType::Standard, buildTestArticulationPattern());
 
-    EXPECT_CALL(*m_repositoryMock, defaultProfile(_)).WillRepeatedly(Return(m_defaultProfile));
+    EXPECT_CALL(*repositoryMock_, defaultProfile(_)).WillRepeatedly(Return(defaultProfile_));
 
     // [WHEN] The playback model requested to be loaded
-    PlaybackModel model(m_repositoryMock.get());
+    PlaybackModel model(repositoryMock_.get());
     model.load(score);
 
     // [WHEN] Request events for Winds
@@ -711,10 +711,10 @@ TEST_F(Engraving_PlaybackModelTests, Single_Measure_Repeat) {
     int expectedSize = 2 * 4 + 4 * 8 + 1;
 
     // [WHEN] The articulation profiles repository will be returning profiles for StringsArticulation family
-    EXPECT_CALL(*m_repositoryMock, defaultProfile(_)).WillRepeatedly(Return(m_defaultProfile));
+    EXPECT_CALL(*repositoryMock_, defaultProfile(_)).WillRepeatedly(Return(defaultProfile_));
 
     // [WHEN] The playback model requested to be loaded
-    PlaybackModel model(m_repositoryMock.get());
+    PlaybackModel model(repositoryMock_.get());
     model.load(score);
 
     const PlaybackEventsMap &result = model.resolveTrackPlaybackData(part->id(), part->instrumentId()).originEvents;
@@ -746,10 +746,10 @@ TEST_F(Engraving_PlaybackModelTests, Multi_Measure_Repeat) {
     int expectedSize = 8 * 4 + 1;
 
     // [WHEN] The articulation profiles repository will be returning profiles for StringsArticulation family
-    EXPECT_CALL(*m_repositoryMock, defaultProfile(_)).WillRepeatedly(Return(m_defaultProfile));
+    EXPECT_CALL(*repositoryMock_, defaultProfile(_)).WillRepeatedly(Return(defaultProfile_));
 
     // [WHEN] The playback model requested to be loaded
-    PlaybackModel model(m_repositoryMock.get());
+    PlaybackModel model(repositoryMock_.get());
     model.load(score);
 
     const PlaybackEventsMap &result = model.resolveTrackPlaybackData(part->id(), part->instrumentId()).originEvents;
@@ -769,11 +769,11 @@ TEST_F(Engraving_PlaybackModelTests, MeasureRepeat_TiedNotes) {
     ASSERT_EQ(part->instruments().size(), 1);
 
     // [WHEN] The articulation profiles repository will be returning profiles for StringsArticulation family
-    m_defaultProfile->setPattern(ArticulationType::Standard, buildTestArticulationPattern());
-    EXPECT_CALL(*m_repositoryMock, defaultProfile(_)).WillRepeatedly(Return(m_defaultProfile));
+    defaultProfile_->setPattern(ArticulationType::Standard, buildTestArticulationPattern());
+    EXPECT_CALL(*repositoryMock_, defaultProfile(_)).WillRepeatedly(Return(defaultProfile_));
 
     // [WHEN] The playback model requested to be loaded
-    PlaybackModel model(m_repositoryMock.get());
+    PlaybackModel model(repositoryMock_.get());
     model.setPlayRepeats(true);
     model.load(score);
 
@@ -840,10 +840,10 @@ TEST_F(Engraving_PlaybackModelTests, SimpleRepeat_Changes_Notification) {
     ASSERT_EQ(part->instruments().size(), 1);
 
     // [GIVEN] The articulation profiles repository will be returning profiles for StringsArticulation family
-    ON_CALL(*m_repositoryMock, defaultProfile(_)).WillByDefault(Return(m_defaultProfile));
+    ON_CALL(*repositoryMock_, defaultProfile(_)).WillByDefault(Return(defaultProfile_));
 
     // [GIVEN] The playback model requested to be loaded
-    PlaybackModel model(m_repositoryMock.get());
+    PlaybackModel model(repositoryMock_.get());
     model.load(score);
 
     InstrumentTrackId trackId{part->id(), part->instrumentId()};
@@ -882,14 +882,14 @@ TEST_F(Engraving_PlaybackModelTests, TempoChangesDuringNotes) {
     ASSERT_EQ(part->instruments().size(), 1);
 
     // [WHEN] The articulation profiles repository will be returning profiles
-    m_defaultProfile->setPattern(ArticulationType::Standard, buildTestArticulationPattern());
-    m_defaultProfile->setPattern(ArticulationType::Tremolo8th, buildTestArticulationPattern());
-    m_defaultProfile->setPattern(ArticulationType::Pedal, buildTestArticulationPattern());
+    defaultProfile_->setPattern(ArticulationType::Standard, buildTestArticulationPattern());
+    defaultProfile_->setPattern(ArticulationType::Tremolo8th, buildTestArticulationPattern());
+    defaultProfile_->setPattern(ArticulationType::Pedal, buildTestArticulationPattern());
 
-    EXPECT_CALL(*m_repositoryMock, defaultProfile(_)).WillRepeatedly(Return(m_defaultProfile));
+    EXPECT_CALL(*repositoryMock_, defaultProfile(_)).WillRepeatedly(Return(defaultProfile_));
 
     // [WHEN] The playback model requested to be loaded
-    PlaybackModel model(m_repositoryMock.get());
+    PlaybackModel model(repositoryMock_.get());
     model.load(score);
 
     const PlaybackEventsMap &result = model.resolveTrackPlaybackData(part->id(), part->instrumentId()).originEvents;
@@ -1010,10 +1010,10 @@ TEST_F(Engraving_PlaybackModelTests, Metronome_4_4) {
     int expectedSize = 16;
 
     // [WHEN] The articulation profiles repository will be returning profiles for StringsArticulation family
-    EXPECT_CALL(*m_repositoryMock, defaultProfile(_)).WillRepeatedly(Return(m_defaultProfile));
+    EXPECT_CALL(*repositoryMock_, defaultProfile(_)).WillRepeatedly(Return(defaultProfile_));
 
     // [WHEN] The playback model requested to be loaded with Metronome enabled
-    PlaybackModel model(m_repositoryMock.get());
+    PlaybackModel model(repositoryMock_.get());
     model.setIsMetronomeEnabled(true);
     model.load(score);
 
@@ -1074,10 +1074,10 @@ TEST_F(Engraving_PlaybackModelTests, Metronome_6_4_Repeat) {
     int expectedSize = 30;
 
     // [WHEN] The articulation profiles repository will be returning profiles for StringsArticulation family
-    EXPECT_CALL(*m_repositoryMock, defaultProfile(_)).WillRepeatedly(Return(m_defaultProfile));
+    EXPECT_CALL(*repositoryMock_, defaultProfile(_)).WillRepeatedly(Return(defaultProfile_));
 
     // [WHEN] The playback model requested to be loaded
-    PlaybackModel model(m_repositoryMock.get());
+    PlaybackModel model(repositoryMock_.get());
     model.setIsMetronomeEnabled(true);
     model.load(score);
 
@@ -1107,7 +1107,7 @@ TEST_F(Engraving_PlaybackModelTests, Note_Entry_Playback_Note) {
     ASSERT_EQ(part->instruments().size(), 1);
 
     // [GIVEN] The articulation profiles repository will be returning required profiles
-    ON_CALL(*m_repositoryMock, defaultProfile(_)).WillByDefault(Return(m_defaultProfile));
+    ON_CALL(*repositoryMock_, defaultProfile(_)).WillByDefault(Return(defaultProfile_));
 
     // [GIVEN] The very first note of the score
     Measure *firstMeasure = score->firstMeasure();
@@ -1127,7 +1127,7 @@ TEST_F(Engraving_PlaybackModelTests, Note_Entry_Playback_Note) {
     score->initAutomation();
 
     // [GIVEN] The playback model requested to be loaded
-    PlaybackModel model(m_repositoryMock.get());
+    PlaybackModel model(repositoryMock_.get());
     model.load(score);
 
     PlaybackData result = model.resolveTrackPlaybackData(part->id(), part->instrumentId());
@@ -1175,7 +1175,7 @@ TEST_F(Engraving_PlaybackModelTests, Note_Entry_Playback_Chord) {
     ASSERT_EQ(part->instruments().size(), 1);
 
     // [GIVEN] The articulation profiles repository will be returning required profiles
-    ON_CALL(*m_repositoryMock, defaultProfile(_)).WillByDefault(Return(m_defaultProfile));
+    ON_CALL(*repositoryMock_, defaultProfile(_)).WillByDefault(Return(defaultProfile_));
 
     // [GIVEN] The third chord of the score
     Measure *firstMeasure = score->firstMeasure();
@@ -1190,7 +1190,7 @@ TEST_F(Engraving_PlaybackModelTests, Note_Entry_Playback_Chord) {
     ASSERT_TRUE(thirdChord->notes().size() == expectedNoteCount);
 
     // [GIVEN] The playback model requested to be loaded
-    PlaybackModel model(m_repositoryMock.get());
+    PlaybackModel model(repositoryMock_.get());
     model.load(score);
 
     PlaybackData result = model.resolveTrackPlaybackData(part->id(), part->instrumentId());
@@ -1269,10 +1269,10 @@ TEST_F(Engraving_PlaybackModelTests, Playback_Setup_Data_MultiInstrument) {
     };
 
     // [WHEN] The articulation profiles repository will be returning profiles for StringsArticulation family
-    EXPECT_CALL(*m_repositoryMock, defaultProfile(_)).WillRepeatedly(Return(m_defaultProfile));
+    EXPECT_CALL(*repositoryMock_, defaultProfile(_)).WillRepeatedly(Return(defaultProfile_));
 
     // [WHEN] The playback model requested to be loaded
-    PlaybackModel model(m_repositoryMock.get());
+    PlaybackModel model(repositoryMock_.get());
     model.load(score);
 
     // [THEN] Result matches with our expectations
@@ -1305,10 +1305,10 @@ TEST_F(Engraving_PlaybackModelTests, Score_Changes_Track_Range) {
     const InstrumentTrackId lastTrackId{lastPart->id(), lastPart->instrumentId()};
 
     // [GIVEN] The articulation profiles repository will be returning profiles for StringsArticulation family
-    ON_CALL(*m_repositoryMock, defaultProfile(_)).WillByDefault(Return(m_defaultProfile));
+    ON_CALL(*repositoryMock_, defaultProfile(_)).WillByDefault(Return(defaultProfile_));
 
     // [GIVEN] The playback model is loaded
-    PlaybackModel model(m_repositoryMock.get());
+    PlaybackModel model(repositoryMock_.get());
     model.load(score);
 
     // The tracks that the model re-rendered for the last change: the changed set,

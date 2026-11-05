@@ -91,15 +91,15 @@ static String formatDateTime(const DateTime &dt, const char *fmt) {
 // ==================================
 // Date
 // ==================================
-Date::Date(int y, int m, int d) : m_year(y), m_month(m), m_day(d) {}
+Date::Date(int y, int m, int d) : year_(y), month_(m), day_(d) {}
 
-bool Date::isNull() const { return m_year == 0 && m_month == 0 && m_day == 0; }
+bool Date::isNull() const { return year_ == 0 && month_ == 0 && day_ == 0; }
 
-int Date::year() const { return m_year; }
+int Date::year() const { return year_; }
 
-int Date::month() const { return m_month; }
+int Date::month() const { return month_; }
 
-int Date::day() const { return m_day; }
+int Date::day() const { return day_; }
 
 int64_t Date::daysTo(const Date &d) const {
     if (isNull() || d.isNull()) {
@@ -158,13 +158,13 @@ Date Date::fromStringISOFormat(const String &str) {
 // Time
 // ==================================
 
-Time::Time(int h, int m, int s) : m_hour(h), m_minute(m), m_second(s) {}
+Time::Time(int h, int m, int s) : hour_(h), minute_(m), second_(s) {}
 
-int Time::hour() const { return m_hour; }
+int Time::hour() const { return hour_; }
 
-int Time::minute() const { return m_minute; }
+int Time::minute() const { return minute_; }
 
-int Time::second() const { return m_second; }
+int Time::second() const { return second_; }
 
 Time Time::currentTime() {
     using namespace std::chrono;
@@ -202,11 +202,11 @@ Time Time::fromStringISOFormat(const String &str) {
 // ==================================
 // DateTime
 // ==================================
-DateTime::DateTime(const Date &d, const Time &t) : m_date(d), m_time(t) {}
+DateTime::DateTime(const Date &d, const Time &t) : date_(d), time_(t) {}
 
-const Date &DateTime::date() const { return m_date; }
+const Date &DateTime::date() const { return date_; }
 
-const Time &DateTime::time() const { return m_time; }
+const Time &DateTime::time() const { return time_; }
 
 DateTime DateTime::currentDateTime() {
     using namespace std::chrono;

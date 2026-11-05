@@ -85,39 +85,39 @@ using namespace mu::engraving::rendering::score;
 
 namespace mu::engraving {
 EngravingItem::EngravingItem(const ElementType &type, EngravingObject *parent, ElementFlags f) : EngravingObject(type, parent) {
-    m_flags = f;
-    m_color = configuration()->defaultColor();
-    m_z = -1;
-    m_minDistance = 0.0_sp;
+    flags_ = f;
+    color_ = configuration()->defaultColor();
+    z_ = -1;
+    minDistance_ = 0.0_sp;
 }
 
 EngravingItem::EngravingItem(const EngravingItem &e, bool link) : EngravingObject(e) {
-    m_offset = e.m_offset;
-    m_track = e.m_track;
-    m_flags = e.m_flags;
+    offset_ = e.offset_;
+    track_ = e.track_;
+    flags_ = e.flags_;
     setFlag(ElementFlag::SELECTED, false);
-    m_z = e.m_z;
-    m_color = e.m_color;
-    m_minDistance = e.m_minDistance;
-    m_excludeVerticalAlign = e.m_excludeVerticalAlign;
+    z_ = e.z_;
+    color_ = e.color_;
+    minDistance_ = e.minDistance_;
+    excludeVerticalAlign_ = e.excludeVerticalAlign_;
     itemDiscovered = false;
 
-    m_accessibleEnabled = e.m_accessibleEnabled;
+    accessibleEnabled_ = e.accessibleEnabled_;
 
-    if (e.m_leftParenthesis) {
-        m_leftParenthesis = e.m_leftParenthesis->clone();
-        m_leftParenthesis->setOwnershipParent(this);
-        m_leftParenthesis->setTrack(track());
+    if (e.leftParenthesis_) {
+        leftParenthesis_ = e.leftParenthesis_->clone();
+        leftParenthesis_->setOwnershipParent(this);
+        leftParenthesis_->setTrack(track());
         if (link) {
-            score()->undo(new Link(m_leftParenthesis, e.m_leftParenthesis));
+            score()->undo(new Link(leftParenthesis_, e.leftParenthesis_));
         }
     }
-    if (e.m_rightParenthesis) {
-        m_rightParenthesis = e.m_rightParenthesis->clone();
-        m_rightParenthesis->setOwnershipParent(this);
-        m_rightParenthesis->setTrack(track());
+    if (e.rightParenthesis_) {
+        rightParenthesis_ = e.rightParenthesis_->clone();
+        rightParenthesis_->setOwnershipParent(this);
+        rightParenthesis_->setTrack(track());
         if (link) {
-            score()->undo(new Link(m_rightParenthesis, e.m_rightParenthesis));
+            score()->undo(new Link(rightParenthesis_, e.rightParenthesis_));
         }
     }
 }
@@ -125,12 +125,12 @@ EngravingItem::EngravingItem(const EngravingItem &e, bool link) : EngravingObjec
 EngravingItem::~EngravingItem() {
     Score::onElementDestruction(this);
 
-    delete m_layoutData;
+    delete layoutData_;
 }
 
-bool EngravingItem::accessibleEnabled() const { return m_accessibleEnabled; }
+bool EngravingItem::accessibleEnabled() const { return accessibleEnabled_; }
 
-void EngravingItem::setAccessibleEnabled(bool enabled) { m_accessibleEnabled = enabled; }
+void EngravingItem::setAccessibleEnabled(bool enabled) { accessibleEnabled_ = enabled; }
 
 EngravingItem *EngravingItem::accessibleParentItem() const {
     if (EngravingItem *p = layoutParent()) {
@@ -173,7 +173,7 @@ const std::shared_ptr<rendering::IScoreRenderer> &EngravingItem::renderer() cons
 
 void EngravingItem::spatiumChanged(double oldValue, double newValue) {
     if (offsetIsSpatiumDependent()) {
-        m_offset *= (newValue / oldValue);
+        offset_ *= (newValue / oldValue);
     }
 }
 
@@ -184,7 +184,7 @@ void EngravingItem::spatiumChanged(double oldValue, double newValue) {
 
 void EngravingItem::localSpatiumChanged(double oldValue, double newValue) {
     if (offsetIsSpatiumDependent()) {
-        m_offset *= (newValue / oldValue);
+        offset_ *= (newValue / oldValue);
     }
 }
 
@@ -215,7 +215,7 @@ bool EngravingItem::isInteractionAvailable() const {
 //   offsetIsSpatiumDependent
 //---------------------------------------------------------
 
-bool EngravingItem::offsetIsSpatiumDependent() const { return sizeIsSpatiumDependent() || (m_flags & ElementFlag::ON_STAFF); }
+bool EngravingItem::offsetIsSpatiumDependent() const { return sizeIsSpatiumDependent() || (flags_ & ElementFlag::ON_STAFF); }
 
 Sid EngravingItem::defaultPosSid() const { return Sid::NOSTYLE; }
 
@@ -284,12 +284,12 @@ void EngravingItem::deleteLater() {
 //---------------------------------------------------------
 
 void EngravingItem::scanElements(std::function<void(EngravingItem *)> func) {
-    if (m_leftParenthesis) {
-        m_leftParenthesis->scanElements(func);
+    if (leftParenthesis_) {
+        leftParenthesis_->scanElements(func);
     }
 
-    if (m_rightParenthesis) {
-        m_rightParenthesis->scanElements(func);
+    if (rightParenthesis_) {
+        rightParenthesis_->scanElements(func);
     }
 
     func(this);
@@ -337,7 +337,7 @@ Staff *EngravingItem::staff() const {
     return score()->staff(staffIdx());
 }
 
-bool EngravingItem::hasStaff() const { return m_track != muse::nidx; }
+bool EngravingItem::hasStaff() const { return track_ != muse::nidx; }
 
 //---------------------------------------------------------
 //   staffType
@@ -357,22 +357,22 @@ bool EngravingItem::onTabStaff() const {
     return stt ? stt->isTabStaff() : false;
 }
 
-track_idx_t EngravingItem::track() const { return m_track; }
+track_idx_t EngravingItem::track() const { return track_; }
 
 void EngravingItem::setTrack(track_idx_t val) {
-    IF_ASSERT_FAILED(val < m_score->ntracks() || val == 0 || val == muse::nidx) {
+    IF_ASSERT_FAILED(val < score_->ntracks() || val == 0 || val == muse::nidx) {
         // Zero and muse::nidx have special use cases.
         // In all other cases the track can't be larger than the total track count.
         return;
     }
 
-    m_track = val;
+    track_ = val;
 
-    if (m_leftParenthesis) {
-        m_leftParenthesis->setTrack(val);
+    if (leftParenthesis_) {
+        leftParenthesis_->setTrack(val);
     }
-    if (m_rightParenthesis) {
-        m_rightParenthesis->setTrack(val);
+    if (rightParenthesis_) {
+        rightParenthesis_->setTrack(val);
     }
 }
 
@@ -381,15 +381,15 @@ void EngravingItem::setTrack(track_idx_t val) {
 //---------------------------------------------------------
 
 int EngravingItem::z() const {
-    if (m_z == -1) {
-        m_z = int(type()) * 100;
+    if (z_ == -1) {
+        z_ = int(type()) * 100;
     }
-    return m_z;
+    return z_;
 }
 
-void EngravingItem::setZ(int val) { m_z = val; }
+void EngravingItem::setZ(int val) { z_ = val; }
 
-staff_idx_t EngravingItem::staffIdx() const { return track2staff(m_track); }
+staff_idx_t EngravingItem::staffIdx() const { return track2staff(track_); }
 
 void EngravingItem::setStaffIdx(staff_idx_t val) {
     voice_idx_t voiceIdx = voice();
@@ -428,7 +428,7 @@ staff_idx_t EngravingItem::effectiveStaffIdx() const {
         return (cutaway || !staffVisible) && measureNo;
     };
 
-    const std::vector<Staff *> &systemObjectStaves = m_score->systemObjectStaves(); // CAUTION: may not be ordered
+    const std::vector<Staff *> &systemObjectStaves = score_->systemObjectStaves(); // CAUTION: may not be ordered
     if (originalStaffIdx > 0) {
         staff_idx_t prevSysObjStaffIdx = 0;
         for (Staff *sysObjStaff : systemObjectStaves) {
@@ -440,7 +440,7 @@ staff_idx_t EngravingItem::effectiveStaffIdx() const {
 
         bool omitObject = true;
         for (staff_idx_t stfIdx = prevSysObjStaffIdx; stfIdx < originalStaffIdx; ++stfIdx) {
-            if (m_score->staff(stfIdx)->show() && system->staff(stfIdx)->show() && !cutawayMeasureNo(stfIdx)) {
+            if (score_->staff(stfIdx)->show() && system->staff(stfIdx)->show() && !cutawayMeasureNo(stfIdx)) {
                 omitObject = false;
                 break;
             }
@@ -453,7 +453,7 @@ staff_idx_t EngravingItem::effectiveStaffIdx() const {
         }
     }
 
-    if (m_score->staff(originalStaffIdx)->show() && system->staff(originalStaffIdx)->show() && !cutawayMeasureNo(originalStaffIdx)) {
+    if (score_->staff(originalStaffIdx)->show() && system->staff(originalStaffIdx)->show() && !cutawayMeasureNo(originalStaffIdx)) {
         return originalStaffIdx;
     }
 
@@ -464,9 +464,9 @@ bool EngravingItem::isTopSystemObject() const { return systemFlag() && track() =
 
 staff_idx_t EngravingItem::vStaffIdx() const { return staffIdx(); }
 
-voice_idx_t EngravingItem::voice() const { return track2voice(m_track); }
+voice_idx_t EngravingItem::voice() const { return track2voice(track_); }
 
-void EngravingItem::setVoice(voice_idx_t v) { setTrack((m_track / VOICES) * VOICES + v); }
+void EngravingItem::setVoice(voice_idx_t v) { setTrack((track_ / VOICES) * VOICES + v); }
 
 //---------------------------------------------------------
 //   tick
@@ -527,9 +527,9 @@ Part *EngravingItem::originPart() const {
     return p ? p->originPart(track(), tick()) : nullptr;
 }
 
-void EngravingItem::setColor(const Color &c) { m_color = c; }
+void EngravingItem::setColor(const Color &c) { color_ = c; }
 
-Color EngravingItem::color() const { return m_color; }
+Color EngravingItem::color() const { return color_; }
 
 //---------------------------------------------------------
 //   curColor
@@ -646,7 +646,7 @@ PointF EngravingItem::pagePos() const {
         return system->staffYpage(idx);
     };
 
-    if (m_flags & ElementFlag::ON_STAFF) {
+    if (flags_ & ElementFlag::ON_STAFF) {
         // Segments, measures and systems all contain multiple staves
         // Find the position of the stave that this item is on
         if (parent->isSegment()) {
@@ -719,7 +719,7 @@ PointF EngravingItem::canvasPos() const {
         return page->y();
     };
 
-    if (m_flags & ElementFlag::ON_STAFF) {
+    if (flags_ & ElementFlag::ON_STAFF) {
         // Segments, measures and systems all contain multiple staves
         // Find the position of the stave that this item is on
         if (parent->isSegment()) {
@@ -912,9 +912,9 @@ void EngravingItem::add(EngravingItem *e) {
             Parenthesis *p = toParenthesis(e);
             p->setVisible(visible());
             if (p->direction() == DirectionH::LEFT) {
-                m_leftParenthesis = p;
+                leftParenthesis_ = p;
             } else if (p->direction() == DirectionH::RIGHT) {
-                m_rightParenthesis = p;
+                rightParenthesis_ = p;
             }
             break;
         }
@@ -929,11 +929,11 @@ void EngravingItem::add(EngravingItem *e) {
 void EngravingItem::remove(EngravingItem *e) {
     switch (e->type()) {
         case ElementType::PARENTHESIS: {
-            if (e == m_leftParenthesis) {
-                m_leftParenthesis = nullptr;
+            if (e == leftParenthesis_) {
+                leftParenthesis_ = nullptr;
             }
-            if (e == m_rightParenthesis) {
-                m_rightParenthesis = nullptr;
+            if (e == rightParenthesis_) {
+                rightParenthesis_ = nullptr;
             }
             break;
         }
@@ -992,8 +992,8 @@ PropertyValue EngravingItem::getProperty(Pid propertyId) const {
         case Pid::COLOR: return PropertyValue::fromValue(color());
         case Pid::VISIBLE: return visible();
         case Pid::SELECTED: return selected();
-        case Pid::OFFSET: return PropertyValue::fromValue(m_offset);
-        case Pid::MIN_DISTANCE: return m_minDistance;
+        case Pid::OFFSET: return PropertyValue::fromValue(offset_);
+        case Pid::MIN_DISTANCE: return minDistance_;
         case Pid::PLACEMENT: return placement();
         case Pid::AUTOPLACE: return autoplace();
         case Pid::Z: return z();
@@ -1002,7 +1002,7 @@ PropertyValue EngravingItem::getProperty(Pid propertyId) const {
         case Pid::POSITION_LINKED_TO_MASTER: return _isPositionLinkedToMaster;
         case Pid::APPEARANCE_LINKED_TO_MASTER: return _isAppearanceLinkedToMaster;
         case Pid::EXCLUDE_FROM_OTHER_PARTS: return _excludeFromOtherParts;
-        case Pid::EXCLUDE_VERTICAL_ALIGN: return m_excludeVerticalAlign;
+        case Pid::EXCLUDE_VERTICAL_ALIGN: return excludeVerticalAlign_;
         case Pid::HAS_PARENTHESES: return parenthesesMode();
         default:
             if (ownershipParent()) {
@@ -1025,7 +1025,7 @@ bool EngravingItem::setProperty(Pid propertyId, const PropertyValue &v) {
         case Pid::COLOR: setColor(v.value<Color>()); break;
         case Pid::VISIBLE: setVisible(v.toBool()); break;
         case Pid::SELECTED: setSelected(v.toBool()); break;
-        case Pid::OFFSET: m_offset = v.value<PointF>(); break;
+        case Pid::OFFSET: offset_ = v.value<PointF>(); break;
         case Pid::MIN_DISTANCE: setMinDistance(v.value<Spatium>()); break;
         case Pid::PLACEMENT: setPlacement(v.value<PlacementV>()); break;
         case Pid::AUTOPLACE: setAutoplace(v.toBool()); break;
@@ -1085,12 +1085,12 @@ void EngravingItem::manageExclusionFromParts(bool exclude) {
     }
 }
 
-EngravingItem *EngravingItem::sharedItem() const { return ldata()->m_sharedItem; }
+EngravingItem *EngravingItem::sharedItem() const { return ldata()->sharedItem_; }
 
-const std::vector<EngravingItem *> &EngravingItem::originItems() const { return ldata()->m_originItems; }
+const std::vector<EngravingItem *> &EngravingItem::originItems() const { return ldata()->originItems_; }
 
 void EngravingItem::connectSharedItem(EngravingItem *sharedItem, EngravingItem *originItem) {
-    if (originItem->ldata()->m_sharedItem == sharedItem) {
+    if (originItem->ldata()->sharedItem_ == sharedItem) {
         return;
     }
 
@@ -1101,11 +1101,11 @@ void EngravingItem::connectSharedItem(EngravingItem *sharedItem, EngravingItem *
         return;
     }
 
-    IF_ASSERT_FAILED(sharedItem->ldata()->m_sharedItem == nullptr && originItem->ldata()->m_originItems.empty()) { return; }
+    IF_ASSERT_FAILED(sharedItem->ldata()->sharedItem_ == nullptr && originItem->ldata()->originItems_.empty()) { return; }
 
-    originItem->mutldata()->m_sharedItem = sharedItem;
+    originItem->mutldata()->sharedItem_ = sharedItem;
 
-    std::vector<EngravingItem *> &curOriginItems = sharedItem->mutldata()->m_originItems;
+    std::vector<EngravingItem *> &curOriginItems = sharedItem->mutldata()->originItems_;
     auto it = std::lower_bound(curOriginItems.begin(), curOriginItems.end(), originItem,
                                [](EngravingItem *item1, EngravingItem *item2) { return item1->track() < item2->track(); });
 
@@ -1113,19 +1113,19 @@ void EngravingItem::connectSharedItem(EngravingItem *sharedItem, EngravingItem *
 }
 
 void EngravingItem::disconnectSharedItem(EngravingItem *sharedItem, EngravingItem *originItem) {
-    IF_ASSERT_FAILED(originItem->m_layoutData->m_sharedItem == sharedItem) { return; }
+    IF_ASSERT_FAILED(originItem->layoutData_->sharedItem_ == sharedItem) { return; }
 
-    originItem->m_layoutData->m_sharedItem = nullptr;
+    originItem->layoutData_->sharedItem_ = nullptr;
 
-    DO_ASSERT(muse::remove(sharedItem->m_layoutData->m_originItems, originItem));
+    DO_ASSERT(muse::remove(sharedItem->layoutData_->originItems_, originItem));
 }
 
 void EngravingItem::disconnectAllOriginItems(EngravingItem *sharedItem) {
     for (EngravingItem *originItem : sharedItem->originItems()) {
-        originItem->m_layoutData->m_sharedItem = nullptr;
+        originItem->layoutData_->sharedItem_ = nullptr;
     }
 
-    sharedItem->m_layoutData->m_originItems.clear();
+    sharedItem->layoutData_->originItems_.clear();
 }
 
 void EngravingItem::disconnectSharedTree(EngravingItem *item) {
@@ -1912,7 +1912,7 @@ void EngravingItem::triggerLayoutToEnd() const {
 //   addData
 //---------------------------------------------------------
 
-void EditData::addData(std::shared_ptr<ElementEditData> ed) { m_data.push_back(ed); }
+void EditData::addData(std::shared_ptr<ElementEditData> ed) { data_.push_back(ed); }
 
 //---------------------------------------------------------
 //   styleP
@@ -1927,10 +1927,10 @@ void EngravingItem::setParenthesesMode(const ParenthesesMode &v, bool addToLinke
 
 ParenthesesMode EngravingItem::parenthesesMode() const {
     ParenthesesMode p = ParenthesesMode::NONE;
-    if (m_leftParenthesis) {
+    if (leftParenthesis_) {
         p |= ParenthesesMode::LEFT;
     }
-    if (m_rightParenthesis) {
+    if (rightParenthesis_) {
         p |= ParenthesesMode::RIGHT;
     }
 
@@ -1938,8 +1938,8 @@ ParenthesesMode EngravingItem::parenthesesMode() const {
 }
 
 void EngravingItem::setHasLeftParenthesis(bool v, bool addToLinked, bool generated) {
-    const bool hasGeneratedParen = m_leftParenthesis && m_leftParenthesis->generated();
-    const bool hasUserParen = m_leftParenthesis && !m_leftParenthesis->generated();
+    const bool hasGeneratedParen = leftParenthesis_ && leftParenthesis_->generated();
+    const bool hasUserParen = leftParenthesis_ && !leftParenthesis_->generated();
 
     if (generated && v == hasGeneratedParen) {
         return;
@@ -1950,7 +1950,7 @@ void EngravingItem::setHasLeftParenthesis(bool v, bool addToLinked, bool generat
     }
 
     if (v) {
-        if (!m_leftParenthesis) {
+        if (!leftParenthesis_) {
             Parenthesis *paren = Factory::createParenthesis(this);
             paren->setTrack(track());
             paren->setDirection(DirectionH::LEFT);
@@ -1959,14 +1959,14 @@ void EngravingItem::setHasLeftParenthesis(bool v, bool addToLinked, bool generat
             score()->undoAddElement(paren, addToLinked);
         }
     } else {
-        score()->undoRemoveElement(m_leftParenthesis, addToLinked);
-        assert(m_leftParenthesis == nullptr);
+        score()->undoRemoveElement(leftParenthesis_, addToLinked);
+        assert(leftParenthesis_ == nullptr);
     }
 }
 
 void EngravingItem::setHasRightParenthesis(bool v, bool addToLinked, bool generated) {
-    const bool hasGeneratedParen = m_rightParenthesis && m_rightParenthesis->generated();
-    const bool hasUserParen = m_rightParenthesis && !m_rightParenthesis->generated();
+    const bool hasGeneratedParen = rightParenthesis_ && rightParenthesis_->generated();
+    const bool hasUserParen = rightParenthesis_ && !rightParenthesis_->generated();
 
     if (generated && v == hasGeneratedParen) {
         return;
@@ -1977,7 +1977,7 @@ void EngravingItem::setHasRightParenthesis(bool v, bool addToLinked, bool genera
     }
 
     if (v) {
-        if (!m_rightParenthesis) {
+        if (!rightParenthesis_) {
             Parenthesis *paren = Factory::createParenthesis(this);
             paren->setTrack(track());
             paren->setDirection(DirectionH::RIGHT);
@@ -1986,8 +1986,8 @@ void EngravingItem::setHasRightParenthesis(bool v, bool addToLinked, bool genera
             score()->undoAddElement(paren, addToLinked);
         }
     } else {
-        score()->undoRemoveElement(m_rightParenthesis, addToLinked);
-        assert(m_rightParenthesis == nullptr);
+        score()->undoRemoveElement(rightParenthesis_, addToLinked);
+        assert(rightParenthesis_ == nullptr);
     }
 }
 
@@ -2074,11 +2074,11 @@ void EngravingItem::setSelected(bool f) { setFlag(ElementFlag::SELECTED, f); }
 
 void EngravingItem::setVisible(bool f) {
     setFlag(ElementFlag::INVISIBLE, !f);
-    if (m_leftParenthesis) {
-        m_leftParenthesis->setVisible(f);
+    if (leftParenthesis_) {
+        leftParenthesis_->setVisible(f);
     }
-    if (m_rightParenthesis) {
-        m_rightParenthesis->setVisible(f);
+    if (rightParenthesis_) {
+        rightParenthesis_->setVisible(f);
     }
 }
 
@@ -2132,19 +2132,19 @@ const EngravingItem::LayoutData *EngravingItem::ldata() const { return ldataInte
 EngravingItem::LayoutData *EngravingItem::mutldata() { return mutldataInternal(); }
 
 const EngravingItem::LayoutData *EngravingItem::ldataInternal() const {
-    if (!m_layoutData) {
-        m_layoutData = createLayoutData();
-        m_layoutData->m_item = this;
+    if (!layoutData_) {
+        layoutData_ = createLayoutData();
+        layoutData_->item_ = this;
     }
-    return m_layoutData;
+    return layoutData_;
 }
 
 EngravingItem::LayoutData *EngravingItem::mutldataInternal() {
-    if (!m_layoutData) {
-        m_layoutData = createLayoutData();
-        m_layoutData->m_item = this;
+    if (!layoutData_) {
+        layoutData_ = createLayoutData();
+        layoutData_->item_ = this;
     }
-    return m_layoutData;
+    return layoutData_;
 }
 
 bool EngravingItem::elementAppliesToTrack(const track_idx_t elementTrack, const track_idx_t refTrack, const VoiceAssignment voiceAssignment,
@@ -2177,51 +2177,51 @@ void EngravingItem::LayoutData::setBbox(const RectF &r) {
     DO_ASSERT(!std::isnan(r.height()) && !std::isinf(r.height()));
 
     //DO_ASSERT(!isShapeComposite());
-    m_shape.set_value(Shape(r, m_item, Shape::Type::Fixed));
+    shape_.set_value(Shape(r, item_, Shape::Type::Fixed));
 }
 
 void EngravingItem::LayoutData::connectItemSnappedBefore(EngravingItem *itemBefore) {
-    IF_ASSERT_FAILED(itemBefore && itemBefore != m_item && itemBefore != m_itemSnappedAfter &&
-                     itemBefore->ldata()->itemSnappedBefore() != m_item) {
+    IF_ASSERT_FAILED(itemBefore && itemBefore != item_ && itemBefore != itemSnappedAfter_ &&
+                     itemBefore->ldata()->itemSnappedBefore() != item_) {
         return;
     }
-    m_itemSnappedBefore = itemBefore;
-    itemBefore->mutldata()->m_itemSnappedAfter = const_cast<EngravingItem *>(m_item);
+    itemSnappedBefore_ = itemBefore;
+    itemBefore->mutldata()->itemSnappedAfter_ = const_cast<EngravingItem *>(item_);
 }
 
 void EngravingItem::LayoutData::disconnectItemSnappedBefore() {
-    if (!m_itemSnappedBefore) {
+    if (!itemSnappedBefore_) {
         return;
     }
-    m_itemSnappedBefore->mutldata()->m_itemSnappedAfter = nullptr;
-    m_itemSnappedBefore = nullptr;
+    itemSnappedBefore_->mutldata()->itemSnappedAfter_ = nullptr;
+    itemSnappedBefore_ = nullptr;
 }
 
 void EngravingItem::LayoutData::connectItemSnappedAfter(EngravingItem *itemAfter) {
-    IF_ASSERT_FAILED(itemAfter && itemAfter != m_item && itemAfter != m_itemSnappedBefore &&
-                     itemAfter->ldata()->itemSnappedAfter() != m_item) {
+    IF_ASSERT_FAILED(itemAfter && itemAfter != item_ && itemAfter != itemSnappedBefore_ &&
+                     itemAfter->ldata()->itemSnappedAfter() != item_) {
         return;
     }
-    m_itemSnappedAfter = itemAfter;
-    itemAfter->mutldata()->m_itemSnappedBefore = const_cast<EngravingItem *>(m_item);
+    itemSnappedAfter_ = itemAfter;
+    itemAfter->mutldata()->itemSnappedBefore_ = const_cast<EngravingItem *>(item_);
 }
 
 void EngravingItem::LayoutData::disconnectItemSnappedAfter() {
-    if (!m_itemSnappedAfter) {
+    if (!itemSnappedAfter_) {
         return;
     }
-    m_itemSnappedAfter->mutldata()->m_itemSnappedBefore = nullptr;
-    m_itemSnappedAfter = nullptr;
+    itemSnappedAfter_->mutldata()->itemSnappedBefore_ = nullptr;
+    itemSnappedAfter_ = nullptr;
 }
 
 void EngravingItem::LayoutData::scanConnectedItemsInSnappingChain(const System *system,
                                                                   const std::function<void(EngravingItem *)> &func) const {
-    EngravingItem *item = const_cast<EngravingItem *>(m_item);
+    EngravingItem *item = const_cast<EngravingItem *>(item_);
     func(item);
 
     std::vector<EngravingItem *> visited = {item}; // To break out of circular snap chains
 
-    EngravingItem *snappedBefore = m_itemSnappedBefore;
+    EngravingItem *snappedBefore = itemSnappedBefore_;
     while (snappedBefore && snappedBefore->findAncestor(ElementType::SYSTEM) == system) {
         IF_ASSERT_FAILED(!muse::contains(visited, snappedBefore)) { break; }
         visited.push_back(snappedBefore);
@@ -2229,7 +2229,7 @@ void EngravingItem::LayoutData::scanConnectedItemsInSnappingChain(const System *
         snappedBefore = snappedBefore->ldata()->itemSnappedBefore();
     }
 
-    EngravingItem *snappedAfter = m_itemSnappedAfter;
+    EngravingItem *snappedAfter = itemSnappedAfter_;
     while (snappedAfter && snappedAfter->findAncestor(ElementType::SYSTEM) == system) {
         IF_ASSERT_FAILED(!muse::contains(visited, snappedAfter)) { break; }
         visited.push_back(snappedAfter);
@@ -2241,13 +2241,13 @@ void EngravingItem::LayoutData::scanConnectedItemsInSnappingChain(const System *
 const RectF &EngravingItem::LayoutData::bbox(LD_ACCESS mode) const {
     //! NOTE Temporary disabled CHECK - a lot of messages
     UNUSED(mode);
-    const Shape &sh = m_shape.value(LD_ACCESS::MAYBE_NOTINITED);
+    const Shape &sh = shape_.value(LD_ACCESS::MAYBE_NOTINITED);
 
     //! NOTE Temporary
     {
         static const RectF _dummy;
 
-        switch (m_item->type()) {
+        switch (item_->type()) {
             case ElementType::NOTE:
             case ElementType::ORNAMENT: return !sh.elements().empty() ? sh.elements().at(0) : _dummy;
             default: break;
@@ -2259,13 +2259,13 @@ const RectF &EngravingItem::LayoutData::bbox(LD_ACCESS mode) const {
 
 Shape EngravingItem::LayoutData::shape(LD_ACCESS mode) const {
     //! NOTE Temporary disabled CHECK - a lot of messages
-    Shape sh = m_shape.value(LD_ACCESS::MAYBE_NOTINITED);
+    Shape sh = shape_.value(LD_ACCESS::MAYBE_NOTINITED);
 
-    const Parenthesis *leftParen = m_item->leftParen();
+    const Parenthesis *leftParen = item_->leftParen();
     if (leftParen && leftParen->addToSkyline()) {
         sh.add(leftParen->ldata()->shape().translated(leftParen->pos()));
     }
-    const Parenthesis *rightParen = m_item->rightParen();
+    const Parenthesis *rightParen = item_->rightParen();
     if (rightParen && rightParen->addToSkyline()) {
         sh.add(rightParen->ldata()->shape().translated(rightParen->pos()));
     }
@@ -2273,7 +2273,7 @@ Shape EngravingItem::LayoutData::shape(LD_ACCESS mode) const {
     //! NOTE Temporary
     //! Reimplementation: done
     {
-        switch (m_item->type()) {
+        switch (item_->type()) {
             case ElementType::BEAM:
             case ElementType::GRACE_NOTES_GROUP:
             case ElementType::ORNAMENT:
@@ -2299,39 +2299,39 @@ Shape EngravingItem::LayoutData::shape(LD_ACCESS mode) const {
                 if (mode == LD_ACCESS::CHECK) {
                     //! NOTE Temporary fix
                     //! We can remove it the moment we figure out the layout order of the elements
-                    LayoutContext ctx(m_item->score());
+                    LayoutContext ctx(item_->score());
                     ChordRest::LayoutData *ldata = static_cast<ChordRest::LayoutData *>(const_cast<LayoutData *>(this));
-                    ChordLayout::checkAndFillShape(toChordRest(m_item), ldata, ctx.conf());
+                    ChordLayout::checkAndFillShape(toChordRest(item_), ldata, ctx.conf());
                 }
-                return m_shape.value(LD_ACCESS::CHECK);
+                return shape_.value(LD_ACCESS::CHECK);
             } break;
             case ElementType::GUITAR_BEND_SEGMENT: {
                 //! NOTE Temporary fix
                 //! We can remove it the moment we figure out the layout order of the elements
-                TLayout::fillGuitarBendSegmentShape(toGuitarBendSegment(m_item),
+                TLayout::fillGuitarBendSegmentShape(toGuitarBendSegment(item_),
                                                     static_cast<GuitarBendSegment::LayoutData *>(const_cast<LayoutData *>(this)));
-                return m_shape.value(LD_ACCESS::CHECK);
+                return shape_.value(LD_ACCESS::CHECK);
             } break;
             case ElementType::HAIRPIN_SEGMENT: {
                 //! To be removed when we're confident enough...
-                IF_ASSERT_FAILED(m_shape.has_value()) {
-                    const_cast<LayoutData *>(this)->setShape(TLayout::recalculateTextLineBaseSegmentShape(toHairpinSegment(m_item)));
+                IF_ASSERT_FAILED(shape_.has_value()) {
+                    const_cast<LayoutData *>(this)->setShape(TLayout::recalculateTextLineBaseSegmentShape(toHairpinSegment(item_)));
                 }
-                return m_shape.value(LD_ACCESS::CHECK);
+                return shape_.value(LD_ACCESS::CHECK);
             } break;
             case ElementType::TRILL_SEGMENT: {
                 //! NOTE Temporary fix
                 //! We can remove it the moment we figure out the layout order of the elements
-                LayoutContext ctx(m_item->score());
-                TLayout::fillTrillSegmentShape(toTrillSegment(m_item),
+                LayoutContext ctx(item_->score());
+                TLayout::fillTrillSegmentShape(toTrillSegment(item_),
                                                static_cast<HairpinSegment::LayoutData *>(const_cast<LayoutData *>(this)), ctx.conf());
-                return m_shape.value(LD_ACCESS::CHECK);
+                return shape_.value(LD_ACCESS::CHECK);
             } break;
             case ElementType::TUPLET: {
                 //! NOTE Temporary fix
                 //! We can remove it the moment we figure out the layout order of the elements
-                TLayout::fillTupletShape(toTuplet(m_item), static_cast<Tuplet::LayoutData *>(const_cast<LayoutData *>(this)));
-                return m_shape.value(LD_ACCESS::CHECK);
+                TLayout::fillTupletShape(toTuplet(item_), static_cast<Tuplet::LayoutData *>(const_cast<LayoutData *>(this)));
+                return shape_.value(LD_ACCESS::CHECK);
             } break;
             default: break;
         }
@@ -2352,17 +2352,17 @@ void EngravingItem::LayoutData::setWidthDebugHook(double w) { UNUSED(w); }
 
 void EngravingItem::LayoutData::dump(std::stringstream &ss) const {
     ss << "\n";
-    ss << m_item->typeName() << " id: " << m_item->eid().toStdString() << "\n";
+    ss << item_->typeName() << " id: " << item_->eid().toStdString() << "\n";
 
-    ss << "skip: " << (m_isSkipDraw ? "yes" : "no") << "\n";
-    ss << "mag: " << m_mag << "\n";
+    ss << "skip: " << (isSkipDraw_ ? "yes" : "no") << "\n";
+    ss << "mag: " << mag_ << "\n";
 
     ss << "pos: ";
-    mu::engraving::dump(m_pos, ss);
+    mu::engraving::dump(pos_, ss);
     ss << "\n";
 
     ss << "shape: ";
-    mu::engraving::dump(m_shape, ss);
+    mu::engraving::dump(shape_, ss);
     ss << "\n";
 
     supDump(ss);

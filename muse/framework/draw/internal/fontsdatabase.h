@@ -60,9 +60,9 @@ private:
     const FontInfo &fontInfo(const FontDataKey &key) const;
     void release(const FontInfo &fi);
 
-    std::map<Font::Type, FontDataKey> m_defaults;
-    std::map<FontDataKey, std::vector<FontDataKey>> m_familySubstitutions;
-    std::map<FontDataKey, FontInfo> m_fonts;
-    uint64_t m_revision = 0;
+    std::map<Font::Type, FontDataKey> defaults_;
+    std::map<FontDataKey, std::vector<FontDataKey>> familySubstitutions_;
+    std::map<FontDataKey, FontInfo> fonts_;
+    uint64_t revision_ = 0;
 };
 } // namespace muse::draw

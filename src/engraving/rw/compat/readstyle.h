@@ -47,9 +47,9 @@ public:
     static bool readStyleProperties(MStyle *style, XmlReader &e);
 
 private:
-    Score *m_score = nullptr;
-    const muse::ByteArray &m_scoreData;
-    const muse::String &m_completeBaseName;
+    Score *score_ = nullptr;
+    const muse::ByteArray &scoreData_;
+    const muse::String &completeBaseName_;
 };
 } // namespace mu::engraving::compat
 

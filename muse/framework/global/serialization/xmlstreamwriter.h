@@ -75,6 +75,6 @@ private:
     void writeValue(const Value &v);
 
     struct Impl;
-    Impl *m_impl = nullptr;
+    Impl *impl_ = nullptr;
 };
 } // namespace muse

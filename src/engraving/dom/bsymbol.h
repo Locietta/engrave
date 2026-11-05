@@ -49,11 +49,11 @@ public:
     bool acceptDrop(EditData &) const override;
     EngravingItem *drop(Transaction &tx, EditData &) override;
 
-    Align align() const { return m_align; }
+    Align align() const { return align_; }
 
-    void setAlign(Align a) { m_align = a; }
+    void setAlign(Align a) { align_ = a; }
 
-    const std::vector<EngravingItem *> &leafs() const { return m_leafs; }
+    const std::vector<EngravingItem *> &leafs() const { return leafs_; }
 
     PointF pagePos() const override;
     PointF canvasPos() const override;
@@ -64,7 +64,7 @@ protected:
 
 private:
 
-    std::vector<EngravingItem *> m_leafs;
-    Align m_align = {AlignH::LEFT, AlignV::BASELINE};
+    std::vector<EngravingItem *> leafs_;
+    Align align_ = {AlignH::LEFT, AlignV::BASELINE};
 };
 } // namespace mu::engraving

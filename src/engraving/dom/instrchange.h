@@ -46,11 +46,11 @@ public:
 
     InstrumentChange *clone() const override { return new InstrumentChange(*this); }
 
-    Instrument *instrument() const { return m_instrument; }
+    Instrument *instrument() const { return instrument_; }
 
-    void setInstrument(Instrument *i) { m_instrument = i; }
+    void setInstrument(Instrument *i) { instrument_ = i; }
 
-    void setInstrument(Instrument &&i) { *m_instrument = i; }
+    void setInstrument(Instrument &&i) { *instrument_ = i; }
 
     void setInstrument(const Instrument &i);
     void setupInstrument(const Instrument *instrument, bool updateText = true);
@@ -58,9 +58,9 @@ public:
     std::vector<KeySig *> keySigs(bool all = false) const;
     std::vector<Clef *> clefs() const;
 
-    bool init() const { return m_init; }
+    bool init() const { return init_; }
 
-    void setInit(bool init) { m_init = init; }
+    void setInit(bool init) { init_ = init; }
 
     Segment *segment() const { return toSegment(ownershipParent()); }
 
@@ -72,8 +72,8 @@ public:
 
 private:
 
-    Instrument *m_instrument = nullptr; // Staff holds ownership if part of score
-    bool m_init = false;                // Set if the instrument has been set by the user, as there is no other way to tell.
+    Instrument *instrument_ = nullptr; // Staff holds ownership if part of score
+    bool init_ = false;                // Set if the instrument has been set by the user, as there is no other way to tell.
 };
 } // namespace mu::engraving
 #endif

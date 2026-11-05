@@ -54,23 +54,23 @@ public:
     HDegree() = default;
 
     HDegree(int v, int a, HDegreeType t) {
-        m_value = v;
-        m_alter = a;
-        m_type = t;
+        value_ = v;
+        alter_ = a;
+        type_ = t;
     }
 
-    int value() const { return m_value; }
+    int value() const { return value_; }
 
-    int alter() const { return m_alter; }
+    int alter() const { return alter_; }
 
-    HDegreeType type() const { return m_type; }
+    HDegreeType type() const { return type_; }
 
     String text() const;
 
 private:
-    int m_value = 0;
-    int m_alter = 0; // -1, 0, 1  (b - - #)
-    HDegreeType m_type = HDegreeType::UNDEF;
+    int value_ = 0;
+    int alter_ = 0; // -1, 0, 1  (b - - #)
+    HDegreeType type_ = HDegreeType::UNDEF;
 };
 
 //---------------------------------------------------------
@@ -81,7 +81,7 @@ class HChord {
 public:
     HChord() = default;
 
-    HChord(int k) { m_keys = k; }
+    HChord(int k) { keys_ = k; }
 
     HChord(int a, int b, int c = -1, int d = -1, int e = -1, int f = -1, int g = -1, int h = -1, int i = -1, int k = -1, int l = -1);
     HChord(const String &);
@@ -90,24 +90,24 @@ public:
 
     bool contains(int key) const // key in chord?
     {
-        return (1 << (key % 12)) & m_keys;
+        return (1 << (key % 12)) & keys_;
     }
 
     HChord &operator+=(int key) {
-        m_keys |= (1 << (key % 12));
+        keys_ |= (1 << (key % 12));
         return *this;
     }
 
     HChord &operator-=(int key) {
-        m_keys &= ~(1 << (key % 12));
+        keys_ &= ~(1 << (key % 12));
         return *this;
     }
 
-    bool operator==(const HChord &o) const { return m_keys == o.m_keys; }
+    bool operator==(const HChord &o) const { return keys_ == o.keys_; }
 
-    bool operator!=(const HChord &o) const { return m_keys != o.m_keys; }
+    bool operator!=(const HChord &o) const { return keys_ != o.keys_; }
 
-    int getKeys() const { return m_keys; }
+    int getKeys() const { return keys_; }
 
     void print() const;
 
@@ -116,10 +116,10 @@ public:
     void add(const std::vector<HDegree> &degreeList);
 
 protected:
-    int m_keys = 0;
+    int keys_ = 0;
 
 private:
-    String m_str;
+    String str_;
 };
 
 //---------------------------------------------------------
@@ -143,26 +143,26 @@ protected:
 struct RenderActionMove : RenderAction {
     RenderActionMove() {}
 
-    RenderActionMove(double movex, double movey) : m_vec(PointF(movex, movey)) {}
+    RenderActionMove(double movex, double movey) : vec_(PointF(movex, movey)) {}
 
     RenderActionType actionType() const override { return RenderActionType::MOVE; }
 
     void print() const override;
 
-    double x() const { return m_vec.x(); }
+    double x() const { return vec_.x(); }
 
-    double y() const { return m_vec.y(); }
+    double y() const { return vec_.y(); }
 
-    PointF vec() const { return m_vec; }
+    PointF vec() const { return vec_; }
 
-    bool scaled() const { return m_scaled; }
+    bool scaled() const { return scaled_; }
 
 protected:
-    RenderActionMove(double movex, double movey, bool scaled) : m_vec(PointF(movex, movey)), m_scaled(scaled) {}
+    RenderActionMove(double movex, double movey, bool scaled) : vec_(PointF(movex, movey)), scaled_(scaled) {}
 
 private:
-    PointF m_vec = PointF(0.0, 0.0);
-    bool m_scaled = false;
+    PointF vec_ = PointF(0.0, 0.0);
+    bool scaled_ = false;
 };
 
 struct RenderActionMoveScaled : RenderActionMove {
@@ -172,22 +172,22 @@ struct RenderActionMoveScaled : RenderActionMove {
 };
 
 struct RenderActionMoveXHeight : RenderAction {
-    RenderActionMoveXHeight(bool up) : m_up(up) {}
+    RenderActionMoveXHeight(bool up) : up_(up) {}
 
     RenderActionType actionType() const override { return RenderActionType::MOVEXHEIGHT; }
 
-    bool up() const { return m_up; }
+    bool up() const { return up_; }
 
-    bool scaled() const { return m_scaled; }
+    bool scaled() const { return scaled_; }
 
     void print() const override;
 
 protected:
-    RenderActionMoveXHeight(bool up, bool scaled) : m_up(up), m_scaled(scaled) {}
+    RenderActionMoveXHeight(bool up, bool scaled) : up_(up), scaled_(scaled) {}
 
 private:
-    bool m_up = true;
-    bool m_scaled = false;
+    bool up_ = true;
+    bool scaled_ = false;
 };
 
 struct RenderActionMoveXHeightScaled : RenderActionMoveXHeight {
@@ -197,22 +197,22 @@ struct RenderActionMoveXHeightScaled : RenderActionMoveXHeight {
 struct RenderActionSet : RenderAction {
     RenderActionSet() {}
 
-    RenderActionSet(String s) : m_text(s) {}
+    RenderActionSet(String s) : text_(s) {}
 
     RenderActionType actionType() const override { return RenderActionType::SET; }
 
     void print() const override;
 
-    const String &text() const { return m_text; }
+    const String &text() const { return text_; }
 
-    bool renderText() const { return m_renderText; }
+    bool renderText() const { return renderText_; }
 
 protected:
-    RenderActionSet(String s, bool renderText) : m_text(s), m_renderText(renderText) {}
+    RenderActionSet(String s, bool renderText) : text_(s), renderText_(renderText) {}
 
 private:
-    String m_text;
-    bool m_renderText = true;
+    String text_;
+    bool renderText_ = true;
 };
 
 struct RenderActionMoveTextWidth : RenderActionSet {
@@ -232,13 +232,13 @@ struct RenderActionPop : RenderAction {
 
     void print() const override;
 
-    double popX() const { return m_popx; }
+    double popX() const { return popx_; }
 
-    double popY() const { return m_popy; }
+    double popY() const { return popy_; }
 protected:
-    RenderActionPop(bool popx, bool popy) : m_popx(popx), m_popy(popy) {}
+    RenderActionPop(bool popx, bool popy) : popx_(popx), popy_(popy) {}
 private:
-    bool m_popx = true, m_popy = true;
+    bool popx_ = true, popy_ = true;
 };
 
 struct RenderActionPopX : RenderActionPop {
@@ -270,16 +270,16 @@ struct RenderActionStopHAlign : RenderAction {
 struct RenderActionScale : RenderAction {
     RenderActionScale() {}
 
-    RenderActionScale(double scale) : m_scale(scale) {}
+    RenderActionScale(double scale) : scale_(scale) {}
 
     RenderActionType actionType() const override { return RenderActionType::SCALE; }
 
-    double scale() const { return m_scale; }
+    double scale() const { return scale_; }
 
     void print() const override;
 
 private:
-    double m_scale = 1.0;
+    double scale_ = 1.0;
 };
 
 struct RenderActionParen : RenderAction {
@@ -342,37 +342,37 @@ public:
     String fromXml(const String &, const String &, const String &, const String &, const std::vector<HDegree> &, const ChordList *);
     const std::vector<RenderActionPtr> &renderList(const ChordList *cl, bool stacked);
 
-    bool parseable() const { return m_parseable; }
+    bool parseable() const { return parseable_; }
 
-    bool understandable() const { return m_understandable; }
+    bool understandable() const { return understandable_; }
 
-    const String &name() const { return m_name; }
+    const String &name() const { return name_; }
 
-    const String &quality() const { return m_quality; }
+    const String &quality() const { return quality_; }
 
-    const String &extension() const { return m_extension; }
+    const String &extension() const { return extension_; }
 
-    const String &modifiers() const { return m_modifiers; }
+    const String &modifiers() const { return modifiers_; }
 
-    const StringList &modifierList() const { return m_modifierList; }
+    const StringList &modifierList() const { return modifierList_; }
 
-    const String &xmlKind() const { return m_xmlKind; }
+    const String &xmlKind() const { return xmlKind_; }
 
-    const String &xmlText() const { return m_xmlText; }
+    const String &xmlText() const { return xmlText_; }
 
-    const String &xmlSymbols() const { return m_xmlSymbols; }
+    const String &xmlSymbols() const { return xmlSymbols_; }
 
-    const String &xmlParens() const { return m_xmlParens; }
+    const String &xmlParens() const { return xmlParens_; }
 
-    const StringList &xmlDegrees() const { return m_xmlDegrees; }
+    const StringList &xmlDegrees() const { return xmlDegrees_; }
 
-    int keys() const { return m_chord.getKeys(); }
+    int keys() const { return chord_.getKeys(); }
 
-    const String &handle() const { return m_handle; }
+    const String &handle() const { return handle_; }
 
-    operator String() const { return m_handle; }
+    operator String() const { return handle_; }
 
-    bool operator==(const ParsedChord &c) const { return this->m_handle == c.m_handle; }
+    bool operator==(const ParsedChord &c) const { return this->handle_ == c.handle_; }
 
     bool operator!=(const ParsedChord &c) const { return !(*this == c); }
 
@@ -381,23 +381,23 @@ private:
     void correctXmlText(const String &s = String());
     void addToken(String, ChordTokenClass);
 
-    String m_name;
-    String m_handle;
-    String m_quality;
-    String m_extension;
-    String m_modifiers;
-    StringList m_modifierList;
-    std::vector<ChordToken> m_tokenList;
-    std::vector<RenderActionPtr> m_renderList;
-    String m_xmlKind;
-    String m_xmlText;
-    String m_xmlSymbols;
-    String m_xmlParens;
-    StringList m_xmlDegrees;
-    StringList m_major, m_minor, m_diminished, m_augmented, m_lower, m_raise, m_mod, m_symbols;
-    HChord m_chord;
-    bool m_parseable = false;
-    bool m_understandable = false;
+    String name_;
+    String handle_;
+    String quality_;
+    String extension_;
+    String modifiers_;
+    StringList modifierList_;
+    std::vector<ChordToken> tokenList_;
+    std::vector<RenderActionPtr> renderList_;
+    String xmlKind_;
+    String xmlText_;
+    String xmlSymbols_;
+    String xmlParens_;
+    StringList xmlDegrees_;
+    StringList major_, minor_, diminished_, augmented_, lower_, raise_, mod_, symbols_;
+    HChord chord_;
+    bool parseable_ = false;
+    bool understandable_ = false;
 };
 
 //---------------------------------------------------------
@@ -428,14 +428,14 @@ struct ChordDescription {
     ChordDescription(int);
     ChordDescription(const String &);
 
-    String quality() const { return m_quality; }
+    String quality() const { return quality_; }
 
     void complete(ParsedChord *pc, const ChordList *);
     void read(XmlReader &, int mscVersion);
     void write(XmlWriter &) const;
 
 private:
-    String m_quality;
+    String quality_;
 };
 
 //---------------------------------------------------------
@@ -481,19 +481,19 @@ public:
     std::vector<ChordToken> chordTokenList;
     static int privateID;
 
-    bool autoAdjust() const { return m_autoAdjust; }
+    bool autoAdjust() const { return autoAdjust_; }
 
-    double nominalMag() const { return m_nmag; }
+    double nominalMag() const { return nmag_; }
 
-    double nominalAdjust() const { return m_nadjust; }
+    double nominalAdjust() const { return nadjust_; }
 
-    bool stackModifiers() const { return m_stackModifiers; }
+    bool stackModifiers() const { return stackModifiers_; }
 
-    bool excludeModsHAlign() const { return m_excludeModsHAlign; }
+    bool excludeModsHAlign() const { return excludeModsHAlign_; }
 
-    double stackedModifierMag() const { return m_stackedmmag; }
+    double stackedModifierMag() const { return stackedmmag_; }
 
-    const ChordStylePreset &chordPreset() const { return m_chordPreset; }
+    const ChordStylePreset &chordPreset() const { return chordPreset_; }
 
     void configureAutoAdjust(double emag = 1.0, double eadjust = 0.0, double mmag = 1.0, double madjust = 0.0, double stackedmmag = 0.0,
                              bool stackModifiers = false, bool excludeModsHAlign = false, String symbolFont = u"",
@@ -513,9 +513,9 @@ public:
     ChordSymbol symbol(const String &s) const;
     ChordToken token(const String &s, ChordTokenClass) const;
 
-    void setCustomChordList(bool t) { m_customChordList = t; }
+    void setCustomChordList(bool t) { customChordList_ = t; }
 
-    bool customChordList() const { return m_customChordList; }
+    bool customChordList() const { return customChordList_; }
 
 private:
 
@@ -524,16 +524,16 @@ private:
     void read(XmlReader &xml, int mscVersion);
     void write(XmlWriter &xml) const;
 
-    std::map<String, ChordSymbol> m_symbols;
-    bool m_autoAdjust = false;
-    bool m_stackModifiers = false;
-    bool m_excludeModsHAlign = false;
-    ChordStylePreset m_chordPreset = ChordStylePreset::STANDARD;
-    double m_nmag = 1.0, m_nadjust = 0.0; // adjust values are measured in percentage
-    double m_emag = 1.0, m_eadjust = 0.0; // (which is then applied to the height of the font)
-    double m_mmag = 1.0, m_madjust = 0.0, m_stackedmmag = 0.0;
-    String m_symbolTextFont = u"";
+    std::map<String, ChordSymbol> symbols_;
+    bool autoAdjust_ = false;
+    bool stackModifiers_ = false;
+    bool excludeModsHAlign_ = false;
+    ChordStylePreset chordPreset_ = ChordStylePreset::STANDARD;
+    double nmag_ = 1.0, nadjust_ = 0.0; // adjust values are measured in percentage
+    double emag_ = 1.0, eadjust_ = 0.0; // (which is then applied to the height of the font)
+    double mmag_ = 1.0, madjust_ = 0.0, stackedmmag_ = 0.0;
+    String symbolTextFont_ = u"";
 
-    bool m_customChordList = false; // if true, chordlist will be saved as part of score
+    bool customChordList_ = false; // if true, chordlist will be saved as part of score
 };
 } // namespace mu::engraving

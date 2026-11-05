@@ -43,8 +43,8 @@ PlayCountText::PlayCountText(DummyParentOr<Segment> parent, TextStyleType tid)
 
 PropertyValue PlayCountText::getProperty(Pid id) const {
     switch (id) {
-        case Pid::PLAY_COUNT_TEXT_SETTING: return m_playCountTextSetting;
-        case Pid::PLAY_COUNT_TEXT: return m_playCountCustomText;
+        case Pid::PLAY_COUNT_TEXT_SETTING: return playCountTextSetting_;
+        case Pid::PLAY_COUNT_TEXT: return playCountCustomText_;
         default: return TextBase::getProperty(id);
     }
 }
@@ -55,7 +55,7 @@ bool PlayCountText::setProperty(Pid id, const PropertyValue &v) {
 
     switch (id) {
         case Pid::PLAY_COUNT_TEXT_SETTING:
-            m_playCountTextSetting = v.value<AutoCustomHide>();
+            playCountTextSetting_ = v.value<AutoCustomHide>();
             if (playCountTextSetting() == AutoCustomHide::CUSTOM && playCountCustomText().isEmpty()) {
                 int repeatCount = m ? m->repeatCount() : 2;
                 String text =
@@ -63,7 +63,7 @@ bool PlayCountText::setProperty(Pid id, const PropertyValue &v) {
                 undoChangeProperty(Pid::PLAY_COUNT_TEXT, text);
             }
             break;
-        case Pid::PLAY_COUNT_TEXT: m_playCountCustomText = v.value<String>(); break;
+        case Pid::PLAY_COUNT_TEXT: playCountCustomText_ = v.value<String>(); break;
         default: return TextBase::setProperty(id, v);
     }
     triggerLayout();

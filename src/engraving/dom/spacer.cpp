@@ -39,21 +39,21 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 Spacer::Spacer(DummyParentOr<Measure> parent) : EngravingItem(ElementType::SPACER, parent) {
-    m_spacerType = SpacerType::UP;
-    m_gap = 0.0_sp;
-    m_z = -10; // Ensure behind notation
+    spacerType_ = SpacerType::UP;
+    gap_ = 0.0_sp;
+    z_ = -10; // Ensure behind notation
 }
 
 Spacer::Spacer(const Spacer &s) : EngravingItem(s) {
-    m_gap = s.m_gap;
-    m_spacerType = s.m_spacerType;
+    gap_ = s.gap_;
+    spacerType_ = s.spacerType_;
 }
 
 //---------------------------------------------------------
 //   setGap
 //---------------------------------------------------------
 
-void Spacer::setGap(Spatium sp) { m_gap = sp; }
+void Spacer::setGap(Spatium sp) { gap_ = sp; }
 
 //---------------------------------------------------------
 //   getProperty
@@ -155,7 +155,7 @@ void Spacer::triggerLayout() const {
 //---------------------------------------------------------
 
 muse::TranslatableString Spacer::subtypeUserName() const {
-    switch (m_spacerType) {
+    switch (spacerType_) {
         case SpacerType::UP: return TranslatableString("engraving/spacertype", "Staff spacer up");
         case SpacerType::DOWN: return TranslatableString("engraving/spacertype", "Staff spacer down");
         case SpacerType::FIXED: return TranslatableString("engraving/spacertype", "Staff spacer fixed down");

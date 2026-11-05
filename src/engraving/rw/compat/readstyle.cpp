@@ -54,7 +54,7 @@ static int readStyleDefaultsVersion(MasterScore *score, const ByteArray &scoreDa
 }
 
 ReadStyleHook::ReadStyleHook(Score *score, const ByteArray &scoreData, const String &completeBaseName)
-    : m_score(score), m_scoreData(scoreData), m_completeBaseName(completeBaseName) {}
+    : score_(score), scoreData_(scoreData), completeBaseName_(completeBaseName) {}
 
 int ReadStyleHook::styleDefaultByMscVersion(const int mscVer) {
     constexpr int LEGACY_MSC_VERSION_V400 = 400;
@@ -82,17 +82,17 @@ int ReadStyleHook::styleDefaultByMscVersion(const int mscVer) {
 }
 
 void ReadStyleHook::setupDefaultStyle() {
-    IF_ASSERT_FAILED(m_score) { return; }
+    IF_ASSERT_FAILED(score_) { return; }
 
     int defaultsVersion = -1;
-    if (m_score->isMaster()) {
-        defaultsVersion = readStyleDefaultsVersion(m_score->masterScore(), m_scoreData, m_completeBaseName);
+    if (score_->isMaster()) {
+        defaultsVersion = readStyleDefaultsVersion(score_->masterScore(), scoreData_, completeBaseName_);
     } else {
-        defaultsVersion = m_score->masterScore()->style().defaultStyleVersion();
+        defaultsVersion = score_->masterScore()->style().defaultStyleVersion();
     }
 
-    m_score->setStyle(DefaultStyle::resolveStyleDefaults(defaultsVersion));
-    m_score->style().setDefaultStyleVersion(defaultsVersion);
+    score_->setStyle(DefaultStyle::resolveStyleDefaults(defaultsVersion));
+    score_->style().setDefaultStyleVersion(defaultsVersion);
 }
 
 void ReadStyleHook::setupDefaultStyle(Score *score) {
@@ -103,7 +103,7 @@ void ReadStyleHook::setupDefaultStyle(Score *score) {
     score->style().setDefaultStyleVersion(defaultsVersion);
 }
 
-void ReadStyleHook::readStyleTag(XmlReader &e) { readStyleTag(m_score, e); }
+void ReadStyleHook::readStyleTag(XmlReader &e) { readStyleTag(score_, e); }
 
 void ReadStyleHook::readStyleTag(Score *score, XmlReader &e) {
     ReadChordListHook clhook(score);

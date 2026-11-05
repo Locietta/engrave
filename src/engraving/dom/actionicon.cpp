@@ -33,23 +33,23 @@ using namespace muse::draw;
 using namespace mu::engraving;
 
 ActionIcon::ActionIcon(DummyParentOr<EngravingItem> parent) : EngravingItem(ElementType::ACTION_ICON, parent) {
-    m_iconFont = Font(configuration()->iconsFontFamily(), Font::Type::Icon);
-    m_iconFont.setPointSizeF(UI_ICONS_DEFAULT_FONT_SIZE);
+    iconFont_ = Font(configuration()->iconsFontFamily(), Font::Type::Icon);
+    iconFont_.setPointSizeF(UI_ICONS_DEFAULT_FONT_SIZE);
 }
 
 ActionIcon *ActionIcon::clone() const { return new ActionIcon(*this); }
 
-void ActionIcon::setActionType(ActionIconType val) { m_actionType = val; }
+void ActionIcon::setActionType(ActionIconType val) { actionType_ = val; }
 
-ActionIconType ActionIcon::actionType() const { return m_actionType; }
+ActionIconType ActionIcon::actionType() const { return actionType_; }
 
-const muse::TranslatableString &ActionIcon::title() const { return TConv::userName(m_actionType); }
+const muse::TranslatableString &ActionIcon::title() const { return TConv::userName(actionType_); }
 
-char16_t ActionIcon::icon() const { return TConv::iconCode(m_actionType); }
+char16_t ActionIcon::icon() const { return TConv::iconCode(actionType_); }
 
 engraving::PropertyValue ActionIcon::getProperty(Pid pid) const {
     switch (pid) {
-        case Pid::ACTION: return PropertyValue(m_actionType);
+        case Pid::ACTION: return PropertyValue(actionType_);
         default: break;
     }
     return EngravingItem::getProperty(pid);
@@ -58,7 +58,7 @@ engraving::PropertyValue ActionIcon::getProperty(Pid pid) const {
 bool ActionIcon::setProperty(Pid pid, const PropertyValue &v) {
     switch (pid) {
         case Pid::ACTION:
-            m_actionType = v.value<ActionIconType>();
+            actionType_ = v.value<ActionIconType>();
             triggerLayout();
             break;
         default: return EngravingItem::setProperty(pid, v);

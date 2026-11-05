@@ -86,10 +86,10 @@ private:
 
     void init(const MStyle &style);
 
-    const EngravingServices &m_services;
-    MasterScore *m_masterScore = nullptr;
+    const EngravingServices &services_;
+    MasterScore *masterScore_ = nullptr;
 
-    bool m_isCorruptedUponLoading = false;
+    bool isCorruptedUponLoading_ = false;
 };
 
 using EngravingProjectPtr = std::shared_ptr<EngravingProject>;

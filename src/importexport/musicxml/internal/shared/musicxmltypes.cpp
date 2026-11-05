@@ -109,8 +109,8 @@ void MusicXmlInstrList::setInstrument(const String instr, const Fraction f) {
 //---------------------------------------------------------
 
 void LyricNumberHandler::addNumber(const String &number) {
-    if (m_numberToNo.find(number) == m_numberToNo.end()) {
-        m_numberToNo[number] = -1; // unassigned
+    if (numberToNo_.find(number) == numberToNo_.end()) {
+        numberToNo_[number] = -1; // unassigned
     }
 }
 
@@ -120,7 +120,7 @@ void LyricNumberHandler::addNumber(const String &number) {
 
 String LyricNumberHandler::toString() const {
     String res;
-    for (const auto &p : m_numberToNo) {
+    for (const auto &p : numberToNo_) {
         if (!res.isEmpty()) {
             res += u" ";
         }
@@ -134,8 +134,8 @@ String LyricNumberHandler::toString() const {
 //---------------------------------------------------------
 
 int LyricNumberHandler::getLyricNo(const String &number) const {
-    const auto it = m_numberToNo.find(number);
-    return it == m_numberToNo.end() ? 0 : it->second;
+    const auto it = numberToNo_.find(number);
+    return it == numberToNo_.end() ? 0 : it->second;
 }
 
 //---------------------------------------------------------
@@ -144,7 +144,7 @@ int LyricNumberHandler::getLyricNo(const String &number) const {
 
 void LyricNumberHandler::determineLyricNos() {
     int i = 0;
-    for (auto &p : m_numberToNo) {
+    for (auto &p : numberToNo_) {
         p.second = i;
         ++i;
     }

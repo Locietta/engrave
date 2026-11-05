@@ -45,9 +45,9 @@ private:
 
     using GlyphImages = std::unordered_map<glyph_idx_t, GlyphImage>;
 
-    mutable std::map<FaceKey, GlyphImages> m_cache;
-    io::path_t m_cacheDirPath;
-    std::string m_cacheRevision;
+    mutable std::map<FaceKey, GlyphImages> cache_;
+    io::path_t cacheDirPath_;
+    std::string cacheRevision_;
 
     struct CacheInfo {
         io::path_t filePath;
@@ -61,7 +61,7 @@ private:
 
     void loadCachedInfo(CacheInfoMap &map, const io::path_t &dir) const;
 
-    mutable bool m_cacheInfoLoaded = false;
-    mutable CacheInfoMap m_cacheInfoMap;
+    mutable bool cacheInfoLoaded_ = false;
+    mutable CacheInfoMap cacheInfoMap_;
 };
 } // namespace muse::draw

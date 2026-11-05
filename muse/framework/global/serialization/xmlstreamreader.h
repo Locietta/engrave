@@ -107,10 +107,10 @@ private:
     void tryParseEntity(Xml *xml);
     String nodeValue(Xml *xml) const;
 
-    Xml *m_xml = nullptr;
-    TokenType m_token = TokenType::NoToken;
+    Xml *xml_ = nullptr;
+    TokenType token_ = TokenType::NoToken;
 
-    std::map<String, String> m_entities;
+    std::map<String, String> entities_;
 };
 } // namespace muse
 

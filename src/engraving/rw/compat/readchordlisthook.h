@@ -38,9 +38,9 @@ public:
     void validate();
 
 private:
-    Score *m_score = nullptr;
-    bool m_chordListTag = false;
-    muse::String m_oldChordDescriptionFile;
+    Score *score_ = nullptr;
+    bool chordListTag_ = false;
+    muse::String oldChordDescriptionFile_;
 };
 } // namespace mu::engraving::compat
 

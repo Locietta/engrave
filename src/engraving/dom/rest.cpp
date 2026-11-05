@@ -60,12 +60,12 @@ namespace mu::engraving {
 
 Rest::Rest(DummyParentOr<Segment> parent) : Rest(ElementType::REST, parent) {}
 
-Rest::Rest(const ElementType &type, DummyParentOr<Segment> parent) : ChordRest(type, parent) { m_beamMode = BeamMode::NONE; }
+Rest::Rest(const ElementType &type, DummyParentOr<Segment> parent) : ChordRest(type, parent) { beamMode_ = BeamMode::NONE; }
 
 Rest::Rest(DummyParentOr<Segment> parent, const TDuration &d) : Rest(ElementType::REST, parent, d) {}
 
 Rest::Rest(const ElementType &type, DummyParentOr<Segment> parent, const TDuration &d) : ChordRest(type, parent) {
-    m_beamMode = BeamMode::NONE;
+    beamMode_ = BeamMode::NONE;
     setDurationType(d);
     if (d.fraction().isValid()) {
         setTicks(d.fraction());
@@ -77,17 +77,17 @@ Rest::Rest(const Rest &r, bool link) : ChordRest(r, link) {
         score()->undo(new Link(this, const_cast<Rest *>(&r)));
         setAutoplace(true);
     }
-    m_gap = r.m_gap;
-    m_dotline = r.m_dotline;
-    for (NoteDot *dot : r.m_dots) {
+    gap_ = r.gap_;
+    dotline_ = r.dotline_;
+    for (NoteDot *dot : r.dots_) {
         add(Factory::copyNoteDot(*dot));
     }
 
-    if (r.m_deadSlapped) {
-        DeadSlapped *ndc = Factory::copyDeadSlapped(*r.m_deadSlapped);
+    if (r.deadSlapped_) {
+        DeadSlapped *ndc = Factory::copyDeadSlapped(*r.deadSlapped_);
         add(ndc);
         if (link) {
-            score()->undo(new Link(ndc, r.m_deadSlapped));
+            score()->undo(new Link(ndc, r.deadSlapped_));
         }
     }
 }
@@ -243,7 +243,7 @@ double Rest::symWidthNoLedgerLines(LayoutData *ldata) const {
 //---------------------------------------------------------
 
 void Rest::checkDots() {
-    int n = dots() - int(m_dots.size());
+    int n = dots() - int(dots_.size());
     for (int i = 0; i < n; ++i) {
         NoteDot *dot = Factory::createNoteDot(this);
         dot->setVisible(visible());
@@ -251,7 +251,7 @@ void Rest::checkDots() {
     }
     if (n < 0) {
         for (int i = 0; i < -n; ++i) {
-            score()->undoRemoveElement(m_dots.back());
+            score()->undoRemoveElement(dots_.back());
         }
     }
 }
@@ -262,10 +262,10 @@ void Rest::checkDots() {
 
 NoteDot *Rest::dot(int n) {
     checkDots();
-    return m_dots[n];
+    return dots_[n];
 }
 
-const std::vector<NoteDot *> &Rest::dotList() const { return m_dots; }
+const std::vector<NoteDot *> &Rest::dotList() const { return dots_; }
 
 //---------------------------------------------------------
 //   getDotline
@@ -318,7 +318,7 @@ void Rest::scanElements(std::function<void(EngravingItem *)> func) {
     for (EngravingItem *e : el()) {
         e->scanElements(func);
     }
-    for (NoteDot *dot : m_dots) {
+    for (NoteDot *dot : dots_) {
         dot->scanElements(func);
     }
     if (!isGap() || debugDrawGap()) {
@@ -338,7 +338,7 @@ void Rest::scanElements(std::function<void(EngravingItem *)> func) {
 
 void Rest::setTrack(track_idx_t val) {
     ChordRest::setTrack(val);
-    for (NoteDot *dot : m_dots) {
+    for (NoteDot *dot : dots_) {
         dot->setTrack(val);
     }
 }
@@ -413,11 +413,11 @@ void Rest::add(EngravingItem *e) {
 
     switch (e->type()) {
         case ElementType::NOTEDOT:
-            m_dots.push_back(toNoteDot(e));
+            dots_.push_back(toNoteDot(e));
             e->added();
             break;
         case ElementType::DEAD_SLAPPED:
-            m_deadSlapped = toDeadSlapped(e);
+            deadSlapped_ = toDeadSlapped(e);
             e->added();
             break;
         default: ChordRest::add(e); break;
@@ -431,10 +431,10 @@ void Rest::add(EngravingItem *e) {
 void Rest::remove(EngravingItem *e) {
     switch (e->type()) {
         case ElementType::NOTEDOT:
-            m_dots.pop_back();
+            dots_.pop_back();
             e->removed();
             break;
-        case ElementType::DEAD_SLAPPED: m_deadSlapped = nullptr;
+        case ElementType::DEAD_SLAPPED: deadSlapped_ = nullptr;
         // fallthrough
         case ElementType::SYMBOL:
         case ElementType::IMAGE:
@@ -454,7 +454,7 @@ void Rest::remove(EngravingItem *e) {
 
 void Rest::localSpatiumChanged(double oldValue, double newValue) {
     ChordRest::localSpatiumChanged(oldValue, newValue);
-    for (EngravingItem *e : m_dots) {
+    for (EngravingItem *e : dots_) {
         e->localSpatiumChanged(oldValue, newValue);
     }
     for (EngravingItem *e : el()) {
@@ -489,7 +489,7 @@ void Rest::resetProperty(Pid id) {
 
 PropertyValue Rest::getProperty(Pid propertyId) const {
     switch (propertyId) {
-        case Pid::GAP: return m_gap;
+        case Pid::GAP: return gap_;
         case Pid::ALIGN_WITH_OTHER_RESTS: return alignWithOtherRests();
         default: return ChordRest::getProperty(propertyId);
     }
@@ -501,7 +501,7 @@ PropertyValue Rest::getProperty(Pid propertyId) const {
 
 bool Rest::setProperty(Pid propertyId, const PropertyValue &v) {
     switch (propertyId) {
-        case Pid::GAP: m_gap = v.toBool(); break;
+        case Pid::GAP: gap_ = v.toBool(); break;
         case Pid::VISIBLE: setVisible(v.toBool()); break;
         case Pid::OFFSET:
             setOffset(v.value<PointF>());
@@ -521,7 +521,7 @@ bool Rest::setProperty(Pid propertyId, const PropertyValue &v) {
 //---------------------------------------------------------
 
 void Rest::undoChangeDotsVisible(bool v) {
-    for (NoteDot *dot : m_dots) {
+    for (NoteDot *dot : dots_) {
         dot->undoChangeProperty(Pid::VISIBLE, v);
     }
 }

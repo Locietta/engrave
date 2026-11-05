@@ -38,13 +38,13 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 StaffState::StaffState(DummyParentOr<EngravingItem> parent) : EngravingItem(ElementType::STAFF_STATE, parent) {
-    m_staffStateType = StaffStateType::INSTRUMENT;
-    m_instrument = new Instrument;
+    staffStateType_ = StaffStateType::INSTRUMENT;
+    instrument_ = new Instrument;
 }
 
-StaffState::StaffState(const StaffState &ss) : EngravingItem(ss) { m_instrument = new Instrument(*ss.m_instrument); }
+StaffState::StaffState(const StaffState &ss) : EngravingItem(ss) { instrument_ = new Instrument(*ss.instrument_); }
 
-StaffState::~StaffState() { delete m_instrument; }
+StaffState::~StaffState() { delete instrument_; }
 
 //---------------------------------------------------------
 //   setStaffStateType

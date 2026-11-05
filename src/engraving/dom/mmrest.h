@@ -49,9 +49,9 @@ public:
     RectF numberRect() const override;
     PointF numberPos() const;
 
-    void setNumberOffset(const Spatium y) { m_numberOffset = y; }
+    void setNumberOffset(const Spatium y) { numberOffset_ = y; }
 
-    Spatium numberOffset() const { return m_numberOffset; }
+    Spatium numberOffset() const { return numberOffset_; }
 
     double yNumberPos() const;
 
@@ -71,7 +71,7 @@ public:
     DECLARE_LAYOUTDATA_METHODS(MMRest)
 
 private:
-    Spatium m_numberOffset = 0.0_sp; // vertical offset of number relative to its style position
-    bool m_numberVisible = false;    // show or hide number
+    Spatium numberOffset_ = 0.0_sp; // vertical offset of number relative to its style position
+    bool numberVisible_ = false;    // show or hide number
 };
 } // namespace mu::engraving

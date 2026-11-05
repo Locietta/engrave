@@ -38,30 +38,30 @@ static const ElementStyle annotationStyle{
 
 PlayTechAnnotation::PlayTechAnnotation(DummyParentOr<Segment> parent, PlayingTechniqueType techniqueType, TextStyleType tid)
     : StaffTextBase(ElementType::PLAYTECH_ANNOTATION, parent, tid, ElementFlag::MOVABLE | ElementFlag::ON_STAFF),
-      m_techniqueType(techniqueType) {
+      techniqueType_(techniqueType) {
     initElementStyle(&annotationStyle);
 }
 
-PlayingTechniqueType PlayTechAnnotation::techniqueType() const { return m_techniqueType; }
+PlayingTechniqueType PlayTechAnnotation::techniqueType() const { return techniqueType_; }
 
 void PlayTechAnnotation::setTechniqueType(const PlayingTechniqueType techniqueType) {
-    m_techniqueType = techniqueType;
+    techniqueType_ = techniqueType;
     resetProperty(Pid::TEXT_STYLE);
 }
 
 PlayTechAnnotation *PlayTechAnnotation::clone() const { return new PlayTechAnnotation(*this); }
 
-TranslatableString PlayTechAnnotation::subtypeUserName() const { return TConv::userName(m_techniqueType); }
+TranslatableString PlayTechAnnotation::subtypeUserName() const { return TConv::userName(techniqueType_); }
 
 bool PlayTechAnnotation::isHandbellsSymbol() const {
-    return static_cast<int>(m_techniqueType) >= static_cast<int>(PlayingTechniqueType::HandbellsSwing) &&
-           static_cast<int>(m_techniqueType) <= static_cast<int>(PlayingTechniqueType::HandbellsR);
+    return static_cast<int>(techniqueType_) >= static_cast<int>(PlayingTechniqueType::HandbellsSwing) &&
+           static_cast<int>(techniqueType_) <= static_cast<int>(PlayingTechniqueType::HandbellsR);
 }
 
 PropertyValue PlayTechAnnotation::getProperty(Pid id) const {
     switch (id) {
-        case Pid::PLAY_TECH_TYPE: return m_techniqueType;
-        case Pid::PLAY: return m_playPlayTechAnnotation;
+        case Pid::PLAY_TECH_TYPE: return techniqueType_;
+        case Pid::PLAY: return playPlayTechAnnotation_;
         default: return StaffTextBase::getProperty(id);
     }
 }

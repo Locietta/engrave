@@ -101,17 +101,17 @@ private:
 
     bool hasOnlyOneLyricsVerse(const RepeatSegment *repeat, const track_idx_t track) const;
 
-    const Score *m_score = nullptr;
+    const Score *score_ = nullptr;
 
-    std::set<track_idx_t> m_usedTracks;
-    mutable std::unordered_map<track_idx_t, const AutomationCurve *> m_dynamicsCurveByTrack;
-    SoundPresetsByTrack m_soundPresetsByTrack;
-    TextArticulationsByTrack m_textArticulationsByTrack;
-    SyllablesByTrack m_syllablesByTrack;
-    PlayTechniquesByTrack m_playTechniquesByTrack;
+    std::set<track_idx_t> usedTracks_;
+    mutable std::unordered_map<track_idx_t, const AutomationCurve *> dynamicsCurveByTrack_;
+    SoundPresetsByTrack soundPresetsByTrack_;
+    TextArticulationsByTrack textArticulationsByTrack_;
+    SyllablesByTrack syllablesByTrack_;
+    PlayTechniquesByTrack playTechniquesByTrack_;
 
-    std::unordered_map<const ChordRest *, int> m_currentVerseNumByChordRest;
-    std::map<track_idx_t, std::set<int /*tick*/>> m_multiVerseLyricsPositionMap;
+    std::unordered_map<const ChordRest *, int> currentVerseNumByChordRest_;
+    std::map<track_idx_t, std::set<int /*tick*/>> multiVerseLyricsPositionMap_;
 };
 
 using PlaybackContextPtr = std::shared_ptr<PlaybackContext>;

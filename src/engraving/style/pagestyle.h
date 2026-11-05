@@ -47,7 +47,7 @@ public:
     double spatium() const;
 
 private:
-    const MStyle &m_style;
+    const MStyle &style_;
 };
 
 class PageSizeSetAccessor {
@@ -79,6 +79,6 @@ public:
     void setSpatium(double v);
 
 private:
-    MStyle &m_style;
+    MStyle &style_;
 };
 } // namespace mu::engraving

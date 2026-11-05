@@ -43,16 +43,16 @@ private:
     volume_db_t gainSmoothing(const float &newGainReduction) const;
     volume_db_t computeGain(const volume_db_t &logarithmSample) const;
 
-    EnvelopeFilterConfig m_filterConfig;
+    EnvelopeFilterConfig filterConfig_;
 
-    float m_softThresholdLower = 0.f;
-    float m_softThresholdUpper = 0.f;
-    float m_previousGainReduction = 1.f;
+    float softThresholdLower_ = 0.f;
+    float softThresholdUpper_ = 0.f;
+    float previousGainReduction_ = 1.f;
 
-    float m_feedbackGain = 0.f;
-    float m_feedbackFactor = 0.f;
+    float feedbackGain_ = 0.f;
+    float feedbackFactor_ = 0.f;
 
-    bool m_isActive = false;
+    bool isActive_ = false;
 };
 
 using CompressorPtr = std::unique_ptr<Compressor>;

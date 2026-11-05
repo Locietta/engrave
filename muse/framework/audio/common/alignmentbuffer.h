@@ -30,13 +30,13 @@ namespace muse::audio {
 //! For example, we expect block 512, but the driver requests 470
 class AlignmentBuffer {
 public:
-    AlignmentBuffer(size_t capacity) : m_buf(capacity) {}
+    AlignmentBuffer(size_t capacity) : buf_(capacity) {}
 
-    inline size_t capacity() const { return m_buf.size(); }
+    inline size_t capacity() const { return buf_.size(); }
 
-    inline size_t availableRead() const { return m_availableRead; }
+    inline size_t availableRead() const { return availableRead_; }
 
-    inline size_t availableWrite() const { return m_buf.size() - m_availableRead; }
+    inline size_t availableWrite() const { return buf_.size() - availableRead_; }
 
     bool write(const float *data, size_t size) {
         assert(size <= availableWrite());
@@ -44,17 +44,17 @@ public:
             return false;
         }
 
-        if (m_tail + size <= m_buf.size()) {
-            std::copy(data, data + size, m_buf.begin() + m_tail);
-            m_tail += size;
+        if (tail_ + size <= buf_.size()) {
+            std::copy(data, data + size, buf_.begin() + tail_);
+            tail_ += size;
         } else {
-            size_t firstPart = m_buf.size() - m_tail;
-            std::copy(data, data + firstPart, m_buf.begin() + m_tail);
-            std::copy(data + firstPart, data + size, m_buf.begin());
-            m_tail = size - firstPart;
+            size_t firstPart = buf_.size() - tail_;
+            std::copy(data, data + firstPart, buf_.begin() + tail_);
+            std::copy(data + firstPart, data + size, buf_.begin());
+            tail_ = size - firstPart;
         }
 
-        m_availableRead += size;
+        availableRead_ += size;
         return true;
     }
 
@@ -63,29 +63,29 @@ public:
             return true;
         }
 
-        assert(size <= m_availableRead);
-        if (!(size <= m_availableRead)) {
+        assert(size <= availableRead_);
+        if (!(size <= availableRead_)) {
             return false;
         }
 
-        if (m_head + size <= m_buf.size()) {
-            std::copy(m_buf.begin() + m_head, m_buf.begin() + m_head + size, dest);
-            m_head += size;
+        if (head_ + size <= buf_.size()) {
+            std::copy(buf_.begin() + head_, buf_.begin() + head_ + size, dest);
+            head_ += size;
         } else {
-            size_t firstPart = m_buf.size() - m_head;
-            std::copy(m_buf.begin() + m_head, m_buf.begin() + m_buf.size(), dest);
-            std::copy(m_buf.begin(), m_buf.begin() + (size - firstPart), dest + firstPart);
-            m_head = size - firstPart;
+            size_t firstPart = buf_.size() - head_;
+            std::copy(buf_.begin() + head_, buf_.begin() + buf_.size(), dest);
+            std::copy(buf_.begin(), buf_.begin() + (size - firstPart), dest + firstPart);
+            head_ = size - firstPart;
         }
 
-        m_availableRead -= size;
+        availableRead_ -= size;
         return true;
     }
 
 private:
-    std::vector<float> m_buf;
-    size_t m_availableRead = 0;
-    size_t m_head = 0;
-    size_t m_tail = 0;
+    std::vector<float> buf_;
+    size_t availableRead_ = 0;
+    size_t head_ = 0;
+    size_t tail_ = 0;
 };
 } // namespace muse::audio

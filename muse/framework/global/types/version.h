@@ -54,10 +54,10 @@ public:
     bool operator<=(const Version &other) const;
 
 private:
-    int m_major = 0;
-    int m_minor = 0;
-    int m_patch = 0;
-    String m_suffix;
-    int m_suffixVersion = 0;
+    int major_ = 0;
+    int minor_ = 0;
+    int patch_ = 0;
+    String suffix_;
+    int suffixVersion_ = 0;
 };
 } // namespace muse

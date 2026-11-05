@@ -80,34 +80,34 @@ struct NoteEvent {
     NoteEvent() = default;
 
     explicit NoteEvent(ArrangementContext &&arrangementCtx, PitchContext &&pitchCtx, ExpressionContext &&expressionCtx)
-        : m_arrangementCtx(arrangementCtx), m_pitchCtx(pitchCtx), m_expressionCtx(expressionCtx) {}
+        : arrangementCtx_(arrangementCtx), pitchCtx_(pitchCtx), expressionCtx_(expressionCtx) {}
 
     explicit NoteEvent(const timestamp_t nominalTimestamp, const duration_t nominalDuration, const voice_layer_idx_t voiceIdx,
                        const staff_layer_idx_t staffIdx, const pitch_level_t nominalPitchLevel, const dynamic_level_t nominalDynamicLevel,
                        const ArticulationMap &articulationsApplied, const double bps, const float requiredVelocityFraction = 0.f,
                        const PitchCurve &requiredPitchCurve = {}) {
-        m_arrangementCtx.nominalDuration = nominalDuration;
-        m_arrangementCtx.nominalTimestamp = nominalTimestamp;
-        m_arrangementCtx.voiceLayerIndex = voiceIdx;
-        m_arrangementCtx.staffLayerIndex = staffIdx;
-        m_arrangementCtx.bps = bps;
+        arrangementCtx_.nominalDuration = nominalDuration;
+        arrangementCtx_.nominalTimestamp = nominalTimestamp;
+        arrangementCtx_.voiceLayerIndex = voiceIdx;
+        arrangementCtx_.staffLayerIndex = staffIdx;
+        arrangementCtx_.bps = bps;
 
-        m_pitchCtx.nominalPitchLevel = nominalPitchLevel;
+        pitchCtx_.nominalPitchLevel = nominalPitchLevel;
 
-        m_expressionCtx.articulations = articulationsApplied;
-        m_expressionCtx.nominalDynamicLevel = nominalDynamicLevel;
+        expressionCtx_.articulations = articulationsApplied;
+        expressionCtx_.nominalDynamicLevel = nominalDynamicLevel;
 
         setUp(requiredVelocityFraction, requiredPitchCurve);
     }
 
-    const ArrangementContext &arrangementCtx() const { return m_arrangementCtx; }
+    const ArrangementContext &arrangementCtx() const { return arrangementCtx_; }
 
-    const PitchContext &pitchCtx() const { return m_pitchCtx; }
+    const PitchContext &pitchCtx() const { return pitchCtx_; }
 
-    const ExpressionContext &expressionCtx() const { return m_expressionCtx; }
+    const ExpressionContext &expressionCtx() const { return expressionCtx_; }
 
     bool operator==(const NoteEvent &other) const {
-        return m_arrangementCtx == other.m_arrangementCtx && m_pitchCtx == other.m_pitchCtx && m_expressionCtx == other.m_expressionCtx;
+        return arrangementCtx_ == other.arrangementCtx_ && pitchCtx_ == other.pitchCtx_ && expressionCtx_ == other.expressionCtx_;
     }
 
 private:
@@ -118,44 +118,44 @@ private:
     }
 
     void setUp(const float requiredVelocityFraction, const PitchCurve &requiredPitchCurve) {
-        calculateActualDuration(m_expressionCtx.articulations);
-        calculateActualTimestamp(m_expressionCtx.articulations);
+        calculateActualDuration(expressionCtx_.articulations);
+        calculateActualTimestamp(expressionCtx_.articulations);
 
         if (requiredPitchCurve.empty()) {
-            calculatePitchCurve(m_expressionCtx.articulations);
+            calculatePitchCurve(expressionCtx_.articulations);
         } else {
-            m_pitchCtx.pitchCurve = requiredPitchCurve;
+            pitchCtx_.pitchCurve = requiredPitchCurve;
         }
 
-        calculateExpressionCurve(m_expressionCtx.articulations, requiredVelocityFraction);
+        calculateExpressionCurve(expressionCtx_.articulations, requiredVelocityFraction);
     }
 
     void calculateActualTimestamp(const ArticulationMap &articulationsApplied) {
-        m_arrangementCtx.actualTimestamp = m_arrangementCtx.nominalTimestamp;
+        arrangementCtx_.actualTimestamp = arrangementCtx_.nominalTimestamp;
 
         if (articulationsApplied.empty()) {
             return;
         }
 
         timestamp_t timestampOffsetValue =
-            mult(m_arrangementCtx.nominalDuration, percentageToFactor(articulationsApplied.averageTimestampOffset()));
+            mult(arrangementCtx_.nominalDuration, percentageToFactor(articulationsApplied.averageTimestampOffset()));
 
-        m_arrangementCtx.actualTimestamp += timestampOffsetValue;
+        arrangementCtx_.actualTimestamp += timestampOffsetValue;
     }
 
     void calculateActualDuration(const ArticulationMap &articulationsApplied) {
-        m_arrangementCtx.actualDuration = m_arrangementCtx.nominalDuration;
+        arrangementCtx_.actualDuration = arrangementCtx_.nominalDuration;
 
-        if (articulationsApplied.empty() || m_arrangementCtx.nominalDuration == INFINITE_DURATION) {
+        if (articulationsApplied.empty() || arrangementCtx_.nominalDuration == INFINITE_DURATION) {
             return;
         }
 
-        m_arrangementCtx.actualDuration =
-            mult(m_arrangementCtx.actualDuration, percentageToFactor(articulationsApplied.averageDurationFactor()));
+        arrangementCtx_.actualDuration =
+            mult(arrangementCtx_.actualDuration, percentageToFactor(articulationsApplied.averageDurationFactor()));
     }
 
     void calculatePitchCurve(const ArticulationMap &articulationsApplied) {
-        m_pitchCtx.pitchCurve = articulationsApplied.averagePitchOffsetMap();
+        pitchCtx_.pitchCurve = articulationsApplied.averagePitchOffsetMap();
 
         pitch_level_t averagePitchRange = articulationsApplied.averagePitchRange();
         if (averagePitchRange == 0 || averagePitchRange == PITCH_LEVEL_STEP) {
@@ -165,24 +165,24 @@ private:
         float ratio = static_cast<float>(averagePitchRange) / static_cast<float>(PITCH_LEVEL_STEP);
         float patternUnitRatio = PITCH_LEVEL_STEP / static_cast<float>(ONE_PERCENT);
 
-        for (auto &pair : m_pitchCtx.pitchCurve) {
+        for (auto &pair : pitchCtx_.pitchCurve) {
             pair.second = static_cast<pitch_level_t>(RealRound(static_cast<float>(pair.second) * ratio * patternUnitRatio, 0));
         }
     }
 
     void calculateExpressionCurve(const ArticulationMap &articulationsApplied, const float requiredVelocityFraction) {
-        m_expressionCtx.expressionCurve = articulationsApplied.averageDynamicOffsetMap();
+        expressionCtx_.expressionCurve = articulationsApplied.averageDynamicOffsetMap();
 
         if (!RealIsNull(requiredVelocityFraction)) {
-            m_expressionCtx.velocityOverride = requiredVelocityFraction;
+            expressionCtx_.velocityOverride = requiredVelocityFraction;
         }
 
-        if (m_expressionCtx.expressionCurve.empty()) {
+        if (expressionCtx_.expressionCurve.empty()) {
             return;
         }
 
         dynamic_level_t articulationDynamicLevel = articulationsApplied.averageMaxAmplitudeLevel();
-        dynamic_level_t nominalDynamicLevel = m_expressionCtx.nominalDynamicLevel;
+        dynamic_level_t nominalDynamicLevel = expressionCtx_.nominalDynamicLevel;
 
         constexpr dynamic_level_t naturalDynamicLevel = dynamicLevelFromType(DynamicType::Natural);
 
@@ -199,14 +199,14 @@ private:
 
         float ratio = static_cast<float>(actualDynamicLevel) / static_cast<float>(articulationDynamicLevel);
 
-        for (auto &pair : m_expressionCtx.expressionCurve) {
+        for (auto &pair : expressionCtx_.expressionCurve) {
             pair.second = static_cast<dynamic_level_t>(RealRound(pair.second * ratio, 0));
         }
     }
 
-    ArrangementContext m_arrangementCtx;
-    PitchContext m_pitchCtx;
-    ExpressionContext m_expressionCtx;
+    ArrangementContext arrangementCtx_;
+    PitchContext pitchCtx_;
+    ExpressionContext expressionCtx_;
 };
 
 struct ControllerChangeEvent {

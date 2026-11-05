@@ -42,11 +42,11 @@ public:
 
     TieSegment *clone() const override { return new TieSegment(*this); }
 
-    void addAdjustmentOffset(const PointF &offset, Grip grip) { m_adjustmentOffsets[static_cast<size_t>(grip)] += offset; }
+    void addAdjustmentOffset(const PointF &offset, Grip grip) { adjustmentOffsets_[static_cast<size_t>(grip)] += offset; }
 
-    void resetAdjustmentOffset() { m_adjustmentOffsets.fill(PointF()); }
+    void resetAdjustmentOffset() { adjustmentOffsets_.fill(PointF()); }
 
-    PointF adjustmentOffset(Grip grip) { return m_adjustmentOffsets[static_cast<size_t>(grip)]; }
+    PointF adjustmentOffset(Grip grip) { return adjustmentOffsets_[static_cast<size_t>(grip)]; }
 
     void consolidateAdjustmentOffsetIntoUserOffset();
 
@@ -54,9 +54,9 @@ public:
 
     Tie *tie() const { return (Tie *) spanner(); }
 
-    void setStaffMove(int val) { m_staffMove = val; }
+    void setStaffMove(int val) { staffMove_ = val; }
 
-    staff_idx_t vStaffIdx() const override { return staffIdx() + m_staffMove; }
+    staff_idx_t vStaffIdx() const override { return staffIdx() + staffMove_; }
 
     virtual double minShoulderHeight() const;
     virtual double maxShoulderHeight() const;
@@ -73,8 +73,8 @@ protected:
     TieSegment(const ElementType &type, Tie *sp);
 
 private:
-    int m_staffMove = 0;
-    std::array<PointF, static_cast<size_t>(Grip::GRIPS)> m_adjustmentOffsets;
+    int staffMove_ = 0;
+    std::array<PointF, static_cast<size_t>(Grip::GRIPS)> adjustmentOffsets_;
 };
 
 //---------------------------------------------------------
@@ -102,9 +102,9 @@ public:
 
     virtual void setEndNote(Note *note) { setEndElement((EngravingItem *) note); }
 
-    bool isInside() const { return m_isInside; }
+    bool isInside() const { return isInside_; }
 
-    void setIsInside(bool val) { m_isInside = val; }
+    void setIsInside(bool val) { isInside_ = val; }
 
     virtual bool isOuterTieOfChord(Grip startOrEnd) const;
     bool hasTiedSecondInside() const;
@@ -130,9 +130,9 @@ public:
 
     double scalingFactor() const override;
 
-    const TiePlacement &tiePlacement() const { return m_tiePlacement; }
+    const TiePlacement &tiePlacement() const { return tiePlacement_; }
 
-    void setTiePlacement(const TiePlacement &val) { m_tiePlacement = val; }
+    void setTiePlacement(const TiePlacement &val) { tiePlacement_ = val; }
 
     // Outgoing ties before repeats
     void updatePossibleJumpPoints();
@@ -143,11 +143,11 @@ public:
     virtual const TieJumpPointList *tieJumpPoints() const;
 
     // Incoming ties after repeats
-    void setJumpPoint(TieJumpPoint *jumpPoint) { m_jumpPoint = jumpPoint; }
+    void setJumpPoint(TieJumpPoint *jumpPoint) { jumpPoint_ = jumpPoint; }
 
     void updateStartTieOnRemoval();
 
-    TieJumpPoint *jumpPoint() const { return m_jumpPoint; }
+    TieJumpPoint *jumpPoint() const { return jumpPoint_; }
 
     Tie *startTie() const;
 
@@ -158,11 +158,11 @@ protected:
 
     bool isInSpannerMap() const override { return false; }
 
-    bool m_isInside = false;
-    TiePlacement m_tiePlacement = TiePlacement::AUTO;
+    bool isInside_ = false;
+    TiePlacement tiePlacement_ = TiePlacement::AUTO;
 
     // Jump point information for incoming ties after repeats
-    TieJumpPoint *m_jumpPoint = nullptr;
+    TieJumpPoint *jumpPoint_ = nullptr;
     TieJumpPointList *startTieJumpPoints() const;
 };
 } // namespace mu::engraving

@@ -52,13 +52,13 @@ namespace mu::engraving {
 GuitarBend::GuitarBend(EngravingObject *parent) : SLine(ElementType::GUITAR_BEND, parent, ElementFlag::MOVABLE) {}
 
 GuitarBend::GuitarBend(const GuitarBend &g) : SLine(g) {
-    m_bendType = g.bendType();
+    bendType_ = g.bendType();
     _bendAmountInQuarterTones = g.bendAmountInQuarterTones();
 }
 
 GuitarBend::~GuitarBend() {
-    if (m_holdLine) {
-        delete m_holdLine;
+    if (holdLine_) {
+        delete holdLine_;
     }
 }
 
@@ -302,9 +302,9 @@ PropertyValue GuitarBend::getProperty(Pid id) const {
         case Pid::DIRECTION: return direction();
         case Pid::BEND_SHOW_HOLD_LINE: return static_cast<int>(showHoldLine());
         case Pid::BEND_START_TIME_FACTOR: return startTimeFactor();
-        case Pid::BEND_TARGET_TIME_FACTOR: return m_targetTimeFactor.has_value() ? m_targetTimeFactor.value() : PropertyValue();
+        case Pid::BEND_TARGET_TIME_FACTOR: return targetTimeFactor_.has_value() ? targetTimeFactor_.value() : PropertyValue();
         case Pid::BEND_END_TIME_FACTOR: return endTimeFactor();
-        case Pid::GUITAR_DIVE_TAB_POS: return isDive() ? m_diveTabPos : DirectionV::AUTO;
+        case Pid::GUITAR_DIVE_TAB_POS: return isDive() ? diveTabPos_ : DirectionV::AUTO;
         case Pid::GUITAR_BEND_AMOUNT: return bendAmountInQuarterTones();
         case Pid::VIBRATO_LINE_TYPE: return dipVibratoType();
         case Pid::GUITAR_DIVE_IS_SLACK: return isSlack();
@@ -321,7 +321,7 @@ bool GuitarBend::setProperty(Pid propertyId, const PropertyValue &v) {
             if (v.isValid()) {
                 setTargetTimeFactor(v.toReal());
             } else {
-                m_targetTimeFactor = std::nullopt;
+                targetTimeFactor_ = std::nullopt;
             }
             break;
         case Pid::BEND_END_TIME_FACTOR: setEndTimeFactor(v.toReal()); break;
@@ -353,23 +353,23 @@ PropertyValue GuitarBend::propertyDefault(Pid id) const {
         case Pid::BEND_SHOW_HOLD_LINE: return static_cast<int>(GuitarBendShowHoldLine::AUTO);
         case Pid::BEND_START_TIME_FACTOR: return 0.f;
         case Pid::BEND_TARGET_TIME_FACTOR:
-            if (m_bendType == GuitarBendType::DIP) {
+            if (bendType_ == GuitarBendType::DIP) {
                 return 0.25f;
             }
             return {};
         case Pid::BEND_END_TIME_FACTOR:
-            if (m_bendType == GuitarBendType::GRACE_NOTE_BEND) {
+            if (bendType_ == GuitarBendType::GRACE_NOTE_BEND) {
                 return 0.25f;
             }
-            if (m_bendType == GuitarBendType::SCOOP) {
+            if (bendType_ == GuitarBendType::SCOOP) {
                 return 0.25f;
             }
-            if (m_bendType == GuitarBendType::DIP) {
+            if (bendType_ == GuitarBendType::DIP) {
                 return 0.5f;
             }
             return 1.f;
         case Pid::GUITAR_DIVE_TAB_POS: return DirectionV::AUTO;
-        case Pid::GUITAR_BEND_AMOUNT: return m_bendType == GuitarBendType::DIP ? -2 : 0;
+        case Pid::GUITAR_BEND_AMOUNT: return bendType_ == GuitarBendType::DIP ? -2 : 0;
         case Pid::VIBRATO_LINE_TYPE: return VibratoType::NONE;
         case Pid::GUITAR_DIVE_IS_SLACK: return false;
         default: return SLine::propertyDefault(id);
@@ -508,11 +508,11 @@ void GuitarBend::computeIsInvalidOrNeedsWarning() {
     static constexpr int DIVE_MIN = -32;
 
     if (isDive()) {
-        m_isInvalid = bendAmountInQuarterTones() == 0 || totBendAmount < DIVE_MIN || totBendAmount > DIVE_MAX;
-        m_isBorderlineUnplayable = false;
+        isInvalid_ = bendAmountInQuarterTones() == 0 || totBendAmount < DIVE_MIN || totBendAmount > DIVE_MAX;
+        isBorderlineUnplayable_ = false;
     } else {
-        m_isInvalid = totBendAmount < 0 || totBendAmount > UNPLAYABLE_THRESHOLD || bendAmountInQuarterTones() == 0;
-        m_isBorderlineUnplayable = totBendAmount > WARNING_THRESHOLD && totBendAmount <= UNPLAYABLE_THRESHOLD;
+        isInvalid_ = totBendAmount < 0 || totBendAmount > UNPLAYABLE_THRESHOLD || bendAmountInQuarterTones() == 0;
+        isBorderlineUnplayable_ = totBendAmount > WARNING_THRESHOLD && totBendAmount <= UNPLAYABLE_THRESHOLD;
     }
 }
 
@@ -705,12 +705,12 @@ void GuitarBend::updateHoldLine() {
     }
 
     if (!needsHoldLine) {
-        if (m_holdLine) {
-            if (!m_holdLine->segmentsEmpty()) {
-                m_holdLine->eraseSpannerSegments();
+        if (holdLine_) {
+            if (!holdLine_->segmentsEmpty()) {
+                holdLine_->eraseSpannerSegments();
             }
-            delete m_holdLine;
-            m_holdLine = nullptr;
+            delete holdLine_;
+            holdLine_ = nullptr;
         }
         return;
     }
@@ -727,18 +727,18 @@ void GuitarBend::updateHoldLine() {
         }
     }
 
-    if (!m_holdLine) {
-        m_holdLine = new GuitarBendHold(this);
+    if (!holdLine_) {
+        holdLine_ = new GuitarBendHold(this);
     }
 
-    m_holdLine->setStartElement(startOfHold);
-    m_holdLine->setEndElement(endOfHold);
-    m_holdLine->setTick(startOfHold->tick());
-    m_holdLine->setTick2(endOfHold->tick());
-    m_holdLine->setTrack(track());
-    m_holdLine->setTrack2(track());
-    m_holdLine->setGenerated(true);
-    m_holdLine->setOwnershipParent(this);
+    holdLine_->setStartElement(startOfHold);
+    holdLine_->setEndElement(endOfHold);
+    holdLine_->setTick(startOfHold->tick());
+    holdLine_->setTick2(endOfHold->tick());
+    holdLine_->setTrack(track());
+    holdLine_->setTrack2(track());
+    holdLine_->setGenerated(true);
+    holdLine_->setOwnershipParent(this);
 }
 
 double GuitarBend::lineWidth() const {
@@ -756,16 +756,16 @@ double GuitarBend::lineWidth() const {
  * **************************************/
 
 GuitarBendSegment::GuitarBendSegment(GuitarBend *sp) : LineSegment(ElementType::GUITAR_BEND_SEGMENT, sp, ElementFlag::MOVABLE) {
-    m_text = new GuitarBendText(this);
+    text_ = new GuitarBendText(this);
     setFlag(ElementFlag::ON_STAFF, true);
 }
 
 GuitarBendSegment::GuitarBendSegment(const GuitarBendSegment &s) : LineSegment(s) {
-    m_vertexPointOff = s.m_vertexPointOff;
-    m_text = new GuitarBendText(this);
+    vertexPointOff_ = s.vertexPointOff_;
+    text_ = new GuitarBendText(this);
 }
 
-GuitarBendSegment::~GuitarBendSegment() { delete m_text; }
+GuitarBendSegment::~GuitarBendSegment() { delete text_; }
 
 PropertyValue GuitarBendSegment::getProperty(Pid id) const {
     switch (id) {
@@ -811,22 +811,22 @@ void GuitarBendSegment::reset() {
 double GuitarBendSegment::lineWidth() const { return guitarBend()->lineWidth(); }
 
 void GuitarBendSegment::scanElements(std::function<void(EngravingItem *)> func) {
-    func(m_text);
+    func(text_);
     LineSegment::scanElements(func);
 }
 
 bool GuitarBendSegment::isUserModified() const {
-    bool modified = !vertexPointOff().isNull() || (m_text && m_text->isUserModified());
+    bool modified = !vertexPointOff().isNull() || (text_ && text_->isUserModified());
     return modified || LineSegment::isUserModified();
 }
 
 Color GuitarBend::curColor(const rendering::PaintOptions &opt) const {
     if (!opt.isPrinting && MScore::warnGuitarBends) {
-        if (m_isInvalid) {
+        if (isInvalid_) {
             return selected() ? configuration()->criticalSelectedColor() : configuration()->criticalColor();
         }
 
-        if (m_isBorderlineUnplayable) {
+        if (isBorderlineUnplayable_) {
             return selected() ? configuration()->warningSelectedColor() : configuration()->warningColor();
         }
     }
@@ -889,7 +889,7 @@ GuitarBendType GuitarBend::bendTypeFromActionIcon(ActionIconType actionIconType)
 }
 
 void GuitarBend::setBendType(GuitarBendType t) {
-    m_bendType = t;
+    bendType_ = t;
 
     resetProperty(Pid::GUITAR_BEND_AMOUNT);
     resetProperty(Pid::BEND_START_TIME_FACTOR);
@@ -900,7 +900,7 @@ void GuitarBend::setBendType(GuitarBendType t) {
 void GuitarBend::setTargetTimeFactor(float f) {
     IF_ASSERT_FAILED(muse::RealIsEqualOrLess(f, endTimeFactor())) { return; }
 
-    m_targetTimeFactor = f;
+    targetTimeFactor_ = f;
 }
 
 /****************************************

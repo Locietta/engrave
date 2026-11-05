@@ -27,7 +27,7 @@ using namespace muse;
 using namespace muse::draw;
 
 Bezier::Bezier(double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4)
-    : m_x1(x1), m_y1(y1), m_x2(x2), m_y2(y2), m_x3(x3), m_y3(y3), m_x4(x4), m_y4(y4) {}
+    : x1_(x1), y1_(y1), x2_(x2), y2_(y2), x3_(x3), y3_(y3), x4_(x4), y4_(y4) {}
 
 Bezier Bezier::fromPoints(const PointF &p1, const PointF &p2, const PointF &p3, const PointF &p4) {
     return {p1.x(), p1.y(), p2.x(), p2.y(), p3.x(), p3.y(), p4.x(), p4.y()};
@@ -56,20 +56,20 @@ Bezier Bezier::bezierOnInterval(double t0, double t1) const {
 }
 
 void Bezier::parameterSplitLeft(double t, Bezier *left) {
-    left->m_x1 = m_x1;
-    left->m_y1 = m_y1;
-    left->m_x2 = m_x1 + t * (m_x2 - m_x1);
-    left->m_y2 = m_y1 + t * (m_y2 - m_y1);
-    left->m_x3 = m_x2 + t * (m_x3 - m_x2); // temporary holding spot
-    left->m_y3 = m_y2 + t * (m_y3 - m_y2); // temporary holding spot
-    m_x3 = m_x3 + t * (m_x4 - m_x3);
-    m_y3 = m_y3 + t * (m_y4 - m_y3);
-    m_x2 = left->m_x3 + t * (m_x3 - left->m_x3);
-    m_y2 = left->m_y3 + t * (m_y3 - left->m_y3);
-    left->m_x3 = left->m_x2 + t * (left->m_x3 - left->m_x2);
-    left->m_y3 = left->m_y2 + t * (left->m_y3 - left->m_y2);
-    left->m_x4 = m_x1 = left->m_x3 + t * (m_x2 - left->m_x3);
-    left->m_y4 = m_y1 = left->m_y3 + t * (m_y2 - left->m_y3);
+    left->x1_ = x1_;
+    left->y1_ = y1_;
+    left->x2_ = x1_ + t * (x2_ - x1_);
+    left->y2_ = y1_ + t * (y2_ - y1_);
+    left->x3_ = x2_ + t * (x3_ - x2_); // temporary holding spot
+    left->y3_ = y2_ + t * (y3_ - y2_); // temporary holding spot
+    x3_ = x3_ + t * (x4_ - x3_);
+    y3_ = y3_ + t * (y4_ - y3_);
+    x2_ = left->x3_ + t * (x3_ - left->x3_);
+    y2_ = left->y3_ + t * (y3_ - left->y3_);
+    left->x3_ = left->x2_ + t * (left->x3_ - left->x2_);
+    left->y3_ = left->y2_ + t * (left->y3_ - left->y2_);
+    left->x4_ = x1_ = left->x3_ + t * (x2_ - left->x3_);
+    left->y4_ = y1_ = left->y3_ + t * (y2_ - left->y3_);
 }
 
 PointF Bezier::pointAt(double t) const {
@@ -77,17 +77,17 @@ PointF Bezier::pointAt(double t) const {
     double x, y;
     double t1 = 1. - t;
     {
-        double a = m_x1 * t1 + m_x2 * t;
-        double b = m_x2 * t1 + m_x3 * t;
-        double c = m_x3 * t1 + m_x4 * t;
+        double a = x1_ * t1 + x2_ * t;
+        double b = x2_ * t1 + x3_ * t;
+        double c = x3_ * t1 + x4_ * t;
         a = a * t1 + b * t;
         b = b * t1 + c * t;
         x = a * t1 + b * t;
     }
     {
-        double a = m_y1 * t1 + m_y2 * t;
-        double b = m_y2 * t1 + m_y3 * t;
-        double c = m_y3 * t1 + m_y4 * t;
+        double a = y1_ * t1 + y2_ * t;
+        double b = y2_ * t1 + y3_ * t;
+        double c = y3_ * t1 + y4_ * t;
         a = a * t1 + b * t;
         b = b * t1 + c * t;
         y = a * t1 + b * t;

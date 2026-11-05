@@ -31,14 +31,14 @@ using namespace mu::engraving;
 //---------------------------------------------------------
 
 void ChangeSoundFlag::flip() {
-    IF_ASSERT_FAILED(m_soundFlag) { return; }
+    IF_ASSERT_FAILED(soundFlag_) { return; }
 
-    SoundFlag::PresetCodes presets = m_soundFlag->soundPresets();
-    SoundFlag::PlayingTechniqueCode technique = m_soundFlag->playingTechnique();
+    SoundFlag::PresetCodes presets = soundFlag_->soundPresets();
+    SoundFlag::PlayingTechniqueCode technique = soundFlag_->playingTechnique();
 
-    m_soundFlag->setSoundPresets(m_presets);
-    m_soundFlag->setPlayingTechnique(m_playingTechnique);
+    soundFlag_->setSoundPresets(presets_);
+    soundFlag_->setPlayingTechnique(playingTechnique_);
 
-    m_presets = std::move(presets);
-    m_playingTechnique = std::move(technique);
+    presets_ = std::move(presets);
+    playingTechnique_ = std::move(technique);
 }

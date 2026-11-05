@@ -48,21 +48,21 @@ struct AsciiChar {
 public:
     constexpr AsciiChar() = default;
 
-    constexpr explicit AsciiChar(char c) : m_ch(c) {}
+    constexpr explicit AsciiChar(char c) : ch_(c) {}
 
-    constexpr char ascii() const noexcept { return m_ch; }
+    constexpr char ascii() const noexcept { return ch_; }
 
-    constexpr char16_t unicode() const noexcept { return char16_t(m_ch); }
+    constexpr char16_t unicode() const noexcept { return char16_t(ch_); }
 
-    inline char toLower() const { return toLower(m_ch); }
+    inline char toLower() const { return toLower(ch_); }
 
-    inline char toUpper() const { return toUpper(m_ch); }
+    inline char toUpper() const { return toUpper(ch_); }
 
     static char toLower(char ch);
     static char toUpper(char ch);
 
 private:
-    char m_ch = 0;
+    char ch_ = 0;
 };
 
 // ============================
@@ -91,90 +91,90 @@ public:
 
     constexpr Char() = default;
 
-    constexpr Char(char16_t c) : m_ch(c) {}
+    constexpr Char(char16_t c) : ch_(c) {}
 
-    Char(AsciiChar c) : m_ch(c.unicode()) {}
+    Char(AsciiChar c) : ch_(c.unicode()) {}
 
-    constexpr bool operator==(Char c) const { return m_ch == c.m_ch; }
+    constexpr bool operator==(Char c) const { return ch_ == c.ch_; }
 
     constexpr bool operator!=(Char c) const { return !operator==(c); }
 
-    constexpr bool operator==(char16_t c) const { return m_ch == c; }
+    constexpr bool operator==(char16_t c) const { return ch_ == c; }
 
     constexpr bool operator!=(char16_t c) const { return !operator==(c); }
 
-    constexpr bool operator==(AsciiChar c) const { return m_ch == c.unicode(); }
+    constexpr bool operator==(AsciiChar c) const { return ch_ == c.unicode(); }
 
     constexpr bool operator!=(AsciiChar c) const { return !operator==(c); }
 
-    constexpr bool operator>(Char c) const { return m_ch > c.m_ch; }
+    constexpr bool operator>(Char c) const { return ch_ > c.ch_; }
 
-    constexpr bool operator>(char16_t c) const { return m_ch > c; }
+    constexpr bool operator>(char16_t c) const { return ch_ > c; }
 
-    constexpr bool operator<(Char c) const { return m_ch < c.m_ch; }
+    constexpr bool operator<(Char c) const { return ch_ < c.ch_; }
 
-    constexpr bool operator<(char16_t c) const { return m_ch < c; }
+    constexpr bool operator<(char16_t c) const { return ch_ < c; }
 
-    constexpr bool operator>=(Char c) const { return m_ch >= c.m_ch; }
+    constexpr bool operator>=(Char c) const { return ch_ >= c.ch_; }
 
-    constexpr bool operator>=(char16_t c) const { return m_ch >= c; }
+    constexpr bool operator>=(char16_t c) const { return ch_ >= c; }
 
-    constexpr bool operator<=(Char c) const { return m_ch <= c.m_ch; }
+    constexpr bool operator<=(Char c) const { return ch_ <= c.ch_; }
 
-    constexpr bool operator<=(char16_t c) const { return m_ch <= c; }
+    constexpr bool operator<=(char16_t c) const { return ch_ <= c; }
 
-    constexpr char16_t unicode() const { return m_ch; }
+    constexpr char16_t unicode() const { return ch_; }
 
-    inline bool isNull() const { return m_ch == 0; }
+    inline bool isNull() const { return ch_ == 0; }
 
-    constexpr bool isAscii() const { return isAscii(m_ch); }
+    constexpr bool isAscii() const { return isAscii(ch_); }
 
     static constexpr bool isAscii(char16_t c) { return c <= 0x7f; }
 
-    inline char toAscii(bool *ok = nullptr) const { return toAscii(m_ch, ok); }
+    inline char toAscii(bool *ok = nullptr) const { return toAscii(ch_, ok); }
 
     static char toAscii(char16_t c, bool *ok = nullptr);
 
     static inline Char fromAscii(char c) { return static_cast<char16_t>(c); }
 
-    inline bool isLetter() const { return isLetter(m_ch); }
+    inline bool isLetter() const { return isLetter(ch_); }
 
     static bool isLetter(char16_t c);
 
-    inline bool isSpace() const { return isSpace(m_ch); }
+    inline bool isSpace() const { return isSpace(ch_); }
 
     static bool isSpace(char16_t c);
 
-    inline bool isDigit() const { return isDigit(m_ch); }
+    inline bool isDigit() const { return isDigit(ch_); }
 
     static bool isDigit(char16_t c);
     int digitValue() const;
 
-    inline bool isPunct() const { return isPunct(m_ch); }
+    inline bool isPunct() const { return isPunct(ch_); }
 
     static bool isPunct(char16_t c);
 
-    inline bool isLower() const { return toLower() == m_ch; }
+    inline bool isLower() const { return toLower() == ch_; }
 
-    inline Char toLower() const { return toLower(m_ch); }
+    inline Char toLower() const { return toLower(ch_); }
 
     static char16_t toLower(char16_t ch);
 
-    inline bool isUpper() const { return toUpper() == m_ch; }
+    inline bool isUpper() const { return toUpper() == ch_; }
 
-    inline Char toUpper() const { return toUpper(m_ch); }
+    inline Char toUpper() const { return toUpper(ch_); }
 
     static char16_t toUpper(char16_t ch);
 
-    inline bool isHighSurrogate() const { return isHighSurrogate(m_ch); }
+    inline bool isHighSurrogate() const { return isHighSurrogate(ch_); }
 
-    inline bool isLowSurrogate() const { return isLowSurrogate(m_ch); }
+    inline bool isLowSurrogate() const { return isLowSurrogate(ch_); }
 
-    inline bool isSurrogate() const { return isSurrogate(m_ch); }
+    inline bool isSurrogate() const { return isSurrogate(ch_); }
 
     static constexpr char32_t surrogateToUcs4(char16_t high, char16_t low) { return (char32_t(high) << 10) + low - 0x35fdc00; }
 
-    static constexpr char32_t surrogateToUcs4(Char high, Char low) { return surrogateToUcs4(high.m_ch, low.m_ch); }
+    static constexpr char32_t surrogateToUcs4(Char high, Char low) { return surrogateToUcs4(high.ch_, low.ch_); }
 
     static constexpr bool isHighSurrogate(char32_t ucs4) { return (ucs4 & 0xfffffc00) == 0xd800; }
 
@@ -189,7 +189,7 @@ public:
     static constexpr bool requiresSurrogates(char32_t ucs4) { return ucs4 >= 0x10000; }
 
 private:
-    char16_t m_ch = 0;
+    char16_t ch_ = 0;
 };
 
 // ============================
@@ -425,7 +425,7 @@ private:
     void detach();
     void doArgs(std::u16string &out, const std::vector<std::u16string_view> &args) const;
 
-    std::shared_ptr<std::u16string> m_data;
+    std::shared_ptr<std::u16string> data_;
 
 #ifdef MUSE_STRING_DEBUG_HACK
     //! HACK On MacOS with clang there are problems with debugging - the value of the std::u16string is not visible.
@@ -477,35 +477,35 @@ public:
 
     constexpr AsciiStringView() = default;
 
-    constexpr AsciiStringView(const char *str) : m_size(str ? std::char_traits<char>::length(str) : 0), m_data(str) {}
+    constexpr AsciiStringView(const char *str) : size_(str ? std::char_traits<char>::length(str) : 0), data_(str) {}
 
-    constexpr AsciiStringView(const char *str, size_t size) : m_size(size), m_data(str) {}
+    constexpr AsciiStringView(const char *str, size_t size) : size_(size), data_(str) {}
 
-    AsciiStringView(const std::string &str) : m_size(str.size()), m_data(str.c_str()) {}
+    AsciiStringView(const std::string &str) : size_(str.size()), data_(str.c_str()) {}
 
     operator std::string_view() const {
-        if (!m_data) {
+        if (!data_) {
             return std::string_view{};
         }
-        return std::string_view(m_data, m_size);
+        return std::string_view(data_, size_);
     }
 
-    inline bool operator==(const AsciiStringView &s) const { return m_size == s.m_size && std::memcmp(m_data, s.m_data, m_size) == 0; }
+    inline bool operator==(const AsciiStringView &s) const { return size_ == s.size_ && std::memcmp(data_, s.data_, size_) == 0; }
 
     inline bool operator!=(const AsciiStringView &s) const { return !this->operator==(s); }
 
     inline bool operator==(const char *s) const {
         size_t sz = (s ? std::char_traits<char>::length(s) : 0);
-        return m_size == sz && (s ? std::memcmp(m_data, s, m_size) == 0 : true);
+        return size_ == sz && (s ? std::memcmp(data_, s, size_) == 0 : true);
     }
 
     inline bool operator!=(const char *s) const { return !this->operator==(s); }
 
     inline bool operator<(const AsciiStringView &s) const {
-        if (m_size != s.m_size) {
-            return m_size < s.m_size;
+        if (size_ != s.size_) {
+            return size_ < s.size_;
         }
-        return std::memcmp(m_data, s.m_data, m_size) < 0;
+        return std::memcmp(data_, s.data_, size_) < 0;
     }
 
     const char *ascii() const;
@@ -519,8 +519,8 @@ public:
     double toDouble(bool *ok = nullptr) const;
 
 private:
-    size_t m_size = 0;
-    const char *m_data = nullptr;
+    size_t size_ = 0;
+    const char *data_ = nullptr;
 };
 
 inline String operator+(char16_t s1, const String &s2) {

@@ -31,88 +31,88 @@ namespace muse::draw {
 class Pen {
 public:
 
-    Pen(PenStyle style) : m_style(style) {}
+    Pen(PenStyle style) : style_(style) {}
 
     Pen(const Color &color = Color::BLACK, double width = 1, PenStyle s = PenStyle::SolidLine, PenCapStyle c = PenCapStyle::SquareCap,
         PenJoinStyle j = PenJoinStyle::BevelJoin)
-        : m_color(color), m_width(width), m_style(s), m_capStyle(c), m_joinStyle(j) {}
+        : color_(color), width_(width), style_(s), capStyle_(c), joinStyle_(j) {}
 
     inline bool operator==(const Pen &o) const {
-        return m_color == o.m_color && RealIsEqual(m_width, o.m_width) && m_style == o.m_style && m_capStyle == o.m_capStyle &&
-               m_joinStyle == o.m_joinStyle && RealIsEqual(m_miterLimit, o.m_miterLimit) && RealIsEqual(m_dashPattern, o.m_dashPattern);
+        return color_ == o.color_ && RealIsEqual(width_, o.width_) && style_ == o.style_ && capStyle_ == o.capStyle_ &&
+               joinStyle_ == o.joinStyle_ && RealIsEqual(miterLimit_, o.miterLimit_) && RealIsEqual(dashPattern_, o.dashPattern_);
     }
 
     inline bool operator!=(const Pen &o) const { return !this->operator==(o); }
 
-    PenStyle style() const { return m_style; }
+    PenStyle style() const { return style_; }
 
     void setStyle(PenStyle style) {
-        if (m_style == style) {
+        if (style_ == style) {
             return;
         }
-        m_style = style;
-        m_dashPattern.clear();
+        style_ = style;
+        dashPattern_.clear();
     }
 
     std::vector<double> dashPattern() const {
-        if (m_style == PenStyle::SolidLine || m_style == PenStyle::NoPen) {
+        if (style_ == PenStyle::SolidLine || style_ == PenStyle::NoPen) {
             return std::vector<double>();
-        } else if (m_dashPattern.empty()) {
+        } else if (dashPattern_.empty()) {
             const double space = 2;
             const double dot = 1;
             const double dash = 4;
-            switch (m_style) {
-                case PenStyle::DashLine: m_dashPattern = {dash, space}; break;
-                case PenStyle::DotLine: m_dashPattern = {dot, space}; break;
-                case PenStyle::DashDotLine: m_dashPattern = {dash, space, dot, space}; break;
-                case PenStyle::DashDotDotLine: m_dashPattern = {dash, space, dot, space, dot, space}; break;
+            switch (style_) {
+                case PenStyle::DashLine: dashPattern_ = {dash, space}; break;
+                case PenStyle::DotLine: dashPattern_ = {dot, space}; break;
+                case PenStyle::DashDotLine: dashPattern_ = {dash, space, dot, space}; break;
+                case PenStyle::DashDotDotLine: dashPattern_ = {dash, space, dot, space, dot, space}; break;
                 default: break;
             }
         }
-        return m_dashPattern;
+        return dashPattern_;
     }
 
     void setDashPattern(const std::vector<double> &pattern) {
         if (pattern.empty()) {
             return;
         }
-        m_dashPattern = pattern;
-        m_style = PenStyle::CustomDashLine;
-        if ((m_dashPattern.size() % 2) == 1) {
-            m_dashPattern.push_back(1);
+        dashPattern_ = pattern;
+        style_ = PenStyle::CustomDashLine;
+        if ((dashPattern_.size() % 2) == 1) {
+            dashPattern_.push_back(1);
         }
     }
 
-    double widthF() const { return m_width; }
+    double widthF() const { return width_; }
 
-    void setWidthF(double width) { m_width = width; }
+    void setWidthF(double width) { width_ = width; }
 
-    Color color() const { return m_color; }
+    Color color() const { return color_; }
 
-    void setColor(const Color &color) { m_color = color; }
+    void setColor(const Color &color) { color_ = color; }
 
-    PenCapStyle capStyle() const { return m_capStyle; }
+    PenCapStyle capStyle() const { return capStyle_; }
 
-    void setCapStyle(PenCapStyle pcs) { m_capStyle = pcs; }
+    void setCapStyle(PenCapStyle pcs) { capStyle_ = pcs; }
 
-    PenJoinStyle joinStyle() const { return m_joinStyle; }
+    PenJoinStyle joinStyle() const { return joinStyle_; }
 
-    void setJoinStyle(PenJoinStyle pcs) { m_joinStyle = pcs; }
+    void setJoinStyle(PenJoinStyle pcs) { joinStyle_ = pcs; }
 
-    double miterLimit() const { return m_miterLimit; }
+    double miterLimit() const { return miterLimit_; }
 
-    void setMiterLimit(double limit) { m_miterLimit = limit; }
+    void setMiterLimit(double limit) { miterLimit_ = limit; }
 
 
 private:
 
-    Color m_color = Color::BLACK;
-    double m_width = 1.0;
-    PenStyle m_style = PenStyle::SolidLine;
-    PenCapStyle m_capStyle = PenCapStyle::SquareCap;
-    PenJoinStyle m_joinStyle = PenJoinStyle::BevelJoin;
-    double m_miterLimit = 2.0;
-    mutable std::vector<double> m_dashPattern;
+    Color color_ = Color::BLACK;
+    double width_ = 1.0;
+    PenStyle style_ = PenStyle::SolidLine;
+    PenCapStyle capStyle_ = PenCapStyle::SquareCap;
+    PenJoinStyle joinStyle_ = PenJoinStyle::BevelJoin;
+    double miterLimit_ = 2.0;
+    mutable std::vector<double> dashPattern_;
 };
 } // namespace muse::draw
 

@@ -37,33 +37,33 @@
 using namespace muse::draw;
 
 void FontRenderCache::init() {
-    m_cache.clear();
-    m_cacheInfoLoaded = false;
-    m_cacheInfoMap.clear();
+    cache_.clear();
+    cacheInfoLoaded_ = false;
+    cacheInfoMap_.clear();
 
-    if (!m_cacheDirPath.empty()) {
-        muse::io::Dir::mkpath(m_cacheDirPath);
+    if (!cacheDirPath_.empty()) {
+        muse::io::Dir::mkpath(cacheDirPath_);
         updateCacheRevision();
     }
 }
 
 void FontRenderCache::setCacheDirPath(const muse::io::path_t &path, const std::string &revision) {
-    m_cacheDirPath = path;
-    m_cacheRevision = revision;
-    m_cache.clear();
-    m_cacheInfoLoaded = false;
-    m_cacheInfoMap.clear();
+    cacheDirPath_ = path;
+    cacheRevision_ = revision;
+    cache_.clear();
+    cacheInfoLoaded_ = false;
+    cacheInfoMap_.clear();
 
-    if (!m_cacheDirPath.empty()) {
-        muse::io::Dir::mkpath(m_cacheDirPath);
+    if (!cacheDirPath_.empty()) {
+        muse::io::Dir::mkpath(cacheDirPath_);
         updateCacheRevision();
     }
 }
 
-muse::io::path_t FontRenderCache::revisionFilePath() const { return m_cacheDirPath.appendingComponent("revision"); }
+muse::io::path_t FontRenderCache::revisionFilePath() const { return cacheDirPath_.appendingComponent("revision"); }
 
 void FontRenderCache::updateCacheRevision() {
-    if (m_cacheRevision.empty()) {
+    if (cacheRevision_.empty()) {
         return;
     }
 
@@ -73,14 +73,14 @@ void FontRenderCache::updateCacheRevision() {
         muse::io::File revisionFile(revisionPath);
         if (revisionFile.open(muse::io::IODevice::ReadOnly)) {
             const muse::ByteArray data = revisionFile.readAll();
-            isNeedClear = std::string_view(data.constChar(), data.size()) != m_cacheRevision;
+            isNeedClear = std::string_view(data.constChar(), data.size()) != cacheRevision_;
         }
     }
 
     if (isNeedClear) {
-        muse::RetVal<muse::io::paths_t> files = muse::io::Dir::scanFiles(m_cacheDirPath, {}, muse::io::ScanMode::FilesInCurrentDir);
+        muse::RetVal<muse::io::paths_t> files = muse::io::Dir::scanFiles(cacheDirPath_, {}, muse::io::ScanMode::FilesInCurrentDir);
         if (!files.ret) {
-            LOGE() << "failed scan font render cache dir: " << m_cacheDirPath << ", error: " << files.ret.toString();
+            LOGE() << "failed scan font render cache dir: " << cacheDirPath_ << ", error: " << files.ret.toString();
             return;
         }
 
@@ -92,15 +92,15 @@ void FontRenderCache::updateCacheRevision() {
             }
         }
 
-        m_cacheInfoLoaded = false;
-        m_cacheInfoMap.clear();
+        cacheInfoLoaded_ = false;
+        cacheInfoMap_.clear();
 
         if (!isCleared) {
             return;
         }
     }
 
-    if (!muse::io::File::writeFile(revisionPath, muse::ByteArray(m_cacheRevision.c_str())).success()) {
+    if (!muse::io::File::writeFile(revisionPath, muse::ByteArray(cacheRevision_.c_str())).success()) {
         LOGE() << "failed write cache revision file: " << revisionPath;
     }
 }
@@ -158,13 +158,13 @@ muse::io::path_t FontRenderCache::makeFilePath(const FaceKey &face, glyph_idx_t 
 }
 
 void FontRenderCache::store(const FaceKey &face, glyph_idx_t glyphIdx, const GlyphImage &image) {
-    m_cache[face][glyphIdx] = image;
+    cache_[face][glyphIdx] = image;
 
-    if (m_cacheDirPath.empty()) {
+    if (cacheDirPath_.empty()) {
         return;
     }
 
-    muse::io::path_t fileFullPath = m_cacheDirPath.appendingComponent(makeFilePath(face, glyphIdx, image));
+    muse::io::path_t fileFullPath = cacheDirPath_.appendingComponent(makeFilePath(face, glyphIdx, image));
     muse::io::File file(fileFullPath);
     if (!file.open(muse::io::IODevice::WriteOnly)) {
         LOGE() << "failed open to write file: " << fileFullPath;
@@ -175,8 +175,8 @@ void FontRenderCache::store(const FaceKey &face, glyph_idx_t glyphIdx, const Gly
 }
 
 GlyphImage FontRenderCache::load(const FaceKey &face, glyph_idx_t glyphIdx) const {
-    auto faceIt = m_cache.find(face);
-    if (faceIt != m_cache.end()) {
+    auto faceIt = cache_.find(face);
+    if (faceIt != cache_.end()) {
         const GlyphImages &images = faceIt->second;
         auto imageIt = images.find(glyphIdx);
         if (imageIt != images.end()) {
@@ -184,15 +184,15 @@ GlyphImage FontRenderCache::load(const FaceKey &face, glyph_idx_t glyphIdx) cons
         }
     }
 
-    if (!m_cacheInfoLoaded) {
-        if (!m_cacheDirPath.empty()) {
-            loadCachedInfo(m_cacheInfoMap, m_cacheDirPath);
+    if (!cacheInfoLoaded_) {
+        if (!cacheDirPath_.empty()) {
+            loadCachedInfo(cacheInfoMap_, cacheDirPath_);
         }
-        m_cacheInfoLoaded = true;
+        cacheInfoLoaded_ = true;
     }
 
-    auto cacheInfoIt = m_cacheInfoMap.find(keyToString(face, glyphIdx));
-    if (cacheInfoIt == m_cacheInfoMap.end()) {
+    auto cacheInfoIt = cacheInfoMap_.find(keyToString(face, glyphIdx));
+    if (cacheInfoIt == cacheInfoMap_.end()) {
         return GlyphImage();
     }
 
@@ -211,7 +211,7 @@ GlyphImage FontRenderCache::load(const FaceKey &face, glyph_idx_t glyphIdx) cons
     image.rect = info.rect;
     image.range = info.range;
 
-    m_cache[face][glyphIdx] = image;
+    cache_[face][glyphIdx] = image;
 
     return image;
 }

@@ -47,10 +47,10 @@ protected:
     size_t writeData(const uint8_t *data, size_t len) override;
 
 private:
-    path_t m_filePath;
-    size_t m_size = 0;
+    path_t filePath_;
+    size_t size_ = 0;
 
-    StreamId m_streamId = INVALID_STREAM_ID;
-    size_t m_expectedPos = 0;
+    StreamId streamId_ = INVALID_STREAM_ID;
+    size_t expectedPos_ = 0;
 };
 } // namespace muse::io

@@ -622,8 +622,8 @@ int GuitarPro4::convertGP4SlideNum(int sl) {
 //---------------------------------------------------------
 
 bool GuitarPro4::read(IODevice *io) {
-    m_continiousElementsBuilder = std::make_unique<ContiniousElementsBuilder>(score);
-    m_guitarBendImporter = std::make_unique<GuitarBendImporter>(score);
+    continiousElementsBuilder_ = std::make_unique<ContiniousElementsBuilder>(score);
+    guitarBendImporter_ = std::make_unique<GuitarBendImporter>(score);
 
     f = io;
     curPos = 30;
@@ -1135,7 +1135,7 @@ bool GuitarPro4::read(IODevice *io) {
             }
             if (measureLen < measure->ticks()) {
                 score->setRest(tick, track, measure->ticks() - measureLen, false, nullptr, false);
-                m_continiousElementsBuilder->notifyUncompletedMeasure();
+                continiousElementsBuilder_->notifyUncompletedMeasure();
             }
         }
 
@@ -1195,8 +1195,8 @@ bool GuitarPro4::read(IODevice *io) {
         }
     }
 
-    m_continiousElementsBuilder->addElementsToScore();
-    m_guitarBendImporter->addElementsToScore();
+    continiousElementsBuilder_->addElementsToScore();
+    guitarBendImporter_->addElementsToScore();
     addTunings();
     utils::addPlayCountTexts(score);
 

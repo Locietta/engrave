@@ -8,7 +8,7 @@ namespace muse::audio {
 // codecs; inner polls return failure, never unwind through a C callback.
 class OfflineCancellation {
     inline static thread_local const std::function<bool()> *s_poll = nullptr;
-    const std::function<bool()> *m_previous;
+    const std::function<bool()> *previous_;
 public:
     enum class Phase { Other, PlaybackModel, Sequencer, Synthesis, Encoding };
     inline static thread_local Phase phase = Phase::Other;
@@ -37,9 +37,9 @@ public:
         ~SynthesisScope() { phase = previous; }
     };
 
-    explicit OfflineCancellation(const std::function<bool()> &poll) : m_previous(std::exchange(s_poll, &poll)) {}
+    explicit OfflineCancellation(const std::function<bool()> &poll) : previous_(std::exchange(s_poll, &poll)) {}
 
-    ~OfflineCancellation() { s_poll = m_previous; }
+    ~OfflineCancellation() { s_poll = previous_; }
 
     OfflineCancellation(const OfflineCancellation &) = delete;
     OfflineCancellation &operator=(const OfflineCancellation &) = delete;

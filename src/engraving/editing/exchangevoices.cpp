@@ -42,33 +42,33 @@ class ExchangeVoicesInMeasure : public UndoableCommand {
 
 public:
     ExchangeVoicesInMeasure(Measure *measure, track_idx_t srcTrack, track_idx_t dstTrack, staff_idx_t staff)
-        : m_measure(measure), m_srcTrack(srcTrack), m_dstTrack(dstTrack), m_staff(staff) {}
+        : measure_(measure), srcTrack_(srcTrack), dstTrack_(dstTrack), staff_(staff) {}
 
-    void undo() override { doExchange(m_dstTrack, m_srcTrack); }
+    void undo() override { doExchange(dstTrack_, srcTrack_); }
 
-    void redo() override { doExchange(m_srcTrack, m_dstTrack); }
+    void redo() override { doExchange(srcTrack_, dstTrack_); }
 
     UNDO_TYPE(CommandType::ExchangeVoice)
     UNDO_NAME("ExchangeVoice")
-    UNDO_CHANGED_OBJECTS({m_measure})
+    UNDO_CHANGED_OBJECTS({measure_})
 
 private:
     void doExchange(track_idx_t srcTrack, track_idx_t dstTrack);
 
-    Measure *m_measure = nullptr;
-    track_idx_t m_srcTrack = muse::nidx;
-    track_idx_t m_dstTrack = muse::nidx;
-    staff_idx_t m_staff = muse::nidx;
+    Measure *measure_ = nullptr;
+    track_idx_t srcTrack_ = muse::nidx;
+    track_idx_t dstTrack_ = muse::nidx;
+    staff_idx_t staff_ = muse::nidx;
 };
 
 void ExchangeVoicesInMeasure::doExchange(track_idx_t srcTrack, track_idx_t dstTrack) {
-    for (Segment *s = m_measure->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
+    for (Segment *s = measure_->first(SegmentType::ChordRest); s; s = s->next(SegmentType::ChordRest)) {
         s->swapElements(srcTrack, dstTrack);
     }
 
-    Fraction start = m_measure->tick();
-    Fraction end = start + m_measure->ticks();
-    auto spanners = m_measure->score()->spannerMap().findOverlapping(start.ticks(), end.ticks() - 1);
+    Fraction start = measure_->tick();
+    Fraction end = start + measure_->ticks();
+    auto spanners = measure_->score()->spannerMap().findOverlapping(start.ticks(), end.ticks() - 1);
     for (auto i = spanners.begin(); i < spanners.end(); i++) {
         Spanner *sp = i->value;
         Fraction spStart = sp->tick();
@@ -88,7 +88,7 @@ void ExchangeVoicesInMeasure::doExchange(track_idx_t srcTrack, track_idx_t dstTr
             }
         }
     }
-    m_measure->checkMultiVoices(m_staff); // probably true, but check for invisible notes & rests
+    measure_->checkMultiVoices(staff_); // probably true, but check for invisible notes & rests
 }
 } // namespace
 

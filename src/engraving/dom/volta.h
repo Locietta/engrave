@@ -73,9 +73,9 @@ public:
 
     void setChannel() const;
 
-    std::vector<int> endings() const { return m_endings; }
+    std::vector<int> endings() const { return endings_; }
 
-    std::vector<int> &endings() { return m_endings; }
+    std::vector<int> &endings() { return endings_; }
 
     void setEndings(const std::vector<int> &l);
     void setText(const String &s);
@@ -87,7 +87,7 @@ public:
     void setVoltaType(Volta::Type); // deprecated
     Type voltaType() const;         // deprecated
 
-    bool isFirstVolta() const { return m_endings.size() == 1 && hasEnding(1); }
+    bool isFirstVolta() const { return endings_.size() == 1 && hasEnding(1); }
 
     PropertyValue getProperty(Pid propertyId) const override;
     bool setProperty(Pid propertyId, const PropertyValue &) override;
@@ -99,7 +99,7 @@ protected:
     Sid defaultPosSid() const override;
 
 private:
-    std::vector<int> m_endings;
+    std::vector<int> endings_;
 };
 } // namespace mu::engraving
 

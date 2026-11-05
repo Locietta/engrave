@@ -48,26 +48,26 @@ AccidentalsLayout::AccidentalsLayoutContext::AccidentalsLayoutContext(std::vecto
 }
 
 void AccidentalsLayout::AccidentalsLayoutContext::initConstants() {
-    m_spatium = allAccidentals.front()->spatium();
+    spatium_ = allAccidentals.front()->spatium();
 
     // Hardcoded engraving parameters that don't have a style (some of these may get a style in future)
-    m_verticalAccidentalToAccidentalClearance = 0.15 * m_spatium;
-    m_verticalSharpToSharpClearance = 0.05 * m_spatium;
-    m_verticalAccidentalToChordClearance = 0.10 * m_spatium;
-    m_additionalPaddingForVerticals = 0.1 * m_spatium;
-    m_xPosSplitThreshold = 0.5 * m_spatium;
-    m_xVerticalAlignmentThreshold = 0.75 * m_spatium;
-    m_sharpAndNaturalLedgerLinePadding = 0.1 * m_spatium;
-    m_reducedFlatToNotePadding = 0.15 * m_spatium;
-    m_flatKerningOfFourth = -0.15 * m_spatium;
-    m_naturalKerningOfFourth = -0.05 * m_spatium;
+    verticalAccidentalToAccidentalClearance_ = 0.15 * spatium_;
+    verticalSharpToSharpClearance_ = 0.05 * spatium_;
+    verticalAccidentalToChordClearance_ = 0.10 * spatium_;
+    additionalPaddingForVerticals_ = 0.1 * spatium_;
+    xPosSplitThreshold_ = 0.5 * spatium_;
+    xVerticalAlignmentThreshold_ = 0.75 * spatium_;
+    sharpAndNaturalLedgerLinePadding_ = 0.1 * spatium_;
+    reducedFlatToNotePadding_ = 0.15 * spatium_;
+    flatKerningOfFourth_ = -0.15 * spatium_;
+    naturalKerningOfFourth_ = -0.05 * spatium_;
 
     const MStyle &style = allAccidentals.front()->style();
-    m_accidentalAccidentalDistance = style.styleAbsolute(Sid::accidentalDistance);
-    m_orderFollowNoteDisplacement = style.styleB(Sid::accidentalOrderFollowsNoteDisplacement);
-    m_alignOctavesAcrossSubChords = style.styleB(Sid::alignAccidentalOctavesAcrossSubChords);
-    m_keepSecondsTogether = style.styleB(Sid::keepAccidentalSecondsTogether);
-    m_alignOffsetOctaves = style.styleB(Sid::alignOffsetOctaveAccidentals);
+    accidentalAccidentalDistance_ = style.styleAbsolute(Sid::accidentalDistance);
+    orderFollowNoteDisplacement_ = style.styleB(Sid::accidentalOrderFollowsNoteDisplacement);
+    alignOctavesAcrossSubChords_ = style.styleB(Sid::alignAccidentalOctavesAcrossSubChords);
+    keepSecondsTogether_ = style.styleB(Sid::keepAccidentalSecondsTogether);
+    alignOffsetOctaves_ = style.styleB(Sid::alignOffsetOctaveAccidentals);
 }
 
 void AccidentalsLayout::layoutAccidentals(const std::vector<Chord *> &chords, LayoutContext &ctx) {

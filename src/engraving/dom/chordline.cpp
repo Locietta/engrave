@@ -51,20 +51,20 @@ namespace mu::engraving {
 ChordLine::ChordLine(DummyParentOr<Chord> parent) : EngravingItem(ElementType::CHORDLINE, parent, ElementFlag::MOVABLE) {}
 
 ChordLine::ChordLine(const ChordLine &cl) : EngravingItem(cl) {
-    m_modified = cl.m_modified;
-    m_hasSourceOffsets = cl.m_hasSourceOffsets;
-    m_sourceOffsets = cl.m_sourceOffsets;
-    m_chordLineType = cl.m_chordLineType;
-    m_straight = cl.m_straight;
-    m_wavy = cl.m_wavy;
-    m_lengthX = cl.m_lengthX;
-    m_lengthY = cl.m_lengthY;
-    m_playChordLine = cl.m_playChordLine;
-    m_note = cl.m_note;
+    modified_ = cl.modified_;
+    hasSourceOffsets_ = cl.hasSourceOffsets_;
+    sourceOffsets_ = cl.sourceOffsets_;
+    chordLineType_ = cl.chordLineType_;
+    straight_ = cl.straight_;
+    wavy_ = cl.wavy_;
+    lengthX_ = cl.lengthX_;
+    lengthY_ = cl.lengthY_;
+    playChordLine_ = cl.playChordLine_;
+    note_ = cl.note_;
 
     /* The manually edited shape is "given" data which happens to live in the layout
      * data, and EngravingItem's copy constructor doesn't copy that. Without this, an edited
-     * chordline is invisible in newly created parts: m_modified is true, so the layout won't
+     * chordline is invisible in newly created parts: modified_ is true, so the layout won't
      * regenerate the path, but the path itself is empty. */
     mutldata()->path = cl.ldata()->path;
 }
@@ -73,9 +73,9 @@ ChordLine::ChordLine(const ChordLine &cl) : EngravingItem(cl) {
 //   setChordLineType
 //---------------------------------------------------------
 
-void ChordLine::setChordLineType(ChordLineType st) { m_chordLineType = st; }
+void ChordLine::setChordLineType(ChordLineType st) { chordLineType_ = st; }
 
-const TranslatableString &ChordLine::chordLineTypeName() const { return TConv::userName(m_chordLineType, m_straight, m_wavy); }
+const TranslatableString &ChordLine::chordLineTypeName() const { return TConv::userName(chordLineType_, straight_, wavy_); }
 
 //---------------------------------------------------------
 //   slideType
@@ -101,10 +101,10 @@ static Note::SlideType slideType(ChordLineType type) {
 //---------------------------------------------------------
 
 void ChordLine::setNote(Note *note) {
-    m_note = note;
+    note_ = note;
 
     if (note) {
-        note->attachSlide(slideType(m_chordLineType));
+        note->attachSlide(slideType(chordLineType_));
     }
 }
 
@@ -141,14 +141,14 @@ void ChordLine::readSourceOffsets(const std::array<PointF, 4> &xml, double unit)
     for (PointF &point : physical) {
         point = PointF(chordLineProduct(point.x(), unit), chordLineProduct(point.y(), unit));
     }
-    m_sourceOffsets = physical;
-    m_hasSourceOffsets = true;
+    sourceOffsets_ = physical;
+    hasSourceOffsets_ = true;
 }
 
 std::array<PointF, 4> ChordLine::xmlSourceOffsets() const {
     const double unit = offsetIsSpatiumDependent() ? style().spatium() : DPMM;
     requireChordLineScale(unit);
-    auto xml = m_sourceOffsets;
+    auto xml = sourceOffsets_;
     for (PointF &point : xml) {
         const PointF converted = point / unit;
         if (!std::isfinite(converted.x()) || !std::isfinite(converted.y()) || (point.x() != 0.0 && converted.x() == 0.0) ||
@@ -178,10 +178,10 @@ std::array<PointF, 4> ChordLine::offsetPoints(const std::array<PointF, 4> &offse
 }
 
 void ChordLine::scaleOffsets(double oldValue, double newValue) {
-    if (!m_hasSourceOffsets) {
+    if (!hasSourceOffsets_) {
         return;
     }
-    for (PointF &point : m_sourceOffsets) {
+    for (PointF &point : sourceOffsets_) {
         point *= newValue / oldValue;
     }
 }
@@ -197,13 +197,13 @@ void ChordLine::localSpatiumChanged(double oldValue, double newValue) {
 }
 
 PainterPath ChordLine::sourceOffsetPath(double sp, double mag) const {
-    const auto points = offsetPoints(m_sourceOffsets, sp, mag);
+    const auto points = offsetPoints(sourceOffsets_, sp, mag);
     PainterPath path;
-    if (m_chordLineType == ChordLineType::NOTYPE || m_wavy) {
+    if (chordLineType_ == ChordLineType::NOTYPE || wavy_) {
         return path;
     }
     path.moveTo(points[0]);
-    if (m_straight) {
+    if (straight_) {
         path.lineTo(points[3]);
     } else {
         path.cubicTo(points[1], points[2], points[3]);
@@ -212,7 +212,7 @@ PainterPath ChordLine::sourceOffsetPath(double sp, double mag) const {
 }
 
 SymId ChordLine::waveSym() const {
-    if (m_chordLineType == ChordLineType::FALL || m_chordLineType == ChordLineType::PLOP) {
+    if (chordLineType_ == ChordLineType::FALL || chordLineType_ == ChordLineType::PLOP) {
         return SymId::brassFallRoughShort;
     }
 
@@ -224,9 +224,9 @@ SymId ChordLine::waveSym() const {
 //---------------------------------------------------------
 
 int ChordLine::subtype() const {
-    size_t h1 = std::hash<ChordLineType>{}(m_chordLineType);
-    size_t h2 = std::hash<bool>{}(m_straight);
-    size_t h3 = std::hash<bool>{}(m_wavy);
+    size_t h1 = std::hash<ChordLineType>{}(chordLineType_);
+    size_t h2 = std::hash<bool>{}(straight_);
+    size_t h3 = std::hash<bool>{}(wavy_);
 
     return static_cast<int>(h1 ^ (h2 << 1) ^ (h3 << 2));
 }
@@ -240,10 +240,10 @@ muse::TranslatableString ChordLine::subtypeUserName() const { return chordLineTy
 PropertyValue ChordLine::getProperty(Pid propertyId) const {
     switch (propertyId) {
         case Pid::PATH: return PropertyValue::fromValue(ldata()->path);
-        case Pid::CHORD_LINE_TYPE: return int(m_chordLineType);
-        case Pid::CHORD_LINE_STRAIGHT: return m_straight;
-        case Pid::CHORD_LINE_WAVY: return m_wavy;
-        case Pid::PLAY: return m_playChordLine;
+        case Pid::CHORD_LINE_TYPE: return int(chordLineType_);
+        case Pid::CHORD_LINE_STRAIGHT: return straight_;
+        case Pid::CHORD_LINE_WAVY: return wavy_;
+        case Pid::PLAY: return playChordLine_;
         default: break;
     }
     return EngravingItem::getProperty(propertyId);
@@ -260,11 +260,11 @@ ChordLine::AppearanceState ChordLine::appearanceState() const {
         state.flags[i] = propertyFlags(appearanceProperties[i]);
     }
     state.linked = isAppearanceLinkedToMaster();
-    state.offsets = m_hasSourceOffsets;
-    state.controls = m_sourceOffsets;
-    state.modified = m_modified;
-    state.lengthX = m_lengthX;
-    state.lengthY = m_lengthY;
+    state.offsets = hasSourceOffsets_;
+    state.controls = sourceOffsets_;
+    state.modified = modified_;
+    state.lengthX = lengthX_;
+    state.lengthY = lengthY_;
     return state;
 }
 
@@ -274,11 +274,11 @@ void ChordLine::restoreAppearance(const AppearanceState &state) {
         setPropertyFlags(appearanceProperties[i], state.flags[i]);
     }
     setAppearanceLinkedToMaster(state.linked);
-    m_hasSourceOffsets = state.offsets;
-    m_sourceOffsets = state.controls;
-    m_modified = state.modified;
-    m_lengthX = state.lengthX;
-    m_lengthY = state.lengthY;
+    hasSourceOffsets_ = state.offsets;
+    sourceOffsets_ = state.controls;
+    modified_ = state.modified;
+    lengthX_ = state.lengthX;
+    lengthY_ = state.lengthY;
     triggerLayout();
 }
 
@@ -298,8 +298,8 @@ bool ChordLine::setProperty(Pid propertyId, const PropertyValue &val) {
             return true;
         case Pid::PATH:
             mutldata()->path = val.value<PainterPath>();
-            m_hasSourceOffsets = false;
-            m_sourceOffsets = {};
+            hasSourceOffsets_ = false;
+            sourceOffsets_ = {};
             setModified(true);
             break;
         case Pid::CHORD_LINE_TYPE: setChordLineType(ChordLineType(val.toInt())); break;
@@ -322,8 +322,8 @@ void ChordLine::resetProperty(Pid pid) {
         return;
     }
     // Keep the source representation; both kinds return to their default shape.
-    m_sourceOffsets = {};
-    m_modified = false;
+    sourceOffsets_ = {};
+    modified_ = false;
     mutldata()->path = PainterPath();
     triggerLayout();
 }

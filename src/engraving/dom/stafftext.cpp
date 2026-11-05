@@ -42,16 +42,16 @@ StaffText::StaffText(DummyParentOr<Segment> parent, TextStyleType tid)
 }
 
 StaffText::StaffText(const StaffText &t) : StaffTextBase(t) {
-    if (t.m_soundFlag) {
-        setSoundFlag(t.m_soundFlag->clone());
+    if (t.soundFlag_) {
+        setSoundFlag(t.soundFlag_->clone());
     }
 }
 
 EngravingItem *StaffText::linkedClone() {
     StaffText *clone = static_cast<StaffText *>(StaffTextBase::linkedClone());
 
-    if (clone->m_soundFlag && m_soundFlag) {
-        score()->undo(new Link(clone->m_soundFlag, m_soundFlag));
+    if (clone->soundFlag_ && soundFlag_) {
+        score()->undo(new Link(clone->soundFlag_, soundFlag_));
     }
 
     return clone;
@@ -65,8 +65,8 @@ PropertyValue StaffText::propertyDefault(Pid id) const {
 }
 
 void StaffText::scanElements(std::function<void(EngravingItem *)> func) {
-    if (m_soundFlag) {
-        m_soundFlag->scanElements(func);
+    if (soundFlag_) {
+        soundFlag_->scanElements(func);
     }
 
     StaffTextBase::scanElements(func);
@@ -108,25 +108,25 @@ void StaffText::remove(EngravingItem *e) {
 void StaffText::setTrack(track_idx_t idx) {
     StaffTextBase::setTrack(idx);
 
-    if (m_soundFlag) {
-        m_soundFlag->setTrack(idx);
+    if (soundFlag_) {
+        soundFlag_->setTrack(idx);
     }
 }
 
-bool StaffText::hasSoundFlag() const { return m_soundFlag != nullptr; }
+bool StaffText::hasSoundFlag() const { return soundFlag_ != nullptr; }
 
-SoundFlag *StaffText::soundFlag() const { return m_soundFlag; }
+SoundFlag *StaffText::soundFlag() const { return soundFlag_; }
 
 void StaffText::setSoundFlag(SoundFlag *flag) {
-    if (m_soundFlag == flag) {
+    if (soundFlag_ == flag) {
         return;
     }
 
-    m_soundFlag = flag;
+    soundFlag_ = flag;
 
-    if (m_soundFlag) {
-        m_soundFlag->setOwnershipParent(this);
-        m_soundFlag->setTrack(track());
+    if (soundFlag_) {
+        soundFlag_->setOwnershipParent(this);
+        soundFlag_->setTrack(track());
     }
 
     triggerLayout();

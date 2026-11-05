@@ -416,17 +416,17 @@ void ChangeMeasureRepeatCount::flip() {
 }
 
 void ChangeMMRestNext::flip() {
-    assert(m_mmrest->isMMRest());
-    MeasureBase *oldNext = m_mmrest->next();
+    assert(mmrest_->isMMRest());
+    MeasureBase *oldNext = mmrest_->next();
 
-    m_mmrest->setNext(m_next);
-    m_next = oldNext;
+    mmrest_->setNext(next_);
+    next_ = oldNext;
 }
 
 void ChangeMMRestPrev::flip() {
-    assert(m_mmrest->isMMRest());
-    MeasureBase *oldPrev = m_mmrest->prev();
+    assert(mmrest_->isMMRest());
+    MeasureBase *oldPrev = mmrest_->prev();
 
-    m_mmrest->setPrev(m_prev);
-    m_prev = oldPrev;
+    mmrest_->setPrev(prev_);
+    prev_ = oldPrev;
 }

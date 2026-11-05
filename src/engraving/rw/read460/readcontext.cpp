@@ -37,7 +37,7 @@
 using namespace mu::engraving;
 using namespace mu::engraving::read460;
 
-ReadContext::ReadContext(Score *score) : m_score(score) {}
+ReadContext::ReadContext(Score *score) : score_(score) {}
 
 ReadContext::~ReadContext() {
     if (!_connectors.empty() || !_pendingConnectors.empty()) {
@@ -54,31 +54,31 @@ ReadContext::~ReadContext() {
     }
 }
 
-Score *ReadContext::score() const { return m_score; }
+Score *ReadContext::score() const { return score_; }
 
-void ReadContext::setScore(Score *score) { m_score = score; }
+void ReadContext::setScore(Score *score) { score_ = score; }
 
 const MStyle &ReadContext::style() const { return score()->style(); }
 
 std::shared_ptr<IEngravingFontsProvider> ReadContext::engravingFonts() const { return score()->engravingFonts(); }
 
-String ReadContext::mscoreVersion() const { return m_score->mscoreVersion(); }
+String ReadContext::mscoreVersion() const { return score_->mscoreVersion(); }
 
-int ReadContext::mscVersion() const { return m_score->mscVersion(); }
+int ReadContext::mscVersion() const { return score_->mscVersion(); }
 
-int ReadContext::fileDivision() const { return m_score->fileDivision(); }
+int ReadContext::fileDivision() const { return score_->fileDivision(); }
 
-int ReadContext::fileDivision(int t) const { return m_score->fileDivision(t); }
+int ReadContext::fileDivision(int t) const { return score_->fileDivision(t); }
 
-double ReadContext::spatium() const { return m_score->style().spatium(); }
+double ReadContext::spatium() const { return score_->style().spatium(); }
 
-void ReadContext::setSpatium(double v) { m_score->style().set(Sid::spatium, v); }
+void ReadContext::setSpatium(double v) { score_->style().set(Sid::spatium, v); }
 
-DummyParent *ReadContext::dummy() const { return m_score->dummy(); }
+DummyParent *ReadContext::dummy() const { return score_->dummy(); }
 
-Staff *ReadContext::staff(staff_idx_t n) { return m_score->staff(n); }
+Staff *ReadContext::staff(staff_idx_t n) { return score_->staff(n); }
 
-bool ReadContext::isSameScore(const EngravingObject *obj) const { return obj->score() == m_score; }
+bool ReadContext::isSameScore(const EngravingObject *obj) const { return obj->score() == score_; }
 
 Fraction ReadContext::rtick() const { return _curMeasure ? _tick - _curMeasure->tick() : _tick; }
 

@@ -48,7 +48,7 @@ TremoloSingleChord::TremoloSingleChord(DummyParentOr<Chord> parent)
 
 TremoloSingleChord::TremoloSingleChord(const TremoloSingleChord &t) : EngravingItem(t) {
     setTremoloType(t.tremoloType());
-    m_durationType = t.m_durationType;
+    durationType_ = t.durationType_;
 }
 
 TremoloSingleChord::~TremoloSingleChord() {
@@ -73,19 +73,19 @@ double TremoloSingleChord::minHeight() const {
 //---------------------------------------------------------
 
 void TremoloSingleChord::setTremoloType(TremoloType t) {
-    m_tremoloType = t;
+    tremoloType_ = t;
     switch (tremoloType()) {
         case TremoloType::R16:
-        case TremoloType::C16: m_lines = 2; break;
+        case TremoloType::C16: lines_ = 2; break;
         case TremoloType::R32:
-        case TremoloType::C32: m_lines = 3; break;
+        case TremoloType::C32: lines_ = 3; break;
         case TremoloType::R64:
-        case TremoloType::C64: m_lines = 4; break;
+        case TremoloType::C64: lines_ = 4; break;
         case TremoloType::R128:
-        case TremoloType::C128: m_lines = 5; break;
+        case TremoloType::C128: lines_ = 5; break;
         case TremoloType::R256:
-        case TremoloType::C256: m_lines = 6; break;
-        default: m_lines = 1; break;
+        case TremoloType::C256: lines_ = 6; break;
+        default: lines_ = 1; break;
     }
 
     styleChanged();
@@ -144,7 +144,7 @@ PainterPath TremoloSingleChord::basePath(double /*stretch*/) const {
     double ty = td;
 
     // other lines
-    for (int i = 1; i < m_lines; i++) {
+    for (int i = 1; i < lines_; i++) {
         ppath.addRect(-w2, ty, 2.0 * w2, lw);
         ty += td;
     }
@@ -160,19 +160,19 @@ void TremoloSingleChord::computeShape() {
     if (isBuzzRoll()) {
         setbbox(symBbox(SymId::buzzRoll));
     } else {
-        m_path = basePath();
-        setbbox(m_path.boundingRect());
+        path_ = basePath();
+        setbbox(path_.boundingRect());
     }
 }
 
-TDuration TremoloSingleChord::durationType() const { return m_durationType; }
+TDuration TremoloSingleChord::durationType() const { return durationType_; }
 
 void TremoloSingleChord::setDurationType(TDuration d) {
-    if (m_durationType == d) {
+    if (durationType_ == d) {
         return;
     }
 
-    m_durationType = d;
+    durationType_ = d;
     styleChanged();
 }
 
@@ -205,8 +205,8 @@ TranslatableString TremoloSingleChord::subtypeUserName() const { return TConv::u
 
 PropertyValue TremoloSingleChord::getProperty(Pid propertyId) const {
     switch (propertyId) {
-        case Pid::TREMOLO_TYPE: return int(m_tremoloType);
-        case Pid::PLAY: return m_playTremolo;
+        case Pid::TREMOLO_TYPE: return int(tremoloType_);
+        case Pid::PLAY: return playTremolo_;
         default: break;
     }
     return EngravingItem::getProperty(propertyId);

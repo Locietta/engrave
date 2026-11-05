@@ -63,22 +63,22 @@ struct ClefTypeList {
 struct ClefInfo {
     static const ClefInfo clefTable[];
 
-    ClefType m_type = ClefType::INVALID;
-    int m_line = 0;        ///< Line positioning on the staff
-    int m_pitchOffset = 0; ///< Pitch offset for line 0.
-    signed char m_lines[14];
-    SymId m_symId = SymId::noSym;
-    StaffGroup m_staffGroup = StaffGroup::STANDARD;
+    ClefType type_ = ClefType::INVALID;
+    int line_ = 0;        ///< Line positioning on the staff
+    int pitchOffset_ = 0; ///< Pitch offset for line 0.
+    signed char lines_[14];
+    SymId symId_ = SymId::noSym;
+    StaffGroup staffGroup_ = StaffGroup::STANDARD;
 
-    static int line(ClefType t) { return clefTable[int(t)].m_line; }
+    static int line(ClefType t) { return clefTable[int(t)].line_; }
 
-    static int pitchOffset(ClefType t) { return clefTable[int(t)].m_pitchOffset; }
+    static int pitchOffset(ClefType t) { return clefTable[int(t)].pitchOffset_; }
 
-    static SymId symId(ClefType t) { return clefTable[int(t)].m_symId; }
+    static SymId symId(ClefType t) { return clefTable[int(t)].symId_; }
 
-    static const signed char *lines(ClefType t) { return clefTable[int(t)].m_lines; }
+    static const signed char *lines(ClefType t) { return clefTable[int(t)].lines_; }
 
-    static StaffGroup staffGroup(ClefType t) { return clefTable[int(t)].m_staffGroup; }
+    static StaffGroup staffGroup(ClefType t) { return clefTable[int(t)].staffGroup_; }
 };
 
 //---------------------------------------------------------
@@ -106,13 +106,13 @@ public:
     bool acceptDrop(EditData &) const override;
     EngravingItem *drop(Transaction &tx, EditData &) override;
 
-    bool isSmall() const { return m_isSmall; }
+    bool isSmall() const { return isSmall_; }
 
     void setSmall(bool val);
 
-    bool showCourtesy() const { return m_showCourtesy; }
+    bool showCourtesy() const { return showCourtesy_; }
 
-    void setShowCourtesy(bool v) { m_showCourtesy = v; }
+    void setShowCourtesy(bool v) { showCourtesy_ = v; }
 
     void undoSetShowCourtesy(bool v);
     Clef *otherClef();
@@ -120,28 +120,28 @@ public:
     ClefType clefType() const;
     void setClefType(ClefType i);
 
-    bool isCourtesy() const { return m_isCourtesy; }
+    bool isCourtesy() const { return isCourtesy_; }
 
-    void setIsCourtesy(const bool v) { m_isCourtesy = v; }
+    void setIsCourtesy(const bool v) { isCourtesy_ = v; }
 
     int subtype() const override { return int(clefType()); }
 
     TranslatableString subtypeUserName() const override;
 
-    void setForInstrumentChange(bool forInstrumentChange) { m_forInstrumentChange = forInstrumentChange; }
+    void setForInstrumentChange(bool forInstrumentChange) { forInstrumentChange_ = forInstrumentChange; }
 
-    bool forInstrumentChange() const { return m_forInstrumentChange; }
+    bool forInstrumentChange() const { return forInstrumentChange_; }
 
-    ClefTypeList clefTypeList() const { return m_clefTypes; }
+    ClefTypeList clefTypeList() const { return clefTypes_; }
 
-    ClefType concertClef() const { return m_clefTypes.concertClef; }
+    ClefType concertClef() const { return clefTypes_.concertClef; }
 
-    ClefType transposingClef() const { return m_clefTypes.transposingClef; }
+    ClefType transposingClef() const { return clefTypes_.transposingClef; }
 
     void setConcertClef(ClefType val);
     void setTransposingClef(ClefType val);
 
-    void setClefType(const ClefTypeList &ctl) { m_clefTypes = ctl; }
+    void setClefType(const ClefTypeList &ctl) { clefTypes_ = ctl; }
 
     void spatiumChanged(double oldValue, double newValue) override;
 
@@ -160,15 +160,15 @@ public:
 
     void undoChangeProperty(Pid id, const PropertyValue &v, PropertyFlags ps) override;
 
-    ClefToBarlinePosition clefToBarlinePosition() const { return m_clefToBarlinePosition; }
+    ClefToBarlinePosition clefToBarlinePosition() const { return clefToBarlinePosition_; }
 
-    void setClefToBarlinePosition(ClefToBarlinePosition val) { m_clefToBarlinePosition = val; }
+    void setClefToBarlinePosition(ClefToBarlinePosition val) { clefToBarlinePosition_ = val; }
 
     bool isHeader() const;
 
-    bool isTrailer() const { return m_isTrailer; }
+    bool isTrailer() const { return isTrailer_; }
 
-    void setIsTrailer(bool val) { m_isTrailer = val; }
+    void setIsTrailer(bool val) { isTrailer_ = val; }
 
     bool isMidMeasureClef() const;
 
@@ -186,13 +186,13 @@ private:
     friend class Factory;
     Clef(DummyParentOr<Segment> parent);
 
-    bool m_showCourtesy = true;
-    bool m_isSmall = false;
-    bool m_forInstrumentChange = false;
-    bool m_isCourtesy = false;
-    bool m_isTrailer = false;
-    ClefToBarlinePosition m_clefToBarlinePosition = ClefToBarlinePosition::AUTO;
-    ClefTypeList m_clefTypes = ClefType::INVALID;
+    bool showCourtesy_ = true;
+    bool isSmall_ = false;
+    bool forInstrumentChange_ = false;
+    bool isCourtesy_ = false;
+    bool isTrailer_ = false;
+    ClefToBarlinePosition clefToBarlinePosition_ = ClefToBarlinePosition::AUTO;
+    ClefTypeList clefTypes_ = ClefType::INVALID;
 };
 } // namespace mu::engraving
 #endif

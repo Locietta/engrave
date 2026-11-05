@@ -65,26 +65,26 @@ constexpr double TAB_DEFAULT_DUR_YOFFS = -1.0;
 
 Color StaffType::s_defaultColor = Color::BLACK;
 
-std::vector<TablatureFretFont> StaffType::m_fretFonts = {};
-std::vector<TablatureDurationFont> StaffType::m_durationFonts = {};
+std::vector<TablatureFretFont> StaffType::fretFonts_ = {};
+std::vector<TablatureDurationFont> StaffType::durationFonts_ = {};
 
 //---------------------------------------------------------
 //   StaffType
 //---------------------------------------------------------
 
 StaffType::StaffType() {
-    m_color = s_defaultColor;
+    color_ = s_defaultColor;
     // set reasonable defaults for type-specific members */
-    m_symRepeat = TablatureSymbolRepeat::NEVER;
-    setDurationFontName(m_durationFonts[0].displayName);
+    symRepeat_ = TablatureSymbolRepeat::NEVER;
+    setDurationFontName(durationFonts_[0].displayName);
     setFretPresetIdx(0);
 }
 
 StaffType::StaffType(StaffGroup sg, StaffTypes staffType, int lines, int stpOff, double lineDist, bool genClef, bool showBarLines,
                      bool stemless, bool genTimeSig, bool genKeySig, bool showLedgerLines, bool invisible, const Color &color)
-    : m_group(sg), m_staffType(staffType), m_invisible(invisible), m_color(color), m_lines(lines), m_stepOffset(stpOff),
-      m_lineDistance(Spatium(lineDist)), m_showBarlines(showBarLines), m_showLedgerLines(showLedgerLines), m_stemless(stemless),
-      m_genClef(genClef), m_genTimesig(genTimeSig), m_genKeysig(genKeySig) {}
+    : group_(sg), staffType_(staffType), invisible_(invisible), color_(color), lines_(lines), stepOffset_(stpOff),
+      lineDistance_(Spatium(lineDist)), showBarlines_(showBarLines), showLedgerLines_(showLedgerLines), stemless_(stemless),
+      genClef_(genClef), genTimesig_(genTimeSig), genKeysig_(genKeySig) {}
 
 StaffType::StaffType(StaffGroup sg, StaffTypes staffType, int lines, int stpOff, double lineDist, bool genClef, bool showBarLines,
                      bool stemless, bool genTimesig, bool invisible, const Color &color, const String &durFontName, double genDur,
@@ -92,9 +92,9 @@ StaffType::StaffType(StaffGroup sg, StaffTypes staffType, int lines, int stpOff,
                      TablatureMinimStyle minimStyle, bool onLines, bool showRests, bool stemsDown, bool stemThrough, bool upsideDown,
                      bool showTabFingering, bool useNumbers, bool showBackTied) {
     UNUSED(invisible);
-    m_color = color;
-    m_group = sg;
-    m_staffType = staffType;
+    color_ = color;
+    group_ = sg;
+    staffType_ = staffType;
     setLines(lines);
     setStepOffset(stpOff);
     setLineDistance(Spatium(lineDist));
@@ -128,11 +128,11 @@ StaffType::StaffType(StaffGroup sg, StaffTypes staffType, int lines, int stpOff,
 //   translatedGroupName
 //---------------------------------------------------------
 
-String StaffType::translatedGroupName() const { return TConv::translatedUserName(m_group); }
+String StaffType::translatedGroupName() const { return TConv::translatedUserName(group_); }
 
-int StaffType::middleLine() const { return m_lines - 1 - m_stepOffset; }
+int StaffType::middleLine() const { return lines_ - 1 - stepOffset_; }
 
-int StaffType::bottomLine() const { return (m_lines - 1) * 2; }
+int StaffType::bottomLine() const { return (lines_ - 1) * 2; }
 
 //---------------------------------------------------------
 //   operator==
@@ -141,66 +141,66 @@ int StaffType::bottomLine() const { return (m_lines - 1) * 2; }
 bool StaffType::operator==(const StaffType &st) const {
     bool equal = true;
 
-    equal &= (m_group == st.m_group);
-    equal &= (m_staffType == st.m_staffType);
-    equal &= (m_staffLabel == st.m_staffLabel);
-    equal &= (m_userMag == st.m_userMag);
-    equal &= (m_yoffset == st.m_yoffset);
-    equal &= (m_small == st.m_small);
-    equal &= (m_invisible == st.m_invisible);
-    equal &= (m_color == st.m_color);
-    equal &= (m_lines == st.m_lines);
-    equal &= (m_stepOffset == st.m_stepOffset);
-    equal &= (m_lineDistance == st.m_lineDistance);
-    equal &= (m_showBarlines == st.m_showBarlines);
-    equal &= (m_showLedgerLines == st.m_showLedgerLines);
-    equal &= (m_stemless == st.m_stemless);
-    equal &= (m_genClef == st.m_genClef);
-    equal &= (m_genTimesig == st.m_genTimesig);
-    equal &= (m_genKeysig == st.m_genKeysig);
-    equal &= (m_noteHeadScheme == st.m_noteHeadScheme);
-    equal &= (m_instrumentLabelVisibility == st.m_instrumentLabelVisibility);
-    equal &= (m_durationFontSize == st.m_durationFontSize);
-    equal &= (m_durationFontUserY == st.m_durationFontUserY);
-    equal &= (m_fretFontSize == st.m_fretFontSize);
-    equal &= (m_fretFontUserY == st.m_fretFontUserY);
-    equal &= (m_genDurations == st.m_genDurations);
-    equal &= (m_linesThrough == st.m_linesThrough);
-    equal &= (m_minimStyle == st.m_minimStyle);
-    equal &= (m_symRepeat == st.m_symRepeat);
-    equal &= (m_onLines == st.m_onLines);
-    equal &= (m_showRests == st.m_showRests);
-    equal &= (m_stemsDown == st.m_stemsDown);
-    equal &= (m_stemsThrough == st.m_stemsThrough);
-    equal &= (m_upsideDown == st.m_upsideDown);
-    equal &= (m_showTabFingering == st.m_showTabFingering);
-    equal &= (m_useNumbers == st.m_useNumbers);
-    equal &= (m_showBackTied == st.m_showBackTied);
-    equal &= (m_durationBoxH == st.m_durationBoxH);
-    equal &= (m_durationBoxY == st.m_durationBoxY);
-    equal &= (m_durationFont == st.m_durationFont);
-    equal &= (m_durationFontIdx == st.m_durationFontIdx);
-    equal &= (m_durationYOffset == st.m_durationYOffset);
-    equal &= (m_durationGridYOffset == st.m_durationGridYOffset);
-    equal &= (m_fretBoxH == st.m_fretBoxH);
-    equal &= (m_deadFretBoxH == st.m_deadFretBoxH);
-    equal &= (m_fretBoxY == st.m_fretBoxY);
-    equal &= (m_deadFretBoxY == st.m_deadFretBoxY);
-    equal &= (m_fretFont == st.m_fretFont);
-    equal &= (m_fretFontInfo.family == st.m_fretFontInfo.family);
-    equal &= (m_fretYOffset == st.m_fretYOffset);
-    equal &= (m_fretUseTextStyle == st.m_fretUseTextStyle);
-    equal &= (m_fretTextStyle == st.m_fretTextStyle);
-    equal &= (m_fretPresetIdx == st.m_fretPresetIdx);
+    equal &= (group_ == st.group_);
+    equal &= (staffType_ == st.staffType_);
+    equal &= (staffLabel_ == st.staffLabel_);
+    equal &= (userMag_ == st.userMag_);
+    equal &= (yoffset_ == st.yoffset_);
+    equal &= (small_ == st.small_);
+    equal &= (invisible_ == st.invisible_);
+    equal &= (color_ == st.color_);
+    equal &= (lines_ == st.lines_);
+    equal &= (stepOffset_ == st.stepOffset_);
+    equal &= (lineDistance_ == st.lineDistance_);
+    equal &= (showBarlines_ == st.showBarlines_);
+    equal &= (showLedgerLines_ == st.showLedgerLines_);
+    equal &= (stemless_ == st.stemless_);
+    equal &= (genClef_ == st.genClef_);
+    equal &= (genTimesig_ == st.genTimesig_);
+    equal &= (genKeysig_ == st.genKeysig_);
+    equal &= (noteHeadScheme_ == st.noteHeadScheme_);
+    equal &= (instrumentLabelVisibility_ == st.instrumentLabelVisibility_);
+    equal &= (durationFontSize_ == st.durationFontSize_);
+    equal &= (durationFontUserY_ == st.durationFontUserY_);
+    equal &= (fretFontSize_ == st.fretFontSize_);
+    equal &= (fretFontUserY_ == st.fretFontUserY_);
+    equal &= (genDurations_ == st.genDurations_);
+    equal &= (linesThrough_ == st.linesThrough_);
+    equal &= (minimStyle_ == st.minimStyle_);
+    equal &= (symRepeat_ == st.symRepeat_);
+    equal &= (onLines_ == st.onLines_);
+    equal &= (showRests_ == st.showRests_);
+    equal &= (stemsDown_ == st.stemsDown_);
+    equal &= (stemsThrough_ == st.stemsThrough_);
+    equal &= (upsideDown_ == st.upsideDown_);
+    equal &= (showTabFingering_ == st.showTabFingering_);
+    equal &= (useNumbers_ == st.useNumbers_);
+    equal &= (showBackTied_ == st.showBackTied_);
+    equal &= (durationBoxH_ == st.durationBoxH_);
+    equal &= (durationBoxY_ == st.durationBoxY_);
+    equal &= (durationFont_ == st.durationFont_);
+    equal &= (durationFontIdx_ == st.durationFontIdx_);
+    equal &= (durationYOffset_ == st.durationYOffset_);
+    equal &= (durationGridYOffset_ == st.durationGridYOffset_);
+    equal &= (fretBoxH_ == st.fretBoxH_);
+    equal &= (deadFretBoxH_ == st.deadFretBoxH_);
+    equal &= (fretBoxY_ == st.fretBoxY_);
+    equal &= (deadFretBoxY_ == st.deadFretBoxY_);
+    equal &= (fretFont_ == st.fretFont_);
+    equal &= (fretFontInfo_.family == st.fretFontInfo_.family);
+    equal &= (fretYOffset_ == st.fretYOffset_);
+    equal &= (fretUseTextStyle_ == st.fretUseTextStyle_);
+    equal &= (fretTextStyle_ == st.fretTextStyle_);
+    equal &= (fretPresetIdx_ == st.fretPresetIdx_);
 
     return equal;
 }
 
-StaffTypes StaffType::type() const { return m_staffType; }
+StaffTypes StaffType::type() const { return staffType_; }
 
-String StaffType::staffTypeName() const { return TConv::translatedUserName(m_staffType); }
+String StaffType::staffTypeName() const { return TConv::translatedUserName(staffType_); }
 
-String StaffType::xmlName() const { return String::fromAscii(TConv::toXml(m_staffType).ascii()); }
+String StaffType::xmlName() const { return String::fromAscii(TConv::toXml(staffType_).ascii()); }
 
 //---------------------------------------------------------
 //   isSimpleTabStaff
@@ -245,10 +245,10 @@ bool StaffType::isHiddenElementOnTab(Sid commonTabStyle, Sid simpleTabStyle) con
 }
 
 void StaffType::styleChanged() {
-    if (!m_fretUseTextStyle) {
+    if (!fretUseTextStyle_) {
         return;
     }
-    setFretTextStyle(m_fretTextStyle);
+    setFretTextStyle(fretTextStyle_);
 }
 
 //---------------------------------------------------------
@@ -256,29 +256,29 @@ void StaffType::styleChanged() {
 //---------------------------------------------------------
 
 void StaffType::setOnLines(bool val) {
-    m_onLines = val;
+    onLines_ = val;
     setDurationMetrics();
     setFretMetrics();
 }
 
 void StaffType::setUseNumbers(bool val) {
-    m_useNumbers = val;
+    useNumbers_ = val;
     setFretMetrics();
 }
 
 void StaffType::setFretTextStyle(const TextStyleType &val) {
-    m_fretTextStyle = val;
-    m_fretFontInfo = TablatureFretFont();
-    m_fretFont = Font();
+    fretTextStyle_ = val;
+    fretFontInfo_ = TablatureFretFont();
+    fretFont_ = Font();
 
-    const TextStyle *ts = textStyle(m_fretTextStyle);
+    const TextStyle *ts = textStyle(fretTextStyle_);
 
     for (const TextStyleProperty property : *ts) {
         switch (property.type) {
             case TextStylePropertyType::FontFace: {
                 String fontName = style().styleSt(property.sid);
-                m_fretFontInfo.family = fontName;
-                m_fretFont.setFamily(fontName, Font::Type::Tablature);
+                fretFontInfo_.family = fontName;
+                fretFont_.setFamily(fontName, Font::Type::Tablature);
             } break;
             case TextStylePropertyType::FontSize: {
                 double fontSize = style().styleD(property.sid);
@@ -286,10 +286,10 @@ void StaffType::setFretTextStyle(const TextStyleType &val) {
             } break;
             case TextStylePropertyType::FontStyle: {
                 FontStyle fStyle = style().styleV(property.sid).value<FontStyle>();
-                m_fretFont.setBold(fStyle & FontStyle::Bold);
-                m_fretFont.setItalic(fStyle & FontStyle::Italic);
-                m_fretFont.setUnderline(fStyle & FontStyle::Underline);
-                m_fretFont.setStrike(fStyle & FontStyle::Strike);
+                fretFont_.setBold(fStyle & FontStyle::Bold);
+                fretFont_.setItalic(fStyle & FontStyle::Italic);
+                fretFont_.setUnderline(fStyle & FontStyle::Underline);
+                fretFont_.setStrike(fStyle & FontStyle::Strike);
             } break;
             default: continue;
         }
@@ -303,18 +303,18 @@ void StaffType::setFretTextStyle(const TextStyleType &val) {
 
 void StaffType::setFretPresetIdx(size_t idx) {
     // Clear all previous formatting
-    m_fretFont = Font();
-    if (idx >= m_fretFonts.size()) {
-        m_fretPresetIdx = 0;
-        m_fretFontInfo = m_fretFonts[0];
+    fretFont_ = Font();
+    if (idx >= fretFonts_.size()) {
+        fretPresetIdx_ = 0;
+        fretFontInfo_ = fretFonts_[0];
     } else {
-        m_fretPresetIdx = idx;
-        m_fretFontInfo = m_fretFonts[idx];
+        fretPresetIdx_ = idx;
+        fretFontInfo_ = fretFonts_[idx];
     }
 
-    m_fretFont.setFamily(m_fretFontInfo.family, Font::Type::Tablature);
-    setFretFontSize(m_fretFontInfo.defSize);
-    setFretFontUserY(m_fretFontInfo.defYOffset);
+    fretFont_.setFamily(fretFontInfo_.family, Font::Type::Tablature);
+    setFretFontSize(fretFontInfo_.defSize);
+    setFretFontUserY(fretFontInfo_.defYOffset);
     setFretMetrics();
 }
 
@@ -325,8 +325,8 @@ void StaffType::setFretPreset(const String &name) {
         locName = u"MuseScore Phalèse";
     }
     size_t idx = 0;
-    for (idx = 0; idx < m_fretFonts.size(); idx++) {
-        if (m_fretFonts[idx].displayName == locName) {
+    for (idx = 0; idx < fretFonts_.size(); idx++) {
+        if (fretFonts_[idx].displayName == locName) {
             break;
         }
     }
@@ -340,85 +340,85 @@ void StaffType::setFretPreset(const String &name) {
 //---------------------------------------------------------
 
 void StaffType::setScore(Score *score) {
-    m_score = score;
-    if (m_score && m_group == StaffGroup::TAB) {
+    score_ = score;
+    if (score_ && group_ == StaffGroup::TAB) {
         setDurationMetrics();
         setFretMetrics();
     }
 }
 
 void StaffType::setDurationMetrics() {
-    if (!m_score) {
+    if (!score_) {
         return;
     }
 
     // FontMetrics returns results unreliably rounded to integral pixels;
     // use a scaled up font and then scale computed values down
     Font font(durationFont());
-    font.setPointSizeF(m_durationFontSize);
+    font.setPointSizeF(durationFontSize_);
     FontMetrics fm(font);
-    String txt(m_durationFonts[m_durationFontIdx].displayValue, size_t(TabVal::NUM_OF));
+    String txt(durationFonts_[durationFontIdx_].displayValue, size_t(TabVal::NUM_OF));
     RectF bb(fm.tightBoundingRect(txt));
     // raise symbols by a default margin and, if marks are above lines, by half the line distance
     // (converted from spatium units to raster units)
-    m_durationGridYOffset = (TAB_DEFAULT_DUR_YOFFS - (m_onLines ? 0.0 : lineDistance().val() * 0.5)) * defaultSpatium();
+    durationGridYOffset_ = (TAB_DEFAULT_DUR_YOFFS - (onLines_ ? 0.0 : lineDistance().val() * 0.5)) * defaultSpatium();
     // this is the bottomest point of any duration sign
-    m_durationYOffset = m_durationGridYOffset;
+    durationYOffset_ = durationGridYOffset_;
     // move symbols so that the lowest margin 'sits' on the base line:
     // move down by the whole part above (negative) the base line
     // ( -bb.y() ) then up by the whole height ( -bb.height() )
-    m_durationYOffset -= (bb.height() + bb.y()) / 100.0;
-    m_durationBoxH = bb.height() / 100.0;
-    m_durationBoxY = m_durationGridYOffset - bb.height() / 100.0;
+    durationYOffset_ -= (bb.height() + bb.y()) / 100.0;
+    durationBoxH_ = bb.height() / 100.0;
+    durationBoxY_ = durationGridYOffset_ - bb.height() / 100.0;
 }
 
 void StaffType::setFretMetrics() {
-    if (!m_score) {
+    if (!score_) {
         return;
     }
 
     FontMetrics fm(fretFont());
     RectF bb;
     // compute vertical displacement
-    if (m_useNumbers) {
+    if (useNumbers_) {
         // compute total height of used characters
         String txt;
         for (int idx = 0; idx < 10; idx++) { // use only first 10 digits
-            txt.append(m_fretFontInfo.displayDigit[idx]);
+            txt.append(fretFontInfo_.displayDigit[idx]);
         }
         bb = fm.tightBoundingRect(txt);
         // for numbers: centre on '0': move down by the whole part above (negative)
         // the base line ( -bb.y() ) then up by half the whole height ( -bb.height()/2 )
-        RectF bx(fm.tightBoundingRect(m_fretFontInfo.displayDigit[0]));
-        m_fretYOffset = -(bx.y() + bx.height() / 2.0);
+        RectF bx(fm.tightBoundingRect(fretFontInfo_.displayDigit[0]));
+        fretYOffset_ = -(bx.y() + bx.height() / 2.0);
         // _fretYOffset = -(bb.y() + bb.height()/2.0);  // <- using bbox of all chars
     } else {
         // compute total height of used characters
-        const String txt(m_fretFontInfo.displayLetter.data(), NUM_OF_LETTERFRETS);
+        const String txt(fretFontInfo_.displayLetter.data(), NUM_OF_LETTERFRETS);
         bb = fm.tightBoundingRect(txt);
         // for letters: centre on the 'a' ascender, by moving down half of the part above the base line in bx
-        RectF bx(fm.tightBoundingRect(m_fretFontInfo.displayLetter[0]));
-        m_fretYOffset = -bx.y() / 2.0;
+        RectF bx(fm.tightBoundingRect(fretFontInfo_.displayLetter[0]));
+        fretYOffset_ = -bx.y() / 2.0;
     }
 
     // Calculate position for dead fret marks - these must be centred separately based on their glyph
-    RectF deadBb = fm.tightBoundingRect(m_fretFontInfo.xChar);
+    RectF deadBb = fm.tightBoundingRect(fretFontInfo_.xChar);
     double lineThickness = style().styleS(Sid::staffLineWidth).val() * defaultSpatium() * 0.5;
-    m_deadFretYOffset = -deadBb.y() / 2.0 + lineThickness;
+    deadFretYOffset_ = -deadBb.y() / 2.0 + lineThickness;
 
     // if on string, we are done; if between strings, raise by half line distance
-    if (!m_onLines) {
+    if (!onLines_) {
         double lineAdj = lineDistance().val() * defaultSpatium() * 0.5;
-        m_fretYOffset -= lineAdj;
-        m_deadFretYOffset -= lineAdj;
+        fretYOffset_ -= lineAdj;
+        deadFretYOffset_ -= lineAdj;
     }
 
     // from _fretYOffset, compute _fretBoxH and _fretBoxY
-    m_fretBoxH = bb.height();
-    m_fretBoxY = bb.y() + m_fretYOffset;
+    fretBoxH_ = bb.height();
+    fretBoxY_ = bb.y() + fretYOffset_;
 
-    m_deadFretBoxH = deadBb.height();
-    m_deadFretBoxY = deadBb.y() + m_deadFretYOffset;
+    deadFretBoxH_ = deadBb.height();
+    deadFretBoxY_ = deadBb.y() + deadFretYOffset_;
 }
 
 //---------------------------------------------------------
@@ -427,18 +427,18 @@ void StaffType::setFretMetrics() {
 
 void StaffType::setDurationFontName(const String &name) {
     size_t idx;
-    for (idx = 0; idx < m_durationFonts.size(); idx++) {
-        if (m_durationFonts[idx].displayName == name) {
+    for (idx = 0; idx < durationFonts_.size(); idx++) {
+        if (durationFonts_[idx].displayName == name) {
             break;
         }
     }
-    if (idx >= m_durationFonts.size()) {
+    if (idx >= durationFonts_.size()) {
         idx = 0; // if name not found, use first font
     }
-    m_durationFontIdx = idx;
-    m_durationFont.setFamily(m_durationFonts[idx].family, Font::Type::Tablature);
-    setDurationFontSize(m_durationFonts[idx].defSize);
-    setDurationFontUserY(m_durationFonts[idx].defYOffset);
+    durationFontIdx_ = idx;
+    durationFont_.setFamily(durationFonts_[idx].family, Font::Type::Tablature);
+    setDurationFontSize(durationFonts_[idx].defSize);
+    setDurationFontUserY(durationFonts_[idx].defYOffset);
     setDurationMetrics();
 }
 
@@ -449,44 +449,44 @@ void StaffType::setDurationFontName(const String &name) {
 double StaffType::defaultSpatium() const { return StyleDef::styleValues[static_cast<size_t>(Sid::spatium)].defaultValue.toDouble(); }
 
 double StaffType::durationBoxH() const {
-    if (!m_genDurations && !m_stemless) {
+    if (!genDurations_ && !stemless_) {
         return 0.0;
     }
-    return m_durationBoxH;
+    return durationBoxH_;
 }
 
 double StaffType::durationBoxY() const {
-    if (!m_genDurations && !m_stemless) {
+    if (!genDurations_ && !stemless_) {
         return 0.0;
     }
-    return m_durationBoxY + m_durationFontUserY * defaultSpatium();
+    return durationBoxY_ + durationFontUserY_ * defaultSpatium();
 }
 
-double StaffType::durationFontYOffset() const { return m_durationYOffset + m_durationFontUserY * defaultSpatium(); }
+double StaffType::durationFontYOffset() const { return durationYOffset_ + durationFontUserY_ * defaultSpatium(); }
 
-double StaffType::fretBoxY() const { return m_fretBoxY + m_fretFontUserY * defaultSpatium(); }
+double StaffType::fretBoxY() const { return fretBoxY_ + fretFontUserY_ * defaultSpatium(); }
 
-double StaffType::deadFretBoxY() const { return m_deadFretBoxY + m_fretFontUserY * defaultSpatium(); }
+double StaffType::deadFretBoxY() const { return deadFretBoxY_ + fretFontUserY_ * defaultSpatium(); }
 
-double StaffType::fretMaskH() const { return m_lineDistance.val() * defaultSpatium(); }
+double StaffType::fretMaskH() const { return lineDistance_.val() * defaultSpatium(); }
 
-double StaffType::fretMaskY() const { return (m_onLines ? -0.5 : -1.0) * m_lineDistance.val() * defaultSpatium(); }
+double StaffType::fretMaskY() const { return (onLines_ ? -0.5 : -1.0) * lineDistance_.val() * defaultSpatium(); }
 
-double StaffType::fretFontYOffset() const { return m_fretYOffset + m_fretFontUserY * defaultSpatium(); }
+double StaffType::fretFontYOffset() const { return fretYOffset_ + fretFontUserY_ * defaultSpatium(); }
 
 //---------------------------------------------------------
 //   setDurationFontSize / setFretFontSize
 //---------------------------------------------------------
 
 void StaffType::setDurationFontSize(double val) {
-    m_durationFontSize = val;
-    m_durationFont.setPointSizeF(val);
+    durationFontSize_ = val;
+    durationFont_.setPointSizeF(val);
     setDurationMetrics();
 }
 
 void StaffType::setFretFontSize(double val) {
-    m_fretFontSize = val;
-    m_fretFont.setPointSizeF(val);
+    fretFontSize_ = val;
+    fretFont_.setPointSizeF(val);
     setFretMetrics();
 }
 
@@ -503,7 +503,7 @@ String StaffType::fretString(int fret, int string, bool deadNote) const {
         return UNKNOWN_FRET;
     }
     if (deadNote) {
-        return String(m_fretFontInfo.xChar);
+        return String(fretFontInfo_.xChar);
     } else {
         bool hasFret;
         String text = tabBassStringPrefix(string, &hasFret);
@@ -511,15 +511,15 @@ String StaffType::fretString(int fret, int string, bool deadNote) const {
             return text; // return the prefix only
         }
         // otherwise, add to prefix the relevant digit/letter string
-        return text + (m_useNumbers ? (fret >= NUM_OF_DIGITFRETS ? UNKNOWN_FRET : m_fretFontInfo.displayDigit[fret]) :
-                                      (fret >= NUM_OF_LETTERFRETS ? UNKNOWN_FRET : m_fretFontInfo.displayLetter[fret]));
+        return text + (useNumbers_ ? (fret >= NUM_OF_DIGITFRETS ? UNKNOWN_FRET : fretFontInfo_.displayDigit[fret]) :
+                                     (fret >= NUM_OF_LETTERFRETS ? UNKNOWN_FRET : fretFontInfo_.displayLetter[fret]));
     }
 }
 
 String StaffType::durationString(DurationType type, int dots) const {
-    String s = m_durationFonts[m_durationFontIdx].displayValue[size_t(type)];
+    String s = durationFonts_[durationFontIdx_].displayValue[size_t(type)];
     for (int count = 0; count < dots; count++) {
-        s.append(m_durationFonts[m_durationFontIdx].displayDot);
+        s.append(durationFonts_[durationFontIdx_].displayDot);
     }
     return s;
 }
@@ -541,13 +541,13 @@ String StaffType::durationString(DurationType type, int dots) const {
 
 String StaffType::tabBassStringPrefix(int strg, bool *hasFret) const {
     *hasFret = true; // assume notation allows to fret this string
-    int bassStrgIdx = (strg >= m_lines ? strg - m_lines + 1 : 0);
-    if (m_useNumbers) {
+    int bassStrgIdx = (strg >= lines_ ? strg - lines_ + 1 : 0);
+    if (useNumbers_) {
         // if above the max bass string which can be fretted with number notation
         // return a number with the string index
         if (bassStrgIdx > NUM_OF_BASSSTRINGS_WITH_NUMBER) {
             *hasFret = false;
-            return m_fretFontInfo.displayDigit[strg + 1];
+            return fretFontInfo_.displayDigit[strg + 1];
         }
         // if a frettable bass string, return an empty string
         return String();
@@ -557,12 +557,12 @@ String StaffType::tabBassStringPrefix(int strg, bool *hasFret) const {
         // return a number with the bass string index itself
         if (bassStrgIdx > NUM_OF_BASSSTRINGS_WITH_LETTER) {
             *hasFret = false;
-            return m_fretFontInfo.displayDigit[bassStrgIdx - 1];
+            return fretFontInfo_.displayDigit[bassStrgIdx - 1];
         }
         // if a frettable bass string, return a character with the relevant num. of slashes;
         // note that the number of slashes is bassStrgIdx-1 (1st bass has no slash)
         // and slashChar[] is 0-based (slashChar[0] => 1 slash, ...), whence the -2
-        String prefix = bassStrgIdx > 1 ? String(m_fretFontInfo.slashChar[bassStrgIdx - 2]) : String();
+        String prefix = bassStrgIdx > 1 ? String(fretFontInfo_.slashChar[bassStrgIdx - 2]) : String();
         return prefix;
     }
 }
@@ -577,11 +577,11 @@ String StaffType::tabBassStringPrefix(int strg, bool *hasFret) const {
 //---------------------------------------------------------
 
 int StaffType::numOfTabLedgerLines(int string) const {
-    if (m_group != StaffGroup::TAB || !m_useNumbers) {
+    if (group_ != StaffGroup::TAB || !useNumbers_) {
         return 0;
     }
 
-    int numOfLedgers = string < 0 ? -string : string - m_lines + 1;
+    int numOfLedgers = string < 0 ? -string : string - lines_ + 1;
     return numOfLedgers >= 1 && numOfLedgers <= NUM_OF_BASSSTRINGS_WITH_NUMBER ? numOfLedgers : 0;
 }
 
@@ -600,12 +600,12 @@ int StaffType::physStringToVisual(int strg) const {
     //      if (strg >= _lines)                 // if physical string has no visual representation,
     //            strg = _lines - 1;            // reduce to nearest visual line
     // if TAB upside down, flip around top line
-    return m_upsideDown ? m_lines - 1 - strg : strg;
+    return upsideDown_ ? lines_ - 1 - strg : strg;
 }
 
 int StaffType::visualStringToPhys(int line) const {
     // if TAB upside down, reverse string number
-    line = (m_upsideDown ? m_lines - 1 - line : line);
+    line = (upsideDown_ ? lines_ - 1 - line : line);
 
     if (line < 0) { // if above top string, reduce to top string
         line = 0;
@@ -633,15 +633,15 @@ Spatium StaffType::physStringToYOffset(int strg) const {
     if (yOffset < 0) {     // if above top physical string, limit to top string
         yOffset = 0;
     }
-    if (yOffset >= m_lines) { // if physical string 'below' tab lines,
-        yOffset = m_lines;    // reduce to first string 'below' tab body
-        if (!m_useNumbers) {  // with letters, add some space for the slashes ascender
-            yOffset = m_onLines ? m_lines : m_lines + STAFFTYPE_TAB_BASSSLASH_YOFFSET;
+    if (yOffset >= lines_) { // if physical string 'below' tab lines,
+        yOffset = lines_;    // reduce to first string 'below' tab body
+        if (!useNumbers_) {  // with letters, add some space for the slashes ascender
+            yOffset = onLines_ ? lines_ : lines_ + STAFFTYPE_TAB_BASSSLASH_YOFFSET;
         }
     }
     // if TAB upside down, flip around top line
-    yOffset = m_upsideDown ? (double) (m_lines - 1) - yOffset : yOffset;
-    return yOffset * m_lineDistance;
+    yOffset = upsideDown_ ? (double) (lines_ - 1) - yOffset : yOffset;
+    return yOffset * lineDistance_;
 }
 
 //---------------------------------------------------------
@@ -714,7 +714,7 @@ void StaffType::initTabFonts() {
     // keep displayName strings and the order/count of these presets unchanged:
     // saved scores reference a preset by displayName (<460) or by
     // positional index (>=460)
-    m_fretFonts = {
+    fretFonts_ = {
         makeFretFontPreset(u"FreeSans", u"MuseScore Tab Sans"),
         makeFretFontPreset(u"FreeSerif", u"MuseScore Tab Serif"),
         makeMuseScoreFretFontPreset(u"MuseScoreTabRenaiss", u"MuseScore Tab Renaiss"),
@@ -725,7 +725,7 @@ void StaffType::initTabFonts() {
         makeMuseScoreFretFontPreset(u"MuseScoreTabLuteDidactic", u"MuseScore Lute Didactic"),
     };
 
-    m_durationFonts = {
+    durationFonts_ = {
         makeDurationFontPreset(u"MuseScoreTabModern", u"MuseScore Tab Modern", 0.5_sp, 3.0_sp, 0.1_sp, DurationType::V_QUARTER),
         makeDurationFontPreset(u"MuseScoreTabItalian", u"MuseScore Tab Italian", 0.15_sp, 1.75_sp, 0.15_sp, DurationType::V_WHOLE),
         makeDurationFontPreset(u"MuseScoreTabFrench", u"MuseScore Tab French", 0.30_sp, 3.125_sp, 0.21_sp, DurationType::V_QUARTER),
@@ -744,13 +744,13 @@ void StaffType::initTabFonts() {
 std::vector<String> StaffType::tabFontNames(bool bDuration) {
     std::vector<String> names;
     if (bDuration) {
-        names.reserve(m_durationFonts.size());
-        for (const TablatureDurationFont &f : m_durationFonts) {
+        names.reserve(durationFonts_.size());
+        for (const TablatureDurationFont &f : durationFonts_) {
             names.push_back(f.displayName);
         }
     } else {
-        names.reserve(m_fretFonts.size());
-        for (const TablatureFretFont &f : m_fretFonts) {
+        names.reserve(fretFonts_.size());
+        for (const TablatureFretFont &f : fretFonts_) {
             names.push_back(f.displayName);
         }
     }
@@ -766,14 +766,14 @@ std::vector<String> StaffType::tabFontNames(bool bDuration) {
 
 bool StaffType::tabFontData(bool bDuration, size_t nIdx, double &pSize, double &pYOff) {
     if (bDuration) {
-        if (nIdx < m_durationFonts.size()) {
-            TablatureDurationFont f = m_durationFonts.at(nIdx);
+        if (nIdx < durationFonts_.size()) {
+            TablatureDurationFont f = durationFonts_.at(nIdx);
             pSize = f.defSize;
             pYOff = f.defYOffset;
             return true;
         }
     } else {
-        TablatureFretFont f = nIdx < m_fretFonts.size() ? m_fretFonts.at(nIdx) : TablatureFretFont();
+        TablatureFretFont f = nIdx < fretFonts_.size() ? fretFonts_.at(nIdx) : TablatureFretFont();
         pSize = f.defSize;
         pYOff = f.defYOffset;
         return true;
@@ -782,11 +782,11 @@ bool StaffType::tabFontData(bool bDuration, size_t nIdx, double &pSize, double &
 }
 
 const MStyle &StaffType::style() const {
-    if (!m_score) {
+    if (!score_) {
         return DefaultStyle::defaultStyle();
     }
 
-    return m_score->style();
+    return score_->style();
 }
 
 //---------------------------------------------------------
@@ -812,17 +812,17 @@ static const int _defaultPreset[STAFF_GROUP_MAX] = {
 //---------------------------------------------------------
 
 const StaffType *StaffType::preset(StaffTypes idx) {
-    if (int(idx) < 0 || int(idx) >= int(m_presets.size())) {
-        return &m_presets[0];
+    if (int(idx) < 0 || int(idx) >= int(presets_.size())) {
+        return &presets_[0];
     }
 
-    return &m_presets[int(idx)];
+    return &presets_[int(idx)];
 }
 
 const StaffType *StaffType::presetFromXmlName(const String &xmlName) {
-    for (size_t i = 0; i < m_presets.size(); ++i) {
-        if (m_presets[i].xmlName() == xmlName) {
-            return &m_presets[i];
+    for (size_t i = 0; i < presets_.size(); ++i) {
+        if (presets_[i].xmlName() == xmlName) {
+            return &presets_[i];
         }
     }
 
@@ -831,14 +831,14 @@ const StaffType *StaffType::presetFromXmlName(const String &xmlName) {
 
 const StaffType *StaffType::getDefaultPreset(StaffGroup grp) {
     int _idx = _defaultPreset[int(grp)];
-    return &m_presets[_idx];
+    return &presets_[_idx];
 }
 
 //---------------------------------------------------------
 //   initStaffTypes
 //---------------------------------------------------------
 
-std::vector<StaffType> StaffType::m_presets;
+std::vector<StaffType> StaffType::presets_;
 
 /* *INDENT-OFF* */
 void StaffType::initStaffTypes(const Color &defaultColor) {
@@ -846,7 +846,7 @@ void StaffType::initStaffTypes(const Color &defaultColor) {
     initTabFonts(); // set up TAB font presets, before initStaffTypes()
 
     // keep in sync with enum class StaffTypes
-    m_presets = {
+    presets_ = {
         //                       group,              staff type,                    lin stpOff  dist clef   bars stmless time  key    ledger invis     color
         StaffType(StaffGroup::STANDARD, StaffTypes::STANDARD, 5, 0, 1, true, true, false, true, true, true, false, defaultColor),
         StaffType(StaffGroup::PERCUSSION, StaffTypes::PERC_1LINE, 1, 0, 1, true, true, false, true, false, true, false, defaultColor),

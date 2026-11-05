@@ -55,21 +55,21 @@ bool SelectionFilter::isFiltered(const SelectionFilterTypesVariant &variant) con
             const FilterParams params{/*otherFilter*/ static_cast<unsigned int>(type),
                                       /*noneMask*/ static_cast<unsigned int>(VoicesSelectionFilterTypes::NONE),
                                       /*allMask*/ static_cast<unsigned int>(VoicesSelectionFilterTypes::ALL)};
-            return isFiltered_Impl(m_filteredVoicesTypes, params);
+            return isFiltered_Impl(filteredVoicesTypes_, params);
         }
         case 1: {
             const NotesInChordSelectionFilterTypes type = std::get<NotesInChordSelectionFilterTypes>(variant);
             const FilterParams params{/*otherFilter*/ static_cast<unsigned int>(type),
                                       /*noneMask*/ static_cast<unsigned int>(NotesInChordSelectionFilterTypes::NONE),
                                       /*allMask*/ static_cast<unsigned int>(NotesInChordSelectionFilterTypes::ALL)};
-            return isFiltered_Impl(m_filteredNotesInChordTypes, params);
+            return isFiltered_Impl(filteredNotesInChordTypes_, params);
         }
         case 2: {
             const ElementsSelectionFilterTypes type = std::get<ElementsSelectionFilterTypes>(variant);
             const FilterParams params{/*otherFilter*/ static_cast<unsigned int>(type),
                                       /*noneMask*/ static_cast<unsigned int>(ElementsSelectionFilterTypes::NONE),
                                       /*allMask*/ static_cast<unsigned int>(ElementsSelectionFilterTypes::ALL)};
-            return isFiltered_Impl(m_filteredElementsTypes, params);
+            return isFiltered_Impl(filteredElementsTypes_, params);
         }
         default: break;
     }
@@ -85,7 +85,7 @@ void SelectionFilter::setFiltered(const SelectionFilterTypesVariant &variant, bo
             FilterParams params{/*otherFilter*/ static_cast<unsigned int>(type),
                                 /*noneMask*/ static_cast<unsigned int>(VoicesSelectionFilterTypes::NONE),
                                 /*allMask*/ static_cast<unsigned int>(VoicesSelectionFilterTypes::ALL)};
-            setFiltered_Impl(m_filteredVoicesTypes, params, filtered);
+            setFiltered_Impl(filteredVoicesTypes_, params, filtered);
             return;
         }
         case 1: {
@@ -93,7 +93,7 @@ void SelectionFilter::setFiltered(const SelectionFilterTypesVariant &variant, bo
             FilterParams params{/*otherFilter*/ static_cast<unsigned int>(type),
                                 /*noneMask*/ static_cast<unsigned int>(NotesInChordSelectionFilterTypes::NONE),
                                 /*allMask*/ static_cast<unsigned int>(NotesInChordSelectionFilterTypes::ALL)};
-            setFiltered_Impl(m_filteredNotesInChordTypes, params, filtered);
+            setFiltered_Impl(filteredNotesInChordTypes_, params, filtered);
             return;
         }
         case 2: {
@@ -101,7 +101,7 @@ void SelectionFilter::setFiltered(const SelectionFilterTypesVariant &variant, bo
             FilterParams params{/*otherFilter*/ static_cast<unsigned int>(type),
                                 /*noneMask*/ static_cast<unsigned int>(ElementsSelectionFilterTypes::NONE),
                                 /*allMask*/ static_cast<unsigned int>(ElementsSelectionFilterTypes::ALL)};
-            setFiltered_Impl(m_filteredElementsTypes, params, filtered);
+            setFiltered_Impl(filteredElementsTypes_, params, filtered);
             return;
         }
         default: break;
@@ -176,7 +176,7 @@ bool SelectionFilter::canSelect(const EngravingItem *e) const {
 bool SelectionFilter::canSelectNoteIdx(size_t noteIdx, size_t totalNotesInChord, bool selectionContainsMultiNoteChords) const {
     if (totalNotesInChord == 1) {
         //! NOTE: Always include single notes when the selection consists solely of single notes...
-        return m_includeSingleNotes || !selectionContainsMultiNoteChords;
+        return includeSingleNotes_ || !selectionContainsMultiNoteChords;
     }
 
     NotesInChordSelectionFilterTypes type = NotesInChordSelectionFilterTypes::NONE;

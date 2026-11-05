@@ -43,7 +43,7 @@ class Segment;
 
 class SkylineLine {
 public:
-    SkylineLine(bool n) : m_isNorth(n) {}
+    SkylineLine(bool n) : isNorth_(n) {}
 
     void add(const ShapeElement &r);
 
@@ -53,7 +53,7 @@ public:
 
     template <typename Predicate>
     inline bool remove_if(Predicate p) {
-        return m_shape.remove_if(p);
+        return shape_.remove_if(p);
     }
 
     SkylineLine getFilteredCopy(std::function<bool(const ShapeElement &)> filterOut) const;
@@ -74,19 +74,19 @@ public:
     double top(double startX = -DBL_MAX, double endX = DBL_MAX);
     double bottom(double startX = -DBL_MAX, double endX = DBL_MAX);
 
-    bool isNorth() const { return m_isNorth; }
+    bool isNorth() const { return isNorth_; }
 
-    const std::vector<ShapeElement> &elements() const { return m_shape.elements(); }
+    const std::vector<ShapeElement> &elements() const { return shape_.elements(); }
 
-    std::vector<ShapeElement> &elements() { return m_shape.elements(); }
+    std::vector<ShapeElement> &elements() { return shape_.elements(); }
 
 private:
     double staffLinesTopAtX(double x) const;
     double staffLinesBottomAtX(double x) const;
 
 private:
-    const bool m_isNorth;
-    Shape m_shape;
+    const bool isNorth_;
+    Shape shape_;
 
     struct StaffLineEdge {
         double top = 0.0;
@@ -95,9 +95,9 @@ private:
         StaffLineEdge(double t, double b) : top(t), bottom(b) {}
     };
 
-    std::map<double, StaffLineEdge> m_staffLineEdges;
+    std::map<double, StaffLineEdge> staffLineEdges_;
 
-    bool hasValidStaffLineEdges() const { return !m_staffLineEdges.empty(); }
+    bool hasValidStaffLineEdges() const { return !staffLineEdges_.empty(); }
 };
 
 //---------------------------------------------------------

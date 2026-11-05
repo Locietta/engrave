@@ -52,12 +52,12 @@ std::string pathToUtf8(const std::filesystem::path &path) {
 
 class CacheStore {
 public:
-    explicit CacheStore(std::filesystem::path root) : m_root(std::move(root)) {}
+    explicit CacheStore(std::filesystem::path root) : root_(std::move(root)) {}
 
     void ensureDirectory() {
-        if (m_owned) return;
+        if (owned_) return;
         std::error_code error;
-        const std::filesystem::path base = !m_root.empty() ? m_root : std::filesystem::temp_directory_path(error);
+        const std::filesystem::path base = !root_.empty() ? root_ : std::filesystem::temp_directory_path(error);
         if (error || base.empty()) {
             throw std::runtime_error("Failed to resolve the temporary directory for runtime fonts");
         }
@@ -86,8 +86,8 @@ public:
                 throw std::runtime_error("Failed to resolve the runtime font cache directory path");
             }
 
-            m_dir = std::move(absolute);
-            m_owned = true;
+            dir_ = std::move(absolute);
+            owned_ = true;
             return;
         }
 
@@ -95,26 +95,26 @@ public:
     }
 
     ~CacheStore() {
-        if (!m_owned || m_dir.empty()) {
+        if (!owned_ || dir_.empty()) {
             return;
         }
         std::error_code error;
-        std::filesystem::remove_all(m_dir, error);
+        std::filesystem::remove_all(dir_, error);
     }
 
     void clear() {
-        if (!m_owned) return;
+        if (!owned_) return;
         std::error_code error;
-        std::filesystem::remove_all(m_dir, error);
+        std::filesystem::remove_all(dir_, error);
         if (error) throw std::system_error(error, "Failed to remove the owned runtime resource cache");
-        m_owned = false;
-        m_dir.clear();
+        owned_ = false;
+        dir_.clear();
     }
 
-    void retain() { ++m_leases; }
+    void retain() { ++leases_; }
 
     void release() noexcept {
-        if (--m_leases == 0 && m_shutdownPending) {
+        if (--leases_ == 0 && shutdownPending_) {
             try {
                 clear();
             } catch (const std::exception &error) {
@@ -124,8 +124,8 @@ public:
     }
 
     void shutdown() {
-        m_shutdownPending = true;
-        if (m_leases == 0) clear();
+        shutdownPending_ = true;
+        if (leases_ == 0) clear();
     }
 
     CacheStore(const CacheStore &) = delete;
@@ -135,49 +135,49 @@ public:
 
     const std::filesystem::path &dir() {
         ensureDirectory();
-        return m_dir;
+        return dir_;
     }
 
 private:
-    std::filesystem::path m_root;
-    std::filesystem::path m_dir;
-    bool m_owned = false;
-    std::size_t m_leases = 0;
-    bool m_shutdownPending = false;
+    std::filesystem::path root_;
+    std::filesystem::path dir_;
+    bool owned_ = false;
+    std::size_t leases_ = 0;
+    bool shutdownPending_ = false;
 };
 
 class ResourceLease {
 public:
-    explicit ResourceLease(std::shared_ptr<CacheStore> cache) : m_cache(std::move(cache)) { m_cache->retain(); }
+    explicit ResourceLease(std::shared_ptr<CacheStore> cache) : cache_(std::move(cache)) { cache_->retain(); }
 
-    ~ResourceLease() { m_cache->release(); }
+    ~ResourceLease() { cache_->release(); }
 
     ResourceLease(const ResourceLease &) = delete;
     ResourceLease &operator=(const ResourceLease &) = delete;
 private:
-    std::shared_ptr<CacheStore> m_cache;
+    std::shared_ptr<CacheStore> cache_;
 };
 
 class TempFileGuard {
 public:
-    explicit TempFileGuard(std::filesystem::path path) : m_path(std::move(path)) {}
+    explicit TempFileGuard(std::filesystem::path path) : path_(std::move(path)) {}
 
     ~TempFileGuard() {
-        if (m_committed || m_path.empty()) {
+        if (committed_ || path_.empty()) {
             return;
         }
         std::error_code error;
-        std::filesystem::remove(m_path, error);
+        std::filesystem::remove(path_, error);
     }
 
     TempFileGuard(const TempFileGuard &) = delete;
     TempFileGuard &operator=(const TempFileGuard &) = delete;
 
-    void commit() noexcept { m_committed = true; }
+    void commit() noexcept { committed_ = true; }
 
 private:
-    std::filesystem::path m_path;
-    bool m_committed = false;
+    std::filesystem::path path_;
+    bool committed_ = false;
 };
 
 struct ParsedFont {
@@ -363,23 +363,23 @@ std::unique_ptr<draw::FontsEngine> createEngine(draw::IFontsDatabase &database) 
 class RuntimeFontsDatabase final : public draw::FontsDatabase {
 public:
     RuntimeFontsDatabase(std::shared_ptr<CacheStore> cacheStore, std::shared_ptr<const ActiveTable> active)
-        : m_cacheStore(std::move(cacheStore)), m_active(std::move(active)) {}
+        : cacheStore_(std::move(cacheStore)), active_(std::move(active)) {}
 
     ~RuntimeFontsDatabase() override = default;
 
-    void publish(std::shared_ptr<const ActiveTable> active) noexcept { m_active.swap(active); }
+    void publish(std::shared_ptr<const ActiveTable> active) noexcept { active_.swap(active); }
 
-    std::shared_ptr<const ActiveTable> activeTable() const { return m_active; }
+    std::shared_ptr<const ActiveTable> activeTable() const { return active_; }
 
-    const std::shared_ptr<CacheStore> &cacheStore() const { return m_cacheStore; }
+    const std::shared_ptr<CacheStore> &cacheStore() const { return cacheStore_; }
 
     draw::FontDataKey actualFont(const draw::FontDataKey &requireKey, draw::Font::Type type) const override {
-        if (const FontRecord *exact = findRecord(*m_active, requireKey)) {
+        if (const FontRecord *exact = findRecord(*active_, requireKey)) {
             return exact->key;
         }
 
         const draw::FontDataKey baseKey = draw::FontsDatabase::actualFont(requireKey, type);
-        if (const FontRecord *overridden = findRecord(*m_active, baseKey)) {
+        if (const FontRecord *overridden = findRecord(*active_, baseKey)) {
             return overridden->key;
         }
 
@@ -388,7 +388,7 @@ public:
         // FontsEngine normalises Undefined/Unknown to Text before querying, so
         // this fallback must not apply to symbol/music faces.
         if (type == draw::Font::Type::Text && baseKey.family() != requireKey.family()) {
-            if (const FontRecord *fallback = findRegularFamilyFallback(*m_active, requireKey)) {
+            if (const FontRecord *fallback = findRegularFamilyFallback(*active_, requireKey)) {
                 return fallback->key;
             }
         }
@@ -406,8 +406,8 @@ public:
         // candidates: the primary face is always tried first, so this only
         // changes codepoints it cannot render (for example CJK text in a score
         // that names a Latin-only family).
-        result.reserve(result.size() + m_active->size());
-        for (const FontRecord &record : *m_active) {
+        result.reserve(result.size() + active_->size());
+        for (const FontRecord &record : *active_) {
             if (std::find(result.begin(), result.end(), record.key) == result.end()) {
                 result.push_back(record.key);
             }
@@ -417,7 +417,7 @@ public:
 
     draw::FontData fontData(const draw::FontDataKey &requireKey, draw::Font::Type type) const override {
         const draw::FontDataKey actualKey = actualFont(requireKey, type);
-        if (const FontRecord *record = findRecord(*m_active, actualKey)) {
+        if (const FontRecord *record = findRecord(*active_, actualKey)) {
             draw::FontData data;
             data.key = record->key;
             data.data = *record->bytes;
@@ -427,39 +427,39 @@ public:
     }
 
 private:
-    std::shared_ptr<CacheStore> m_cacheStore;
-    std::shared_ptr<const ActiveTable> m_active;
+    std::shared_ptr<CacheStore> cacheStore_;
+    std::shared_ptr<const ActiveTable> active_;
 };
 
 class FontsEngineProxy final : public draw::IFontsEngine {
 public:
     FontsEngineProxy(const OwnerState &owner, std::shared_ptr<CacheStore> cacheStore, std::unique_ptr<draw::FontsEngine> engine)
-        : m_owner(owner), m_cacheStore(std::move(cacheStore)), m_engine(std::move(engine)) {}
+        : owner_(owner), cacheStore_(std::move(cacheStore)), engine_(std::move(engine)) {}
 
     ~FontsEngineProxy() override {
-        m_engine.reset();
-        m_cacheStore.reset();
+        engine_.reset();
+        cacheStore_.reset();
     }
 
     // The caller has already checked ownership and prepared the new engine.
     // Replacing the engine drops every upstream cached face, so replacements
     // and reactivations cannot keep using the old face.
-    void setEngine(std::unique_ptr<draw::FontsEngine> engine) noexcept { m_engine = std::move(engine); }
+    void setEngine(std::unique_ptr<draw::FontsEngine> engine) noexcept { engine_ = std::move(engine); }
 
     // The render cache is optional (FontRenderCache is a no-op without a
     // directory); forward it so a caller can opt in.
     void setRenderCacheDirPath(const muse::io::path_t &path, const std::string &revision = std::string()) override {
-        m_owner.check();
-        if (!m_engine) {
+        owner_.check();
+        if (!engine_) {
             throw std::runtime_error("Runtime font engine is not initialized");
         }
-        m_engine->setRenderCacheDirPath(path, revision);
+        engine_->setRenderCacheDirPath(path, revision);
     }
 
     void clearLoadedFaces() override {
-        m_owner.check();
-        if (m_engine) {
-            m_engine->clearLoadedFaces();
+        owner_.check();
+        if (engine_) {
+            engine_->clearLoadedFaces();
         }
     }
 
@@ -503,16 +503,16 @@ public:
 
 private:
     const draw::FontsEngine *engine() const {
-        m_owner.check();
-        if (!m_engine) {
+        owner_.check();
+        if (!engine_) {
             throw std::runtime_error("Runtime font engine is not initialized");
         }
-        return m_engine.get();
+        return engine_.get();
     }
 
-    const OwnerState &m_owner;
-    std::shared_ptr<CacheStore> m_cacheStore;
-    std::unique_ptr<draw::FontsEngine> m_engine;
+    const OwnerState &owner_;
+    std::shared_ptr<CacheStore> cacheStore_;
+    std::unique_ptr<draw::FontsEngine> engine_;
 };
 
 } // namespace
@@ -570,19 +570,19 @@ RuntimeFontInfo RuntimeAssets::Impl::reactivateRetained(const FontRecord &retain
     return result;
 }
 
-RuntimeAssets::RuntimeAssets(const std::filesystem::path &cacheRoot) : m_impl(std::make_unique<Impl>()) {
+RuntimeAssets::RuntimeAssets(const std::filesystem::path &cacheRoot) : impl_(std::make_unique<Impl>()) {
     if (!cacheRoot.empty()) {
         std::error_code error;
         std::filesystem::create_directories(cacheRoot, error);
     }
-    m_impl->cacheStore = std::make_shared<CacheStore>(cacheRoot);
-    m_impl->database = std::make_unique<RuntimeFontsDatabase>(m_impl->cacheStore, std::make_shared<ActiveTable>());
-    m_impl->proxyEngine = std::make_unique<FontsEngineProxy>(m_impl->owner, m_impl->cacheStore, createEngine(*m_impl->database));
-    m_impl->provider = std::make_unique<draw::FontProvider>(*m_impl->database, *m_impl->proxyEngine);
+    impl_->cacheStore = std::make_shared<CacheStore>(cacheRoot);
+    impl_->database = std::make_unique<RuntimeFontsDatabase>(impl_->cacheStore, std::make_shared<ActiveTable>());
+    impl_->proxyEngine = std::make_unique<FontsEngineProxy>(impl_->owner, impl_->cacheStore, createEngine(*impl_->database));
+    impl_->provider = std::make_unique<draw::FontProvider>(*impl_->database, *impl_->proxyEngine);
 }
 
 RuntimeAssets::~RuntimeAssets() {
-    if (!m_impl->owner.installed) return;
+    if (!impl_->owner.installed) return;
     try {
         shutdown();
     } catch (const std::exception &error) {
@@ -590,31 +590,31 @@ RuntimeAssets::~RuntimeAssets() {
     }
 }
 
-draw::IFontsDatabase &RuntimeAssets::fontsDatabase() { return *m_impl->database; }
+draw::IFontsDatabase &RuntimeAssets::fontsDatabase() { return *impl_->database; }
 
-draw::IFontsEngine &RuntimeAssets::fontsEngine() { return *m_impl->proxyEngine; }
+draw::IFontsEngine &RuntimeAssets::fontsEngine() { return *impl_->proxyEngine; }
 
-draw::IFontProvider &RuntimeAssets::fontProvider() { return *m_impl->provider; }
+draw::IFontProvider &RuntimeAssets::fontProvider() { return *impl_->provider; }
 
 void RuntimeAssets::shutdown() {
-    if (!m_impl->owner.installed) return;
-    m_impl->owner.check();
+    if (!impl_->owner.installed) return;
+    impl_->owner.check();
     // Release the face cache and retained files explicitly; leases keep the
     // cache directory until the last one is released.
-    m_impl->proxyEngine->setEngine(nullptr);
-    m_impl->database->cacheStore()->shutdown();
-    m_impl->retainedFonts.clear();
-    m_impl->retainedSoundFonts.clear();
-    m_impl->owner.installed = false;
+    impl_->proxyEngine->setEngine(nullptr);
+    impl_->database->cacheStore()->shutdown();
+    impl_->retainedFonts.clear();
+    impl_->retainedSoundFonts.clear();
+    impl_->owner.installed = false;
 }
 
 std::shared_ptr<const void> RuntimeAssets::retain() {
-    m_impl->owner.check();
-    return std::make_shared<ResourceLease>(m_impl->database->cacheStore());
+    impl_->owner.check();
+    return std::make_shared<ResourceLease>(impl_->database->cacheStore());
 }
 
 RuntimeFontInfo RuntimeAssets::addFont(const std::string &source_path) {
-    Impl &d = *m_impl;
+    Impl &d = *impl_;
     d.owner.check();
 
     std::vector<std::uint8_t> bytes = readResourceFile(source_path, kMaxFontFileBytes, "Font");
@@ -709,7 +709,7 @@ RuntimeFontInfo RuntimeAssets::addFont(const std::string &source_path) {
 }
 
 std::vector<RuntimeFontInfo> RuntimeAssets::fonts() const {
-    const Impl &d = *m_impl;
+    const Impl &d = *impl_;
     d.owner.check();
 
     const std::shared_ptr<const ActiveTable> active = d.database->activeTable();
@@ -722,7 +722,7 @@ std::vector<RuntimeFontInfo> RuntimeAssets::fonts() const {
 }
 
 RuntimeSoundFontInfo RuntimeAssets::freezeSoundFont(const std::string &source_path) {
-    Impl &d = *m_impl;
+    Impl &d = *impl_;
     d.owner.check();
     const auto bytes = readResourceFile(source_path, kMaxSoundFontFileBytes, "SoundFont");
     validateSoundFontHeader(bytes, source_path);

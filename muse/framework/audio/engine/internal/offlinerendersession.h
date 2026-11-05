@@ -16,16 +16,16 @@ public:
     RetVal2<TrackId, TrackParams> addTrack(const std::string &name, const mpe::PlaybackData &data, const TrackParams &params);
     RetVal2<TrackId, TrackParams> addAuxTrack(const std::string &name, const TrackParams &params);
 
-    IAudioNodePtr output() const { return m_master; }
+    IAudioNodePtr output() const { return master_; }
 
     void resetSources();
 private:
     RetVal2<TrackId, TrackParams> add(const std::string &name, const mpe::PlaybackData *data, const TrackParams &params);
-    IAudioFactory &m_factory;
-    OutputSpec m_spec;
-    std::shared_ptr<Mixer> m_mixer;
-    TrackChainPtr m_master;
-    std::vector<TrackChainPtr> m_tracks;
-    TrackId m_lastId = MASTER_TRACK_ID;
+    IAudioFactory &factory_;
+    OutputSpec spec_;
+    std::shared_ptr<Mixer> mixer_;
+    TrackChainPtr master_;
+    std::vector<TrackChainPtr> tracks_;
+    TrackId lastId_ = MASTER_TRACK_ID;
 };
 } // namespace muse::audio::engine

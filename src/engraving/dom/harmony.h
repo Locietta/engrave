@@ -46,27 +46,27 @@ enum class HarmonyRenderItemType : unsigned char { TEXT, PAREN };
 struct HarmonyRenderItem {
     virtual ~HarmonyRenderItem() = default;
 
-    HarmonyRenderItem(bool align, double _x, double _y) : m_hAlign(align), m_pos(_x, _y) {}
+    HarmonyRenderItem(bool align, double _x, double _y) : hAlign_(align), pos_(_x, _y) {}
 
-    PointF pos() const { return m_pos + m_offset; }
+    PointF pos() const { return pos_ + offset_; }
 
-    double x() const { return m_pos.x(); }
+    double x() const { return pos_.x(); }
 
-    double y() const { return m_pos.y(); }
+    double y() const { return pos_.y(); }
 
-    void movex(double v) { m_pos.rx() += v; }
+    void movex(double v) { pos_.rx() += v; }
 
-    void movey(double v) { m_pos.ry() += v; }
+    void movey(double v) { pos_.ry() += v; }
 
-    void setx(double v) { m_pos.rx() = v; }
+    void setx(double v) { pos_.rx() = v; }
 
-    void sety(double v) { m_pos.ry() = v; }
+    void sety(double v) { pos_.ry() = v; }
 
-    void setOffset(const PointF &p) { m_offset = p; }
+    void setOffset(const PointF &p) { offset_ = p; }
 
     virtual double height() const = 0;
 
-    bool align() const { return m_hAlign; }
+    bool align() const { return hAlign_; }
 
     virtual RectF boundingRect() const = 0;
     virtual RectF tightBoundingRect() const = 0;
@@ -77,9 +77,9 @@ struct HarmonyRenderItem {
     virtual HarmonyRenderItemType type() const = 0;
 
 private:
-    bool m_hAlign = true;
-    PointF m_offset; // Offset for placing within the TextBase.
-    PointF m_pos;    // Position of segments relative to Harmony position
+    bool hAlign_ = true;
+    PointF offset_; // Offset for placing within the TextBase.
+    PointF pos_;    // Position of segments relative to Harmony position
 };
 
 struct ChordSymbolParen : HarmonyRenderItem {
@@ -120,11 +120,11 @@ struct TextSegment : HarmonyRenderItem {
     RectF boundingRect() const override;
     RectF tightBoundingRect() const override;
 
-    void setText(const String &t) { m_text = t; }
+    void setText(const String &t) { text_ = t; }
 
-    String text() const { return m_text; }
+    String text() const { return text_; }
 
-    muse::draw::Font font() const { return m_font; }
+    muse::draw::Font font() const { return font_; }
 
     void setFont(const muse::draw::Font &f);
 
@@ -142,8 +142,8 @@ struct TextSegment : HarmonyRenderItem {
     }
 
 private:
-    muse::draw::Font m_font;
-    String m_text;
+    muse::draw::Font font_;
+    String text_;
 };
 
 class HDegree;
@@ -153,40 +153,40 @@ class HDegree;
 //      Contains all identifying information for a chord. The Harmony DOM class can have many of these
 //      as polychords
 //
-//   @P m_bassTpc       int             bass note as "tonal pitch class"
-//   @P m_rootTpc       int             root note as "tonal pitch class"
-//   @P m_id            int             harmony identifier
-//   @P m_textName      String          plaintext representation of chord
-//   @P m_parsedChord   ParsedChord*    parsed representation of the plaintext chord
+//   @P bassTpc_       int             bass note as "tonal pitch class"
+//   @P rootTpc_       int             root note as "tonal pitch class"
+//   @P id_            int             harmony identifier
+//   @P textName_      String          plaintext representation of chord
+//   @P parsedChord_   ParsedChord*    parsed representation of the plaintext chord
 //---------------------------------------------------------
 
 class HarmonyInfo {
 public:
     HarmonyInfo(int id, int rootTpc, int bassTpc, String textName, ParsedChord *pc, Score *score)
-        : m_id(id), m_rootTpc(rootTpc), m_bassTpc(bassTpc), m_textName(textName), m_parsedChord(pc), m_score(score) {}
+        : id_(id), rootTpc_(rootTpc), bassTpc_(bassTpc), textName_(textName), parsedChord_(pc), score_(score) {}
 
-    HarmonyInfo(Score *score) : m_score(score) {}
+    HarmonyInfo(Score *score) : score_(score) {}
 
     HarmonyInfo(const HarmonyInfo &h);
     ~HarmonyInfo();
 
-    int id() const { return m_id; }
+    int id() const { return id_; }
 
-    void setId(int v) { m_id = v; }
+    void setId(int v) { id_ = v; }
 
-    int rootTpc() const { return m_rootTpc; }
+    int rootTpc() const { return rootTpc_; }
 
-    void setRootTpc(int v) { m_rootTpc = v; }
+    void setRootTpc(int v) { rootTpc_ = v; }
 
-    int bassTpc() const { return m_bassTpc; }
+    int bassTpc() const { return bassTpc_; }
 
-    void setBassTpc(int v) { m_bassTpc = v; }
+    void setBassTpc(int v) { bassTpc_ = v; }
 
-    String textName() const { return m_textName; }
+    String textName() const { return textName_; }
 
-    void setTextName(const String &v) { m_textName = v; }
+    void setTextName(const String &v) { textName_ = v; }
 
-    ChordList *chordList() const { return m_score ? m_score->chordList() : nullptr; }
+    ChordList *chordList() const { return score_ ? score_->chordList() : nullptr; }
 
     const ChordDescription *descr() const;
     const ChordDescription *descr(const String &, const ParsedChord *pc = 0) const;
@@ -194,26 +194,26 @@ public:
     const ChordDescription *getDescription(const String &, const ParsedChord *pc = 0);
     const ChordDescription *generateDescription();
 
-    void setParsedChord(ParsedChord *v) { m_parsedChord = v; }
+    void setParsedChord(ParsedChord *v) { parsedChord_ = v; }
 
-    ParsedChord *parsedChord() const { return m_parsedChord; }
+    ParsedChord *parsedChord() const { return parsedChord_; }
 
     ParsedChord *getParsedChord();
 
     bool hasModifiers() const;
 
 private:
-    int m_id = -1;                    // >0 = id of matched chord from chord list, if applicable
-                                      // -1 = invalid chord
-                                      // <-10000 = private id of generated chord or matched chord with no id
-    int m_rootTpc = Tpc::TPC_INVALID; // root note for chord
-    int m_bassTpc = Tpc::TPC_INVALID; // bass note or chord bass; used for "slash" chords
-                                      // or notation of bass note in chord
+    int id_ = -1;                    // >0 = id of matched chord from chord list, if applicable
+                                     // -1 = invalid chord
+                                     // <-10000 = private id of generated chord or matched chord with no id
+    int rootTpc_ = Tpc::TPC_INVALID; // root note for chord
+    int bassTpc_ = Tpc::TPC_INVALID; // bass note or chord bass; used for "slash" chords
+                                     // or notation of bass note in chord
 
-    String m_textName;                    // name recognized from chord list, read from score file, or constructed from imported source
-                                          // Also stores the whole RNA string to be rendered
-    ParsedChord *m_parsedChord = nullptr; // parsed form of chord
-    Score *m_score = nullptr;
+    String textName_;                    // name recognized from chord list, read from score file, or constructed from imported source
+                                         // Also stores the whole RNA string to be rendered
+    ParsedChord *parsedChord_ = nullptr; // parsed form of chord
+    Score *score_ = nullptr;
 };
 
 //---------------------------------------------------------
@@ -235,15 +235,15 @@ public:
 
     int id() const; // WILL BE DEPRECATED AFTER RelaizedHarmony IS UPDATED
 
-    bool play() const { return m_play; }
+    bool play() const { return play_; }
 
-    void setBassCase(NoteCaseType c) { m_bassCase = c; }
+    void setBassCase(NoteCaseType c) { bassCase_ = c; }
 
-    NoteCaseType bassCase() const { return m_bassCase; }
+    NoteCaseType bassCase() const { return bassCase_; }
 
-    void setRootCase(NoteCaseType c) { m_rootCase = c; }
+    void setRootCase(NoteCaseType c) { rootCase_ = c; }
 
-    NoteCaseType rootCase() const { return m_rootCase; }
+    NoteCaseType rootCase() const { return rootCase_; }
 
     Segment *getParentSeg() const;
     FretDiagram *getParentFretDiagram() const;
@@ -264,7 +264,7 @@ public:
     void addDegree(const HDegree &d);
     const std::vector<HDegree> &degreeList() const;
 
-    HarmonyType harmonyType() const { return m_harmonyType; }
+    HarmonyType harmonyType() const { return harmonyType_; }
 
     void setHarmonyType(HarmonyType val);
 
@@ -273,11 +273,11 @@ public:
     void afterRead();
     void render();
 
-    bool isPolychord() const { return m_chords.size() > 1; }
+    bool isPolychord() const { return chords_.size() > 1; }
 
-    const std::vector<HarmonyInfo *> chords() const { return m_chords; }
+    const std::vector<HarmonyInfo *> chords() const { return chords_; }
 
-    void addChord(HarmonyInfo *info) { m_chords.push_back(info); }
+    void addChord(HarmonyInfo *info) { chords_.push_back(info); }
 
     bool hasModifiers() const;
 
@@ -308,29 +308,29 @@ public:
 
     double mag() const override;
 
-    double bassScale() const { return m_bassScale; }
+    double bassScale() const { return bassScale_; }
 
-    void setBassScale(double v) { m_bassScale = v; }
+    void setBassScale(double v) { bassScale_ = v; }
 
     Color curColor(const rendering::PaintOptions &opt) const override;
     void setColor(const Color &color) override;
 
-    bool doNotStackModifiers() const { return m_doNotStackModifiers; }
+    bool doNotStackModifiers() const { return doNotStackModifiers_; }
 
     NoteCaseType rootRenderCase(HarmonyInfo *info) const;
     NoteCaseType bassRenderCase() const;
 
-    FontStyle fontStyle() const override { return m_fontStyle; }
+    FontStyle fontStyle() const override { return fontStyle_; }
 
-    String family() const override { return m_fontFamily; }
+    String family() const override { return fontFamily_; }
 
-    double size() const override { return m_fontSize; }
+    double size() const override { return fontSize_; }
 
-    void setFontStyle(const FontStyle &val) override { m_fontStyle = val; }
+    void setFontStyle(const FontStyle &val) override { fontStyle_ = val; }
 
-    void setFamily(const String &val) override { m_fontFamily = val; }
+    void setFamily(const String &val) override { fontFamily_ = val; }
 
-    void setSize(const double &val) override { m_fontSize = val; }
+    void setSize(const double &val) override { fontSize_ = val; }
 
     struct LayoutData : public TextBase::LayoutData {
         ld_field<double> harmonyHeight = {"[Harmony] harmonyHeight", 0.0}; // used for calculating the height is frame while editing.
@@ -343,7 +343,7 @@ public:
     DECLARE_LAYOUTDATA_METHODS(Harmony)
 
 private:
-    std::vector<HarmonyInfo *> m_chords;
+    std::vector<HarmonyInfo *> chords_;
 
     const std::vector<const ChordDescription *> parseHarmony(const String &s, bool syntaxOnly = false);
     const ChordDescription *parseSingleHarmony(const String &s, HarmonyInfo *info, bool syntaxOnly = false);
@@ -352,24 +352,24 @@ private:
 
     Harmony *findInSeg(Segment *seg) const;
 
-    bool m_isMisspelled = false;                       // show spell check warning
-    HarmonyType m_harmonyType = HarmonyType::STANDARD; // used to control rendering, transposition, export, etc.
+    bool isMisspelled_ = false;                       // show spell check warning
+    HarmonyType harmonyType_ = HarmonyType::STANDARD; // used to control rendering, transposition, export, etc.
 
-    mutable RealizedHarmony m_realizedHarmony; // the realized harmony used for playback
+    mutable RealizedHarmony realizedHarmony_; // the realized harmony used for playback
 
-    std::vector<HDegree> m_degreeList;
+    std::vector<HDegree> degreeList_;
 
-    bool m_play = true; // whether or not to play back the harmony
-    bool m_doNotStackModifiers = false;
+    bool play_ = true; // whether or not to play back the harmony
+    bool doNotStackModifiers_ = false;
 
-    NoteCaseType m_rootCase = NoteCaseType::AUTO;
-    NoteCaseType m_bassCase = NoteCaseType::AUTO; // case as typed
+    NoteCaseType rootCase_ = NoteCaseType::AUTO;
+    NoteCaseType bassCase_ = NoteCaseType::AUTO; // case as typed
 
-    double m_bassScale = 1.0;
+    double bassScale_ = 1.0;
 
     // Overridden textbase properties to apply to whole item
-    double m_fontSize = 10.0;
-    String m_fontFamily = u"";
-    FontStyle m_fontStyle;
+    double fontSize_ = 10.0;
+    String fontFamily_ = u"";
+    FontStyle fontStyle_;
 };
 } // namespace mu::engraving

@@ -31,7 +31,7 @@
 namespace muse::mpe {
 class ArticulationProfilesRepository : public IArticulationProfilesRepository {
 public:
-    explicit ArticulationProfilesRepository(io::IFileSystem &fileSystem) : m_fileSystem(fileSystem) {}
+    explicit ArticulationProfilesRepository(io::IFileSystem &fileSystem) : fileSystem_(fileSystem) {}
 
     ArticulationsProfilePtr createNew() const override;
     ArticulationsProfilePtr defaultProfile(const ArticulationFamily family) const override;
@@ -39,7 +39,7 @@ public:
     void saveProfile(const io::path_t &path, const ArticulationsProfilePtr profilePtr) override;
 
 private:
-    io::IFileSystem *fileSystem() const { return &m_fileSystem; }
+    io::IFileSystem *fileSystem() const { return &fileSystem_; }
 
     std::vector<ArticulationFamily> supportedFamiliesFromJson(const JsonArray &array) const;
     JsonArray supportedFamiliesToJson(const std::vector<ArticulationFamily> &families) const;
@@ -56,9 +56,9 @@ private:
     ExpressionPattern expressionPatternFromJson(const JsonObject &obj) const;
     JsonObject expressionPatternToJson(const ExpressionPattern &pattern) const;
 
-    mutable std::unordered_map<ArticulationFamily, ArticulationsProfilePtr> m_defaultProfiles;
+    mutable std::unordered_map<ArticulationFamily, ArticulationsProfilePtr> defaultProfiles_;
 
-    io::IFileSystem &m_fileSystem;
+    io::IFileSystem &fileSystem_;
 };
 } // namespace muse::mpe
 

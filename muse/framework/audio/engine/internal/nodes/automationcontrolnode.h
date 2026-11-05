@@ -53,11 +53,11 @@ protected:
     void onOutputSpecChanged(const OutputSpec &spec) override;
     void doSelfProcess(float *buffer, samples_t samplesPerChannel) override;
 
-    PlayheadPositionPtr m_playheadPosition;
-    AutomatableValue<volume_db_t> m_volume;
-    AutomatableValue<balance_t> m_pan;
-    std::vector<dsp::SmoothLinearValue<float>> m_channelGains;
-    std::optional<secs_t> m_lastGainsPos;
+    PlayheadPositionPtr playheadPosition_;
+    AutomatableValue<volume_db_t> volume_;
+    AutomatableValue<balance_t> pan_;
+    std::vector<dsp::SmoothLinearValue<float>> channelGains_;
+    std::optional<secs_t> lastGainsPos_;
 };
 
 using AutomationControlNodePtr = std::shared_ptr<AutomationControlNode>;

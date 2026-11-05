@@ -97,21 +97,21 @@ template <typename T>
 class OnePoleFilter {
 public:
     T processSample(T x0) {
-        auto res = cf.b0 * x0 + cf.b1 * _x1 - cf.a1 * m_y1;
+        auto res = cf.b0 * x0 + cf.b1 * _x1 - cf.a1 * y1_;
         _x1 = x0;
-        m_y1 = res;
+        y1_ = res;
         return res;
     }
 
     void reset() {
-        m_y1 = T(0);
+        y1_ = T(0);
         _x1 = T(0);
     }
 
     OnePoleCoeffs<T> cf;
 
 private:
-    T m_y1 = T(0), _x1 = T(0);
+    T y1_ = T(0), _x1 = T(0);
 };
 } // namespace muse::audio::fx::reverbfilters
 

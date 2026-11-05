@@ -40,10 +40,10 @@ using namespace mu::engraving::rendering::score;
 // LayoutConfiguration
 // ================================================
 
-LayoutConfiguration::LayoutConfiguration(IGetScoreInternal *s) : m_getScore(s) {}
+LayoutConfiguration::LayoutConfiguration(IGetScoreInternal *s) : getScore_(s) {}
 
 const Score *LayoutConfiguration::score() const {
-    const Score *score = m_getScore->score();
+    const Score *score = getScore_->score();
     IF_ASSERT_FAILED(score) { return nullptr; }
     return score;
 }
@@ -94,11 +94,11 @@ bool LayoutConfiguration::isShowInstrumentNames() const { return score()->showIn
 // DomAccessor
 // ================================================
 
-DomAccessor::DomAccessor(IGetScoreInternal *s) : m_getScore(s) {}
+DomAccessor::DomAccessor(IGetScoreInternal *s) : getScore_(s) {}
 
-const Score *DomAccessor::score() const { return m_getScore->score(); }
+const Score *DomAccessor::score() const { return getScore_->score(); }
 
-Score *DomAccessor::score() { return m_getScore->score(); }
+Score *DomAccessor::score() { return getScore_->score(); }
 
 const std::vector<Part *> &DomAccessor::parts() const {
     IF_ASSERT_FAILED(score()) {
@@ -367,8 +367,8 @@ LayoutDebug *LayoutDebug::instance() {
 }
 
 void LayoutDebug::callClear() {
-    m_currentCall = nullptr;
-    m_calls.clear();
+    currentCall_ = nullptr;
+    calls_.clear();
 }
 
 void LayoutDebug::callBegin(const std::string_view &name, const std::string_view &info) {
@@ -376,21 +376,21 @@ void LayoutDebug::callBegin(const std::string_view &name, const std::string_view
     Call c;
     c.name = name;
     c.info = info;
-    if (m_currentCall) {
-        c.top = m_currentCall;
-        m_currentCall->nested.push_back(c);
-        m_currentCall = &m_currentCall->nested.back();
+    if (currentCall_) {
+        c.top = currentCall_;
+        currentCall_->nested.push_back(c);
+        currentCall_ = &currentCall_->nested.back();
     } else {
-        m_calls.push_back(c);
-        m_currentCall = &m_calls.back();
+        calls_.push_back(c);
+        currentCall_ = &calls_.back();
     }
 }
 
 void LayoutDebug::callEnd() {
-    IF_ASSERT_FAILED(m_currentCall) { return; }
+    IF_ASSERT_FAILED(currentCall_) { return; }
 
-    //LOGDA() << m_currentCall->name << " " << m_currentCall->info;
-    m_currentCall = m_currentCall->top;
+    //LOGDA() << currentCall_->name << " " << currentCall_->info;
+    currentCall_ = currentCall_->top;
 }
 
 void LayoutDebug::callDump(const LayoutDebug::Call &c, std::stringstream &ss, int &indent) {
@@ -407,7 +407,7 @@ void LayoutDebug::callDump(const LayoutDebug::Call &c, std::stringstream &ss, in
 }
 
 void LayoutDebug::callDump(std::stringstream &ss) const {
-    for (const Call &c : m_calls) {
+    for (const Call &c : calls_) {
         int indent = 0;
         callDump(c, ss, indent);
     }
@@ -419,43 +419,43 @@ void LayoutDebug::callPrint() { LOGDA() << "\n" << callDump(); }
 // LayoutContext
 // =============================================================
 
-LayoutContext::LayoutContext(Score *score) : m_score(score), m_configuration(this), m_dom(this) {
+LayoutContext::LayoutContext(Score *score) : score_(score), configuration_(this), dom_(this) {
     if (score) {
-        m_state.setFirstSystemIndent(score->style().styleB(Sid::enableIndentationOnFirstSystem));
+        state_.setFirstSystemIndent(score->style().styleB(Sid::enableIndentationOnFirstSystem));
     }
 }
 
 LayoutContext::~LayoutContext() {}
 
-bool LayoutContext::isValid() const { return m_score != nullptr; }
+bool LayoutContext::isValid() const { return score_ != nullptr; }
 
 IEngravingFontPtr LayoutContext::engravingFont() const {
-    IF_ASSERT_FAILED(m_score) { return nullptr; }
-    return m_score->engravingFont();
+    IF_ASSERT_FAILED(score_) { return nullptr; }
+    return score_->engravingFont();
 }
 
-const DomAccessor &LayoutContext::dom() const { return m_dom; }
+const DomAccessor &LayoutContext::dom() const { return dom_; }
 
-DomAccessor &LayoutContext::mutDom() { return m_dom; }
+DomAccessor &LayoutContext::mutDom() { return dom_; }
 
-const LayoutState &LayoutContext::state() const { return m_state; }
+const LayoutState &LayoutContext::state() const { return state_; }
 
-LayoutState &LayoutContext::mutState() { return m_state; }
+LayoutState &LayoutContext::mutState() { return state_; }
 
 const Selection &LayoutContext::selection() const {
-    IF_ASSERT_FAILED(m_score) {
+    IF_ASSERT_FAILED(score_) {
         static const Selection dummy;
         return dummy;
     }
-    return m_score->selection();
+    return score_->selection();
 }
 
 void LayoutContext::select(EngravingItem *item, SelectType type, staff_idx_t staff) {
-    IF_ASSERT_FAILED(m_score) { return; }
-    m_score->select(item, type, staff);
+    IF_ASSERT_FAILED(score_) { return; }
+    score_->select(item, type, staff);
 }
 
 void LayoutContext::deselect(EngravingItem *el) {
-    IF_ASSERT_FAILED(m_score) { return; }
-    m_score->deselect(el);
+    IF_ASSERT_FAILED(score_) { return; }
+    score_->deselect(el);
 }

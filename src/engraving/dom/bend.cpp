@@ -66,12 +66,12 @@ Bend::Bend(DummyParentOr<Note> parent) : EngravingItem(ElementType::BEND, parent
 //---------------------------------------------------------
 
 Font Bend::font(double sp) const {
-    Font f(m_fontFace, Font::Type::Unknown);
-    f.setBold(m_fontStyle & FontStyle::Bold);
-    f.setItalic(m_fontStyle & FontStyle::Italic);
-    f.setUnderline(m_fontStyle & FontStyle::Underline);
-    f.setStrike(m_fontStyle & FontStyle::Strike);
-    double m = m_fontSize;
+    Font f(fontFace_, Font::Type::Unknown);
+    f.setBold(fontStyle_ & FontStyle::Bold);
+    f.setItalic(fontStyle_ & FontStyle::Italic);
+    f.setUnderline(fontStyle_ & FontStyle::Underline);
+    f.setStrike(fontStyle_ & FontStyle::Strike);
+    double m = fontSize_;
     m *= sp / defaultSpatium();
 
     f.setPointSizeF(m);
@@ -79,15 +79,15 @@ Font Bend::font(double sp) const {
 }
 
 BendType Bend::parseBendTypeFromCurve() const {
-    if (m_points == BEND_CURVE) {
+    if (points_ == BEND_CURVE) {
         return BendType::BEND;
-    } else if (m_points == BEND_RELEASE_CURVE) {
+    } else if (points_ == BEND_RELEASE_CURVE) {
         return BendType::BEND_RELEASE;
-    } else if (m_points == BEND_RELEASE_BEND_CURVE) {
+    } else if (points_ == BEND_RELEASE_BEND_CURVE) {
         return BendType::BEND_RELEASE_BEND;
-    } else if (m_points == PREBEND_CURVE) {
+    } else if (points_ == PREBEND_CURVE) {
         return BendType::PREBEND;
-    } else if (m_points == PREBEND_RELEASE_CURVE) {
+    } else if (points_ == PREBEND_RELEASE_CURVE) {
         return BendType::PREBEND_RELEASE;
     } else {
         return BendType::CUSTOM;
@@ -96,11 +96,11 @@ BendType Bend::parseBendTypeFromCurve() const {
 
 void Bend::updatePointsByBendType(const BendType bendType) {
     switch (bendType) {
-        case BendType::BEND: m_points = BEND_CURVE; break;
-        case BendType::BEND_RELEASE: m_points = BEND_RELEASE_CURVE; break;
-        case BendType::BEND_RELEASE_BEND: m_points = BEND_RELEASE_BEND_CURVE; break;
-        case BendType::PREBEND: m_points = PREBEND_CURVE; break;
-        case BendType::PREBEND_RELEASE: m_points = PREBEND_RELEASE_CURVE; break;
+        case BendType::BEND: points_ = BEND_CURVE; break;
+        case BendType::BEND_RELEASE: points_ = BEND_RELEASE_CURVE; break;
+        case BendType::BEND_RELEASE_BEND: points_ = BEND_RELEASE_BEND_CURVE; break;
+        case BendType::PREBEND: points_ = PREBEND_CURVE; break;
+        case BendType::PREBEND_RELEASE: points_ = PREBEND_RELEASE_CURVE; break;
         default: break;
     }
 }
@@ -111,13 +111,13 @@ void Bend::updatePointsByBendType(const BendType bendType) {
 
 PropertyValue Bend::getProperty(Pid id) const {
     switch (id) {
-        case Pid::FONT_FACE: return m_fontFace;
-        case Pid::FONT_SIZE: return m_fontSize;
-        case Pid::FONT_STYLE: return int(m_fontStyle);
+        case Pid::FONT_FACE: return fontFace_;
+        case Pid::FONT_SIZE: return fontSize_;
+        case Pid::FONT_STYLE: return int(fontStyle_);
         case Pid::PLAY: return playBend();
-        case Pid::LINE_WIDTH: return m_lineWidth;
+        case Pid::LINE_WIDTH: return lineWidth_;
         case Pid::BEND_TYPE: return static_cast<int>(parseBendTypeFromCurve());
-        case Pid::BEND_CURVE: return m_points;
+        case Pid::BEND_CURVE: return points_;
         default: return EngravingItem::getProperty(id);
     }
 }
@@ -128,11 +128,11 @@ PropertyValue Bend::getProperty(Pid id) const {
 
 bool Bend::setProperty(Pid id, const PropertyValue &v) {
     switch (id) {
-        case Pid::FONT_FACE: m_fontFace = v.value<String>(); break;
-        case Pid::FONT_SIZE: m_fontSize = v.toReal(); break;
-        case Pid::FONT_STYLE: m_fontStyle = FontStyle(v.toInt()); break;
+        case Pid::FONT_FACE: fontFace_ = v.value<String>(); break;
+        case Pid::FONT_SIZE: fontSize_ = v.toReal(); break;
+        case Pid::FONT_STYLE: fontStyle_ = FontStyle(v.toInt()); break;
         case Pid::PLAY: setPlayBend(v.toBool()); break;
-        case Pid::LINE_WIDTH: m_lineWidth = v.value<Spatium>(); break;
+        case Pid::LINE_WIDTH: lineWidth_ = v.value<Spatium>(); break;
         case Pid::BEND_TYPE: updatePointsByBendType(static_cast<BendType>(v.toInt())); break;
         case Pid::BEND_CURVE: setPoints(v.value<PitchValues>()); break;
         default: return EngravingItem::setProperty(id, v);

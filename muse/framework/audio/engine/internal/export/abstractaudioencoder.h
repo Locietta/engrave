@@ -44,13 +44,13 @@ public:
     // Finalization may successfully produce zero bytes; report status instead.
     virtual Ret end() = 0;
 
-    const SoundTrackFormat &format() const { return m_format; }
+    const SoundTrackFormat &format() const { return format_; }
 
 
 protected:
-    explicit AbstractAudioEncoder(const SoundTrackFormat &format) : m_format(format) {}
+    explicit AbstractAudioEncoder(const SoundTrackFormat &format) : format_(format) {}
 
-    SoundTrackFormat m_format;
+    SoundTrackFormat format_;
 };
 
 using AbstractAudioEncoderPtr = std::unique_ptr<AbstractAudioEncoder>;

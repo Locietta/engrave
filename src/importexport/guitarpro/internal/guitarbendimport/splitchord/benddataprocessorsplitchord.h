@@ -35,6 +35,6 @@ public:
     void processBends(const BendDataContextSplitChord &bendDataCtx);
 
 private:
-    mu::engraving::Score *m_score = nullptr;
+    mu::engraving::Score *score_ = nullptr;
 };
 } // namespace mu::iex::guitarpro

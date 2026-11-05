@@ -47,17 +47,17 @@ public:
 
     Hairpin *hairpin() const { return (Hairpin *) spanner(); }
 
-    bool drawCircledTip() const { return m_drawCircledTip; }
+    bool drawCircledTip() const { return drawCircledTip_; }
 
-    void setDrawCircledTip(bool arg) { m_drawCircledTip = arg; }
+    void setDrawCircledTip(bool arg) { drawCircledTip_ = arg; }
 
-    double circledTipRadius() const { return m_circledTipRadius; }
+    double circledTipRadius() const { return circledTipRadius_; }
 
-    void setCircledTipRadius(double r) { m_circledTipRadius = r; }
+    void setCircledTipRadius(double r) { circledTipRadius_ = r; }
 
-    PointF circledTip() const { return m_circledTip; }
+    PointF circledTip() const { return circledTip_; }
 
-    void setCircledTip(const PointF &p) { m_circledTip = p; }
+    void setCircledTip(const PointF &p) { circledTip_ = p; }
 
     EngravingObject *propertyDelegate(Pid) const override;
 
@@ -77,9 +77,9 @@ private:
 
     void setPropertyFlags(Pid id, PropertyFlags f) override;
 
-    bool m_drawCircledTip = false;
-    PointF m_circledTip;
-    double m_circledTipRadius = 0.0;
+    bool drawCircledTip_ = false;
+    PointF circledTip_;
+    double circledTipRadius_ = 0.0;
 };
 
 //---------------------------------------------------------
@@ -105,45 +105,45 @@ public:
     const Dynamic *dynamicSnappedBefore() const;
     const Dynamic *dynamicSnappedAfter() const;
 
-    HairpinType hairpinType() const { return m_hairpinType; }
+    HairpinType hairpinType() const { return hairpinType_; }
 
     void setHairpinType(HairpinType val);
 
     LineSegment *createLineSegment() override;
 
-    bool hairpinCircledTip() const { return m_hairpinCircledTip; }
+    bool hairpinCircledTip() const { return hairpinCircledTip_; }
 
-    void setHairpinCircledTip(bool val) { m_hairpinCircledTip = val; }
+    void setHairpinCircledTip(bool val) { hairpinCircledTip_ = val; }
 
-    int veloChange() const { return m_veloChange; }
+    int veloChange() const { return veloChange_; }
 
-    void setVeloChange(int v) { m_veloChange = v; }
+    void setVeloChange(int v) { veloChange_ = v; }
 
-    Spatium hairpinHeight() const { return m_hairpinHeight; }
+    Spatium hairpinHeight() const { return hairpinHeight_; }
 
-    void setHairpinHeight(Spatium val) { m_hairpinHeight = val; }
+    void setHairpinHeight(Spatium val) { hairpinHeight_ = val; }
 
-    Spatium hairpinContHeight() const { return m_hairpinContHeight; }
+    Spatium hairpinContHeight() const { return hairpinContHeight_; }
 
-    void setHairpinContHeight(Spatium val) { m_hairpinContHeight = val; }
+    void setHairpinContHeight(Spatium val) { hairpinContHeight_ = val; }
 
-    bool singleNoteDynamics() const { return m_singleNoteDynamics; }
+    bool singleNoteDynamics() const { return singleNoteDynamics_; }
 
-    void setSingleNoteDynamics(bool val) { m_singleNoteDynamics = val; }
+    void setSingleNoteDynamics(bool val) { singleNoteDynamics_ = val; }
 
-    ChangeMethod veloChangeMethod() const { return m_veloChangeMethod; }
+    ChangeMethod veloChangeMethod() const { return veloChangeMethod_; }
 
-    void setVeloChangeMethod(ChangeMethod val) { m_veloChangeMethod = val; }
+    void setVeloChangeMethod(ChangeMethod val) { veloChangeMethod_ = val; }
 
-    bool isCrescendo() const { return m_hairpinType == HairpinType::CRESC_HAIRPIN || m_hairpinType == HairpinType::CRESC_LINE; }
+    bool isCrescendo() const { return hairpinType_ == HairpinType::CRESC_HAIRPIN || hairpinType_ == HairpinType::CRESC_LINE; }
 
-    bool isDecrescendo() const { return m_hairpinType == HairpinType::DIM_HAIRPIN || m_hairpinType == HairpinType::DIM_LINE; }
+    bool isDecrescendo() const { return hairpinType_ == HairpinType::DIM_HAIRPIN || hairpinType_ == HairpinType::DIM_LINE; }
 
     PropertyValue getProperty(Pid id) const override;
     bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid id) const override;
 
-    bool isLineType() const { return m_hairpinType == HairpinType::CRESC_LINE || m_hairpinType == HairpinType::DIM_LINE; }
+    bool isLineType() const { return hairpinType_ == HairpinType::CRESC_LINE || hairpinType_ == HairpinType::DIM_LINE; }
 
     PointF linePos(Grip grip, System **system) const override;
 
@@ -151,27 +151,27 @@ public:
 
     void reset() override;
 
-    void setVoiceAssignment(VoiceAssignment v) { m_voiceAssignment = v; }
+    void setVoiceAssignment(VoiceAssignment v) { voiceAssignment_ = v; }
 
-    VoiceAssignment voiceAssignment() const { return m_voiceAssignment; }
+    VoiceAssignment voiceAssignment() const { return voiceAssignment_; }
 
-    void setDirection(DirectionV v) { m_direction = v; }
+    void setDirection(DirectionV v) { direction_ = v; }
 
-    DirectionV direction() const { return m_direction; }
+    DirectionV direction() const { return direction_; }
 
-    void setCenterBetweenStaves(AutoOnOff v) { m_centerBetweenStaves = v; }
+    void setCenterBetweenStaves(AutoOnOff v) { centerBetweenStaves_ = v; }
 
-    AutoOnOff centerBetweenStaves() const { return m_centerBetweenStaves; }
+    AutoOnOff centerBetweenStaves() const { return centerBetweenStaves_; }
 
-    bool snapToItemBefore() const { return m_snapToItemBefore; }
+    bool snapToItemBefore() const { return snapToItemBefore_; }
 
-    void setSnapToItemBefore(bool v) { m_snapToItemBefore = v; }
+    void setSnapToItemBefore(bool v) { snapToItemBefore_ = v; }
 
-    bool snapToItemAfter() const { return m_snapToItemAfter; }
+    bool snapToItemAfter() const { return snapToItemAfter_; }
 
-    void setSnapToItemAfter(bool v) { m_snapToItemAfter = v; }
+    void setSnapToItemAfter(bool v) { snapToItemAfter_ = v; }
 
-    int subtype() const override { return int(m_hairpinType); }
+    int subtype() const override { return int(hairpinType_); }
 
     TranslatableString subtypeUserName() const override;
 
@@ -182,20 +182,20 @@ private:
 
     Sid getPropertyStyle(Pid) const override;
 
-    HairpinType m_hairpinType = HairpinType::INVALID;
-    int m_veloChange = 0;
-    bool m_hairpinCircledTip = false;
-    bool m_singleNoteDynamics = false;
-    ChangeMethod m_veloChangeMethod = ChangeMethod::NORMAL;
+    HairpinType hairpinType_ = HairpinType::INVALID;
+    int veloChange_ = 0;
+    bool hairpinCircledTip_ = false;
+    bool singleNoteDynamics_ = false;
+    ChangeMethod veloChangeMethod_ = ChangeMethod::NORMAL;
 
-    Spatium m_hairpinHeight;
-    Spatium m_hairpinContHeight;
+    Spatium hairpinHeight_;
+    Spatium hairpinContHeight_;
 
-    VoiceAssignment m_voiceAssignment = VoiceAssignment::ALL_VOICE_IN_INSTRUMENT;
-    DirectionV m_direction = DirectionV::AUTO;
-    AutoOnOff m_centerBetweenStaves = AutoOnOff::AUTO;
+    VoiceAssignment voiceAssignment_ = VoiceAssignment::ALL_VOICE_IN_INSTRUMENT;
+    DirectionV direction_ = DirectionV::AUTO;
+    AutoOnOff centerBetweenStaves_ = AutoOnOff::AUTO;
 
-    bool m_snapToItemBefore = true;
-    bool m_snapToItemAfter = true;
+    bool snapToItemBefore_ = true;
+    bool snapToItemAfter_ = true;
 };
 } // namespace mu::engraving

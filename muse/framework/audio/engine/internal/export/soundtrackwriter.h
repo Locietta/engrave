@@ -53,19 +53,19 @@ public:
 private:
     Ret writeStreaming();
     bool pollCancellation();
-    std::function<bool()> m_cancelled;
+    std::function<bool()> cancelled_;
 
-    IAudioNodePtr m_source;
-    std::function<void(uint64_t)> m_blockCompleted;
+    IAudioNodePtr source_;
+    std::function<void(uint64_t)> blockCompleted_;
 
-    std::vector<float> m_intermBuffer;
-    samples_t m_renderStep = 0;
-    samples_t m_leadingSilenceSamples = 0;
-    samples_t m_dataSamples = 0;
-    samples_t m_totalSamples = 0;
+    std::vector<float> intermBuffer_;
+    samples_t renderStep_ = 0;
+    samples_t leadingSilenceSamples_ = 0;
+    samples_t dataSamples_ = 0;
+    samples_t totalSamples_ = 0;
 
-    encode::AbstractAudioEncoderPtr m_encoderPtr;
+    encode::AbstractAudioEncoderPtr encoderPtr_;
 
-    std::atomic<bool> m_isAborted = false;
+    std::atomic<bool> isAborted_ = false;
 };
 } // namespace muse::audio::soundtrack

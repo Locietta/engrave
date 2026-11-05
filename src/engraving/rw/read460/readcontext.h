@@ -79,13 +79,13 @@ public:
     double spatium() const;
     void setSpatium(double v);
 
-    void setPropertiesToSkip(const PropertyIdSet &propertiesToSkip) { m_propertiesToSkip = propertiesToSkip; }
+    void setPropertiesToSkip(const PropertyIdSet &propertiesToSkip) { propertiesToSkip_ = propertiesToSkip; }
 
-    bool shouldSkipProperty(Pid pid) const { return muse::contains(m_propertiesToSkip, pid); }
+    bool shouldSkipProperty(Pid pid) const { return muse::contains(propertiesToSkip_, pid); }
 
-    bool forcePageMode() const { return m_forcePageMode; }
+    bool forcePageMode() const { return forcePageMode_; }
 
-    void setForcePageMode(bool v) { m_forcePageMode = v; }
+    void setForcePageMode(bool v) { forcePageMode_ = v; }
 
     DummyParent *dummy() const;
 
@@ -136,9 +136,9 @@ public:
 
     const SettingsCompat &settingCompat() { return _settingsCompat; }
 
-    Fraction timeSigForNextMeasure() { return m_timeSigForNextMeasure; }
+    Fraction timeSigForNextMeasure() { return timeSigForNextMeasure_; }
 
-    void setTimeSigForNextMeasure(Fraction timeSig) { m_timeSigForNextMeasure = timeSig; }
+    void setTimeSigForNextMeasure(Fraction timeSig) { timeSigForNextMeasure_ = timeSig; }
 
     Location location(bool forceAbsFrac = false) const;
     void fillLocation(Location &, bool forceAbsFrac = false) const;
@@ -153,10 +153,10 @@ private:
     void addConnectorInfo(std::shared_ptr<ConnectorInfoReader>);
     void removeConnector(const ConnectorInfoReader *); // Removes the whole ConnectorInfo chain from the connectors list.
 
-    Score *m_score = nullptr;
+    Score *score_ = nullptr;
 
     bool _pasteMode = false; // modifies read behaviour on paste operation
-    bool m_forcePageMode = false;
+    bool forcePageMode_ = false;
 
     std::vector<std::shared_ptr<ConnectorInfoReader>> _connectors;
     std::vector<std::shared_ptr<ConnectorInfoReader>>
@@ -178,8 +178,8 @@ private:
 
     SettingsCompat _settingsCompat;
 
-    PropertyIdSet m_propertiesToSkip;
+    PropertyIdSet propertiesToSkip_;
 
-    Fraction m_timeSigForNextMeasure = Fraction(0, 1);
+    Fraction timeSigForNextMeasure_ = Fraction(0, 1);
 };
 } // namespace mu::engraving::read460

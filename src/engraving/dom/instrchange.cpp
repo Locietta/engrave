@@ -59,30 +59,30 @@ static const ElementStyle instrumentChangeStyle{
 InstrumentChange::InstrumentChange(EngravingObject *parent)
     : TextBase(ElementType::INSTRUMENT_CHANGE, parent, TextStyleType::INSTRUMENT_CHANGE, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
     initElementStyle(&instrumentChangeStyle);
-    m_instrument = new Instrument();
+    instrument_ = new Instrument();
 }
 
 InstrumentChange::InstrumentChange(const Instrument &i, EngravingObject *parent)
     : TextBase(ElementType::INSTRUMENT_CHANGE, parent, TextStyleType::INSTRUMENT_CHANGE, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
     initElementStyle(&instrumentChangeStyle);
-    m_instrument = new Instrument(i);
+    instrument_ = new Instrument(i);
 }
 
 InstrumentChange::InstrumentChange(const InstrumentChange &is) : TextBase(is) {
-    m_instrument = new Instrument(*is.m_instrument);
-    m_init = is.m_init;
+    instrument_ = new Instrument(*is.instrument_);
+    init_ = is.init_;
 }
 
-InstrumentChange::~InstrumentChange() { delete m_instrument; }
+InstrumentChange::~InstrumentChange() { delete instrument_; }
 
 void InstrumentChange::setInstrument(const Instrument &i) {
-    *m_instrument = i;
+    *instrument_ = i;
     //delete _instrument;
     //_instrument = new Instrument(i);
 }
 
 void InstrumentChange::setupInstrument(const Instrument *instrument, bool updateText) {
-    if (!m_init) {
+    if (!init_) {
         return;
     }
 

@@ -57,17 +57,17 @@ public:
 
     void setSym(SymId s, const std::shared_ptr<IEngravingFont> &sf = nullptr);
 
-    SymId sym() const { return m_sym; }
+    SymId sym() const { return sym_; }
 
-    const std::shared_ptr<IEngravingFont> &scoreFont() const { return m_scoreFont; }
+    const std::shared_ptr<IEngravingFont> &scoreFont() const { return scoreFont_; }
 
-    double symbolsSize() const { return m_symbolsSize; }
+    double symbolsSize() const { return symbolsSize_; }
 
-    double symAngle() const { return m_symAngle; }
+    double symAngle() const { return symAngle_; }
 
     AsciiStringView symName() const;
 
-    int subtype() const override { return int(m_sym); }
+    int subtype() const override { return int(sym_); }
 
     muse::TranslatableString subtypeUserName() const override;
 
@@ -82,10 +82,10 @@ public:
     void reset() override;
 
 protected:
-    SymId m_sym = SymId::noSym;
-    std::shared_ptr<IEngravingFont> m_scoreFont = nullptr;
-    double m_symbolsSize = 1.0;
-    double m_symAngle = 0.0;
+    SymId sym_ = SymId::noSym;
+    std::shared_ptr<IEngravingFont> scoreFont_ = nullptr;
+    double symbolsSize_ = 1.0;
+    double symAngle_ = 0.0;
 };
 
 //---------------------------------------------------------
@@ -109,17 +109,17 @@ public:
 
     Segment *segment() const { return (Segment *) ownershipParent(); }
 
-    const muse::draw::Font &font() const { return m_font; }
+    const muse::draw::Font &font() const { return font_; }
 
-    char32_t code() const { return m_code; }
+    char32_t code() const { return code_; }
 
     void setFont(const muse::draw::Font &f);
 
-    void setCode(char32_t val) { m_code = val; }
+    void setCode(char32_t val) { code_ = val; }
 
 private:
-    muse::draw::Font m_font;
-    char32_t m_code = 0; // character code point (Unicode)
+    muse::draw::Font font_;
+    char32_t code_ = 0; // character code point (Unicode)
 };
 } // namespace mu::engraving
 #endif

@@ -47,11 +47,11 @@ public:
 
     void setNumMeasures(int n);
 
-    int numMeasures() const { return m_numMeasures; }
+    int numMeasures() const { return numMeasures_; }
 
-    void setNumberOffset(const Spatium y) { m_numberOffset = y; }
+    void setNumberOffset(const Spatium y) { numberOffset_ = y; }
 
-    Spatium numberOffset() const { return m_numberOffset; }
+    Spatium numberOffset() const { return numberOffset_; }
 
     Measure *firstMeasureOfGroup() const;
     const Measure *referringMeasure(const Measure *measure) const;
@@ -64,7 +64,7 @@ public:
     bool setProperty(Pid, const PropertyValue &) override;
     PropertyValue getProperty(Pid) const override;
 
-    int subtype() const override { return m_numMeasures; }
+    int subtype() const override { return numMeasures_; }
 
     muse::TranslatableString subtypeUserName() const override;
 
@@ -92,8 +92,8 @@ public:
     DECLARE_LAYOUTDATA_METHODS(MeasureRepeat)
 
 private:
-    int m_numMeasures = 0;
-    Spatium m_numberOffset = 0.0_sp; // vertical offset of number relative to its style position
+    int numMeasures_ = 0;
+    Spatium numberOffset_ = 0.0_sp; // vertical offset of number relative to its style position
 };
 } // namespace mu::engraving
 #endif

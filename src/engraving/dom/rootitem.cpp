@@ -27,10 +27,10 @@
 
 using namespace mu::engraving;
 
-RootItem::RootItem(Score *score, Kind kind) : EngravingItem(ElementType::ROOT_ITEM, score), m_kind(kind) {}
+RootItem::RootItem(Score *score, Kind kind) : EngravingItem(ElementType::ROOT_ITEM, score), kind_(kind) {}
 
 EngravingItemList RootItem::accessibleChildren() const {
-    switch (m_kind) {
+    switch (kind_) {
         case Kind::Score: {
             EngravingItemList children = EngravingItem::accessibleChildren();
             // The pages are owned by the score, but this is the top of the accessibility

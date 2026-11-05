@@ -20,12 +20,12 @@ bool Settings::Key::operator==(const Key &k) const { return key == k.key; }
 
 bool Settings::Key::operator<(const Key &k) const { return key < k.key; }
 
-const Settings::Items &Settings::items() const { return m_isTransactionStarted ? m_localSettings : m_items; }
+const Settings::Items &Settings::items() const { return isTransactionStarted_ ? localSettings_ : items_; }
 
 void Settings::load() {
     auto loaded = readItems();
     for (const auto &[k, v] : loaded) {
-        m_items[k] = v;
+        items_[k] = v;
     }
 }
 
@@ -35,9 +35,9 @@ void Settings::reset(bool keepDefaultSettings, bool notifyAboutChanges, bool not
     (void) keepDefaultSettings;
     (void) notifyOtherInstances;
     (void) notifyAboutChanges;
-    m_localSettings.clear();
-    m_isTransactionStarted = false;
-    for (auto &[k, item] : m_items) {
+    localSettings_.clear();
+    isTransactionStarted_ = false;
+    for (auto &[k, item] : items_) {
         item.value = item.defaultValue;
     }
 }
@@ -61,7 +61,7 @@ void Settings::setLocalValue(const Key &key, const Val &value) {
         }
         item.value = value;
     }
-    if (!m_isTransactionStarted) {
+    if (!isTransactionStarted_) {
         writeValue(key, value);
     }
 }
@@ -69,7 +69,7 @@ void Settings::setLocalValue(const Key &key, const Val &value) {
 void Settings::setDefaultValue(const Key &key, const Val &value) {
     Item &item = findItem(key);
     if (item.isNull()) {
-        (m_isTransactionStarted ? m_localSettings : m_items)[key] = Item{key, value, value, "", false, Val(), Val()};
+        (isTransactionStarted_ ? localSettings_ : items_)[key] = Item{key, value, value, "", false, Val(), Val()};
     } else {
         item.defaultValue = value;
         item.value.setType(value.type());
@@ -86,7 +86,7 @@ void Settings::setDescription(const Key &key, const std::string &value) {
 void Settings::setCanBeManuallyEdited(const Settings::Key &key, bool canBeManuallyEdited, const Val &minValue, const Val &maxValue) {
     Item &item = findItem(key);
     if (item.isNull()) {
-        (m_isTransactionStarted ? m_localSettings : m_items)[key] = Item{key, Val(), Val(), "", canBeManuallyEdited, minValue, maxValue};
+        (isTransactionStarted_ ? localSettings_ : items_)[key] = Item{key, Val(), Val(), "", canBeManuallyEdited, minValue, maxValue};
     } else {
         item.canBeManuallyEdited = canBeManuallyEdited;
         item.minValue = minValue;
@@ -96,31 +96,31 @@ void Settings::setCanBeManuallyEdited(const Settings::Key &key, bool canBeManual
 
 void Settings::beginTransaction(bool notifyToOtherInstances) {
     (void) notifyToOtherInstances;
-    if (m_isTransactionStarted) {
+    if (isTransactionStarted_) {
         throw std::logic_error("Transaction is already started");
     }
-    m_localSettings = m_items;
-    m_isTransactionStarted = true;
+    localSettings_ = items_;
+    isTransactionStarted_ = true;
 }
 
 void Settings::commitTransaction(bool notifyToOtherInstances) {
     (void) notifyToOtherInstances;
-    if (!m_isTransactionStarted) return;
-    m_items = std::move(m_localSettings);
-    m_isTransactionStarted = false;
-    m_localSettings.clear();
+    if (!isTransactionStarted_) return;
+    items_ = std::move(localSettings_);
+    isTransactionStarted_ = false;
+    localSettings_.clear();
 }
 
 void Settings::rollbackTransaction(bool notifyToOtherInstances) {
     (void) notifyToOtherInstances;
-    m_isTransactionStarted = false;
-    m_localSettings.clear();
+    isTransactionStarted_ = false;
+    localSettings_.clear();
 }
 
 io::path_t Settings::filePath() const { return io::path_t(); }
 
 Settings::Item &Settings::findItem(const Key &key) const {
-    Items &items = m_isTransactionStarted ? m_localSettings : m_items;
+    Items &items = isTransactionStarted_ ? localSettings_ : items_;
     auto it = items.find(key);
     if (it == items.end()) {
         static Item null;
@@ -131,14 +131,14 @@ Settings::Item &Settings::findItem(const Key &key) const {
 
 void Settings::insertNewItem(const Settings::Key &key, const Val &value) {
     Item item = Item{key, value, value, "", false, Val(), Val()};
-    if (m_isTransactionStarted) {
-        m_localSettings[key] = item;
+    if (isTransactionStarted_) {
+        localSettings_[key] = item;
     } else {
-        m_items[key] = item;
+        items_[key] = item;
     }
 }
 
-Settings::Items Settings::readItems() const { return m_items; }
+Settings::Items Settings::readItems() const { return items_; }
 
 void Settings::writeValue(const Key &key, const Val &value) {
     (void) key;

@@ -45,15 +45,15 @@ public:
 
     EngravingObject *propertyDelegate(Pid) const override;
 
-    const SymIdList &symbols() const { return m_symbols; }
+    const SymIdList &symbols() const { return symbols_; }
 
-    void setSymbols(const SymIdList &s) { m_symbols = s; }
+    void setSymbols(const SymIdList &s) { symbols_ = s; }
 
     void symbolLine(SymId start, SymId fill);
     void symbolLine(SymId start, SymId fill, SymId end);
 
 private:
-    SymIdList m_symbols;
+    SymIdList symbols_;
 };
 
 //---------------------------------------------------------
@@ -75,9 +75,9 @@ public:
     LineSegment *createLineSegment() override;
     PointF linePos(Grip grip, System **system) const override;
 
-    void setVibratoType(VibratoType tt) { m_vibratoType = tt; }
+    void setVibratoType(VibratoType tt) { vibratoType_ = tt; }
 
-    VibratoType vibratoType() const { return m_vibratoType; }
+    VibratoType vibratoType() const { return vibratoType_; }
 
     String vibratoTypeUserName() const;
 
@@ -87,7 +87,7 @@ public:
     bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid) const override;
 
-    int subtype() const override { return int(m_vibratoType); }
+    int subtype() const override { return int(vibratoType_); }
 
     TranslatableString subtypeUserName() const override;
 
@@ -95,7 +95,7 @@ protected:
     Sid defaultPosSid() const override;
 
 private:
-    VibratoType m_vibratoType = VibratoType::GUITAR_VIBRATO;
+    VibratoType vibratoType_ = VibratoType::GUITAR_VIBRATO;
 };
 } // namespace mu::engraving
 

@@ -55,8 +55,8 @@ protected:
     virtual const char *tagName() const = 0;
 
 private:
-    XmlWriter *m_xml = nullptr;
-    WriteContext *m_ctx = nullptr;
+    XmlWriter *xml_ = nullptr;
+    WriteContext *ctx_ = nullptr;
 };
 
 //-----------------------------------------------------------------------------

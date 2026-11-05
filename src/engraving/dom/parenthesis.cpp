@@ -54,12 +54,12 @@ PropertyValue Parenthesis::propertyDefault(Pid pid) const {
     }
 }
 
-bool Parenthesis::followParentCurColor() const { return m_followParentColor; }
+bool Parenthesis::followParentCurColor() const { return followParentColor_; }
 
-void Parenthesis::setFollowParentColor(bool val) { m_followParentColor = val; }
+void Parenthesis::setFollowParentColor(bool val) { followParentColor_ = val; }
 
 Color Parenthesis::curColor(const rendering::PaintOptions &opt) const {
-    if (m_followParentColor) {
+    if (followParentColor_) {
         return layoutParent()->curColor(opt);
     }
 

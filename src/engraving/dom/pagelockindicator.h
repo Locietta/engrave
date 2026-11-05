@@ -36,7 +36,7 @@ public:
 
     void setSelected(bool v) override;
 
-    const RangeLock *pageLock() const { return m_pageLock; }
+    const RangeLock *pageLock() const { return pageLock_; }
 
     const Page *page() const;
 
@@ -50,6 +50,6 @@ public:
     DECLARE_LAYOUTDATA_METHODS(PageLockIndicator)
 
 private:
-    const RangeLock *m_pageLock = nullptr;
+    const RangeLock *pageLock_ = nullptr;
 };
 } // namespace mu::engraving

@@ -63,24 +63,24 @@ public:
 
     void clear() {
         std::multimap<int, Spanner *>::clear();
-        m_dirty = true;
+        dirty_ = true;
     }
 
     bool empty() const { return std::multimap<int, Spanner *>::empty(); }
 
     void update() const;
 
-    void setDirty() const { m_dirty = true; } // must be called if a spanner changes start/length
+    void setDirty() const { dirty_ = true; } // must be called if a spanner changes start/length
 #ifndef NDEBUG
     void dump() const;
 #endif
 
 private:
 
-    mutable bool m_dirty = false;
-    mutable interval_tree::IntervalTree<Spanner *> m_tree;
-    mutable interval_tree::IntervalTree<Spanner *> m_collisionFreeTree;
-    mutable std::vector<interval_tree::Interval<Spanner *>> m_results;
+    mutable bool dirty_ = false;
+    mutable interval_tree::IntervalTree<Spanner *> tree_;
+    mutable interval_tree::IntervalTree<Spanner *> collisionFreeTree_;
+    mutable std::vector<interval_tree::Interval<Spanner *>> results_;
 };
 } // namespace mu::engraving
 

@@ -32,7 +32,7 @@
 
 namespace mu::engraving {
 PageLockIndicator::PageLockIndicator(DummyParentOr<System> parent, const RangeLock *lock)
-    : IndicatorIcon(ElementType::PAGE_LOCK_INDICATOR, parent, ElementFlag::SYSTEM | ElementFlag::GENERATED), m_pageLock(lock) {}
+    : IndicatorIcon(ElementType::PAGE_LOCK_INDICATOR, parent, ElementFlag::SYSTEM | ElementFlag::GENERATED), pageLock_(lock) {}
 
 void PageLockIndicator::setSelected(bool v) {
     EngravingItem::setSelected(v);
@@ -43,8 +43,8 @@ void PageLockIndicator::setSelected(bool v) {
 const Page *PageLockIndicator::page() const { return system() ? system()->page() : nullptr; }
 
 String PageLockIndicator::formatBarsAndBeats() const {
-    const MeasureBase *startMB = m_pageLock->startMB();
-    const MeasureBase *endMB = m_pageLock->endMB();
+    const MeasureBase *startMB = pageLock_->startMB();
+    const MeasureBase *endMB = pageLock_->endMB();
     const Measure *startMeasure = startMB->isMeasure() ? toMeasure(startMB) : toMeasure(startMB->prevMeasure());
     const Measure *endMeasure = endMB->isMeasure() ? toMeasure(endMB) : toMeasure(endMB->prevMeasure());
     const int startMeasureNum = startMeasure ? startMeasure->measureNumber() : -1;

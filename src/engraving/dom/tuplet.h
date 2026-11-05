@@ -60,9 +60,9 @@ public:
     void add(EngravingItem *) override;
     void remove(EngravingItem *) override;
 
-    Text *number() const { return m_number; }
+    Text *number() const { return number_; }
 
-    void setNumber(Text *t) { m_number = t; }
+    void setNumber(Text *t) { number_ = t; }
 
     void resetNumberProperty();
     static void resetNumberProperty(Text *number);
@@ -71,86 +71,86 @@ public:
 
     Measure *measure() const override { return toMeasure(ownershipParent()); }
 
-    TupletNumberType numberType() const { return m_numberType; }
+    TupletNumberType numberType() const { return numberType_; }
 
-    TupletBracketType bracketType() const { return m_bracketType; }
+    TupletBracketType bracketType() const { return bracketType_; }
 
-    void setNumberType(TupletNumberType val) { m_numberType = val; }
+    void setNumberType(TupletNumberType val) { numberType_ = val; }
 
-    void setBracketType(TupletBracketType val) { m_bracketType = val; }
+    void setBracketType(TupletBracketType val) { bracketType_ = val; }
 
-    bool hasBracket() const { return m_hasBracket; }
+    bool hasBracket() const { return hasBracket_; }
 
-    void setHasBracket(bool b) { m_hasBracket = b; }
+    void setHasBracket(bool b) { hasBracket_ = b; }
 
-    Spatium bracketWidth() const { return m_bracketWidth; }
+    Spatium bracketWidth() const { return bracketWidth_; }
 
-    void setBracketWidth(Spatium s) { m_bracketWidth = s; }
+    void setBracketWidth(Spatium s) { bracketWidth_ = s; }
 
-    const Fraction &ratio() const { return m_ratio; }
+    const Fraction &ratio() const { return ratio_; }
 
-    void setRatio(const Fraction &r) { m_ratio = r; }
+    void setRatio(const Fraction &r) { ratio_ = r; }
 
-    void setUserPoint1(PointF p) { m_userP1 = p; }
+    void setUserPoint1(PointF p) { userP1_ = p; }
 
-    void setUserPoint2(PointF p) { m_userP2 = p; }
+    void setUserPoint2(PointF p) { userP2_ = p; }
 
-    const std::vector<DurationElement *> &elements() const { return m_currentElements; }
+    const std::vector<DurationElement *> &elements() const { return currentElements_; }
 
-    void clear() { m_currentElements.clear(); }
+    void clear() { currentElements_.clear(); }
 
     bool contains(const DurationElement *el) const {
-        return std::find(m_currentElements.begin(), m_currentElements.end(), el) != m_currentElements.end();
+        return std::find(currentElements_.begin(), currentElements_.end(), el) != currentElements_.end();
     }
 
     void scanElements(std::function<void(EngravingItem *)> func) override;
 
     void reset() override;
 
-    TDuration baseLen() const { return m_baseLen; }
+    TDuration baseLen() const { return baseLen_; }
 
-    void setBaseLen(const TDuration &d) { m_baseLen = d; }
+    void setBaseLen(const TDuration &d) { baseLen_ = d; }
 
     void dump() const override;
 
-    void setDirection(DirectionV d) { m_direction = d; }
+    void setDirection(DirectionV d) { direction_ = d; }
 
-    DirectionV direction() const { return m_direction; }
+    DirectionV direction() const { return direction_; }
 
-    bool isUp() const { return m_isUp; }
+    bool isUp() const { return isUp_; }
 
-    void setIsUp(bool val) { m_isUp = val; }
+    void setIsUp(bool val) { isUp_ = val; }
 
-    bool isSmall() const { return m_isSmall; }
+    bool isSmall() const { return isSmall_; }
 
-    void setIsSmall(bool val) { m_isSmall = val; }
+    void setIsSmall(bool val) { isSmall_ = val; }
 
-    Fraction tick() const override { return m_tick; }
+    Fraction tick() const override { return tick_; }
 
     Fraction rtick() const override;
 
-    void setTick(const Fraction &v) { m_tick = v; }
+    void setTick(const Fraction &v) { tick_ = v; }
 
     Fraction elementsDuration();
     void sortElements();
     bool cross() const;
     staff_idx_t vStaffIdx() const override;
 
-    const PointF &p1() const { return m_p1; }
+    const PointF &p1() const { return p1_; }
 
-    PointF &p1() { return m_p1; }
+    PointF &p1() { return p1_; }
 
-    void setP1(const PointF &p) { m_p1 = p; }
+    void setP1(const PointF &p) { p1_ = p; }
 
-    const PointF &p2() const { return m_p2; }
+    const PointF &p2() const { return p2_; }
 
-    PointF &p2() { return m_p2; }
+    PointF &p2() { return p2_; }
 
-    void setP2(const PointF &p) { m_p2 = p; }
+    void setP2(const PointF &p) { p2_ = p; }
 
-    const PointF &userP1() const { return m_userP1; }
+    const PointF &userP1() const { return userP1_; }
 
-    const PointF &userP2() const { return m_userP2; }
+    const PointF &userP2() const { return userP2_; }
 
     void setVisible(bool f) override;
     void setColor(const Color &col) override;
@@ -183,30 +183,30 @@ private:
     Fraction addMissingElement(const Fraction &startTick, const Fraction &endTick);
 
     // All DurationElements where `tuplet()` returns this tuplet
-    std::set<DurationElement *> m_allElements;
+    std::set<DurationElement *> allElements_;
 
     // Those DurationElements that are currently really part of this tuplet
-    std::vector<DurationElement *> m_currentElements;
+    std::vector<DurationElement *> currentElements_;
 
-    bool m_beingDestructed = false;
+    bool beingDestructed_ = false;
 
-    DirectionV m_direction = DirectionV::AUTO;
-    TupletNumberType m_numberType = TupletNumberType::SHOW_NUMBER;
-    TupletBracketType m_bracketType = TupletBracketType::AUTO_BRACKET;
-    Spatium m_bracketWidth;
+    DirectionV direction_ = DirectionV::AUTO;
+    TupletNumberType numberType_ = TupletNumberType::SHOW_NUMBER;
+    TupletBracketType bracketType_ = TupletBracketType::AUTO_BRACKET;
+    Spatium bracketWidth_;
 
-    bool m_hasBracket = false;
-    Fraction m_ratio;
-    TDuration m_baseLen; // 1/8 for a triplet of 1/8
+    bool hasBracket_ = false;
+    Fraction ratio_;
+    TDuration baseLen_; // 1/8 for a triplet of 1/8
 
-    bool m_isUp = true;
-    bool m_isSmall = true;
+    bool isUp_ = true;
+    bool isSmall_ = true;
 
-    Fraction m_tick;
+    Fraction tick_;
 
-    PointF m_p1, m_p2;
-    PointF m_userP1, m_userP2; // user offset
+    PointF p1_, p2_;
+    PointF userP1_, userP2_; // user offset
 
-    Text *m_number = nullptr;
+    Text *number_ = nullptr;
 };
 } // namespace mu::engraving

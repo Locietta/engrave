@@ -57,9 +57,9 @@ public:
 
     TranslatableString subtypeUserName() const override;
 
-    bool snapToItemAfter() const { return m_snapToItemAfter; }
+    bool snapToItemAfter() const { return snapToItemAfter_; }
 
-    void setSnapToItemAfter(bool v) { m_snapToItemAfter = v; }
+    void setSnapToItemAfter(bool v) { snapToItemAfter_ = v; }
 
     bool adjustForRehearsalMark(bool start) const;
     PointF linePos(Grip grip, System **system) const override;
@@ -68,13 +68,13 @@ protected:
     Sid defaultPosSid() const override;
 
 private:
-    GradualTempoChangeType m_tempoChangeType = GradualTempoChangeType::Undefined;
-    ChangeMethod m_tempoEasingMethod = ChangeMethod::NORMAL;
-    std::optional<float> m_tempoChangeFactor;
+    GradualTempoChangeType tempoChangeType_ = GradualTempoChangeType::Undefined;
+    ChangeMethod tempoEasingMethod_ = ChangeMethod::NORMAL;
+    std::optional<float> tempoChangeFactor_;
 
-    bool m_snapToItemAfter = true;
+    bool snapToItemAfter_ = true;
 
-    bool m_alignRightOfRehearsalMark = true;
+    bool alignRightOfRehearsalMark_ = true;
 
     friend class GradualTempoChangeSegment;
 };

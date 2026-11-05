@@ -72,12 +72,12 @@ public:
     voice_idx_t voiceIdx() const;
 
     struct LayoutData : public EngravingItem::LayoutData {
-        bool darker() const { return m_darker; }
+        bool darker() const { return darker_; }
 
-        void setDarker(bool v) { m_darker = v; }
+        void setDarker(bool v) { darker_ = v; }
 
     private:
-        bool m_darker = false;
+        bool darker_ = false;
     };
     DECLARE_LAYOUTDATA_METHODS(TimeTickAnchor)
 };

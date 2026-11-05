@@ -57,17 +57,17 @@ class TrackList : public std::vector<EngravingItem *> {
 public:
     typedef std::map<Chord *, Chord *> ClonedChordMap;
 
-    TrackList(ScoreRange *r) { m_range = r; }
+    TrackList(ScoreRange *r) { range_ = r; }
 
     ~TrackList();
 
-    Fraction ticks() const { return m_duration; }
+    Fraction ticks() const { return duration_; }
 
-    ScoreRange *range() const { return m_range; }
+    ScoreRange *range() const { return range_; }
 
-    track_idx_t track() const { return m_track; }
+    track_idx_t track() const { return track_; }
 
-    void setTrack(track_idx_t val) { m_track = val; }
+    void setTrack(track_idx_t val) { track_ = val; }
 
     void read(const Segment *fs, const Segment *ls);
     bool write(Score *, const Fraction &) const;
@@ -83,10 +83,10 @@ private:
     void appendTuplet(Tuplet *srcTuplet, Tuplet *dstTuplet);
     void combineTuplet(Tuplet *dst, Tuplet *src);
 
-    Fraction m_duration;
-    ScoreRange *m_range = nullptr;
-    track_idx_t m_track = 0;
-    ClonedChordMap m_clonedChord;
+    Fraction duration_;
+    ScoreRange *range_ = nullptr;
+    track_idx_t track_ = 0;
+    ClonedChordMap clonedChord_;
 };
 
 //---------------------------------------------------------
@@ -111,16 +111,16 @@ public:
     bool write(Score *, const Fraction &) const;
     Fraction ticks() const;
 
-    Segment *first() const { return m_first; }
+    Segment *first() const { return first_; }
 
-    Segment *last() const { return m_last; }
+    Segment *last() const { return last_; }
 
     void fill(const Fraction &);
     bool truncate(const Fraction &);
 
 protected:
-    std::vector<Spanner *> m_spanner;
-    std::vector<Annotation> m_annotations;
+    std::vector<Spanner *> spanner_;
+    std::vector<Annotation> annotations_;
 
 private:
     struct BarLinesBackup {
@@ -129,7 +129,7 @@ private:
         BarLine *bl = nullptr;
     };
 
-    std::vector<BarLinesBackup> m_barLines;
+    std::vector<BarLinesBackup> barLines_;
 
     void backupBarLines(Segment *first, Segment *last);
     bool insertBarLine(Measure *m, const BarLinesBackup &barLine) const;
@@ -141,7 +141,7 @@ private:
         LayoutBreakType lBreakType;
     };
 
-    std::vector<BreaksBackup> m_breaks;
+    std::vector<BreaksBackup> breaks_;
 
     void backupBreaks(Segment *first, Segment *last);
     void restoreBreaks(Score *score, const Fraction &tick) const;
@@ -151,7 +151,7 @@ private:
         bool isStartRepeat;
     };
 
-    std::vector<StartEndRepeatBackup> m_startEndRepeats;
+    std::vector<StartEndRepeatBackup> startEndRepeats_;
 
     void backupRepeats(Segment *first, Segment *last);
     void restoreRepeats(Score *score, const Fraction &tick) const;
@@ -180,11 +180,11 @@ private:
 
     friend class TrackList;
 
-    std::vector<TrackList *> m_tracks;
-    std::vector<Tie *> m_startTies;
-    std::vector<SpacerBackup> m_spacers;
-    std::vector<JumpsMarkersBackup> m_jumpsMarkers;
-    Segment *m_first = nullptr;
-    Segment *m_last = nullptr;
+    std::vector<TrackList *> tracks_;
+    std::vector<Tie *> startTies_;
+    std::vector<SpacerBackup> spacers_;
+    std::vector<JumpsMarkersBackup> jumpsMarkers_;
+    Segment *first_ = nullptr;
+    Segment *last_ = nullptr;
 };
 } // namespace mu::engraving

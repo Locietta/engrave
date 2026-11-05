@@ -42,33 +42,33 @@ using namespace mu;
 namespace mu::engraving {
 class DrumSet;
 
-bool InputState::isValid() const { return m_segment != nullptr && m_track != muse::nidx; }
+bool InputState::isValid() const { return segment_ != nullptr && track_ != muse::nidx; }
 
 //---------------------------------------------------------
 //   drumset
 //---------------------------------------------------------
 
 Staff *InputState::staff() const {
-    if (!m_segment || m_track == muse::nidx) {
+    if (!segment_ || track_ == muse::nidx) {
         return nullptr;
     }
 
-    return m_segment->score()->staff(mu::engraving::track2staff(m_track));
+    return segment_->score()->staff(mu::engraving::track2staff(track_));
 }
 
-staff_idx_t InputState::staffIdx() const { return mu::engraving::track2staff(m_track); }
+staff_idx_t InputState::staffIdx() const { return mu::engraving::track2staff(track_); }
 
 Drumset *InputState::drumset() const {
-    if (!m_segment || m_track == muse::nidx) {
+    if (!segment_ || track_ == muse::nidx) {
         return nullptr;
     }
 
-    const Staff *staff = m_segment->score()->staff(m_track / VOICES);
+    const Staff *staff = segment_->score()->staff(track_ / VOICES);
     if (!staff) {
         return nullptr;
     }
 
-    return staff->part()->instrument(m_segment->tick())->drumset();
+    return staff->part()->instrument(segment_->tick())->drumset();
 }
 
 //---------------------------------------------------------
@@ -76,12 +76,12 @@ Drumset *InputState::drumset() const {
 //---------------------------------------------------------
 
 StaffGroup InputState::staffGroup() const {
-    if (!m_segment || m_track == muse::nidx) {
+    if (!segment_ || track_ == muse::nidx) {
         return StaffGroup::STANDARD;
     }
 
-    Fraction tick = m_segment->tick();
-    const Staff *staff = m_segment->score()->staff(m_track / VOICES);
+    Fraction tick = segment_->tick();
+    const Staff *staff = segment_->score()->staff(track_ / VOICES);
     if (!staff) {
         return StaffGroup::STANDARD;
     }
@@ -101,7 +101,7 @@ StaffGroup InputState::staffGroup() const {
 //   tick
 //---------------------------------------------------------
 
-Fraction InputState::tick() const { return m_segment ? m_segment->tick() : Fraction(0, 1); }
+Fraction InputState::tick() const { return segment_ ? segment_->tick() : Fraction(0, 1); }
 
 //---------------------------------------------------------
 //   cr
@@ -109,7 +109,7 @@ Fraction InputState::tick() const { return m_segment ? m_segment->tick() : Fract
 
 ChordRest *InputState::cr() const {
     // _track could potentially be invalid, for instance after navigation through a frame
-    return m_segment && m_track != muse::nidx ? toChordRest(m_segment->element(m_track)) : 0;
+    return segment_ && track_ != muse::nidx ? toChordRest(segment_->element(track_)) : 0;
 }
 
 //---------------------------------------------------------
@@ -117,20 +117,20 @@ ChordRest *InputState::cr() const {
 //---------------------------------------------------------
 
 void InputState::setDots(int n) {
-    if (n && (!m_duration.isValid() || m_duration.isZero() || m_duration.isMeasure())) {
-        m_duration = DurationType::V_QUARTER;
+    if (n && (!duration_.isValid() || duration_.isZero() || duration_.isMeasure())) {
+        duration_ = DurationType::V_QUARTER;
     }
-    m_duration.setDots(n);
+    duration_.setDots(n);
 }
 
 void InputState::setVoice(voice_idx_t v) {
-    const Score *score = m_segment ? m_segment->score() : nullptr;
+    const Score *score = segment_ ? segment_->score() : nullptr;
 
-    if (!score || v >= VOICES || v == voice() || m_track == muse::nidx) {
+    if (!score || v >= VOICES || v == voice() || track_ == muse::nidx) {
         return;
     }
 
-    const track_idx_t newTrack = (m_track / VOICES) * VOICES + v;
+    const track_idx_t newTrack = (track_ / VOICES) * VOICES + v;
     Segment *currSeg = segment();
     if (!currSeg || currSeg->cr(newTrack)) {
         setTrack(newTrack);
@@ -331,8 +331,8 @@ void InputState::moveInputPos(EngravingItem *e) {
             Measure *m = s->measure()->mmRestFirst();
             s = m->findSegment(SegmentType::ChordRest, m->tick());
         }
-        m_lastSegment = m_segment;
-        m_segment = s;
+        lastSegment_ = segment_;
+        segment_ = s;
     }
 }
 
@@ -345,8 +345,8 @@ void InputState::setSegment(Segment *s) {
         Measure *m = s->measure()->mmRestFirst();
         s = m->findSegment(SegmentType::ChordRest, m->tick());
     }
-    m_segment = s;
-    m_lastSegment = s;
+    segment_ = s;
+    lastSegment_ = s;
 }
 
 //---------------------------------------------------------
@@ -354,10 +354,10 @@ void InputState::setSegment(Segment *s) {
 //---------------------------------------------------------
 
 Segment *InputState::nextInputPos() const {
-    Measure *m = m_segment->measure();
-    Segment *s = m_segment->next1(SegmentType::ChordRest);
+    Measure *m = segment_->measure();
+    Segment *s = segment_->next1(SegmentType::ChordRest);
     while (s) {
-        if (s->element(m_track) || s->measure() != m) {
+        if (s->element(track_) || s->measure() != m) {
             return s;
         }
         s = s->next1(SegmentType::ChordRest);
@@ -372,12 +372,12 @@ Segment *InputState::nextInputPos() const {
 
 void InputState::moveToNextInputPos() {
     Segment *s = nextInputPos();
-    m_lastSegment = m_segment;
+    lastSegment_ = segment_;
     if (s) {
-        m_segment = s;
-        m_beyondScore = false;
+        segment_ = s;
+        beyondScore_ = false;
     } else {
-        m_beyondScore = true;
+        beyondScore_ = true;
     }
 }
 } // namespace mu::engraving

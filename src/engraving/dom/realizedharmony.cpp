@@ -36,10 +36,10 @@ namespace mu::engraving {
 ///   voicing is different than current
 //---------------------------------------------------
 void RealizedHarmony::setVoicing(Voicing v) {
-    if (m_voicing == v) {
+    if (voicing_ == v) {
         return;
     }
-    m_voicing = v;
+    voicing_ = v;
     cascadeDirty(true);
 }
 
@@ -49,10 +49,10 @@ void RealizedHarmony::setVoicing(Voicing v) {
 ///   HDuration is different than current
 //---------------------------------------------------
 void RealizedHarmony::setDuration(HDuration d) {
-    if (m_duration == d) {
+    if (duration_ == d) {
         return;
     }
-    m_duration = d;
+    duration_ = d;
     cascadeDirty(true);
 }
 
@@ -62,10 +62,10 @@ void RealizedHarmony::setDuration(HDuration d) {
 ///   bool is different than current
 //---------------------------------------------------
 void RealizedHarmony::setLiteral(bool literal) {
-    if (m_literal == literal) {
+    if (literal_ == literal) {
         return;
     }
-    m_literal = literal;
+    literal_ = literal;
     cascadeDirty(true);
 }
 
@@ -74,11 +74,11 @@ void RealizedHarmony::setLiteral(bool literal) {
 ///   returns the list of notes
 //---------------------------------------------------
 const RealizedHarmony::PitchMap &RealizedHarmony::notes() const {
-    assert(!m_dirty);
+    assert(!dirty_);
     //with the way that the code is currently structured, there should be no way to
     //get to this function with dirty flag set although in the future it may be
     //better to just update if dirty here
-    return m_notes;
+    return notes_;
 }
 
 //---------------------------------------------------
@@ -116,7 +116,7 @@ const RealizedHarmony::PitchMap RealizedHarmony::generateNotes(int rootTpc, int 
             break;
         case Voicing::AUTO: //auto is close voicing for now since it is the most robust
             //but just render the root if the harmony isn't understandable
-            if (!m_harmony->parsedForm()->understandable()) {
+            if (!harmony_->parsedForm()->understandable()) {
                 break;
             }
             [[fallthrough]];
@@ -199,14 +199,14 @@ void RealizedHarmony::update(int rootTpc, int bassTpc, int transposeOffset /*= 0
     //bit risky design since these 3 parameters rely on the dirty bit and are not
     //otherwise checked by RealizedHarmony. This saves us 3 ints of space, but
     //has the added risk
-    if (!m_dirty) {
+    if (!dirty_) {
         return;
     }
 
     if (tpcIsValid(rootTpc)) {
-        m_notes = generateNotes(rootTpc, bassTpc, m_literal, m_voicing, transposeOffset);
+        notes_ = generateNotes(rootTpc, bassTpc, literal_, voicing_, transposeOffset);
     }
-    m_dirty = false;
+    dirty_ = false;
 }
 
 //--------------------------------------------------
@@ -232,13 +232,13 @@ Fraction RealizedHarmony::getActualDuration(int utick, HDuration durationType) c
     if (durationType != HDuration::INVALID) {
         dur = durationType;
     } else {
-        dur = m_duration;
+        dur = duration_;
     }
     switch (dur) {
-        case HDuration::UNTIL_NEXT_CHORD_SYMBOL: return m_harmony->ticksTillNext(utick, false); break;
-        case HDuration::STOP_AT_MEASURE_END: return m_harmony->ticksTillNext(utick, true); break;
+        case HDuration::UNTIL_NEXT_CHORD_SYMBOL: return harmony_->ticksTillNext(utick, false); break;
+        case HDuration::STOP_AT_MEASURE_END: return harmony_->ticksTillNext(utick, true); break;
         case HDuration::SEGMENT_DURATION: {
-            Segment *s = m_harmony->getParentSeg();
+            Segment *s = harmony_->getParentSeg();
             if (s) {
                 // TODO - use duration of chordrest on this segment / track
                 // currently, this will result in too short of a duration
@@ -283,7 +283,7 @@ RealizedHarmony::PitchMap RealizedHarmony::getIntervals(int rootTpc, bool litera
 
     PitchMap ret;
 
-    const ParsedChord *p = m_harmony->parsedForm();
+    const ParsedChord *p = harmony_->parsedForm();
     String quality = p->quality();
     int ext = p->extension().toInt();
     const StringList &modList = p->modifierList();
@@ -477,7 +477,7 @@ RealizedHarmony::PitchMap RealizedHarmony::getIntervals(int rootTpc, bool litera
         default: break;
     }
 
-    Harmony *next = m_harmony->findNext();
+    Harmony *next = harmony_->findNext();
     if (!literal && next && tpcIsValid(next->rootTpc())) {
         //jazz interpretation
         String qNext = next->parsedForm()->quality();
@@ -563,12 +563,12 @@ RealizedHarmony::PitchMap RealizedHarmony::normalizeNoteMap(const PitchMap &inte
 ///   TO CASCADE FORWARD AS WELL
 //---------------------------------------------------
 void RealizedHarmony::cascadeDirty(bool dirty) {
-    if (dirty && !m_dirty) { //only cascade when we want to set our clean realized harmony to dirty
-        Harmony *prev = m_harmony->findPrev();
+    if (dirty && !dirty_) { //only cascade when we want to set our clean realized harmony to dirty
+        Harmony *prev = harmony_->findPrev();
         if (prev) {
             prev->realizedHarmony().cascadeDirty(dirty);
         }
     }
-    m_dirty = dirty;
+    dirty_ = dirty;
 }
 } // namespace mu::engraving

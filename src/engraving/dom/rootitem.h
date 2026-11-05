@@ -54,6 +54,6 @@ public:
 
 private:
 
-    Kind m_kind = Kind::Score;
+    Kind kind_ = Kind::Score;
 };
 } // namespace mu::engraving

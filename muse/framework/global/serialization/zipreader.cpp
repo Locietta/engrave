@@ -38,44 +38,44 @@ bool ZipReader::startsWithEntry(const ByteArray &data, std::span<const uint8_t> 
     return ZipContainer::startsWithEntry(data.constData(), data.size(), name);
 }
 
-ZipReader::ZipReader(const io::path_t &filePath) : m_filePath(filePath) {
-    m_impl = new Impl();
-    m_impl->device = new File(filePath);
-    m_impl->isSelfDevice = true;
-    if (m_impl->device->open(IODevice::ReadOnly)) {}
-    m_impl->zip = new ZipContainer(m_impl->device);
+ZipReader::ZipReader(const io::path_t &filePath) : filePath_(filePath) {
+    impl_ = new Impl();
+    impl_->device = new File(filePath);
+    impl_->isSelfDevice = true;
+    if (impl_->device->open(IODevice::ReadOnly)) {}
+    impl_->zip = new ZipContainer(impl_->device);
 }
 
 ZipReader::ZipReader(IODevice *device) {
-    m_impl = new Impl();
-    m_impl->device = device;
-    m_impl->zip = new ZipContainer(m_impl->device);
+    impl_ = new Impl();
+    impl_->device = device;
+    impl_->zip = new ZipContainer(impl_->device);
 }
 
 ZipReader::~ZipReader() {
     close();
-    delete m_impl->zip;
-    if (m_impl->isSelfDevice) {
-        delete m_impl->device;
+    delete impl_->zip;
+    if (impl_->isSelfDevice) {
+        delete impl_->device;
     }
-    delete m_impl;
+    delete impl_;
 }
 
 bool ZipReader::exists() const {
-    if (!m_filePath.empty()) {
-        return File::exists(m_filePath);
+    if (!filePath_.empty()) {
+        return File::exists(filePath_);
     }
 
     return true;
 }
 
-void ZipReader::close() { m_impl->zip->close(); }
+void ZipReader::close() { impl_->zip->close(); }
 
-bool ZipReader::hasError() const { return m_impl->zip->status() != ZipContainer::NoError; }
+bool ZipReader::hasError() const { return impl_->zip->status() != ZipContainer::NoError; }
 
 std::vector<ZipReader::FileInfo> ZipReader::fileInfoList() const {
     std::vector<FileInfo> ret;
-    std::vector<ZipContainer::FileInfo> fis = m_impl->zip->fileInfoList();
+    std::vector<ZipContainer::FileInfo> fis = impl_->zip->fileInfoList();
     ret.reserve(fis.size());
     for (const ZipContainer::FileInfo &qfi : fis) {
         FileInfo fi;
@@ -91,9 +91,9 @@ std::vector<ZipReader::FileInfo> ZipReader::fileInfoList() const {
     return ret;
 }
 
-bool ZipReader::fileExists(const std::string &fileName) const { return m_impl->zip->fileExists(fileName); }
+bool ZipReader::fileExists(const std::string &fileName) const { return impl_->zip->fileExists(fileName); }
 
-ByteArray ZipReader::fileData(const std::string &fileName) const { return m_impl->zip->fileData(fileName); }
+ByteArray ZipReader::fileData(const std::string &fileName) const { return impl_->zip->fileData(fileName); }
 
 // ===========================
 // ZipUnpack

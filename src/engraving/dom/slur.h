@@ -112,9 +112,9 @@ public:
     bool isCrossStaff();
     bool hasCrossBeams();
 
-    const StemFloated &stemFloated() const { return m_stemFloated; }
+    const StemFloated &stemFloated() const { return stemFloated_; }
 
-    StemFloated &stemFloated() { return m_stemFloated; }
+    StemFloated &stemFloated() { return stemFloated_; }
 
     SlurTieSegment *newSlurTieSegment() override { return new SlurSegment(this); }
 
@@ -138,6 +138,6 @@ private:
 
     friend class Factory;
 
-    StemFloated m_stemFloated; // end point position is attached to stem but floated towards the note
+    StemFloated stemFloated_; // end point position is attached to stem but floated towards the note
 };
 } // namespace mu::engraving

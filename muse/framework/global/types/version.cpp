@@ -77,7 +77,7 @@ static std::pair<String, int> parseVersionSuffix(const String &suffix, bool &ok)
 }
 
 Version::Version(int major, int minor, int patch, const String &suffix, int suffixVersion)
-    : m_major(major), m_minor(minor), m_patch(patch), m_suffix(suffix), m_suffixVersion(suffixVersion) {}
+    : major_(major), minor_(minor), patch_(patch), suffix_(suffix), suffixVersion_(suffixVersion) {}
 
 Version::Version(const String &versionStr) {
     String version = versionStr.left(versionStr.indexOf(SUFFIX_DELIMITER));
@@ -88,9 +88,9 @@ Version::Version(const String &versionStr) {
         return;
     }
 
-    m_major = versionComponents[0];
-    m_minor = versionComponents[1];
-    m_patch = versionComponents[2];
+    major_ = versionComponents[0];
+    minor_ = versionComponents[1];
+    patch_ = versionComponents[2];
 
     if (!versionStr.contains(SUFFIX_DELIMITER)) {
         return;
@@ -101,15 +101,15 @@ Version::Version(const String &versionStr) {
 
 Version::Version(const std::string &versionStr) : Version(String::fromStdString(versionStr)) {}
 
-int Version::major() const { return m_major; }
+int Version::major() const { return major_; }
 
-int Version::minor() const { return m_minor; }
+int Version::minor() const { return minor_; }
 
-int Version::patch() const { return m_patch; }
+int Version::patch() const { return patch_; }
 
-const String &Version::suffix() const { return m_suffix; }
+const String &Version::suffix() const { return suffix_; }
 
-int Version::suffixVersion() const { return m_suffixVersion; }
+int Version::suffixVersion() const { return suffixVersion_; }
 
 void Version::setSuffix(const String &suffix) {
     bool ok = true;
@@ -118,20 +118,20 @@ void Version::setSuffix(const String &suffix) {
         return;
     }
 
-    m_suffix = versionSuffix.first;
-    m_suffixVersion = versionSuffix.second;
+    suffix_ = versionSuffix.first;
+    suffixVersion_ = versionSuffix.second;
 }
 
-bool Version::isNull() const { return m_major == 0 && m_minor == 0 && m_patch == 0; }
+bool Version::isNull() const { return major_ == 0 && minor_ == 0 && patch_ == 0; }
 
 bool Version::preRelease() const { return !suffix().isEmpty(); }
 
 String Version::toString() const {
-    String res = String(u"%1.%2.%3").arg(m_major, m_minor, m_patch);
+    String res = String(u"%1.%2.%3").arg(major_, minor_, patch_);
 
-    if (!m_suffix.isEmpty()) {
+    if (!suffix_.isEmpty()) {
         res.append(SUFFIX_DELIMITER);
-        res.append(m_suffix + (m_suffixVersion > 0 ? u"." + String::number(m_suffixVersion) : u""));
+        res.append(suffix_ + (suffixVersion_ > 0 ? u"." + String::number(suffixVersion_) : u""));
     }
 
     return res;
@@ -140,16 +140,16 @@ String Version::toString() const {
 std::string Version::toStdString() const { return toString().toStdString(); }
 
 bool Version::operator<(const Version &other) const {
-    if (m_major > other.major()) {
+    if (major_ > other.major()) {
         return false;
-    } else if (m_major == other.major()) {
-        if (m_minor > other.minor()) {
+    } else if (major_ == other.major()) {
+        if (minor_ > other.minor()) {
             return false;
-        } else if (m_minor == other.minor()) {
-            if (m_patch > other.patch()) {
+        } else if (minor_ == other.minor()) {
+            if (patch_ > other.patch()) {
                 return false;
-            } else if (m_patch == other.patch()) {
-                if (m_suffix.isEmpty()) {
+            } else if (patch_ == other.patch()) {
+                if (suffix_.isEmpty()) {
                     return false;
                 }
 
@@ -160,13 +160,13 @@ bool Version::operator<(const Version &other) const {
                 static StringList suffixes{u"dev", u"alpha", u"beta", u"rc"};
 
                 auto currentIt =
-                    std::find_if(suffixes.cbegin(), suffixes.cend(), [suffix = m_suffix](const String &s) { return s.startsWith(suffix); });
+                    std::find_if(suffixes.cbegin(), suffixes.cend(), [suffix = suffix_](const String &s) { return s.startsWith(suffix); });
 
                 auto updateIt = std::find_if(suffixes.cbegin(), suffixes.cend(),
                                              [suffix = other.suffix()](const String &s) { return s.startsWith(suffix); });
 
                 if (currentIt == suffixes.cend() || updateIt == suffixes.cend()) {
-                    LOGE() << "Invalid version suffix; current " << m_suffix << ", update " << other.suffix();
+                    LOGE() << "Invalid version suffix; current " << suffix_ << ", update " << other.suffix();
                     return true;
                 }
 
@@ -175,7 +175,7 @@ bool Version::operator<(const Version &other) const {
                 }
 
                 if (currentIt == updateIt) {
-                    return m_suffixVersion < other.suffixVersion();
+                    return suffixVersion_ < other.suffixVersion();
                 }
 
                 return false;
@@ -187,8 +187,8 @@ bool Version::operator<(const Version &other) const {
 }
 
 bool Version::operator==(const Version &other) const {
-    return m_major == other.major() && m_minor == other.minor() && m_patch == other.patch() && m_suffix == other.suffix() &&
-           m_suffixVersion == other.suffixVersion();
+    return major_ == other.major() && minor_ == other.minor() && patch_ == other.patch() && suffix_ == other.suffix() &&
+           suffixVersion_ == other.suffixVersion();
 }
 
 bool Version::operator<=(const Version &other) const {

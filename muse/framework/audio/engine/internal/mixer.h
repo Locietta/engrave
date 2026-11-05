@@ -74,12 +74,12 @@ private:
         bool processed = false;
     };
 
-    std::vector<TrackData> m_tracks;
-    std::vector<TrackData> m_auxTracks;
-    std::map<TrackId, AuxSendsParams> m_auxSends;
+    std::vector<TrackData> tracks_;
+    std::vector<TrackData> auxTracks_;
+    std::map<TrackId, AuxSendsParams> auxSends_;
 
-    size_t m_nonMutedTrackCount = 0;
-    std::unordered_set<TrackId> m_tracksToProcessWhenIdle;
+    size_t nonMutedTrackCount_ = 0;
+    std::unordered_set<TrackId> tracksToProcessWhenIdle_;
 };
 
 using MixerPtr = std::shared_ptr<Mixer>;

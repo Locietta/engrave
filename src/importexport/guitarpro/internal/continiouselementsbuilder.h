@@ -115,15 +115,15 @@ private:
         bool endedOnRest = false;
     };
 
-    std::unordered_map<ImportType, std::vector<mu::engraving::Spanner *>> m_elementsByType;
+    std::unordered_map<ImportType, std::vector<mu::engraving::Spanner *>> elementsByType_;
 
     std::unordered_map<mu::engraving::ElementType, std::unordered_map<track_idx_t, std::unordered_map<sub_type_t, ImportType>>>
-        m_lastImportTypes;
-    std::unordered_map<track_idx_t, std::unordered_map<ImportType, std::set<mu::engraving::Spanner *>>> m_spannersWithoutEndElement;
-    std::unordered_map<track_idx_t, std::unordered_map<ImportType, ContiniousElement>> m_elementsToAddToScore;
-    std::vector<mu::engraving::Spanner *> m_orderedAddedElements;
+        lastImportTypes_;
+    std::unordered_map<track_idx_t, std::unordered_map<ImportType, std::set<mu::engraving::Spanner *>>> spannersWithoutEndElement_;
+    std::unordered_map<track_idx_t, std::unordered_map<ImportType, ContiniousElement>> elementsToAddToScore_;
+    std::vector<mu::engraving::Spanner *> orderedAddedElements_;
 
-    mu::engraving::Score *m_score = nullptr;
+    mu::engraving::Score *score_ = nullptr;
 };
 } // namespace mu::iex::guitarpro
 #endif // MU_IMPORTEXPORT_CONTINIOUSELEMENTSBUILDER_H

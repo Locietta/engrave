@@ -34,27 +34,27 @@ using namespace muse;
 static const std::string VAL_TRUE("true");
 static const std::string VAL_FALSE("false");
 
-Val::Val(bool val) : m_val(val), m_type(Type::Bool) {}
+Val::Val(bool val) : val_(val), type_(Type::Bool) {}
 
-Val::Val(int val) : m_val(val), m_type(Type::Int) {}
+Val::Val(int val) : val_(val), type_(Type::Int) {}
 
-Val::Val(int64_t val) : m_val(val), m_type(Type::Int64) {}
+Val::Val(int64_t val) : val_(val), type_(Type::Int64) {}
 
-Val::Val(double val) : m_val(val), m_type(Type::Double) {}
+Val::Val(double val) : val_(val), type_(Type::Double) {}
 
-Val::Val(const std::string &str) : m_val(str), m_type(Type::String) {}
+Val::Val(const std::string &str) : val_(str), type_(Type::String) {}
 
-Val::Val(const char *str) : m_val(std::string(str)), m_type(Type::String) {}
+Val::Val(const char *str) : val_(std::string(str)), type_(Type::String) {}
 
-Val::Val(const io::path_t &path) : m_val(path.toStdString()), m_type(Type::String) {}
+Val::Val(const io::path_t &path) : val_(path.toStdString()), type_(Type::String) {}
 
-Val::Val(const ValList &list) : m_val(list), m_type(Type::List) {}
+Val::Val(const ValList &list) : val_(list), type_(Type::List) {}
 
-Val::Val(const ValMap &map) : m_val(map), m_type(Type::Map) {}
+Val::Val(const ValMap &map) : val_(map), type_(Type::Map) {}
 
 Val::Type Val::valueType() const {
     // std::monostate, bool, int, int64_t, double, std::string, ValList, ValMap
-    switch (m_val.index()) {
+    switch (val_.index()) {
         case 0: return Type::Undefined;
         case 1: return Type::Bool;
         case 2: return Type::Int;
@@ -67,24 +67,24 @@ Val::Type Val::valueType() const {
     return Type::Undefined;
 }
 
-void Val::setType(Type t) { m_type = t; }
+void Val::setType(Type t) { type_ = t; }
 
-Val::Type Val::type() const { return m_type; }
+Val::Type Val::type() const { return type_; }
 
-bool Val::isNull() const { return m_val.index() == 0; }
+bool Val::isNull() const { return val_.index() == 0; }
 
 std::optional<bool> Val::doToBool() const {
     switch (valueType()) {
-        case Type::Bool: return std::get<bool>(m_val);
-        case Type::Int: return muse::is_zero(std::get<int>(m_val)) ? false : true;
-        case Type::Int64: return muse::is_zero(std::get<int64_t>(m_val)) ? false : true;
-        case Type::Double: return muse::is_zero(std::get<double>(m_val)) ? false : true;
+        case Type::Bool: return std::get<bool>(val_);
+        case Type::Int: return muse::is_zero(std::get<int>(val_)) ? false : true;
+        case Type::Int64: return muse::is_zero(std::get<int64_t>(val_)) ? false : true;
+        case Type::Double: return muse::is_zero(std::get<double>(val_)) ? false : true;
         case Type::String: {
-            std::string str = std::get<std::string>(m_val);
+            std::string str = std::get<std::string>(val_);
             return !str.empty() && str != VAL_FALSE && str != "0" && str != "0.0";
         }
-        case Type::List: return std::get<ValList>(m_val).size() > 0;
-        case Type::Map: return std::get<ValMap>(m_val).size() > 0;
+        case Type::List: return std::get<ValList>(val_).size() > 0;
+        case Type::Map: return std::get<ValMap>(val_).size() > 0;
         default: break;
     }
     return std::nullopt;
@@ -97,12 +97,12 @@ bool Val::toBool() const {
 
 std::optional<int> Val::doToInt() const {
     switch (valueType()) {
-        case Type::Bool: return std::get<bool>(m_val) ? 1 : 0;
-        case Type::Int: return std::get<int>(m_val);
-        case Type::Int64: return static_cast<int>(std::get<int64_t>(m_val));
-        case Type::Double: return static_cast<int>(std::get<double>(m_val));
+        case Type::Bool: return std::get<bool>(val_) ? 1 : 0;
+        case Type::Int: return std::get<int>(val_);
+        case Type::Int64: return static_cast<int>(std::get<int64_t>(val_));
+        case Type::Double: return static_cast<int>(std::get<double>(val_));
         case Type::String: {
-            std::string str = std::get<std::string>(m_val);
+            std::string str = std::get<std::string>(val_);
             if (str == VAL_TRUE) {
                 return 1;
             }
@@ -124,12 +124,12 @@ int Val::toInt() const {
 
 std::optional<int64_t> Val::doToInt64() const {
     switch (valueType()) {
-        case Type::Bool: return std::get<bool>(m_val) ? 1 : 0;
-        case Type::Int: return std::get<int>(m_val);
-        case Type::Int64: return std::get<int64_t>(m_val);
-        case Type::Double: return static_cast<int64_t>(std::get<double>(m_val));
+        case Type::Bool: return std::get<bool>(val_) ? 1 : 0;
+        case Type::Int: return std::get<int>(val_);
+        case Type::Int64: return std::get<int64_t>(val_);
+        case Type::Double: return static_cast<int64_t>(std::get<double>(val_));
         case Type::String: {
-            std::string str = std::get<std::string>(m_val);
+            std::string str = std::get<std::string>(val_);
             if (str == VAL_TRUE) {
                 return 1LL;
             }
@@ -151,12 +151,12 @@ int64_t Val::toInt64() const {
 
 std::optional<double> Val::doToDouble() const {
     switch (valueType()) {
-        case Type::Bool: return std::get<bool>(m_val) ? 1.0 : 0.0;
-        case Type::Int: return static_cast<double>(std::get<int>(m_val));
-        case Type::Int64: return static_cast<double>(std::get<int64_t>(m_val));
-        case Type::Double: return std::get<double>(m_val);
+        case Type::Bool: return std::get<bool>(val_) ? 1.0 : 0.0;
+        case Type::Int: return static_cast<double>(std::get<int>(val_));
+        case Type::Int64: return static_cast<double>(std::get<int64_t>(val_));
+        case Type::Double: return std::get<double>(val_);
         case Type::String: {
-            std::string str = std::get<std::string>(m_val);
+            std::string str = std::get<std::string>(val_);
             if (str == VAL_TRUE) {
                 return 1.0;
             }
@@ -204,20 +204,20 @@ static std::string doubleToString(double n, int prec = 6) {
 std::optional<std::string> Val::doToString() const {
     switch (valueType()) {
         case Type::Bool: return toBool() ? VAL_TRUE : VAL_FALSE;
-        case Type::Int: return std::to_string(std::get<int>(m_val));
-        case Type::Int64: return std::to_string(std::get<int64_t>(m_val));
-        case Type::Double: return doubleToString(std::get<double>(m_val));
-        case Type::String: return std::get<std::string>(m_val);
+        case Type::Int: return std::to_string(std::get<int>(val_));
+        case Type::Int64: return std::to_string(std::get<int64_t>(val_));
+        case Type::Double: return doubleToString(std::get<double>(val_));
+        case Type::String: return std::get<std::string>(val_);
         case Type::List: {
             std::string str;
-            if (!ValJson::toString(std::get<ValList>(m_val), str)) {
+            if (!ValJson::toString(std::get<ValList>(val_), str)) {
                 return std::nullopt;
             }
             return str;
         }
         case Type::Map: {
             std::string str;
-            if (!ValJson::toString(std::get<ValMap>(m_val), str)) {
+            if (!ValJson::toString(std::get<ValMap>(val_), str)) {
                 return std::nullopt;
             }
             return str;
@@ -234,7 +234,7 @@ std::string Val::toString() const {
 
 std::optional<io::path_t> Val::doToPath() const {
     if (valueType() == Type::String) {
-        return std::get<std::string>(m_val);
+        return std::get<std::string>(val_);
     }
     return std::nullopt;
 }
@@ -246,10 +246,10 @@ io::path_t Val::toPath() const {
 
 std::optional<ValList> Val::doToList() const {
     switch (valueType()) {
-        case Type::List: return std::get<ValList>(m_val);
+        case Type::List: return std::get<ValList>(val_);
         case Type::String: {
             ValList list;
-            if (!ValJson::fromString(std::get<std::string>(m_val), list)) {
+            if (!ValJson::fromString(std::get<std::string>(val_), list)) {
                 return std::nullopt;
             }
             return list;
@@ -267,10 +267,10 @@ ValList Val::toList() const {
 
 std::optional<ValMap> Val::doToMap() const {
     switch (valueType()) {
-        case Type::Map: return std::get<ValMap>(m_val);
+        case Type::Map: return std::get<ValMap>(val_);
         case Type::String: {
             ValMap map;
-            if (!ValJson::fromString(std::get<std::string>(m_val), map)) {
+            if (!ValJson::fromString(std::get<std::string>(val_), map)) {
                 return std::nullopt;
             }
             return map;
@@ -285,14 +285,14 @@ ValMap Val::toMap() const {
     return value ? *value : ValMap();
 }
 
-bool Val::operator==(const Val &v) const { return v.m_type == m_type && v.m_val == m_val; }
+bool Val::operator==(const Val &v) const { return v.type_ == type_ && v.val_ == val_; }
 
 bool Val::operator<(const Val &v) const {
-    if (m_val.index() != v.m_val.index()) {
+    if (val_.index() != v.val_.index()) {
         return false;
     }
 
-    return m_val < v.m_val;
+    return val_ < v.val_;
 }
 
 static void appendQuoted(std::ostream &out, std::string_view text) {

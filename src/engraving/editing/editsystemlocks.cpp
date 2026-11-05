@@ -42,30 +42,30 @@ using namespace mu::engraving;
 class AddSystemLock : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, AddSystemLock)
 
-    const RangeLock *m_systemLock;
+    const RangeLock *systemLock_;
 public:
-    AddSystemLock(const RangeLock *systemLock) : m_systemLock(systemLock) {}
+    AddSystemLock(const RangeLock *systemLock) : systemLock_(systemLock) {}
 
     void undo() override {
-        Score *score = m_systemLock->startMB()->score();
-        score->removeSystemLock(m_systemLock);
+        Score *score = systemLock_->startMB()->score();
+        score->removeSystemLock(systemLock_);
     }
 
     void redo() override {
-        Score *score = m_systemLock->startMB()->score();
-        score->addSystemLock(m_systemLock);
+        Score *score = systemLock_->startMB()->score();
+        score->addSystemLock(systemLock_);
     }
 
     void cleanup(bool wasDone) override {
         if (!wasDone) {
-            delete m_systemLock;
-            m_systemLock = nullptr;
+            delete systemLock_;
+            systemLock_ = nullptr;
         }
     }
 
     UNDO_NAME("AddSystemLock")
 
-    std::vector<EngravingObject *> objectItems() const override { return {m_systemLock->startMB(), m_systemLock->endMB()}; }
+    std::vector<EngravingObject *> objectItems() const override { return {systemLock_->startMB(), systemLock_->endMB()}; }
 };
 
 //---------------------------------------------------------
@@ -75,30 +75,30 @@ public:
 class RemoveSystemLock : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, RemoveSystemLock)
 
-    const RangeLock *m_systemLock;
+    const RangeLock *systemLock_;
 public:
-    RemoveSystemLock(const RangeLock *systemLock) : m_systemLock(systemLock) {}
+    RemoveSystemLock(const RangeLock *systemLock) : systemLock_(systemLock) {}
 
     void undo() override {
-        Score *score = m_systemLock->startMB()->score();
-        score->addSystemLock(m_systemLock);
+        Score *score = systemLock_->startMB()->score();
+        score->addSystemLock(systemLock_);
     }
 
     void redo() override {
-        Score *score = m_systemLock->startMB()->score();
-        score->removeSystemLock(m_systemLock);
+        Score *score = systemLock_->startMB()->score();
+        score->removeSystemLock(systemLock_);
     }
 
     void cleanup(bool wasDone) override {
         if (wasDone) {
-            delete m_systemLock;
-            m_systemLock = nullptr;
+            delete systemLock_;
+            systemLock_ = nullptr;
         }
     }
 
     UNDO_NAME("RemoveSystemLock")
 
-    std::vector<EngravingObject *> objectItems() const override { return {m_systemLock->startMB(), m_systemLock->endMB()}; }
+    std::vector<EngravingObject *> objectItems() const override { return {systemLock_->startMB(), systemLock_->endMB()}; }
 };
 
 //---------------------------------------------------------

@@ -29,13 +29,13 @@ using namespace muse::audio;
 using namespace muse::audio::fx;
 
 void Equaliser::setOutputSpec(const OutputSpec &spec) {
-    m_outputSpec = spec;
+    outputSpec_ = spec;
     calculate();
 }
 
-bool Equaliser::active() const { return m_active; }
+bool Equaliser::active() const { return active_; }
 
-void Equaliser::setActive(bool active) { m_active = active; }
+void Equaliser::setActive(bool active) { active_ = active; }
 
 void Equaliser::setMode(const ProcessMode) {}
 
@@ -43,46 +43,46 @@ bool Equaliser::shouldProcessDuringSilence() const { return false; }
 
 void Equaliser::process(float *buffer, samples_t sampleCount, samples_t) {
     for (samples_t i = 0; i < sampleCount; ++i) {
-        m_x[2] = m_x[1];
-        m_x[1] = m_x[0];
-        m_x[0] = buffer[i];
+        x_[2] = x_[1];
+        x_[1] = x_[0];
+        x_[0] = buffer[i];
 
-        m_y[2] = m_y[1];
-        m_y[1] = m_y[0];
-        m_y[0] = (m_b[2] * m_x[2] + m_b[1] * m_x[1] + m_b[0] * m_x[0] - m_a[1] * m_y[1] - m_a[2] * m_y[2]) / m_a[0];
+        y_[2] = y_[1];
+        y_[1] = y_[0];
+        y_[0] = (b_[2] * x_[2] + b_[1] * x_[1] + b_[0] * x_[0] - a_[1] * y_[1] - a_[2] * y_[2]) / a_[0];
 
-        buffer[i] = m_y[0];
+        buffer[i] = y_[0];
     }
 }
 
 void Equaliser::calculate() {
-    if (!m_outputSpec.sampleRate) {
+    if (!outputSpec_.sampleRate) {
         return;
     }
-    float a = std::pow(10.f, m_gain / 40.f);
-    float w0 = 2 * M_PI * m_frequency / m_outputSpec.sampleRate;
-    float alpha = std::sin(w0) * a / (2 * m_q);
+    float a = std::pow(10.f, gain_ / 40.f);
+    float w0 = 2 * M_PI * frequency_ / outputSpec_.sampleRate;
+    float alpha = std::sin(w0) * a / (2 * q_);
 
-    m_b[0] = 1 + alpha * a;
-    m_b[1] = -2 * std::cos(w0);
-    m_b[2] = 1 - alpha * a;
+    b_[0] = 1 + alpha * a;
+    b_[1] = -2 * std::cos(w0);
+    b_[2] = 1 - alpha * a;
 
-    m_a[0] = 1 + alpha / a;
-    m_a[1] = -2 * std::cos(w0);
-    m_a[2] = 1 - alpha / a;
+    a_[0] = 1 + alpha / a;
+    a_[1] = -2 * std::cos(w0);
+    a_[2] = 1 - alpha / a;
 }
 
 void Equaliser::setFrequency(float value) {
-    m_frequency = value;
+    frequency_ = value;
     calculate();
 }
 
 void Equaliser::setGain(float value) {
-    m_gain = value;
+    gain_ = value;
     calculate();
 }
 
 void Equaliser::setQ(float value) {
-    m_q = value;
+    q_ = value;
     calculate();
 }

@@ -357,9 +357,9 @@ public:
 
         const CacheKey requestKey = std::make_pair(requested, font.type());
 
-        std::lock_guard<std::mutex> lock(m_mutex);
-        auto requestIt = m_byRequest.find(requestKey);
-        if (requestIt != m_byRequest.end()) {
+        std::lock_guard<std::mutex> lock(mutex_);
+        auto requestIt = byRequest_.find(requestKey);
+        if (requestIt != byRequest_.end()) {
             return requestIt->second;
         }
 
@@ -370,14 +370,14 @@ public:
         }
 
         const CacheKey actualKey = std::make_pair(fontData.key, font.type());
-        auto actualIt = m_byActual.find(actualKey);
-        if (actualIt != m_byActual.end()) {
-            m_byRequest[requestKey] = actualIt->second;
+        auto actualIt = byActual_.find(actualKey);
+        if (actualIt != byActual_.end()) {
+            byRequest_[requestKey] = actualIt->second;
             return actualIt->second;
         }
 
-        if (!m_ftLibrary) {
-            if (FT_Init_FreeType(&m_ftLibrary) != 0) {
+        if (!ftLibrary_) {
+            if (FT_Init_FreeType(&ftLibrary_) != 0) {
                 throw std::runtime_error("CairoPainter: FT_Init_FreeType failed");
             }
         }
@@ -394,7 +394,7 @@ public:
         }
 
         FT_Error ftError =
-            newMatchingMemoryFace(m_ftLibrary, entry->data.data(), static_cast<FT_Long>(entry->data.size()), fontData.key, &entry->ft);
+            newMatchingMemoryFace(ftLibrary_, entry->data.data(), static_cast<FT_Long>(entry->data.size()), fontData.key, &entry->ft);
         if (ftError != 0 || !entry->ft) {
             throw std::runtime_error("CairoPainter: FT_New_Memory_Face failed for family '" + fontData.key.family().id().toStdString() +
                                      "'");
@@ -416,18 +416,18 @@ public:
             entry->hbUpem = entry->ftUpem;
         }
 
-        m_byActual[actualKey] = entry;
-        m_byRequest[requestKey] = entry;
+        byActual_[actualKey] = entry;
+        byRequest_[requestKey] = entry;
         return entry;
     }
 
 private:
     using CacheKey = std::pair<FontDataKey, Font::Type>;
 
-    FT_Library m_ftLibrary = nullptr;
-    std::mutex m_mutex;
-    std::map<CacheKey, std::shared_ptr<FtFaceEntry>> m_byActual;
-    std::map<CacheKey, std::shared_ptr<FtFaceEntry>> m_byRequest;
+    FT_Library ftLibrary_ = nullptr;
+    std::mutex mutex_;
+    std::map<CacheKey, std::shared_ptr<FtFaceEntry>> byActual_;
+    std::map<CacheKey, std::shared_ptr<FtFaceEntry>> byRequest_;
 };
 
 FontCache &fontCache() {
@@ -1931,83 +1931,83 @@ void CairoPainter::Impl::drawTiledPixmap(const RectF &rect, const Pixmap &pm, co
 // -------------------------------------------------------- CairoPainter glue
 
 CairoPainter::CairoPainter(cairo_t *context, const IFontsDatabase &fontsDatabase, double deviceDpi)
-    : m_impl(std::make_unique<Impl>(context, fontsDatabase, deviceDpi)) {}
+    : impl_(std::make_unique<Impl>(context, fontsDatabase, deviceDpi)) {}
 
 CairoPainter::~CairoPainter() = default;
 
-cairo_t *CairoPainter::cairoContext() const { return m_impl->cr; }
+cairo_t *CairoPainter::cairoContext() const { return impl_->cr; }
 
-bool CairoPainter::isActive() const { return m_impl->isActive(); }
+bool CairoPainter::isActive() const { return impl_->isActive(); }
 
-void CairoPainter::beginTarget(const std::string &name) { m_impl->beginTarget(name); }
+void CairoPainter::beginTarget(const std::string &name) { impl_->beginTarget(name); }
 
-void CairoPainter::beforeEndTargetHook(Painter *painter) { m_impl->beforeEndTargetHook(painter); }
+void CairoPainter::beforeEndTargetHook(Painter *painter) { impl_->beforeEndTargetHook(painter); }
 
-bool CairoPainter::endTarget(bool endDraw) { return m_impl->endTarget(endDraw); }
+bool CairoPainter::endTarget(bool endDraw) { return impl_->endTarget(endDraw); }
 
-void CairoPainter::beginObject(const std::string &name) { m_impl->beginObject(name); }
+void CairoPainter::beginObject(const std::string &name) { impl_->beginObject(name); }
 
-void CairoPainter::endObject() { m_impl->endObject(); }
+void CairoPainter::endObject() { impl_->endObject(); }
 
-void CairoPainter::setAntialiasing(bool arg) { m_impl->setAntialiasing(arg); }
+void CairoPainter::setAntialiasing(bool arg) { impl_->setAntialiasing(arg); }
 
-void CairoPainter::setCompositionMode(CompositionMode mode) { m_impl->setCompositionMode(mode); }
+void CairoPainter::setCompositionMode(CompositionMode mode) { impl_->setCompositionMode(mode); }
 
-void CairoPainter::setWindow(const RectF &window) { m_impl->setWindow(window); }
+void CairoPainter::setWindow(const RectF &window) { impl_->setWindow(window); }
 
-void CairoPainter::setViewport(const RectF &viewport) { m_impl->setViewport(viewport); }
+void CairoPainter::setViewport(const RectF &viewport) { impl_->setViewport(viewport); }
 
-void CairoPainter::setFont(const Font &font) { m_impl->setFont(font); }
+void CairoPainter::setFont(const Font &font) { impl_->setFont(font); }
 
-const Font &CairoPainter::font() const { return m_impl->state.font; }
+const Font &CairoPainter::font() const { return impl_->state.font; }
 
-void CairoPainter::setPen(const Pen &pen) { m_impl->setPen(pen); }
+void CairoPainter::setPen(const Pen &pen) { impl_->setPen(pen); }
 
-void CairoPainter::setNoPen() { m_impl->setNoPen(); }
+void CairoPainter::setNoPen() { impl_->setNoPen(); }
 
-const Pen &CairoPainter::pen() const { return m_impl->state.pen; }
+const Pen &CairoPainter::pen() const { return impl_->state.pen; }
 
-void CairoPainter::setBrush(const Brush &brush) { m_impl->setBrush(brush); }
+void CairoPainter::setBrush(const Brush &brush) { impl_->setBrush(brush); }
 
-const Brush &CairoPainter::brush() const { return m_impl->state.brush; }
+const Brush &CairoPainter::brush() const { return impl_->state.brush; }
 
-void CairoPainter::save() { m_impl->save(); }
+void CairoPainter::save() { impl_->save(); }
 
-void CairoPainter::restore() { m_impl->restore(); }
+void CairoPainter::restore() { impl_->restore(); }
 
-double CairoPainter::deviceLogicalDpi() const { return m_impl->dpi; }
+double CairoPainter::deviceLogicalDpi() const { return impl_->dpi; }
 
-void CairoPainter::setTransform(const Transform &transform) { m_impl->setTransform(transform); }
+void CairoPainter::setTransform(const Transform &transform) { impl_->setTransform(transform); }
 
 const Transform &CairoPainter::transform() const {
     // Matches QPainterProvider: return the world transform last supplied via
     // setTransform().  When muse::draw::Painter supplies a complete
     // world*viewport matrix this is that matrix; for direct users it is the
     // world part before window/viewport composition.
-    return m_impl->state.worldTransform;
+    return impl_->state.worldTransform;
 }
 
-void CairoPainter::drawPath(const PainterPath &path) { m_impl->drawPath(path); }
+void CairoPainter::drawPath(const PainterPath &path) { impl_->drawPath(path); }
 
-void CairoPainter::drawPolygon(const PointF *points, size_t pointCount, PolygonMode mode) { m_impl->drawPolygon(points, pointCount, mode); }
+void CairoPainter::drawPolygon(const PointF *points, size_t pointCount, PolygonMode mode) { impl_->drawPolygon(points, pointCount, mode); }
 
-void CairoPainter::drawText(const PointF &point, const String &text) { m_impl->drawText(point, text); }
+void CairoPainter::drawText(const PointF &point, const String &text) { impl_->drawText(point, text); }
 
 void CairoPainter::drawText(const RectF &rect, Alignment alignment, TextFlags textFlags, const String &text) {
-    m_impl->drawText(rect, alignment, textFlags, text);
+    impl_->drawText(rect, alignment, textFlags, text);
 }
 
-void CairoPainter::drawSymbol(const PointF &point, char32_t ucs4Code) { m_impl->drawSymbol(point, ucs4Code); }
+void CairoPainter::drawSymbol(const PointF &point, char32_t ucs4Code) { impl_->drawSymbol(point, ucs4Code); }
 
-void CairoPainter::drawPixmap(const PointF &point, const Pixmap &pm) { m_impl->drawPixmap(point, pm); }
+void CairoPainter::drawPixmap(const PointF &point, const Pixmap &pm) { impl_->drawPixmap(point, pm); }
 
-void CairoPainter::drawTiledPixmap(const RectF &rect, const Pixmap &pm, const PointF &offset) { m_impl->drawTiledPixmap(rect, pm, offset); }
+void CairoPainter::drawTiledPixmap(const RectF &rect, const Pixmap &pm, const PointF &offset) { impl_->drawTiledPixmap(rect, pm, offset); }
 
-bool CairoPainter::hasClipping() const { return m_impl->hasClipping(); }
+bool CairoPainter::hasClipping() const { return impl_->hasClipping(); }
 
-void CairoPainter::setClipRect(const RectF &rect) { m_impl->setClipRect(rect); }
+void CairoPainter::setClipRect(const RectF &rect) { impl_->setClipRect(rect); }
 
-void CairoPainter::setMask(const RectF &background, const std::vector<RectF> &maskRects) { m_impl->setMask(background, maskRects); }
+void CairoPainter::setMask(const RectF &background, const std::vector<RectF> &maskRects) { impl_->setMask(background, maskRects); }
 
-void CairoPainter::setClipping(bool enable) { m_impl->setClipping(enable); }
+void CairoPainter::setClipping(bool enable) { impl_->setClipping(enable); }
 } // namespace muse::draw

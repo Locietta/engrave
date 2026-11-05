@@ -55,64 +55,64 @@ private:
         Shape chordsShape;
         size_t subChordsCountBeforeOctaveMerge = 1;
 
-        double spatium() const { return m_spatium; }
+        double spatium() const { return spatium_; }
 
-        double verticalAccidentalToAccidentalClearance() const { return m_verticalAccidentalToAccidentalClearance; }
+        double verticalAccidentalToAccidentalClearance() const { return verticalAccidentalToAccidentalClearance_; }
 
-        double verticalSharpToSharpClearance() const { return m_verticalSharpToSharpClearance; }
+        double verticalSharpToSharpClearance() const { return verticalSharpToSharpClearance_; }
 
-        double verticalAccidentalToChordClearance() const { return m_verticalAccidentalToChordClearance; }
+        double verticalAccidentalToChordClearance() const { return verticalAccidentalToChordClearance_; }
 
-        double accidentalAccidentalDistance() const { return m_accidentalAccidentalDistance; }
+        double accidentalAccidentalDistance() const { return accidentalAccidentalDistance_; }
 
-        double additionalPaddingForVerticals() const { return m_additionalPaddingForVerticals; }
+        double additionalPaddingForVerticals() const { return additionalPaddingForVerticals_; }
 
-        double xPosSplitThreshold() const { return m_xPosSplitThreshold; }
+        double xPosSplitThreshold() const { return xPosSplitThreshold_; }
 
-        double xVerticalAlignmentThreshold() const { return m_xVerticalAlignmentThreshold; }
+        double xVerticalAlignmentThreshold() const { return xVerticalAlignmentThreshold_; }
 
-        double sharpAndNaturalLedgerLinePadding() const { return m_sharpAndNaturalLedgerLinePadding; }
+        double sharpAndNaturalLedgerLinePadding() const { return sharpAndNaturalLedgerLinePadding_; }
 
-        double reducedFlatToNotePadding() const { return m_reducedFlatToNotePadding; }
+        double reducedFlatToNotePadding() const { return reducedFlatToNotePadding_; }
 
-        double flatKerningOfFourth() const { return m_flatKerningOfFourth; }
+        double flatKerningOfFourth() const { return flatKerningOfFourth_; }
 
-        double naturalKerningOfFourth() const { return m_naturalKerningOfFourth; }
+        double naturalKerningOfFourth() const { return naturalKerningOfFourth_; }
 
-        bool orderFollowNoteDisplacement() const { return m_orderFollowNoteDisplacement; }
+        bool orderFollowNoteDisplacement() const { return orderFollowNoteDisplacement_; }
 
-        bool alignOctavesAcrossSubChords() const { return m_alignOctavesAcrossSubChords; }
+        bool alignOctavesAcrossSubChords() const { return alignOctavesAcrossSubChords_; }
 
-        bool keepSecondsTogether() const { return m_keepSecondsTogether; }
+        bool keepSecondsTogether() const { return keepSecondsTogether_; }
 
-        bool alignOffsetOctaves() const { return m_alignOffsetOctaves; }
+        bool alignOffsetOctaves() const { return alignOffsetOctaves_; }
 
-        size_t largeGroupLimit() const { return m_largeGroupLimit; }
+        size_t largeGroupLimit() const { return largeGroupLimit_; }
 
-        size_t smallGroupLimit() const { return m_smallGroupLimit; }
+        size_t smallGroupLimit() const { return smallGroupLimit_; }
 
     private:
         void initConstants();
 
-        double m_spatium = 0.0;
-        double m_verticalAccidentalToAccidentalClearance = 0.0;
-        double m_verticalSharpToSharpClearance = 0.0;
-        double m_verticalAccidentalToChordClearance = 0.0;
-        double m_accidentalAccidentalDistance = 0.0;
-        double m_additionalPaddingForVerticals = 0.0;
-        double m_xPosSplitThreshold = 0.0;
-        double m_xVerticalAlignmentThreshold = 0.0;
-        double m_sharpAndNaturalLedgerLinePadding = 0.0;
-        double m_reducedFlatToNotePadding = 0.0;
-        double m_flatKerningOfFourth = 0.0;
-        double m_naturalKerningOfFourth = 0.0;
-        bool m_orderFollowNoteDisplacement = false;
-        bool m_alignOctavesAcrossSubChords = false;
-        bool m_keepSecondsTogether = false;
-        bool m_alignOffsetOctaves = false;
+        double spatium_ = 0.0;
+        double verticalAccidentalToAccidentalClearance_ = 0.0;
+        double verticalSharpToSharpClearance_ = 0.0;
+        double verticalAccidentalToChordClearance_ = 0.0;
+        double accidentalAccidentalDistance_ = 0.0;
+        double additionalPaddingForVerticals_ = 0.0;
+        double xPosSplitThreshold_ = 0.0;
+        double xVerticalAlignmentThreshold_ = 0.0;
+        double sharpAndNaturalLedgerLinePadding_ = 0.0;
+        double reducedFlatToNotePadding_ = 0.0;
+        double flatKerningOfFourth_ = 0.0;
+        double naturalKerningOfFourth_ = 0.0;
+        bool orderFollowNoteDisplacement_ = false;
+        bool alignOctavesAcrossSubChords_ = false;
+        bool keepSecondsTogether_ = false;
+        bool alignOffsetOctaves_ = false;
 
-        static constexpr size_t m_smallGroupLimit = 3;
-        static constexpr size_t m_largeGroupLimit = 6;
+        static constexpr size_t smallGroupLimit_ = 3;
+        static constexpr size_t largeGroupLimit_ = 6;
     };
 
     using AccidentalsVectorView = muse::VectorView<Accidental *>;

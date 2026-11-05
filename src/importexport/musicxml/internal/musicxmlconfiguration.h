@@ -58,7 +58,7 @@ public:
     void setInferTextTypeOverride(std::optional<bool> value) override;
 
 private:
-    std::optional<bool> m_needUseDefaultFontOverride;
-    std::optional<bool> m_inferTextTypeOverride;
+    std::optional<bool> needUseDefaultFontOverride_;
+    std::optional<bool> inferTextTypeOverride_;
 };
 } // namespace mu::iex::musicxml

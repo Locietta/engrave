@@ -35,7 +35,7 @@ public:
     ID(const ID &id);
     ID(const std::string &id);
 
-    constexpr ID(const uint64_t &id) : m_id(id) {}
+    constexpr ID(const uint64_t &id) : id_(id) {}
 
     bool isValid() const;
 
@@ -56,7 +56,7 @@ public:
 
 
 private:
-    uint64_t m_id = 0;
+    uint64_t id_ = 0;
 };
 
 using IDList = std::vector<ID>;

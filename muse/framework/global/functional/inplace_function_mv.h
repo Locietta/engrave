@@ -108,7 +108,7 @@ public:
         static_assert(alignof(Fn) <= Alignment, "Callable alignment is too large for this MoveOnlyInplaceFunction");
         static_assert(std::is_nothrow_move_constructible_v<Fn>, "MoveOnlyInplaceFunction requires nothrow move-constructible callables");
 
-        m_vtable = detail::moveOnlyInplaceFunctionVTable<Fn, Ret, Args...>();
+        vtable_ = detail::moveOnlyInplaceFunctionVTable<Fn, Ret, Args...>();
         new (storage()) Fn(std::forward<Callable>(callable));
     }
 
@@ -127,46 +127,46 @@ public:
     ~MoveOnlyInplaceFunction() noexcept { reset(); }
 
     Ret operator()(Args... args) const {
-        if (!m_vtable) {
+        if (!vtable_) {
             throw std::bad_function_call();
         }
 
         if constexpr (std::is_void_v<Ret>) {
-            m_vtable->invoke(storage(), std::forward<Args>(args)...);
+            vtable_->invoke(storage(), std::forward<Args>(args)...);
         } else {
-            return m_vtable->invoke(storage(), std::forward<Args>(args)...);
+            return vtable_->invoke(storage(), std::forward<Args>(args)...);
         }
     }
 
-    explicit operator bool() const noexcept { return m_vtable != nullptr; }
+    explicit operator bool() const noexcept { return vtable_ != nullptr; }
 
     void reset() noexcept {
-        if (!m_vtable) {
+        if (!vtable_) {
             return;
         }
 
-        m_vtable->destroy(storage());
-        m_vtable = nullptr;
+        vtable_->destroy(storage());
+        vtable_ = nullptr;
     }
 
 private:
     using VTable = detail::MoveOnlyInplaceFunctionVTable<Ret, Args...>;
     using Storage = std::aligned_storage_t<Capacity, Alignment>;
 
-    void *storage() const noexcept { return const_cast<Storage *>(&m_storage); }
+    void *storage() const noexcept { return const_cast<Storage *>(&storage_); }
 
     void moveFrom(MoveOnlyInplaceFunction &&other) noexcept {
-        if (!other.m_vtable) {
+        if (!other.vtable_) {
             return;
         }
 
-        m_vtable = other.m_vtable;
-        m_vtable->relocate(storage(), other.storage());
-        other.m_vtable = nullptr;
+        vtable_ = other.vtable_;
+        vtable_->relocate(storage(), other.storage());
+        other.vtable_ = nullptr;
     }
 
-    const VTable *m_vtable = nullptr;
-    mutable Storage m_storage{};
+    const VTable *vtable_ = nullptr;
+    mutable Storage storage_{};
 };
 
 template <typename Signature, size_t Capacity, size_t Alignment>

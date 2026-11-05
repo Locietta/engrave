@@ -34,7 +34,7 @@ class MPE_MultiNoteArticulationsTest : public ::testing::Test {
 protected:
     void SetUp() override {
         // [GIVEN] Rendering data of the very first quarter note on the score, with the 120BPM tempo and 4/4 time signature
-        NoteMetaData &firstNoteData = m_initialData[0];
+        NoteMetaData &firstNoteData = initialData_[0];
         firstNoteData.nominalTimestamp = 0;
         firstNoteData.nominalDuration = 500;
         firstNoteData.voiceIdx = 0; // first voice
@@ -43,7 +43,7 @@ protected:
         firstNoteData.nominalDynamicLevel = dynamicLevelFromType(DynamicType::f);
 
         // [GIVEN] Rendering data of the second quarter note on the score, with the 120BPM tempo and 4/4 time signature
-        NoteMetaData &secondNoteData = m_initialData[1];
+        NoteMetaData &secondNoteData = initialData_[1];
         secondNoteData.nominalTimestamp = 500;
         secondNoteData.nominalDuration = 500;
         secondNoteData.voiceIdx = 0; // first voice
@@ -52,7 +52,7 @@ protected:
         secondNoteData.nominalDynamicLevel = dynamicLevelFromType(DynamicType::f);
 
         // [GIVEN] Rendering data of the second quarter note on the score, with the 120BPM tempo and 4/4 time signature
-        NoteMetaData &thirdNoteData = m_initialData[2];
+        NoteMetaData &thirdNoteData = initialData_[2];
         thirdNoteData.nominalTimestamp = 1000;
         thirdNoteData.nominalDuration = 500;
         thirdNoteData.voiceIdx = 0; // first voice
@@ -61,7 +61,7 @@ protected:
         thirdNoteData.nominalDynamicLevel = dynamicLevelFromType(DynamicType::f);
 
         // [GIVEN] Rendering data of the second quarter note on the score, with the 120BPM tempo and 4/4 time signature
-        NoteMetaData &fourthNoteData = m_initialData[3];
+        NoteMetaData &fourthNoteData = initialData_[3];
         fourthNoteData.nominalTimestamp = 1500;
         fourthNoteData.nominalDuration = 500;
         fourthNoteData.voiceIdx = 0; // first voice
@@ -70,9 +70,9 @@ protected:
         fourthNoteData.nominalDynamicLevel = dynamicLevelFromType(DynamicType::f);
 
         // [GIVEN] Articulation pattern "Standard", which means that note should be played without any modifications
-        m_standardPattern.arrangementPattern = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
-        m_standardPattern.pitchPattern = createSimplePitchPattern(0 /*increment_pitch_diff*/);
-        m_standardPattern.expressionPattern = createSimpleExpressionPattern(dynamicLevelFromType(DynamicType::Natural));
+        standardPattern_.arrangementPattern = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
+        standardPattern_.pitchPattern = createSimplePitchPattern(0 /*increment_pitch_diff*/);
+        standardPattern_.expressionPattern = createSimpleExpressionPattern(dynamicLevelFromType(DynamicType::Natural));
     }
 
     struct NoteMetaData {
@@ -86,9 +86,9 @@ protected:
         dynamic_level_t nominalDynamicLevel = 0;
     };
 
-    std::map<size_t, NoteMetaData> m_initialData;
+    std::map<size_t, NoteMetaData> initialData_;
 
-    ArticulationPatternSegment m_standardPattern;
+    ArticulationPatternSegment standardPattern_;
 };
 
 /**
@@ -100,13 +100,13 @@ protected:
 TEST_F(MPE_MultiNoteArticulationsTest, StandardPattern) {
     // [GIVEN] No articulations applied on the top of the note
     ArticulationPattern pattern;
-    pattern.emplace(0, m_standardPattern);
+    pattern.emplace(0, standardPattern_);
 
     ArticulationMeta meta;
     meta.type = ArticulationType::Standard;
     meta.pattern = pattern;
-    meta.timestamp = m_initialData.at(0).nominalTimestamp;
-    meta.overallDuration = m_initialData.at(0).nominalDuration;
+    meta.timestamp = initialData_.at(0).nominalTimestamp;
+    meta.overallDuration = initialData_.at(0).nominalDuration;
 
     ArticulationAppliedData standardArticulationApplied(std::move(meta), 0, HUNDRED_PERCENT);
 
@@ -117,7 +117,7 @@ TEST_F(MPE_MultiNoteArticulationsTest, StandardPattern) {
     // [WHEN] Notes sequence with given parameters being built
     std::map<size_t, NoteEvent> noteEvents;
 
-    for (const auto &pair : m_initialData) {
+    for (const auto &pair : initialData_) {
         NoteEvent noteEvent(pair.second.nominalTimestamp, pair.second.nominalDuration, pair.second.voiceIdx, pair.second.staffIdx,
                             pair.second.nominalPitchLevel, pair.second.nominalDynamicLevel, appliedArticulations, 0);
 
@@ -135,7 +135,7 @@ TEST_F(MPE_MultiNoteArticulationsTest, StandardPattern) {
         EXPECT_EQ(pair.second.expressionCtx().expressionCurve.maxAmplitudeLevel(), dynamicLevelFromType(DynamicType::f));
 
         // [THEN] We expect that pitch curve of every note will be using default curve from the standard patterns
-        EXPECT_EQ(pair.second.pitchCtx().pitchCurve, m_standardPattern.pitchPattern.pitchOffsetMap);
+        EXPECT_EQ(pair.second.pitchCtx().pitchCurve, standardPattern_.pitchPattern.pitchOffsetMap);
     }
 }
 
@@ -150,7 +150,7 @@ TEST_F(MPE_MultiNoteArticulationsTest, GlissandoPattern) {
     // [GIVEN] Articulation pattern "Glissando", which instructs a performer to start on the pitch/rhythm
     //         and slide the pitch up/down to land on the next pitch/rhythm
 
-    pitch_level_t pitchDiff = m_initialData[0].nominalPitchLevel - m_initialData[1].nominalPitchLevel;
+    pitch_level_t pitchDiff = initialData_[0].nominalPitchLevel - initialData_[1].nominalPitchLevel;
 
     ArticulationPatternSegment glissandoPattern;
     glissandoPattern.arrangementPattern = createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
@@ -164,23 +164,23 @@ TEST_F(MPE_MultiNoteArticulationsTest, GlissandoPattern) {
     ArticulationMeta glissandoMeta;
     glissandoMeta.type = ArticulationType::DiscreteGlissando;
     glissandoMeta.pattern = glissandoScope;
-    glissandoMeta.timestamp = m_initialData.at(0).nominalTimestamp;
-    glissandoMeta.overallDuration = m_initialData.at(0).nominalDuration + m_initialData.at(1).nominalDuration;
+    glissandoMeta.timestamp = initialData_.at(0).nominalTimestamp;
+    glissandoMeta.overallDuration = initialData_.at(0).nominalDuration + initialData_.at(1).nominalDuration;
 
     ArticulationPattern standardScope;
-    standardScope.emplace(0, m_standardPattern);
+    standardScope.emplace(0, standardPattern_);
 
     ArticulationMeta thirdNoteStandardMeta;
     thirdNoteStandardMeta.type = ArticulationType::Standard;
     thirdNoteStandardMeta.pattern = standardScope;
-    thirdNoteStandardMeta.timestamp = m_initialData.at(2).nominalTimestamp;
-    thirdNoteStandardMeta.overallDuration = m_initialData.at(0).nominalDuration;
+    thirdNoteStandardMeta.timestamp = initialData_.at(2).nominalTimestamp;
+    thirdNoteStandardMeta.overallDuration = initialData_.at(0).nominalDuration;
 
     ArticulationMeta fourthNoteStandardMeta;
     fourthNoteStandardMeta.type = ArticulationType::Standard;
     fourthNoteStandardMeta.pattern = standardScope;
-    fourthNoteStandardMeta.timestamp = m_initialData.at(3).nominalTimestamp;
-    fourthNoteStandardMeta.overallDuration = m_initialData.at(0).nominalDuration;
+    fourthNoteStandardMeta.timestamp = initialData_.at(3).nominalTimestamp;
+    fourthNoteStandardMeta.overallDuration = initialData_.at(0).nominalDuration;
 
     // [GIVEN] Glissando articulation applied on the first note, occupied range is from 0% to 50% of the entire articulation range
     ArticulationAppliedData glissandoAppliedOnTheFirstNote(glissandoMeta, 0, 5 * TEN_PERCENT);
@@ -205,7 +205,7 @@ TEST_F(MPE_MultiNoteArticulationsTest, GlissandoPattern) {
     // [WHEN] Notes sequence with given parameters being built
     std::map<size_t, NoteEvent> noteEvents;
 
-    for (const auto &pair : m_initialData) {
+    for (const auto &pair : initialData_) {
         NoteEvent noteEvent(pair.second.nominalTimestamp, pair.second.nominalDuration, pair.second.voiceIdx, pair.second.staffIdx,
                             pair.second.nominalPitchLevel, pair.second.nominalDynamicLevel, appliedArticulations[pair.first], 0);
 
@@ -224,7 +224,7 @@ TEST_F(MPE_MultiNoteArticulationsTest, GlissandoPattern) {
 
     for (size_t i = 2; i < 4; ++i) {
         // [THEN] We expect that pitch curve of the notes 3 and 4 will be using a curve from the standard pattern
-        EXPECT_EQ(noteEvents.at(i).pitchCtx().pitchCurve, m_standardPattern.pitchPattern.pitchOffsetMap);
+        EXPECT_EQ(noteEvents.at(i).pitchCtx().pitchCurve, standardPattern_.pitchPattern.pitchOffsetMap);
     }
 }
 
@@ -240,7 +240,7 @@ TEST_F(MPE_MultiNoteArticulationsTest, CrescendoPattern) {
     // [GIVEN] Articulation pattern "Crescendo", which instructs a performer to gradually increase a volume of every note,
     //         using a certain range of dynamics. In our case there will be a crescendo from forte up to fortissimo
 
-    int noteCount = static_cast<int>(m_initialData.size());
+    int noteCount = static_cast<int>(initialData_.size());
     int dynamicSegmentsCount = noteCount - 1;
 
     dynamic_level_t dynamicLevelDiff = dynamicLevelFromType(DynamicType::ff) - dynamicLevelFromType(DynamicType::f);
@@ -260,11 +260,11 @@ TEST_F(MPE_MultiNoteArticulationsTest, CrescendoPattern) {
     ArticulationMeta crescendoMeta;
     crescendoMeta.type = ArticulationType::DiscreteGlissando;
     crescendoMeta.pattern = crescendoScope;
-    crescendoMeta.timestamp = m_initialData.at(0).nominalTimestamp;
-    crescendoMeta.overallDuration = m_initialData.at(1).nominalTimestamp + m_initialData.at(1).nominalDuration;
+    crescendoMeta.timestamp = initialData_.at(0).nominalTimestamp;
+    crescendoMeta.overallDuration = initialData_.at(1).nominalTimestamp + initialData_.at(1).nominalDuration;
     crescendoMeta.overallDynamicChangesRange = dynamicLevelDiff;
 
-    for (const auto &pair : m_initialData) {
+    for (const auto &pair : initialData_) {
         crescendoMeta.overallDuration += pair.second.nominalDuration;
     }
 
@@ -278,7 +278,7 @@ TEST_F(MPE_MultiNoteArticulationsTest, CrescendoPattern) {
     // [WHEN] Notes sequence with given parameters being built
     std::map<size_t, NoteEvent> noteEvents;
 
-    for (const auto &pair : m_initialData) {
+    for (const auto &pair : initialData_) {
         NoteEvent noteEvent(pair.second.nominalTimestamp, pair.second.nominalDuration, pair.second.voiceIdx, pair.second.staffIdx,
                             pair.second.nominalPitchLevel, pair.second.nominalDynamicLevel, appliedArticulations[pair.first], 0);
 

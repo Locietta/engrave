@@ -57,10 +57,10 @@ public:
 
     struct State;
 
-    State &state() const { return *m_state; }
+    State &state() const { return *state_; }
 
 private:
-    std::unique_ptr<State> m_state;
+    std::unique_ptr<State> state_;
 };
 
 // Hook for MIDI event goldens. The engine resolves a capturing IMidiOutPort and

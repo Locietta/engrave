@@ -24,26 +24,26 @@
 
 using namespace muse;
 
-Ret::Ret(bool arg) : m_code(arg ? int(Code::Ok) : int(Code::UnknownError)) {}
+Ret::Ret(bool arg) : code_(arg ? int(Code::Ok) : int(Code::UnknownError)) {}
 
-Ret::Ret(int c) : m_code(c) {}
+Ret::Ret(int c) : code_(c) {}
 
-Ret::Ret(Code c) : m_code(static_cast<int>(c)) {}
+Ret::Ret(Code c) : code_(static_cast<int>(c)) {}
 
-Ret::Ret(const int &c, const std::string &text) : m_code(c), m_text(text) {}
+Ret::Ret(const int &c, const std::string &text) : code_(c), text_(text) {}
 
-bool Ret::valid() const { return m_code > int(Code::Undefined); }
+bool Ret::valid() const { return code_ > int(Code::Undefined); }
 
-bool Ret::success() const { return m_code == int(Code::Ok); }
+bool Ret::success() const { return code_ == int(Code::Ok); }
 
-void Ret::setCode(int c) { m_code = c; }
+void Ret::setCode(int c) { code_ = c; }
 
-int Ret::code() const { return m_code; }
+int Ret::code() const { return code_; }
 
-void Ret::setText(const std::string &s) { m_text = s; }
+void Ret::setText(const std::string &s) { text_ = s; }
 
-const std::string &Ret::text() const { return m_text; }
+const std::string &Ret::text() const { return text_; }
 
-void Ret::setData(const std::string &key, const std::any &val) { m_data[key] = val; }
+void Ret::setData(const std::string &key, const std::any &val) { data_[key] = val; }
 
-std::string Ret::toString() const { return "[" + std::to_string(m_code) + "] " + m_text; }
+std::string Ret::toString() const { return "[" + std::to_string(code_) + "] " + text_; }

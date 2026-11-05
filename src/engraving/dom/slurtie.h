@@ -105,11 +105,11 @@ public:
     int subtype() const override;
     TranslatableString subtypeUserName() const override;
 
-    void setSlurOffset(Grip i, const PointF &val) { m_ups[int(i)].off = val; }
+    void setSlurOffset(Grip i, const PointF &val) { ups_[int(i)].off = val; }
 
-    const UP &ups(Grip i) const { return m_ups[int(i)]; }
+    const UP &ups(Grip i) const { return ups_[int(i)]; }
 
-    UP &ups(Grip i) { return m_ups[int(i)]; }
+    UP &ups(Grip i) { return ups_[int(i)]; }
 
     virtual bool isUserModified() const override;
 
@@ -127,7 +127,7 @@ protected:
     SlurTieSegment(const ElementType &type, SlurTie *sp);
     SlurTieSegment(const SlurTieSegment &);
 
-    struct UP m_ups[int(Grip::GRIPS)];
+    struct UP ups_[int(Grip::GRIPS)];
 };
 
 //-------------------------------------------------------------------
@@ -145,31 +145,31 @@ public:
     SlurTie(const SlurTie &);
     ~SlurTie();
 
-    bool up() const { return m_up; }
+    bool up() const { return up_; }
 
-    void setUp(bool val) { m_up = val; }
+    void setUp(bool val) { up_ = val; }
 
     virtual void reset() override;
 
-    DirectionV slurDirection() const { return m_slurDirection; }
+    DirectionV slurDirection() const { return slurDirection_; }
 
-    void setSlurDirection(DirectionV d) { m_slurDirection = d; }
+    void setSlurDirection(DirectionV d) { slurDirection_ = d; }
 
     void undoSetSlurDirection(DirectionV d);
 
     virtual bool contains(const PointF &) const { return false; } // not selectable
 
-    SlurStyleType styleType() const { return m_styleType; }
+    SlurStyleType styleType() const { return styleType_; }
 
-    void setStyleType(SlurStyleType type) { m_styleType = type; }
+    void setStyleType(SlurStyleType type) { styleType_ = type; }
 
-    int subtype() const override { return static_cast<int>(m_styleType) + 1; }
+    int subtype() const override { return static_cast<int>(styleType_) + 1; }
 
     TranslatableString subtypeUserName() const override;
 
-    AutoOnOff maskSlurTie() const { return m_maskSlurTie; }
+    AutoOnOff maskSlurTie() const { return maskSlurTie_; }
 
-    void setMaskSlurTie(AutoOnOff val) { m_maskSlurTie = val; }
+    void setMaskSlurTie(AutoOnOff val) { maskSlurTie_ = val; }
 
     virtual SlurTieSegment *newSlurTieSegment() = 0;
 
@@ -183,13 +183,13 @@ public:
 
 protected:
 
-    bool m_up = true; // actual direction
+    bool up_ = true; // actual direction
 
-    DirectionV m_slurDirection = DirectionV::AUTO;
+    DirectionV slurDirection_ = DirectionV::AUTO;
 
 private:
 
-    SlurStyleType m_styleType = SlurStyleType::Undefined;
-    AutoOnOff m_maskSlurTie = AutoOnOff::AUTO;
+    SlurStyleType styleType_ = SlurStyleType::Undefined;
+    AutoOnOff maskSlurTie_ = AutoOnOff::AUTO;
 };
 } // namespace mu::engraving

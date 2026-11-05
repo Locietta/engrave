@@ -41,59 +41,59 @@ using namespace muse;
 using namespace muse::io;
 using namespace mu::engraving;
 
-MscWriter::MscWriter(const Params &params) : m_params(params) {}
+MscWriter::MscWriter(const Params &params) : params_(params) {}
 
 MscWriter::~MscWriter() { close(); }
 
 void MscWriter::setParams(const Params &params) {
     IF_ASSERT_FAILED(!isOpened()) { return; }
 
-    if (m_writer) {
-        m_hadError = m_writer->hasError();
-        delete m_writer;
-        m_writer = nullptr;
+    if (writer_) {
+        hadError_ = writer_->hasError();
+        delete writer_;
+        writer_ = nullptr;
     }
 
-    m_params = params;
+    params_ = params;
 }
 
-const MscWriter::Params &MscWriter::params() const { return m_params; }
+const MscWriter::Params &MscWriter::params() const { return params_; }
 
-Ret MscWriter::open() { return writer()->open(m_params.device, m_params.filePath); }
+Ret MscWriter::open() { return writer()->open(params_.device, params_.filePath); }
 
 void MscWriter::close() {
-    if (m_writer) {
-        if (m_writer->isOpened()) {
+    if (writer_) {
+        if (writer_->isOpened()) {
             // A failed bounded write may unwind through this destructor. Do
             // not build archive metadata while an exception or budget failure
             // is already in flight: its text writer can interrupt as well.
             if (std::uncaught_exceptions() == 0 && (!activeWriteBudget || activeWriteBudget->failure == WriteBudget::Failure::None)) {
                 writeMeta();
             }
-            m_writer->close();
+            writer_->close();
         }
 
-        m_hadError = m_writer->hasError();
-        delete m_writer;
-        m_writer = nullptr;
+        hadError_ = writer_->hasError();
+        delete writer_;
+        writer_ = nullptr;
     }
 }
 
-bool MscWriter::isOpened() const { return m_writer ? m_writer->isOpened() : false; }
+bool MscWriter::isOpened() const { return writer_ ? writer_->isOpened() : false; }
 
-bool MscWriter::hasError() const { return m_writer ? m_writer->hasError() : m_hadError; }
+bool MscWriter::hasError() const { return writer_ ? writer_->hasError() : hadError_; }
 
 MscWriter::IWriter *MscWriter::writer() const {
-    if (!m_writer) {
-        switch (m_params.mode) {
-            case MscIoMode::Zip: m_writer = new ZipFileWriter(); break;
-            case MscIoMode::Dir: m_writer = new DirWriter(); break;
-            case MscIoMode::XmlFile: m_writer = new XmlFileWriter(); break;
+    if (!writer_) {
+        switch (params_.mode) {
+            case MscIoMode::Zip: writer_ = new ZipFileWriter(); break;
+            case MscIoMode::Dir: writer_ = new DirWriter(); break;
+            case MscIoMode::XmlFile: writer_ = new XmlFileWriter(); break;
             case MscIoMode::Unknown: UNREACHABLE; break;
         }
     }
 
-    return m_writer;
+    return writer_;
 }
 
 bool MscWriter::addFileData(const String &fileName, const ByteArray &data) {
@@ -102,7 +102,7 @@ bool MscWriter::addFileData(const String &fileName, const ByteArray &data) {
         return false;
     }
 
-    m_meta.addFile(fileName);
+    meta_.addFile(fileName);
 
     return true;
 }
@@ -110,16 +110,16 @@ bool MscWriter::addFileData(const String &fileName, const ByteArray &data) {
 void MscWriter::writeStyleFile(const ByteArray &data) { addFileData(u"score_style.mss", data); }
 
 String MscWriter::mainFileName() const {
-    if (!m_params.mainFileName.isEmpty()) {
-        return m_params.mainFileName;
+    if (!params_.mainFileName.isEmpty()) {
+        return params_.mainFileName;
     }
 
     String name = u"score.mscx";
-    if (m_params.filePath.empty()) {
+    if (params_.filePath.empty()) {
         return name;
     }
 
-    String completeBaseName = FileInfo(m_params.filePath).completeBaseName();
+    String completeBaseName = FileInfo(params_.filePath).completeBaseName();
     if (completeBaseName.isEmpty()) {
         return name;
     }
@@ -156,13 +156,13 @@ void MscWriter::writeViewSettingsJsonFile(const ByteArray &data, const muse::io:
 void MscWriter::writeAutomationJsonFile(const muse::ByteArray &data) { addFileData(u"automation.json", data); }
 
 void MscWriter::writeMeta() {
-    if (m_meta.isWritten) {
+    if (meta_.isWritten) {
         return;
     }
 
-    writeContainer(m_meta.files);
+    writeContainer(meta_.files);
 
-    m_meta.isWritten = true;
+    meta_.isWritten = true;
 }
 
 void MscWriter::writeContainer(const std::vector<String> &paths) {
@@ -201,43 +201,43 @@ void MscWriter::Meta::addFile(const String &file) {
 // Writers
 // =======================================================================
 
-MscWriter::ZipFileWriter::~ZipFileWriter() { delete m_zip; }
+MscWriter::ZipFileWriter::~ZipFileWriter() { delete zip_; }
 
 Ret MscWriter::ZipFileWriter::open(io::IODevice *device, const path_t &) {
     IF_ASSERT_FAILED(device) { return make_ret(Ret::Code::InternalError); }
-    m_device = device;
+    device_ = device;
 
-    if (!m_device->isOpen()) {
-        if (!m_device->open(IODevice::WriteOnly)) {
+    if (!device_->isOpen()) {
+        if (!device_->open(IODevice::WriteOnly)) {
             LOGE() << "failed to open device for writing";
-            return make_ret(m_device->error(), m_device->errorString());
+            return make_ret(device_->error(), device_->errorString());
         }
     }
 
-    m_zip = new ZipWriter(m_device);
+    zip_ = new ZipWriter(device_);
 
     return true;
 }
 
 void MscWriter::ZipFileWriter::close() {
-    if (m_zip) {
-        m_zip->close();
+    if (zip_) {
+        zip_->close();
     }
 
-    if (m_device) {
-        m_device->close();
+    if (device_) {
+        device_->close();
     }
 }
 
-bool MscWriter::ZipFileWriter::isOpened() const { return m_device ? m_device->isOpen() : false; }
+bool MscWriter::ZipFileWriter::isOpened() const { return device_ ? device_->isOpen() : false; }
 
-bool MscWriter::ZipFileWriter::hasError() const { return (m_device ? m_device->hasError() : false) || (m_zip ? m_zip->hasError() : false); }
+bool MscWriter::ZipFileWriter::hasError() const { return (device_ ? device_->hasError() : false) || (zip_ ? zip_->hasError() : false); }
 
 bool MscWriter::ZipFileWriter::addFileData(const String &fileName, const ByteArray &data) {
-    IF_ASSERT_FAILED(m_zip) { return false; }
+    IF_ASSERT_FAILED(zip_) { return false; }
 
-    m_zip->addFile(fileName.toStdString(), data);
-    if (m_zip->hasError()) {
+    zip_->addFile(fileName.toStdString(), data);
+    if (zip_->hasError()) {
         LOGE() << "failed write files to zip";
         return false;
     }
@@ -247,30 +247,30 @@ bool MscWriter::ZipFileWriter::addFileData(const String &fileName, const ByteArr
 
 Ret MscWriter::DirWriter::open(io::IODevice *device, const muse::io::path_t &filePath) {
     IF_ASSERT_FAILED(!device) {
-        m_hasError = true;
+        hasError_ = true;
         return make_ret(Ret::Code::InternalError);
     }
 
     if (filePath.empty()) {
         LOGE() << "file path is empty";
-        m_hasError = true;
+        hasError_ = true;
         return false;
     }
 
-    m_rootPath = containerPath(filePath);
+    rootPath_ = containerPath(filePath);
 
-    Dir dir(m_rootPath);
+    Dir dir(rootPath_);
     Ret ret = dir.removeRecursively();
     if (!ret) {
         LOGE() << "failed clear dir: " << dir.absolutePath();
-        m_hasError = true;
+        hasError_ = true;
         return ret;
     }
 
     ret = dir.mkpath(dir.absolutePath());
     if (!ret) {
         LOGE() << "failed make path: " << dir.absolutePath();
-        m_hasError = true;
+        hasError_ = true;
         return ret;
     }
 
@@ -281,18 +281,18 @@ void MscWriter::DirWriter::close() {
     // noop
 }
 
-bool MscWriter::DirWriter::isOpened() const { return FileInfo::exists(m_rootPath); }
+bool MscWriter::DirWriter::isOpened() const { return FileInfo::exists(rootPath_); }
 
-bool MscWriter::DirWriter::hasError() const { return m_hasError; }
+bool MscWriter::DirWriter::hasError() const { return hasError_; }
 
 bool MscWriter::DirWriter::addFileData(const String &fileName, const ByteArray &data) {
-    muse::io::path_t filePath = m_rootPath + "/" + fileName;
+    muse::io::path_t filePath = rootPath_ + "/" + fileName;
 
     Dir fileDir(FileInfo(filePath).absolutePath());
     if (!fileDir.exists()) {
         if (!fileDir.mkpath(fileDir.absolutePath())) {
             LOGE() << "failed make path: " << fileDir.absolutePath();
-            m_hasError = true;
+            hasError_ = true;
             return false;
         }
     }
@@ -300,49 +300,49 @@ bool MscWriter::DirWriter::addFileData(const String &fileName, const ByteArray &
     const Ret ret = File::writeFile(filePath, data);
     if (!ret) {
         LOGE() << "failed to write file: " << filePath;
-        m_hasError = true;
+        hasError_ = true;
         return false;
     }
 
     return true;
 }
 
-MscWriter::XmlFileWriter::~XmlFileWriter() { delete m_stream; }
+MscWriter::XmlFileWriter::~XmlFileWriter() { delete stream_; }
 
 Ret MscWriter::XmlFileWriter::open(io::IODevice *device, const path_t &) {
     IF_ASSERT_FAILED(device) { return make_ret(Ret::Code::InternalError); }
-    m_device = device;
+    device_ = device;
 
-    if (!m_device->isOpen()) {
-        if (!m_device->open(IODevice::WriteOnly)) {
+    if (!device_->isOpen()) {
+        if (!device_->open(IODevice::WriteOnly)) {
             LOGE() << "failed to open device for writing";
-            return make_ret(m_device->error(), m_device->errorString());
+            return make_ret(device_->error(), device_->errorString());
         }
     }
 
-    m_stream = new TextStream(m_device);
+    stream_ = new TextStream(device_);
 
     // Write header
-    *m_stream << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-    *m_stream << "<files>\n";
+    *stream_ << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
+    *stream_ << "<files>\n";
 
     return true;
 }
 
 void MscWriter::XmlFileWriter::close() {
-    if (m_stream) {
-        *m_stream << "</files>\n";
-        m_stream->flush();
-        m_device->close();
+    if (stream_) {
+        *stream_ << "</files>\n";
+        stream_->flush();
+        device_->close();
     }
 }
 
-bool MscWriter::XmlFileWriter::isOpened() const { return m_device ? m_device->isOpen() : false; }
+bool MscWriter::XmlFileWriter::isOpened() const { return device_ ? device_->isOpen() : false; }
 
-bool MscWriter::XmlFileWriter::hasError() const { return m_device ? m_device->hasError() : false; }
+bool MscWriter::XmlFileWriter::hasError() const { return device_ ? device_->hasError() : false; }
 
 bool MscWriter::XmlFileWriter::addFileData(const String &fileName, const ByteArray &data) {
-    if (!m_stream) {
+    if (!stream_) {
         return false;
     }
 
@@ -353,7 +353,7 @@ bool MscWriter::XmlFileWriter::addFileData(const String &fileName, const ByteArr
         return true; // not error
     }
 
-    TextStream &ts = *m_stream;
+    TextStream &ts = *stream_;
     ts << "<file name=\"" << fileName << "\">\n";
     ts << "<![CDATA[";
     ts << data;

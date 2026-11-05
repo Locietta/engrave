@@ -27,40 +27,40 @@
 
 namespace muse::audio {
 struct TimePosition {
-    inline samples_t samples() const { return m_samples; }
+    inline samples_t samples() const { return samples_; }
 
-    inline sample_rate_t sampleRate() const { return m_sampleRate; }
+    inline sample_rate_t sampleRate() const { return sampleRate_; }
 
-    inline secs_t time() const { return m_time; }
+    inline secs_t time() const { return time_; }
 
     TimePosition() = default;
     TimePosition(const TimePosition &other) = default;
     TimePosition &operator=(const TimePosition &other) = default;
 
-    inline bool operator==(const TimePosition &other) const { return m_samples == other.m_samples && m_sampleRate == other.m_sampleRate; }
+    inline bool operator==(const TimePosition &other) const { return samples_ == other.samples_ && sampleRate_ == other.sampleRate_; }
 
     inline bool operator!=(const TimePosition &other) const { return !this->operator==(other); }
 
-    inline bool isValid() const { return m_sampleRate > 0; }
+    inline bool isValid() const { return sampleRate_ > 0; }
 
     inline void forward(samples_t delta) {
-        IF_ASSERT_FAILED(m_sampleRate > 0) { return; }
-        m_samples += delta;
-        m_time += static_cast<double>(delta) / m_sampleRate;
+        IF_ASSERT_FAILED(sampleRate_ > 0) { return; }
+        samples_ += delta;
+        time_ += static_cast<double>(delta) / sampleRate_;
     }
 
     inline void forward(const TimePosition &delta) {
-        IF_ASSERT_FAILED(delta.sampleRate() == m_sampleRate) { return; }
+        IF_ASSERT_FAILED(delta.sampleRate() == sampleRate_) { return; }
         forward(delta.samples());
     }
 
     inline TimePosition forwarded(samples_t delta) const {
-        IF_ASSERT_FAILED(m_sampleRate > 0) { return TimePosition(); }
-        return TimePosition(m_samples + delta, m_sampleRate);
+        IF_ASSERT_FAILED(sampleRate_ > 0) { return TimePosition(); }
+        return TimePosition(samples_ + delta, sampleRate_);
     }
 
     inline TimePosition forwarded(const TimePosition &delta) const {
-        IF_ASSERT_FAILED(delta.sampleRate() == m_sampleRate) { return TimePosition(); }
+        IF_ASSERT_FAILED(delta.sampleRate() == sampleRate_) { return TimePosition(); }
         return forwarded(delta.samples());
     }
 
@@ -85,10 +85,10 @@ struct TimePosition {
 
 private:
     inline TimePosition(samples_t samples, sample_rate_t sampleRate)
-        : m_samples(samples), m_sampleRate(sampleRate), m_time(sampleRate > 0 ? static_cast<double>(samples) / sampleRate : 0.0) {}
+        : samples_(samples), sampleRate_(sampleRate), time_(sampleRate > 0 ? static_cast<double>(samples) / sampleRate : 0.0) {}
 
-    samples_t m_samples = 0;
-    sample_rate_t m_sampleRate = 0;
-    secs_t m_time = 0.0; // cache
+    samples_t samples_ = 0;
+    sample_rate_t sampleRate_ = 0;
+    secs_t time_ = 0.0; // cache
 };
 } // namespace muse::audio

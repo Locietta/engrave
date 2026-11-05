@@ -63,13 +63,13 @@ public:
 
     bool allowTimeAnchor() const override { return false; }
 
-    NoteLineEndPlacement lineEndPlacement() { return m_lineEndPlacement; }
+    NoteLineEndPlacement lineEndPlacement() { return lineEndPlacement_; }
 
-    void setLineEndPlacement(NoteLineEndPlacement v) { m_lineEndPlacement = v; }
+    void setLineEndPlacement(NoteLineEndPlacement v) { lineEndPlacement_ = v; }
 
     void reset() override;
 
-    bool enforceMinLength() { return m_lineEndPlacement != NoteLineEndPlacement::LEFT_EDGE; }
+    bool enforceMinLength() { return lineEndPlacement_ != NoteLineEndPlacement::LEFT_EDGE; }
 
 protected:
     Sid defaultPosSid() const override;
@@ -77,6 +77,6 @@ protected:
     bool isInSpannerMap() const override { return false; }
 
 private:
-    NoteLineEndPlacement m_lineEndPlacement = NoteLineEndPlacement::OFFSET_ENDS;
+    NoteLineEndPlacement lineEndPlacement_ = NoteLineEndPlacement::OFFSET_ENDS;
 };
 } // namespace mu::engraving

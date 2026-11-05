@@ -31,7 +31,7 @@ public:
     Matrix() {}
 
     Matrix(double m11, double m12, double m21, double m22, double dx, double dy)
-        : m_11(m11), m_12(m12), m_21(m21), m_22(m22), m_dx(dx), m_dy(dy) {}
+        : m11_(m11), m12_(m12), m21_(m21), m22_(m22), dx_(dx), dy_(dy) {}
 
     Matrix inverted(bool *invertible) const {
         double dtr = determinant();
@@ -45,40 +45,40 @@ public:
                 *invertible = true;
             }
             double dinv = 1.0 / dtr;
-            return Matrix((m_22 * dinv), (-m_12 * dinv), (-m_21 * dinv), (m_11 * dinv), ((m_21 * m_dy - m_22 * m_dx) * dinv),
-                          ((m_12 * m_dx - m_11 * m_dy) * dinv));
+            return Matrix((m22_ * dinv), (-m12_ * dinv), (-m21_ * dinv), (m11_ * dinv), ((m21_ * dy_ - m22_ * dx_) * dinv),
+                          ((m12_ * dx_ - m11_ * dy_) * dinv));
         }
     }
 
-    double determinant() const { return m_11 * m_22 - m_12 * m_21; }
+    double determinant() const { return m11_ * m22_ - m12_ * m21_; }
 
-    double m11() const { return m_11; }
+    double m11() const { return m11_; }
 
-    double m12() const { return m_12; }
+    double m12() const { return m12_; }
 
-    double m21() const { return m_21; }
+    double m21() const { return m21_; }
 
-    double m22() const { return m_22; }
+    double m22() const { return m22_; }
 
-    double dx() const { return m_dx; }
+    double dx() const { return dx_; }
 
-    double dy() const { return m_dy; }
+    double dy() const { return dy_; }
 
     bool operator==(const Matrix &other) const {
-        return RealIsEqual(m_11, other.m_11) && RealIsEqual(m_12, other.m_12) && RealIsEqual(m_21, other.m_21) &&
-               RealIsEqual(m_22, other.m_22) && RealIsEqual(m_dx, other.m_dx) && RealIsEqual(m_dy, other.m_dy);
+        return RealIsEqual(m11_, other.m11_) && RealIsEqual(m12_, other.m12_) && RealIsEqual(m21_, other.m21_) &&
+               RealIsEqual(m22_, other.m22_) && RealIsEqual(dx_, other.dx_) && RealIsEqual(dy_, other.dy_);
     }
 
 private:
     friend class Transform;
 
-    double m_11 = 1;
-    double m_12 = 0;
-    double m_21 = 0;
-    double m_22 = 1;
+    double m11_ = 1;
+    double m12_ = 0;
+    double m21_ = 0;
+    double m22_ = 1;
 
-    double m_dx = 0;
-    double m_dy = 0;
+    double dx_ = 0;
+    double dy_ = 0;
 };
 } // namespace muse::draw
 

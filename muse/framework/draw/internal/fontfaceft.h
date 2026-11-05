@@ -63,9 +63,9 @@ private:
     GlyphMetrics *glyphMetrics(glyph_idx_t idx) const;
     SymbolMetrics *symbolMetrics(glyph_idx_t idx) const;
 
-    FaceKey m_key;
-    bool m_isSymbolMode = false;
-    FData *m_data = nullptr;
-    mutable std::unordered_map<glyph_idx_t, GlyphImage> m_cache;
+    FaceKey key_;
+    bool isSymbolMode_ = false;
+    FData *data_ = nullptr;
+    mutable std::unordered_map<glyph_idx_t, GlyphImage> cache_;
 };
 } // namespace muse::draw

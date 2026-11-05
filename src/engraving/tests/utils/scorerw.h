@@ -55,8 +55,8 @@ public:
     static bool saveMimeData(muse::ByteArray mimeData, const String &saveName);
 
 private:
-    static String m_rootPath;
-    static const EngravingServices *m_services;
+    static String rootPath_;
+    static const EngravingServices *services_;
 };
 } // namespace mu::engraving
 

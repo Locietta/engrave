@@ -49,7 +49,7 @@ public:
 
     void setType(Type type);
 
-    Type type() const { return m_type; }
+    Type type() const { return type_; }
 
     void styleChanged() override;
 
@@ -58,7 +58,7 @@ public:
 private:
     void applyTypeStyle();
 
-    Type m_type = Type::Main;
+    Type type_ = Type::Main;
 };
 } // namespace mu::engraving
 #endif

@@ -60,12 +60,12 @@ public:
 private:
     String generateText() const;
 
-    String m_preset;
-    std::vector<string_idx_t> m_visibleStrings;
-    StringData m_stringData;
+    String preset_;
+    std::vector<string_idx_t> visibleStrings_;
+    StringData stringData_;
 
-    bool m_noStringVisible = false;
-    std::optional<int> m_stringsNumber;
+    bool noStringVisible_ = false;
+    std::optional<int> stringsNumber_;
 };
 } // namespace mu::engraving
 

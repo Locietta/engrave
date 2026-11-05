@@ -55,7 +55,7 @@ static const ElementStyle fermataStyle{
 
 Fermata::Fermata(EngravingObject *parent) : EngravingItem(ElementType::FERMATA, parent, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
     setPlacement(PlacementV::ABOVE);
-    m_symId = SymId::noSym;
+    symId_ = SymId::noSym;
     setPlay(true);
     initElementStyle(&fermataStyle);
 }
@@ -65,11 +65,11 @@ Fermata::Fermata(EngravingObject *parent) : EngravingItem(ElementType::FERMATA, 
 //---------------------------------------------------------
 
 int Fermata::subtype() const {
-    String s = String::fromAscii(SymNames::nameForSymId(m_symId).ascii());
+    String s = String::fromAscii(SymNames::nameForSymId(symId_).ascii());
     if (s.endsWith(u"Below")) {
         return int(SymNames::symIdByName(s.left(s.size() - 5) + u"Above"));
     } else {
-        return int(m_symId);
+        return int(symId_);
     }
 }
 
@@ -112,7 +112,7 @@ Page *Fermata::page() const {
 
 PropertyValue Fermata::getProperty(Pid propertyId) const {
     switch (propertyId) {
-        case Pid::SYMBOL: return PropertyValue::fromValue(m_symId);
+        case Pid::SYMBOL: return PropertyValue::fromValue(symId_);
         case Pid::TIME_STRETCH: return timeStretch();
         case Pid::PLAY: return play();
         default: return EngravingItem::getProperty(propertyId);
@@ -129,11 +129,11 @@ bool Fermata::setProperty(Pid propertyId, const PropertyValue &v) {
         case Pid::PLACEMENT: {
             PlacementV p = v.value<PlacementV>();
             if (p != placement()) {
-                String s = String::fromAscii(SymNames::nameForSymId(m_symId).ascii());
+                String s = String::fromAscii(SymNames::nameForSymId(symId_).ascii());
                 bool up = placeAbove();
                 if (s.endsWith(up ? u"Above" : u"Below")) {
                     String s2 = s.left(s.size() - 5) + (up ? u"Below" : u"Above");
-                    m_symId = SymNames::symIdByName(s2);
+                    symId_ = SymNames::symIdByName(s2);
                 }
                 setPlacement(p);
             }
@@ -197,8 +197,8 @@ double Fermata::mag() const {
 }
 
 void Fermata::setSymIdAndTimeStretch(SymId id) {
-    m_symId = id;
-    m_timeStretch = m_timeStretch == -1 ? propertyDefault(Pid::TIME_STRETCH).value<double>() : -1;
+    symId_ = id;
+    timeStretch_ = timeStretch_ == -1 ? propertyDefault(Pid::TIME_STRETCH).value<double>() : -1;
 }
 
 FermataType Fermata::fermataType() const {

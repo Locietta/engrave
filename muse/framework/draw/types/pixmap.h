@@ -32,25 +32,25 @@ public:
 
     Pixmap() = default;
 
-    Pixmap(Size size) : m_size(size) {}
+    Pixmap(Size size) : size_(size) {}
 
-    Pixmap(const ByteArray &data, Size size) : m_size(size) { setData(data); }
+    Pixmap(const ByteArray &data, Size size) : size_(size) { setData(data); }
 
-    Pixmap(int w, int h) : m_size(Size(w, h)) {}
+    Pixmap(int w, int h) : size_(Size(w, h)) {}
 
-    int width() const { return m_size.width(); }
+    int width() const { return size_.width(); }
 
-    int height() const { return m_size.height(); }
+    int height() const { return size_.height(); }
 
-    Size size() const { return m_size; }
+    Size size() const { return size_; }
 
-    ByteArray data() const { return m_data; }
+    ByteArray data() const { return data_; }
 
-    bool isNull() const { return m_data.empty(); }
+    bool isNull() const { return data_.empty(); }
 
-    unsigned int key() const { return m_key; }
+    unsigned int key() const { return key_; }
 
-    bool operator==(const Pixmap &o) const { return m_size == o.m_size && m_key == o.m_key && m_data == o.m_data; }
+    bool operator==(const Pixmap &o) const { return size_ == o.size_ && key_ == o.key_ && data_ == o.data_; }
 
     bool operator!=(const Pixmap &o) const { return !this->operator==(o); }
 
@@ -66,13 +66,13 @@ private:
     }
 
     void setData(const ByteArray &data) {
-        m_data = data;
-        m_key = doKey(data.constData(), data.size());
+        data_ = data;
+        key_ = doKey(data.constData(), data.size());
     }
 
-    Size m_size;
-    ByteArray m_data; //! usually png
-    unsigned int m_key = 0;
+    Size size_;
+    ByteArray data_; //! usually png
+    unsigned int key_ = 0;
 };
 } // namespace muse::draw
 

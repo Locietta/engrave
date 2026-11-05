@@ -32,25 +32,25 @@ class SmoothLinearValue {
 public:
     SmoothLinearValue(const ValueT &startValue = ValueT(0)) {
         static_assert(std::is_floating_point<StepT>::value, "Internal step type needs to be floating point.");
-        m_targetValue = m_currentValue = startValue;
-        m_currentSteps = (StepT) _initialSteps;
-        m_targetSteps = 0;
-        m_deltaValue = 0;
+        targetValue_ = currentValue_ = startValue;
+        currentSteps_ = (StepT) _initialSteps;
+        targetSteps_ = 0;
+        deltaValue_ = 0;
     }
 
-    void setSteps(int steps) { m_currentSteps = (StepT) std::max(1, steps); }
+    void setSteps(int steps) { currentSteps_ = (StepT) std::max(1, steps); }
 
     /** Advance one tick by just adding the delta. Can lead to error accumulation.
      * @return true if target was reached
      */
     bool tick() {
-        if (m_targetSteps <= 0) {
-            m_currentValue = m_targetValue; // get rid of error accumulation
+        if (targetSteps_ <= 0) {
+            currentValue_ = targetValue_; // get rid of error accumulation
             return true;
         }
 
-        m_targetSteps--;
-        m_currentValue += m_deltaValue;
+        targetSteps_--;
+        currentValue_ += deltaValue_;
         return false;
     }
 
@@ -58,12 +58,12 @@ public:
      * @return true if target was reached
      */
     bool preciseTick() {
-        if (m_targetSteps <= 0) {
+        if (targetSteps_ <= 0) {
             return true;
         }
 
-        m_targetSteps--;
-        m_currentValue = m_targetValue - m_targetSteps * m_deltaValue; // if n reaches 0, _value will be exactly targetvalue
+        targetSteps_--;
+        currentValue_ = targetValue_ - targetSteps_ * deltaValue_; // if n reaches 0, _value will be exactly targetvalue
         return false;
     }
 
@@ -72,8 +72,8 @@ public:
      * warning! will overshoot target if called too many times
      */
     void tickUnchecked() {
-        m_targetSteps--;
-        m_currentValue += m_deltaValue;
+        targetSteps_--;
+        currentValue_ += deltaValue_;
     }
 
     /** Advance one tick without checking whether target was reached
@@ -81,25 +81,25 @@ public:
      * warning! will overshoot target if called too many times
      */
     void preciseTickUnchecked() {
-        m_targetSteps--;
-        m_currentValue = m_targetValue - m_targetSteps * m_deltaValue;
+        targetSteps_--;
+        currentValue_ = targetValue_ - targetSteps_ * deltaValue_;
     }
 
     /** Advance multiple ticks
      *  @param n num ticks to advance
      */
     void advanceTicks(int n) {
-        m_targetSteps -= (double) n;
-        if (m_targetSteps < 0) {
-            m_targetSteps = 0;
+        targetSteps_ -= (double) n;
+        if (targetSteps_ < 0) {
+            targetSteps_ = 0;
         }
-        m_currentValue = m_targetValue - m_targetSteps * m_deltaValue;
+        currentValue_ = targetValue_ - targetSteps_ * deltaValue_;
     }
 
     /// Set the value instantly (for initialization)
     void initWithValue(const ValueT &val) {
-        m_targetValue = m_currentValue = val;
-        m_targetSteps = 0;
+        targetValue_ = currentValue_ = val;
+        targetSteps_ = 0;
     }
 
     /// Set value and target instantly
@@ -110,43 +110,43 @@ public:
 
     /** Sets the target value which is reached after "steps" calls to smoothTick */
     void setTargetValue(const ValueT &val) {
-        if (m_targetValue != val) {
-            m_targetValue = val;
-            m_deltaValue = ValueT((1.0 / m_currentSteps) * (m_targetValue - m_currentValue));
-            m_targetSteps = m_currentSteps;
+        if (targetValue_ != val) {
+            targetValue_ = val;
+            deltaValue_ = ValueT((1.0 / currentSteps_) * (targetValue_ - currentValue_));
+            targetSteps_ = currentSteps_;
         }
     }
 
     /** @returns the value the smoothed value will reach eventually */
-    const ValueT &getTargetValue() const { return m_targetValue; }
+    const ValueT &getTargetValue() const { return targetValue_; }
 
     /** @return the current (smoothed) value */
-    inline const ValueT &getValue() const { return m_currentValue; }
+    inline const ValueT &getValue() const { return currentValue_; }
 
     /** Go to target immediately.
      * @returns value
      */
     inline const ValueT &setToTarget() {
-        m_currentValue = m_targetValue;
-        m_targetSteps = 0.f;
-        return m_currentValue;
+        currentValue_ = targetValue_;
+        targetSteps_ = 0.f;
+        return currentValue_;
     }
 
     /// check if the smoothed value isn't moving and has a specific (target)value
     bool isStaticAtValue(const ValueT &static_value) const { return isAtTargetValue() && (getTargetValue() == static_value); }
 
-    inline bool isAtTargetValue() const { return m_targetSteps <= (StepT) 0; }
+    inline bool isAtTargetValue() const { return targetSteps_ <= (StepT) 0; }
 
-    int getRemainingSteps() const { return (int) m_targetSteps; }
+    int getRemainingSteps() const { return (int) targetSteps_; }
 
-    int smoothingSteps() const { return (int) m_currentSteps; }
+    int smoothingSteps() const { return (int) currentSteps_; }
 
 protected:
-    ValueT m_currentValue;
-    ValueT m_targetValue;
-    ValueT m_deltaValue;
-    StepT m_targetSteps;
-    StepT m_currentSteps;
+    ValueT currentValue_;
+    ValueT targetValue_;
+    ValueT deltaValue_;
+    StepT targetSteps_;
+    StepT currentSteps_;
 };
 } // namespace muse::audio::dsp
 

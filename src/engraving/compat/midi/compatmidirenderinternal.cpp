@@ -1088,14 +1088,14 @@ void CompatMidiRendererInternal::collectGraceBeforeChordEvents(Chord *chord, Cho
                     params.graceOffsetOn = graceTickSum - graceTickOffset * currentBeaforeBeatNote;
                     params.graceOffsetOff = graceTickSum - graceTickOffset * (currentBeaforeBeatNote + 1);
 
-                    collectNote(events, note, params, st, pitchWheelRenderer, m_context);
+                    collectNote(events, note, params, st, pitchWheelRenderer, context_);
                 } else if (isGraceBend) {
                     params.graceOffsetOn = graceTickSum;
                     params.graceOffsetOff = 0;
 
-                    collectNote(events, note, params, st, pitchWheelRenderer, m_context);
+                    collectNote(events, note, params, st, pitchWheelRenderer, context_);
                 } else {
-                    collectNote(events, note, params, st, pitchWheelRenderer, m_context);
+                    collectNote(events, note, params, st, pitchWheelRenderer, context_);
                 }
             }
 
@@ -1185,7 +1185,7 @@ void CompatMidiRendererInternal::doCollectMeasureEvents(EventsHolder &events, Me
             if (!h || !h->play()) {
                 continue;
             }
-            renderHarmony(events, m, h, tickOffset, m_context);
+            renderHarmony(events, m, h, tickOffset, context_);
         }
 
         for (track_idx_t track = strack; track < etrack; ++track) {
@@ -1204,7 +1204,7 @@ void CompatMidiRendererInternal::doCollectMeasureEvents(EventsHolder &events, Me
             }
 
             Chord *chord = toChord(cr);
-            double veloMultiplier = NoteEvent::DEFAULT_VELOCITY_MULTIPLIER * chordVelocityMultiplier(chord, m_context);
+            double veloMultiplier = NoteEvent::DEFAULT_VELOCITY_MULTIPLIER * chordVelocityMultiplier(chord, context_);
 
             //
             // Add normal note events
@@ -1227,15 +1227,15 @@ void CompatMidiRendererInternal::doCollectMeasureEvents(EventsHolder &events, Me
                 params.tickOffset = tickOffset;
                 params.letRingNote = chordParams.letRing;
                 params.endLetRingTick = chordParams.endLetRingTick;
-                if (m_context.instrumentsHaveEffects) {
+                if (context_.instrumentsHaveEffects) {
                     params.effect = effect;
                 }
 
-                if (m_context.eachStringHasChannel && instr->hasStrings()) {
+                if (context_.eachStringHasChannel && instr->hasStrings()) {
                     params.callAllSoundOff = true;
                 }
 
-                collectNote(events, note, params, st1, pitchWheelRenderer, m_context);
+                collectNote(events, note, params, st1, pitchWheelRenderer, context_);
             }
 
             if (!graceNotesMerged(chord)) {
@@ -1246,7 +1246,7 @@ void CompatMidiRendererInternal::doCollectMeasureEvents(EventsHolder &events, Me
                         params.velocityMultiplier = veloMultiplier;
                         params.tickOffset = tickOffset;
                         params.effect = effect;
-                        collectNote(events, note, params, st1, pitchWheelRenderer, m_context);
+                        collectNote(events, note, params, st1, pitchWheelRenderer, context_);
                     }
                 }
             }
@@ -1326,7 +1326,7 @@ void CompatMidiRendererInternal::renderSpanners(EventsHolder &events, PitchWheel
 
         int idx = s->staff()->channel(s->tick(), 0);
         int channel = s->part()->instrument(s->tick())->channel(idx)->channel();
-        const auto &channels = m_context.channels->channelsMap[channel];
+        const auto &channels = context_.channels->channelsMap[channel];
         if (channels.empty()) {
             doRenderSpanners(events, s, channel, pitchWheelRenderer, MidiInstrumentEffect::NONE);
         } else {
@@ -1512,20 +1512,20 @@ static Trill *findFirstTrill(Chord *chord) {
 void CompatMidiRendererInternal::renderScore(EventsHolder &events, const Context &context, bool expandRepeats) {
     UNUSED(expandRepeats);
 
-    m_context = context;
+    context_ = context;
     PitchWheelRenderer pitchWheelRender(g_wheelSpec);
 
     score->updateSwing();
     score->updateCapo();
 
-    if (!m_context.useDefaultArticulations) {
+    if (!context_.useDefaultArticulations) {
         fillArticulationsInfo();
     }
 
-    CompatMidiRender::createPlayEvents(score, score->firstMeasure(), nullptr, m_context);
+    CompatMidiRender::createPlayEvents(score, score->firstMeasure(), nullptr, context_);
 
     score->updateChannel();
-    fillScoreVelocities(score, m_context);
+    fillScoreVelocities(score, context_);
 
     // create note & other events
     for (const Staff *st : score->staves()) {
@@ -1538,8 +1538,8 @@ void CompatMidiRendererInternal::renderScore(EventsHolder &events, const Context
 
     EventsHolder pitchWheelEvents = pitchWheelRender.renderPitchWheel();
     events.mergePitchWheelEvents(pitchWheelEvents);
-    if (m_context.applyCaesuras) {
-        m_context.pauseMap->calculate(score);
+    if (context_.applyCaesuras) {
+        context_.pauseMap->calculate(score);
     }
 }
 
@@ -1555,7 +1555,7 @@ void CompatMidiRendererInternal::fillArticulationsInfo() {
                     [articulationName](const MidiArticulation &instrArticulation) { return instrArticulation.name == articulationName; });
 
                 if (!instrHasArticulation) {
-                    m_context.articulationsWithoutValuesByInstrument[instrId].insert(articulationName);
+                    context_.articulationsWithoutValuesByInstrument[instrId].insert(articulationName);
                 }
             }
         }

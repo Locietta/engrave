@@ -46,7 +46,7 @@ private:
     void flush();
 
     struct Impl;
-    Impl *m_impl = nullptr;
-    io::IODevice *m_device = nullptr;
+    Impl *impl_ = nullptr;
+    io::IODevice *device_ = nullptr;
 };
 } // namespace muse

@@ -35,16 +35,16 @@ using namespace muse;
 
 static constexpr int TEXTSTREAM_BUFFERSIZE = 16384;
 
-TextStream::TextStream(io::IODevice *device) : m_device(device) { m_buf.reserve(TEXTSTREAM_BUFFERSIZE); }
+TextStream::TextStream(io::IODevice *device) : device_(device) { buf_.reserve(TEXTSTREAM_BUFFERSIZE); }
 
 TextStream::~TextStream() { flush(); }
 
-void TextStream::setDevice(io::IODevice *device) { m_device = device; }
+void TextStream::setDevice(io::IODevice *device) { device_ = device; }
 
 void TextStream::flush() {
-    if (m_device && m_device->isOpen()) {
-        m_device->write(m_buf.data(), m_buf.size());
-        m_buf.clear();
+    if (device_ && device_->isOpen()) {
+        device_->write(buf_.data(), buf_.size());
+        buf_.clear();
     }
 }
 
@@ -140,8 +140,8 @@ TextStream &TextStream::operator<<(const String &s) {
 
 void TextStream::write(const char *ch, size_t len) {
     if (io::activeWriteBudget && !io::activeWriteBudget->charge(len)) throw io::WriteBudgetStop{};
-    m_buf.insert(m_buf.end(), reinterpret_cast<const uint8_t *>(ch), reinterpret_cast<const uint8_t *>(ch + len));
-    if (m_device && m_buf.size() > TEXTSTREAM_BUFFERSIZE) {
+    buf_.insert(buf_.end(), reinterpret_cast<const uint8_t *>(ch), reinterpret_cast<const uint8_t *>(ch + len));
+    if (device_ && buf_.size() > TEXTSTREAM_BUFFERSIZE) {
         flush();
         if (io::activeWriteBudget && !io::activeWriteBudget->poll()) throw io::WriteBudgetStop{};
     }

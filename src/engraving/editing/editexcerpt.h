@@ -103,9 +103,9 @@ public:
 class AddPartToExcerpt : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, AddPartToExcerpt)
 
-    Excerpt *m_excerpt = nullptr;
-    Part *m_part = nullptr;
-    size_t m_targetPartIdx = 0;
+    Excerpt *excerpt_ = nullptr;
+    Part *part_ = nullptr;
+    size_t targetPartIdx_ = 0;
 
 public:
     AddPartToExcerpt(Excerpt *e, Part *p, size_t targetPartIdx);
@@ -115,6 +115,6 @@ public:
 
     UNDO_TYPE(CommandType::AddPartToExcerpt)
     UNDO_NAME("AddPartToExcerpt")
-    UNDO_CHANGED_OBJECTS({m_part})
+    UNDO_CHANGED_OBJECTS({part_})
 };
 } // namespace mu::engraving

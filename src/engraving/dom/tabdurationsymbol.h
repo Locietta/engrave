@@ -43,15 +43,15 @@ public:
 
     TabDurationSymbol *clone() const override { return new TabDurationSymbol(*this); }
 
-    const StaffType *tab() const { return m_tab; }
+    const StaffType *tab() const { return tab_; }
 
-    const String &text() const { return m_text; }
+    const String &text() const { return text_; }
 
     void setDuration(DurationType type, int dots, const StaffType *tab);
 
-    bool isRepeat() const { return m_repeat; }
+    bool isRepeat() const { return repeat_; }
 
-    void setRepeat(bool val) { m_repeat = val; }
+    void setRepeat(bool val) { repeat_ = val; }
 
     struct LayoutData : public EngravingItem::LayoutData {
         TabBeamGrid beamGrid = TabBeamGrid::NONE; // value for special 'English' grid display
@@ -61,8 +61,8 @@ public:
     DECLARE_LAYOUTDATA_METHODS(TabDurationSymbol)
 
 private:
-    const StaffType *m_tab = nullptr;
-    String m_text;
-    bool m_repeat = false;
+    const StaffType *tab_ = nullptr;
+    String text_;
+    bool repeat_ = false;
 };
 } // namespace mu::engraving

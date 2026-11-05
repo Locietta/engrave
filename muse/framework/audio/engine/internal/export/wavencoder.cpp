@@ -86,13 +86,13 @@ struct WavHeader {
 };
 } // namespace
 
-WavEncoder::WavEncoder(const SoundTrackFormat &format, io::IODevice &dstDevice) : AbstractAudioEncoder(format), m_dstDevice{&dstDevice} {
-    DO_ASSERT(m_dstDevice);
+WavEncoder::WavEncoder(const SoundTrackFormat &format, io::IODevice &dstDevice) : AbstractAudioEncoder(format), dstDevice_{&dstDevice} {
+    DO_ASSERT(dstDevice_);
 }
 
 bool WavEncoder::begin(const samples_t) {
-    m_headerWritten = false;
-    m_pcmStartPos = 0;
+    headerWritten_ = false;
+    pcmStartPos_ = 0;
     return true;
 }
 
@@ -100,7 +100,7 @@ bool WavEncoder::writePlaceholderHeader() {
     WavHeader header;
     header.chunkSize = 18; // 18 is 2 bytes more to include cbsize field / extension size
 
-    switch (m_format.sampleFormat) {
+    switch (format_.sampleFormat) {
         case AudioSampleFormat::Int16:
             header.bitsPerSample = 16;
             header.code = 1; // PCM
@@ -117,21 +117,21 @@ bool WavEncoder::writePlaceholderHeader() {
         default: return false;
     }
 
-    header.audioChannelsNumber = m_format.outputSpec.audioChannelCount;
-    header.sampleRate = m_format.outputSpec.sampleRate;
+    header.audioChannelsNumber = format_.outputSpec.audioChannelCount;
+    header.sampleRate = format_.outputSpec.sampleRate;
     header.samplesPerChannel = 0;
 
-    header.write(*m_dstDevice);
+    header.write(*dstDevice_);
     return true;
 }
 
 bool WavEncoder::patchHeaderSizes() {
-    const size_t endPos = m_dstDevice->pos();
-    if (endPos < m_pcmStartPos || endPos < 8) {
+    const size_t endPos = dstDevice_->pos();
+    if (endPos < pcmStartPos_ || endPos < 8) {
         return false;
     }
 
-    const uint64_t dataBytes = endPos - m_pcmStartPos;
+    const uint64_t dataBytes = endPos - pcmStartPos_;
     if (dataBytes > std::numeric_limits<uint32_t>::max() || endPos - 8 > std::numeric_limits<uint32_t>::max()) {
         LOGE() << "WAV export: file size exceeds 32-bit chunk limits";
         return false;
@@ -140,34 +140,34 @@ bool WavEncoder::patchHeaderSizes() {
     const uint32_t dataSize = static_cast<uint32_t>(dataBytes);
     const uint32_t riffChunkSize = static_cast<uint32_t>(endPos - 8);
 
-    bool ok = writeTagData<uint32_t>(*m_dstDevice, riffChunkSize, 4); // RIFF chunk size at offset 4
-    ok = writeTagData<uint32_t>(*m_dstDevice, dataSize, 42) && ok;    // data chunk size at offset 42
-    return m_dstDevice->seek(endPos) && ok;
+    bool ok = writeTagData<uint32_t>(*dstDevice_, riffChunkSize, 4); // RIFF chunk size at offset 4
+    ok = writeTagData<uint32_t>(*dstDevice_, dataSize, 42) && ok;    // data chunk size at offset 42
+    return dstDevice_->seek(endPos) && ok;
 }
 
 size_t WavEncoder::encode(const samples_t samplesPerChannel, const float *input) {
-    if (!m_headerWritten) {
+    if (!headerWritten_) {
         if (!writePlaceholderHeader()) {
             return 0;
         }
-        m_pcmStartPos = m_dstDevice->pos();
-        m_headerWritten = true;
+        pcmStartPos_ = dstDevice_->pos();
+        headerWritten_ = true;
     }
 
-    const int channels = m_format.outputSpec.audioChannelCount;
+    const int channels = format_.outputSpec.audioChannelCount;
 
-    if (m_format.sampleFormat == AudioSampleFormat::Float32) {
+    if (format_.sampleFormat == AudioSampleFormat::Float32) {
         for (samples_t sampleIdx = 0; sampleIdx < samplesPerChannel; ++sampleIdx) {
             for (audioch_t audioChNum = 0; audioChNum < channels; ++audioChNum) {
                 const int idx = static_cast<int>(sampleIdx) * channels + audioChNum;
-                if (m_dstDevice->write(reinterpret_cast<const std::uint8_t *>(input + idx), 4) != 4) {
+                if (dstDevice_->write(reinterpret_cast<const std::uint8_t *>(input + idx), 4) != 4) {
                     return 0;
                 }
             }
         }
     } else {
         int bitsPerSample = 0;
-        switch (m_format.sampleFormat) {
+        switch (format_.sampleFormat) {
             case AudioSampleFormat::Int16: bitsPerSample = 16; break;
             case AudioSampleFormat::Int24: bitsPerSample = 24; break;
             default: return 0;
@@ -181,7 +181,7 @@ size_t WavEncoder::encode(const samples_t samplesPerChannel, const float *input)
 
                 const int32_t sampleInt = dsp::convertFloatSamples<int32_t>(input[idx], bitsPerSample);
 
-                if (m_dstDevice->write(reinterpret_cast<const std::uint8_t *>(&sampleInt), bytesToWrite) !=
+                if (dstDevice_->write(reinterpret_cast<const std::uint8_t *>(&sampleInt), bytesToWrite) !=
                     static_cast<size_t>(bytesToWrite)) {
                     return 0;
                 }
@@ -193,7 +193,7 @@ size_t WavEncoder::encode(const samples_t samplesPerChannel, const float *input)
 }
 
 Ret WavEncoder::end() {
-    if (m_headerWritten && !patchHeaderSizes()) return make_ret(Err::ErrorEncode, "WAV header finalization failed");
+    if (headerWritten_ && !patchHeaderSizes()) return make_ret(Err::ErrorEncode, "WAV header finalization failed");
     return make_ok();
 }
 } // namespace muse::audio::encode

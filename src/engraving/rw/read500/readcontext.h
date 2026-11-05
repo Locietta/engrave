@@ -74,13 +74,13 @@ public:
     double spatium() const;
     void setSpatium(double v);
 
-    void setPropertiesToSkip(const PropertyIdSet &propertiesToSkip) { m_propertiesToSkip = propertiesToSkip; }
+    void setPropertiesToSkip(const PropertyIdSet &propertiesToSkip) { propertiesToSkip_ = propertiesToSkip; }
 
-    bool shouldSkipProperty(Pid pid) const { return muse::contains(m_propertiesToSkip, pid); }
+    bool shouldSkipProperty(Pid pid) const { return muse::contains(propertiesToSkip_, pid); }
 
-    bool forcePageMode() const { return m_forcePageMode; }
+    bool forcePageMode() const { return forcePageMode_; }
 
-    void setForcePageMode(bool v) { m_forcePageMode = v; }
+    void setForcePageMode(bool v) { forcePageMode_ = v; }
 
     DummyParent *dummy() const;
 
@@ -131,9 +131,9 @@ public:
 
     const SettingsCompat &settingCompat() { return _settingsCompat; }
 
-    Fraction timeSigForNextMeasure() { return m_timeSigForNextMeasure; }
+    Fraction timeSigForNextMeasure() { return timeSigForNextMeasure_; }
 
-    void setTimeSigForNextMeasure(Fraction timeSig) { m_timeSigForNextMeasure = timeSig; }
+    void setTimeSigForNextMeasure(Fraction timeSig) { timeSigForNextMeasure_ = timeSig; }
 
     Location location(bool forceAbsFrac = false) const;
     void fillLocation(Location &, bool forceAbsFrac = false) const;
@@ -150,10 +150,10 @@ public:
     void connectNoteAnchoredSpanners();
 
 private:
-    Score *m_score = nullptr;
+    Score *score_ = nullptr;
 
     bool _pasteMode = false; // modifies read behaviour on paste operation
-    bool m_forcePageMode = false;
+    bool forcePageMode_ = false;
 
     Fraction _tick{Fraction(0, 1)};
     Fraction _tickOffset{Fraction(0, 1)};
@@ -171,16 +171,16 @@ private:
 
     SettingsCompat _settingsCompat;
 
-    PropertyIdSet m_propertiesToSkip;
+    PropertyIdSet propertiesToSkip_;
 
-    Fraction m_timeSigForNextMeasure = Fraction(0, 1);
+    Fraction timeSigForNextMeasure_ = Fraction(0, 1);
 
-    std::unordered_map<Measure *, EID> m_mmRestEndMeasures;
+    std::unordered_map<Measure *, EID> mmRestEndMeasures_;
 
     // On pasting we must create new EIDs for the elements, as the serialized EIDs could be used elsewhere in the score
     // This map preserves the link between the old EID used to reference items within the section of the score which was copied and the newly created EID
-    std::unordered_map<EID, EID> m_pastedEIDs;
+    std::unordered_map<EID, EID> pastedEIDs_;
 
-    std::map<Spanner *, std::pair<EID, EID>> m_incompleteNoteAnchoredSpanners;
+    std::map<Spanner *, std::pair<EID, EID>> incompleteNoteAnchoredSpanners_;
 };
 } // namespace mu::engraving::read500

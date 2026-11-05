@@ -90,34 +90,34 @@ public:
 
     Measure *measure() const { return ownershipParent() ? toMeasure(ownershipParent()->ownershipParent()) : nullptr; }
 
-    void setSpanStaff(const bool val) { m_spanStaff = val; }
+    void setSpanStaff(const bool val) { spanStaff_ = val; }
 
-    void setSpanFrom(int val) { m_spanFrom = val; }
+    void setSpanFrom(int val) { spanFrom_ = val; }
 
-    void setSpanTo(int val) { m_spanTo = val; }
+    void setSpanTo(int val) { spanTo_ = val; }
 
     void setShowTips(bool val);
 
-    bool spanStaff() const { return m_spanStaff; }
+    bool spanStaff() const { return spanStaff_; }
 
-    int spanFrom() const { return m_spanFrom; }
+    int spanFrom() const { return spanFrom_; }
 
-    int spanTo() const { return m_spanTo; }
+    int spanTo() const { return spanTo_; }
 
     bool showTips() const;
 
-    const ElementList *el() const { return &m_el; }
+    const ElementList *el() const { return &el_; }
 
     static String translatedUserTypeName(BarLineType);
 
-    void setBarLineType(BarLineType i) { m_barLineType = i; }
+    void setBarLineType(BarLineType i) { barLineType_ = i; }
 
-    BarLineType barLineType() const { return m_barLineType; }
+    BarLineType barLineType() const { return barLineType_; }
 
     bool isTop() const;
     bool isBottom() const;
 
-    int subtype() const override { return int(m_barLineType); }
+    int subtype() const override { return int(barLineType_); }
 
     TranslatableString subtypeUserName() const override;
 
@@ -128,9 +128,9 @@ public:
     using EngravingObject::undoChangeProperty;
     EngravingObject *propertyDelegate(Pid) const override;
 
-    void setPlayCount(int playCount) { m_playCount = playCount; }
+    void setPlayCount(int playCount) { playCount_ = playCount; }
 
-    int playCount() const { return m_playCount; }
+    int playCount() const { return playCount_; }
 
     PlayCountText *playCountText() const;
 
@@ -158,13 +158,13 @@ private:
     BarLine(DummyParentOr<Segment> parent);
     BarLine(const BarLine &);
 
-    bool m_spanStaff = false; // span barline to next staff if true
-    int m_spanFrom = 0;       // line number on start and end staves
-    int m_spanTo = 0;
-    BarLineType m_barLineType = BarLineType::NORMAL;
+    bool spanStaff_ = false; // span barline to next staff if true
+    int spanFrom_ = 0;       // line number on start and end staves
+    int spanTo_ = 0;
+    BarLineType barLineType_ = BarLineType::NORMAL;
 
-    ElementList m_el; ///< fermata or other articulations
+    ElementList el_; ///< fermata or other articulations
 
-    int m_playCount = -1; // For use during copy & paste
+    int playCount_ = -1; // For use during copy & paste
 };
 } // namespace mu::engraving

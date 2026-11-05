@@ -65,7 +65,7 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 SysStaff::~SysStaff() {
-    for (auto &pair : m_instrumentNames) {
+    for (auto &pair : instrumentNames_) {
         if (InstrumentName *n = pair.second) {
             delete n;
         }
@@ -76,15 +76,15 @@ SysStaff::~SysStaff() {
 //   yBottom
 //---------------------------------------------------------
 
-double SysStaff::yBottom() const { return skyline().south().valid() ? skyline().south().max() : m_height; }
+double SysStaff::yBottom() const { return skyline().south().valid() ? skyline().south().max() : height_; }
 
 //---------------------------------------------------------
 //   saveLayout
 //---------------------------------------------------------
 
 void SysStaff::saveLayout() {
-    m_height = bbox().height();
-    m_yPos = bbox().y();
+    height_ = bbox().height();
+    yPos_ = bbox().y();
 }
 
 //---------------------------------------------------------
@@ -92,13 +92,13 @@ void SysStaff::saveLayout() {
 //---------------------------------------------------------
 
 void SysStaff::restoreLayout() {
-    bbox().setTop(m_yPos);
-    bbox().setHeight(m_height);
+    bbox().setTop(yPos_);
+    bbox().setHeight(height_);
 }
 
 InstrumentName *SysStaff::name(InstrumentNameRole role) const {
-    if (muse::contains(m_instrumentNames, role)) {
-        return m_instrumentNames.at(role);
+    if (muse::contains(instrumentNames_, role)) {
+        return instrumentNames_.at(role);
     }
 
     return nullptr;
@@ -110,7 +110,7 @@ void SysStaff::addInstrumentName(InstrumentName *n) {
         delete curName;
     }
 
-    m_instrumentNames[role] = n;
+    instrumentNames_[role] = n;
 }
 
 void SysStaff::removeInstrumentName(InstrumentNameRole role) {
@@ -118,7 +118,7 @@ void SysStaff::removeInstrumentName(InstrumentNameRole role) {
         delete n;
     }
 
-    m_instrumentNames[role] = nullptr;
+    instrumentNames_[role] = nullptr;
 }
 
 //---------------------------------------------------------
@@ -129,15 +129,15 @@ System::System(Score *parent) : EngravingItem(ElementType::SYSTEM, parent) {}
 
 void System::setOwnershipParent(Score *score) { EngravingItem::setOwnershipParent(score); }
 
-EngravingItem *System::layoutParent() const { return m_page; }
+EngravingItem *System::layoutParent() const { return page_; }
 
 //---------------------------------------------------------
 //   ~System
 //---------------------------------------------------------
 
 System::~System() {
-    if (m_page) {
-        muse::remove(m_page->systems(), this);
+    if (page_) {
+        muse::remove(page_->systems(), this);
     }
     for (SpannerSegment *ss : spannerSegments()) {
         if (ss->system() == this) {
@@ -149,14 +149,14 @@ System::~System() {
             mb->setSystem(nullptr);
         }
     }
-    muse::DeleteAll(m_staves);
-    muse::DeleteAll(m_brackets);
-    muse::DeleteAll(m_systemLockIndicators);
-    if (m_staffVisibilityIndicator) {
-        delete m_staffVisibilityIndicator;
+    muse::DeleteAll(staves_);
+    muse::DeleteAll(brackets_);
+    muse::DeleteAll(systemLockIndicators_);
+    if (staffVisibilityIndicator_) {
+        delete staffVisibilityIndicator_;
     }
-    if (m_pageLockIndicator) {
-        delete m_pageLockIndicator;
+    if (pageLockIndicator_) {
+        delete pageLockIndicator_;
     }
 }
 
@@ -171,13 +171,13 @@ void System::clear() {
             mb->setSystem(nullptr);
         }
     }
-    m_ml.clear();
-    for (SpannerSegment *ss : m_spannerSegments) {
+    ml_.clear();
+    for (SpannerSegment *ss : spannerSegments_) {
         if (ss->system() == this) {
             ss->setSystem(nullptr);
         }
     }
-    m_spannerSegments.clear();
+    spannerSegments_.clear();
     // _systemDividers are reused
 }
 
@@ -188,7 +188,7 @@ void System::clear() {
 void System::appendMeasure(MeasureBase *mb) {
     assert(!mb->isMeasure() || !(style().styleB(Sid::createMultiMeasureRests) && toMeasure(mb)->hasMMRest()));
     mb->setSystem(this);
-    m_ml.push_back(mb);
+    ml_.push_back(mb);
 }
 
 //---------------------------------------------------------
@@ -196,7 +196,7 @@ void System::appendMeasure(MeasureBase *mb) {
 //---------------------------------------------------------
 
 void System::removeMeasure(MeasureBase *mb) {
-    m_ml.erase(std::remove(m_ml.begin(), m_ml.end(), mb), m_ml.end());
+    ml_.erase(std::remove(ml_.begin(), ml_.end(), mb), ml_.end());
     if (mb->system() == this) {
         mb->setSystem(nullptr);
     }
@@ -207,11 +207,11 @@ void System::removeMeasure(MeasureBase *mb) {
 //---------------------------------------------------------
 
 void System::removeLastMeasure() {
-    if (m_ml.empty()) {
+    if (ml_.empty()) {
         return;
     }
-    MeasureBase *mb = m_ml.back();
-    m_ml.pop_back();
+    MeasureBase *mb = ml_.back();
+    ml_.pop_back();
     if (mb->system() == this) {
         mb->setSystem(nullptr);
     }
@@ -222,8 +222,8 @@ EngravingItemList System::accessibleChildren() const {
     // but it is the system that places them, so the system is where the accessibility
     // tree finds them.
     EngravingItemList children = EngravingItem::accessibleChildren();
-    children.insert(children.end(), m_ml.begin(), m_ml.end());
-    children.insert(children.end(), m_spannerSegments.begin(), m_spannerSegments.end());
+    children.insert(children.end(), ml_.begin(), ml_.end());
+    children.insert(children.end(), spannerSegments_.begin(), spannerSegments_.end());
 
     return children;
 }
@@ -234,8 +234,8 @@ EngravingItemList System::accessibleChildren() const {
 //---------------------------------------------------------
 
 Box *System::vbox() const {
-    if (!m_ml.empty() && m_ml.front()->isVBoxBase()) {
-        return toBox(m_ml.front());
+    if (!ml_.empty() && ml_.front()->isVBoxBase()) {
+        return toBox(ml_.front());
     }
     return nullptr;
 }
@@ -248,9 +248,9 @@ SysStaff *System::insertStaff(int idx) {
     SysStaff *staff = new SysStaff;
     if (idx) {
         // HACK: guess position
-        staff->bbox().setTop(m_staves[idx - 1]->y() + 6 * spatium());
+        staff->bbox().setTop(staves_[idx - 1]->y() + 6 * spatium());
     }
-    m_staves.insert(m_staves.begin() + idx, staff);
+    staves_.insert(staves_.begin() + idx, staff);
     return staff;
 }
 
@@ -258,19 +258,19 @@ SysStaff *System::insertStaff(int idx) {
 //   removeStaff
 //---------------------------------------------------------
 
-void System::removeStaff(int idx) { m_staves.erase(m_staves.begin() + idx); }
+void System::removeStaff(int idx) { staves_.erase(staves_.begin() + idx); }
 
 //---------------------------------------------------------
 //   adjustStavesNumber
 //---------------------------------------------------------
 
 void System::adjustStavesNumber(size_t nstaves) {
-    for (size_t i = m_staves.size(); i < nstaves; ++i) {
+    for (size_t i = staves_.size(); i < nstaves; ++i) {
         insertStaff(static_cast<int>(i));
     }
-    const size_t dn = m_staves.size() - nstaves;
+    const size_t dn = staves_.size() - nstaves;
     for (size_t i = 0; i < dn; ++i) {
-        removeStaff(static_cast<int>(m_staves.size()) - 1);
+        removeStaff(static_cast<int>(staves_.size()) - 1);
     }
 }
 
@@ -285,33 +285,33 @@ size_t System::getBracketsColumnsCount() const {
 }
 
 void System::setHasStaffVisibilityIndicator(bool has) {
-    if (has && !m_staffVisibilityIndicator) {
-        m_staffVisibilityIndicator = Factory::createStaffVisibilityIndicator(this);
-    } else if (!has && m_staffVisibilityIndicator) {
-        delete m_staffVisibilityIndicator;
-        m_staffVisibilityIndicator = nullptr;
+    if (has && !staffVisibilityIndicator_) {
+        staffVisibilityIndicator_ = Factory::createStaffVisibilityIndicator(this);
+    } else if (!has && staffVisibilityIndicator_) {
+        delete staffVisibilityIndicator_;
+        staffVisibilityIndicator_ = nullptr;
     }
 }
 
-bool System::isLocked() const { return m_ml.front()->isStartOfSystemLock(); }
+bool System::isLocked() const { return ml_.front()->isStartOfSystemLock(); }
 
-const RangeLock *System::systemLock() const { return m_ml.front()->systemLock(); }
+const RangeLock *System::systemLock() const { return ml_.front()->systemLock(); }
 
 void System::addSystemLockIndicator(SystemLockIndicator *sli) {
     assert(sli);
-    m_systemLockIndicators.push_back(sli);
+    systemLockIndicators_.push_back(sli);
 }
 
 void System::deleteSystemLockIndicators() {
-    muse::DeleteAll(m_systemLockIndicators);
-    m_systemLockIndicators.clear();
+    muse::DeleteAll(systemLockIndicators_);
+    systemLockIndicators_.clear();
 }
 
-void System::setPageLockIndicator(PageLockIndicator *pli) { m_pageLockIndicator = pli; }
+void System::setPageLockIndicator(PageLockIndicator *pli) { pageLockIndicator_ = pli; }
 
 void System::deletePageLockIndicator() {
-    delete m_pageLockIndicator;
-    m_pageLockIndicator = nullptr;
+    delete pageLockIndicator_;
+    pageLockIndicator_ = nullptr;
 }
 
 //---------------------------------------------------------
@@ -319,9 +319,9 @@ void System::deletePageLockIndicator() {
 //---------------------------------------------------------
 
 staff_idx_t System::firstVisibleStaffFrom(staff_idx_t startStaffIdx) const {
-    for (staff_idx_t i = startStaffIdx; i < m_staves.size(); ++i) {
+    for (staff_idx_t i = startStaffIdx; i < staves_.size(); ++i) {
         Staff *s = score()->staff(i);
-        SysStaff *ss = m_staves[i];
+        SysStaff *ss = staves_[i];
 
         if (s->show() && ss->show()) {
             return i;
@@ -334,14 +334,14 @@ staff_idx_t System::firstVisibleStaffFrom(staff_idx_t startStaffIdx) const {
 staff_idx_t System::nextVisibleStaff(staff_idx_t staffIdx) const { return firstVisibleStaffFrom(staffIdx + 1); }
 
 staff_idx_t System::prevVisibleStaff(staff_idx_t startStaffIdx) const {
-    if (startStaffIdx == 0 || m_staves.empty()) {
+    if (startStaffIdx == 0 || staves_.empty()) {
         return muse::nidx;
     }
-    startStaffIdx = std::min(startStaffIdx, static_cast<staff_idx_t>(m_staves.size()));
+    startStaffIdx = std::min(startStaffIdx, static_cast<staff_idx_t>(staves_.size()));
 
     for (staff_idx_t i = startStaffIdx - 1;; --i) {
         Staff *s = score()->staff(i);
-        SysStaff *ss = m_staves[i];
+        SysStaff *ss = staves_[i];
 
         if (s->show() && ss->show()) {
             return i;
@@ -356,14 +356,14 @@ staff_idx_t System::prevVisibleStaff(staff_idx_t startStaffIdx) const {
 }
 
 staff_idx_t System::lastVisibleStaff() const {
-    const size_t nstaves = std::min(score()->nstaves(), m_staves.size());
-    if (nstaves < 1 || m_staves.empty()) {
+    const size_t nstaves = std::min(score()->nstaves(), staves_.size());
+    if (nstaves < 1 || staves_.empty()) {
         return muse::nidx;
     }
 
     for (staff_idx_t i = nstaves - 1;; --i) {
         Staff *staff = score()->staff(i);
-        SysStaff *sysStaff = m_staves[i];
+        SysStaff *sysStaff = staves_[i];
         if (staff->show() && sysStaff->show()) {
             return i;
         }
@@ -453,7 +453,7 @@ void System::add(EngravingItem *el) {
     switch (el->type()) {
         case ElementType::INSTRUMENT_NAME: {
             InstrumentName *n = toInstrumentName(el);
-            SysStaff *sysStaff = m_staves[n->staffIdx()];
+            SysStaff *sysStaff = staves_[n->staffIdx()];
             sysStaff->addInstrumentName(n);
             n->setSysStaff(sysStaff);
             break;
@@ -462,7 +462,7 @@ void System::add(EngravingItem *el) {
 
         case ElementType::BRACKET: {
             Bracket *b = toBracket(el);
-            m_brackets.push_back(b);
+            brackets_.push_back(b);
         } break;
 
         case ElementType::MEASURE:
@@ -498,19 +498,19 @@ void System::add(EngravingItem *el) {
         case ElementType::TAPPING_HALF_SLUR_SEGMENT: {
             SpannerSegment *ss = toSpannerSegment(el);
 #ifndef NDEBUG
-            if (muse::contains(m_spannerSegments, ss)) {
+            if (muse::contains(spannerSegments_, ss)) {
                 LOGD("System::add() %s %p already there", ss->typeName(), ss);
             } else
 #endif
-                m_spannerSegments.push_back(ss);
+                spannerSegments_.push_back(ss);
         } break;
 
         case ElementType::SYSTEM_DIVIDER: {
             SystemDivider *sd = toSystemDivider(el);
             if (sd->dividerType() == SystemDividerType::LEFT) {
-                m_systemDividerLeft = sd;
+                systemDividerLeft_ = sd;
             } else {
-                m_systemDividerRight = sd;
+                systemDividerRight_ = sd;
             }
         } break;
 
@@ -529,14 +529,14 @@ void System::remove(EngravingItem *el) {
         case ElementType::INSTRUMENT_NAME: {
             // NOTE: el gets deleted here
             InstrumentName *n = toInstrumentName(el);
-            SysStaff *sysStaff = m_staves[n->staffIdx()];
+            SysStaff *sysStaff = staves_[n->staffIdx()];
             sysStaff->removeInstrumentName(n->instrumentNameRole());
             return;
         }
         case ElementType::BEAM: score()->removeElement(el); break;
         case ElementType::BRACKET: {
             Bracket *b = toBracket(el);
-            if (!muse::remove(m_brackets, b)) {
+            if (!muse::remove(brackets_, b)) {
                 LOGD("System::remove: bracket not found");
             }
         } break;
@@ -564,7 +564,7 @@ void System::remove(EngravingItem *el) {
         case ElementType::GUITAR_BEND_SEGMENT:
         case ElementType::GUITAR_BEND_HOLD_SEGMENT: {
             SpannerSegment *ss = toSpannerSegment(el);
-            if (!muse::remove(m_spannerSegments, ss)) {
+            if (!muse::remove(spannerSegments_, ss)) {
                 LOGD("System::remove: %p(%s) not found, score %p", el, el->typeName(), score());
                 assert(score() == el->score());
             }
@@ -573,11 +573,11 @@ void System::remove(EngravingItem *el) {
             }
         } break;
         case ElementType::SYSTEM_DIVIDER:
-            if (el == m_systemDividerLeft) {
-                m_systemDividerLeft = 0;
+            if (el == systemDividerLeft_) {
+                systemDividerLeft_ = 0;
             } else {
-                assert(m_systemDividerRight == el);
-                m_systemDividerRight = 0;
+                assert(systemDividerRight_ == el);
+                systemDividerRight_ = 0;
             }
             break;
 
@@ -601,12 +601,12 @@ void System::change(EngravingItem *o, EngravingItem *n) {
 //---------------------------------------------------------
 
 Fraction System::snap(const Fraction &tick, const PointF p) const {
-    for (const MeasureBase *m : m_ml) {
+    for (const MeasureBase *m : ml_) {
         if (p.x() < m->x() + m->width()) {
             return toMeasure(m)->snap(tick, p - m->pos()); //TODO: MeasureBase
         }
     }
-    return toMeasure(m_ml.back())->snap(tick, p - pos()); //TODO: MeasureBase
+    return toMeasure(ml_.back())->snap(tick, p - pos()); //TODO: MeasureBase
 }
 
 //---------------------------------------------------------
@@ -614,12 +614,12 @@ Fraction System::snap(const Fraction &tick, const PointF p) const {
 //---------------------------------------------------------
 
 Fraction System::snapNote(const Fraction &tick, const PointF p, int staff) const {
-    for (const MeasureBase *m : m_ml) {
+    for (const MeasureBase *m : ml_) {
         if (p.x() < m->x() + m->width()) {
             return toMeasure(m)->snapNote(tick, p - m->pos(), staff); //TODO: MeasureBase
         }
     }
-    return toMeasure(m_ml.back())->snap(tick, p - pos()); // TODO: MeasureBase
+    return toMeasure(ml_.back())->snap(tick, p - pos()); // TODO: MeasureBase
 }
 
 //---------------------------------------------------------
@@ -627,8 +627,8 @@ Fraction System::snapNote(const Fraction &tick, const PointF p, int staff) const
 //---------------------------------------------------------
 
 Measure *System::firstMeasure() const {
-    auto i = std::find_if(m_ml.begin(), m_ml.end(), [](MeasureBase *mb) { return mb->isMeasure(); });
-    return i != m_ml.end() ? toMeasure(*i) : 0;
+    auto i = std::find_if(ml_.begin(), ml_.end(), [](MeasureBase *mb) { return mb->isMeasure(); });
+    return i != ml_.end() ? toMeasure(*i) : 0;
 }
 
 //---------------------------------------------------------
@@ -636,8 +636,8 @@ Measure *System::firstMeasure() const {
 //---------------------------------------------------------
 
 Measure *System::lastMeasure() const {
-    auto i = std::find_if(m_ml.rbegin(), m_ml.rend(), [](MeasureBase *mb) { return mb->isMeasure(); });
-    return i != m_ml.rend() ? toMeasure(*i) : 0;
+    auto i = std::find_if(ml_.rbegin(), ml_.rend(), [](MeasureBase *mb) { return mb->isMeasure(); });
+    return i != ml_.rend() ? toMeasure(*i) : 0;
 }
 
 //---------------------------------------------------------
@@ -645,7 +645,7 @@ Measure *System::lastMeasure() const {
 //---------------------------------------------------------
 
 MeasureBase *System::nextMeasure(const MeasureBase *m) const {
-    if (m == m_ml.back()) {
+    if (m == ml_.back()) {
         return 0;
     }
     MeasureBase *nm = m->next();
@@ -660,33 +660,33 @@ MeasureBase *System::nextMeasure(const MeasureBase *m) const {
 //---------------------------------------------------------
 
 void System::scanElements(std::function<void(EngravingItem *)> func) {
-    if (m_pageLockIndicator) {
-        func(m_pageLockIndicator);
+    if (pageLockIndicator_) {
+        func(pageLockIndicator_);
     }
 
     if (vbox()) {
         return;
     }
-    for (Bracket *b : m_brackets) {
+    for (Bracket *b : brackets_) {
         b->scanElements(func);
     }
 
-    if (m_systemDividerLeft) {
-        func(m_systemDividerLeft);
+    if (systemDividerLeft_) {
+        func(systemDividerLeft_);
     }
-    if (m_systemDividerRight) {
-        func(m_systemDividerRight);
-    }
-
-    if (m_staffVisibilityIndicator) {
-        func(m_staffVisibilityIndicator);
+    if (systemDividerRight_) {
+        func(systemDividerRight_);
     }
 
-    for (auto i : m_systemLockIndicators) {
+    if (staffVisibilityIndicator_) {
+        func(staffVisibilityIndicator_);
+    }
+
+    for (auto i : systemLockIndicators_) {
         func(i);
     }
 
-    for (const SysStaff *st : m_staves) {
+    for (const SysStaff *st : staves_) {
         if (st->show()) {
             for (auto &pair : st->instrumentNames()) {
                 if (InstrumentName *n = pair.second) {
@@ -703,7 +703,7 @@ void System::scanElements(std::function<void(EngravingItem *)> func) {
         }
     }
 
-    for (SpannerSegment *ss : m_spannerSegments) {
+    for (SpannerSegment *ss : spannerSegments_) {
         staff_idx_t staffIdx = ss->spanner()->staffIdx();
         if (staffIdx == muse::nidx) {
             LOGD("System::scanElements: staffIDx == -1: %s %p", ss->spanner()->typeName(), ss->spanner());
@@ -728,7 +728,7 @@ void System::scanElements(std::function<void(EngravingItem *)> func) {
             }
             v = v1 || v2; // hide spanner if both chords are hidden
         }
-        if ((score()->staff(staffIdx)->show() && m_staves[staffIdx]->show() && v) || spanner->isVolta() || spanner->systemFlag()) {
+        if ((score()->staff(staffIdx)->show() && staves_[staffIdx]->show() && v) || spanner->isVolta() || spanner->systemFlag()) {
             ss->scanElements(func);
         }
     }
@@ -740,11 +740,11 @@ void System::scanElements(std::function<void(EngravingItem *)> func) {
 //---------------------------------------------------------
 
 double System::staffYpage(staff_idx_t staffIdx) const {
-    if (staffIdx >= m_staves.size()) {
+    if (staffIdx >= staves_.size()) {
         return pagePos().y();
     }
 
-    return m_staves[staffIdx]->y() + y();
+    return staves_[staffIdx]->y() + y();
 }
 
 //---------------------------------------------------------
@@ -752,11 +752,11 @@ double System::staffYpage(staff_idx_t staffIdx) const {
 //    return canvas coordinates
 //---------------------------------------------------------
 
-double System::staffCanvasYpage(staff_idx_t staffIdx) const { return m_staves[staffIdx]->y() + y() + page()->canvasPos().y(); }
+double System::staffCanvasYpage(staff_idx_t staffIdx) const { return staves_[staffIdx]->y() + y() + page()->canvasPos().y(); }
 
 SysStaff *System::staff(size_t staffIdx) const {
-    if (staffIdx < m_staves.size()) {
-        return m_staves[staffIdx];
+    if (staffIdx < staves_.size()) {
+        return staves_[staffIdx];
     }
 
     return nullptr;
@@ -838,9 +838,9 @@ double System::bottomDistance(staff_idx_t staffIdx, const SkylineLine &s) const 
 //---------------------------------------------------------
 
 staff_idx_t System::firstVisibleSysStaff() const {
-    size_t nstaves = m_staves.size();
+    size_t nstaves = staves_.size();
     for (staff_idx_t i = 0; i < nstaves; ++i) {
-        if (m_staves[i]->show()) {
+        if (staves_[i]->show()) {
             return i;
         }
     }
@@ -852,9 +852,9 @@ staff_idx_t System::firstVisibleSysStaff() const {
 //---------------------------------------------------------
 
 staff_idx_t System::lastVisibleSysStaff() const {
-    int nstaves = static_cast<int>(m_staves.size());
+    int nstaves = static_cast<int>(staves_.size());
     for (int i = nstaves - 1; i >= 0; --i) {
-        if (m_staves[i]->show()) {
+        if (staves_[i]->show()) {
             return static_cast<staff_idx_t>(i);
         }
     }
@@ -1053,7 +1053,7 @@ ChordRest *System::firstChordRest(track_idx_t track) const {
 //   pageBreak
 //---------------------------------------------------------
 
-bool System::pageBreak() const { return m_ml.empty() ? false : m_ml.back()->pageBreak(); }
+bool System::pageBreak() const { return ml_.empty() ? false : ml_.back()->pageBreak(); }
 
 //---------------------------------------------------------
 //   endTick
@@ -1098,7 +1098,7 @@ staff_idx_t System::firstVisibleSysStaffOfPart(const Part *part) const {
 
 staff_idx_t System::firstVisibleSysStaffWithInstrument(const String &instrumentId, staff_idx_t startFrom) {
     Fraction tick = first()->tick();
-    for (staff_idx_t idx = startFrom; idx < m_staves.size(); ++idx) {
+    for (staff_idx_t idx = startFrom; idx < staves_.size(); ++idx) {
         Part *part = score()->staff(idx)->part();
         if (part->instrument(tick)->id() == instrumentId) {
             staff_idx_t firstVisOfPart = firstVisibleSysStaffOfPart(part);

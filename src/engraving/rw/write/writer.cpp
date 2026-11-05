@@ -72,9 +72,9 @@ bool Writer::writeScore(Score *score, io::IODevice *device, rw::WriteInOutData *
 
     if (!inout || !inout->ctx.shouldWriteRange()) {
         //update version values for i.e. plugin access
-        score->m_mscoreVersion = muse::appinfo::version().toString();
-        score->m_mscoreRevision = muse::appinfo::revision().toInt(nullptr, 16);
-        score->m_mscVersion = Constants::MSC_VERSION;
+        score->mscoreVersion_ = muse::appinfo::version().toString();
+        score->mscoreRevision_ = muse::appinfo::revision().toInt(nullptr, 16);
+        score->mscVersion_ = Constants::MSC_VERSION;
     }
 
     if (inout) {
@@ -118,7 +118,7 @@ void Writer::write(Score *score, XmlWriter &xml, WriteContext &ctx, compat::Writ
     }
 
     if (score->isMaster() && !MScore::testMode) {
-        score->m_synthesizerState.write(xml);
+        score->synthesizerState_.write(xml);
     }
 
     if (score->pageNumberOffset()) {
@@ -129,29 +129,29 @@ void Writer::write(Score *score, XmlWriter &xml, WriteContext &ctx, compat::Writ
 
     hook.onWriteStyle302(score, xml, ctx.inlineStyle());
 
-    xml.tag("showInvisible", score->m_showInvisible);
-    xml.tag("showUnprintable", score->m_showUnprintable);
-    xml.tag("showFrames", score->m_showFrames);
-    xml.tag("showMargins", score->m_showPageborders);
-    xml.tag("markIrregularMeasures", score->m_markIrregularMeasures, true);
+    xml.tag("showInvisible", score->showInvisible_);
+    xml.tag("showUnprintable", score->showUnprintable_);
+    xml.tag("showFrames", score->showFrames_);
+    xml.tag("showMargins", score->showPageborders_);
+    xml.tag("markIrregularMeasures", score->markIrregularMeasures_, true);
 
-    if (!score->m_showSoundFlags) { // true by default
-        xml.tag("showSoundFlags", score->m_showSoundFlags);
+    if (!score->showSoundFlags_) { // true by default
+        xml.tag("showSoundFlags", score->showSoundFlags_);
     }
 
-    if (score->m_isOpen) {
-        xml.tag("open", score->m_isOpen);
+    if (score->isOpen_) {
+        xml.tag("open", score->isOpen_);
     }
 
-    for (const auto &t : score->m_metaTags) {
+    for (const auto &t : score->metaTags_) {
         // do not output "platform" and "creationDate" in test and save template mode
         if ((!MScore::testMode && !MScore::saveTemplateMode) || (t.first != "platform" && t.first != "creationDate")) {
             xml.tag("metaTag", {{"name", t.first.toXmlEscaped()}}, t.second);
         }
     }
 
-    if (score->m_scoreOrder.isValid()) {
-        ScoreOrder order = score->m_scoreOrder;
+    if (score->scoreOrder_.isValid()) {
+        ScoreOrder order = score->scoreOrder_;
         order.updateInstruments(score);
         order.write(xml);
     }
@@ -172,9 +172,9 @@ void Writer::write(Score *score, XmlWriter &xml, WriteContext &ctx, compat::Writ
         measureStart = score->first();
     }
 
-    if (!score->m_systemObjectStaves.empty()) {
+    if (!score->systemObjectStaves_.empty()) {
         bool saveSysObjStaves = false;
-        for (const Staff *s : score->m_systemObjectStaves) {
+        for (const Staff *s : score->systemObjectStaves_) {
             IF_ASSERT_FAILED(s->idx() != muse::nidx) { continue; }
             saveSysObjStaves = true;
             break;
@@ -182,7 +182,7 @@ void Writer::write(Score *score, XmlWriter &xml, WriteContext &ctx, compat::Writ
 
         if (saveSysObjStaves) {
             xml.startElement("SystemObjects");
-            for (const Staff *s : score->m_systemObjectStaves) {
+            for (const Staff *s : score->systemObjectStaves_) {
                 const staff_idx_t idx = s->idx();
                 IF_ASSERT_FAILED(idx != muse::nidx) { continue; }
 
@@ -216,7 +216,7 @@ void Writer::write(Score *score, XmlWriter &xml, WriteContext &ctx, compat::Writ
         return (firstStaffIdx >= staffStart && firstStaffIdx < staffEnd) || (lastStaffIdx >= staffStart && lastStaffIdx < staffEnd);
     };
 
-    for (const Part *part : score->m_parts) {
+    for (const Part *part : score->parts_) {
         if (shouldWritePart(part)) {
             TWrite::write(part, xml, ctx);
         }

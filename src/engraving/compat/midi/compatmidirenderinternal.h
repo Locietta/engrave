@@ -207,7 +207,7 @@ private:
     void fillArticulationsInfo();
 
     Score *score = nullptr;
-    Context m_context;
+    Context context_;
 };
 } // namespace mu::engraving
 

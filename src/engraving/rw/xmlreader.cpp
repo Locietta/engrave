@@ -134,10 +134,10 @@ void XmlReader::unknown() {
     if (XmlStreamReader::error()) {
         LOGD("%s ", muPrintable(errorString()));
     }
-    if (!m_docName.isEmpty()) {
-        LOGD() << "tag in <" << m_docName << "> byte offset " << byteOffset() + m_byteOffsetAdjustment << ": " << name();
+    if (!docName_.isEmpty()) {
+        LOGD() << "tag in <" << docName_ << "> byte offset " << byteOffset() + byteOffsetAdjustment_ << ": " << name();
     } else {
-        LOGD() << "byte offset " << byteOffset() + m_byteOffsetAdjustment << ": " << name();
+        LOGD() << "byte offset " << byteOffset() + byteOffsetAdjustment_ << ": " << name();
     }
     skipCurrentElement();
 }

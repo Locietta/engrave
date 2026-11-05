@@ -55,19 +55,19 @@ class ChangeStyleValues : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeStyleValues)
 
 public:
-    ChangeStyleValues(Score *s, std::unordered_map<Sid, PropertyValue> values) : m_score(s), m_values(std::move(values)) {}
+    ChangeStyleValues(Score *s, std::unordered_map<Sid, PropertyValue> values) : score_(s), values_(std::move(values)) {}
 
-    const std::unordered_map<Sid, PropertyValue> &values() const { return m_values; }
+    const std::unordered_map<Sid, PropertyValue> &values() const { return values_; }
 
     UNDO_TYPE(CommandType::ChangeStyleValues)
     UNDO_NAME("ChangeStyleValues")
-    UNDO_CHANGED_OBJECTS({m_score})
+    UNDO_CHANGED_OBJECTS({score_})
 
 private:
     void flip() override;
 
-    Score *m_score = nullptr;
-    std::unordered_map<Sid, PropertyValue> m_values;
+    Score *score_ = nullptr;
+    std::unordered_map<Sid, PropertyValue> values_;
 };
 
 class EditStyle {

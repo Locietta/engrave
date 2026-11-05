@@ -86,8 +86,8 @@ public:
     SelectionFilter() = default;
 
     inline bool operator==(const SelectionFilter &f) const {
-        return m_filteredVoicesTypes == f.m_filteredVoicesTypes && m_filteredNotesInChordTypes == f.m_filteredNotesInChordTypes &&
-               m_filteredElementsTypes == f.m_filteredElementsTypes;
+        return filteredVoicesTypes_ == f.filteredVoicesTypes_ && filteredNotesInChordTypes_ == f.filteredNotesInChordTypes_ &&
+               filteredElementsTypes_ == f.filteredElementsTypes_;
     }
 
     inline bool operator!=(const SelectionFilter &f) const { return !this->operator==(f); }
@@ -103,15 +103,15 @@ public:
 
     //! IMPORTANT NOTE: This flag should only ever be used for selections that contain multi-note Chords. It should always be
     //! ignored in selections that exclusively consist of single notes...
-    bool includeSingleNotes() const { return m_includeSingleNotes; }
+    bool includeSingleNotes() const { return includeSingleNotes_; }
 
-    void setIncludeSingleNotes(bool include) { m_includeSingleNotes = include; }
+    void setIncludeSingleNotes(bool include) { includeSingleNotes_ = include; }
 
 private:
-    unsigned int m_filteredVoicesTypes = static_cast<unsigned int>(VoicesSelectionFilterTypes::ALL);
-    unsigned int m_filteredNotesInChordTypes = static_cast<unsigned int>(NotesInChordSelectionFilterTypes::ALL);
-    unsigned int m_filteredElementsTypes = static_cast<unsigned int>(ElementsSelectionFilterTypes::ALL);
+    unsigned int filteredVoicesTypes_ = static_cast<unsigned int>(VoicesSelectionFilterTypes::ALL);
+    unsigned int filteredNotesInChordTypes_ = static_cast<unsigned int>(NotesInChordSelectionFilterTypes::ALL);
+    unsigned int filteredElementsTypes_ = static_cast<unsigned int>(ElementsSelectionFilterTypes::ALL);
 
-    bool m_includeSingleNotes = true;
+    bool includeSingleNotes_ = true;
 };
 } // namespace mu::engraving

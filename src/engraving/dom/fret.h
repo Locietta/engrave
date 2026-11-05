@@ -148,13 +148,13 @@ public:
 
     double mainWidth() const;
 
-    int strings() const { return m_strings; }
+    int strings() const { return strings_; }
 
-    int frets() const { return m_frets; }
+    int frets() const { return frets_; }
 
     void setStrings(int n);
 
-    void setFrets(int n) { m_frets = n; }
+    void setFrets(int n) { frets_ = n; }
 
     void setDot(int string, int fret, bool add = false, FretDotType dtype = FretDotType::NORMAL);
     void addDotForDotStyleBarre(int string, int fret);
@@ -172,30 +172,30 @@ public:
     void undoSetFretBarre(int _string, int _fret, bool _add = false);
     void undoFretClear();
 
-    int fretOffset() const { return m_fretOffset; }
+    int fretOffset() const { return fretOffset_; }
 
-    void setFretOffset(int val) { m_fretOffset = val; }
+    void setFretOffset(int val) { fretOffset_ = val; }
 
-    int maxFrets() const { return m_maxFrets; }
+    int maxFrets() const { return maxFrets_; }
 
-    void setMaxFrets(int val) { m_maxFrets = val; }
+    void setMaxFrets(int val) { maxFrets_ = val; }
 
-    bool showNut() const { return m_showNut; }
+    bool showNut() const { return showNut_; }
 
-    void setShowNut(bool val) { m_showNut = val; }
+    void setShowNut(bool val) { showNut_ = val; }
 
-    double userMag() const { return m_userMag; }
+    double userMag() const { return userMag_; }
 
-    void setUserMag(double m) { m_userMag = m; }
+    void setUserMag(double m) { userMag_ = m; }
 
     int numPos() const;
 
-    Orientation orientation() const { return m_orientation; }
+    Orientation orientation() const { return orientation_; }
 
     String harmonyPlainText() const;
     String harmonyDisplayText() const;
 
-    Harmony *harmony() const { return m_harmony; }
+    Harmony *harmony() const { return harmony_; }
 
     void setHarmony(String harmonyText);
 
@@ -203,11 +203,11 @@ public:
     FretItem::Marker marker(int s) const;
     FretItem::Barre barre(int fret) const;
 
-    const BarreMap &barres() const { return m_barres; }
+    const BarreMap &barres() const { return barres_; }
 
-    const DotMap &dots() const { return m_dots; }
+    const DotMap &dots() const { return dots_; }
 
-    const MarkerMap &markers() const { return m_markers; }
+    const MarkerMap &markers() const { return markers_; }
 
     muse::draw::Font fretNumFont() const;
     muse::draw::Font fingeringFont() const;
@@ -229,11 +229,11 @@ public:
 
     void setTrack(track_idx_t val) override;
 
-    bool showFingering() const { return m_showFingering; }
+    bool showFingering() const { return showFingering_; }
 
-    void setShowFingering(bool v) { m_showFingering = v; }
+    void setShowFingering(bool v) { showFingering_ = v; }
 
-    const std::vector<int> &fingering() const { return m_fingering; }
+    const std::vector<int> &fingering() const { return fingering_; }
 
     void setFingering(std::vector<int> v);
 
@@ -290,27 +290,27 @@ private:
 
     static void applyDiagramPattern(FretDiagram *diagram, const String &pattern);
 
-    int m_strings = 0;
-    int m_frets = 0;
-    int m_fretOffset = 0;
-    int m_maxFrets = 0;
-    bool m_showNut = false;
-    Orientation m_orientation = Orientation::VERTICAL;
+    int strings_ = 0;
+    int frets_ = 0;
+    int fretOffset_ = 0;
+    int maxFrets_ = 0;
+    bool showNut_ = false;
+    Orientation orientation_ = Orientation::VERTICAL;
 
     // Barres are stored in the format: K: fret, V: barre struct
-    BarreMap m_barres;
+    BarreMap barres_;
 
     // Dots stored as K: string, V: dot struct
-    DotMap m_dots;
+    DotMap dots_;
 
     // Markers stored as K: string, V: marker struct
-    MarkerMap m_markers;
+    MarkerMap markers_;
 
-    Harmony *m_harmony = nullptr;
+    Harmony *harmony_ = nullptr;
 
-    double m_userMag = 1.0; // allowed 0.1 - 10.0
+    double userMag_ = 1.0; // allowed 0.1 - 10.0
 
-    bool m_showFingering = false;
-    std::vector<int> m_fingering = std::vector<int>(m_strings, 0);
+    bool showFingering_ = false;
+    std::vector<int> fingering_ = std::vector<int>(strings_, 0);
 };
 } // namespace mu::engraving

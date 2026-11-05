@@ -56,7 +56,7 @@ protected:
 
 private:
 
-    path_t m_filePath;
-    ByteArray m_data;
+    path_t filePath_;
+    ByteArray data_;
 };
 } // namespace muse::io

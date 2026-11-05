@@ -52,7 +52,7 @@ private:
     void fxChainToRemove(const AudioFxChain &currentFxChain, const AudioFxChain &newFxChain, AudioFxChain &resultChain);
     void fxChainToCreate(const AudioFxChain &currentFxChain, const AudioFxChain &newFxChain, AudioFxChain &resultChain);
 
-    std::map<TrackId, FxMap> m_tracksFxMap;
-    FxMap m_masterFxMap;
+    std::map<TrackId, FxMap> tracksFxMap_;
+    FxMap masterFxMap_;
 };
 } // namespace muse::audio::fx

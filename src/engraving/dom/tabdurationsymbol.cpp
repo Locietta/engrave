@@ -30,8 +30,8 @@ using namespace mu::engraving;
 TabDurationSymbol::TabDurationSymbol(DummyParentOr<ChordRest> parent)
     : EngravingItem(ElementType::TAB_DURATION_SYMBOL, parent, ElementFlag::NOT_SELECTABLE) {
     setGenerated(true);
-    m_tab = 0;
-    m_text = String();
+    tab_ = 0;
+    text_ = String();
 }
 
 TabDurationSymbol::TabDurationSymbol(DummyParentOr<ChordRest> parent, const StaffType *tab, DurationType type, int dots)
@@ -41,11 +41,11 @@ TabDurationSymbol::TabDurationSymbol(DummyParentOr<ChordRest> parent, const Staf
 }
 
 TabDurationSymbol::TabDurationSymbol(const TabDurationSymbol &e) : EngravingItem(e) {
-    m_tab = e.m_tab;
-    m_text = e.m_text;
+    tab_ = e.tab_;
+    text_ = e.text_;
 }
 
 void TabDurationSymbol::setDuration(DurationType type, int dots, const StaffType *tab) {
-    m_tab = tab;
-    m_text = tab->durationString(type, dots);
+    tab_ = tab;
+    text_ = tab->durationString(type, dots);
 }

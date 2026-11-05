@@ -152,7 +152,7 @@ private:
     const Score *score() const;
     const LayoutOptions &options() const;
 
-    IGetScoreInternal *m_getScore = nullptr;
+    IGetScoreInternal *getScore_ = nullptr;
 };
 
 class DomAccessor {
@@ -230,155 +230,155 @@ public:
     const std::set<Spanner *> &unmanagedSpanners() const;
 
 private:
-    IGetScoreInternal *m_getScore = nullptr;
+    IGetScoreInternal *getScore_ = nullptr;
 };
 
 class LayoutState {
 public:
 
     // Const
-    bool firstSystem() const { return m_firstSystem; }
+    bool firstSystem() const { return firstSystem_; }
 
-    bool firstSystemIndent() const { return m_firstSystemIndent; }
+    bool firstSystemIndent() const { return firstSystemIndent_; }
 
-    bool startWithLongNames() const { return m_startWithLongNames; }
+    bool startWithLongNames() const { return startWithLongNames_; }
 
-    const Fraction &tick() const { return m_tick; }
+    const Fraction &tick() const { return tick_; }
 
-    const Fraction &startTick() const { return m_startTick; }
+    const Fraction &startTick() const { return startTick_; }
 
-    const Fraction &endTick() const { return m_endTick; }
+    const Fraction &endTick() const { return endTick_; }
 
-    bool isLayoutAll() const { return m_isLayoutAll; }
+    bool isLayoutAll() const { return isLayoutAll_; }
 
-    const Page *page() const { return m_page; }
+    const Page *page() const { return page_; }
 
-    page_idx_t pageIdx() const { return m_pageIdx; }
+    page_idx_t pageIdx() const { return pageIdx_; }
 
-    const std::vector<System *> &systemList() const { return m_systemList; }
+    const std::vector<System *> &systemList() const { return systemList_; }
 
-    const System *prevSystem() const { return m_prevSystem; }
+    const System *prevSystem() const { return prevSystem_; }
 
-    const System *curSystem() const { return m_curSystem; }
+    const System *curSystem() const { return curSystem_; }
 
-    const MeasureBase *prevMeasure() const { return m_prevMeasure; }
+    const MeasureBase *prevMeasure() const { return prevMeasure_; }
 
-    const MeasureBase *curMeasure() const { return m_curMeasure; }
+    const MeasureBase *curMeasure() const { return curMeasure_; }
 
-    const MeasureBase *nextMeasure() const { return m_nextMeasure; }
+    const MeasureBase *nextMeasure() const { return nextMeasure_; }
 
-    const MeasureBase *systemOldMeasure() const { return m_systemOldMeasure; }
+    const MeasureBase *systemOldMeasure() const { return systemOldMeasure_; }
 
-    const MeasureBase *pageOldMeasure() const { return m_pageOldMeasure; }
+    const MeasureBase *pageOldMeasure() const { return pageOldMeasure_; }
 
-    int measureNumber() const { return m_measureNumber; }
+    int measureNumber() const { return measureNumber_; }
 
-    bool rangeDone() const { return m_rangeDone; }
+    bool rangeDone() const { return rangeDone_; }
 
-    const std::unordered_set<System *> &systemsNeedingCentering() const { return m_systemsNeedingCentering; }
+    const std::unordered_set<System *> &systemsNeedingCentering() const { return systemsNeedingCentering_; }
 
-    bool mustRecomputeHeadersFooters() const { return m_mustRecomputeHeadersFooters; }
+    bool mustRecomputeHeadersFooters() const { return mustRecomputeHeadersFooters_; }
 
-    double totalBracketsWidth() const { return m_totalBracketsWidth; }
+    double totalBracketsWidth() const { return totalBracketsWidth_; }
 
     // Mutable
-    void setFirstSystem(bool val) { m_firstSystem = val; }
+    void setFirstSystem(bool val) { firstSystem_ = val; }
 
-    void setFirstSystemIndent(bool val) { m_firstSystemIndent = val; }
+    void setFirstSystemIndent(bool val) { firstSystemIndent_ = val; }
 
-    void setStartWithLongNames(bool val) { m_startWithLongNames = val; }
+    void setStartWithLongNames(bool val) { startWithLongNames_ = val; }
 
-    void setTick(const Fraction &t) { m_tick = t; }
+    void setTick(const Fraction &t) { tick_ = t; }
 
-    void setStartTick(const Fraction &t) { m_startTick = t; }
+    void setStartTick(const Fraction &t) { startTick_ = t; }
 
-    void setEndTick(const Fraction &t) { m_endTick = t; }
+    void setEndTick(const Fraction &t) { endTick_ = t; }
 
-    void setIsLayoutAll(bool v) { m_isLayoutAll = v; }
+    void setIsLayoutAll(bool v) { isLayoutAll_ = v; }
 
-    Page *page() { return m_page; }
+    Page *page() { return page_; }
 
-    void setPage(Page *p) { m_page = p; }
+    void setPage(Page *p) { page_ = p; }
 
-    void setPageIdx(page_idx_t idx) { m_pageIdx = idx; }
+    void setPageIdx(page_idx_t idx) { pageIdx_ = idx; }
 
-    std::vector<System *> &systemList() { return m_systemList; }
+    std::vector<System *> &systemList() { return systemList_; }
 
-    void setSystemList(const std::vector<System *> &l) { m_systemList = l; }
+    void setSystemList(const std::vector<System *> &l) { systemList_ = l; }
 
-    System *prevSystem() { return m_prevSystem; }
+    System *prevSystem() { return prevSystem_; }
 
-    void setPrevSystem(System *s) { m_prevSystem = s; }
+    void setPrevSystem(System *s) { prevSystem_ = s; }
 
-    System *curSystem() { return m_curSystem; }
+    System *curSystem() { return curSystem_; }
 
-    void setCurSystem(System *s) { m_curSystem = s; }
+    void setCurSystem(System *s) { curSystem_ = s; }
 
-    MeasureBase *prevMeasure() { return m_prevMeasure; }
+    MeasureBase *prevMeasure() { return prevMeasure_; }
 
-    void setPrevMeasure(MeasureBase *m) { m_prevMeasure = m; }
+    void setPrevMeasure(MeasureBase *m) { prevMeasure_ = m; }
 
-    MeasureBase *curMeasure() { return m_curMeasure; }
+    MeasureBase *curMeasure() { return curMeasure_; }
 
-    void setCurMeasure(MeasureBase *m) { m_curMeasure = m; }
+    void setCurMeasure(MeasureBase *m) { curMeasure_ = m; }
 
-    MeasureBase *nextMeasure() { return m_nextMeasure; }
+    MeasureBase *nextMeasure() { return nextMeasure_; }
 
-    void setNextMeasure(MeasureBase *m) { m_nextMeasure = m; }
+    void setNextMeasure(MeasureBase *m) { nextMeasure_ = m; }
 
-    void setSystemOldMeasure(MeasureBase *m) { m_systemOldMeasure = m; }
+    void setSystemOldMeasure(MeasureBase *m) { systemOldMeasure_ = m; }
 
-    void setPageOldMeasure(MeasureBase *m) { m_pageOldMeasure = m; }
+    void setPageOldMeasure(MeasureBase *m) { pageOldMeasure_ = m; }
 
-    void setMeasureNumber(int n) { m_measureNumber = n; }
+    void setMeasureNumber(int n) { measureNumber_ = n; }
 
-    void setRangeDone(bool val) { m_rangeDone = val; }
+    void setRangeDone(bool val) { rangeDone_ = val; }
 
-    void addSystemNeedingCentering(System *s) { m_systemsNeedingCentering.insert(s); }
+    void addSystemNeedingCentering(System *s) { systemsNeedingCentering_.insert(s); }
 
-    void removeSystemNeedingCentering(System *s) { m_systemsNeedingCentering.erase(s); }
+    void removeSystemNeedingCentering(System *s) { systemsNeedingCentering_.erase(s); }
 
-    void clearSystemsNeedingCentering() { m_systemsNeedingCentering.clear(); }
+    void clearSystemsNeedingCentering() { systemsNeedingCentering_.clear(); }
 
-    void setMustRecomputeHeadersFooters(bool val) { m_mustRecomputeHeadersFooters = val; }
+    void setMustRecomputeHeadersFooters(bool val) { mustRecomputeHeadersFooters_ = val; }
 
-    void setTotalBracketsWidth(double val) { m_totalBracketsWidth = val; }
+    void setTotalBracketsWidth(double val) { totalBracketsWidth_ = val; }
 
 private:
 
-    bool m_firstSystem = true;
-    bool m_firstSystemIndent = true;
-    bool m_startWithLongNames = true;
+    bool firstSystem_ = true;
+    bool firstSystemIndent_ = true;
+    bool startWithLongNames_ = true;
 
-    Fraction m_tick{0, 1};
-    Fraction m_startTick;
-    Fraction m_endTick;
-    bool m_isLayoutAll = false;
+    Fraction tick_{0, 1};
+    Fraction startTick_;
+    Fraction endTick_;
+    bool isLayoutAll_ = false;
 
-    Page *m_page = nullptr;
-    page_idx_t m_pageIdx = 0; // index in Score->page()s
+    Page *page_ = nullptr;
+    page_idx_t pageIdx_ = 0; // index in Score->page()s
 
-    std::vector<System *> m_systemList; // reusable systems
-    System *m_prevSystem = nullptr;     // used during page layout
-    System *m_curSystem = nullptr;
+    std::vector<System *> systemList_; // reusable systems
+    System *prevSystem_ = nullptr;     // used during page layout
+    System *curSystem_ = nullptr;
 
-    MeasureBase *m_prevMeasure = nullptr;
-    MeasureBase *m_curMeasure = nullptr;
-    MeasureBase *m_nextMeasure = nullptr;
-    MeasureBase *m_systemOldMeasure = nullptr;
-    MeasureBase *m_pageOldMeasure = nullptr;
-    int m_measureNumber = 0;
+    MeasureBase *prevMeasure_ = nullptr;
+    MeasureBase *curMeasure_ = nullptr;
+    MeasureBase *nextMeasure_ = nullptr;
+    MeasureBase *systemOldMeasure_ = nullptr;
+    MeasureBase *pageOldMeasure_ = nullptr;
+    int measureNumber_ = 0;
 
-    bool m_rangeDone = false;
+    bool rangeDone_ = false;
 
     std::unordered_set<System *>
-        m_systemsNeedingCentering; // systems which have been laid out and still need SystemLayout::centerElementsBetweenStaves
+        systemsNeedingCentering_; // systems which have been laid out and still need SystemLayout::centerElementsBetweenStaves
 
-    bool m_mustRecomputeHeadersFooters =
+    bool mustRecomputeHeadersFooters_ =
         false; // we may need to re-compute headers/footers after laying out all pages if they contained a page count
 
     // cache
-    double m_totalBracketsWidth = -1.0;
+    double totalBracketsWidth_ = -1.0;
 };
 
 class LayoutDebug {
@@ -426,8 +426,8 @@ private:
 
     static void callDump(const LayoutDebug::Call &c, std::stringstream &ss, int &indent);
 
-    Call *m_currentCall;
-    std::vector<Call> m_calls;
+    Call *currentCall_;
+    std::vector<Call> calls_;
 };
 
 class LayoutContext : public IGetScoreInternal {
@@ -443,7 +443,7 @@ public:
     // Conf
     IEngravingFontPtr engravingFont() const;
 
-    const LayoutConfiguration &conf() const { return m_configuration; }
+    const LayoutConfiguration &conf() const { return configuration_; }
 
     // Dom access
     const DomAccessor &dom() const;
@@ -460,12 +460,12 @@ public:
 
 private:
 
-    Score *score() override { return m_score; }
+    Score *score() override { return score_; }
 
-    Score *m_score = nullptr;
+    Score *score_ = nullptr;
 
-    LayoutConfiguration m_configuration;
-    DomAccessor m_dom;
-    LayoutState m_state;
+    LayoutConfiguration configuration_;
+    DomAccessor dom_;
+    LayoutState state_;
 };
 } // namespace mu::engraving::rendering::score

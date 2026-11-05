@@ -37,30 +37,30 @@ StaffTextBase::StaffTextBase(const ElementType &type, DummyParentOr<Segment> par
 
 void StaffTextBase::clear() {
     for (voice_idx_t voice = 0; voice < VOICES; ++voice) {
-        m_channelNames[voice].clear();
+        channelNames_[voice].clear();
     }
     clearAeolusStops();
 }
 
 void StaffTextBase::clearAeolusStops() {
     for (int i = 0; i < 4; ++i) {
-        m_aeolusStops[i] = 0;
+        aeolusStops_[i] = 0;
     }
 }
 
 void StaffTextBase::setAeolusStop(int group, int idx, bool val) {
     if (val) {
-        m_aeolusStops[group] |= (1 << idx);
+        aeolusStops_[group] |= (1 << idx);
     } else {
-        m_aeolusStops[group] &= ~(1 << idx);
+        aeolusStops_[group] &= ~(1 << idx);
     }
 }
 
-void StaffTextBase::setAeolusStop(int group, int val) { m_aeolusStops[group] = val; }
+void StaffTextBase::setAeolusStop(int group, int val) { aeolusStops_[group] = val; }
 
-bool StaffTextBase::getAeolusStop(int group, int idx) const { return m_aeolusStops[group] & (1 << idx); }
+bool StaffTextBase::getAeolusStop(int group, int idx) const { return aeolusStops_[group] & (1 << idx); }
 
-int StaffTextBase::aeolusStop(int group) const { return m_aeolusStops[group]; }
+int StaffTextBase::aeolusStop(int group) const { return aeolusStops_[group]; }
 
 Segment *StaffTextBase::segment() const {
     if (!ownershipParent()->isSegment()) {

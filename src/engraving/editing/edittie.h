@@ -47,15 +47,15 @@ public:
 class ChangeTieJumpPointActive : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeTieJumpPointActive)
 
-    TieJumpPointList *m_jumpPointList = nullptr;
-    muse::String m_id;
-    bool m_active = false;
+    TieJumpPointList *jumpPointList_ = nullptr;
+    muse::String id_;
+    bool active_ = false;
 
     void flip() override;
 
 public:
     ChangeTieJumpPointActive(TieJumpPointList *jumpPointList, muse::String id, bool active)
-        : m_jumpPointList(jumpPointList), m_id(id), m_active(active) {}
+        : jumpPointList_(jumpPointList), id_(id), active_(active) {}
 
     UNDO_TYPE(CommandType::ChangeTieEndPointActive)
     UNDO_NAME("ChangeTieEndPointActive")

@@ -96,7 +96,7 @@ void MusicXmlNotePitch::displayStepOctave(muse::XmlStreamReader &e) {
             const String step = e.readText();
             int pos = static_cast<int>(String(u"CDEFGAB").indexOf(step));
             if (step.size() == 1 && pos >= 0 && pos < 7) {
-                m_displayStep = pos;
+                displayStep_ = pos;
             } else {
                 //logError(String("invalid step '%1'").arg(strStep));
                 LOGD("invalid step '%s'", muPrintable(step)); // TODO
@@ -104,11 +104,11 @@ void MusicXmlNotePitch::displayStepOctave(muse::XmlStreamReader &e) {
         } else if (e.name() == "display-octave") {
             const String oct = e.readText();
             bool ok;
-            m_displayOctave = oct.toInt(&ok);
-            if (!ok || m_displayOctave < 0 || m_displayOctave > 9) {
+            displayOctave_ = oct.toInt(&ok);
+            if (!ok || displayOctave_ < 0 || displayOctave_ > 9) {
                 //logError(String("invalid octave '%1'").arg(strOct));
                 LOGD("invalid octave '%s'", muPrintable(oct)); // TODO
-                m_displayOctave = -1;
+                displayOctave_ = -1;
             }
         } else {
             e.skipCurrentElement(); // TODO log
@@ -126,46 +126,46 @@ void MusicXmlNotePitch::displayStepOctave(muse::XmlStreamReader &e) {
 
 void MusicXmlNotePitch::pitch(muse::XmlStreamReader &e) {
     // defaults
-    m_step = -1;
-    m_alter = 0;
-    m_tuning = 0.0;
-    m_octave = -1;
+    step_ = -1;
+    alter_ = 0;
+    tuning_ = 0.0;
+    octave_ = -1;
 
     while (e.readNextStartElement()) {
         if (e.name() == "alter") {
             const String alter = e.readText();
             bool ok;
-            m_alter = MusicXmlSupport::stringToInt(alter, &ok);
-            if (!ok || m_alter < -3 || m_alter > 3) {
-                m_logger->logError(String(u"invalid alter '%1'").arg(alter), &e);
+            alter_ = MusicXmlSupport::stringToInt(alter, &ok);
+            if (!ok || alter_ < -3 || alter_ > 3) {
+                logger_->logError(String(u"invalid alter '%1'").arg(alter), &e);
                 bool ok2;
                 const double altervalue = alter.toDouble(&ok2);
-                if (ok2 && (std::abs(altervalue) < 2.0) && (m_accType == AccidentalType::NONE)) {
+                if (ok2 && (std::abs(altervalue) < 2.0) && (accType_ == AccidentalType::NONE)) {
                     // try to see if a microtonal accidental is needed
-                    m_accType = microtonalGuess(altervalue);
+                    accType_ = microtonalGuess(altervalue);
 
                     // If it's not a microtonal accidental we will use tuning
-                    if (m_accType == AccidentalType::NONE) {
-                        m_tuning = 100 * altervalue;
+                    if (accType_ == AccidentalType::NONE) {
+                        tuning_ = 100 * altervalue;
                     }
                 }
-                m_alter = 0;
+                alter_ = 0;
             }
         } else if (e.name() == "octave") {
             const String oct = e.readText();
             bool ok;
-            m_octave = oct.toInt(&ok);
-            if (!ok || m_octave < 0 || m_octave > 9) {
-                m_logger->logError(String(u"invalid octave '%1'").arg(oct), &e);
-                m_octave = -1;
+            octave_ = oct.toInt(&ok);
+            if (!ok || octave_ < 0 || octave_ > 9) {
+                logger_->logError(String(u"invalid octave '%1'").arg(oct), &e);
+                octave_ = -1;
             }
         } else if (e.name() == "step") {
             const String step = e.readText();
             const size_t pos = String(u"CDEFGAB").indexOf(step);
             if (step.size() == 1 && pos < 7) {
-                m_step = int(pos);
+                step_ = int(pos);
             } else {
-                m_logger->logError(String(u"invalid step '%1'").arg(step), &e);
+                logger_->logError(String(u"invalid step '%1'").arg(step), &e);
             }
         } else {
             // TODO skipLogCurrElem();
@@ -187,10 +187,10 @@ bool MusicXmlNotePitch::readProperties(muse::XmlStreamReader &e, Score *score) {
     const AsciiStringView tag(e.name());
 
     if (tag == "accidental") {
-        m_acc = accidental(e, score);
+        acc_ = accidental(e, score);
         return true;
     } else if (tag == "unpitched") {
-        m_unpitched = true;
+        unpitched_ = true;
         displayStepOctave(e);
         return true;
     } else if (tag == "pitch") {

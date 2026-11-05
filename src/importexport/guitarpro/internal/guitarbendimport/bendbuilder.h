@@ -36,6 +36,6 @@ public:
     void addElementsToScore(mu::engraving::Score *score, const BendDataContext &bendCtx, const DiveDataContext &diveCtx);
 
 private:
-    std::unique_ptr<BendDataProcessorSplitChord> m_bendDataProcessorSplitChord;
+    std::unique_ptr<BendDataProcessorSplitChord> bendDataProcessorSplitChord_;
 };
 } // namespace mu::iex::guitarpro

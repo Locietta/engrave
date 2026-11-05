@@ -43,18 +43,18 @@ public:
     BendDataContext collectBendDataContext();
 
 private:
-    mu::engraving::Score *m_score = nullptr;
+    mu::engraving::Score *score_ = nullptr;
     std::unordered_map<mu::engraving::track_idx_t,
                        std::map<mu::engraving::Fraction, std::unordered_map<const mu::engraving::Note *, ImportedBendInfo>>>
-        m_bendInfoForNote;
+        bendInfoForNote_;
 
     std::unordered_map<mu::engraving::track_idx_t, std::map<mu::engraving::Fraction, tied_chords_bend_data_chunk_t>>
-        m_regroupedDataByTiedChords;
+        regroupedDataByTiedChords_;
 
-    std::unique_ptr<BendDataCollectorSplitChord> m_bendDataCollectorSplitChord;
+    std::unique_ptr<BendDataCollectorSplitChord> bendDataCollectorSplitChord_;
 
-    // converts m_bendInfoForNote to m_regroupedData, leaves m_bendInfoForNote empty
-    // m_bendInfoForNote is needed to store separate bend data for each note, while m_regroupedData stores in format, comfortoble for import
+    // converts bendInfoForNote_ to regroupedData_, leaves bendInfoForNote_ empty
+    // bendInfoForNote_ is needed to store separate bend data for each note, while regroupedData_ stores in format, comfortoble for import
     void regroupBendDataByTiedChords();
     void fillBendDataContext(BendDataContext &bendDataCtx);
 

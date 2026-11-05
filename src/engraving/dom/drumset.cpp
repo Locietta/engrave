@@ -40,7 +40,7 @@ using namespace mu::engraving;
 namespace mu::engraving {
 Drumset *smDrumset = nullptr; // standard midi drumset
 
-bool Drumset::isValid(int pitch) const { return pitch >= 0 && pitch < DRUM_INSTRUMENTS && !m_drums[pitch].name.empty(); }
+bool Drumset::isValid(int pitch) const { return pitch >= 0 && pitch < DRUM_INSTRUMENTS && !drums_[pitch].name.empty(); }
 
 String Drumset::translatedName(int pitch) const { return muse::mtrc("engraving/drumset", name(pitch)); }
 
@@ -88,7 +88,7 @@ int Drumset::defaultPitchForLine(int val) const {
 //---------------------------------------------------------
 
 void Drumset::save(XmlWriter &xml) const {
-    xml.tag("percussionPanelColumns", m_percussionPanelColumns);
+    xml.tag("percussionPanelColumns", percussionPanelColumns_);
     for (int i = 0; i < DRUM_INSTRUMENTS; ++i) {
         if (!isValid(i)) {
             continue;
@@ -142,9 +142,9 @@ bool Drumset::readDrumProperties(XmlReader &e, int pitch) {
 
     const AsciiStringView tag(e.name());
     if (tag == "head") {
-        m_drums[pitch].notehead = TConv::fromXml(e.readAsciiText(), NoteHeadGroup::HEAD_NORMAL);
+        drums_[pitch].notehead = TConv::fromXml(e.readAsciiText(), NoteHeadGroup::HEAD_NORMAL);
     } else if (tag == "noteheads") {
-        m_drums[pitch].notehead = NoteHeadGroup::HEAD_CUSTOM;
+        drums_[pitch].notehead = NoteHeadGroup::HEAD_CUSTOM;
         while (e.readNextStartElement()) {
             const AsciiStringView nhTag(e.name());
             int noteType = int(TConv::fromXml(nhTag, NoteHeadType::HEAD_AUTO));
@@ -152,18 +152,18 @@ bool Drumset::readDrumProperties(XmlReader &e, int pitch) {
                 return false;
             }
 
-            m_drums[pitch].noteheads[noteType] = SymNames::symIdByName(e.readAsciiText());
+            drums_[pitch].noteheads[noteType] = SymNames::symIdByName(e.readAsciiText());
         }
     } else if (tag == "line") {
-        m_drums[pitch].line = e.readInt();
+        drums_[pitch].line = e.readInt();
     } else if (tag == "voice") {
-        m_drums[pitch].voice = e.readInt();
+        drums_[pitch].voice = e.readInt();
     } else if (tag == "name") {
-        m_drums[pitch].name = e.readText();
+        drums_[pitch].name = e.readText();
     } else if (tag == "stem") {
-        m_drums[pitch].stemDirection = DirectionV(e.readInt());
+        drums_[pitch].stemDirection = DirectionV(e.readInt());
     } else if (tag == "shortcut") {
-        m_drums[pitch].shortcut = e.readText();
+        drums_[pitch].shortcut = e.readText();
     } else if (tag == "variants") {
         while (e.readNextStartElement()) {
             const AsciiStringView tagv(e.name());
@@ -178,13 +178,13 @@ bool Drumset::readDrumProperties(XmlReader &e, int pitch) {
                         div.tremolo = TConv::fromXml(e.readAsciiText(), TremoloType::INVALID_TREMOLO);
                     }
                 }
-                m_drums[pitch].addVariant(div);
+                drums_[pitch].addVariant(div);
             }
         }
     } else if (tag == "panelRow") {
-        m_drums[pitch].panelRow = e.readInt();
+        drums_[pitch].panelRow = e.readInt();
     } else if (tag == "panelColumn") {
-        m_drums[pitch].panelColumn = e.readInt();
+        drums_[pitch].panelColumn = e.readInt();
     } else {
         return false;
     }
@@ -215,12 +215,12 @@ void Drumset::loadDrum(XmlReader &e) {
 
 void Drumset::clear() {
     for (int i = 0; i < DRUM_INSTRUMENTS; ++i) {
-        m_drums[i].name.clear();
-        m_drums[i].notehead = NoteHeadGroup::HEAD_INVALID;
-        m_drums[i].shortcut.clear();
-        m_drums[i].variants.clear();
-        m_drums[i].panelRow = -1;
-        m_drums[i].panelColumn = -1;
+        drums_[i].name.clear();
+        drums_[i].notehead = NoteHeadGroup::HEAD_INVALID;
+        drums_[i].shortcut.clear();
+        drums_[i].variants.clear();
+        drums_[i].panelRow = -1;
+        drums_[i].panelColumn = -1;
     }
 }
 

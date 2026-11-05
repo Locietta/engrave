@@ -32,156 +32,156 @@ using namespace muse::audio::synth;
 using namespace muse::mpe;
 
 EventAudioNode::EventAudioNode(const IAudioFactory &audioFactory, TrackId trackId, const mpe::PlaybackData &playbackData)
-    : m_audioFactory(audioFactory), m_trackId(trackId), m_playbackData(playbackData) {}
+    : audioFactory_(audioFactory), trackId_(trackId), playbackData_(playbackData) {}
 
 void EventAudioNode::onModeChanged(const ProcessMode mode) {
 
-    if (!m_synth) {
+    if (!synth_) {
         return;
     }
 
-    m_synth->setMode(mode);
-    m_synth->flushSound();
+    synth_->setMode(mode);
+    synth_->flushSound();
 }
 
 void EventAudioNode::onOutputSpecChanged(const OutputSpec &spec) {
-    if (!m_synth) {
+    if (!synth_) {
         return;
     }
 
-    m_synth->setOutputSpec(spec);
+    synth_->setOutputSpec(spec);
 }
 
 void EventAudioNode::doSelfProcess(float *buffer, samples_t samplesPerChannel) {
-    if (!m_synth) {
+    if (!synth_) {
         return;
     }
 
     OfflineTimer timer(OfflineTiming::current().synth);
-    m_synth->process(buffer, samplesPerChannel);
+    synth_->process(buffer, samplesPerChannel);
 }
 
 void EventAudioNode::seek(const TimePosition &position, const bool flushSound) {
 
-    IF_ASSERT_FAILED(m_synth) { return; }
+    IF_ASSERT_FAILED(synth_) { return; }
 
-    if (m_synth->playbackPosition() == position) {
+    if (synth_->playbackPosition() == position) {
         return;
     }
 
-    m_synth->setPlaybackPosition(position);
+    synth_->setPlaybackPosition(position);
 
     if (flushSound) {
-        m_synth->flushSound();
+        synth_->flushSound();
     }
 }
 
 void EventAudioNode::flush() {
 
-    IF_ASSERT_FAILED(m_synth) { return; }
+    IF_ASSERT_FAILED(synth_) { return; }
 
-    m_synth->flushSound();
+    synth_->flushSound();
 }
 
-const AudioInputParams &EventAudioNode::inputParams() const { return m_params; }
+const AudioInputParams &EventAudioNode::inputParams() const { return params_; }
 
 void EventAudioNode::applyInputParams(const AudioInputParams &requiredParams) {
-    IF_ASSERT_FAILED(m_outputSpec.isValid()) { return; }
+    IF_ASSERT_FAILED(outputSpec_.isValid()) { return; }
 
-    if (m_params.isValid() && m_params == requiredParams) {
+    if (params_.isValid() && params_ == requiredParams) {
         return;
     }
 
     SynthCtx ctx = currentSynthCtx();
 
-    if (m_synth) {
-        m_playbackData = m_synth->playbackData();
+    if (synth_) {
+        playbackData_ = synth_->playbackData();
     }
 
-    RetVal<synth::ISynthesizerPtr> synth = audioFactory()->makeSynth(m_trackId, requiredParams, m_playbackData.setupData);
+    RetVal<synth::ISynthesizerPtr> synth = audioFactory()->makeSynth(trackId_, requiredParams, playbackData_.setupData);
 
     if (!synth.ret) {
-        synth = audioFactory()->makeDefaultSynth(m_trackId);
+        synth = audioFactory()->makeDefaultSynth(trackId_);
         IF_ASSERT_FAILED(synth.val) {
             LOGE() << "Default synth not found!";
             return;
         }
     }
 
-    m_synth = synth.val;
+    synth_ = synth.val;
 
     setupSource();
 
     if (ctx.isValid()) {
         restoreSynthCtx(ctx);
     } else {
-        m_synth->setMode(ProcessMode::Idle);
+        synth_->setMode(ProcessMode::Idle);
     }
 
-    setName(std::string("Source[") + m_synth->name() + "]");
+    setName(std::string("Source[") + synth_->name() + "]");
 
-    m_params = m_synth->params();
+    params_ = synth_->params();
 }
 
 void EventAudioNode::prepareToPlay() {
 
-    IF_ASSERT_FAILED(m_synth) { return; }
+    IF_ASSERT_FAILED(synth_) { return; }
 
-    m_synth->prepareToPlay();
+    synth_->prepareToPlay();
 }
 
 bool EventAudioNode::readyToPlay() const {
 
-    IF_ASSERT_FAILED(m_synth) { return false; }
+    IF_ASSERT_FAILED(synth_) { return false; }
 
-    return m_synth->readyToPlay();
+    return synth_->readyToPlay();
 }
 
 bool EventAudioNode::hasPendingChunks() const {
 
-    IF_ASSERT_FAILED(m_synth) { return false; }
+    IF_ASSERT_FAILED(synth_) { return false; }
 
-    return m_synth->hasPendingChunks();
+    return synth_->hasPendingChunks();
 }
 
 void EventAudioNode::processInput() {
 
-    IF_ASSERT_FAILED(m_synth) { return; }
+    IF_ASSERT_FAILED(synth_) { return; }
 
-    m_synth->processInput();
+    synth_->processInput();
 }
 
 InputProcessingProgress EventAudioNode::inputProcessingProgress() const {
 
-    IF_ASSERT_FAILED(m_synth) { return {}; }
+    IF_ASSERT_FAILED(synth_) { return {}; }
 
-    return m_synth->inputProcessingProgress();
+    return synth_->inputProcessingProgress();
 }
 
 void EventAudioNode::clearCache() {
 
-    IF_ASSERT_FAILED(m_synth) { return; }
+    IF_ASSERT_FAILED(synth_) { return; }
 
-    m_synth->clearCache();
+    synth_->clearCache();
 }
 
 EventAudioNode::SynthCtx EventAudioNode::currentSynthCtx() const {
-    if (!m_synth) {
+    if (!synth_) {
         return SynthCtx();
     }
 
-    return {m_synth->mode(), m_synth->playbackPosition()};
+    return {synth_->mode(), synth_->playbackPosition()};
 }
 
 void EventAudioNode::restoreSynthCtx(const SynthCtx &ctx) {
-    m_synth->setPlaybackPosition(ctx.playbackPosition);
-    m_synth->setMode(ctx.mode);
+    synth_->setPlaybackPosition(ctx.playbackPosition);
+    synth_->setMode(ctx.mode);
 }
 
 void EventAudioNode::setupSource() {
 
-    IF_ASSERT_FAILED(m_synth) { return; }
+    IF_ASSERT_FAILED(synth_) { return; }
 
-    m_synth->setOutputSpec(m_outputSpec);
-    m_synth->setup(m_playbackData);
+    synth_->setOutputSpec(outputSpec_);
+    synth_->setup(playbackData_);
 }

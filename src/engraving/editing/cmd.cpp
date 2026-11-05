@@ -109,17 +109,17 @@ namespace mu::engraving {
 
 void CmdState::reset() {
     layoutFlags = LayoutFlag::NO_FLAGS;
-    m_updateMode = UpdateMode::DoNothing;
-    m_startTick = Fraction(-1, 1);
-    m_endTick = Fraction(-1, 1);
+    updateMode_ = UpdateMode::DoNothing;
+    startTick_ = Fraction(-1, 1);
+    endTick_ = Fraction(-1, 1);
 
-    m_startStaff = muse::nidx;
-    m_endStaff = muse::nidx;
-    m_el = nullptr;
-    m_oneElement = true;
-    m_mb = nullptr;
-    m_oneMeasureBase = true;
-    m_locked = false;
+    startStaff_ = muse::nidx;
+    endStaff_ = muse::nidx;
+    el_ = nullptr;
+    oneElement_ = true;
+    mb_ = nullptr;
+    oneMeasureBase_ = true;
+    locked_ = false;
 }
 
 //---------------------------------------------------------
@@ -127,15 +127,15 @@ void CmdState::reset() {
 //---------------------------------------------------------
 
 void CmdState::setTick(const Fraction &t) {
-    if (m_locked) {
+    if (locked_) {
         return;
     }
 
-    if (m_startTick == Fraction(-1, 1) || t < m_startTick) {
-        m_startTick = t;
+    if (startTick_ == Fraction(-1, 1) || t < startTick_) {
+        startTick_ = t;
     }
-    if (m_endTick == Fraction(-1, 1) || t > m_endTick) {
-        m_endTick = t;
+    if (endTick_ == Fraction(-1, 1) || t > endTick_) {
+        endTick_ = t;
     }
     setUpdateMode(UpdateMode::Layout);
 }
@@ -145,15 +145,15 @@ void CmdState::setTick(const Fraction &t) {
 //---------------------------------------------------------
 
 void CmdState::setStaff(staff_idx_t st) {
-    if (m_locked || st == muse::nidx) {
+    if (locked_ || st == muse::nidx) {
         return;
     }
 
-    if (m_startStaff == muse::nidx || st < m_startStaff) {
-        m_startStaff = st;
+    if (startStaff_ == muse::nidx || st < startStaff_) {
+        startStaff_ = st;
     }
-    if (m_endStaff == muse::nidx || st > m_endStaff) {
-        m_endStaff = st;
+    if (endStaff_ == muse::nidx || st > endStaff_) {
+        endStaff_ = st;
     }
 }
 
@@ -162,12 +162,12 @@ void CmdState::setStaff(staff_idx_t st) {
 //---------------------------------------------------------
 
 void CmdState::setMeasureBase(const MeasureBase *mb) {
-    if (!mb || m_mb == mb || m_locked) {
+    if (!mb || mb_ == mb || locked_) {
         return;
     }
 
-    m_oneMeasureBase = !m_mb;
-    m_mb = mb;
+    oneMeasureBase_ = !mb_;
+    mb_ = mb;
 }
 
 //---------------------------------------------------------
@@ -175,14 +175,14 @@ void CmdState::setMeasureBase(const MeasureBase *mb) {
 //---------------------------------------------------------
 
 void CmdState::setElement(const EngravingItem *e) {
-    if (!e || m_el == e || m_locked) {
+    if (!e || el_ == e || locked_) {
         return;
     }
 
-    m_oneElement = !m_el;
-    m_el = e;
+    oneElement_ = !el_;
+    el_ = e;
 
-    if (m_oneMeasureBase) {
+    if (oneMeasureBase_) {
         setMeasureBase(e->findMeasureBase());
     }
 }
@@ -192,11 +192,11 @@ void CmdState::setElement(const EngravingItem *e) {
 //---------------------------------------------------------
 
 void CmdState::unsetElement(const EngravingItem *e) {
-    if (m_el == e) {
-        m_el = nullptr;
+    if (el_ == e) {
+        el_ = nullptr;
     }
-    if (m_mb == e) {
-        m_mb = nullptr;
+    if (mb_ == e) {
+        mb_ = nullptr;
     }
 }
 
@@ -205,11 +205,11 @@ void CmdState::unsetElement(const EngravingItem *e) {
 //---------------------------------------------------------
 
 const EngravingItem *CmdState::element() const {
-    if (m_oneElement) {
-        return m_el;
+    if (oneElement_) {
+        return el_;
     }
-    if (m_oneMeasureBase) {
-        return m_mb;
+    if (oneMeasureBase_) {
+        return mb_;
     }
     return nullptr;
 }
@@ -218,10 +218,10 @@ const EngravingItem *CmdState::element() const {
 //   setUpdateMode
 //---------------------------------------------------------
 
-void CmdState::_setUpdateMode(UpdateMode m) { m_updateMode = m; }
+void CmdState::_setUpdateMode(UpdateMode m) { updateMode_ = m; }
 
 void CmdState::setUpdateMode(UpdateMode m) {
-    if (int(m) > int(m_updateMode)) {
+    if (int(m) > int(updateMode_)) {
         _setUpdateMode(m);
     }
 }
@@ -230,11 +230,11 @@ void CmdState::setUpdateMode(UpdateMode m) {
 //   deleteLater
 //---------------------------------------------------------
 
-void CmdState::deleteLater(EngravingObject *e) { m_postponedDeletions.push_back(e); }
+void CmdState::deleteLater(EngravingObject *e) { postponedDeletions_.push_back(e); }
 
 std::vector<EngravingObject *> CmdState::takePostponedDeletions() {
     std::vector<EngravingObject *> result;
-    result.swap(m_postponedDeletions);
+    result.swap(postponedDeletions_);
     return result;
 }
 
@@ -304,7 +304,7 @@ void Score::undo(UndoableCommand *cmd) const {
 //---------------------------------------------------------
 
 void CmdState::dump() {
-    LOGD("CmdState: mode %d %d-%d", int(m_updateMode), m_startTick.ticks(), m_endTick.ticks());
+    LOGD("CmdState: mode %d %d-%d", int(updateMode_), startTick_.ticks(), endTick_.ticks());
     // bool _excerptsChanged     { false };
     // bool _instrumentsChanged  { false };
 }
@@ -319,20 +319,20 @@ void CmdState::dump() {
 void Score::update() { masterScore()->update(); }
 
 void MasterScore::update(bool resetCmdState, bool layoutAllParts) {
-    if (m_updatesLocked) {
+    if (updatesLocked_) {
         return;
     }
 
     TRACEFUNC;
 
-    deletePostponed(m_cmdState);
+    deletePostponed(cmdState_);
 
-    if (m_cmdState.layoutRange()) {
+    if (cmdState_.layoutRange()) {
         for (Score *s : scoreList()) {
             if (s != this && !s->isOpen() && scoreList().size() > 1 && !layoutAllParts) {
                 continue;
             }
-            s->doLayoutRange(m_cmdState.startTick(), m_cmdState.endTick());
+            s->doLayoutRange(cmdState_.startTick(), cmdState_.endTick());
         }
     }
 
@@ -345,7 +345,7 @@ void MasterScore::update(bool resetCmdState, bool layoutAllParts) {
     }
 
     if (resetCmdState) {
-        m_cmdState.reset();
+        cmdState_.reset();
     }
 
     for (Score *score : scoreList()) {
@@ -356,7 +356,7 @@ void MasterScore::update(bool resetCmdState, bool layoutAllParts) {
     }
 }
 
-void MasterScore::lockUpdates(bool locked) { m_updatesLocked = locked; }
+void MasterScore::lockUpdates(bool locked) { updatesLocked_ = locked; }
 
 //---------------------------------------------------------
 //   expandVoice
@@ -430,8 +430,8 @@ void Score::expandVoice(Segment *s, track_idx_t track) {
 }
 
 void Score::expandVoice() {
-    Segment *s = m_is.segment();
-    track_idx_t track = m_is.track();
+    Segment *s = is_.segment();
+    track_idx_t track = is_.track();
     expandVoice(s, track);
 }
 
@@ -461,7 +461,7 @@ void Score::addInterval(int val, const std::vector<Note *> &nl) {
     Note *prevTied = nullptr;
     std::vector<EngravingItem *> notesToSelect;
     int deltaLine = val < 0 ? val + 1 : val - 1;
-    bool accidental = m_is.noteEntryMode() && m_is.accidentalType() != AccidentalType::NONE;
+    bool accidental = is_.noteEntryMode() && is_.accidentalType() != AccidentalType::NONE;
     bool useOctaveRule = (deltaLine % STEP_DELTA_OCTAVE == 0) && !accidental; // Both octaves and unison
 
     for (Note *on : tmpnl) {
@@ -489,7 +489,7 @@ void Score::addInterval(int val, const std::vector<Note *> &nl) {
                 Key key = estaff->key(tick);
                 int ntpc;
                 if (accidental) {
-                    AccidentalVal acci = Accidental::subtype2value(m_is.accidentalType());
+                    AccidentalVal acci = Accidental::subtype2value(is_.accidentalType());
                     int step = absStep(line, clef);
                     int octave = step / 7;
                     nval.pitch = step2pitch(step) + octave * PITCH_DELTA_OCTAVE + int(acci);
@@ -530,7 +530,7 @@ void Score::addInterval(int val, const std::vector<Note *> &nl) {
 
         if (forceAccidental) {
             Accidental *a = Factory::createAccidental(note);
-            a->setAccidentalType(m_is.accidentalType());
+            a->setAccidentalType(is_.accidentalType());
             a->setRole(AccidentalRole::USER);
             undoAddElement(a);
         }
@@ -558,8 +558,8 @@ void Score::addInterval(int val, const std::vector<Note *> &nl) {
             notesToSelect.push_back(toEngravingItem(note));
         }
     }
-    if (m_is.noteEntryMode()) {
-        m_is.setAccidentalType(AccidentalType::NONE);
+    if (is_.noteEntryMode()) {
+        is_.setAccidentalType(AccidentalType::NONE);
     }
     if (notesToSelect.empty()) {
         return;
@@ -569,8 +569,8 @@ void Score::addInterval(int val, const std::vector<Note *> &nl) {
     } else {
         select(notesToSelect, SelectType::ADD, 0);
     }
-    if (m_is.cr() == toChordRest(_nl.front()->chord()) && selIsSingle) {
-        m_is.moveToNextInputPos();
+    if (is_.cr() == toChordRest(_nl.front()->chord()) && selIsSingle) {
+        is_.moveToNextInputPos();
     }
 }
 
@@ -984,7 +984,7 @@ Segment *Score::setNoteRestAt(Segment *segment, track_idx_t track, NoteVal nval,
 Segment *Score::setNoteRest(Segment *segment, track_idx_t track, NoteVal nval, Fraction sd, DirectionV stemDirection, bool forceAccidental,
                             const std::set<SymId> &articulationIds, bool rhythmic, InputState *externalInputState) {
     assert(segment->segmentType() == SegmentType::ChordRest);
-    InputState &is = externalInputState ? (*externalInputState) : m_is;
+    InputState &is = externalInputState ? (*externalInputState) : is_;
     EngravingItem *nr = nullptr;
     segment = setNoteRestAt(segment, track, nval, sd, stemDirection, forceAccidental, articulationIds, rhythmic, &nr);
     ChordRest *cr = nullptr;

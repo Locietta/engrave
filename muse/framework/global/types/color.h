@@ -35,7 +35,7 @@ public:
     Color();
     Color(const Color &other);
 
-    constexpr Color(int r, int g, int b, int a = DEFAULT_ALPHA) : m_rgba(rgba(r, g, b, a)), m_isValid(isRgbaValid(r, g, b, a)) {}
+    constexpr Color(int r, int g, int b, int a = DEFAULT_ALPHA) : rgba_(rgba(r, g, b, a)), isValid_(isRgbaValid(r, g, b, a)) {}
 
     Color(const char *color);
 
@@ -85,8 +85,8 @@ private:
     void setRgba(int r, int g, int b, int a);
     void setRgba(Rgba rgb);
 
-    Rgba m_rgba = rgba(0, 0, 0, DEFAULT_ALPHA);
-    bool m_isValid = false;
+    Rgba rgba_ = rgba(0, 0, 0, DEFAULT_ALPHA);
+    bool isValid_ = false;
 };
 
 inline const Color Color::transparent = {255, 255, 255, 0};

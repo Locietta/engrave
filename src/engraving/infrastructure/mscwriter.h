@@ -87,8 +87,8 @@ private:
         bool addFileData(const muse::String &fileName, const muse::ByteArray &data) override;
 
     private:
-        muse::io::IODevice *m_device = nullptr;
-        muse::ZipWriter *m_zip = nullptr;
+        muse::io::IODevice *device_ = nullptr;
+        muse::ZipWriter *zip_ = nullptr;
     };
 
     struct DirWriter : public IWriter {
@@ -98,8 +98,8 @@ private:
         bool hasError() const override;
         bool addFileData(const muse::String &fileName, const muse::ByteArray &data) override;
     private:
-        muse::io::path_t m_rootPath;
-        bool m_hasError = false;
+        muse::io::path_t rootPath_;
+        bool hasError_ = false;
     };
 
     struct XmlFileWriter : public IWriter {
@@ -110,8 +110,8 @@ private:
         bool hasError() const override;
         bool addFileData(const muse::String &fileName, const muse::ByteArray &data) override;
     private:
-        muse::io::IODevice *m_device = nullptr;
-        muse::TextStream *m_stream = nullptr;
+        muse::io::IODevice *device_ = nullptr;
+        muse::TextStream *stream_ = nullptr;
     };
 
     struct Meta {
@@ -131,9 +131,9 @@ private:
 
     muse::String mainFileName() const;
 
-    Params m_params;
-    mutable IWriter *m_writer = nullptr;
-    Meta m_meta;
-    bool m_hadError = false;
+    Params params_;
+    mutable IWriter *writer_ = nullptr;
+    Meta meta_;
+    bool hadError_ = false;
 };
 } // namespace mu::engraving

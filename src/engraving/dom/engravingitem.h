@@ -183,21 +183,21 @@ public:
 
     inline void setFlag(ElementFlag f, bool v) {
         if (v) {
-            m_flags |= f;
+            flags_ |= f;
         } else {
-            m_flags &= ~ElementFlags(f);
+            flags_ &= ~ElementFlags(f);
         }
     }
 
     inline void setFlag(ElementFlag f, bool v) const {
         if (v) {
-            m_flags |= f;
+            flags_ |= f;
         } else {
-            m_flags &= ~ElementFlags(f);
+            flags_ &= ~ElementFlags(f);
         }
     }
 
-    inline bool flag(ElementFlag f) const { return m_flags & f; }
+    inline bool flag(ElementFlag f) const { return flags_ & f; }
 
     bool selected() const;
     virtual void setSelected(bool f);
@@ -231,9 +231,9 @@ public:
 
     void setGenerated(bool val) { setFlag(ElementFlag::GENERATED, val); }
 
-    Spatium minDistance() const { return m_minDistance; }
+    Spatium minDistance() const { return minDistance_; }
 
-    void setMinDistance(Spatium v) { m_minDistance = v; }
+    void setMinDistance(Spatium v) { minDistance_ = v; }
 
     PointF systemPos() const;
     virtual PointF pagePos() const;   ///< position in page coordinates
@@ -245,24 +245,24 @@ public:
 
     PointF mapToCanvas(const PointF &p) const { return p + canvasPos(); }
 
-    const PointF &offset() const { return m_offset; }
+    const PointF &offset() const { return offset_; }
 
-    virtual void setOffset(const PointF &o) { m_offset = o; }
+    virtual void setOffset(const PointF &o) { offset_ = o; }
 
-    void setOffset(double x, double y) { m_offset.setX(x), m_offset.setY(y); }
+    void setOffset(double x, double y) { offset_.setX(x), offset_.setY(y); }
 
-    PointF &roffset() { return m_offset; }
+    PointF &roffset() { return offset_; }
 
-    real_t &rxoffset() { return m_offset.rx(); }
+    real_t &rxoffset() { return offset_.rx(); }
 
-    real_t &ryoffset() { return m_offset.ry(); }
+    real_t &ryoffset() { return offset_.ry(); }
 
     virtual Fraction tick() const;
     virtual Fraction rtick() const;
 
     Fraction beat() const;
 
-    bool isNudged() const { return !m_offset.isNull(); }
+    bool isNudged() const { return !offset_.isNull(); }
 
     bool contains(const PointF &p) const;
     bool intersects(const RectF &r) const;
@@ -390,11 +390,11 @@ public:
 
     virtual void setAutoplace(bool v) { setFlag(ElementFlag::NO_AUTOPLACE, !v); }
 
-    bool addToSkyline() const { return !(m_flags & (ElementFlag::INVISIBLE | ElementFlag::NO_AUTOPLACE)) && !ldata()->isSkipDraw(); }
+    bool addToSkyline() const { return !(flags_ & (ElementFlag::INVISIBLE | ElementFlag::NO_AUTOPLACE)) && !ldata()->isSkipDraw(); }
 
-    bool excludeVerticalAlign() const { return m_excludeVerticalAlign; }
+    bool excludeVerticalAlign() const { return excludeVerticalAlign_; }
 
-    void setExcludeVerticalAlign(bool v) { m_excludeVerticalAlign = v; }
+    void setExcludeVerticalAlign(bool v) { excludeVerticalAlign_ = v; }
 
     PropertyValue getProperty(Pid) const override;
     bool setProperty(Pid, const PropertyValue &) override;
@@ -452,15 +452,15 @@ public:
     virtual void setParenthesesMode(const ParenthesesMode &v, bool addToLinked = true, bool generated = false);
     ParenthesesMode parenthesesMode() const;
 
-    inline Parenthesis *paren(const DirectionH &dir) const { return dir == DirectionH::LEFT ? m_leftParenthesis : m_rightParenthesis; }
+    inline Parenthesis *paren(const DirectionH &dir) const { return dir == DirectionH::LEFT ? leftParenthesis_ : rightParenthesis_; }
 
-    Parenthesis *leftParen() const { return m_leftParenthesis; }
+    Parenthesis *leftParen() const { return leftParenthesis_; }
 
-    Parenthesis *rightParen() const { return m_rightParenthesis; }
+    Parenthesis *rightParen() const { return rightParenthesis_; }
 
-    void setLeftParen(Parenthesis *paren) { m_leftParenthesis = paren; }
+    void setLeftParen(Parenthesis *paren) { leftParenthesis_ = paren; }
 
-    void setRightParen(Parenthesis *paren) { m_rightParenthesis = paren; }
+    void setRightParen(Parenthesis *paren) { rightParenthesis_ = paren; }
 
     struct BarBeat {
         int bar = 0;
@@ -477,28 +477,28 @@ public:
         virtual ~LayoutData() = default;
 
         virtual void reset() {
-            m_shape.reset();
-            m_mask.reset();
+            shape_.reset();
+            mask_.reset();
             //! NOTE Temporary removed, have problems, need investigation
-            //m_pos.reset();
+            //pos_.reset();
         }
 
-        virtual bool isValid() const { return m_shape.has_value() && m_shape.value().bbox().isValid(); }
+        virtual bool isValid() const { return shape_.has_value() && shape_.value().bbox().isValid(); }
 
-        bool isSkipDraw() const { return m_isSkipDraw; }
+        bool isSkipDraw() const { return isSkipDraw_; }
 
-        void setIsSkipDraw(bool val) { m_isSkipDraw = val; }
+        void setIsSkipDraw(bool val) { isSkipDraw_ = val; }
 
-        double mag() const { return m_mag; }
+        double mag() const { return mag_; }
 
-        void setMag(double val) { m_mag = val; }
+        void setMag(double val) { mag_ = val; }
 
-        bool isSetPos() const { return m_pos.has_value(); }
+        bool isSetPos() const { return pos_.has_value(); }
 
         const PointF &pos(LD_ACCESS mode = LD_ACCESS::CHECK) const {
             //! NOTE Temporarily to mute a lot of messages
             mode = (LD_ACCESS::CHECK == mode) ? LD_ACCESS::MAYBE_NOTINITED : mode;
-            return m_pos.value(mode);
+            return pos_.value(mode);
         }
 
         void setPos(const PointF &p) { doSetPos(p.x(), p.y()); }
@@ -515,19 +515,19 @@ public:
 
         void moveY(double y) { doSetPos(pos(LD_ACCESS::MAYBE_NOTINITED).x(), pos(LD_ACCESS::MAYBE_NOTINITED).y() + y); }
 
-        bool isSetBbox() const { return m_shape.has_value(); }
+        bool isSetBbox() const { return shape_.has_value(); }
 
-        void clearBbox() { m_shape.reset(); }
+        void clearBbox() { shape_.reset(); }
 
         const RectF &bbox(LD_ACCESS mode = LD_ACCESS::CHECK) const;
 
-        bool isSetShape() const { return m_shape.has_value(); }
+        bool isSetShape() const { return shape_.has_value(); }
 
-        void clearShape() { m_shape.reset(); }
+        void clearShape() { shape_.reset(); }
 
         Shape shape(LD_ACCESS mode = LD_ACCESS::CHECK) const;
 
-        void setShape(const Shape &sh) { m_shape.set_value(sh); }
+        void setShape(const Shape &sh) { shape_.set_value(sh); }
 
         void setBbox(const RectF &r);
 
@@ -558,9 +558,9 @@ public:
             setBbox(r);
         }
 
-        void setMask(const Shape &m) { m_mask.set_value(m); }
+        void setMask(const Shape &m) { mask_.set_value(m); }
 
-        const Shape &mask() const { return m_mask.value(); }
+        const Shape &mask() const { return mask_.value(); }
 
         void connectItemSnappedBefore(EngravingItem *itemBefore);
         void disconnectItemSnappedBefore();
@@ -572,9 +572,9 @@ public:
             disconnectItemSnappedAfter();
         }
 
-        EngravingItem *itemSnappedBefore() const { return m_itemSnappedBefore; }
+        EngravingItem *itemSnappedBefore() const { return itemSnappedBefore_; }
 
-        EngravingItem *itemSnappedAfter() const { return m_itemSnappedAfter; }
+        EngravingItem *itemSnappedAfter() const { return itemSnappedAfter_; }
 
         void scanConnectedItemsInSnappingChain(const System *system, const std::function<void(EngravingItem *)> &func) const;
 
@@ -593,28 +593,28 @@ public:
 #ifndef NDEBUG
             doSetPosDebugHook(x, y);
 #endif
-            m_pos.mut_value().setX(x), m_pos.mut_value().setY(y);
+            pos_.mut_value().setX(x), pos_.mut_value().setY(y);
         }
 
-        Shape &mutShape() { return m_shape.mut_value(); }
+        Shape &mutShape() { return shape_.mut_value(); }
 
-        bool isShapeComposite() const { return m_shape.has_value() && m_shape.value().isComposite(); }
+        bool isShapeComposite() const { return shape_.has_value() && shape_.value().isComposite(); }
 
         friend class EngravingItem;
 
-        const EngravingItem *m_item = nullptr;
-        bool m_isSkipDraw = false;
-        double m_mag = 1.0;             // standard magnification (derived value)
-        ld_field<PointF> m_pos = "pos"; // Reference position, relative to _parent, set by autoplace
-        ld_field<Shape> m_shape = "shape";
-        ld_field<Shape> m_mask = "mask";
+        const EngravingItem *item_ = nullptr;
+        bool isSkipDraw_ = false;
+        double mag_ = 1.0;             // standard magnification (derived value)
+        ld_field<PointF> pos_ = "pos"; // Reference position, relative to _parent, set by autoplace
+        ld_field<Shape> shape_ = "shape";
+        ld_field<Shape> mask_ = "mask";
 
-        EngravingItem *m_itemSnappedBefore = nullptr;
-        EngravingItem *m_itemSnappedAfter = nullptr;
+        EngravingItem *itemSnappedBefore_ = nullptr;
+        EngravingItem *itemSnappedAfter_ = nullptr;
 
         // STAVE SHARING
-        EngravingItem *m_sharedItem = nullptr;
-        std::vector<EngravingItem *> m_originItems;
+        EngravingItem *sharedItem_ = nullptr;
+        std::vector<EngravingItem *> originItems_;
     };
 
     const LayoutData *ldata() const;
@@ -671,11 +671,11 @@ public:
 
     void setWidth(double v) { mutldata()->setWidth(v); }
 
-    virtual const PointF pos() const { return ldata()->pos() + m_offset; }
+    virtual const PointF pos() const { return ldata()->pos() + offset_; }
 
-    virtual double x() const { return ldata()->pos().x() + m_offset.x(); }
+    virtual double x() const { return ldata()->pos().x() + offset_.x(); }
 
-    virtual double y() const { return ldata()->pos().y() + m_offset.y(); }
+    virtual double y() const { return ldata()->pos().y() + offset_.y(); }
 
     virtual void setPos(double x, double y) { mutldata()->setPos(x, y); }
 
@@ -702,10 +702,10 @@ protected:
     virtual const LayoutData *ldataInternal() const;
     virtual LayoutData *mutldataInternal();
 
-    mutable int m_z = 0;
-    Color m_color; // element color attribute
+    mutable int z_ = 0;
+    Color color_; // element color attribute
 
-    track_idx_t m_track = muse::nidx; // staffIdx * VOICES + voice
+    track_idx_t track_ = muse::nidx; // staffIdx * VOICES + voice
 
     static bool elementAppliesToTrack(const track_idx_t elementTrack, const track_idx_t refTrack, const VoiceAssignment voiceAssignment,
                                       const Part *part);
@@ -714,19 +714,19 @@ private:
 
     friend class Factory;
 
-    bool m_accessibleEnabled = false;
+    bool accessibleEnabled_ = false;
 
-    PointF m_offset; // offset from reference position, set by autoplace or user
+    PointF offset_; // offset from reference position, set by autoplace or user
 
-    Spatium m_minDistance; // autoplace min distance
-    mutable ElementFlags m_flags;
+    Spatium minDistance_; // autoplace min distance
+    mutable ElementFlags flags_;
 
-    bool m_excludeVerticalAlign = false;
+    bool excludeVerticalAlign_ = false;
 
-    mutable LayoutData *m_layoutData = nullptr;
+    mutable LayoutData *layoutData_ = nullptr;
 
-    Parenthesis *m_leftParenthesis = nullptr;
-    Parenthesis *m_rightParenthesis = nullptr;
+    Parenthesis *leftParenthesis_ = nullptr;
+    Parenthesis *rightParenthesis_ = nullptr;
     void setHasLeftParenthesis(bool v, bool addToLinked = true, bool generated = false);
     void setHasRightParenthesis(bool v, bool addToLinked = true, bool generated = false);
 };

@@ -188,13 +188,13 @@ EngravingObject *first_live(MasterScore &master, ElementType type) {
 /// One transaction on the score, so that the engine's undo commands may run.
 class Command {
 public:
-    explicit Command(MasterScore &score) : m_score(score) {
+    explicit Command(MasterScore &score) : score_(score) {
         mu::engraving::MScore::setError(mu::engraving::MsError::MS_NO_ERROR);
-        m_score.startCmd(muse::TranslatableString::untranslatable("engrave handles test"));
+        score_.startCmd(muse::TranslatableString::untranslatable("engrave handles test"));
     }
 
     ~Command() {
-        if (m_open) m_score.endCmd(true, true);
+        if (open_) score_.endCmd(true, true);
     }
 
     Command(const Command &) = delete;
@@ -203,20 +203,20 @@ public:
     /// Commits, and then does what a batch does: give the elements the commands made
     /// their ids again, and drop the history so that a removal destroys its elements.
     void commit(bool drop_history) {
-        m_score.endCmd(false, true);
-        m_open = false;
-        engrave::assign_missing_ids(m_score);
-        if (drop_history) m_score.undoStack()->clearHistory();
+        score_.endCmd(false, true);
+        open_ = false;
+        engrave::assign_missing_ids(score_);
+        if (drop_history) score_.undoStack()->clearHistory();
     }
 
     void rollback() {
-        m_score.endCmd(true, true);
-        m_open = false;
+        score_.endCmd(true, true);
+        open_ = false;
     }
 
 private:
-    MasterScore &m_score;
-    bool m_open = true;
+    MasterScore &score_;
+    bool open_ = true;
 };
 
 template <typename Function>

@@ -35,13 +35,13 @@ const StaffType &StaffTypeList::staffType(const Fraction &tick) const {
         return st;
     }
 
-    if (m_staffTypeChanges.empty()) {
-        return m_firstStaffType;
+    if (staffTypeChanges_.empty()) {
+        return firstStaffType_;
     }
 
-    auto i = m_staffTypeChanges.upper_bound(tick.ticks());
-    if (i == m_staffTypeChanges.begin()) {
-        return m_firstStaffType;
+    auto i = staffTypeChanges_.upper_bound(tick.ticks());
+    if (i == staffTypeChanges_.begin()) {
+        return firstStaffType_;
     }
 
     return (--i)->second;
@@ -54,13 +54,13 @@ const StaffType &StaffTypeList::staffType(const Fraction &tick) const {
 StaffType &StaffTypeList::staffType(const Fraction &tick) {
     assert(!tick.negative());
 
-    if (m_staffTypeChanges.empty()) {
-        return m_firstStaffType;
+    if (staffTypeChanges_.empty()) {
+        return firstStaffType_;
     }
 
-    auto i = m_staffTypeChanges.upper_bound(tick.ticks());
-    if (i == m_staffTypeChanges.begin()) {
-        return m_firstStaffType;
+    auto i = staffTypeChanges_.upper_bound(tick.ticks());
+    if (i == staffTypeChanges_.begin()) {
+        return firstStaffType_;
     }
     return (--i)->second;
 }
@@ -73,14 +73,14 @@ StaffType *StaffTypeList::setStaffType(const Fraction &tick, const StaffType &st
     assert(!tick.negative());
 
     if (tick.isZero()) {
-        m_firstStaffType = st;
-        return &m_firstStaffType;
+        firstStaffType_ = st;
+        return &firstStaffType_;
     }
 
-    auto i = m_staffTypeChanges.find(tick.ticks());
+    auto i = staffTypeChanges_.find(tick.ticks());
     StaffType *nst;
-    if (i == m_staffTypeChanges.end()) {
-        auto k = m_staffTypeChanges.insert(std::pair<int, StaffType>(tick.ticks(), st));
+    if (i == staffTypeChanges_.end()) {
+        auto k = staffTypeChanges_.insert(std::pair<int, StaffType>(tick.ticks(), st));
         nst = &(k.first->second);
     } else {
         i->second = st;
@@ -96,22 +96,22 @@ StaffType *StaffTypeList::setStaffType(const Fraction &tick, const StaffType &st
 bool StaffTypeList::removeStaffType(const Fraction &tick) {
     assert(!tick.negative());
     if (tick.isZero()) {
-        m_firstStaffType = StaffType();
+        firstStaffType_ = StaffType();
         return true;
     }
 
-    auto i = m_staffTypeChanges.find(tick.ticks());
+    auto i = staffTypeChanges_.find(tick.ticks());
 
-    if (i == m_staffTypeChanges.end()) {
+    if (i == staffTypeChanges_.end()) {
         return false;
     }
 
-    m_staffTypeChanges.erase(i);
+    staffTypeChanges_.erase(i);
     return true;
 }
 
 bool StaffTypeList::isStaffTypeStartFrom(const Fraction &tick) const {
-    return m_staffTypeChanges.find(tick.ticks()) != m_staffTypeChanges.end();
+    return staffTypeChanges_.find(tick.ticks()) != staffTypeChanges_.end();
 }
 
 void StaffTypeList::moveStaffType(const Fraction &from, const Fraction &to) {
@@ -129,9 +129,9 @@ std::pair<int, int> StaffTypeList::staffTypeRange(const Fraction &tick) const {
         return {-1, -1};
     }
 
-    auto i = m_staffTypeChanges.upper_bound(tick.ticks());
-    const int end = (i == m_staffTypeChanges.end()) ? -1 : i->first;
-    const int start = (i == m_staffTypeChanges.begin()) ? 0 : (--i)->first;
+    auto i = staffTypeChanges_.upper_bound(tick.ticks());
+    const int end = (i == staffTypeChanges_.end()) ? -1 : i->first;
+    const int start = (i == staffTypeChanges_.begin()) ? 0 : (--i)->first;
 
     return {start, end};
 }

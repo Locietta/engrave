@@ -64,7 +64,7 @@ public:
 private:
     static String doSuffix(const String &filePath);
 
-    String m_filePath;
+    String filePath_;
 };
 } // namespace muse::io
 

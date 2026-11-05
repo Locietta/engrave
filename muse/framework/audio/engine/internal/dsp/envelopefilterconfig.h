@@ -34,22 +34,22 @@ struct EnvelopeFilterConfig {
                                   const float releaseTime = DEFAULT_RELEASE_TIME,
                                   const volume_db_t minimumOperableLevel = DEFAULT_MINIMUM_OPERABLE_LEVEL,
                                   const volume_db_t makeUpGain = DEFAULT_MAKE_UP_GAIN) {
-        m_sampleRate = sampleRate;
-        m_ratio = ratio;
-        m_kneeWidth = kneeWidth;
-        m_logarithmicThreshold = logarithmicThreshold;
-        m_attackTime = attackTime;
-        m_releaseTime = releaseTime;
+        sampleRate_ = sampleRate;
+        ratio_ = ratio;
+        kneeWidth_ = kneeWidth;
+        logarithmicThreshold_ = logarithmicThreshold;
+        attackTime_ = attackTime;
+        releaseTime_ = releaseTime;
 
-        m_attackTimeCoefficient = sampleAttackTimeCoefficient(sampleRate, attackTime);
-        m_releaseTimeCoefficient = sampleReleaseTimeCoefficient(sampleRate, releaseTime);
+        attackTimeCoefficient_ = sampleAttackTimeCoefficient(sampleRate, attackTime);
+        releaseTimeCoefficient_ = sampleReleaseTimeCoefficient(sampleRate, releaseTime);
 
-        m_minimumOperableLevel = minimumOperableLevel;
+        minimumOperableLevel_ = minimumOperableLevel;
 
-        m_softThresholdLower = m_logarithmicThreshold - (m_kneeWidth / 2.f);
-        m_softThresholdUpper = m_logarithmicThreshold + (m_kneeWidth / 2.f);
+        softThresholdLower_ = logarithmicThreshold_ - (kneeWidth_ / 2.f);
+        softThresholdUpper_ = logarithmicThreshold_ + (kneeWidth_ / 2.f);
 
-        m_makeUpGain = makeUpGain;
+        makeUpGain_ = makeUpGain;
     }
 
     static constexpr float DEFAULT_KNEE_WIDTH = 6.f; // [0, 20.f]
@@ -60,43 +60,43 @@ struct EnvelopeFilterConfig {
     static constexpr volume_db_t DEFAULT_MINIMUM_OPERABLE_LEVEL = volume_dbfs_t::make(-60.f);
     static constexpr volume_db_t DEFAULT_MAKE_UP_GAIN = volume_dbfs_t::make(-10.f); // [-10.f, 12.f]
 
-    unsigned int sampleRate() const { return m_sampleRate; }
+    unsigned int sampleRate() const { return sampleRate_; }
 
     /// Compression ratio is the input/output ratio for signals that overshoot the operation threshold.
-    float ratio() const { return m_ratio; }
+    float ratio() const { return ratio_; }
 
-    volume_db_t kneeWidth() const { return m_kneeWidth; }
+    volume_db_t kneeWidth() const { return kneeWidth_; }
 
     /// Operation threshold is the level above which gain is applied to the input signal.
-    volume_db_t logarithmicThreshold() const { return m_logarithmicThreshold; }
+    volume_db_t logarithmicThreshold() const { return logarithmicThreshold_; }
 
-    float attackTimeCoefficient() const { return m_attackTimeCoefficient; }
+    float attackTimeCoefficient() const { return attackTimeCoefficient_; }
 
-    float releaseTimeCoefficient() const { return m_releaseTimeCoefficient; }
+    float releaseTimeCoefficient() const { return releaseTimeCoefficient_; }
 
-    volume_db_t minimumOperableLevel() const { return m_minimumOperableLevel; }
+    volume_db_t minimumOperableLevel() const { return minimumOperableLevel_; }
 
-    volume_db_t softThresholdUpper() const { return m_softThresholdUpper; }
+    volume_db_t softThresholdUpper() const { return softThresholdUpper_; }
 
-    volume_db_t softThresholdLower() const { return m_softThresholdLower; }
+    volume_db_t softThresholdLower() const { return softThresholdLower_; }
 
     /// Make-up gain compensates for gain lost during limiting. It is applied at the output of the dynamic range limiter.
-    volume_db_t makeUpGain() const { return m_makeUpGain; }
+    volume_db_t makeUpGain() const { return makeUpGain_; }
 
 private:
-    unsigned int m_sampleRate = 0;
-    float m_ratio = 0.f;
-    volume_db_t m_kneeWidth = 0.f;
-    volume_db_t m_logarithmicThreshold = 0.f;
-    float m_attackTime = 0.f;
-    float m_releaseTime = 0.f;
-    float m_attackTimeCoefficient = 0.f;
-    float m_releaseTimeCoefficient = 0.f;
-    float m_minimumOperableLevel = 0.f;
+    unsigned int sampleRate_ = 0;
+    float ratio_ = 0.f;
+    volume_db_t kneeWidth_ = 0.f;
+    volume_db_t logarithmicThreshold_ = 0.f;
+    float attackTime_ = 0.f;
+    float releaseTime_ = 0.f;
+    float attackTimeCoefficient_ = 0.f;
+    float releaseTimeCoefficient_ = 0.f;
+    float minimumOperableLevel_ = 0.f;
 
-    volume_db_t m_softThresholdUpper = 0.f;
-    volume_db_t m_softThresholdLower = 0.f;
-    volume_db_t m_makeUpGain = 0.f;
+    volume_db_t softThresholdUpper_ = 0.f;
+    volume_db_t softThresholdLower_ = 0.f;
+    volume_db_t makeUpGain_ = 0.f;
 };
 } // namespace muse::audio::dsp
 

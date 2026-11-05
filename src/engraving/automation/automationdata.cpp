@@ -97,24 +97,24 @@ static void diffPoints(const AutomationCurveKey &key, const AutomationCurve &old
     }
 }
 
-const AutomationCurveMap &AutomationData::curves() const { return m_curveMap; }
+const AutomationCurveMap &AutomationData::curves() const { return curveMap_; }
 
 const AutomationCurve &AutomationData::curve(const AutomationCurveKey &key) const {
-    auto curveIt = m_curveMap.find(key);
-    if (curveIt == m_curveMap.end()) {
+    auto curveIt = curveMap_.find(key);
+    if (curveIt == curveMap_.end()) {
         return EMPTY_CURVE;
     }
 
     return curveIt->second;
 }
 
-bool AutomationData::isEmpty() const { return m_curveMap.empty(); }
+bool AutomationData::isEmpty() const { return curveMap_.empty(); }
 
 void AutomationData::setCurves(const AutomationCurveMap &curves) {
     TRACEFUNC;
 
-    if (m_curveMap.empty() && !curves.empty()) {
-        m_curveMap = curves;
+    if (curveMap_.empty() && !curves.empty()) {
+        curveMap_ = curves;
         return;
     }
 
@@ -122,8 +122,8 @@ void AutomationData::setCurves(const AutomationCurveMap &curves) {
     AutomationChanges changes;
 
     for (const auto &[key, newCurve] : curves) {
-        const auto oldIt = m_curveMap.find(key);
-        const bool existed = oldIt != m_curveMap.end();
+        const auto oldIt = curveMap_.find(key);
+        const bool existed = oldIt != curveMap_.end();
         if (existed) {
             ++overlapCount;
         }
@@ -132,36 +132,36 @@ void AutomationData::setCurves(const AutomationCurveMap &curves) {
         diffPoints(key, oldCurve, newCurve, changes);
     }
 
-    for (const auto &[key, oldCurve] : m_curveMap) {
+    for (const auto &[key, oldCurve] : curveMap_) {
         if (!curves.contains(key)) {
             diffPoints(key, oldCurve, EMPTY_CURVE, changes);
         }
     }
 
     // Every key was touched by this change
-    const size_t allKeysCount = curves.size() + m_curveMap.size() - overlapCount;
+    const size_t allKeysCount = curves.size() + curveMap_.size() - overlapCount;
     if (changes.affectedKeys.size() == allKeysCount) {
         changes.isFullReset = true;
     }
 
-    m_curveMap = curves;
+    curveMap_ = curves;
 }
 
 void AutomationData::replaceCurves(const AutomationCurveMap &curves) {
     TRACEFUNC;
 
-    if (m_curveMap.empty() && !curves.empty()) {
-        m_curveMap = curves;
+    if (curveMap_.empty() && !curves.empty()) {
+        curveMap_ = curves;
         return;
     }
 
-    const size_t oldSize = m_curveMap.size();
+    const size_t oldSize = curveMap_.size();
     size_t overlapCount = 0;
     AutomationChanges changes;
 
     for (const auto &[key, newCurve] : curves) {
-        const auto oldIt = m_curveMap.find(key);
-        const bool existed = oldIt != m_curveMap.end();
+        const auto oldIt = curveMap_.find(key);
+        const bool existed = oldIt != curveMap_.end();
         if (existed) {
             ++overlapCount;
         }
@@ -171,12 +171,12 @@ void AutomationData::replaceCurves(const AutomationCurveMap &curves) {
 
         if (newCurve.empty()) {
             if (existed) {
-                m_curveMap.erase(oldIt);
+                curveMap_.erase(oldIt);
             }
         } else if (existed) {
             oldIt->second = newCurve;
         } else {
-            m_curveMap.emplace(key, newCurve);
+            curveMap_.emplace(key, newCurve);
         }
     }
 
@@ -194,7 +194,7 @@ void AutomationData::editPoints(const AutomationCurveKey &key, const AutomationP
         return;
     }
 
-    const auto curveIt = m_curveMap.try_emplace(key).first;
+    const auto curveIt = curveMap_.try_emplace(key).first;
     AutomationCurve &curve = curveIt->second;
     AutomationChanges changes;
     bool changed = false;
@@ -246,7 +246,7 @@ void AutomationData::editPoints(const AutomationCurveKey &key, const AutomationP
     }
 
     if (curve.empty()) {
-        m_curveMap.erase(curveIt);
+        curveMap_.erase(curveIt);
     }
 
     if (changed) {
@@ -295,9 +295,9 @@ std::string AutomationData::dump() const {
         return result;
     };
 
-    std::string result = "AutomationData: " + std::to_string(m_curveMap.size()) + " curves";
+    std::string result = "AutomationData: " + std::to_string(curveMap_.size()) + " curves";
 
-    for (const auto &[key, curve] : m_curveMap) {
+    for (const auto &[key, curve] : curveMap_) {
         result += "\n[" + std::string(typeName(key.type)) + " " + scopeStr(key) + "] " + std::to_string(curve.size()) + " points";
 
         for (const auto &[tick, point] : curve) {

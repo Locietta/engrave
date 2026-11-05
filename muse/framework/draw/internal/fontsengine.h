@@ -34,11 +34,11 @@ namespace muse::draw {
 class IFontFace;
 
 class FontsEngine : public IFontsEngine {
-    IFontsDatabase &m_database;
-    mutable uint64_t m_databaseRevision = 0;
+    IFontsDatabase &database_;
+    mutable uint64_t databaseRevision_ = 0;
 
 public:
-    explicit FontsEngine(IFontsDatabase &database) : m_database(database) {}
+    explicit FontsEngine(IFontsDatabase &database) : database_(database) {}
 
     ~FontsEngine();
 
@@ -103,11 +103,11 @@ private:
 
     std::vector<FontFaceTextBlock> splitTextByFontFaces(const RequireFace *rf, const TextBlock &text) const;
 
-    FontFaceFactory m_fontFaceFactory;
+    FontFaceFactory fontFaceFactory_;
 
-    mutable std::vector<IFontFace *> m_loadedFaces;
-    mutable std::vector<RequireFace *> m_requiredFaces;
+    mutable std::vector<IFontFace *> loadedFaces_;
+    mutable std::vector<RequireFace *> requiredFaces_;
 
-    mutable FontRenderCache m_renderCache;
+    mutable FontRenderCache renderCache_;
 };
 } // namespace muse::draw

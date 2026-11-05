@@ -61,22 +61,22 @@ public:
     EngravingItem *layoutParent() const override;
     EngravingItem *accessibleParentItem() const override;
 
-    const std::vector<System *> &systems() const { return m_systems; }
+    const std::vector<System *> &systems() const { return systems_; }
 
-    std::vector<System *> &systems() { return m_systems; }
+    std::vector<System *> &systems() { return systems_; }
 
-    System *system(size_t idx) { return m_systems[idx]; }
+    System *system(size_t idx) { return systems_[idx]; }
 
-    const System *system(size_t idx) const { return m_systems.at(idx); }
+    const System *system(size_t idx) const { return systems_.at(idx); }
 
     MeasureBase *firstMeasureBase() const;
     MeasureBase *lastMeasureBase() const;
 
     void appendSystem(System *s);
 
-    page_idx_t pageNumber() const { return m_pageNumber; }
+    page_idx_t pageNumber() const { return pageNumber_; }
 
-    void setPageNumber(page_idx_t n) { m_pageNumber = n; }
+    void setPageNumber(page_idx_t n) { pageNumber_ = n; }
 
     int getDisplayPageNumber() const;
     bool isOdd() const;
@@ -91,7 +91,7 @@ public:
     std::vector<EngravingItem *> items(const RectF &r);
     std::vector<EngravingItem *> items(const PointF &p);
 
-    void invalidateBspTree() { m_bspTreeValid = false; }
+    void invalidateBspTree() { bspTreeValid_ = false; }
 
     PointF pagePos() const override { return PointF(); } ///< position in page coordinates
 
@@ -100,13 +100,13 @@ public:
     Fraction endTick() const;
     Measure *firstMeasure() const;
 
-    Text *headerText(int index) const { return m_headerTexts.at(index); }
+    Text *headerText(int index) const { return headerTexts_.at(index); }
 
-    Text *footerText(int index) const { return m_footerTexts.at(index); }
+    Text *footerText(int index) const { return footerTexts_.at(index); }
 
-    void setHeaderText(int index, Text *t) { m_headerTexts.at(index) = t; }
+    void setHeaderText(int index, Text *t) { headerTexts_.at(index) = t; }
 
-    void setFooterText(int index, Text *t) { m_footerTexts.at(index) = t; }
+    void setFooterText(int index, Text *t) { footerTexts_.at(index) = t; }
 
     bool isLocked() const;
     const RangeLock *pageLock() const;
@@ -118,13 +118,13 @@ private:
 
     void doRebuildBspTree();
 
-    std::vector<System *> m_systems;
-    page_idx_t m_pageNumber = 0;
+    std::vector<System *> systems_;
+    page_idx_t pageNumber_ = 0;
 
-    std::array<Text *, MAX_HEADERS> m_headerTexts{};
-    std::array<Text *, MAX_FOOTERS> m_footerTexts{};
+    std::array<Text *, MAX_HEADERS> headerTexts_{};
+    std::array<Text *, MAX_FOOTERS> footerTexts_{};
 
     BspTree bspTree;
-    bool m_bspTreeValid = false;
+    bool bspTreeValid_ = false;
 };
 } // namespace mu::engraving

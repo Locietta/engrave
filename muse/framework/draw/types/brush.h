@@ -44,87 +44,87 @@ public:
 
     LinearGradient() = default;
 
-    LinearGradient(const PointF &start, const PointF &finalStop) : m_start(start), m_finalStop(finalStop) {}
+    LinearGradient(const PointF &start, const PointF &finalStop) : start_(start), finalStop_(finalStop) {}
 
-    inline const PointF &start() const { return m_start; }
+    inline const PointF &start() const { return start_; }
 
-    void setStart(const PointF &start) { m_start = start; }
+    void setStart(const PointF &start) { start_ = start; }
 
-    inline const PointF &finalStop() const { return m_finalStop; }
+    inline const PointF &finalStop() const { return finalStop_; }
 
-    void setFinalStop(const PointF &finalStop) { m_finalStop = finalStop; }
+    void setFinalStop(const PointF &finalStop) { finalStop_ = finalStop; }
 
     void setColorAt(double position, const Color &color) {
-        for (ColorStop &stop : m_colorStops) {
+        for (ColorStop &stop : colorStops_) {
             if (RealIsEqual(stop.position, position)) {
                 stop.color = color;
                 return;
             }
         }
 
-        auto it = std::lower_bound(m_colorStops.begin(), m_colorStops.end(), position,
+        auto it = std::lower_bound(colorStops_.begin(), colorStops_.end(), position,
                                    [](const ColorStop &stop, double pos) { return stop.position < pos; });
-        m_colorStops.insert(it, {position, color});
+        colorStops_.insert(it, {position, color});
     }
 
-    inline const std::vector<ColorStop> &colorStops() const { return m_colorStops; }
+    inline const std::vector<ColorStop> &colorStops() const { return colorStops_; }
 
     inline bool operator==(const LinearGradient &o) const {
-        return m_start == o.m_start && m_finalStop == o.m_finalStop && m_colorStops == o.m_colorStops;
+        return start_ == o.start_ && finalStop_ == o.finalStop_ && colorStops_ == o.colorStops_;
     }
 
     inline bool operator!=(const LinearGradient &o) const { return !this->operator==(o); }
 
 private:
-    PointF m_start;
-    PointF m_finalStop;
-    std::vector<ColorStop> m_colorStops;
+    PointF start_;
+    PointF finalStop_;
+    std::vector<ColorStop> colorStops_;
 };
 
 class Brush {
 public:
     Brush() {}
 
-    Brush(BrushStyle style) : m_style(style) {}
+    Brush(BrushStyle style) : style_(style) {}
 
-    Brush(const Color &color) : m_color(color) {}
+    Brush(const Color &color) : color_(color) {}
 
-    Brush(const LinearGradient &gradient) : m_style(BrushStyle::LinearGradientPattern), m_linearGradient(gradient) {}
+    Brush(const LinearGradient &gradient) : style_(BrushStyle::LinearGradientPattern), linearGradient_(gradient) {}
 
     inline bool operator==(const Brush &o) const {
-        if (m_style != o.m_style) {
+        if (style_ != o.style_) {
             return false;
         }
 
-        if (m_style == BrushStyle::LinearGradientPattern) {
-            return m_linearGradient == o.m_linearGradient;
+        if (style_ == BrushStyle::LinearGradientPattern) {
+            return linearGradient_ == o.linearGradient_;
         }
 
-        return m_color == o.m_color;
+        return color_ == o.color_;
     }
 
     inline bool operator!=(const Brush &o) const { return !this->operator==(o); }
 
-    inline BrushStyle style() const { return m_style; }
+    inline BrushStyle style() const { return style_; }
 
-    void setStyle(BrushStyle style) { m_style = style; }
+    void setStyle(BrushStyle style) { style_ = style; }
 
-    inline const Color &color() const { return m_color; }
+    inline const Color &color() const { return color_; }
 
-    void setColor(const Color &color) { m_color = color; }
+    void setColor(const Color &color) { color_ = color; }
 
-    inline const LinearGradient &linearGradient() const { return m_linearGradient; }
+    inline const LinearGradient &linearGradient() const { return linearGradient_; }
 
     void setLinearGradient(const LinearGradient &gradient) {
-        m_style = BrushStyle::LinearGradientPattern;
-        m_linearGradient = gradient;
+        style_ = BrushStyle::LinearGradientPattern;
+        linearGradient_ = gradient;
     }
 
 
 private:
-    Color m_color = Color::BLACK;
-    BrushStyle m_style = BrushStyle::SolidPattern;
-    LinearGradient m_linearGradient;
+    Color color_ = Color::BLACK;
+    BrushStyle style_ = BrushStyle::SolidPattern;
+    LinearGradient linearGradient_;
 };
 } // namespace muse::draw
 

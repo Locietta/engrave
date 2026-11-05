@@ -75,9 +75,9 @@ private:
     int expressionLevel(const mpe::dynamic_level_t dynamicLevel) const;
     int pitchBendLevel(const mpe::pitch_level_t pitchLevel) const;
 
-    mutable ChannelMap m_channels;
-    bool m_useDynamicEvents = false;
-    int m_lastStaff = -1;
+    mutable ChannelMap channels_;
+    bool useDynamicEvents_ = false;
+    int lastStaff_ = -1;
 };
 } // namespace muse::audio::synth
 

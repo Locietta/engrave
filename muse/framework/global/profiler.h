@@ -8,8 +8,8 @@ public:
     ~Scope();
 
 private:
-    const char *m_name;
-    long long m_start;
+    const char *name_;
+    long long start_;
 };
 } // namespace muse::profiler
 

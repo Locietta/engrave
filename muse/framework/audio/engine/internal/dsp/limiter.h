@@ -41,11 +41,11 @@ private:
     volume_db_t gainSmoothing(const float newGainReduction) const;
     volume_db_t computeGain(const volume_db_t &logarithmSample) const;
 
-    EnvelopeFilterConfig m_filterConfig;
+    EnvelopeFilterConfig filterConfig_;
 
-    float m_previousGainReduction = 0.f;
+    float previousGainReduction_ = 0.f;
 
-    bool m_isActive = false;
+    bool isActive_ = false;
 };
 
 using LimiterPtr = std::unique_ptr<Limiter>;

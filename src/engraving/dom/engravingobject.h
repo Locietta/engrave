@@ -222,9 +222,9 @@ template <typename... ParentTypes>
 class DummyParentOr {
 public:
     template <typename T, std::enable_if_t<std::is_same_v<T, DummyParent> || (std::is_base_of_v<ParentTypes, T> || ...), int> = 0>
-    DummyParentOr(T *parent) : m_parent(parent) {}
+    DummyParentOr(T *parent) : parent_(parent) {}
 
-    operator EngravingObject *() const { return m_parent; }
+    operator EngravingObject *() const { return parent_; }
 
     //! The parent as one of the accepted types, or null when it is the dummy - i.e.
     //! when there is no parent to speak to yet.
@@ -232,7 +232,7 @@ public:
     T *as() const;
 
 private:
-    EngravingObject *m_parent = nullptr;
+    EngravingObject *parent_ = nullptr;
 };
 
 //! The given parent if there is one, the dummy otherwise.
@@ -248,9 +248,9 @@ public:
 
     virtual ~EngravingObject();
 
-    inline ElementType type() const { return m_type; }
+    inline ElementType type() const { return type_; }
 
-    inline bool isType(ElementType t) const { return t == m_type; }
+    inline bool isType(ElementType t) const { return t == type_; }
 
     const char *typeName() const;
     virtual TranslatableString typeUserName() const;
@@ -271,7 +271,7 @@ public:
     EngravingObject *ownershipParent() const;
     void moveToDummy();
 
-    const EngravingObjectList &children() const { return m_children; }
+    const EngravingObjectList &children() const { return children_; }
 
     EngravingItemList childrenItems(bool all = false) const;
     std::vector<EngravingItem *> getChildren(bool includeInvisible = true) const;
@@ -300,9 +300,9 @@ public:
 
     virtual void initElementStyle(const ElementStyle *);
 
-    virtual const ElementStyle *styledProperties() const { return m_elementStyle; }
+    virtual const ElementStyle *styledProperties() const { return elementStyle_; }
 
-    virtual PropertyFlags *propertyFlagsList() const { return m_propertyFlagsList; }
+    virtual PropertyFlags *propertyFlagsList() const { return propertyFlagsList_; }
 
     virtual PropertyFlags propertyFlags(Pid) const;
     bool isStyled(Pid pid) const;
@@ -328,7 +328,7 @@ public:
 
     virtual void undoUnlink();
 
-    LinkedObjects *links() const { return m_links; }
+    LinkedObjects *links() const { return links_; }
 
     void setLinks(LinkedObjects *le);
 
@@ -336,15 +336,15 @@ protected:
     virtual int getPropertyFlagsIdx(Pid id) const;
 
     //! NOTE For compatibility reasons, hope, we will remove the need for this method.
-    void hack_setType(const ElementType &t) { m_type = t; }
+    void hack_setType(const ElementType &t) { type_ = t; }
 
     void addChild(EngravingObject *o);
     void removeChild(EngravingObject *o);
 
-    const ElementStyle *m_elementStyle{&EMPTY_STYLE};
-    PropertyFlags *m_propertyFlagsList = nullptr;
-    LinkedObjects *m_links = nullptr;
-    Score *m_score = nullptr;
+    const ElementStyle *elementStyle_{&EMPTY_STYLE};
+    PropertyFlags *propertyFlagsList_ = nullptr;
+    LinkedObjects *links_ = nullptr;
+    Score *score_ = nullptr;
 
 private:
     static ElementStyle const EMPTY_STYLE;
@@ -352,10 +352,10 @@ private:
     void doSetParent(EngravingObject *p);
     void doSetScore(Score *sc);
 
-    ElementType m_type = ElementType::INVALID;
+    ElementType type_ = ElementType::INVALID;
 
-    EngravingObject *m_parent = nullptr;
-    EngravingObjectList m_children;
+    EngravingObject *parent_ = nullptr;
+    EngravingObjectList children_;
 
 public:
 
@@ -596,7 +596,7 @@ public:
 template <typename... ParentTypes>
 template <typename T>
 T *DummyParentOr<ParentTypes...>::as() const {
-    return m_parent && !m_parent->isType(ElementType::DUMMY) ? static_cast<T *>(m_parent) : nullptr;
+    return parent_ && !parent_->isType(ElementType::DUMMY) ? static_cast<T *>(parent_) : nullptr;
 }
 
 //---------------------------------------------------

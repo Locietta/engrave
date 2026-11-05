@@ -55,8 +55,8 @@ public:
 
 protected:
     void init(double minPadUnit);
-    PaddingVector<double> m_parenBefore;
-    PaddingVector<double> m_parenAfter;
+    PaddingVector<double> parenBefore_;
+    PaddingVector<double> parenAfter_;
 };
 
 struct NoteParenPaddingTable : public ParenPaddingTable {
@@ -93,17 +93,17 @@ private:
 };
 
 struct PaddingTables {
-    const PaddingTable &horizontalPaddingTable() const { return m_horizontalPaddingTable; }
+    const PaddingTable &horizontalPaddingTable() const { return horizontalPaddingTable_; }
 
-    const ParenPaddingTable &parenthesisPaddingTableFor(const EngravingItem *item) const { return m_parenPaddingTables.getTableFor(item); }
+    const ParenPaddingTable &parenthesisPaddingTableFor(const EngravingItem *item) const { return parenPaddingTables_.getTableFor(item); }
 
     void update(const MStyle &style) {
-        m_horizontalPaddingTable.update(style);
-        m_parenPaddingTables.update(style);
+        horizontalPaddingTable_.update(style);
+        parenPaddingTables_.update(style);
     }
 
 private:
-    PaddingTable m_horizontalPaddingTable;
-    ParenPaddingTables m_parenPaddingTables;
+    PaddingTable horizontalPaddingTable_;
+    ParenPaddingTables parenPaddingTables_;
 };
 } // namespace mu::engraving

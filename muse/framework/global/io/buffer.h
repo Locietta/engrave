@@ -51,7 +51,7 @@ protected:
 
 private:
 
-    ByteArray *m_ref = nullptr;
-    ByteArray m_ba;
+    ByteArray *ref_ = nullptr;
+    ByteArray ba_;
 };
 } // namespace muse::io

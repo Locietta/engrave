@@ -48,9 +48,9 @@ public:
 
     Tuplet *findNew(Tuplet *o);
 
-    void add(Tuplet *_o, Tuplet *_n) { m_map.emplace_back(_o, _n); }
+    void add(Tuplet *_o, Tuplet *_n) { map_.emplace_back(_o, _n); }
 
 private:
-    std::vector<Tuplet2> m_map;
+    std::vector<Tuplet2> map_;
 };
 } // namespace mu::engraving

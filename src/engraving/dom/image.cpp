@@ -58,31 +58,31 @@ static bool defaultSizeIsSpatium = true;
 //---------------------------------------------------------
 
 Image::Image(DummyParentOr<EngravingItem> parent) : BSymbol(ElementType::IMAGE, parent, ElementFlag::MOVABLE) {
-    m_imageType = ImageType::NONE;
-    m_size = SizeF(0.0, 0.0);
-    m_storeItem = 0;
-    m_dirty = false;
-    m_lockAspectRatio = defaultLockAspectRatio;
-    m_autoScale = defaultAutoScale;
-    m_sizeIsSpatium = defaultSizeIsSpatium;
+    imageType_ = ImageType::NONE;
+    size_ = SizeF(0.0, 0.0);
+    storeItem_ = 0;
+    dirty_ = false;
+    lockAspectRatio_ = defaultLockAspectRatio;
+    autoScale_ = defaultAutoScale;
+    sizeIsSpatium_ = defaultSizeIsSpatium;
 }
 
 Image::Image(const Image &img) : BSymbol(img) {
-    m_imageType = img.m_imageType;
-    m_buffer = img.m_buffer;
-    m_size = img.m_size;
-    m_lockAspectRatio = img.m_lockAspectRatio;
-    m_autoScale = img.m_autoScale;
-    m_dirty = img.m_dirty;
-    m_storeItem = img.m_storeItem;
-    m_sizeIsSpatium = img.m_sizeIsSpatium;
-    if (m_storeItem) {
-        m_storeItem->reference(this);
+    imageType_ = img.imageType_;
+    buffer_ = img.buffer_;
+    size_ = img.size_;
+    lockAspectRatio_ = img.lockAspectRatio_;
+    autoScale_ = img.autoScale_;
+    dirty_ = img.dirty_;
+    storeItem_ = img.storeItem_;
+    sizeIsSpatium_ = img.sizeIsSpatium_;
+    if (storeItem_) {
+        storeItem_->reference(this);
     }
-    if (m_imageType == ImageType::RASTER) {
-        m_rasterDoc = img.m_rasterDoc ? std::make_shared<Pixmap>(*img.m_rasterDoc) : nullptr;
-    } else if (m_imageType == ImageType::SVG) {
-        m_svgDoc = img.m_svgDoc ? new SvgRenderer(m_storeItem->buffer()) : 0;
+    if (imageType_ == ImageType::RASTER) {
+        rasterDoc_ = img.rasterDoc_ ? std::make_shared<Pixmap>(*img.rasterDoc_) : nullptr;
+    } else if (imageType_ == ImageType::SVG) {
+        svgDoc_ = img.svgDoc_ ? new SvgRenderer(storeItem_->buffer()) : 0;
     }
     setZ(img.z());
 }
@@ -92,11 +92,11 @@ Image::Image(const Image &img) : BSymbol(img) {
 //---------------------------------------------------------
 
 Image::~Image() {
-    if (m_storeItem) {
-        m_storeItem->dereference(this);
+    if (storeItem_) {
+        storeItem_->dereference(this);
     }
-    if (m_imageType == ImageType::SVG) {
-        delete m_svgDoc;
+    if (imageType_ == ImageType::SVG) {
+        delete svgDoc_;
     }
 }
 
@@ -105,11 +105,11 @@ Image::~Image() {
 //---------------------------------------------------------
 
 void Image::setImageType(ImageType t) {
-    m_imageType = t;
-    if (m_imageType == ImageType::SVG) {
-        m_svgDoc = 0;
-    } else if (m_imageType == ImageType::RASTER) {
-        m_rasterDoc.reset();
+    imageType_ = t;
+    if (imageType_ == ImageType::SVG) {
+        svgDoc_ = 0;
+    } else if (imageType_ == ImageType::RASTER) {
+        rasterDoc_.reset();
     } else {
         LOGD("illegal image type");
     }
@@ -124,12 +124,12 @@ muse::SizeF Image::imageSize() const {
         return muse::SizeF();
     }
 
-    if (m_imageType == ImageType::RASTER) {
-        muse::Size rasterSize = m_rasterDoc->size();
+    if (imageType_ == ImageType::RASTER) {
+        muse::Size rasterSize = rasterDoc_->size();
         return muse::SizeF(rasterSize.width(), rasterSize.height());
     }
 
-    return m_svgDoc->defaultSize();
+    return svgDoc_->defaultSize();
 }
 
 //---------------------------------------------------------
@@ -148,7 +148,7 @@ bool Image::isImageFramed() const {
 //   imageAspectRatio
 //---------------------------------------------------------
 
-double Image::imageAspectRatio() const { return m_size.width() / m_size.height(); }
+double Image::imageAspectRatio() const { return size_.width() / size_.height(); }
 
 //---------------------------------------------------------
 //   setImageHeight
@@ -157,10 +157,10 @@ double Image::imageAspectRatio() const { return m_size.width() / m_size.height()
 void Image::updateImageHeight(const double &height) {
     double aspectRatio = imageAspectRatio();
 
-    m_size.setHeight(height);
+    size_.setHeight(height);
 
-    if (m_lockAspectRatio) {
-        m_size.setWidth(height * aspectRatio);
+    if (lockAspectRatio_) {
+        size_.setWidth(height * aspectRatio);
     }
 }
 
@@ -171,10 +171,10 @@ void Image::updateImageHeight(const double &height) {
 void Image::updateImageWidth(const double &width) {
     double aspectRatio = imageAspectRatio();
 
-    m_size.setWidth(width);
+    size_.setWidth(width);
 
-    if (m_lockAspectRatio) {
-        m_size.setHeight(width / aspectRatio);
+    if (lockAspectRatio_) {
+        size_.setHeight(width / aspectRatio);
     }
 }
 
@@ -182,25 +182,25 @@ void Image::updateImageWidth(const double &width) {
 //   imageHeight
 //---------------------------------------------------------
 
-double Image::imageHeight() const { return m_size.height(); }
+double Image::imageHeight() const { return size_.height(); }
 
 //---------------------------------------------------------
 //   imageWidth
 //---------------------------------------------------------
 
-double Image::imageWidth() const { return m_size.width(); }
+double Image::imageWidth() const { return size_.width(); }
 
 bool Image::loadFromStore(const std::string &storePath) {
-    m_storePath = storePath;
+    storePath_ = storePath;
     if (storePath.empty()) {
         return false;
     }
 
-    m_storeItem = imageStore.getImage(storePath);
-    if (!m_storeItem) {
+    storeItem_ = imageStore.getImage(storePath);
+    if (!storeItem_) {
         return false;
     }
-    m_storeItem->reference(this);
+    storeItem_->reference(this);
 
     std::string suffix = muse::io::suffix(storePath);
     if (suffix == "svg" || suffix == "svgz") {
@@ -236,8 +236,8 @@ bool Image::loadFromFile(muse::io::path_t path) {
     muse::ByteArray ba = f.readAll();
     f.close();
 
-    m_storeItem = imageStore.add(path.toStdString(), ba);
-    m_storeItem->reference(this);
+    storeItem_ = imageStore.add(path.toStdString(), ba);
+    storeItem_->reference(this);
     if (path.hasSuffix("svg") || path.hasSuffix("svgz")) {
         setImageType(ImageType::SVG);
     } else {
@@ -253,8 +253,8 @@ bool Image::loadFromFile(muse::io::path_t path) {
 //---------------------------------------------------------
 
 bool Image::loadFromData(const std::string &name, const muse::ByteArray &ba) {
-    m_storeItem = imageStore.add(name, ba);
-    m_storeItem->reference(this);
+    storeItem_ = imageStore.add(name, ba);
+    storeItem_->reference(this);
 
     muse::io::path_t ioPath(name);
     if (ioPath.hasSuffix("svg") || ioPath.hasSuffix("svgz")) {
@@ -269,29 +269,29 @@ bool Image::loadFromData(const std::string &name, const muse::ByteArray &ba) {
 //   pixel2Size
 //---------------------------------------------------------
 
-SizeF Image::pixel2size(const SizeF &s) const { return s / (m_sizeIsSpatium ? spatium() : DPMM); }
+SizeF Image::pixel2size(const SizeF &s) const { return s / (sizeIsSpatium_ ? spatium() : DPMM); }
 
 //---------------------------------------------------------
 //   size2pixel
 //---------------------------------------------------------
 
-SizeF Image::size2pixel(const SizeF &s) const { return s * (m_sizeIsSpatium ? spatium() : DPMM); }
+SizeF Image::size2pixel(const SizeF &s) const { return s * (sizeIsSpatium_ ? spatium() : DPMM); }
 
 void Image::init() {
-    if (m_imageType == ImageType::SVG && !m_svgDoc) {
-        if (m_storeItem) {
-            m_svgDoc = new SvgRenderer(m_storeItem->buffer());
+    if (imageType_ == ImageType::SVG && !svgDoc_) {
+        if (storeItem_) {
+            svgDoc_ = new SvgRenderer(storeItem_->buffer());
         }
-    } else if (m_imageType == ImageType::RASTER && !m_rasterDoc) {
-        if (m_storeItem) {
-            m_rasterDoc = score()->services().imageProvider->createPixmap(m_storeItem->buffer());
-            if (!m_rasterDoc->isNull()) {
-                m_dirty = true;
+    } else if (imageType_ == ImageType::RASTER && !rasterDoc_) {
+        if (storeItem_) {
+            rasterDoc_ = score()->services().imageProvider->createPixmap(storeItem_->buffer());
+            if (!rasterDoc_->isNull()) {
+                dirty_ = true;
             }
         }
     }
-    if (m_size.isNull()) {
-        m_size = pixel2size(imageSize());
+    if (size_.isNull()) {
+        size_ = pixel2size(imageSize());
     }
 }
 
@@ -327,14 +327,14 @@ bool Image::setProperty(Pid propertyId, const PropertyValue &v) {
         case Pid::IMAGE_FRAMED: break;
         case Pid::LOCK_ASPECT_RATIO: setLockAspectRatio(v.toBool()); break;
         case Pid::SIZE_IS_SPATIUM: {
-            SizeF s = size2pixel(m_size);
+            SizeF s = size2pixel(size_);
             setSizeIsSpatium(v.toBool());
-            m_size = pixel2size(s);
+            size_ = pixel2size(s);
         } break;
         default: rv = EngravingItem::setProperty(propertyId, v); break;
     }
     setGenerated(false);
-    m_dirty = true;
+    dirty_ = true;
     triggerLayout();
     return rv;
 }

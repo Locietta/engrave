@@ -34,7 +34,7 @@ std::vector<IFxProcessorPtr> AbstractFxResolver::resolveFxList(const TrackId tra
         return {};
     }
 
-    FxMap &fxMap = m_tracksFxMap[trackId];
+    FxMap &fxMap = tracksFxMap_[trackId];
     updateTrackFxMap(fxMap, trackId, fxChain, outputSpec);
 
     return muse::values(fxMap);
@@ -48,14 +48,14 @@ std::vector<IFxProcessorPtr> AbstractFxResolver::resolveMasterFxList(const Audio
 
     updateMasterFxMap(fxChain, outputSpec);
 
-    return muse::values(m_masterFxMap);
+    return muse::values(masterFxMap_);
 }
 
 void AbstractFxResolver::refresh() {}
 
 void AbstractFxResolver::clearAllFx() {
-    m_tracksFxMap.clear();
-    m_masterFxMap.clear();
+    tracksFxMap_.clear();
+    masterFxMap_.clear();
 }
 
 void AbstractFxResolver::updateTrackFxMap(FxMap &fxMap, const audio::TrackId trackId, const AudioFxChain &newFxChain,
@@ -88,7 +88,7 @@ void AbstractFxResolver::updateTrackFxMap(FxMap &fxMap, const audio::TrackId tra
 
 void AbstractFxResolver::updateMasterFxMap(const AudioFxChain &newFxChain, const OutputSpec &outputSpec) {
     AudioFxChain currentFxChain;
-    for (const auto &pair : m_masterFxMap) {
+    for (const auto &pair : masterFxMap_) {
         currentFxChain.emplace(pair.first, pair.second->params());
     }
 
@@ -99,7 +99,7 @@ void AbstractFxResolver::updateMasterFxMap(const AudioFxChain &newFxChain, const
         removeMasterFx(pair.second.resourceMeta.id, pair.second.chainOrder);
 
         currentFxChain.erase(pair.first);
-        m_masterFxMap.erase(pair.first);
+        masterFxMap_.erase(pair.first);
     }
 
     audio::AudioFxChain fxToCreate;
@@ -108,7 +108,7 @@ void AbstractFxResolver::updateMasterFxMap(const AudioFxChain &newFxChain, const
     for (const auto &pair : fxToCreate) {
         IFxProcessorPtr fx = createMasterFx(pair.second, outputSpec);
         if (fx) {
-            m_masterFxMap.emplace(pair.first, fx);
+            masterFxMap_.emplace(pair.first, fx);
         }
     }
 }

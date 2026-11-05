@@ -101,18 +101,18 @@ private:
     int setControllerValue(int channel, int ctrl, int value);
     int setPitchBend(int channel, int pitchBend);
 
-    OutputSpec m_outputSpec;
+    OutputSpec outputSpec_;
 
-    std::shared_ptr<Fluid> m_fluid;
-    midi::IMidiOutPort *m_midiOutPort = nullptr;
+    std::shared_ptr<Fluid> fluid_;
+    midi::IMidiOutPort *midiOutPort_ = nullptr;
 
-    FluidSequencer m_sequencer;
-    std::set<io::path_t> m_sfontPaths;
-    std::optional<midi::Program> m_preset;
+    FluidSequencer sequencer_;
+    std::set<io::path_t> sfontPaths_;
+    std::optional<midi::Program> preset_;
 
-    KeyTuning m_tuning;
+    KeyTuning tuning_;
 
-    bool m_flushSoundRequested = false;
+    bool flushSoundRequested_ = false;
 };
 
 using FluidSynthPtr = std::shared_ptr<FluidSynth>;

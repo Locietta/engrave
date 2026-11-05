@@ -55,13 +55,13 @@ public:
 
     bool setProperty(Pid id, const PropertyValue &v) override;
 
-    bool twoLines() const { return m_twoLines; }
+    bool twoLines() const { return twoLines_; }
 
-    void setTwoLines(bool val) { m_twoLines = val; }
+    void setTwoLines(bool val) { twoLines_ = val; }
 
-    Text *text() const { return m_text; }
+    Text *text() const { return text_; }
 
-    Text *endText() const { return m_endText; }
+    Text *endText() const { return endText_; }
 
     struct LayoutData : public EngravingItem::LayoutData {
         std::array<PointF, 6> points;
@@ -77,10 +77,10 @@ public:
 
 protected:
 
-    Text *m_text = nullptr;
-    Text *m_endText = nullptr;
+    Text *text_ = nullptr;
+    Text *endText_ = nullptr;
 
-    bool m_twoLines = false;
+    bool twoLines_ = false;
 };
 
 //---------------------------------------------------------

@@ -28,11 +28,11 @@
 
 namespace muse::draw {
 class FontProvider : public IFontProvider {
-    IFontsDatabase &m_database;
-    IFontsEngine &m_engine;
+    IFontsDatabase &database_;
+    IFontsEngine &engine_;
 
 public:
-    FontProvider(IFontsDatabase &database, IFontsEngine &engine) : m_database(database), m_engine(engine) {}
+    FontProvider(IFontsDatabase &database, IFontsEngine &engine) : database_(database), engine_(engine) {}
 
     int addSymbolFont(const String &family, const io::path_t &path) override;
     int addSymbolFont(const String &family, std::shared_ptr<io::IODevice> device) override;

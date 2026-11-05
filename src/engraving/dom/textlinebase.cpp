@@ -40,24 +40,24 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 TextLineBaseSegment::TextLineBaseSegment(const ElementType &type, TextLineBase *sp, ElementFlags f) : LineSegment(type, sp, f) {
-    m_text = Factory::createText(this, TextStyleType::DEFAULT, false);
-    m_endText = Factory::createText(this, TextStyleType::DEFAULT, false);
-    m_text->setFlag(ElementFlag::MOVABLE, false);
-    m_endText->setFlag(ElementFlag::MOVABLE, false);
+    text_ = Factory::createText(this, TextStyleType::DEFAULT, false);
+    endText_ = Factory::createText(this, TextStyleType::DEFAULT, false);
+    text_->setFlag(ElementFlag::MOVABLE, false);
+    endText_->setFlag(ElementFlag::MOVABLE, false);
 }
 
 TextLineBaseSegment::TextLineBaseSegment(const TextLineBaseSegment &seg) : LineSegment(seg) {
-    m_text = seg.m_text->clone();
-    m_endText = seg.m_endText->clone();
-    m_text->setOwnershipParent(this);
-    m_endText->setOwnershipParent(this);
+    text_ = seg.text_->clone();
+    endText_ = seg.endText_->clone();
+    text_->setOwnershipParent(this);
+    endText_->setOwnershipParent(this);
     // set the right _text
     renderer()->layoutTextLineBaseSegment(this);
 }
 
 TextLineBaseSegment::~TextLineBaseSegment() {
-    delete m_text;
-    delete m_endText;
+    delete text_;
+    delete endText_;
 }
 
 //---------------------------------------------------------
@@ -66,8 +66,8 @@ TextLineBaseSegment::~TextLineBaseSegment() {
 
 void TextLineBaseSegment::setSelected(bool f) {
     SpannerSegment::setSelected(f);
-    m_text->setSelected(f);
-    m_endText->setSelected(f);
+    text_->setSelected(f);
+    endText_->setSelected(f);
 }
 
 RectF TextLineBaseSegment::boundingBoxOfLine(const PointF &p1, const PointF &p2, double lw2, bool isDottedLine) {
@@ -84,12 +84,12 @@ bool TextLineBaseSegment::setProperty(Pid id, const PropertyValue &v) {
     if (id == Pid::COLOR) {
         Color color = v.value<Color>();
 
-        if (m_text) {
-            m_text->setColor(color);
+        if (text_) {
+            text_->setColor(color);
         }
 
-        if (m_endText) {
-            m_endText->setColor(color);
+        if (endText_) {
+            endText_->setColor(color);
         }
     }
 
@@ -104,8 +104,8 @@ void TextLineBaseSegment::spatiumChanged(double ov, double nv) {
     LineSegment::spatiumChanged(ov, nv);
 
     textLineBase()->spatiumChanged(ov, nv);
-    m_text->spatiumChanged(ov, nv);
-    m_endText->spatiumChanged(ov, nv);
+    text_->spatiumChanged(ov, nv);
+    endText_->spatiumChanged(ov, nv);
 }
 
 static constexpr std::array<Pid, 45> TextLineBasePropertyId = {{Pid::LINE_VISIBLE,

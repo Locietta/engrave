@@ -54,7 +54,7 @@ constexpr size_t GP7_MAX_ENTRIES = 4096;
 bool GuitarPro7::read(IODevice *io) {
     f = io;
     previousTempo = -1;
-    m_gpifRead = false;
+    gpifRead_ = false;
 
     ZipReader zip(io);
     const auto entries = zip.fileInfoList();
@@ -93,10 +93,10 @@ bool GuitarPro7::read(IODevice *io) {
     }
     zip.close();
 
-    m_properties = readProperties(&partsData);
+    properties_ = readProperties(&partsData);
 
     readGpif(&fileData);
-    return m_gpifRead;
+    return gpifRead_;
 }
 
 //---------------------------------------------------------

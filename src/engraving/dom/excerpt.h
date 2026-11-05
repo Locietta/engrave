@@ -38,7 +38,7 @@ class TieMap;
 
 class Excerpt {
 public:
-    Excerpt(MasterScore *masterScore = nullptr) { m_masterScore = masterScore; }
+    Excerpt(MasterScore *masterScore = nullptr) { masterScore_ = masterScore; }
 
     Excerpt(const Excerpt &ex, bool copyContents = true);
 
@@ -52,9 +52,9 @@ public:
     const ID &initialPartId() const;
     void setInitialPartId(const ID &id);
 
-    MasterScore *masterScore() const { return m_masterScore; }
+    MasterScore *masterScore() const { return masterScore_; }
 
-    Score *excerptScore() const { return m_excerptScore; }
+    Score *excerptScore() const { return excerptScore_; }
 
     void setExcerptScore(Score *s);
 
@@ -69,11 +69,11 @@ public:
     void setFileName(const String &fileName);
     void updateFileName(size_t index = muse::nidx);
 
-    std::vector<Part *> &parts() { return m_parts; }
+    std::vector<Part *> &parts() { return parts_; }
 
-    const std::vector<Part *> &parts() const { return m_parts; }
+    const std::vector<Part *> &parts() const { return parts_; }
 
-    void setParts(const std::vector<Part *> &parts) { m_parts = parts; }
+    void setParts(const std::vector<Part *> &parts) { parts_ = parts; }
 
     bool containsPart(const Part *part) const;
 
@@ -111,14 +111,14 @@ private:
 
     void updateTracksMapping();
 
-    MasterScore *m_masterScore = nullptr;
-    Score *m_excerptScore = nullptr;
-    String m_name;
-    String m_fileName;
-    std::vector<Part *> m_parts;
-    TracksMap m_tracksMapping;
-    bool m_inited = false;
-    ID m_initialPartId;
+    MasterScore *masterScore_ = nullptr;
+    Score *excerptScore_ = nullptr;
+    String name_;
+    String fileName_;
+    std::vector<Part *> parts_;
+    TracksMap tracksMapping_;
+    bool inited_ = false;
+    ID initialPartId_;
 };
 } // namespace mu::engraving
 

@@ -125,8 +125,8 @@ private:
 
     static Transaction &dummy();
 
-    UndoableTransaction *m_undoableTransaction = nullptr;
-    bool m_isDummy = false;
+    UndoableTransaction *undoableTransaction_ = nullptr;
+    bool isDummy_ = false;
 
     static inline PushHook s_pushHook = nullptr;
 };
@@ -153,8 +153,8 @@ public:
     void undoRedo(bool undo, EditData *editData);
 
 private:
-    MasterScore *m_masterScore = nullptr;
+    MasterScore *masterScore_ = nullptr;
 
-    std::unique_ptr<Transaction> m_currentTransaction;
+    std::unique_ptr<Transaction> currentTransaction_;
 };
 } // namespace mu::engraving

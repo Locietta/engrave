@@ -39,41 +39,41 @@ class MusicXmlLogger;
 
 class MusicXmlNotePitch {
 public:
-    MusicXmlNotePitch(MusicXmlLogger *logger) : m_logger(logger) { /* nothing so far */ }
+    MusicXmlNotePitch(MusicXmlLogger *logger) : logger_(logger) { /* nothing so far */ }
 
     void pitch(muse::XmlStreamReader &e);
     bool readProperties(muse::XmlStreamReader &e, engraving::Score *score);
 
-    engraving::Accidental *acc() const { return m_acc; }
+    engraving::Accidental *acc() const { return acc_; }
 
-    engraving::AccidentalType accType() const { return m_accType; }
+    engraving::AccidentalType accType() const { return accType_; }
 
-    int alter() const { return m_alter; }
+    int alter() const { return alter_; }
 
-    double tuning() const { return m_tuning; }
+    double tuning() const { return tuning_; }
 
-    int displayOctave() const { return m_displayOctave; }
+    int displayOctave() const { return displayOctave_; }
 
-    int displayStep() const { return m_displayStep; }
+    int displayStep() const { return displayStep_; }
 
     void displayStepOctave(muse::XmlStreamReader &e);
 
-    int octave() const { return m_octave; }
+    int octave() const { return octave_; }
 
-    int step() const { return m_step; }
+    int step() const { return step_; }
 
-    bool unpitched() const { return m_unpitched; }
+    bool unpitched() const { return unpitched_; }
 
 private:
-    engraving::Accidental *m_acc = nullptr;                                // created based on accidental element
-    engraving::AccidentalType m_accType = engraving::AccidentalType::NONE; // set by pitch() based on alter value (can be microtonal)
-    int m_alter = 0;
-    double m_tuning = 0.0;
-    int m_displayStep = -1;   // invalid
-    int m_displayOctave = -1; // invalid
-    int m_octave = -1;
-    int m_step = 0;
-    bool m_unpitched = false;
-    MusicXmlLogger *m_logger = nullptr; // Error logger
+    engraving::Accidental *acc_ = nullptr;                                // created based on accidental element
+    engraving::AccidentalType accType_ = engraving::AccidentalType::NONE; // set by pitch() based on alter value (can be microtonal)
+    int alter_ = 0;
+    double tuning_ = 0.0;
+    int displayStep_ = -1;   // invalid
+    int displayOctave_ = -1; // invalid
+    int octave_ = -1;
+    int step_ = 0;
+    bool unpitched_ = false;
+    MusicXmlLogger *logger_ = nullptr; // Error logger
 };
 } // namespace mu::iex::musicxml

@@ -43,7 +43,7 @@ const BagpipeNoteInfo BagpipeEmbellishment::BAGPIPE_NOTEINFO_LIST[] = {{"LG", 6,
 BagpipeNoteList BagpipeEmbellishment::resolveNoteList() const {
     BagpipeNoteList nl;
 
-    StringList notes = TConv::embellishmentNotes(m_embelType);
+    StringList notes = TConv::embellishmentNotes(embelType_);
     int noteInfoSize = sizeof(BAGPIPE_NOTEINFO_LIST) / sizeof(*BAGPIPE_NOTEINFO_LIST);
     for (const String &note : notes) {
         // search for note in BagpipeNoteInfoList

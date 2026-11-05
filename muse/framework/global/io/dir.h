@@ -51,7 +51,7 @@ public:
     static path_t tempPath();
 
 private:
-    path_t m_path;
+    path_t path_;
 };
 } // namespace muse::io
 

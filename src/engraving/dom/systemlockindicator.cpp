@@ -32,7 +32,7 @@
 
 namespace mu::engraving {
 SystemLockIndicator::SystemLockIndicator(DummyParentOr<System> parent, const RangeLock *lock)
-    : IndicatorIcon(ElementType::SYSTEM_LOCK_INDICATOR, parent, ElementFlag::SYSTEM | ElementFlag::GENERATED), m_systemLock(lock) {}
+    : IndicatorIcon(ElementType::SYSTEM_LOCK_INDICATOR, parent, ElementFlag::SYSTEM | ElementFlag::GENERATED), systemLock_(lock) {}
 
 void SystemLockIndicator::setSelected(bool v) {
     EngravingItem::setSelected(v);
@@ -41,8 +41,8 @@ void SystemLockIndicator::setSelected(bool v) {
 }
 
 String SystemLockIndicator::formatBarsAndBeats() const {
-    const MeasureBase *startMB = m_systemLock->startMB();
-    const MeasureBase *endMB = m_systemLock->endMB();
+    const MeasureBase *startMB = systemLock_->startMB();
+    const MeasureBase *endMB = systemLock_->endMB();
     const Measure *startMeasure = startMB->isMeasure() ? toMeasure(startMB) : toMeasure(startMB->prevMeasure());
     const Measure *endMeasure = endMB->isMeasure() ? toMeasure(endMB) : toMeasure(endMB->prevMeasure());
     const int startMeasureNum = startMeasure ? startMeasure->measureNumber() : -1;

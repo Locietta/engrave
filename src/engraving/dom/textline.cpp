@@ -131,8 +131,8 @@ TextLineSegment::TextLineSegment(TextLine *sp, bool system)
     setSystemFlag(system);
     initStyle();
 
-    m_text->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
-    m_endText->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
+    text_->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
+    endText_->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
 }
 
 //---------------------------------------------------------

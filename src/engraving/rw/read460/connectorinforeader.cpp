@@ -51,7 +51,7 @@ using namespace mu::engraving::read460;
 //---------------------------------------------------------
 
 ConnectorInfoReader::ConnectorInfoReader(XmlReader &e, ReadContext *ctx, EngravingItem *current, int track)
-    : ConnectorInfo(current, track), m_reader(&e), m_ctx(ctx), m_connector(nullptr), m_connectorReceiver(current) {}
+    : ConnectorInfo(current, track), reader_(&e), ctx_(ctx), connector_(nullptr), connectorReceiver_(current) {}
 
 //---------------------------------------------------------
 //   readPositionInfo
@@ -68,7 +68,7 @@ static Location readPositionInfo(ReadContext *ctx, int track) {
 //---------------------------------------------------------
 
 ConnectorInfoReader::ConnectorInfoReader(XmlReader &e, ReadContext *ctx, Score *current, int track)
-    : ConnectorInfo(current, readPositionInfo(ctx, track)), m_reader(&e), m_ctx(ctx), m_connector(nullptr), m_connectorReceiver(current) {
+    : ConnectorInfo(current, readPositionInfo(ctx, track)), reader_(&e), ctx_(ctx), connector_(nullptr), connectorReceiver_(current) {
     setCurrentUpdated(true);
 }
 
@@ -77,33 +77,33 @@ ConnectorInfoReader::ConnectorInfoReader(XmlReader &e, ReadContext *ctx, Score *
 //---------------------------------------------------------
 
 bool ConnectorInfoReader::read() {
-    XmlReader &e = *m_reader;
+    XmlReader &e = *reader_;
     const AsciiStringView name(e.asciiAttribute("type"));
-    m_type = TConv::fromXml(name, ElementType::INVALID);
+    type_ = TConv::fromXml(name, ElementType::INVALID);
 
-    m_ctx->fillLocation(m_currentLoc);
+    ctx_->fillLocation(currentLoc_);
 
     while (e.readNextStartElement()) {
         const AsciiStringView tag(e.name());
 
         if (tag == "prev") {
-            readEndpointLocation(m_prevLoc);
+            readEndpointLocation(prevLoc_);
         } else if (tag == "next") {
-            readEndpointLocation(m_nextLoc);
+            readEndpointLocation(nextLoc_);
         } else {
             if (tag == name) {
-                m_connector = Factory::createItemByName(tag, m_connectorReceiver->score()->dummy());
+                connector_ = Factory::createItemByName(tag, connectorReceiver_->score()->dummy());
             } else {
                 LOGW("ConnectorInfoReader::read: element tag (%s) does not match connector type (%s). Is the file corrupted?", tag.ascii(),
                      name.ascii());
             }
 
-            if (!m_connector) {
+            if (!connector_) {
                 e.unknown();
                 return false;
             }
-            m_connector->setTrack(m_currentLoc.track());
-            TRead::readItem(m_connector, e, *m_ctx);
+            connector_->setTrack(currentLoc_.track());
+            TRead::readItem(connector_, e, *ctx_);
         }
     }
     return true;
@@ -114,19 +114,19 @@ bool ConnectorInfoReader::read() {
 //---------------------------------------------------------
 
 void ConnectorInfoReader::readEndpointLocation(Location &l) {
-    XmlReader &e = *m_reader;
+    XmlReader &e = *reader_;
     while (e.readNextStartElement()) {
         const AsciiStringView tag(e.name());
         if (tag == "location") {
             l = Location::relative();
-            TRead::read(&l, e, *m_ctx);
+            TRead::read(&l, e, *ctx_);
         } else {
             e.unknown();
         }
     }
 }
 
-Fraction ConnectorInfoReader::curTick() const { return m_ctx->tick(); }
+Fraction ConnectorInfoReader::curTick() const { return ctx_->tick(); }
 
 //---------------------------------------------------------
 //   ConnectorInfoReader::update
@@ -134,13 +134,13 @@ Fraction ConnectorInfoReader::curTick() const { return m_ctx->tick(); }
 
 void ConnectorInfoReader::update() {
     if (!currentUpdated()) {
-        updateCurrentInfo(m_ctx->pasteMode());
+        updateCurrentInfo(ctx_->pasteMode());
     }
     if (hasPrevious()) {
-        m_prevLoc.toAbsolute(m_currentLoc);
+        prevLoc_.toAbsolute(currentLoc_);
     }
     if (hasNext()) {
-        m_nextLoc.toAbsolute(m_currentLoc);
+        nextLoc_.toAbsolute(currentLoc_);
     }
 }
 
@@ -169,7 +169,7 @@ void ConnectorInfoReader::addToScore(bool pasteMode) {
         r = r->prev();
     }
     while (r) {
-        bool found = ReadAddConnectorVisitor::visit(ReadAddConnectorTypes{}, r->m_connectorReceiver, r, pasteMode);
+        bool found = ReadAddConnectorVisitor::visit(ReadAddConnectorTypes{}, r->connectorReceiver_, r, pasteMode);
         DO_ASSERT(found);
         r = r->next();
     }
@@ -195,7 +195,7 @@ EngravingItem *ConnectorInfoReader::connector() {
     // connector should be contained in the first node normally.
     ConnectorInfo *i = findFirst();
     if (i) {
-        return static_cast<ConnectorInfoReader *>(i)->m_connector;
+        return static_cast<ConnectorInfoReader *>(i)->connector_;
     }
     return nullptr;
 }
@@ -217,9 +217,9 @@ EngravingItem *ConnectorInfoReader::releaseConnector() {
         ConnectorInfoReader *ii = this;
         EngravingItem *c = nullptr;
         while (ii->prev()) {
-            if (ii->m_connector) {
-                c = ii->m_connector;
-                ii->m_connector = nullptr;
+            if (ii->connector_) {
+                c = ii->connector_;
+                ii->connector_ = nullptr;
             }
             ii = ii->prev();
             if (ii == this) {
@@ -228,8 +228,8 @@ EngravingItem *ConnectorInfoReader::releaseConnector() {
         }
         return c;
     }
-    EngravingItem *c = i->m_connector;
-    i->m_connector = nullptr;
+    EngravingItem *c = i->connector_;
+    i->connector_ = nullptr;
     return c;
 }
 

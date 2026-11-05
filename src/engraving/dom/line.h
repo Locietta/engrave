@@ -91,29 +91,29 @@ public:
     virtual LineSegment *createLineSegment() = 0;
     void setLen(double l);
 
-    bool diagonal() const { return m_diagonal; }
+    bool diagonal() const { return diagonal_; }
 
-    void setDiagonal(bool v) { m_diagonal = v; }
+    void setDiagonal(bool v) { diagonal_ = v; }
 
-    Spatium lineWidth() const { return m_lineWidth; }
+    Spatium lineWidth() const { return lineWidth_; }
 
-    Color lineColor() const { return m_lineColor; }
+    Color lineColor() const { return lineColor_; }
 
-    LineType lineStyle() const { return m_lineStyle; }
+    LineType lineStyle() const { return lineStyle_; }
 
-    void setLineWidth(const Spatium &v) { m_lineWidth = v; }
+    void setLineWidth(const Spatium &v) { lineWidth_ = v; }
 
-    void setLineColor(const Color &v) { m_lineColor = v; }
+    void setLineColor(const Color &v) { lineColor_ = v; }
 
-    void setLineStyle(LineType v) { m_lineStyle = v; }
+    void setLineStyle(LineType v) { lineStyle_ = v; }
 
-    double dashLineLen() const { return m_dashLineLen; }
+    double dashLineLen() const { return dashLineLen_; }
 
-    void setDashLineLen(double val) { m_dashLineLen = val; }
+    void setDashLineLen(double val) { dashLineLen_ = val; }
 
-    double dashGapLen() const { return m_dashGapLen; }
+    double dashGapLen() const { return dashGapLen_; }
 
-    void setDashGapLen(double val) { m_dashGapLen = val; }
+    void setDashGapLen(double val) { dashGapLen_ = val; }
 
     LineSegment *frontSegment() { return toLineSegment(Spanner::frontSegment()); }
 
@@ -144,11 +144,11 @@ private:
 
     friend class LineSegment;
 
-    Spatium m_lineWidth;
-    Color m_lineColor;
-    LineType m_lineStyle = LineType::SOLID;
-    double m_dashLineLen = 5.0;
-    double m_dashGapLen = 5.0;
-    bool m_diagonal = false;
+    Spatium lineWidth_;
+    Color lineColor_;
+    LineType lineStyle_ = LineType::SOLID;
+    double dashLineLen_ = 5.0;
+    double dashGapLen_ = 5.0;
+    bool diagonal_ = false;
 };
 } // namespace mu::engraving

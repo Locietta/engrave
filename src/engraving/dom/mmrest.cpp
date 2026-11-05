@@ -34,11 +34,11 @@ using namespace mu::engraving;
 //--------------------------------------------------------
 
 MMRest::MMRest(DummyParentOr<Segment> s) : Rest(ElementType::MMREST, s) {
-    m_numberVisible = true;
+    numberVisible_ = true;
     setPlacement(PlacementV::ABOVE);
 }
 
-MMRest::MMRest(const MMRest &r, bool link) : Rest(r, link) { m_numberVisible = r.m_numberVisible; }
+MMRest::MMRest(const MMRest &r, bool link) : Rest(r, link) { numberVisible_ = r.numberVisible_; }
 
 bool MMRest::shouldShowNumberByDefault() const {
     bool shouldShow = isOldStyle() && ldata()->number == 1 ? style().styleB(Sid::singleMeasureMMRestShowNumber) : true;
@@ -52,7 +52,7 @@ bool MMRest::shouldShowNumberByDefault() const {
     return shouldShow && !isTopStaffOfPartAndCenteringIsActive;
 }
 
-bool MMRest::showNumber() const { return shouldShowNumberByDefault() && m_numberVisible; }
+bool MMRest::showNumber() const { return shouldShowNumberByDefault() && numberVisible_; }
 
 bool MMRest::isOldStyle() const {
     int number = ldata()->number;
@@ -69,7 +69,7 @@ PointF MMRest::numberPos() const {
     return PointF(x, y);
 }
 
-double MMRest::yNumberPos() const { return ldata()->yNumberPos + absoluteFromSpatium(m_numberOffset); }
+double MMRest::yNumberPos() const { return ldata()->yNumberPos + absoluteFromSpatium(numberOffset_); }
 
 //---------------------------------------------------------
 //   propertyDefault
@@ -89,8 +89,8 @@ PropertyValue MMRest::propertyDefault(Pid propertyId) const {
 
 PropertyValue MMRest::getProperty(Pid propertyId) const {
     switch (propertyId) {
-        case Pid::MMREST_NUMBER_OFFSET: return m_numberOffset;
-        case Pid::MMREST_NUMBER_VISIBLE: return m_numberVisible;
+        case Pid::MMREST_NUMBER_OFFSET: return numberOffset_;
+        case Pid::MMREST_NUMBER_VISIBLE: return numberVisible_;
         default: return Rest::getProperty(propertyId);
     }
 }
@@ -102,11 +102,11 @@ PropertyValue MMRest::getProperty(Pid propertyId) const {
 bool MMRest::setProperty(Pid propertyId, const PropertyValue &v) {
     switch (propertyId) {
         case Pid::MMREST_NUMBER_OFFSET:
-            m_numberOffset = v.value<Spatium>();
+            numberOffset_ = v.value<Spatium>();
             triggerLayout();
             break;
         case Pid::MMREST_NUMBER_VISIBLE:
-            m_numberVisible = v.toBool();
+            numberVisible_ = v.toBool();
             triggerLayout();
             break;
         default: return Rest::setProperty(propertyId, v);

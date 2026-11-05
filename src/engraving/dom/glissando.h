@@ -80,9 +80,9 @@ public:
 
     static Note *guessInitialNote(Chord *chord);
 
-    std::optional<bool> isHarpGliss() const { return m_isHarpGliss; }
+    std::optional<bool> isHarpGliss() const { return isHarpGliss_; }
 
-    void setIsHarpGliss(std::optional<bool> v) { m_isHarpGliss = v; }
+    void setIsHarpGliss(std::optional<bool> v) { isHarpGliss_ = v; }
 
     // overridden inherited methods
     Glissando *clone() const override { return new Glissando(*this); }
@@ -106,6 +106,6 @@ protected:
 
 private:
 
-    std::optional<bool> m_isHarpGliss = std::nullopt;
+    std::optional<bool> isHarpGliss_ = std::nullopt;
 };
 } // namespace mu::engraving

@@ -48,12 +48,12 @@ class BatchGuard;
 
 class EditContext {
 public:
-    explicit EditContext(mu::engraving::MasterScore &master) : m_master(master) {}
+    explicit EditContext(mu::engraving::MasterScore &master) : master_(master) {}
 
-    mu::engraving::MasterScore &master() const { return m_master; }
+    mu::engraving::MasterScore &master() const { return master_; }
 
     // The operation being prepared or run.
-    std::size_t op() const { return m_op; }
+    std::size_t op() const { return op_; }
 
     // While preparing: NotFound or StaleHandle for an id or address that names
     // nothing live, InvalidArgument for an OpRef that does not name an earlier
@@ -71,10 +71,10 @@ public:
 private:
     friend class BatchGuard;
 
-    mu::engraving::MasterScore &m_master;
-    std::size_t m_op = 0;
-    std::size_t m_epoch = 0; // advanced by every operation that changed more than properties
-    std::vector<std::vector<mu::engraving::EngravingObject *>> m_created;
+    mu::engraving::MasterScore &master_;
+    std::size_t op_ = 0;
+    std::size_t epoch_ = 0; // advanced by every operation that changed more than properties
+    std::vector<std::vector<mu::engraving::EngravingObject *>> created_;
 };
 
 // Applies a prepared operation. An error it returns rolls the batch back.
@@ -130,8 +130,8 @@ private:
     bool same_score(const Snapshot &snapshot);
     void restore(const Snapshot &snapshot);
 
-    Document &m_document;
-    EditContext m_context;
+    Document &document_;
+    EditContext context_;
 };
 
 } // namespace engrave::api

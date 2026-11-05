@@ -25,15 +25,15 @@
 using namespace muse::audio;
 using namespace muse::audio::engine;
 
-bool SignalNode::isSilent() const { return m_isSilent; }
+bool SignalNode::isSilent() const { return isSilent_; }
 
-void SignalNode::onOutputSpecChanged(const OutputSpec &spec) { m_channelPeaks.resize(spec.audioChannelCount, 0.f); }
+void SignalNode::onOutputSpecChanged(const OutputSpec &spec) { channelPeaks_.resize(spec.audioChannelCount, 0.f); }
 
 void SignalNode::doSelfProcess(float *buffer, samples_t samplesPerChannel) {
-    const audioch_t channelsCount = m_outputSpec.audioChannelCount;
+    const audioch_t channelsCount = outputSpec_.audioChannelCount;
 
     for (audioch_t ch = 0; ch < channelsCount; ++ch) {
-        m_channelPeaks[ch] = 0.f;
+        channelPeaks_[ch] = 0.f;
     }
 
     for (size_t s = 0; s < samplesPerChannel; ++s) {
@@ -41,16 +41,16 @@ void SignalNode::doSelfProcess(float *buffer, samples_t samplesPerChannel) {
         for (size_t ch = 0; ch < channelsCount; ++ch) {
             const size_t idx = frameOffset + ch;
             const float a = std::fabs(buffer[idx]);
-            if (a > m_channelPeaks[ch]) {
-                m_channelPeaks[ch] = a;
+            if (a > channelPeaks_[ch]) {
+                channelPeaks_[ch] = a;
             }
         }
     }
 
-    m_isSilent = true;
+    isSilent_ = true;
     for (audioch_t ch = 0; ch < channelsCount; ++ch) {
-        if (m_channelPeaks[ch] > 0.f) {
-            m_isSilent = false;
+        if (channelPeaks_[ch] > 0.f) {
+            isSilent_ = false;
         }
     }
 }

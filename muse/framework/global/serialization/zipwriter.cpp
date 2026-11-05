@@ -34,36 +34,36 @@ struct ZipWriter::Impl {
 };
 
 ZipWriter::ZipWriter(io::IODevice *device) {
-    m_device = device;
-    m_impl = new Impl();
-    m_impl->zip = new ZipContainer(m_device);
+    device_ = device;
+    impl_ = new Impl();
+    impl_->zip = new ZipContainer(device_);
 }
 
 ZipWriter::~ZipWriter() {
     close();
-    delete m_impl->zip;
-    delete m_impl;
+    delete impl_->zip;
+    delete impl_;
 }
 
 void ZipWriter::flush() {}
 
 void ZipWriter::close() {
-    if (m_impl->isClosed) {
+    if (impl_->isClosed) {
         return;
     }
 
-    m_impl->zip->close();
-    if (m_device) {
+    impl_->zip->close();
+    if (device_) {
         flush();
-        m_device->close();
+        device_->close();
     }
 
-    m_impl->isClosed = true;
+    impl_->isClosed = true;
 }
 
-bool ZipWriter::hasError() const { return m_impl->zip->status() != ZipContainer::NoError; }
+bool ZipWriter::hasError() const { return impl_->zip->status() != ZipContainer::NoError; }
 
 void ZipWriter::addFile(const std::string &fileName, const ByteArray &data) {
-    m_impl->zip->addFile(fileName, data);
+    impl_->zip->addFile(fileName, data);
     flush();
 }

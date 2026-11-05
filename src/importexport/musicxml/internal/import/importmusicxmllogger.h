@@ -35,8 +35,8 @@ public:
     void logDebugInfo(const muse::String &info, const muse::XmlStreamReader *xmlreader = 0);
     void logError(const muse::String &error, const muse::XmlStreamReader *xmlreader = 0);
 
-    void setLoggingLevel(const Level level) { m_level = level; }
+    void setLoggingLevel(const Level level) { level_ = level; }
 private:
-    Level m_level = Level::MXML_INFO;
+    Level level_ = Level::MXML_INFO;
 };
 } // namespace mu::iex::musicxml

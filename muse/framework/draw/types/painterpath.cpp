@@ -41,15 +41,15 @@ void PainterPath::moveTo(const PointF &p) {
     }
     ensureData();
     setDirty();
-    assert(!m_elements.empty());
-    m_requireMoveTo = false;
-    if (m_elements.back().type == ElementType::MoveToElement) {
-        m_elements.back().x = p.x();
-        m_elements.back().y = p.y();
+    assert(!elements_.empty());
+    requireMoveTo_ = false;
+    if (elements_.back().type == ElementType::MoveToElement) {
+        elements_.back().x = p.x();
+        elements_.back().y = p.y();
     } else {
-        m_elements.push_back({p.x(), p.y(), ElementType::MoveToElement});
+        elements_.push_back({p.x(), p.y(), ElementType::MoveToElement});
     }
-    m_cStart = static_cast<int>(m_elements.size() - 1);
+    cStart_ = static_cast<int>(elements_.size() - 1);
 }
 
 void PainterPath::lineTo(const PointF &p) {
@@ -59,14 +59,14 @@ void PainterPath::lineTo(const PointF &p) {
     ensureData();
     setDirty();
 
-    assert(!m_elements.empty());
+    assert(!elements_.empty());
     maybeMoveTo();
-    if (p == PointF(m_elements.back())) {
+    if (p == PointF(elements_.back())) {
         return;
     }
 
-    m_elements.push_back({p.x(), p.y(), ElementType::LineToElement});
-    m_convex = m_elements.size() == 3 || (m_elements.size() == 4 && isClosed());
+    elements_.push_back({p.x(), p.y(), ElementType::LineToElement});
+    convex_ = elements_.size() == 3 || (elements_.size() == 4 && isClosed());
 }
 
 void PainterPath::cubicTo(const PointF &ctrlPt1, const PointF &ctrlPt2, const PointF &endPt) {
@@ -76,33 +76,33 @@ void PainterPath::cubicTo(const PointF &ctrlPt1, const PointF &ctrlPt2, const Po
     ensureData();
     setDirty();
 
-    assert(!m_elements.empty());
+    assert(!elements_.empty());
     // Abort on empty curve as a stroker cannot handle this and the
     // curve is irrelevant anyway.
 
-    if (ctrlPt1 == m_elements.back() && ctrlPt1 == ctrlPt2 && ctrlPt2 == endPt) {
+    if (ctrlPt1 == elements_.back() && ctrlPt1 == ctrlPt2 && ctrlPt2 == endPt) {
         return;
     }
     maybeMoveTo();
 
-    m_elements.push_back({ctrlPt1.x(), ctrlPt1.y(), ElementType::CurveToElement});
-    m_elements.push_back({ctrlPt2.x(), ctrlPt2.y(), ElementType::CurveToDataElement});
-    m_elements.push_back({endPt.x(), endPt.y(), ElementType::CurveToDataElement});
+    elements_.push_back({ctrlPt1.x(), ctrlPt1.y(), ElementType::CurveToElement});
+    elements_.push_back({ctrlPt2.x(), ctrlPt2.y(), ElementType::CurveToDataElement});
+    elements_.push_back({endPt.x(), endPt.y(), ElementType::CurveToDataElement});
 }
 
 void PainterPath::translate(double dx, double dy) {
     if (RealIsNull(dx) && RealIsNull(dy)) {
         return;
     }
-    auto m_elementsLeft = m_elements.size();
-    if (m_elementsLeft <= 0) {
+    auto elementsLeft_ = elements_.size();
+    if (elementsLeft_ <= 0) {
         return;
     }
 
     setDirty();
-    PainterPath::Element *element = m_elements.data();
+    PainterPath::Element *element = elements_.data();
     assert(element);
-    while (m_elementsLeft--) {
+    while (elementsLeft_--) {
         element->x += dx;
         element->y += dy;
         ++element;
@@ -112,21 +112,21 @@ void PainterPath::translate(double dx, double dy) {
 void PainterPath::translate(const PointF &offset) { translate(offset.x(), offset.y()); }
 
 RectF PainterPath::boundingRect() const {
-    if (m_dirtyBounds) {
+    if (dirtyBounds_) {
         computeBoundingRect();
     }
-    return m_bounds;
+    return bounds_;
 }
 
 bool PainterPath::isEmpty() const {
-    return m_elements.empty() || (m_elements.size() == 1 && m_elements.front().type == ElementType::MoveToElement);
+    return elements_.empty() || (elements_.size() == 1 && elements_.front().type == ElementType::MoveToElement);
 }
 
-size_t PainterPath::elementCount() const { return m_elements.size(); }
+size_t PainterPath::elementCount() const { return elements_.size(); }
 
 PainterPath::Element PainterPath::elementAt(size_t i) const {
     assert(i < elementCount());
-    return m_elements.at(i);
+    return elements_.at(i);
 }
 
 void PainterPath::addRect(const RectF &r) {
@@ -139,15 +139,15 @@ void PainterPath::addRect(const RectF &r) {
     ensureData();
     setDirty();
 
-    bool first = m_elements.size() < 2;
+    bool first = elements_.size() < 2;
     moveTo(r.x(), r.y());
-    m_elements.push_back({r.x() + r.width(), r.y(), ElementType::LineToElement});
-    m_elements.push_back({r.x() + r.width(), r.y() + r.height(), ElementType::LineToElement});
-    m_elements.push_back({r.x(), r.y() + r.height(), ElementType::LineToElement});
-    m_elements.push_back({r.x(), r.y(), ElementType::LineToElement});
+    elements_.push_back({r.x() + r.width(), r.y(), ElementType::LineToElement});
+    elements_.push_back({r.x() + r.width(), r.y() + r.height(), ElementType::LineToElement});
+    elements_.push_back({r.x(), r.y() + r.height(), ElementType::LineToElement});
+    elements_.push_back({r.x(), r.y(), ElementType::LineToElement});
 
-    m_requireMoveTo = true;
-    m_convex = first;
+    requireMoveTo_ = true;
+    convex_ = first;
 }
 
 void PainterPath::addEllipse(const RectF &boundingRect) {
@@ -160,7 +160,7 @@ void PainterPath::addEllipse(const RectF &boundingRect) {
     ensureData();
     setDirty();
 
-    bool first = m_elements.size() < 2;
+    bool first = elements_.size() < 2;
     PointF pts[12];
     int point_count;
     PointF start = curvesForArc(boundingRect, 0, -360, pts, &point_count);
@@ -169,8 +169,8 @@ void PainterPath::addEllipse(const RectF &boundingRect) {
     cubicTo(pts[3], pts[4], pts[5]);   // 270 -> 180
     cubicTo(pts[6], pts[7], pts[8]);   // 180 -> 90
     cubicTo(pts[9], pts[10], pts[11]); // 90 - >0
-    m_requireMoveTo = true;
-    m_convex = first;
+    requireMoveTo_ = true;
+    convex_ = first;
 }
 
 void PainterPath::addRoundedRect(const RectF &rect, double xRadius, double yRadius) {
@@ -207,15 +207,15 @@ void PainterPath::addRoundedRect(const RectF &rect, double xRadius, double yRadi
     ensureData();
     setDirty();
 
-    bool first = m_elements.size() < 2;
+    bool first = elements_.size() < 2;
     arcMoveTo(x, y, rxx2, ryy2, 180);
     arcTo(x, y, rxx2, ryy2, 180, -90);
     arcTo(x + w - rxx2, y, rxx2, ryy2, 90, -90);
     arcTo(x + w - rxx2, y + h - ryy2, rxx2, ryy2, 0, -90);
     arcTo(x, y + h - ryy2, rxx2, ryy2, 270, -90);
     closeSubpath();
-    m_requireMoveTo = true;
-    m_convex = first;
+    requireMoveTo_ = true;
+    convex_ = first;
 }
 
 void PainterPath::arcMoveTo(const RectF &rect, double angle) {
@@ -251,34 +251,34 @@ void PainterPath::closeSubpath() {
         return;
     }
     setDirty();
-    m_requireMoveTo = true;
-    const Element &first = m_elements.at(m_cStart);
-    Element &last = m_elements.back();
+    requireMoveTo_ = true;
+    const Element &first = elements_.at(cStart_);
+    Element &last = elements_.back();
     if (first.x != last.x || first.y != last.y) {
         if (RealIsEqual(first.x, last.x) && RealIsEqual(first.y, last.y)) {
             last.x = first.x;
             last.y = first.y;
         } else {
-            m_elements.push_back({first.x, first.y, ElementType::LineToElement});
+            elements_.push_back({first.x, first.y, ElementType::LineToElement});
         }
     }
 }
 
-PainterPath::FillRule PainterPath::fillRule() const { return isEmpty() ? FillRule::OddEvenFill : m_fillRule; }
+PainterPath::FillRule PainterPath::fillRule() const { return isEmpty() ? FillRule::OddEvenFill : fillRule_; }
 
 void PainterPath::setFillRule(PainterPath::FillRule fillRule) {
     ensureData();
-    if (m_fillRule == fillRule) {
+    if (fillRule_ == fillRule) {
         return;
     }
     setDirty();
-    m_fillRule = fillRule;
+    fillRule_ = fillRule;
 }
 
 void PainterPath::ensureData() {
-    if (m_elements.empty()) {
-        m_elements.reserve(16);
-        m_elements.push_back({0, 0, ElementType::MoveToElement});
+    if (elements_.empty()) {
+        elements_.reserve(16);
+        elements_.push_back({0, 0, ElementType::MoveToElement});
     }
 }
 
@@ -289,13 +289,13 @@ bool PainterPath::hasValidCoords(const RectF &r) {
 }
 
 void PainterPath::computeBoundingRect() const {
-    m_dirtyBounds = false;
+    dirtyBounds_ = false;
 
     double maxx, maxy;
-    double minx = maxx = m_elements.at(0).x;
-    double miny = maxy = m_elements.at(0).y;
-    for (size_t i = 1; i < m_elements.size(); ++i) {
-        const Element &e = m_elements.at(i);
+    double minx = maxx = elements_.at(0).x;
+    double miny = maxy = elements_.at(0).y;
+    for (size_t i = 1; i < elements_.size(); ++i) {
+        const Element &e = elements_.at(i);
         switch (e.type) {
             case ElementType::MoveToElement:
             case ElementType::LineToElement:
@@ -311,7 +311,7 @@ void PainterPath::computeBoundingRect() const {
                 }
                 break;
             case ElementType::CurveToElement: {
-                Bezier b = Bezier::fromPoints(m_elements.at(i - 1), e, m_elements.at(i + 1), m_elements.at(i + 2));
+                Bezier b = Bezier::fromPoints(elements_.at(i - 1), e, elements_.at(i + 1), elements_.at(i + 2));
                 RectF r = painterpathBezierExtrema(b);
                 double right = r.right();
                 double bottom = r.bottom();
@@ -332,7 +332,7 @@ void PainterPath::computeBoundingRect() const {
             default: break;
         }
     }
-    m_bounds = RectF(minx, miny, maxx - minx, maxy - miny);
+    bounds_ = RectF(minx, miny, maxx - minx, maxy - miny);
 }
 
 static void findEllipseCoords(const RectF &r, double angle, double length, PointF *startPoint, PointF *endPoint) {
@@ -524,9 +524,9 @@ static double angleForArc(double angle) {
     return t;
 }
 
-#define BEZIER_A(bezier, coord) 3 * (-bezier.m_##coord##1 + 3 * bezier.m_##coord##2 - 3 * bezier.m_##coord##3 + bezier.m_##coord##4)
-#define BEZIER_B(bezier, coord) 6 * (bezier.m_##coord##1 - 2 * bezier.m_##coord##2 + bezier.m_##coord##3)
-#define BEZIER_C(bezier, coord) 3 * (-bezier.m_##coord##1 + bezier.m_##coord##2)
+#define BEZIER_A(bezier, coord) 3 * (-bezier.coord##1_ + 3 * bezier.coord##2_ - 3 * bezier.coord##3_ + bezier.coord##4_)
+#define BEZIER_B(bezier, coord) 6 * (bezier.coord##1_ - 2 * bezier.coord##2_ + bezier.coord##3_)
+#define BEZIER_C(bezier, coord) 3 * (-bezier.coord##1_ + bezier.coord##2_)
 
 #define BEZIER_CHECK_T(bezier, t) \
     if (t >= 0 && t <= 1) {       \
@@ -544,19 +544,19 @@ static double angleForArc(double angle) {
 RectF PainterPath::painterpathBezierExtrema(const Bezier &b) {
     double minx, miny, maxx, maxy;
     // initialize with end points
-    if (b.m_x1 < b.m_x4) {
-        minx = b.m_x1;
-        maxx = b.m_x4;
+    if (b.x1_ < b.x4_) {
+        minx = b.x1_;
+        maxx = b.x4_;
     } else {
-        minx = b.m_x4;
-        maxx = b.m_x1;
+        minx = b.x4_;
+        maxx = b.x1_;
     }
-    if (b.m_y1 < b.m_y4) {
-        miny = b.m_y1;
-        maxy = b.m_y4;
+    if (b.y1_ < b.y4_) {
+        miny = b.y1_;
+        maxy = b.y4_;
     } else {
-        miny = b.m_y4;
-        maxy = b.m_y1;
+        miny = b.y4_;
+        maxy = b.y1_;
     }
     // Update for the X extrema
     {
@@ -610,7 +610,7 @@ RectF PainterPath::painterpathBezierExtrema(const Bezier &b) {
 }
 
 void PainterPath::setDirty() {
-    m_dirtyBounds = true;
-    m_convex = false;
+    dirtyBounds_ = true;
+    convex_ = false;
 }
 } // namespace muse::draw

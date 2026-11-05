@@ -37,11 +37,11 @@ EngravingItem *Hook::elementBase() const { return chord(); }
 
 void Hook::setHookType(int i) {
     bool straight = style().styleB(Sid::useStraightNoteFlags);
-    m_hookType = i;
+    hookType_ = i;
     setSym(symIdForHookIndex(i, straight));
 }
 
-PointF Hook::smuflAnchor() const { return symSmuflAnchor(m_sym, chord()->up() ? SmuflAnchorId::stemUpNW : SmuflAnchorId::stemDownSW); }
+PointF Hook::smuflAnchor() const { return symSmuflAnchor(sym_, chord()->up() ? SmuflAnchorId::stemUpNW : SmuflAnchorId::stemDownSW); }
 
 SymId Hook::symIdForHookIndex(int index, bool straight) {
     switch (index) {

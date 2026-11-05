@@ -34,27 +34,27 @@ class Transaction;
 struct RestVerticalClearance {
 public:
     void reset() {
-        m_above = 1000; // arbitrary high value
-        m_below = 1000; // arbitrary high value
-        m_locked = false;
+        above_ = 1000; // arbitrary high value
+        below_ = 1000; // arbitrary high value
+        locked_ = false;
     }
 
-    int above() const { return m_above; }
+    int above() const { return above_; }
 
-    int below() const { return m_below; }
+    int below() const { return below_; }
 
-    void setAbove(int v) { m_above = std::max(std::min(m_above, v), 0); }
+    void setAbove(int v) { above_ = std::max(std::min(above_, v), 0); }
 
-    void setBelow(int v) { m_below = std::max(std::min(m_below, v), 0); }
+    void setBelow(int v) { below_ = std::max(std::min(below_, v), 0); }
 
-    bool locked() const { return m_locked; }
+    bool locked() const { return locked_; }
 
-    void setLocked(bool v) { m_locked = v; }
+    void setLocked(bool v) { locked_ = v; }
 
 private:
-    int m_above = 0.0; // In space units
-    int m_below = 0.0; // In space units
-    bool m_locked = false;
+    int above_ = 0.0; // In space units
+    int below_ = 0.0; // In space units
+    bool locked_ = false;
 };
 
 //---------------------------------------------------------
@@ -68,7 +68,7 @@ class Rest : public ChordRest {
 
 public:
 
-    ~Rest() { muse::DeleteAll(m_dots); }
+    ~Rest() { muse::DeleteAll(dots_); }
 
     void hack_toRestType();
 
@@ -89,9 +89,9 @@ public:
     bool acceptDrop(EditData &) const override;
     EngravingItem *drop(Transaction &tx, EditData &) override;
 
-    bool isGap() const { return m_gap; }
+    bool isGap() const { return gap_; }
 
-    virtual void setGap(bool v) { m_gap = v; }
+    virtual void setGap(bool v) { gap_ = v; }
 
     virtual void add(EngravingItem *) override;
     virtual void remove(EngravingItem *) override;
@@ -101,9 +101,9 @@ public:
     NoteDot *dot(int n);
     const std::vector<NoteDot *> &dotList() const;
 
-    int dotLine() const { return m_dotline; }
+    int dotLine() const { return dotline_; }
 
-    void setDotLine(int l) { m_dotline = l; }
+    void setDotLine(int l) { dotline_ = l; }
 
     static int getDotline(DurationType durationType);
     bool accent();
@@ -112,14 +112,14 @@ public:
     bool isWholeRest() const;
     bool isBreveRest() const;
 
-    DeadSlapped *deadSlapped() const { return m_deadSlapped; }
+    DeadSlapped *deadSlapped() const { return deadSlapped_; }
 
     double rightEdge() const override;
     double centerX() const;
 
-    bool alignWithOtherRests() const { return m_alignWithOtherRests; }
+    bool alignWithOtherRests() const { return alignWithOtherRests_; }
 
-    void setAlignWithOtherRests(bool v) { m_alignWithOtherRests = v; }
+    void setAlignWithOtherRests(bool v) { alignWithOtherRests_ = v; }
 
     void localSpatiumChanged(double oldValue, double newValue) override;
     PropertyValue propertyDefault(Pid) const override;
@@ -134,7 +134,7 @@ public:
     bool shouldNotBeDrawn() const;
     bool debugDrawGap() const;
 
-    RestVerticalClearance &verticalClearance() { return m_verticalClearance; }
+    RestVerticalClearance &verticalClearance() { return verticalClearance_; }
 
     struct LayoutData : public ChordRest::LayoutData {
         std::vector<Rest *> mergedRests; // Rests from other voices that may be merged with this
@@ -166,13 +166,13 @@ private:
 
     // values calculated by layout:
 
-    int m_dotline = -1; // depends on rest symbol
-    bool m_gap = false; // invisible and not selectable for user
-    std::vector<NoteDot *> m_dots;
-    DeadSlapped *m_deadSlapped = nullptr;
+    int dotline_ = -1; // depends on rest symbol
+    bool gap_ = false; // invisible and not selectable for user
+    std::vector<NoteDot *> dots_;
+    DeadSlapped *deadSlapped_ = nullptr;
 
-    RestVerticalClearance m_verticalClearance;
+    RestVerticalClearance verticalClearance_;
 
-    bool m_alignWithOtherRests = true;
+    bool alignWithOtherRests_ = true;
 };
 } // namespace mu::engraving

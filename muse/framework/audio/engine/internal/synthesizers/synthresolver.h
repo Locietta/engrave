@@ -47,11 +47,11 @@ public:
 private:
     using SynthPair = std::pair<audio::AudioResourceId, ISynthesizerPtr>;
 
-    mutable std::mutex m_mutex;
+    mutable std::mutex mutex_;
 
-    std::map<AudioSourceType, IResolverPtr> m_resolvers;
-    AudioInputParams m_defaultInputParams;
-    OutputSpec m_defaultOutputSpec;
+    std::map<AudioSourceType, IResolverPtr> resolvers_;
+    AudioInputParams defaultInputParams_;
+    OutputSpec defaultOutputSpec_;
 };
 } // namespace muse::audio::synth
 

@@ -43,6 +43,6 @@ public:
 
 private:
 
-    AudioEngineConfig m_conf;
+    AudioEngineConfig conf_;
 };
 } // namespace muse::audio::engine

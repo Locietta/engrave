@@ -125,27 +125,27 @@ static void changeStyleValue(Score *score, Sid idx, const PropertyValue &oldValu
 }
 
 void ChangeStyleValues::flip() {
-    if (!m_score) {
+    if (!score_) {
         return;
     }
 
     bool styleChanged = false;
-    const MStyle &style = m_score->style();
+    const MStyle &style = score_->style();
 
-    for (auto &pair : m_values) {
+    for (auto &pair : values_) {
         PropertyValue oldValue = style.styleV(pair.first);
         if (oldValue == pair.second) {
             continue;
         }
 
-        changeStyleValue(m_score, pair.first, oldValue, pair.second);
+        changeStyleValue(score_, pair.first, oldValue, pair.second);
         pair.second = oldValue;
 
         styleChanged = true;
     }
 
     if (styleChanged) {
-        m_score->styleChanged();
+        score_->styleChanged();
     }
 }
 

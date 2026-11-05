@@ -31,21 +31,21 @@ using namespace muse::draw;
 static int s_fontID = -1;
 
 void FontsDatabase::setDefaultFont(Font::Type type, const FontDataKey &key) {
-    m_defaults[type] = key;
-    ++m_revision;
+    defaults_[type] = key;
+    ++revision_;
 }
 
 void FontsDatabase::insertSubstitution(const String &familyName, const String &substituteName) {
     FontDataKey familyKey(familyName);
     FontDataKey substituteKey(substituteName);
-    m_familySubstitutions[familyKey].push_back(substituteKey);
+    familySubstitutions_[familyKey].push_back(substituteKey);
 
-    ++m_revision;
+    ++revision_;
 }
 
 void FontsDatabase::removeSubstitutions(const String &familyName, const std::vector<String> &substituteNames) {
-    auto it = m_familySubstitutions.find(FontDataKey(familyName));
-    if (it == m_familySubstitutions.end()) {
+    auto it = familySubstitutions_.find(FontDataKey(familyName));
+    if (it == familySubstitutions_.end()) {
         return;
     }
 
@@ -60,20 +60,20 @@ void FontsDatabase::removeSubstitutions(const String &familyName, const std::vec
     }
 
     if (substitutes.empty()) {
-        m_familySubstitutions.erase(it);
+        familySubstitutions_.erase(it);
     }
 
-    ++m_revision;
+    ++revision_;
 }
 
 const FontDataKey &FontsDatabase::defaultFont(Font::Type type) const {
-    auto it = m_defaults.find(type);
-    if (it != m_defaults.end()) {
+    auto it = defaults_.find(type);
+    if (it != defaults_.end()) {
         return it->second;
     }
 
-    it = m_defaults.find(Font::Type::Unknown);
-    IF_ASSERT_FAILED(it != m_defaults.end()) {
+    it = defaults_.find(Font::Type::Unknown);
+    IF_ASSERT_FAILED(it != defaults_.end()) {
         static FontDataKey null;
         return null;
     }
@@ -105,27 +105,27 @@ int FontsDatabase::addFont(const FontDataKey &key, std::shared_ptr<io::IODevice>
 
     const int id = ++s_fontID;
 
-    auto it = m_fonts.find(key);
-    if (it != m_fonts.end()) {
+    auto it = fonts_.find(key);
+    if (it != fonts_.end()) {
         release(it->second);
-        m_fonts.erase(it);
+        fonts_.erase(it);
     }
 
-    m_fonts.insert({key, FontInfo{id, key, std::move(device)}});
-    ++m_revision;
+    fonts_.insert({key, FontInfo{id, key, std::move(device)}});
+    ++revision_;
 
     return id;
 }
 
 void FontsDatabase::removeFont(const FontDataKey &key) {
-    auto it = m_fonts.find(key);
-    if (it == m_fonts.end()) {
+    auto it = fonts_.find(key);
+    if (it == fonts_.end()) {
         return;
     }
 
     release(it->second);
-    m_fonts.erase(it);
-    ++m_revision;
+    fonts_.erase(it);
+    ++revision_;
 }
 
 void FontsDatabase::release(const FontInfo &fi) { UNUSED(fi); }
@@ -141,8 +141,8 @@ FontDataKey FontsDatabase::actualFont(const FontDataKey &requireKey, Font::Type 
 }
 
 std::vector<FontDataKey> FontsDatabase::substitutionFonts(const FontDataKey &requireKey) const {
-    auto familyIt = m_familySubstitutions.find(FontDataKey(requireKey.family()));
-    if (familyIt != m_familySubstitutions.end()) {
+    auto familyIt = familySubstitutions_.find(FontDataKey(requireKey.family()));
+    if (familyIt != familySubstitutions_.end()) {
         return familyIt->second;
     }
 
@@ -172,11 +172,11 @@ FontData FontsDatabase::fontData(const FontDataKey &requireKey, Font::Type type)
     return FontData{key, data};
 }
 
-uint64_t FontsDatabase::revision() const { return m_revision; }
+uint64_t FontsDatabase::revision() const { return revision_; }
 
 const FontsDatabase::FontInfo &FontsDatabase::fontInfo(const FontDataKey &key) const {
-    auto it = m_fonts.find(key);
-    if (it != m_fonts.end()) {
+    auto it = fonts_.find(key);
+    if (it != fonts_.end()) {
         return it->second;
     }
 

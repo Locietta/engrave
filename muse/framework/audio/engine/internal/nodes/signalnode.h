@@ -42,8 +42,8 @@ protected:
 
     void doSelfProcess(float *buffer, samples_t samplesPerChannel) override;
 
-    std::vector<float> m_channelPeaks;
-    bool m_isSilent = true;
+    std::vector<float> channelPeaks_;
+    bool isSilent_ = true;
 };
 
 using SignalNodePtr = std::shared_ptr<SignalNode>;

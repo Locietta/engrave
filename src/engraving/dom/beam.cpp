@@ -63,10 +63,10 @@ Beam::Beam(Score *parent) : BeamBase(ElementType::BEAM, parent->dummy()) {
 }
 
 System *Beam::system() const {
-    if (m_elements.empty()) {
+    if (elements_.empty()) {
         return nullptr;
     }
-    Measure *measure = m_elements.front()->measure();
+    Measure *measure = elements_.front()->measure();
     return measure ? measure->system() : nullptr;
 }
 
@@ -83,20 +83,20 @@ EngravingItem *Beam::accessibleParentItem() const {
 //---------------------------------------------------------
 
 Beam::Beam(const Beam &b) : BeamBase(b) {
-    m_elements = b.m_elements;
-    m_growLeft = b.m_growLeft;
-    m_growRight = b.m_growRight;
-    m_beamDist = b.m_beamDist;
-    m_fragments.reserve(b.m_fragments.size());
-    for (const BeamFragment *f : b.m_fragments) {
-        m_fragments.push_back(new BeamFragment(*f));
+    elements_ = b.elements_;
+    growLeft_ = b.growLeft_;
+    growRight_ = b.growRight_;
+    beamDist_ = b.beamDist_;
+    fragments_.reserve(b.fragments_.size());
+    for (const BeamFragment *f : b.fragments_) {
+        fragments_.push_back(new BeamFragment(*f));
     }
-    m_minCRMove = b.m_minCRMove;
-    m_maxCRMove = b.m_maxCRMove;
-    m_isGrace = b.m_isGrace;
-    m_cross = b.m_cross;
-    m_fullCross = b.m_fullCross;
-    m_slope = b.m_slope;
+    minCRMove_ = b.minCRMove_;
+    maxCRMove_ = b.maxCRMove_;
+    isGrace_ = b.isGrace_;
+    cross_ = b.cross_;
+    fullCross_ = b.fullCross_;
+    slope_ = b.slope_;
 }
 
 //---------------------------------------------------------
@@ -107,14 +107,14 @@ Beam::~Beam() {
     //
     // delete all references from chords
     //
-    for (ChordRest *cr : m_elements) {
+    for (ChordRest *cr : elements_) {
         cr->setBeam(nullptr);
     }
 
     clearBeamSegments();
 
-    muse::DeleteAll(m_fragments);
-    m_fragments.clear();
+    muse::DeleteAll(fragments_);
+    fragments_.clear();
 }
 
 //---------------------------------------------------------
@@ -145,22 +145,22 @@ void Beam::remove(EngravingItem *e) {
 
 void Beam::addChordRest(ChordRest *a) {
     a->setBeam(this);
-    if (!muse::contains(m_elements, a)) {
+    if (!muse::contains(elements_, a)) {
         //
         // insert element in same order as it appears
         // in the score
         //
-        if (a->segment() && !m_elements.empty()) {
-            for (size_t i = 0; i < m_elements.size(); ++i) {
-                Segment *s = m_elements[i]->segment();
+        if (a->segment() && !elements_.empty()) {
+            for (size_t i = 0; i < elements_.size(); ++i) {
+                Segment *s = elements_[i]->segment();
                 if ((s->tick() > a->segment()->tick()) ||
                     ((s->tick() == a->segment()->tick()) && (a->segment()->next(SegmentType::ChordRest) == s))) {
-                    m_elements.insert(m_elements.begin() + i, a);
+                    elements_.insert(elements_.begin() + i, a);
                     return;
                 }
             }
         }
-        m_elements.push_back(a);
+        elements_.push_back(a);
     }
 }
 
@@ -169,7 +169,7 @@ void Beam::addChordRest(ChordRest *a) {
 //---------------------------------------------------------
 
 void Beam::removeChordRest(ChordRest *a) {
-    if (!muse::remove(m_elements, a)) {
+    if (!muse::remove(elements_, a)) {
         LOGD("Beam::remove(): cannot find ChordRest");
     }
     a->setBeam(0);
@@ -220,7 +220,7 @@ const BeamSegment *Beam::topLevelSegmentForElement(const ChordRest *element) con
 
 void Beam::move(const PointF &offset) {
     EngravingItem::move(offset);
-    for (BeamSegment *bs : m_beamSegments) {
+    for (BeamSegment *bs : beamSegments_) {
         bs->line.translate(offset);
     }
 }
@@ -288,7 +288,7 @@ void Beam::spatiumChanged(double oldValue, double newValue) {
     int idx = directionIdx();
     if (userModified()) {
         double diff = newValue / oldValue;
-        for (BeamFragment *f : m_fragments) {
+        for (BeamFragment *f : fragments_) {
             f->py1[idx] = f->py1[idx] * diff;
             f->py2[idx] = f->py2[idx] * diff;
         }
@@ -300,7 +300,7 @@ void Beam::spatiumChanged(double oldValue, double newValue) {
 //---------------------------------------------------------
 
 void Beam::setDirection(DirectionV d) {
-    if (direction() == d || m_cross) {
+    if (direction() == d || cross_) {
         return;
     }
 
@@ -353,9 +353,9 @@ void Beam::reset() {
 //---------------------------------------------------------
 
 void Beam::triggerLayout() const {
-    if (!m_elements.empty()) {
-        m_elements.front()->triggerLayout();
-        m_elements.back()->triggerLayout();
+    if (!elements_.empty()) {
+        elements_.front()->triggerLayout();
+        elements_.back()->triggerLayout();
     }
 }
 
@@ -399,10 +399,10 @@ EngravingItem *Beam::drop(Transaction &, EditData &data) {
 //---------------------------------------------------------
 
 PairF Beam::beamPos() const {
-    if (m_fragments.empty()) {
+    if (fragments_.empty()) {
         return PairF(0.0, 0.0);
     }
-    BeamFragment *f = m_fragments.back();
+    BeamFragment *f = fragments_.back();
     int idx = directionIdx();
     double _spatium = spatium();
     return PairF(f->py1[idx] / _spatium, f->py2[idx] / _spatium);
@@ -413,10 +413,10 @@ PairF Beam::beamPos() const {
 //---------------------------------------------------------
 
 void Beam::setBeamPos(const PairF &bp) {
-    if (m_fragments.empty()) {
-        m_fragments.push_back(new BeamFragment);
+    if (fragments_.empty()) {
+        fragments_.push_back(new BeamFragment);
     }
-    BeamFragment *f = m_fragments.back();
+    BeamFragment *f = fragments_.back();
     int idx = directionIdx();
     setUserModified(true);
     setGenerated(false);
@@ -431,21 +431,21 @@ void Beam::setBeamPos(const PairF &bp) {
 }
 
 void Beam::setNoSlope(bool b) {
-    m_noSlope = b;
+    noSlope_ = b;
 
     // Make flat if usermodified
-    if (m_noSlope) {
+    if (noSlope_) {
         int idx = directionIdx();
         if (userModified()) {
-            BeamFragment *f = m_fragments.back();
+            BeamFragment *f = fragments_.back();
             f->py1[idx] = f->py2[idx] = (f->py1[idx] + f->py2[idx]) * 0.5;
         }
     }
 }
 
 void Beam::computeAndSetSlope() {
-    double xDiff = m_endAnchor.x() - m_startAnchor.x();
-    double yDiff = m_endAnchor.y() - m_startAnchor.y();
+    double xDiff = endAnchor_.x() - startAnchor_.x();
+    double yDiff = endAnchor_.y() - startAnchor_.y();
     if (std::abs(xDiff) < 0.5 * spatium()) {
         // Temporary safeguard: a beam this short is invalid, and exists only as a temporary state,
         // so don't try to compute the slope as it will be wrong. Needs a better solution in future.
@@ -533,25 +533,25 @@ PropertyValue Beam::propertyDefault(Pid id) const {
 //---------------------------------------------------------
 
 void Beam::addSkyline(Skyline &sk) {
-    if (m_beamSegments.empty() || !addToSkyline()) {
+    if (beamSegments_.empty() || !addToSkyline()) {
         return;
     }
 
     // Only add the outer segment, no need to add the inner one
-    sk.add(m_beamSegments.front()->shape());
+    sk.add(beamSegments_.front()->shape());
 }
 
 //---------------------------------------------------------
 //   tick
 //---------------------------------------------------------
 
-Fraction Beam::tick() const { return m_elements.empty() ? Fraction(0, 1) : m_elements.front()->segment()->tick(); }
+Fraction Beam::tick() const { return elements_.empty() ? Fraction(0, 1) : elements_.front()->segment()->tick(); }
 
 //---------------------------------------------------------
 //   rtick
 //---------------------------------------------------------
 
-Fraction Beam::rtick() const { return m_elements.empty() ? Fraction(0, 1) : m_elements.front()->segment()->rtick(); }
+Fraction Beam::rtick() const { return elements_.empty() ? Fraction(0, 1) : elements_.front()->segment()->rtick(); }
 
 //---------------------------------------------------------
 //   ticks
@@ -560,7 +560,7 @@ Fraction Beam::rtick() const { return m_elements.empty() ? Fraction(0, 1) : m_el
 
 Fraction Beam::ticks() const {
     Fraction ticks = Fraction(0, 1);
-    for (ChordRest *cr : m_elements) {
+    for (ChordRest *cr : elements_) {
         ticks += cr->actualTicks();
     }
     return ticks;
@@ -597,7 +597,7 @@ bool Beam::isMovable() const { return true; }
 //   containsChord
 //---------------------------------------------------------
 bool Beam::hasAllRests() {
-    for (ChordRest *cr : m_elements) {
+    for (ChordRest *cr : elements_) {
         if (cr && cr->isChord()) {
             return false;
         }
@@ -606,7 +606,7 @@ bool Beam::hasAllRests() {
 }
 
 void Beam::clearBeamSegments() {
-    for (ChordRest *chordRest : m_elements) {
+    for (ChordRest *chordRest : elements_) {
         chordRest->setBeamlet(nullptr);
     }
 
@@ -625,7 +625,7 @@ Shape BeamSegment::shape() const {
     Shape shape;
     PointF startPoint = line.p1();
     PointF endPoint = line.p2();
-    double _beamWidth = parentElement->isBeam() ? item_cast<const Beam *>(parentElement)->m_beamWidth :
+    double _beamWidth = parentElement->isBeam() ? item_cast<const Beam *>(parentElement)->beamWidth_ :
                                                   item_cast<const TremoloTwoChord *>(parentElement)->ldata()->beamWidth;
     // This is the case of right-beamlets
     if (startPoint.x() > endPoint.x()) {

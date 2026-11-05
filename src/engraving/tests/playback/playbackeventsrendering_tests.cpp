@@ -52,13 +52,13 @@ static constexpr duration_t WHOLE_NOTE_DURATION = QUARTER_NOTE_DURATION * 4;    
 class Engraving_PlaybackEventsRendererTests : public ::testing::Test {
 protected:
     void SetUp() override {
-        m_dummyPatternSegment.arrangementPattern =
+        dummyPatternSegment_.arrangementPattern =
             tests::createArrangementPattern(HUNDRED_PERCENT /*duration_factor*/, 0 /*timestamp_offset*/);
-        m_dummyPatternSegment.pitchPattern = tests::createSimplePitchPattern(0 /*increment_pitch_diff*/);
-        m_dummyPatternSegment.expressionPattern = tests::createSimpleExpressionPattern(dynamicLevelFromType(mpe::DynamicType::Natural));
-        m_dummyPattern.emplace(0, m_dummyPatternSegment);
+        dummyPatternSegment_.pitchPattern = tests::createSimplePitchPattern(0 /*increment_pitch_diff*/);
+        dummyPatternSegment_.expressionPattern = tests::createSimpleExpressionPattern(dynamicLevelFromType(mpe::DynamicType::Natural));
+        dummyPattern_.emplace(0, dummyPatternSegment_);
 
-        m_defaultProfile = std::make_shared<ArticulationsProfile>();
+        defaultProfile_ = std::make_shared<ArticulationsProfile>();
     }
 
     const Chord *findChord(const Score *score, int tick, track_idx_t track = 0) const {
@@ -76,12 +76,12 @@ protected:
         return nullptr;
     }
 
-    ArticulationsProfilePtr m_defaultProfile = nullptr;
+    ArticulationsProfilePtr defaultProfile_ = nullptr;
 
-    ArticulationPattern m_dummyPattern;
-    ArticulationPatternSegment m_dummyPatternSegment;
+    ArticulationPattern dummyPattern_;
+    ArticulationPatternSegment dummyPatternSegment_;
 
-    PlaybackEventsRenderer m_renderer;
+    PlaybackEventsRenderer renderer_;
 };
 
 /**
@@ -103,15 +103,15 @@ TEST_F(Engraving_PlaybackEventsRendererTests, SingleNote_TenutoAccent) {
     ASSERT_TRUE(chord);
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Accent, m_dummyPattern);
-    m_defaultProfile->setPattern(ArticulationType::Tenuto, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Accent, dummyPattern_);
+    defaultProfile_->setPattern(ArticulationType::Tenuto, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     // [THEN] We expect that a single note event will be rendered from the chord
     EXPECT_EQ(result.size(), 1);
@@ -151,14 +151,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, SingleNote_NoArticulations) {
     ASSERT_TRUE(chord);
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Standard, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Standard, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     // [THEN] We expect that a single note event will be rendered from the chord
     EXPECT_EQ(result.size(), 1);
@@ -201,14 +201,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, SingleNote_Trill_Modern) {
     int expectedTrillSubNotesCount = 8;
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Trill, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Trill, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     for (const auto &pair : result) {
         // [THEN] We expect that rendered note events number will match expectations
@@ -260,14 +260,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, SingleNote_Unexpandable_Trill) {
     int expectedTrillSubNotesCount = 1;
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Trill, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Trill, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     // [THEN] We expect that the only one note event will be rendered,
     //        since Trill consists of 32-nd note, we can't break down 32-nd principal note into smaller sub-notes
@@ -296,14 +296,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, SingleNote_Trill_Baroque) {
     int expectedTrillSubNotesCount = 10;
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::TrillBaroque, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::TrillBaroque, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     for (const auto &pair : result) {
         // [THEN] We expect that rendered note events number will match expectations
@@ -375,14 +375,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, SingleNote_Turn_Regular) {
     std::vector<pitch_level_t> expectedPitches = {plus, nominalPitchLevel, minus, nominalPitchLevel};
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Turn, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Turn, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     for (const auto &pair : result) {
         // [THEN] We expect that rendered note events number will match expectations
@@ -439,14 +439,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, SingleNote_Turn_Inverted) {
     std::vector<pitch_level_t> expectedPitches = {minus, nominalPitchLevel, plus, nominalPitchLevel};
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::InvertedTurn, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::InvertedTurn, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     for (const auto &pair : result) {
         // [THEN] We expect that rendered note events number will match expectations
@@ -505,14 +505,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, SingleNote_Turn_Inverted_Slash_Var
     std::vector<pitch_level_t> expectedPitches = {minus, nominalPitchLevel, plus, nominalPitchLevel};
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::InvertedTurn, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::InvertedTurn, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     for (const auto &pair : result) {
         // [THEN] We expect that rendered note events number will match expectations
@@ -567,14 +567,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, SingleNote_Upper_Mordent) {
     std::vector<pitch_level_t> expectedPitches = {nominalPitchLevel, plus, nominalPitchLevel};
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::UpperMordent, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::UpperMordent, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     for (const auto &pair : result) {
         // [THEN] We expect that rendered note events number will match expectations
@@ -629,14 +629,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, SingleNote_Lower_Mordent) {
     std::vector<pitch_level_t> expectedPitches = {nominalPitchLevel, minus, nominalPitchLevel};
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::LowerMordent, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::LowerMordent, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     for (const auto &pair : result) {
         // [THEN] We expect that rendered note events number will match expectations
@@ -690,14 +690,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, TwoNotes_Discrete_Glissando) {
     }
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::DiscreteGlissando, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::DiscreteGlissando, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     for (const auto &pair : result) {
         // [THEN] We expect that rendered note events number will match expectations
@@ -761,7 +761,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, TwoNotes_Continuous_Glissando) {
     };
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::ContinuousGlissando, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::ContinuousGlissando, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
@@ -770,7 +770,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, TwoNotes_Continuous_Glissando) {
     PlaybackEventsMap result;
     for (const RepeatSegment *repeatSegment : score->repeatList()) {
         int tickPositionOffset = repeatSegment->utick - repeatSegment->tick;
-        m_renderer.render(chord, tickPositionOffset, m_defaultProfile, ctx, result);
+        renderer_.render(chord, tickPositionOffset, defaultProfile_, ctx, result);
     }
 
     // [THEN] 2 events, as we have 2 repeat segments
@@ -844,14 +844,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, TwoNotes_Glissando_NoPlay) {
     }
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Standard, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Standard, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     for (const auto &pair : result) {
         // [THEN] We expect that rendered note events number will match expectations
@@ -918,13 +918,13 @@ TEST_F(Engraving_PlaybackEventsRendererTests, TwoNotes_Discrete_Harp_Glissando) 
         expectedPitches.push_back(nominalPitchLevel + pitchesWt.at(i) * PITCH_LEVEL_STEP);
     }
 
-    m_defaultProfile->setPattern(ArticulationType::DiscreteGlissando, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::DiscreteGlissando, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     for (const auto &pair : result) {
         // [THEN] We expect that rendered note events number will match expectations
@@ -960,10 +960,10 @@ TEST_F(Engraving_PlaybackEventsRendererTests, TwoNotes_Discrete_Harp_Glissando) 
         expectedPitches.push_back(nominalPitchLevel - pitches2.at(i) * PITCH_LEVEL_STEP);
     }
 
-    m_defaultProfile->setPattern(ArticulationType::DiscreteGlissando, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::DiscreteGlissando, dummyPattern_);
 
     PlaybackEventsMap result2;
-    m_renderer.render(secondChord, 0, m_defaultProfile, ctx, result2);
+    renderer_.render(secondChord, 0, defaultProfile_, ctx, result2);
 
     for (const auto &pair : result2) {
         // [THEN] We expect that rendered note events number will match expectations
@@ -996,8 +996,8 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Glissando_on_tied_notes) {
     Score *score = ScoreRW::readScore(PLAYBACK_EVENTS_RENDERING_DIR + u"glissando_on_tied_notes/glissando_on_tied_notes.mscx");
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::DiscreteGlissando, m_dummyPattern);
-    m_defaultProfile->setPattern(ArticulationType::ContinuousGlissando, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::DiscreteGlissando, dummyPattern_);
+    defaultProfile_->setPattern(ArticulationType::ContinuousGlissando, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
@@ -1012,7 +1012,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Glissando_on_tied_notes) {
 
     // [WHEN] Request to render a chord with the A4 note on it
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     // [THEN] Note event has the correct duration and standard articulation (no glissando)
     pitch_level_t nominalPitchLevel = pitchLevel(PitchClass::A, 4);
@@ -1035,7 +1035,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Glissando_on_tied_notes) {
 
     // [WHEN] Request to render a chord with the A4 note on it
     result.clear();
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     // [THEN] Expected glissando disclosure
     size_t expectedSubNotesCount = 3;
@@ -1077,7 +1077,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Glissando_on_tied_notes) {
 
     // [WHEN] Request to render a chord with the A4 note on it
     result.clear();
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     // [THEN] Expected glissando disclosure
     expectedSubNotesCount = 1;
@@ -1150,14 +1150,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, SingleNote_Acciaccatura) {
     };
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Acciaccatura, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Acciaccatura, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     for (const auto &pair : result) {
         // [THEN] We expect that rendered note events number will match expectations
@@ -1219,14 +1219,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, SingleNote_AcciaccaturaChord) {
     };
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Acciaccatura, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Acciaccatura, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     for (const auto &pair : result) {
         // [THEN] We expect that rendered note events number will match expectations
@@ -1289,14 +1289,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, SingleNote_MultiAcciaccatura) {
     };
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Acciaccatura, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Acciaccatura, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     for (const auto &pair : result) {
         // [THEN] We expect that rendered note events number will match expectations
@@ -1360,14 +1360,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, GraceNoteWithTiedNotes) {
     };
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::PreAppoggiatura, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::PreAppoggiatura, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord with the F4 note on it
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     // [THEN] The events map is not empty
     EXPECT_FALSE(result.empty());
@@ -1426,14 +1426,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, SingleNote_Appoggiatura_Post) {
     };
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::PostAppoggiatura, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::PostAppoggiatura, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     for (const auto &pair : result) {
         // [THEN] We expect that rendered note events number will match expectations
@@ -1495,14 +1495,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, SingleNote_AppoggiaturaChord_Post)
     };
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::PostAppoggiatura, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::PostAppoggiatura, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     for (const auto &pair : result) {
         // [THEN] We expect that rendered note events number will match expectations
@@ -1566,14 +1566,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, SingleNote_MultiAppoggiatura_Post)
     };
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::PostAppoggiatura, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::PostAppoggiatura, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     for (const auto &pair : result) {
         // [THEN] We expect that rendered note events number will match expectations
@@ -1630,14 +1630,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Chord_Arpeggio) {
     std::vector<pitch_level_t> expectedPitches = {pitchLevel(PitchClass::F, 4), pitchLevel(PitchClass::A, 4), pitchLevel(PitchClass::C, 5)};
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Arpeggio, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Arpeggio, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     for (const auto &pair : result) {
         // [THEN] We expect that rendered note events number will match expectations
@@ -1685,15 +1685,15 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Chord_Arpeggio_Grace) {
                                                   pitchLevel(PitchClass::C, 5)};
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Arpeggio, m_dummyPattern);
-    m_defaultProfile->setPattern(ArticulationType::Acciaccatura, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Arpeggio, dummyPattern_);
+    defaultProfile_->setPattern(ArticulationType::Acciaccatura, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     for (const auto &pair : result) {
         // [THEN] The grace note is rendered along with the arpeggiated notes
@@ -1744,14 +1744,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Chord_Arpeggio_Up) {
     };
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::ArpeggioUp, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::ArpeggioUp, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     for (const auto &pair : result) {
         // [THEN] We expect that rendered note events number will match expectations
@@ -1814,14 +1814,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Chord_Arpeggio_Up_TiedNotes) {
     };
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::ArpeggioUp, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::ArpeggioUp, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     for (const auto &pair : result) {
         // [THEN] We expect that rendered note events number will match expectations
@@ -1883,14 +1883,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Chord_Arpeggio_Down) {
     };
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::ArpeggioDown, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::ArpeggioDown, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     for (const auto &pair : result) {
         // [THEN] We expect that rendered note events number will match expectations
@@ -1951,14 +1951,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Chord_Arpeggio_Straight_Down) {
     };
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::ArpeggioStraightDown, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::ArpeggioStraightDown, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     for (const auto &pair : result) {
         // [THEN] We expect that rendered note events number will match expectations
@@ -2019,14 +2019,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Chord_Arpeggio_Straight_Up) {
     };
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::ArpeggioStraightUp, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::ArpeggioStraightUp, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     for (const auto &pair : result) {
         // [THEN] We expect that rendered note events number will match expectations
@@ -2080,14 +2080,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Chord_Arpeggio_Bracket) {
     };
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Standard, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Standard, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     for (const auto &pair : result) {
         // [THEN] We expect that rendered note events number will match expectations
@@ -2118,7 +2118,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, PartiallyTiedArpeggio) {
     ASSERT_TRUE(score);
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::ArpeggioUp, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::ArpeggioUp, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
@@ -2135,7 +2135,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, PartiallyTiedArpeggio) {
                     continue;
                 }
 
-                m_renderer.render(toChord(el), tickPositionOffset, m_defaultProfile, ctx, result);
+                renderer_.render(toChord(el), tickPositionOffset, defaultProfile_, ctx, result);
             }
         }
     }
@@ -2213,14 +2213,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Single_Note_Tremolo) {
                                                   pitchLevel(PitchClass::F, 4)};
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Tremolo8th, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Tremolo8th, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     for (const auto &pair : result) {
         // [THEN] We expect that rendered note events number will match expectations
@@ -2254,8 +2254,8 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Single_Note_Tremolo_OnTiedNote) {
     ASSERT_TRUE(score);
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Standard, m_dummyPattern);
-    m_defaultProfile->setPattern(ArticulationType::Tremolo32nd, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Standard, dummyPattern_);
+    defaultProfile_->setPattern(ArticulationType::Tremolo32nd, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
@@ -2271,7 +2271,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Single_Note_Tremolo_OnTiedNote) {
 
     // [WHEN] Request to render the 1st chord
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     // [THEN] Note event has normal duration and standard articulation (no tremolo)
     ASSERT_EQ(result.size(), 1);
@@ -2293,7 +2293,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Single_Note_Tremolo_OnTiedNote) {
 
     // [WHEN] Request to render the 2nd chord
     result.clear();
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     constexpr int expectedSubNotesCount = 16;
     constexpr mpe::duration_t expectedDuration = HALF_NOTE_DURATION / expectedSubNotesCount;
@@ -2353,8 +2353,8 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Single_Note_Tremolo_OnTiedNote_Pla
     }
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Standard, m_dummyPattern);
-    m_defaultProfile->setPattern(ArticulationType::Tremolo32nd, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Standard, dummyPattern_);
+    defaultProfile_->setPattern(ArticulationType::Tremolo32nd, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
@@ -2370,7 +2370,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Single_Note_Tremolo_OnTiedNote_Pla
 
     // [WHEN] Request to render the first chord (without tremolo)
     PlaybackEventsMap result;
-    m_renderer.render(firstChord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(firstChord, 0, defaultProfile_, ctx, result);
 
     // [THEN] First note renders normally (standard articulation)
     ASSERT_EQ(result.size(), 1);
@@ -2383,7 +2383,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Single_Note_Tremolo_OnTiedNote_Pla
 
     // [WHEN] Request to render the second chord (with tremolo disabled)
     result.clear();
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     // [THEN] Since tremolo playback is disabled, this should NOT render the tied note
     // This verifies that our fix prevents double playback when playTremolo = false
@@ -2420,14 +2420,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Single_Chord_Tremolo) {
     std::vector<pitch_level_t> expectedPitches = {pitchLevel(PitchClass::F, 4), pitchLevel(PitchClass::A, 4), pitchLevel(PitchClass::C, 5)};
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Tremolo16th, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Tremolo16th, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     // [THEN] We expect that rendered note events number will match expectations
     EXPECT_EQ(result.begin()->second.size(), expectedChordsCount * expectedSubNotesCount);
@@ -2465,7 +2465,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Single_Chord_Tremolo_TiedNotes) {
         ScoreRW::readScore(PLAYBACK_EVENTS_RENDERING_DIR + u"single_chord_tremolo_tied_notes/single_chord_tremolo_tied_notes.mscx");
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Tremolo32nd, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Tremolo32nd, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
@@ -2477,7 +2477,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Single_Chord_Tremolo_TiedNotes) {
         for (const Segment *segment = measure->first(SegmentType::ChordRest); segment; segment = segment->next(SegmentType::ChordRest)) {
             const mu::engraving::EngravingItem *element = segment->element(0);
             if (element && element->isChord()) {
-                m_renderer.render(toChord(element), 0, m_defaultProfile, ctx, result);
+                renderer_.render(toChord(element), 0, defaultProfile_, ctx, result);
             }
         }
     }
@@ -2558,7 +2558,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, PartiallyTiedTremolo) {
     ASSERT_TRUE(score);
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Tremolo16th, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Tremolo16th, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
@@ -2575,7 +2575,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, PartiallyTiedTremolo) {
                     continue;
                 }
 
-                m_renderer.render(toChord(el), tickPositionOffset, m_defaultProfile, ctx, result);
+                renderer_.render(toChord(el), tickPositionOffset, defaultProfile_, ctx, result);
             }
         }
     }
@@ -2690,14 +2690,14 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Two_Chords_Tremolo) {
                                                      pitchLevel(PitchClass::G, 5)};
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Tremolo16th, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Tremolo16th, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
 
     // [WHEN] Request to render a chord
     PlaybackEventsMap result;
-    m_renderer.render(chord, 0, m_defaultProfile, ctx, result);
+    renderer_.render(chord, 0, defaultProfile_, ctx, result);
 
     // [THEN] We expect that rendered note events number will match expectations
     EXPECT_EQ(result.begin()->second.size(), expectedChordsCount * chordNotesCount);
@@ -2736,7 +2736,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Pauses) {
     Score *score = ScoreRW::readScore(PLAYBACK_EVENTS_RENDERING_DIR + u"pauses/pauses.mscx");
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Standard, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Standard, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
@@ -2754,7 +2754,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Pauses) {
                     continue;
                 }
 
-                m_renderer.render(toChord(el), tickPositionOffset, m_defaultProfile, ctx, result);
+                renderer_.render(toChord(el), tickPositionOffset, defaultProfile_, ctx, result);
             }
         }
     }
@@ -2822,7 +2822,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, TiedNotesAndRepeats) {
     ASSERT_TRUE(score);
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Standard, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Standard, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
@@ -2840,7 +2840,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, TiedNotesAndRepeats) {
                     continue;
                 }
 
-                m_renderer.render(toChord(el), tickPositionOffset, m_defaultProfile, ctx, result);
+                renderer_.render(toChord(el), tickPositionOffset, defaultProfile_, ctx, result);
             }
         }
     }
@@ -2929,7 +2929,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, PartialTie) {
     Score *score = ScoreRW::readScore(PLAYBACK_EVENTS_RENDERING_DIR + u"partial_tie.mscx");
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Standard, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Standard, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
@@ -2947,7 +2947,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, PartialTie) {
                     continue;
                 }
 
-                m_renderer.render(toChord(el), tickPositionOffset, m_defaultProfile, ctx, result);
+                renderer_.render(toChord(el), tickPositionOffset, defaultProfile_, ctx, result);
             }
         }
     }
@@ -3039,8 +3039,8 @@ TEST_F(Engraving_PlaybackEventsRendererTests, TrillLine_TiedNotes) {
     Score *score = ScoreRW::readScore(PLAYBACK_EVENTS_RENDERING_DIR + u"trill_line_on_tied_notes.mscx");
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Standard, m_dummyPattern);
-    m_defaultProfile->setPattern(ArticulationType::Trill, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Standard, dummyPattern_);
+    defaultProfile_->setPattern(ArticulationType::Trill, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
@@ -3052,7 +3052,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, TrillLine_TiedNotes) {
         for (const Segment *segment = measure->first(SegmentType::ChordRest); segment; segment = segment->next(SegmentType::ChordRest)) {
             const mu::engraving::EngravingItem *element = segment->element(0);
             if (element && element->isChord()) {
-                m_renderer.render(toChord(element), 0, m_defaultProfile, ctx, result);
+                renderer_.render(toChord(element), 0, defaultProfile_, ctx, result);
             }
         }
     }
@@ -3140,7 +3140,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Trill_TiedNotes) {
     ASSERT_EQ(score->repeatList().size(), 2);
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Trill, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Trill, dummyPattern_);
 
     // [GIVEN] Dummy context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
@@ -3168,7 +3168,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, Trill_TiedNotes) {
     PlaybackEventsMap result;
     for (const RepeatSegment *repeatSegment : score->repeatList()) {
         int tickPositionOffset = repeatSegment->utick - repeatSegment->tick;
-        m_renderer.render(toChord(chord), tickPositionOffset, m_defaultProfile, ctx, result);
+        renderer_.render(toChord(chord), tickPositionOffset, defaultProfile_, ctx, result);
     }
 
     // [THEN] We expect 2 lists of events (for each repeat segment)
@@ -3239,7 +3239,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, CountIn) {
     ASSERT_TRUE(score);
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Standard, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Standard, dummyPattern_);
 
     // [GIVEN] Anacrusis measure (1/4)
     const Measure *anacrusisMeasure_1_4 = score->firstMeasure();
@@ -3249,7 +3249,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, CountIn) {
     PlaybackEventsMap result;
     duration_t countInDuration = 0;
     int startTick = anacrusisMeasure_1_4->tick().ticks();
-    m_renderer.renderCountIn(score, startTick, 0, m_defaultProfile, result, countInDuration);
+    renderer_.renderCountIn(score, startTick, 0, defaultProfile_, result, countInDuration);
 
     // [THEN] 7 quarter note events
     EXPECT_EQ(result.size(), 7);
@@ -3279,7 +3279,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, CountIn) {
     result.clear();
     countInDuration = 0;
     startTick = secondMeasure_4_4->tick().ticks();
-    m_renderer.renderCountIn(score, startTick, 0, m_defaultProfile, result, countInDuration);
+    renderer_.renderCountIn(score, startTick, 0, defaultProfile_, result, countInDuration);
 
     // [THEN] 4 quarter note events
     EXPECT_EQ(result.size(), 4);
@@ -3305,7 +3305,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, CountIn) {
     result.clear();
     countInDuration = 0;
     startTick = secondMeasure_4_4->tick().ticks() + 480 + 480;
-    m_renderer.renderCountIn(score, startTick, 0, m_defaultProfile, result, countInDuration);
+    renderer_.renderCountIn(score, startTick, 0, defaultProfile_, result, countInDuration);
 
     // [THEN] 6 quarter note events
     EXPECT_EQ(result.size(), 6);
@@ -3335,7 +3335,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, CountIn) {
     result.clear();
     countInDuration = 0;
     startTick = thirdMeasure_3_8->tick().ticks();
-    m_renderer.renderCountIn(score, startTick, 0, m_defaultProfile, result, countInDuration);
+    renderer_.renderCountIn(score, startTick, 0, defaultProfile_, result, countInDuration);
 
     // [THEN] 3 quaver note events
     EXPECT_EQ(result.size(), 3);
@@ -3361,7 +3361,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, CountIn) {
     result.clear();
     countInDuration = 0;
     startTick = thirdMeasure_3_8->tick().ticks() + 333;
-    m_renderer.renderCountIn(score, startTick, 0, m_defaultProfile, result, countInDuration); // tick: 240 + 93
+    renderer_.renderCountIn(score, startTick, 0, defaultProfile_, result, countInDuration); // tick: 240 + 93
 
     // [THEN] 5 quaver note events (3 + 2)
     constexpr int closestMainBeat = 2880;
@@ -3394,7 +3394,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, HandbellsLetVibrate) {
     ASSERT_EQ(score->parts().size(), 1);
 
     // [GIVEN] Fulfill articulations profile with dummy patterns
-    m_defaultProfile->setPattern(ArticulationType::Pedal, m_dummyPattern);
+    defaultProfile_->setPattern(ArticulationType::Pedal, dummyPattern_);
 
     // [GIVEN] Playback context
     PlaybackContextPtr ctx = std::make_shared<PlaybackContext>(score);
@@ -3412,7 +3412,7 @@ TEST_F(Engraving_PlaybackEventsRendererTests, HandbellsLetVibrate) {
         for (const Segment *segment = measure->first(SegmentType::ChordRest); segment; segment = segment->next(SegmentType::ChordRest)) {
             const mu::engraving::EngravingItem *element = segment->element(0);
             if (element && element->isChord()) {
-                m_renderer.render(toChord(element), 0, m_defaultProfile, ctx, result);
+                renderer_.render(toChord(element), 0, defaultProfile_, ctx, result);
             }
         }
     }

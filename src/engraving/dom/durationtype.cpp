@@ -73,7 +73,7 @@ void TDuration::setDots(int v) {
     if (v < 0) {
         v = 0;
     }
-    m_dots = v;
+    dots_ = v;
 }
 
 //---------------------------------------------------------
@@ -82,7 +82,7 @@ void TDuration::setDots(int v) {
 
 void TDuration::setVal(int ticks) {
     if (ticks == 0) {
-        m_val = DurationType::V_MEASURE;
+        val_ = DurationType::V_MEASURE;
     } else {
         TDuration dt;
         for (int i = 0; i < int(DurationType::V_ZERO); ++i) {
@@ -92,16 +92,16 @@ void TDuration::setVal(int ticks) {
                 int remain = ticks % t;
                 const int SMALLEST_DOT_DIVISOR = 1 << MAX_DOTS;
                 if ((t - remain) < (t / SMALLEST_DOT_DIVISOR)) {
-                    m_val = DurationType(i - 1);
+                    val_ = DurationType(i - 1);
                     return;
                 }
-                m_val = DurationType(i);
-                getDots(t, remain, &m_dots);
+                val_ = DurationType(i);
+                getDots(t, remain, &dots_);
                 return;
             }
         }
         LOGD("2: no duration type for ticks %d", ticks);
-        m_val = DurationType::V_QUARTER; // fallback default value
+        val_ = DurationType::V_QUARTER; // fallback default value
     }
 }
 
@@ -111,7 +111,7 @@ void TDuration::setVal(int ticks) {
 
 Fraction TDuration::ticks() const {
     Fraction t;
-    switch (m_val) {
+    switch (val_) {
         case DurationType::V_QUARTER: t = Fraction(1, 4); break;
         case DurationType::V_1024TH: t = Fraction(1, 1024); break;
         case DurationType::V_512TH: t = Fraction(1, 512); break;
@@ -131,7 +131,7 @@ Fraction TDuration::ticks() const {
         case DurationType::V_INVALID: return Fraction(-1, 1);
     }
     Fraction tmp = t;
-    for (int i = 0; i < m_dots; ++i) {
+    for (int i = 0; i < dots_; ++i) {
         tmp *= Fraction(1, 2);
         t += tmp;
     }
@@ -144,7 +144,7 @@ Fraction TDuration::ticks() const {
 
 NoteHeadType TDuration::headType() const {
     NoteHeadType headType = NoteHeadType::HEAD_WHOLE;
-    switch (m_val) {
+    switch (val_) {
         case DurationType::V_1024TH:
         case DurationType::V_512TH:
         case DurationType::V_256TH:
@@ -177,7 +177,7 @@ int TDuration::hooks() const {
                                     3, 4, 5, 6, 7, 8,
                                     // V_ZERO, V_MEASURE, V_INVALID
                                     0, 0, 0};
-    return table[int(m_val)];
+    return table[int(val_)];
 }
 
 //---------------------------------------------------------
@@ -185,7 +185,7 @@ int TDuration::hooks() const {
 //---------------------------------------------------------
 
 bool TDuration::hasStem() const {
-    switch (m_val) {
+    switch (val_) {
         case DurationType::V_1024TH:
         case DurationType::V_512TH:
         case DurationType::V_256TH:
@@ -212,22 +212,22 @@ bool TDuration::hasStem() const {
 //---------------------------------------------------------
 
 void TDuration::shiftType(int nSteps, bool stepDotted) {
-    if (m_val == DurationType::V_MEASURE || m_val == DurationType::V_INVALID || m_val == DurationType::V_ZERO) {
+    if (val_ == DurationType::V_MEASURE || val_ == DurationType::V_INVALID || val_ == DurationType::V_ZERO) {
         setType(DurationType::V_INVALID);
     } else {
         int newValue;
         int newDots;
         if (stepDotted) {
             // figure out the new duration in terms of the number of single dotted or undotted steps from DurationType::V_LONG
-            int roundDownSingleDots = (m_dots > 0) ? -1 : 0;
-            int newValAsNumSingleDotSteps = int(m_val) * 2 + roundDownSingleDots + nSteps;
+            int roundDownSingleDots = (dots_ > 0) ? -1 : 0;
+            int newValAsNumSingleDotSteps = int(val_) * 2 + roundDownSingleDots + nSteps;
 
             // convert that new duration back into terms of DurationType integer value and number of dots
             newDots = newValAsNumSingleDotSteps % 2;            // odd means there is a dot
             newValue = newValAsNumSingleDotSteps / 2 + newDots; // if new duration has a dot, then that
         } else {
-            newDots = m_dots;
-            newValue = int(m_val) + nSteps;
+            newDots = dots_;
+            newValue = int(val_) + nSteps;
         }
 
         if ((newValue < int(DurationType::V_LONG)) || (newValue > int(DurationType::V_1024TH)) ||
@@ -246,11 +246,11 @@ void TDuration::shiftType(int nSteps, bool stepDotted) {
 //---------------------------------------------------------
 
 bool TDuration::operator<(const TDuration &t) const {
-    if (t.m_val < m_val) {
+    if (t.val_ < val_) {
         return true;
     }
-    if (t.m_val == m_val) {
-        if (m_dots < t.m_dots) {
+    if (t.val_ == val_) {
+        if (dots_ < t.dots_) {
             return true;
         }
     }
@@ -262,11 +262,11 @@ bool TDuration::operator<(const TDuration &t) const {
 //---------------------------------------------------------
 
 bool TDuration::operator>=(const TDuration &t) const {
-    if (t.m_val > m_val) {
+    if (t.val_ > val_) {
         return true;
     }
-    if (t.m_val == m_val) {
-        if (m_dots >= t.m_dots) {
+    if (t.val_ == val_) {
+        if (dots_ >= t.dots_) {
             return true;
         }
     }
@@ -278,11 +278,11 @@ bool TDuration::operator>=(const TDuration &t) const {
 //---------------------------------------------------------
 
 bool TDuration::operator<=(const TDuration &t) const {
-    if (t.m_val < m_val) {
+    if (t.val_ < val_) {
         return true;
     }
-    if (t.m_val == m_val) {
-        if (m_dots <= t.m_dots) {
+    if (t.val_ == val_) {
+        if (dots_ <= t.dots_) {
             return true;
         }
     }
@@ -294,11 +294,11 @@ bool TDuration::operator<=(const TDuration &t) const {
 //---------------------------------------------------------
 
 bool TDuration::operator>(const TDuration &t) const {
-    if (t.m_val > m_val) {
+    if (t.val_ > val_) {
         return true;
     }
-    if (t.m_val == m_val) {
-        if (m_dots > t.m_dots) {
+    if (t.val_ == val_) {
+        if (dots_ > t.dots_) {
             return true;
         }
     }
@@ -312,7 +312,7 @@ bool TDuration::operator>(const TDuration &t) const {
 Fraction TDuration::fraction() const {
     int z = 1;
     unsigned n;
-    switch (m_val) {
+    switch (val_) {
         case DurationType::V_1024TH: n = 1024; break;
         case DurationType::V_512TH: n = 512; break;
         case DurationType::V_256TH: n = 256; break;
@@ -343,8 +343,8 @@ Fraction TDuration::fraction() const {
     }
 
     //dots multiplier is (2^(n + 1) - 1)/(2^n) where n is the number of dots
-    int dotN = (1 << (static_cast<char>(m_dots) + 1)) - 1;
-    int dotD = 1 << static_cast<char>(m_dots);
+    int dotN = (1 << (static_cast<char>(dots_) + 1)) - 1;
+    int dotD = 1 << static_cast<char>(dots_);
 
     return Fraction(z * dotN, n * dotD);
 }
@@ -366,7 +366,7 @@ TDuration::TDuration(const Fraction &l, bool truncate, int maxDots, DurationType
 
 void TDuration::truncateToFraction(const Fraction &l, int maxDots) {
     // try to fit in l by reducing number of duration dots
-    if (setDotsToFitFraction(l, m_dots)) {
+    if (setDotsToFitFraction(l, dots_)) {
         return;
     }
 
@@ -384,7 +384,7 @@ void TDuration::truncateToFraction(const Fraction &l, int maxDots) {
 
 bool TDuration::setDotsToFitFraction(const Fraction &l, int maxDots) {
     for (; maxDots >= 0; maxDots--) {
-        m_dots = maxDots; // ensures _dots >= 0 if function returns false.
+        dots_ = maxDots; // ensures _dots >= 0 if function returns false.
         if ((fraction() - l).numerator() <= 0) {
             return true; // duration fits in l
         }
@@ -400,8 +400,8 @@ bool TDuration::setDotsToFitFraction(const Fraction &l, int maxDots) {
 TDuration &TDuration::operator-=(const TDuration &t) {
     Fraction f1 = fraction() - t.fraction();
     TDuration d(f1);
-    m_val = d.m_val;
-    m_dots = d.m_dots;
+    val_ = d.val_;
+    dots_ = d.dots_;
     return *this;
 }
 
@@ -412,8 +412,8 @@ TDuration &TDuration::operator-=(const TDuration &t) {
 TDuration &TDuration::operator+=(const TDuration &t) {
     Fraction f1 = fraction() + t.fraction();
     TDuration d(f1);
-    m_val = d.m_val;
-    m_dots = d.m_dots;
+    val_ = d.val_;
+    dots_ = d.dots_;
     return *this;
 }
 
@@ -737,9 +737,9 @@ bool forceRhythmicSplitSimple(bool isRest, BeatType startBeat, BeatType endBeat,
 //---------------------------------------------------------
 
 void TDuration::setType(DurationType t) {
-    m_val = t;
-    if (m_val == DurationType::V_MEASURE) {
-        m_dots = 0;
+    val_ = t;
+    if (val_ == DurationType::V_MEASURE) {
+        dots_ = 0;
     }
 }
 

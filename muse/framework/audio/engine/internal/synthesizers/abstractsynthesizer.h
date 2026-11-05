@@ -53,7 +53,7 @@ public:
     void clearCache() override;
 
 protected:
-    const engine::IAudioEngineConfiguration *config() const { return &m_config; }
+    const engine::IAudioEngineConfiguration *config() const { return &config_; }
 
     virtual void setupSound(const mpe::PlaybackSetupData &setupData) = 0;
     virtual void setupEvents(const mpe::PlaybackData &playbackData) = 0;
@@ -61,14 +61,14 @@ protected:
     msecs_t samplesToMsecs(const samples_t samplesPerChannel, const samples_t sampleRate) const;
     samples_t microSecsToSamples(const msecs_t msec, const samples_t sampleRate) const;
 
-    ProcessMode m_mode = ProcessMode::Undefined;
+    ProcessMode mode_ = ProcessMode::Undefined;
 
-    mpe::PlaybackSetupData m_setupData;
+    mpe::PlaybackSetupData setupData_;
 
-    audio::AudioInputParams m_params;
-    const engine::IAudioEngineConfiguration &m_config;
+    audio::AudioInputParams params_;
+    const engine::IAudioEngineConfiguration &config_;
 
-    InputProcessingProgress m_inputProcessingProgress;
-    bool m_hasPendingChunks = false;
+    InputProcessingProgress inputProcessingProgress_;
+    bool hasPendingChunks_ = false;
 };
 } // namespace muse::audio::synth

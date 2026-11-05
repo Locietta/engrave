@@ -51,9 +51,9 @@ class RealizedHarmony {
 public:
     using PitchMap = std::multimap<int, int>; //map from pitch to tpc
 
-    RealizedHarmony() : m_harmony(0), m_notes(PitchMap()), m_dirty(1) {}
+    RealizedHarmony() : harmony_(0), notes_(PitchMap()), dirty_(1) {}
 
-    RealizedHarmony(Harmony *h) : m_harmony(h), m_notes(PitchMap()), m_dirty(1) {}
+    RealizedHarmony(Harmony *h) : harmony_(h), notes_(PitchMap()), dirty_(1) {}
 
     void setVoicing(Voicing);
     void setDuration(HDuration);
@@ -61,17 +61,17 @@ public:
 
     void setDirty(bool dirty) { cascadeDirty(dirty); } //set dirty flag and cascade
 
-    void setHarmony(Harmony *h) { m_harmony = h; }
+    void setHarmony(Harmony *h) { harmony_ = h; }
 
-    Voicing voicing() const { return m_voicing; }
+    Voicing voicing() const { return voicing_; }
 
-    HDuration duration() const { return m_duration; }
+    HDuration duration() const { return duration_; }
 
-    bool literal() const { return m_literal; }
+    bool literal() const { return literal_; }
 
-    Harmony *harmony() { return m_harmony; }
+    Harmony *harmony() { return harmony_; }
 
-    bool valid() const { return !m_dirty && m_harmony; }
+    bool valid() const { return !dirty_ && harmony_; }
 
     const PitchMap &notes() const;
     const PitchMap generateNotes(int rootTpc, int bassTpc, bool literal, Voicing voicing, int transposeOffset) const;
@@ -85,15 +85,15 @@ private:
     PitchMap normalizeNoteMap(const PitchMap &intervals, int rootTpc, int rootPitch, size_t max = 128, bool enforceMaxAsGoal = false) const;
     void cascadeDirty(bool dirty);
 
-    Harmony *m_harmony = nullptr;
+    Harmony *harmony_ = nullptr;
 
-    PitchMap m_notes;
+    PitchMap notes_;
 
-    Voicing m_voicing = Voicing::AUTO;
-    HDuration m_duration = HDuration::INVALID;
+    Voicing voicing_ = Voicing::AUTO;
+    HDuration duration_ = HDuration::INVALID;
 
     //whether or not the current notes QMap is up to date
-    bool m_dirty = false;
-    bool m_literal = false; //use all notes when possible and do not add any notes
+    bool dirty_ = false;
+    bool literal_ = false; //use all notes when possible and do not add any notes
 };
 } // namespace mu::engraving

@@ -35,26 +35,26 @@ class Spatium {
 public:
     constexpr Spatium() = default;
 
-    explicit constexpr Spatium(double v) : m_val(v) {}
+    explicit constexpr Spatium(double v) : val_(v) {}
 
-    constexpr double val() const { return m_val; }
+    constexpr double val() const { return val_; }
 
-    constexpr double toAbsolute(double spval) const { return m_val * spval; }
+    constexpr double toAbsolute(double spval) const { return val_ * spval; }
 
     static constexpr Spatium fromAbsolute(double absolute, double spval) { return Spatium(absolute / spval); }
 
-    constexpr bool operator>(const Spatium &a) const { return m_val > a.m_val; }
+    constexpr bool operator>(const Spatium &a) const { return val_ > a.val_; }
 
-    constexpr bool operator<(const Spatium &a) const { return m_val < a.m_val; }
+    constexpr bool operator<(const Spatium &a) const { return val_ < a.val_; }
 
-    bool operator==(const Spatium &a) const { return muse::RealIsEqual(m_val, a.m_val); }
+    bool operator==(const Spatium &a) const { return muse::RealIsEqual(val_, a.val_); }
 
-    bool operator!=(const Spatium &a) const { return m_val != a.m_val; }
+    bool operator!=(const Spatium &a) const { return val_ != a.val_; }
 
-    bool isZero() const { return muse::RealIsNull(m_val); }
+    bool isZero() const { return muse::RealIsNull(val_); }
 
     constexpr Spatium &operator+=(const Spatium &a) {
-        m_val += a.m_val;
+        val_ += a.val_;
         return *this;
     }
 
@@ -65,7 +65,7 @@ public:
     }
 
     constexpr Spatium &operator-=(const Spatium &a) {
-        m_val -= a.m_val;
+        val_ -= a.val_;
         return *this;
     }
 
@@ -76,11 +76,11 @@ public:
     }
 
     constexpr Spatium &operator/=(double d) {
-        m_val /= d;
+        val_ /= d;
         return *this;
     }
 
-    constexpr double operator/(const Spatium &b) const { return m_val / b.m_val; }
+    constexpr double operator/(const Spatium &b) const { return val_ / b.val_; }
 
     constexpr Spatium operator/(double b) const {
         Spatium r(*this);
@@ -89,12 +89,12 @@ public:
     }
 
     constexpr Spatium &operator*=(int d) {
-        m_val *= d;
+        val_ *= d;
         return *this;
     }
 
     constexpr Spatium &operator*=(double d) {
-        m_val *= d;
+        val_ *= d;
         return *this;
     }
 
@@ -110,10 +110,10 @@ public:
         return r;
     }
 
-    constexpr Spatium operator-() const { return Spatium(-m_val); }
+    constexpr Spatium operator-() const { return Spatium(-val_); }
 
 private:
-    double m_val = 0.0;
+    double val_ = 0.0;
 };
 
 constexpr Spatium operator""_sp(long double v) { return Spatium(static_cast<double>(v)); }

@@ -68,9 +68,9 @@ public:
     ~MeasureBase();
 
     //! The system this measure is currently laid out on; null if not placed.
-    System *system() const { return m_system; }
+    System *system() const { return system_; }
 
-    void setSystem(System *s) { m_system = s; }
+    void setSystem(System *s) { system_ = s; }
 
     EngravingItem *layoutParent() const override;
 
@@ -90,17 +90,17 @@ public:
 
     virtual void setScore(Score *s) override;
 
-    MeasureBase *next() const { return m_next; }
+    MeasureBase *next() const { return next_; }
 
     MeasureBase *nextMM() const;
 
-    void setNext(MeasureBase *e) { m_next = e; }
+    void setNext(MeasureBase *e) { next_ = e; }
 
-    MeasureBase *prev() const { return m_prev; }
+    MeasureBase *prev() const { return prev_; }
 
     MeasureBase *prevMM() const;
 
-    void setPrev(MeasureBase *e) { m_prev = e; }
+    void setPrev(MeasureBase *e) { prev_ = e; }
 
     MeasureBase *top() const;
 
@@ -111,9 +111,9 @@ public:
     Measure *nextMeasureMM() const;
     Measure *prevMeasureMM() const;
 
-    ElementList &el() { return m_el; }
+    ElementList &el() { return el_; }
 
-    const ElementList &el() const { return m_el; }
+    const ElementList &el() const { return el_; }
 
     const MeasureBase *mbWithPrecedingSectionBreak() const;
     LayoutBreak *sectionBreakElement() const;
@@ -141,11 +141,11 @@ public:
     Fraction tick() const override;
     void setTick(const Fraction &f);
 
-    Fraction ticks() const { return m_len; }
+    Fraction ticks() const { return len_; }
 
-    void setTicks(const Fraction &f) { m_len = f; }
+    void setTicks(const Fraction &f) { len_ = f; }
 
-    Fraction endTick() const { return m_tick + m_len; }
+    Fraction endTick() const { return tick_ + len_; }
 
     void triggerLayout() const override;
 
@@ -196,17 +196,17 @@ protected:
     MeasureBase(const ElementType &type, Score *parent);
     MeasureBase(const MeasureBase &);
 
-    Fraction m_len{Fraction(0, 1)}; // actual length of measure
+    Fraction len_{Fraction(0, 1)}; // actual length of measure
 
-    ElementList m_el; // Measure(/tick) relative -elements: with defined start time
-                      // but outside the staff
+    ElementList el_; // Measure(/tick) relative -elements: with defined start time
+                     // but outside the staff
 private:
-    MeasureBase *m_next = nullptr;
-    MeasureBase *m_prev = nullptr;
+    MeasureBase *next_ = nullptr;
+    MeasureBase *prev_ = nullptr;
 
-    System *m_system = nullptr; // current layout placement; not owned, not copied
+    System *system_ = nullptr; // current layout placement; not owned, not copied
 
-    Fraction m_tick = Fraction(0, 1);
+    Fraction tick_ = Fraction(0, 1);
 };
 
 //---------------------------------------------------------
@@ -217,9 +217,9 @@ class MeasureBaseList {
 public:
     MeasureBaseList();
 
-    MeasureBase *first() const { return m_first; }
+    MeasureBase *first() const { return first_; }
 
-    MeasureBase *last() const { return m_last; }
+    MeasureBase *last() const { return last_; }
 
     void clear();
     void add(MeasureBase *);
@@ -228,9 +228,9 @@ public:
     void remove(MeasureBase *, MeasureBase *);
     void change(MeasureBase *o, MeasureBase *n);
 
-    int size() const { return m_size; }
+    int size() const { return size_; }
 
-    bool empty() const { return m_size == 0; }
+    bool empty() const { return size_ == 0; }
 
     void append(MeasureBase *);
 
@@ -244,14 +244,14 @@ private:
     void push_back(MeasureBase *m);
     void push_front(MeasureBase *m);
 
-    int m_size = 0;
-    MeasureBase *m_first = nullptr;
-    MeasureBase *m_last = nullptr;
+    int size_ = 0;
+    MeasureBase *first_ = nullptr;
+    MeasureBase *last_ = nullptr;
 
     // At a tick there can be any number of MeasureBases
     // There can only be one Measure
     // There can be any number of Boxes
-    std::multimap<int, MeasureBase *> m_tickIndex;
+    std::multimap<int, MeasureBase *> tickIndex_;
 };
 } // namespace mu::engraving
 #endif

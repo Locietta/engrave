@@ -87,7 +87,7 @@ Measure *Score::tick2measure(const Fraction &tick) const {
         return firstMeasure();
     }
 
-    return m_measures.measureByTick(tick.ticks());
+    return measures_.measureByTick(tick.ticks());
 }
 
 //---------------------------------------------------------
@@ -103,7 +103,7 @@ Measure *Score::tick2measureMM(const Fraction &t) const {
         tick = Fraction(0, 1);
     }
 
-    Measure *measure = m_measures.measureByTick(t.ticks());
+    Measure *measure = measures_.measureByTick(t.ticks());
     if (!measure) {
         LOGD("tick2measureMM %d not found", tick.ticks());
         return nullptr;
@@ -114,13 +114,13 @@ Measure *Score::tick2measureMM(const Fraction &t) const {
 
 MeasureBase *Score::tick2measureBase(const Fraction &tick) const {
     if (tick == Fraction(-1, 1)) { // special number
-        return m_measures.last();
+        return measures_.last();
     }
     if (tick <= Fraction(0, 1)) {
-        return m_measures.first();
+        return measures_.first();
     }
 
-    return m_measures.firstMeasureBaseAtTick(tick.ticks());
+    return measures_.firstMeasureBaseAtTick(tick.ticks());
 }
 
 //---------------------------------------------------------
@@ -236,7 +236,7 @@ BeatType Score::tick2beatType(const Fraction &tick) const {
     return timeSig.rtick2beatType(rtick);
 }
 
-void Score::checkChordList() { m_chordList.checkChordList(style()); }
+void Score::checkChordList() { chordList_.checkChordList(style()); }
 
 //---------------------------------------------------------
 //    next/prevChordNote

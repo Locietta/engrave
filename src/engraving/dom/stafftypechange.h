@@ -41,11 +41,11 @@ public:
 
     StaffTypeChange *clone() const override { return new StaffTypeChange(*this); }
 
-    const StaffType *staffType() const { return m_staffType; }
+    const StaffType *staffType() const { return staffType_; }
 
     void setStaffType(StaffType *st, bool owned);
 
-    double lw() const { return m_lw; }
+    double lw() const { return lw_; }
 
     Measure *measure() const { return toMeasure(ownershipParent()); }
 
@@ -61,9 +61,9 @@ private:
 
     void spatiumChanged(double oldValue, double newValue) override;
 
-    StaffType *m_staffType = nullptr;
-    bool m_ownsStaffType = false;
-    double m_lw = 0.0;
+    StaffType *staffType_ = nullptr;
+    bool ownsStaffType_ = false;
+    double lw_ = 0.0;
 };
 } // namespace mu::engraving
 

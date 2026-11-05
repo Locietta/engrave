@@ -40,18 +40,18 @@ namespace mu::engraving {
 
 class EaseInOut final {
 public:
-    EaseInOut() : m_easeIn(0.0), m_easeOut(1.0) {}
+    EaseInOut() : easeIn_(0.0), easeOut_(1.0) {}
 
-    EaseInOut(double easeIn, double easeOut) : m_easeIn(easeIn), m_easeOut(easeOut) {}
+    EaseInOut(double easeIn, double easeOut) : easeIn_(easeIn), easeOut_(easeOut) {}
 
     void SetEases(double easeIn, double easeOut) {
-        m_easeIn = easeIn;
-        m_easeOut = easeOut;
+        easeIn_ = easeIn;
+        easeOut_ = easeOut;
     }
 
     double EvalX(const double t) const {
         double tCompl = 1.0 - t;
-        return (3.0 * m_easeIn * tCompl * tCompl + (3.0 - 3.0 * m_easeOut * tCompl - 2.0 * t) * t) * t;
+        return (3.0 * easeIn_ * tCompl * tCompl + (3.0 - 3.0 * easeOut_ * tCompl - 2.0 * t) * t) * t;
     }
 
     double EvalY(const double t) const { return -(t * t) * (2.0 * t - 3.0); }
@@ -68,8 +68,8 @@ public:
     void timeList(const int nbNotes, const int duration, std::vector<int> *times) const;
 
 private:
-    double m_easeIn = 0.0;
-    double m_easeOut = 0.0;
+    double easeIn_ = 0.0;
+    double easeOut_ = 0.0;
 };
 } // namespace mu::engraving
 #endif

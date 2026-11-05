@@ -47,8 +47,8 @@ SlurTieSegment::SlurTieSegment(const ElementType &type, SlurTie *sp) : SpannerSe
 
 SlurTieSegment::SlurTieSegment(const SlurTieSegment &b) : SpannerSegment(b) {
     for (int i = 0; i < int(Grip::GRIPS); ++i) {
-        m_ups[i] = b.m_ups[i];
-        m_ups[i].p = PointF();
+        ups_[i] = b.ups_[i];
+        ups_[i].p = PointF();
     }
 }
 
@@ -59,7 +59,7 @@ SlurTieSegment::SlurTieSegment(const SlurTieSegment &b) : SpannerSegment(b) {
 void SlurTieSegment::move(const PointF &s) {
     EngravingItem::move(s);
     for (int k = 0; k < int(Grip::GRIPS); ++k) {
-        m_ups[k].p += s;
+        ups_[k].p += s;
     }
 }
 
@@ -70,7 +70,7 @@ void SlurTieSegment::move(const PointF &s) {
 void SlurTieSegment::spatiumChanged(double oldValue, double newValue) {
     EngravingItem::spatiumChanged(oldValue, newValue);
     double diff = newValue / oldValue;
-    for (UP &u : m_ups) {
+    for (UP &u : ups_) {
         u.off *= diff;
     }
 }
@@ -189,17 +189,17 @@ void SlurTieSegment::undoChangeProperty(Pid pid, const PropertyValue &val, Prope
 //---------------------------------------------------------
 
 SlurTie::SlurTie(const ElementType &type, EngravingObject *parent) : Spanner(type, parent) {
-    m_slurDirection = DirectionV::AUTO;
-    m_up = true;
-    m_styleType = SlurStyleType::Solid;
-    m_maskSlurTie = AutoOnOff::AUTO;
+    slurDirection_ = DirectionV::AUTO;
+    up_ = true;
+    styleType_ = SlurStyleType::Solid;
+    maskSlurTie_ = AutoOnOff::AUTO;
 }
 
 SlurTie::SlurTie(const SlurTie &t) : Spanner(t) {
-    m_up = t.m_up;
-    m_slurDirection = t.m_slurDirection;
-    m_styleType = t.m_styleType;
-    m_maskSlurTie = t.m_maskSlurTie;
+    up_ = t.up_;
+    slurDirection_ = t.slurDirection_;
+    styleType_ = t.styleType_;
+    maskSlurTie_ = t.maskSlurTie_;
 }
 
 //---------------------------------------------------------
@@ -275,7 +275,7 @@ void SlurTie::reset() {
 }
 
 muse::TranslatableString SlurTie::subtypeUserName() const {
-    switch (m_styleType) {
+    switch (styleType_) {
         case SlurStyleType::Solid: return TranslatableString("engraving/slurstyletype", "Solid");
         case SlurStyleType::Dotted: return TranslatableString("engraving/slurstyletype", "Dotted");
         case SlurStyleType::Dashed: return TranslatableString("engraving/slurstyletype", "Dashed");

@@ -100,11 +100,11 @@ public:
 
 private:
 
-    DebuggingOptions m_debuggingOptions;
+    DebuggingOptions debuggingOptions_;
 
-    Color m_cachedDisplayedDefaultColor;
-    Color m_cachedInvertedDisplayedDefaultColor;
+    Color cachedDisplayedDefaultColor_;
+    Color cachedInvertedDisplayedDefaultColor_;
 
-    bool m_multiVoice = false;
+    bool multiVoice_ = false;
 };
 } // namespace mu::engraving

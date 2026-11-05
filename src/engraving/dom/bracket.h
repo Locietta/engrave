@@ -48,45 +48,45 @@ public:
 
     void scanElements(std::function<void(EngravingItem *)> func) override;
 
-    void setBracketItem(BracketItem *i) { m_bi = i; }
+    void setBracketItem(BracketItem *i) { bi_ = i; }
 
-    BracketItem *bracketItem() const { return m_bi; }
+    BracketItem *bracketItem() const { return bi_; }
 
-    BracketType bracketType() const { return m_bi->bracketType(); }
+    BracketType bracketType() const { return bi_->bracketType(); }
 
     int subtype() const override { return int(bracketType()); }
 
     TranslatableString subtypeUserName() const override;
 
-    size_t firstStaff() const { return m_firstStaff; }
+    size_t firstStaff() const { return firstStaff_; }
 
-    size_t lastStaff() const { return m_lastStaff; }
+    size_t lastStaff() const { return lastStaff_; }
 
     void setStaffSpan(size_t a, size_t b);
 
-    InstrumentNameType labelType() const { return m_labelType; }
+    InstrumentNameType labelType() const { return labelType_; }
 
-    void setLabelType(InstrumentNameType t) { m_labelType = t; }
+    void setLabelType(InstrumentNameType t) { labelType_ = t; }
 
-    SymId braceSymbol() const { return m_braceSymbol; }
+    SymId braceSymbol() const { return braceSymbol_; }
 
-    void setBraceSymbol(const SymId &sym) { m_braceSymbol = sym; }
+    void setBraceSymbol(const SymId &sym) { braceSymbol_ = sym; }
 
-    size_t column() const { return m_bi->column(); }
+    size_t column() const { return bi_->column(); }
 
-    size_t span() const { return m_bi->bracketSpan(); }
+    size_t span() const { return bi_->bracketSpan(); }
 
-    double magx() const { return m_magx; }
+    double magx() const { return magx_; }
 
     System *system() const { return (System *) ownershipParent(); }
 
-    Measure *measure() const { return m_measure; }
+    Measure *measure() const { return measure_; }
 
-    void setMeasure(Measure *measure) { m_measure = measure; }
+    void setMeasure(Measure *measure) { measure_ = measure; }
 
-    const BracketItem *bi() const { return m_bi; }
+    const BracketItem *bi() const { return bi_; }
 
-    Color color() const override { return m_bi->color(); }
+    Color color() const override { return bi_->color(); }
 
     bool acceptDrop(EditData &) const override;
     EngravingItem *drop(Transaction &tx, EditData &) override;
@@ -102,9 +102,9 @@ public:
 
     void setSelected(bool f) override;
 
-    Text *text() const { return m_text; }
+    Text *text() const { return text_; }
 
-    void setText(Text *t) { m_text = t; }
+    void setText(Text *t) { text_ = t; }
 
     bool intersects(const Bracket *other) const;
     bool contains(staff_idx_t staffIdx) const;
@@ -125,21 +125,21 @@ private:
 
     Bracket(DummyParentOr<EngravingItem> parent);
 
-    BracketItem *m_bi = nullptr;
-    double m_ay1 = 0.0;
+    BracketItem *bi_ = nullptr;
+    double ay1_ = 0.0;
 
-    size_t m_firstStaff = 0;
-    size_t m_lastStaff = 0;
+    size_t firstStaff_ = 0;
+    size_t lastStaff_ = 0;
 
-    InstrumentNameType m_labelType;
+    InstrumentNameType labelType_;
 
-    SymId m_braceSymbol = SymId::noSym;
+    SymId braceSymbol_ = SymId::noSym;
 
     // horizontal scaling factor for brace symbol. Cannot be equal to magY or depend on h
     // because layout needs width of brace before knowing height of system...
-    double m_magx = 0.0;
-    Measure *m_measure = nullptr;
+    double magx_ = 0.0;
+    Measure *measure_ = nullptr;
 
-    Text *m_text = nullptr;
+    Text *text_ = nullptr;
 };
 } // namespace mu::engraving

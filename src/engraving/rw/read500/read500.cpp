@@ -124,30 +124,30 @@ bool Read500::readScoreTag(Score *score, XmlReader &e, ReadContext &ctx) {
         } else if (tag == "Staff") {
             StaffRead::readStaff(score, e, ctx);
         } else if (tag == "Synthesizer") {
-            score->m_synthesizerState.read(e);
+            score->synthesizerState_.read(e);
         } else if (tag == "page-offset") {
-            score->m_pageNumberOffset = e.readInt();
+            score->pageNumberOffset_ = e.readInt();
         } else if (tag == "Division") {
-            score->m_fileDivision = e.readInt();
+            score->fileDivision_ = e.readInt();
         } else if (tag == "open") {
-            score->m_isOpen = e.readBool();
+            score->isOpen_ = e.readBool();
         } else if (tag == "showInvisible") {
-            score->m_showInvisible = e.readInt();
+            score->showInvisible_ = e.readInt();
         } else if (tag == "showUnprintable") {
-            score->m_showUnprintable = e.readInt();
+            score->showUnprintable_ = e.readInt();
         } else if (tag == "showFrames") {
-            score->m_showFrames = e.readInt();
+            score->showFrames_ = e.readInt();
         } else if (tag == "showMargins") {
-            score->m_showPageborders = e.readInt();
+            score->showPageborders_ = e.readInt();
         } else if (tag == "showSoundFlags") {
-            score->m_showSoundFlags = e.readInt();
+            score->showSoundFlags_ = e.readInt();
         } else if (tag == "markIrregularMeasures") {
-            score->m_markIrregularMeasures = e.readInt();
+            score->markIrregularMeasures_ = e.readInt();
         } else if (tag == "Style") {
             // Since version 400, the Style is usually stored in a separate file,
             // but we also support reading it from the mscx file.
             compat::ReadStyleHook::readStyleTag(score, e);
-            score->m_engravingFont = score->engravingFonts()->fontByName(score->style().styleSt(Sid::musicalSymbolFont).toStdString());
+            score->engravingFont_ = score->engravingFonts()->fontByName(score->style().styleSt(Sid::musicalSymbolFont).toStdString());
         } else if (tag == "copyright" || tag == "rights") {
             score->setMetaTag(u"copyright", Text::readXmlText(e, score));
         } else if (tag == "movement-number") {
@@ -277,7 +277,7 @@ bool Read500::readScoreTag(Score *score, XmlReader &e, ReadContext &ctx) {
         }
     }
 
-    score->m_fileDivision = Constants::DIVISION;
+    score->fileDivision_ = Constants::DIVISION;
 
     // Make sure every instrument has an instrumentId set.
     for (Part *part : score->parts()) {
@@ -808,7 +808,7 @@ bool Read500::pasteStaff(XmlReader &e, Segment *dst, staff_idx_t dstStaff, Fract
                 m->checkMeasure(i);
             }
         }
-        score->m_selection.setRangeTicks(dstTick, dstTick + tickLen, dstStaff, endStaff);
+        score->selection_.setRangeTicks(dstTick, dstTick + tickLen, dstStaff, endStaff);
 
         //finding the first element that has a track
         //the canvas position will be set to this element
@@ -831,7 +831,7 @@ bool Read500::pasteStaff(XmlReader &e, Segment *dst, staff_idx_t dstStaff, Fract
         }
 
         if (!score->selection().isRange()) {
-            score->m_selection.setState(SelState::RANGE);
+            score->selection_.setState(SelState::RANGE);
         }
     }
     return true;

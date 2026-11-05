@@ -92,66 +92,66 @@ public:
     void setScore(Score *);
     void setTrack(track_idx_t);
 
-    MeasureNumber *measureNumber() const { return m_measureNumber; }
+    MeasureNumber *measureNumber() const { return measureNumber_; }
 
-    void setMeasureNumber(MeasureNumber *t) { m_measureNumber = t; }
+    void setMeasureNumber(MeasureNumber *t) { measureNumber_ = t; }
 
-    MMRestRange *mmRangeText() const { return m_mmRangeText; }
+    MMRestRange *mmRangeText() const { return mmRangeText_; }
 
-    void setMMRangeText(MMRestRange *r) { m_mmRangeText = r; }
+    void setMMRangeText(MMRestRange *r) { mmRangeText_ = r; }
 
-    StaffLines *lines() const { return m_lines; }
+    StaffLines *lines() const { return lines_; }
 
-    void setLines(StaffLines *l) { m_lines = l; }
+    void setLines(StaffLines *l) { lines_ = l; }
 
-    Spacer *vspacerUp() const { return m_vspacerUp; }
+    Spacer *vspacerUp() const { return vspacerUp_; }
 
-    void setVspacerUp(Spacer *s) { m_vspacerUp = s; }
+    void setVspacerUp(Spacer *s) { vspacerUp_ = s; }
 
-    Spacer *vspacerDown() const { return m_vspacerDown; }
+    Spacer *vspacerDown() const { return vspacerDown_; }
 
-    void setVspacerDown(Spacer *s) { m_vspacerDown = s; }
+    void setVspacerDown(Spacer *s) { vspacerDown_ = s; }
 
-    bool hasVoices() const { return m_hasVoices; }
+    bool hasVoices() const { return hasVoices_; }
 
-    void setHasVoices(bool val) { m_hasVoices = val; }
+    void setHasVoices(bool val) { hasVoices_ = val; }
 
-    bool visible() const { return m_visible; }
+    bool visible() const { return visible_; }
 
-    void setVisible(bool val) { m_visible = val; }
+    void setVisible(bool val) { visible_ = val; }
 
-    bool stemless() const { return m_stemless; }
+    bool stemless() const { return stemless_; }
 
-    void setStemless(bool val) { m_stemless = val; }
+    void setStemless(bool val) { stemless_ = val; }
 
-    AutoOnOff hideIfEmpty() const { return m_hideIfEmpty; }
+    AutoOnOff hideIfEmpty() const { return hideIfEmpty_; }
 
-    void setHideIfEmpty(AutoOnOff val) { m_hideIfEmpty = val; }
+    void setHideIfEmpty(AutoOnOff val) { hideIfEmpty_ = val; }
 
-    bool corrupted() const { return m_corrupted; }
+    bool corrupted() const { return corrupted_; }
 
-    void setCorrupted(bool val) { m_corrupted = val; }
+    void setCorrupted(bool val) { corrupted_ = val; }
 
-    int measureRepeatCount() const { return m_measureRepeatCount; }
+    int measureRepeatCount() const { return measureRepeatCount_; }
 
-    void setMeasureRepeatCount(int n) { m_measureRepeatCount = n; }
+    void setMeasureRepeatCount(int n) { measureRepeatCount_ = n; }
 
 private:
-    MeasureNumber *m_measureNumber = nullptr; // Measure number text object
-    MMRestRange *m_mmRangeText = nullptr;     // Multi measure rest range text object
-    StaffLines *m_lines = nullptr;
-    Spacer *m_vspacerUp = nullptr;
-    Spacer *m_vspacerDown = nullptr;
-    bool m_hasVoices = false; // indicates that MStaff contains more than one voice,
-                              // this changes some layout rules
+    MeasureNumber *measureNumber_ = nullptr; // Measure number text object
+    MMRestRange *mmRangeText_ = nullptr;     // Multi measure rest range text object
+    StaffLines *lines_ = nullptr;
+    Spacer *vspacerUp_ = nullptr;
+    Spacer *vspacerDown_ = nullptr;
+    bool hasVoices_ = false; // indicates that MStaff contains more than one voice,
+                             // this changes some layout rules
 
-    bool m_visible = true;
-    bool m_stemless = false;
-    AutoOnOff m_hideIfEmpty = AutoOnOff::AUTO; // whether this MStaff wants its staff to be hidden on its system
-                                               // when the staff is empty on that system
+    bool visible_ = true;
+    bool stemless_ = false;
+    AutoOnOff hideIfEmpty_ = AutoOnOff::AUTO; // whether this MStaff wants its staff to be hidden on its system
+                                              // when the staff is empty on that system
 
-    bool m_corrupted = false;
-    int m_measureRepeatCount = 0;
+    bool corrupted_ = false;
+    int measureRepeatCount_ = 0;
 };
 
 //---------------------------------------------------------
@@ -194,46 +194,46 @@ public:
     AutoOnOff hideStaffIfEmpty(staff_idx_t staffIdx) const;
     void setHideStaffIfEmpty(staff_idx_t staffIdx, AutoOnOff hideIfEmpty);
 
-    bool corrupted(staff_idx_t staffIdx) const { return m_mstaves[staffIdx]->corrupted(); }
+    bool corrupted(staff_idx_t staffIdx) const { return mstaves_[staffIdx]->corrupted(); }
 
-    void setCorrupted(staff_idx_t staffIdx, bool val) { m_mstaves[staffIdx]->setCorrupted(val); }
+    void setCorrupted(staff_idx_t staffIdx, bool val) { mstaves_[staffIdx]->setCorrupted(val); }
 
-    MeasureNumber *measureNumber(staff_idx_t staffIdx) const { return m_mstaves[staffIdx]->measureNumber(); }
+    MeasureNumber *measureNumber(staff_idx_t staffIdx) const { return mstaves_[staffIdx]->measureNumber(); }
 
-    void setMeasureNumber(staff_idx_t staffIdx, MeasureNumber *t) { m_mstaves[staffIdx]->setMeasureNumber(t); }
+    void setMeasureNumber(staff_idx_t staffIdx, MeasureNumber *t) { mstaves_[staffIdx]->setMeasureNumber(t); }
 
-    const std::vector<MStaff *> &mstaves() const { return m_mstaves; }
+    const std::vector<MStaff *> &mstaves() const { return mstaves_; }
 
-    std::vector<MStaff *> &mstaves() { return m_mstaves; }
+    std::vector<MStaff *> &mstaves() { return mstaves_; }
 
     void setMMRangeText(staff_idx_t staffIdx, MMRestRange *);
     MMRestRange *mmRangeText(staff_idx_t staffIdx) const;
 
     void createStaves(staff_idx_t);
 
-    Fraction timesig() const { return m_timesig; }
+    Fraction timesig() const { return timesig_; }
 
-    void setTimesig(const Fraction &f) { m_timesig = f; }
+    void setTimesig(const Fraction &f) { timesig_ = f; }
 
     Fraction stretchedLen(const Staff *) const;
 
-    bool isIrregular() const { return m_timesig != m_len; }
+    bool isIrregular() const { return timesig_ != len_; }
 
-    int measureNumber() const { return m_measureNumber; }
+    int measureNumber() const { return measureNumber_; }
 
-    void setMeasureNumber(int n) { m_measureNumber = n; }
+    void setMeasureNumber(int n) { measureNumber_ = n; }
 
-    int measureNumberOffset() const { return m_measureNumberOffset; }
+    int measureNumberOffset() const { return measureNumberOffset_; }
 
-    void setMeasureNumberOffset(int n) { m_measureNumberOffset = n; }
+    void setMeasureNumberOffset(int n) { measureNumberOffset_ = n; }
 
     bool excludeFromNumbering() const { return flag(ElementFlag::EXCLUDE_FROM_NUMBERING); }
 
     void setExcludeFromNumbering(bool v) { setFlag(ElementFlag::EXCLUDE_FROM_NUMBERING, v); }
 
-    MeasureNumberMode measureNumberMode() const { return m_measureNumberMode; }
+    MeasureNumberMode measureNumberMode() const { return measureNumberMode_; }
 
-    void setMeasureNumberMode(MeasureNumberMode v) { m_measureNumberMode = v; }
+    void setMeasureNumberMode(MeasureNumberMode v) { measureNumberMode_ = v; }
 
     bool repeatEnd() const { return flag(ElementFlag::REPEAT_END); }
 
@@ -263,27 +263,27 @@ public:
 
     void setEndOfMeasureChange(bool val) const { setFlag(ElementFlag::END_OF_MEASURE_CHANGE, val); }
 
-    Segment *first() const { return m_segments.first(); }
+    Segment *first() const { return segments_.first(); }
 
-    Segment *first(SegmentType t) const { return m_segments.first(t); }
+    Segment *first(SegmentType t) const { return segments_.first(t); }
 
-    Segment *firstEnabled() const { return m_segments.first(ElementFlag::ENABLED); }
+    Segment *firstEnabled() const { return segments_.first(ElementFlag::ENABLED); }
 
-    Segment *firstActive() const { return m_segments.firstActive(); }
+    Segment *firstActive() const { return segments_.firstActive(); }
 
-    Segment *last() const { return m_segments.last(); }
+    Segment *last() const { return segments_.last(); }
 
-    Segment *last(SegmentType t) const { return m_segments.last(t); }
+    Segment *last(SegmentType t) const { return segments_.last(t); }
 
-    Segment *lastEnabled() const { return m_segments.last(ElementFlag::ENABLED); }
+    Segment *lastEnabled() const { return segments_.last(ElementFlag::ENABLED); }
 
-    SegmentList &segments() { return m_segments; }
+    SegmentList &segments() { return segments_; }
 
-    const SegmentList &segments() const { return m_segments; }
+    const SegmentList &segments() const { return segments_; }
 
     double userStretch() const;
 
-    void setUserStretch(double v) { m_userStretch = v; }
+    void setUserStretch(double v) { userStretch_ = v; }
 
     void computeTicks();
     Fraction anacrusisOffset() const;
@@ -320,9 +320,9 @@ public:
     bool acceptDrop(EditData &) const override;
     EngravingItem *drop(Transaction &tx, EditData &) override;
 
-    int repeatCount() const { return m_repeatCount; }
+    int repeatCount() const { return repeatCount_; }
 
-    void setRepeatCount(int val) { m_repeatCount = val; }
+    void setRepeatCount(int val) { repeatCount_ = val; }
 
     Segment *findSegmentR(SegmentType st, const Fraction &) const;
     Segment *undoGetSegmentR(SegmentType st, const Fraction &f);
@@ -363,17 +363,17 @@ public:
     bool isLastInSystem() const;
     bool isFirstInSection() const;
 
-    bool breakMultiMeasureRest() const { return m_breakMultiMeasureRest; }
+    bool breakMultiMeasureRest() const { return breakMultiMeasureRest_; }
 
-    void setBreakMultiMeasureRest(bool val) { m_breakMultiMeasureRest = val; }
+    void setBreakMultiMeasureRest(bool val) { breakMultiMeasureRest_ = val; }
 
     bool empty() const;
     bool isOnlyRests(track_idx_t track) const;
     bool isOnlyGapRests(track_idx_t track) const;
 
-    int playbackCount() const { return m_playbackCount; }
+    int playbackCount() const { return playbackCount_; }
 
-    void setPlaybackCount(int val) { m_playbackCount = val; }
+    void setPlaybackCount(int val) { playbackCount_ = val; }
 
     RectF staffPageBoundingRect(staff_idx_t staffIdx) const;
 
@@ -384,20 +384,20 @@ public:
     void undoChangeProperty(Pid id, const PropertyValue &newValue);
     void undoChangeProperty(Pid id, const PropertyValue &newValue, PropertyFlags ps) override;
 
-    bool hasMMRest() const { return m_mmRest != nullptr; }
+    bool hasMMRest() const { return mmRest_ != nullptr; }
 
-    bool isMMRest() const { return m_mmRestCount > 0; }
+    bool isMMRest() const { return mmRestCount_ > 0; }
 
-    Measure *mmRest() const { return m_mmRest; }
+    Measure *mmRest() const { return mmRest_; }
 
     Measure *coveringMMRestOrThis();
     const Measure *coveringMMRestOrThis() const;
 
-    void setMMRest(Measure *m) { m_mmRest = m; }
+    void setMMRest(Measure *m) { mmRest_ = m; }
 
-    int mmRestCount() const { return m_mmRestCount; } // number of measures m_mmRest spans
+    int mmRestCount() const { return mmRestCount_; } // number of measures mmRest_ spans
 
-    void setMMRestCount(int n) { m_mmRestCount = n; }
+    void setMMRestCount(int n) { mmRestCount_ = n; }
 
     Measure *mmRestFirst() const;
     Measure *mmRestLast() const;
@@ -446,11 +446,11 @@ public:
 
     struct LayoutData : public MeasureBase::LayoutData {
     private:
-        bool m_needLayout = true;
+        bool needLayout_ = true;
     public:
-        bool needLayout() const { return m_needLayout; }
+        bool needLayout() const { return needLayout_; }
 
-        void setNeedLayout(bool v) { m_needLayout = v; }
+        void setNeedLayout(bool v) { needLayout_ = v; }
     };
     DECLARE_LAYOUTDATA_METHODS(Measure)
 
@@ -468,24 +468,24 @@ private:
 
     MStaff *mstaff(staff_idx_t staffIndex) const;
 
-    std::vector<MStaff *> m_mstaves;
-    SegmentList m_segments;
-    Measure *m_mmRest = nullptr; // multi measure rest which replaces a measure range
+    std::vector<MStaff *> mstaves_;
+    SegmentList segments_;
+    Measure *mmRest_ = nullptr; // multi measure rest which replaces a measure range
 
-    double m_userStretch = 0.0;
+    double userStretch_ = 0.0;
 
-    Fraction m_timesig;
+    Fraction timesig_;
 
-    int m_mmRestCount = 0; // number of measures an mmrest spans
+    int mmRestCount_ = 0; // number of measures an mmrest spans
 
-    int m_playbackCount = 0; // temp. value used in RepeatList
-                             // counts how many times this measure was already played
+    int playbackCount_ = 0; // temp. value used in RepeatList
+                            // counts how many times this measure was already played
 
-    int m_repeatCount = 0; // end repeat marker and repeat count
+    int repeatCount_ = 0; // end repeat marker and repeat count
 
-    int m_measureNumber = 0; // counting from zero
-    int m_measureNumberOffset = 0;
-    MeasureNumberMode m_measureNumberMode = MeasureNumberMode::AUTO;
-    bool m_breakMultiMeasureRest = false;
+    int measureNumber_ = 0; // counting from zero
+    int measureNumberOffset_ = 0;
+    MeasureNumberMode measureNumberMode_ = MeasureNumberMode::AUTO;
+    bool breakMultiMeasureRest_ = false;
 };
 } // namespace mu::engraving

@@ -111,7 +111,7 @@ private:
 
     void applyCompatStyleVals(int mscVersion);
 
-    std::array<PropertyValue, size_t(Sid::STYLES)> m_values;
-    std::array<double, size_t(Sid::STYLES)> m_precomputedValues;
+    std::array<PropertyValue, size_t(Sid::STYLES)> values_;
+    std::array<double, size_t(Sid::STYLES)> precomputedValues_;
 };
 } // namespace mu::engraving

@@ -205,43 +205,43 @@ struct ReverbProcessor::impl {
     int modCounter = 0;
 };
 
-ReverbProcessor::ReverbProcessor(const AudioFxParams &params) : m_params(params) {
+ReverbProcessor::ReverbProcessor(const AudioFxParams &params) : params_(params) {
     d = simd::aligned_new<impl>(64);
 
-    m_processor.allocateParameters(NumParams);
-    m_processor.setupParameter(Quality, "Quality", {1.f, 4.f}, 4);
+    processor_.allocateParameters(NumParams);
+    processor_.setupParameter(Quality, "Quality", {1.f, 4.f}, 4);
 
-    m_processor.setupParameter(DryLevel, "DryLevel", {-60.f, 20.f}, -60);
-    m_processor.setupParameter(LateLevel, "LateLevel", {-60.f, 20.f}, -20);
-    m_processor.setupParameter(ERLevel, "ERDirect", {-60.f, 20.f}, -20);
-    m_processor.setupParameter(ERtoLate, "ERtoLate", {-60.f, 20.f}, -20);
+    processor_.setupParameter(DryLevel, "DryLevel", {-60.f, 20.f}, -60);
+    processor_.setupParameter(LateLevel, "LateLevel", {-60.f, 20.f}, -20);
+    processor_.setupParameter(ERLevel, "ERDirect", {-60.f, 20.f}, -20);
+    processor_.setupParameter(ERtoLate, "ERtoLate", {-60.f, 20.f}, -20);
 
-    m_processor.setupParameter(PreDelayMs, "PreDelay", {0.f, 500.f}, 10);
-    m_processor.setupParameter(StereoSpread, "Stereo", {0.f, 150.f}, 100);
+    processor_.setupParameter(PreDelayMs, "PreDelay", {0.f, 500.f}, 10);
+    processor_.setupParameter(StereoSpread, "Stereo", {0.f, 150.f}, 100);
 
-    m_processor.setupParameter(ReverbTimeMs, "ReverbTimeMs", {100.f, 10000.f}, 2200);
-    m_processor.setupParameter(LateRoomScale, "LateRoomScale", {0.5f, 4.f}, 0.8f);
-    m_processor.setupParameter(FeedbackTop, "FeedbackTop", {500.f, 20000.f}, 8000);
+    processor_.setupParameter(ReverbTimeMs, "ReverbTimeMs", {100.f, 10000.f}, 2200);
+    processor_.setupParameter(LateRoomScale, "LateRoomScale", {0.5f, 4.f}, 0.8f);
+    processor_.setupParameter(FeedbackTop, "FeedbackTop", {500.f, 20000.f}, 8000);
 
-    m_processor.setupParameter(TimeLow, "TimeLow", {50.f, 200.f}, 100);
-    m_processor.setupParameter(TimeMid, "TimeMid", {50.f, 200.f}, 100);
-    m_processor.setupParameter(TimeHigh, "TimeHigh", {50.f, 200.f}, 60);
-    m_processor.setupParameter(XoverLowMid, "LowMidFreq", {50.f, 500.f}, 400);
-    m_processor.setupParameter(XoverMidHigh, "MidHighFreq", {1000.f, 10000.f}, 4000);
+    processor_.setupParameter(TimeLow, "TimeLow", {50.f, 200.f}, 100);
+    processor_.setupParameter(TimeMid, "TimeMid", {50.f, 200.f}, 100);
+    processor_.setupParameter(TimeHigh, "TimeHigh", {50.f, 200.f}, 60);
+    processor_.setupParameter(XoverLowMid, "LowMidFreq", {50.f, 500.f}, 400);
+    processor_.setupParameter(XoverMidHigh, "MidHighFreq", {1000.f, 10000.f}, 4000);
 
-    m_processor.setupParameter(ModDelayFreq, "ModFreq", {0.f, 10.f}, 1.f);
-    m_processor.setupParameter(ModDelayAmp, "ModAmp", {0.f, 1.f}, 0.2f);
-    m_processor.setupParameter(ModType, "ModType", {0.f, 1.f}, 0);
+    processor_.setupParameter(ModDelayFreq, "ModFreq", {0.f, 10.f}, 1.f);
+    processor_.setupParameter(ModDelayAmp, "ModAmp", {0.f, 1.f}, 0.2f);
+    processor_.setupParameter(ModType, "ModType", {0.f, 1.f}, 0);
 
-    m_processor.setupParameter(VelvetIn, "VelvetIn", {0.f, 1.f}, 0);
-    m_processor.setupParameter(VelvetOut, "VelvetOut", {0.f, 1.f}, 1);
+    processor_.setupParameter(VelvetIn, "VelvetIn", {0.f, 1.f}, 0);
+    processor_.setupParameter(VelvetOut, "VelvetOut", {0.f, 1.f}, 1);
 
-    m_processor.setupParameter(LowCutFreq, "LowCut", {10.f, 25000.f}, 10.f);
-    m_processor.setupParameter(HighCutFreq, "HighCut", {10.f, 25000.f}, 25000.f);
+    processor_.setupParameter(LowCutFreq, "LowCut", {10.f, 25000.f}, 10.f);
+    processor_.setupParameter(HighCutFreq, "HighCut", {10.f, 25000.f}, 25000.f);
 
-    m_processor.setupParameter(PeakFreq, "PeakFreq", {10.f, 25000.f}, 375.f);
-    m_processor.setupParameter(PeakGain, "PeakGain", {-24.f, +24.f}, 0.f);
-    m_processor.setupParameter(PeakQ, "PeakQ", {0.05f, 16.f}, 1);
+    processor_.setupParameter(PeakFreq, "PeakFreq", {10.f, 25000.f}, 375.f);
+    processor_.setupParameter(PeakGain, "PeakGain", {-24.f, +24.f}, 0.f);
+    processor_.setupParameter(PeakQ, "PeakQ", {0.05f, 16.f}, 1);
 
     // Refresh parameters that need initialisation
     setParameter(Params::DryLevel, getParameter(Params::DryLevel));
@@ -270,7 +270,7 @@ AudioFxType ReverbProcessor::type() const { return AudioFxType::MuseFx; }
 
 std::string ReverbProcessor::name() const { return "Muse/Reverb"; }
 
-const AudioFxParams &ReverbProcessor::params() const { return m_params; }
+const AudioFxParams &ReverbProcessor::params() const { return params_; }
 
 void ReverbProcessor::setOutputSpec(const OutputSpec &spec) {
     IF_ASSERT_FAILED(spec.isValid()) { return; }
@@ -278,61 +278,61 @@ void ReverbProcessor::setOutputSpec(const OutputSpec &spec) {
     setFormat(spec.audioChannelCount, spec.sampleRate, spec.samplesPerChannel);
 }
 
-bool ReverbProcessor::active() const { return m_params.active; }
+bool ReverbProcessor::active() const { return params_.active; }
 
-void ReverbProcessor::setActive(bool active) { m_params.active = active; }
+void ReverbProcessor::setActive(bool active) { params_.active = active; }
 
 void ReverbProcessor::setMode(const ProcessMode) {}
 
 bool ReverbProcessor::shouldProcessDuringSilence() const { return false; }
 
 void ReverbProcessor::process(float *buffer, samples_t sampleCount, samples_t) {
-    if (m_processor._blockSize != static_cast<int>(sampleCount)) {
-        setFormat(m_processor._audioChannelsCount, m_processor._sampleRate, sampleCount);
+    if (processor_._blockSize != static_cast<int>(sampleCount)) {
+        setFormat(processor_._audioChannelsCount, processor_._sampleRate, sampleCount);
     }
 
     for (samples_t sampleIndex = 0; sampleIndex < sampleCount; ++sampleIndex) {
-        size_t offset = sampleIndex * m_processor._audioChannelsCount;
+        size_t offset = sampleIndex * processor_._audioChannelsCount;
 
-        for (audioch_t audioChannelIndex = 0; audioChannelIndex < m_processor._audioChannelsCount; ++audioChannelIndex) {
-            m_signalBuffers[audioChannelIndex][sampleIndex] = buffer[offset + audioChannelIndex];
+        for (audioch_t audioChannelIndex = 0; audioChannelIndex < processor_._audioChannelsCount; ++audioChannelIndex) {
+            signalBuffers_[audioChannelIndex][sampleIndex] = buffer[offset + audioChannelIndex];
         }
     }
 
-    switch (m_delays) {
-        case 24: _processLines<24>(m_signalBuffers, static_cast<int32_t>(sampleCount)); break;
-        case 16: _processLines<16>(m_signalBuffers, static_cast<int32_t>(sampleCount)); break;
-        case 12: _processLines<12>(m_signalBuffers, static_cast<int32_t>(sampleCount)); break;
-        default: _processLines<8>(m_signalBuffers, static_cast<int32_t>(sampleCount)); break;
+    switch (delays_) {
+        case 24: _processLines<24>(signalBuffers_, static_cast<int32_t>(sampleCount)); break;
+        case 16: _processLines<16>(signalBuffers_, static_cast<int32_t>(sampleCount)); break;
+        case 12: _processLines<12>(signalBuffers_, static_cast<int32_t>(sampleCount)); break;
+        default: _processLines<8>(signalBuffers_, static_cast<int32_t>(sampleCount)); break;
     }
 
     for (samples_t sampleIndex = 0; sampleIndex < sampleCount; ++sampleIndex) {
-        size_t offset = sampleIndex * m_processor._audioChannelsCount;
+        size_t offset = sampleIndex * processor_._audioChannelsCount;
 
-        for (audioch_t audioChannelIndex = 0; audioChannelIndex < m_processor._audioChannelsCount; ++audioChannelIndex) {
-            buffer[offset + audioChannelIndex] = m_signalBuffers[audioChannelIndex][sampleIndex];
+        for (audioch_t audioChannelIndex = 0; audioChannelIndex < processor_._audioChannelsCount; ++audioChannelIndex) {
+            buffer[offset + audioChannelIndex] = signalBuffers_[audioChannelIndex][sampleIndex];
         }
     }
 }
 
 void ReverbProcessor::getParameterInfo(int32_t index, ParameterInfo &info) {
     assert(index < NumParams);
-    info.name = m_processor._param[index].name;
-    info.range = m_processor._param[index].valueRange;
+    info.name = processor_._param[index].name;
+    info.range = processor_._param[index].valueRange;
 }
 
 float ReverbProcessor::getParameter(int32_t index) {
     assert(index < NumParams);
-    return m_processor._param[index].currentValue;
+    return processor_._param[index].currentValue;
 }
 
 void ReverbProcessor::calculateTailParams() {
-    const int *delayTimes = _delayTimesForN(m_delays);
-    float scale = float(getParameter(LateRoomScale) * m_processor._sampleRate / 44100.);
+    const int *delayTimes = _delayTimesForN(delays_);
+    float scale = float(getParameter(LateRoomScale) * processor_._sampleRate / 44100.);
 
     const float log_db60 = std::log(fromDecibel(-60.f));
 
-    float timeSmp = float(getParameter(ReverbTimeMs) * 0.001 * m_processor._sampleRate);
+    float timeSmp = float(getParameter(ReverbTimeMs) * 0.001 * processor_._sampleRate);
 
     auto decay_per_sample = log_db60 / (timeSmp);
     auto decay_per_sample_l = decay_per_sample / (getParameter(TimeLow) * 0.01f);
@@ -340,10 +340,10 @@ void ReverbProcessor::calculateTailParams() {
     auto decay_per_sample_h = decay_per_sample / (getParameter(TimeHigh) * 0.01f);
 
     // correct gain to keep the level of the first late output sample constant
-    m_lateGainCorrection = 1.f / std::exp(delayTimes[0] * scale * decay_per_sample);
-    d->late_gain_smooth.setTargetValue(m_lateGain * m_lateGainCorrection);
+    lateGainCorrection_ = 1.f / std::exp(delayTimes[0] * scale * decay_per_sample);
+    d->late_gain_smooth.setTargetValue(lateGain_ * lateGainCorrection_);
 
-    for (int i = 0; i < m_delays; ++i) {
+    for (int i = 0; i < delays_; ++i) {
         float delay_time = delayTimes[i] * scale;
 
         float gain_l = std::exp(delay_time * decay_per_sample_l);
@@ -351,10 +351,10 @@ void ReverbProcessor::calculateTailParams() {
         float gain_h = std::exp(delay_time * decay_per_sample_h);
         IirBiquadFilter::Coeffs<float> cf1, cf2;
         IirBiquadFilter::create3BandToneControl4P<float>(getParameter(XoverLowMid), getParameter(XoverMidHigh), gain_l, gain_m, gain_h,
-                                                         (float) m_processor._sampleRate, cf1, cf2);
+                                                         (float) processor_._sampleRate, cf1, cf2);
 
         float ag_gain = std::exp(delay_time * decay_per_sample_h * 0.5f); // at feedbacktop use half the 'high' delay time
-        auto ag_cf = reverbfilters::onePoleCoeffsLowpass1Point<float>(getParameter(FeedbackTop), ag_gain, m_processor._sampleRate);
+        auto ag_cf = reverbfilters::onePoleCoeffsLowpass1Point<float>(getParameter(FeedbackTop), ag_gain, processor_._sampleRate);
 
         // copy coefficients to simd-friendly structures
         int x = i >> 2, y = i & 3;
@@ -377,25 +377,24 @@ void ReverbProcessor::calculateTailParams() {
 }
 
 void ReverbProcessor::calculateModParams() {
-    const int *delayTimes = _delayTimesForN(m_delays);
+    const int *delayTimes = _delayTimesForN(delays_);
 
     float depthMs = getParameter(ModDelayAmp) * getParameter(LateRoomScale);
     float freqHz = getParameter(ModDelayFreq);
 
-    float modDepthSmp = float(depthMs * 0.001f * m_processor._sampleRate);
-    d->sinLfo.setup(m_delays, freqHz * d->modStep, modDepthSmp, m_processor._sampleRate);
-    float scale = float(getParameter(LateRoomScale) * m_processor._sampleRate / 44100.);
-    for (int i = 0; i < m_delays; ++i) {
+    float modDepthSmp = float(depthMs * 0.001f * processor_._sampleRate);
+    d->sinLfo.setup(delays_, freqHz * d->modStep, modDepthSmp, processor_._sampleRate);
+    float scale = float(getParameter(LateRoomScale) * processor_._sampleRate / 44100.);
+    for (int i = 0; i < delays_; ++i) {
         d->modDelay[i].setBaseDelay(delayTimes[i] * scale, modDepthSmp * 2.f);
     }
 }
 
 void ReverbProcessor::setParameter(int32_t index, float newValue) {
     // Store
-    assert(index >= 0 && index <= static_cast<int32_t>(m_processor._param.size()));
-    auto clampedValue =
-        std::min(m_processor._param[index].valueRange.second, std::max(m_processor._param[index].valueRange.first, newValue));
-    m_processor._param[index].currentValue = clampedValue;
+    assert(index >= 0 && index <= static_cast<int32_t>(processor_._param.size()));
+    auto clampedValue = std::min(processor_._param[index].valueRange.second, std::max(processor_._param[index].valueRange.first, newValue));
+    processor_._param[index].currentValue = clampedValue;
 
     // Update
     switch (index) {
@@ -415,49 +414,49 @@ void ReverbProcessor::setParameter(int32_t index, float newValue) {
 
         case Params::LowCutFreq:
             d->loCutFilter.setTargetCoefficients(
-                IirBiquadFilter::createHighPass1PMatched((double) getParameter(LowCutFreq), m_processor._sampleRate));
+                IirBiquadFilter::createHighPass1PMatched((double) getParameter(LowCutFreq), processor_._sampleRate));
             break;
 
         case Params::HighCutFreq:
             d->hiCutFilter.setTargetCoefficients(
-                IirBiquadFilter::createLowPass1PMatched((double) getParameter(HighCutFreq), m_processor._sampleRate));
+                IirBiquadFilter::createLowPass1PMatched((double) getParameter(HighCutFreq), processor_._sampleRate));
             break;
 
         case Params::PeakFreq:
         case Params::PeakGain:
         case Params::PeakQ:
             d->peakFilter.setTargetCoefficients(IirBiquadFilter::createBandShelfMatched(
-                getParameter(PeakFreq), getParameter(PeakQ), fromDecibel(getParameter(PeakGain)), m_processor._sampleRate));
+                getParameter(PeakFreq), getParameter(PeakQ), fromDecibel(getParameter(PeakGain)), processor_._sampleRate));
             break;
 
         case Params::DryLevel:
-            d->dry_gain_smooth.setTargetValue((newValue > m_processor._param[Params::DryLevel].valueRange.first) ? fromDecibel(newValue) :
-                                                                                                                   0.f);
+            d->dry_gain_smooth.setTargetValue((newValue > processor_._param[Params::DryLevel].valueRange.first) ? fromDecibel(newValue) :
+                                                                                                                  0.f);
             break;
         case Params::LateLevel:
-            m_lateGain = (newValue > m_processor._param[Params::LateLevel].valueRange.first) ? fromDecibel(newValue) : 0.f;
-            d->late_gain_smooth.setTargetValue(m_lateGain * m_lateGainCorrection);
+            lateGain_ = (newValue > processor_._param[Params::LateLevel].valueRange.first) ? fromDecibel(newValue) : 0.f;
+            d->late_gain_smooth.setTargetValue(lateGain_ * lateGainCorrection_);
             break;
         case Params::ERLevel:
-            d->er_gain_smooth.setTargetValue((newValue > m_processor._param[Params::ERLevel].valueRange.first) ? fromDecibel(newValue) :
-                                                                                                                 0.f);
+            d->er_gain_smooth.setTargetValue((newValue > processor_._param[Params::ERLevel].valueRange.first) ? fromDecibel(newValue) :
+                                                                                                                0.f);
             break;
         case Params::ERtoLate:
-            m_erToLateGain = (newValue > m_processor._param[Params::ERtoLate].valueRange.first) ? fromDecibel(newValue) : 0.f;
+            erToLateGain_ = (newValue > processor_._param[Params::ERtoLate].valueRange.first) ? fromDecibel(newValue) : 0.f;
             break;
         case Params::Quality:
             switch (int(newValue)) {
-                case 4: m_delays = 24; break;
-                case 3: m_delays = 16; break;
-                case 2: m_delays = 12; break;
-                default: m_delays = 8; break;
+                case 4: delays_ = 24; break;
+                case 3: delays_ = 16; break;
+                case 2: delays_ = 12; break;
+                default: delays_ = 8; break;
             }
             calculateTailParams();
             calculateModParams();
             reset();
             break;
         case Params::PreDelayMs: {
-            int smp = int(newValue * 0.001 * m_processor._sampleRate + 0.5);
+            int smp = int(newValue * 0.001 * processor_._sampleRate + 0.5);
             d->pre_delay.setDelaySamples(smp);
             break;
         }
@@ -467,19 +466,19 @@ void ReverbProcessor::setParameter(int32_t index, float newValue) {
 bool ReverbProcessor::setFormat(audioch_t audioChannelsCount, double sampleRate, int32_t maximumBlockSize) {
     IF_ASSERT_FAILED(audioChannelsCount > 0 && audioChannelsCount <= 2) { return false; }
 
-    if (m_signalBuffers) {
-        if (audioChannelsCount > m_processor._audioChannelsCount || maximumBlockSize > m_processor._blockSize) {
+    if (signalBuffers_) {
+        if (audioChannelsCount > processor_._audioChannelsCount || maximumBlockSize > processor_._blockSize) {
             deleteSignalBuffers();
         }
     }
 
     // Store base information
-    m_processor.setFormat(audioChannelsCount, sampleRate, maximumBlockSize);
+    processor_.setFormat(audioChannelsCount, sampleRate, maximumBlockSize);
 
-    if (!m_signalBuffers) {
-        m_signalBuffers = new float *[m_processor._audioChannelsCount];
-        for (audioch_t i = 0; i < m_processor._audioChannelsCount; ++i) {
-            m_signalBuffers[i] = new float[maximumBlockSize];
+    if (!signalBuffers_) {
+        signalBuffers_ = new float *[processor_._audioChannelsCount];
+        for (audioch_t i = 0; i < processor_._audioChannelsCount; ++i) {
+            signalBuffers_[i] = new float[maximumBlockSize];
         }
     }
 
@@ -487,7 +486,7 @@ bool ReverbProcessor::setFormat(audioch_t audioChannelsCount, double sampleRate,
     d->er_buffer.setSize(2, maximumBlockSize);
     d->late_buffer.setSize(2, maximumBlockSize);
 
-    int max_predelay_smp = int(sampleRate * 0.001 * m_processor._param[Params::PreDelayMs].valueRange.second + 0.5);
+    int max_predelay_smp = int(sampleRate * 0.001 * processor_._param[Params::PreDelayMs].valueRange.second + 0.5);
     d->pre_delay.allocateForMaxDelaySamples(max_predelay_smp);
     for (int i = 0; i < max_num_delays; ++i) {
         d->ivnd_in[i].configure(i, sampleRate, maximumBlockSize);
@@ -511,7 +510,7 @@ bool ReverbProcessor::setFormat(audioch_t audioChannelsCount, double sampleRate,
     d->er_fir[0].appendImpulse(int(0.0961 * sampleRate), 0.064f);
     d->er_fir[1].appendImpulse(int(0.1100 * sampleRate), 0.064f);
 
-    auto smoothSteps = int(0.02f * m_processor._sampleRate + 0.5f);
+    auto smoothSteps = int(0.02f * processor_._sampleRate + 0.5f);
     d->loCutFilter.setSmoothingSteps(smoothSteps);
     d->hiCutFilter.setSmoothingSteps(smoothSteps);
     d->peakFilter.setSmoothingSteps(smoothSteps);
@@ -534,12 +533,12 @@ bool ReverbProcessor::setFormat(audioch_t audioChannelsCount, double sampleRate,
 }
 
 void ReverbProcessor::deleteSignalBuffers() {
-    for (audioch_t i = 0; i < m_processor._audioChannelsCount; ++i) {
-        delete[] m_signalBuffers[i];
+    for (audioch_t i = 0; i < processor_._audioChannelsCount; ++i) {
+        delete[] signalBuffers_[i];
     }
 
-    delete[] m_signalBuffers;
-    m_signalBuffers = nullptr;
+    delete[] signalBuffers_;
+    signalBuffers_ = nullptr;
 }
 
 void ReverbProcessor::reset() {
@@ -549,12 +548,12 @@ void ReverbProcessor::reset() {
         d->er_fir[ch].reset();
         d->ivnd_er[ch].reset();
     }
-    for (int i = 0; i < m_delays; ++i) {
+    for (int i = 0; i < delays_; ++i) {
         d->ivnd_in[i].reset();
         d->ivnd_out[i].reset();
         d->modDelay[i].reset();
     }
-    for (int j = 0; j < (m_delays >> 2); ++j) {
+    for (int j = 0; j < (delays_ >> 2); ++j) {
         IirBiquadFilter::resetState(d->damping_state1_x4[j]);
         IirBiquadFilter::resetState(d->damping_state2_x4[j]);
         d->ag_filter_x4[j].reset();
@@ -580,8 +579,8 @@ void ReverbProcessor::_processLines(float **signalPtr, int32_t numSamples) {
     auto **late_ptr = d->late_buffer.getPtrs();
 
     // handle mono by using the same buffer twice
-    float *signal_in[] = {signalPtr[0], m_processor._audioChannelsCount == 2 ? signalPtr[1] : signalPtr[0]};
-    float *signal_out[] = {signalPtr[0], m_processor._audioChannelsCount == 2 ? signalPtr[1] : signalPtr[0]};
+    float *signal_in[] = {signalPtr[0], processor_._audioChannelsCount == 2 ? signalPtr[1] : signalPtr[0]};
+    float *signal_out[] = {signalPtr[0], processor_._audioChannelsCount == 2 ? signalPtr[1] : signalPtr[0]};
 
     // pre-delay, dispersion and velvet-input
     d->work_buffer.assignSamples(0, signal_in[0]);
@@ -594,11 +593,11 @@ void ReverbProcessor::_processLines(float **signalPtr, int32_t numSamples) {
     bool late_muted = d->late_gain_smooth.isStaticAtValue(0.f);
 
     // early reflections
-    if (!er_muted || (m_erToLateGain > 0.f && !late_muted)) {
+    if (!er_muted || (erToLateGain_ > 0.f && !late_muted)) {
         for (int ch = 0; ch < 2; ++ch) {
             d->er_fir[ch].processBlock(work_ptr[ch], er_ptr[ch], numSamples);
             // add to late feedback input (work buffer)
-            vo::constantMultiplyAndAdd(er_ptr[ch], m_erToLateGain, work_ptr[ch], numSamples);
+            vo::constantMultiplyAndAdd(er_ptr[ch], erToLateGain_, work_ptr[ch], numSamples);
         }
 
         if (velvet_input) {
@@ -723,10 +722,10 @@ void ReverbProcessor::_processLines(float **signalPtr, int32_t numSamples) {
         d->peakFilter.process(late_ptr, 2, numSamples);
     }
 
-    if (getParameter(LowCutFreq) > m_processor._param[Params::LowCutFreq].valueRange.first) {
+    if (getParameter(LowCutFreq) > processor_._param[Params::LowCutFreq].valueRange.first) {
         d->loCutFilter.process(late_ptr, 2, numSamples);
     }
-    if (getParameter(HighCutFreq) < m_processor._param[Params::HighCutFreq].valueRange.second) {
+    if (getParameter(HighCutFreq) < processor_._param[Params::HighCutFreq].valueRange.second) {
         d->hiCutFilter.process(late_ptr, 2, numSamples);
     }
 

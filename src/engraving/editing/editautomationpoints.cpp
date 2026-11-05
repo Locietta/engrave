@@ -89,40 +89,40 @@ static void widenChangedRange(const Score *score, const AutomationCurveKey &key,
 
 EditAutomationPoints::EditAutomationPoints(Score *score, ScoreAutomationController *controller, const AutomationCurveKey &key,
                                            const AutomationPointEdits &edits)
-    : m_score(score), m_controller(controller), m_key(key) {
+    : score_(score), controller_(controller), key_(key) {
     assert(score && controller && !edits.empty());
 
     // Collapse the edit list into the final value to write at each touched tick,
     // replaying the same erase-then-write order AutomationData::editPoints itself would apply
     for (const AutomationPointEdit &edit : edits) {
         if (const auto *setPoint = std::get_if<AutomationPointEdit::SetPoint>(&edit.change)) {
-            m_pointStates[edit.tick] = setPoint->point;
+            pointStates_[edit.tick] = setPoint->point;
         } else if (const auto *movePoint = std::get_if<AutomationPointEdit::MovePoint>(&edit.change)) {
             if (movePoint->from != edit.tick) {
-                m_pointStates[movePoint->from] = std::nullopt;
+                pointStates_[movePoint->from] = std::nullopt;
             }
-            m_pointStates[edit.tick] = movePoint->point;
+            pointStates_[edit.tick] = movePoint->point;
         } else {
-            m_pointStates[edit.tick] = std::nullopt;
+            pointStates_[edit.tick] = std::nullopt;
         }
     }
 }
 
-std::optional<ChangedRange> EditAutomationPoints::changedRange() const { return m_changedRange; }
+std::optional<ChangedRange> EditAutomationPoints::changedRange() const { return changedRange_; }
 
 void EditAutomationPoints::flip() {
     TRACEFUNC;
 
-    IF_ASSERT_FAILED(m_score && m_controller && m_controller->automationData()) { return; }
+    IF_ASSERT_FAILED(score_ && controller_ && controller_->automationData()) { return; }
 
-    const AutomationCurve &curve = m_controller->automationData()->curve(m_key);
-    m_changedRange = computeChangedRange(m_score, m_key, m_pointStates);
+    const AutomationCurve &curve = controller_->automationData()->curve(key_);
+    changedRange_ = computeChangedRange(score_, key_, pointStates_);
 
     std::map<utick_t, std::optional<AutomationPoint>> previousStates;
     AutomationPointEdits automationEdits;
-    automationEdits.reserve(m_pointStates.size());
+    automationEdits.reserve(pointStates_.size());
 
-    for (const auto &[tick, point] : m_pointStates) {
+    for (const auto &[tick, point] : pointStates_) {
         const auto it = curve.find(tick);
         if (it != curve.cend()) {
             previousStates.emplace(tick, it->second);
@@ -137,10 +137,10 @@ void EditAutomationPoints::flip() {
         }
     }
 
-    if (m_changedRange) {
-        m_controller->editPoints(m_key, automationEdits);
-        widenChangedRange(m_score, m_key, automationEdits, *m_changedRange);
+    if (changedRange_) {
+        controller_->editPoints(key_, automationEdits);
+        widenChangedRange(score_, key_, automationEdits, *changedRange_);
     }
 
-    m_pointStates = std::move(previousStates);
+    pointStates_ = std::move(previousStates);
 }

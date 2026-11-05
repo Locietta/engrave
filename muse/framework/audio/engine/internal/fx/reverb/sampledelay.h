@@ -37,58 +37,58 @@ public:
 
     void allocateForMaxDelaySamples(int maxDelaySamples) {
         for (auto ch = 0; ch < maxNumChannels; ++ch) {
-            m_buffer[ch].setSize(maxDelaySamples);
+            buffer_[ch].setSize(maxDelaySamples);
         }
     }
 
     void setDelaySamples(int samples) {
-        if (m_delaySamples == samples) {
+        if (delaySamples_ == samples) {
             return;
         }
 
-        m_delaySamples = samples;
+        delaySamples_ = samples;
         allocateForMaxDelaySamples(samples);
         reset();
     }
 
-    int getDelaySamples() const { return m_delaySamples; }
+    int getDelaySamples() const { return delaySamples_; }
 
     void reset() {
         for (auto ch = 0; ch < maxNumChannels; ++ch) {
-            m_buffer[ch].reset();
+            buffer_[ch].reset();
         }
     }
 
     SampleT processSample(const SampleT &sample, int ch) {
-        if (m_delaySamples == 0) {
+        if (delaySamples_ == 0) {
             return sample;
         }
 
-        auto s = m_buffer[ch].read(-m_delaySamples);
-        m_buffer[ch].writeOffset0(sample);
-        m_buffer[ch].advance(1);
+        auto s = buffer_[ch].read(-delaySamples_);
+        buffer_[ch].writeOffset0(sample);
+        buffer_[ch].advance(1);
         return s;
     }
 
     void processBlock(SampleT **smp, int numCh, int numSamples) {
         assert(numCh <= maxNumChannels);
-        if (m_delaySamples == 0) {
+        if (delaySamples_ == 0) {
             return;
         }
 
         for (auto ch = 0; ch < numCh; ++ch) {
             for (auto i = 0; i < numSamples; ++i) {
-                auto s = m_buffer[ch].read(-m_delaySamples);
-                m_buffer[ch].writeOffset0(smp[ch][i]);
+                auto s = buffer_[ch].read(-delaySamples_);
+                buffer_[ch].writeOffset0(smp[ch][i]);
                 smp[ch][i] = s;
-                m_buffer[ch].advance(1);
+                buffer_[ch].advance(1);
             }
         }
     }
 
 private:
-    CircularSampleBuffer<SampleT> m_buffer[maxNumChannels];
-    int m_delaySamples = 0;
+    CircularSampleBuffer<SampleT> buffer_[maxNumChannels];
+    int delaySamples_ = 0;
 };
 } // namespace muse::audio::fx
 

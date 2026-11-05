@@ -42,7 +42,7 @@ public:
     Ret end() override;
 
 private:
-    OggOpusEnc *m_opusEncoder = nullptr;
-    io::IODevice *m_dstDevice = nullptr;
+    OggOpusEnc *opusEncoder_ = nullptr;
+    io::IODevice *dstDevice_ = nullptr;
 };
 } // namespace muse::audio::encode

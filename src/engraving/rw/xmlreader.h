@@ -60,18 +60,18 @@ public:
     Fraction readFraction();
     String readXml();
 
-    void setDocName(const String &s) { m_docName = s; }
+    void setDocName(const String &s) { docName_ = s; }
 
-    String docName() const { return m_docName; }
+    String docName() const { return docName_; }
 
     // for reading old files (< 3.01)
-    void setByteOffsetAdjustment(int64_t val) { m_byteOffsetAdjustment = val; }
+    void setByteOffsetAdjustment(int64_t val) { byteOffsetAdjustment_ = val; }
 
 private:
 
     void htmlToString(int level, String *);
 
-    String m_docName; // used for error reporting
-    int64_t m_byteOffsetAdjustment = 0;
+    String docName_; // used for error reporting
+    int64_t byteOffsetAdjustment_ = 0;
 };
 } // namespace mu::engraving

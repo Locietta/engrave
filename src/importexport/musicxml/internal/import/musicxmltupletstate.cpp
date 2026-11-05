@@ -123,9 +123,9 @@ bool MusicXmlTupletState::isTupletFilled(const TDuration normalType, const Fract
     UNUSED(timeMod);
     bool res = false;
     /*
-    const auto normalNotes = state.m_normalNotes;
+    const auto normalNotes = state.normalNotes_;
     LOGD("duration %s normalType %s timeMod %s normalNotes %d actualNotes %d",
-           muPrintable(state.m_duration.toString()),
+           muPrintable(state.duration_.toString()),
            muPrintable(normalType.fraction().toString()),
            muPrintable(timeMod.toString()),
            normalNotes,
@@ -233,10 +233,10 @@ void MusicXmlTupletState::addDurationToTuplet(const Fraction dur, const Fraction
     LOGD("1 duration %s timeMod %s -> state.tupletType %d state.tupletCount %d state.actualNotes %d state.normalNotes %d",
            muPrintable(duration.print()),
            muPrintable(timeMod.print()),
-           m_tupletType,
-           m_tupletCount,
-           m_actualNotes,
-           m_normalNotes
+           tupletType_,
+           tupletCount_,
+           actualNotes_,
+           normalNotes_
            );
     */
     if (duration <= Fraction(0, 1)) {
@@ -256,10 +256,10 @@ void MusicXmlTupletState::addDurationToTuplet(const Fraction dur, const Fraction
     /*
     LOGD("2 duration %s -> state.tupletType %d state.tupletCount %d state.actualNotes %d state.normalNotes %d",
            muPrintable(duration.print()),
-           m_tupletType,
-           m_tupletCount,
-           m_actualNotes,
-           m_normalNotes
+           tupletType_,
+           tupletCount_,
+           actualNotes_,
+           normalNotes_
            );
     */
 }

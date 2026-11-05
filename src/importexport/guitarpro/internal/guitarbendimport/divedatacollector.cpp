@@ -38,11 +38,11 @@ void DiveDataCollector::collectDiveData(const Chord *chord, const PitchValues &p
     const Fraction tick = chord->tick();
 
     bool hasPrecedingWhammy = false;
-    if (auto it = m_lastWhammyByTrack.find(track); it != m_lastWhammyByTrack.end()) {
+    if (auto it = lastWhammyByTrack_.find(track); it != lastWhammyByTrack_.end()) {
         const auto &prev = it->second;
         hasPrecedingWhammy = (prev.destPitch == pitchValues.front().pitch) && (prev.endTick == tick);
     }
-    m_lastWhammyByTrack[track] = {pitchValues.back().pitch, tick + chord->actualTicks()};
+    lastWhammyByTrack_[track] = {pitchValues.back().pitch, tick + chord->actualTicks()};
 
     for (const Note *note : chord->notes()) {
         if (note->displayFret() == Note::DisplayFretOption::Hide) {
@@ -59,7 +59,7 @@ void DiveDataCollector::collectDiveData(const Chord *chord, const PitchValues &p
         const bool isCompoundPreDive = (info.type == DiveType::PRE_DIVE);
 
         if (isCompoundPreDive) {
-            m_ctx.preDiveData[track][tick][noteIdx].quarterTones = info.quarterTones;
+            ctx_.preDiveData[track][tick][noteIdx].quarterTones = info.quarterTones;
             if (info.graceDiveSegments.empty()) {
                 continue;
             }
@@ -67,11 +67,11 @@ void DiveDataCollector::collectDiveData(const Chord *chord, const PitchValues &p
         }
 
         if (info.graceDiveSegments.size() == 1 && note->tieFor()) {
-            m_ctx.tiedNotesDivesData[track][tick][noteIdx] = std::move(info.graceDiveSegments.front());
+            ctx_.tiedNotesDivesData[track][tick][noteIdx] = std::move(info.graceDiveSegments.front());
             continue;
         }
 
-        GraceNotesImportInfo &graceInfo = m_ctx.graceAfterDiveData[track][tick][noteIdx];
+        GraceNotesImportInfo &graceInfo = ctx_.graceAfterDiveData[track][tick][noteIdx];
 
         if (note->tieFor() && !info.graceDiveSegments.empty()) {
             graceInfo.lastNoteData.shouldMoveTie = true;

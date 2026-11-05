@@ -29,34 +29,34 @@ namespace muse {
 template <typename T>
 struct VectorView {
 public:
-    VectorView(std::vector<T> &vec) : m_begin(vec.begin()), m_end(vec.end()) {}
+    VectorView(std::vector<T> &vec) : begin_(vec.begin()), end_(vec.end()) {}
 
     using iterator = typename std::vector<T>::iterator;
     using reverse_iterator = typename std::vector<T>::reverse_iterator;
 
-    iterator begin() { return m_begin; }
+    iterator begin() { return begin_; }
 
-    iterator end() { return m_end; }
+    iterator end() { return end_; }
 
-    reverse_iterator rbegin() { return reverse_iterator{m_end}; }
+    reverse_iterator rbegin() { return reverse_iterator{end_}; }
 
-    reverse_iterator rend() { return reverse_iterator{m_begin}; }
+    reverse_iterator rend() { return reverse_iterator{begin_}; }
 
-    bool empty() const { return m_begin == m_end; }
+    bool empty() const { return begin_ == end_; }
 
     T &front() const {
         if (empty()) {
             throw std::out_of_range("VectorView::front(): empty view");
         }
-        return *m_begin;
+        return *begin_;
     }
 
     T &pop_front() {
         if (empty()) {
             throw std::out_of_range("VectorView::pop_front(): empty view");
         }
-        T &v = *m_begin;
-        ++m_begin;
+        T &v = *begin_;
+        ++begin_;
         return v;
     }
 
@@ -64,45 +64,45 @@ public:
         if (empty()) {
             throw std::out_of_range("VectorView::back(): empty view");
         }
-        return *(m_end - 1);
+        return *(end_ - 1);
     }
 
     T &pop_back() {
         if (empty()) {
             throw std::out_of_range("VectorView::pop_back(): empty view");
         }
-        --m_end;
-        return *m_end;
+        --end_;
+        return *end_;
     }
 
     bool remove(const T &v) {
-        auto originalEnd = m_end;
-        m_end = std::remove(m_begin, m_end, v);
-        return m_end != originalEnd;
+        auto originalEnd = end_;
+        end_ = std::remove(begin_, end_, v);
+        return end_ != originalEnd;
     }
 
     template <typename Predicate>
     bool remove_if(Predicate &&pred) {
-        auto originalEnd = m_end;
-        m_end = std::remove_if(m_begin, m_end, std::forward<Predicate>(pred));
-        return m_end != originalEnd;
+        auto originalEnd = end_;
+        end_ = std::remove_if(begin_, end_, std::forward<Predicate>(pred));
+        return end_ != originalEnd;
     }
 
     bool reverse_remove(const T &v) {
-        auto originalBegin = m_begin;
-        m_begin = std::remove(rbegin(), rend(), v).base();
-        return m_begin != originalBegin;
+        auto originalBegin = begin_;
+        begin_ = std::remove(rbegin(), rend(), v).base();
+        return begin_ != originalBegin;
     }
 
     template <typename Predicate>
     bool reverse_remove_if(Predicate &&pred) {
-        auto originalBegin = m_begin;
-        m_begin = std::remove_if(rbegin(), rend(), std::forward<Predicate>(pred)).base();
-        return m_begin != originalBegin;
+        auto originalBegin = begin_;
+        begin_ = std::remove_if(rbegin(), rend(), std::forward<Predicate>(pred)).base();
+        return begin_ != originalBegin;
     }
 
 private:
-    iterator m_begin;
-    iterator m_end;
+    iterator begin_;
+    iterator end_;
 };
 } // namespace muse

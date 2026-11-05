@@ -50,12 +50,12 @@ StringTunings::StringTunings(DummyParentOr<Segment> parent, TextStyleType textSt
 }
 
 StringTunings::StringTunings(const StringTunings &s) : StaffTextBase(s) {
-    m_preset = s.m_preset;
-    m_visibleStrings = s.m_visibleStrings;
-    m_stringData = s.m_stringData;
+    preset_ = s.preset_;
+    visibleStrings_ = s.visibleStrings_;
+    stringData_ = s.stringData_;
 
-    m_noStringVisible = s.m_noStringVisible;
-    m_stringsNumber = s.m_stringsNumber;
+    noStringVisible_ = s.noStringVisible_;
+    stringsNumber_ = s.stringsNumber_;
 }
 
 StringTunings *StringTunings::clone() const { return new StringTunings(*this); }
@@ -77,16 +77,16 @@ PropertyValue StringTunings::getProperty(Pid id) const {
             }
         }
 
-        if (m_stringsNumber.has_value()) {
-            return m_stringsNumber.value();
+        if (stringsNumber_.has_value()) {
+            return stringsNumber_.value();
         }
 
         return stringData()->strings();
     } else if (id == Pid::STRINGTUNINGS_PRESET) {
-        return m_preset;
+        return preset_;
     } else if (id == Pid::STRINGTUNINGS_VISIBLE_STRINGS) {
         std::vector<int> visibleStrings;
-        for (string_idx_t string : m_visibleStrings) {
+        for (string_idx_t string : visibleStrings_) {
             visibleStrings.emplace_back(static_cast<int>(string));
         }
 
@@ -125,14 +125,14 @@ bool StringTunings::setProperty(Pid id, const PropertyValue &val) {
             }
         }
 
-        m_stringsNumber = val.toInt();
+        stringsNumber_ = val.toInt();
     } else if (id == Pid::STRINGTUNINGS_PRESET) {
-        m_preset = val.value<String>();
+        preset_ = val.value<String>();
     } else if (id == Pid::STRINGTUNINGS_VISIBLE_STRINGS) {
-        m_visibleStrings.clear();
+        visibleStrings_.clear();
         std::vector<int> ignoredStrings = val.value<std::vector<int>>();
         for (int string : ignoredStrings) {
-            m_visibleStrings.emplace_back(static_cast<string_idx_t>(string));
+            visibleStrings_.emplace_back(static_cast<string_idx_t>(string));
         }
     } else {
         return StaffTextBase::setProperty(id, val);
@@ -142,10 +142,10 @@ bool StringTunings::setProperty(Pid id, const PropertyValue &val) {
     return true;
 }
 
-const StringData *StringTunings::stringData() const { return &m_stringData; }
+const StringData *StringTunings::stringData() const { return &stringData_; }
 
 void StringTunings::setStringData(const StringData &stringData) {
-    m_stringData.set(stringData);
+    stringData_.set(stringData);
     triggerLayout();
 }
 
@@ -154,26 +154,26 @@ void StringTunings::undoStringData(const StringData &stringData) {
     triggerLayout();
 }
 
-const String &StringTunings::preset() const { return m_preset; }
+const String &StringTunings::preset() const { return preset_; }
 
-void StringTunings::setPreset(const String &preset) { m_preset = preset; }
+void StringTunings::setPreset(const String &preset) { preset_ = preset; }
 
-const std::vector<string_idx_t> &StringTunings::visibleStrings() const { return m_visibleStrings; }
+const std::vector<string_idx_t> &StringTunings::visibleStrings() const { return visibleStrings_; }
 
-void StringTunings::setVisibleStrings(const std::vector<string_idx_t> &visibleStrings) { m_visibleStrings = visibleStrings; }
+void StringTunings::setVisibleStrings(const std::vector<string_idx_t> &visibleStrings) { visibleStrings_ = visibleStrings; }
 
 void StringTunings::updateText() {
     String updatedText = generateText();
     undoChangeProperty(Pid::TEXT, updatedText, PropertyFlags::STYLED);
 
     if (updatedText.empty()) {
-        m_noStringVisible = true;
+        noStringVisible_ = true;
     } else {
-        m_noStringVisible = false;
+        noStringVisible_ = false;
     }
 }
 
-bool StringTunings::noStringVisible() const { return m_noStringVisible; }
+bool StringTunings::noStringVisible() const { return noStringVisible_; }
 
 void StringTunings::triggerLayout() const {
     if (!part()) {
@@ -202,7 +202,7 @@ String StringTunings::generateText() const {
     int numOfStrings = static_cast<int>(stringList.size());
     for (int i = 0; i < numOfStrings; ++i) {
         string_idx_t index = numOfStrings - i - 1;
-        if (muse::contains(m_visibleStrings, index)) {
+        if (muse::contains(visibleStrings_, index)) {
             const instrString str = stringList[index];
             String pitchStr = pitch2string(str.pitch, str.useFlat);
             if (pitchStr.empty()) {

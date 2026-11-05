@@ -63,11 +63,11 @@ private:
 
     RectF rectForIndex(int index) const;
 
-    unsigned int m_depth = 0;
-    std::vector<Node> m_nodes;
-    std::vector<std::vector<EngravingItem *>> m_leaves;
-    int m_leafCnt = 0;
-    RectF m_rect;
+    unsigned int depth_ = 0;
+    std::vector<Node> nodes_;
+    std::vector<std::vector<EngravingItem *>> leaves_;
+    int leafCnt_ = 0;
+    RectF rect_;
 
 public:
     BspTree();
@@ -83,7 +83,7 @@ public:
 
     EngravingItem *nearestNeighbor(const PointF &pos);
 
-    int leafCount() const { return m_leafCnt; }
+    int leafCount() const { return leafCnt_; }
 
     inline int firstChildIndex(int index) const { return index * 2 + 1; }
 

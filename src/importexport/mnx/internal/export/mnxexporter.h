@@ -65,13 +65,13 @@ struct MnxChordTargetPosition {
 class MnxExporter {
 public:
     MnxExporter(engraving::Score *s, bool exportBeams = true, bool exportRestPositions = false)
-        : m_score(s), m_exportBeams(exportBeams), m_exportRestPositions(exportRestPositions) {}
+        : score_(s), exportBeams_(exportBeams), exportRestPositions_(exportRestPositions) {}
 
     muse::Ret exportMnx();
 
-    const mnx::Document &mnxDocument() const { return m_mnxDocument; }
+    const mnx::Document &mnxDocument() const { return mnxDocument_; }
 
-    const std::unordered_map<engraving::staff_idx_t, std::pair<size_t, int>> &staffToPartStaff() const { return m_staffToPartStaff; }
+    const std::unordered_map<engraving::staff_idx_t, std::pair<size_t, int>> &staffToPartStaff() const { return staffToPartStaff_; }
 
     // utility functions
     engraving::EID getOrAssignEID(engraving::EngravingObject *item);
@@ -128,17 +128,17 @@ private:
 
     void exportSpanners();
 
-    engraving::Score *m_score{};
-    mnx::Document m_mnxDocument;
+    engraving::Score *score_{};
+    mnx::Document mnxDocument_;
 
     // entity tracking
-    std::unordered_map<const engraving::Measure *, size_t> m_measToMnxMeas;
-    std::unordered_map<const engraving::ChordRest *, mnx::json_pointer> m_crToMnxEvent;
-    std::unordered_map<engraving::staff_idx_t, std::pair<size_t, int>> m_staffToPartStaff;
-    std::vector<engraving::Staff *> m_exportedStaves;
-    std::set<std::string> m_lyricLineIds; // this could be (ordered) map if we ever support lyric line metadata.
+    std::unordered_map<const engraving::Measure *, size_t> measToMnxMeas_;
+    std::unordered_map<const engraving::ChordRest *, mnx::json_pointer> crToMnxEvent_;
+    std::unordered_map<engraving::staff_idx_t, std::pair<size_t, int>> staffToPartStaff_;
+    std::vector<engraving::Staff *> exportedStaves_;
+    std::set<std::string> lyricLineIds_; // this could be (ordered) map if we ever support lyric line metadata.
 
-    bool m_exportBeams{true};
-    bool m_exportRestPositions{false};
+    bool exportBeams_{true};
+    bool exportRestPositions_{false};
 };
 } // namespace mu::iex::mnxio

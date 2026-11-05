@@ -36,8 +36,8 @@ public:
     SegmentList() { clear(); }
 
     void clear() {
-        m_first = m_last = 0;
-        m_size = 0;
+        first_ = last_ = 0;
+        size_ = 0;
     }
 #ifndef NDEBUG
     void check();
@@ -46,17 +46,17 @@ public:
 #endif
     SegmentList clone() const;
 
-    int size() const { return m_size; }
+    int size() const { return size_; }
 
     Segment *at(int index) const;
 
-    Segment *first() const { return m_first; }
+    Segment *first() const { return first_; }
 
     Segment *firstActive() const;
     Segment *first(SegmentType) const;
     Segment *first(ElementFlag) const;
 
-    Segment *last() const { return m_last; }
+    Segment *last() const { return last_; }
 
     Segment *last(ElementFlag) const;
     Segment *last(SegmentType) const;
@@ -98,19 +98,19 @@ public:
         const Segment &operator*() const { return *p; }
     };
 
-    iterator begin() { return m_first; }
+    iterator begin() { return first_; }
 
     iterator end() { return 0; }
 
-    const_iterator begin() const { return m_first; }
+    const_iterator begin() const { return first_; }
 
     const_iterator end() const { return 0; }
 
 private:
 
-    Segment *m_first = nullptr; // First item of segment list
-    Segment *m_last = nullptr;  // Last item of segment list
-    int m_size = 0;             // Number of items in segment list
+    Segment *first_ = nullptr; // First item of segment list
+    Segment *last_ = nullptr;  // Last item of segment list
+    int size_ = 0;             // Number of items in segment list
 };
 
 // Segment* begin(SegmentList& l) { return l.first(); }

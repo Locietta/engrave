@@ -44,30 +44,30 @@ Buffer Buffer::opened(const OpenMode mode, ByteArray &&ba) {
     return buf;
 }
 
-Buffer::Buffer() { m_ref = &m_ba; }
+Buffer::Buffer() { ref_ = &ba_; }
 
 Buffer::Buffer(size_t size) {
-    m_ba.resize(size);
-    m_ref = &m_ba;
+    ba_.resize(size);
+    ref_ = &ba_;
 }
 
 Buffer::Buffer(const uint8_t *data, size_t size) {
-    m_ba = ByteArray(data, size);
-    m_ref = &m_ba;
+    ba_ = ByteArray(data, size);
+    ref_ = &ba_;
 }
 
-Buffer::Buffer(ByteArray *ba) : m_ref(ba) {
-    if (!m_ref) {
-        m_ref = &m_ba;
+Buffer::Buffer(ByteArray *ba) : ref_(ba) {
+    if (!ref_) {
+        ref_ = &ba_;
     }
 }
 
 Buffer::Buffer(ByteArray &&ba) {
-    m_ba = std::move(ba);
-    m_ref = &m_ba;
+    ba_ = std::move(ba);
+    ref_ = &ba_;
 }
 
-const ByteArray &Buffer::data() const { return *m_ref; }
+const ByteArray &Buffer::data() const { return *ref_; }
 
 ByteArray Buffer::doReadAll() {
     IF_ASSERT_FAILED(isOpenModeReadable()) { return ByteArray(); }
@@ -82,18 +82,18 @@ ByteArray Buffer::doReadAll() {
 
 bool Buffer::doOpen(OpenMode) { return true; }
 
-size_t Buffer::dataSize() const { return m_ref->size(); }
+size_t Buffer::dataSize() const { return ref_->size(); }
 
-const uint8_t *Buffer::rawData() const { return m_ref->constData(); }
+const uint8_t *Buffer::rawData() const { return ref_->constData(); }
 
 bool Buffer::resizeData(size_t size) {
-    if (activeWriteBudget && size > m_ref->size() && !activeWriteBudget->charge(size - m_ref->size())) return false;
-    m_ref->resize(size);
+    if (activeWriteBudget && size > ref_->size() && !activeWriteBudget->charge(size - ref_->size())) return false;
+    ref_->resize(size);
     return true;
 }
 
 size_t Buffer::writeData(const uint8_t *data, size_t len) {
     if (activeWriteBudget && !activeWriteBudget->poll()) return 0;
-    std::memcpy(m_ref->data() + pos(), data, len);
+    std::memcpy(ref_->data() + pos(), data, len);
     return len;
 }

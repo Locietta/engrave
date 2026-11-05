@@ -111,13 +111,13 @@ public:
 
     void setOttavaType(OttavaType val);
 
-    OttavaType ottavaType() const { return m_ottavaType; }
+    OttavaType ottavaType() const { return ottavaType_; }
 
     int subtype() const override { return int(ottavaType()); }
 
     TranslatableString subtypeUserName() const override;
 
-    bool numbersOnly() const { return m_numbersOnly; }
+    bool numbersOnly() const { return numbersOnly_; }
 
     void setNumbersOnly(bool val);
 
@@ -148,8 +148,8 @@ private:
     Sid getPropertyStyle(Pid) const override;
     void undoChangeProperty(Pid id, const PropertyValue &, PropertyFlags ps) override;
 
-    OttavaType m_ottavaType = OttavaType::OTTAVA_8VA;
-    bool m_numbersOnly = false;
+    OttavaType ottavaType_ = OttavaType::OTTAVA_8VA;
+    bool numbersOnly_ = false;
 };
 } // namespace mu::engraving
 

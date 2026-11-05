@@ -65,7 +65,7 @@ static const Color UNLINKED_ITEM_COLOR = "#FF9300";
 static const Color DEFAULT_DISPLAYED_INVERTED_COLOR = "#CBCBCD";
 
 EngravingConfiguration::EngravingConfiguration()
-    : m_cachedDisplayedDefaultColor(Color::BLACK), m_cachedInvertedDisplayedDefaultColor(DEFAULT_DISPLAYED_INVERTED_COLOR) {}
+    : cachedDisplayedDefaultColor_(Color::BLACK), cachedInvertedDisplayedDefaultColor_(DEFAULT_DISPLAYED_INVERTED_COLOR) {}
 
 void EngravingConfiguration::init() {
     static const Color DEFAULT_VOICE_COLORS[VOICES + 1]{
@@ -80,13 +80,13 @@ void EngravingConfiguration::init() {
     settings()->setDefaultValue(DISPLAYED_DEFAULT_COLOR, colorValue(defaultColor()));
     settings()->setDescription(DISPLAYED_DEFAULT_COLOR, muse::trc("engraving", "Displayed default color"));
     settings()->setCanBeManuallyEdited(DISPLAYED_DEFAULT_COLOR, true);
-    m_cachedDisplayedDefaultColor = colorFromValue(settings()->value(DISPLAYED_DEFAULT_COLOR));
+    cachedDisplayedDefaultColor_ = colorFromValue(settings()->value(DISPLAYED_DEFAULT_COLOR));
 
     settings()->setDefaultValue(INVERTED_DISPLAYED_DEFAULT_COLOR, colorValue(Color(DEFAULT_DISPLAYED_INVERTED_COLOR)));
     settings()->setDescription(INVERTED_DISPLAYED_DEFAULT_COLOR,
                                muse::trc("engraving", "Displayed default color when score colors are inverted"));
     settings()->setCanBeManuallyEdited(INVERTED_DISPLAYED_DEFAULT_COLOR, true);
-    m_cachedInvertedDisplayedDefaultColor = colorFromValue(settings()->value(INVERTED_DISPLAYED_DEFAULT_COLOR));
+    cachedInvertedDisplayedDefaultColor_ = colorFromValue(settings()->value(INVERTED_DISPLAYED_DEFAULT_COLOR));
 
     for (voice_idx_t voice = 0; voice < VOICES; ++voice) {
         Settings::Key key("engraving", "engraving/colors/voice" + std::to_string(voice + 1));
@@ -172,26 +172,26 @@ Color EngravingConfiguration::defaultColor() const { return Color::BLACK; }
 
 Color EngravingConfiguration::displayedDefaultColor(bool inverted) const {
     if (inverted) {
-        return m_cachedInvertedDisplayedDefaultColor;
+        return cachedInvertedDisplayedDefaultColor_;
     }
-    return m_cachedDisplayedDefaultColor;
+    return cachedDisplayedDefaultColor_;
 }
 
 void EngravingConfiguration::setDisplayedDefaultColor(Color color, bool inverted) {
     if (inverted) {
         settings()->setSharedValue(INVERTED_DISPLAYED_DEFAULT_COLOR, colorValue(color));
-        m_cachedInvertedDisplayedDefaultColor = color;
+        cachedInvertedDisplayedDefaultColor_ = color;
     } else {
         settings()->setSharedValue(DISPLAYED_DEFAULT_COLOR, colorValue(color));
-        m_cachedDisplayedDefaultColor = color;
+        cachedDisplayedDefaultColor_ = color;
     }
 }
 
 void EngravingConfiguration::resetDisplayedDefaultColors() {
     settings()->setSharedValue(DISPLAYED_DEFAULT_COLOR, settings()->defaultValue(DISPLAYED_DEFAULT_COLOR));
     settings()->setSharedValue(INVERTED_DISPLAYED_DEFAULT_COLOR, settings()->defaultValue(INVERTED_DISPLAYED_DEFAULT_COLOR));
-    m_cachedDisplayedDefaultColor = colorFromValue(settings()->value(DISPLAYED_DEFAULT_COLOR));
-    m_cachedInvertedDisplayedDefaultColor = colorFromValue(settings()->value(INVERTED_DISPLAYED_DEFAULT_COLOR));
+    cachedDisplayedDefaultColor_ = colorFromValue(settings()->value(DISPLAYED_DEFAULT_COLOR));
+    cachedInvertedDisplayedDefaultColor_ = colorFromValue(settings()->value(INVERTED_DISPLAYED_DEFAULT_COLOR));
 }
 
 Color EngravingConfiguration::indicatorIconInvertedSelectionColor() const {
@@ -263,9 +263,9 @@ Color EngravingConfiguration::invisibleColor() const { return colorFromValue(set
 
 Color EngravingConfiguration::unlinkedColor() const { return colorFromValue(settings()->value(UNLINKED_COLOR)); }
 
-const IEngravingConfiguration::DebuggingOptions &EngravingConfiguration::debuggingOptions() const { return m_debuggingOptions; }
+const IEngravingConfiguration::DebuggingOptions &EngravingConfiguration::debuggingOptions() const { return debuggingOptions_; }
 
-void EngravingConfiguration::setDebuggingOptions(const DebuggingOptions &options) { m_debuggingOptions = options; }
+void EngravingConfiguration::setDebuggingOptions(const DebuggingOptions &options) { debuggingOptions_ = options; }
 
 bool EngravingConfiguration::allowReadingImagesFromOutsideMscz() const { return false; }
 
@@ -276,9 +276,9 @@ bool EngravingConfiguration::guitarProImportExperimental() const {
 
 bool EngravingConfiguration::negativeFretsAllowed() const { return guitarProImportExperimental(); }
 
-void EngravingConfiguration::setGuitarProMultivoiceEnabled(bool multiVoice) { m_multiVoice = multiVoice; }
+void EngravingConfiguration::setGuitarProMultivoiceEnabled(bool multiVoice) { multiVoice_ = multiVoice; }
 
-bool EngravingConfiguration::guitarProMultivoiceEnabled() const { return m_multiVoice; }
+bool EngravingConfiguration::guitarProMultivoiceEnabled() const { return multiVoice_; }
 
 bool EngravingConfiguration::minDistanceForPartialSkylineCalculated() const { return guitarProImportExperimental(); }
 

@@ -67,14 +67,14 @@ public:
 private:
     void updateFactor(double factor);
 
-    bool m_fixedHeight = false;
-    bool m_fixedSpacer = false;
-    double m_factor = 1.0;
-    double m_normalisedSpacing = 0.0;
-    double m_maxActualSpacing = 0.0;
-    double m_addedNormalisedSpace = 0.0;
-    double m_fillSpacing = 0.0;
-    double m_lastStep = 0.0;
+    bool fixedHeight_ = false;
+    bool fixedSpacer_ = false;
+    double factor_ = 1.0;
+    double normalisedSpacing_ = 0.0;
+    double maxActualSpacing_ = 0.0;
+    double addedNormalisedSpace_ = 0.0;
+    double fillSpacing_ = 0.0;
+    double lastStep_ = 0.0;
 };
 
 //---------------------------------------------------------

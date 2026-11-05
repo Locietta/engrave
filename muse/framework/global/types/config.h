@@ -29,34 +29,34 @@ namespace muse {
 struct Config {
     Config() = default;
 
-    Config(const ValMap &v) : m_data(v) {}
+    Config(const ValMap &v) : data_(v) {}
 
     const Val &value(const std::string &key, const Val &def = Val()) const {
-        auto it = m_data.find(key);
-        if (it != m_data.end()) {
+        auto it = data_.find(key);
+        if (it != data_.end()) {
             return it->second;
         }
         return def;
     }
 
-    void set(const std::string &key, const Val &val) { m_data[key] = val; }
+    void set(const std::string &key, const Val &val) { data_[key] = val; }
 
-    auto begin() { return m_data.begin(); }
+    auto begin() { return data_.begin(); }
 
-    auto end() { return m_data.end(); }
+    auto end() { return data_.end(); }
 
-    auto begin() const { return m_data.begin(); }
+    auto begin() const { return data_.begin(); }
 
-    auto end() const { return m_data.end(); }
+    auto end() const { return data_.end(); }
 
-    auto cbegin() const { return m_data.cbegin(); }
+    auto cbegin() const { return data_.cbegin(); }
 
-    auto cend() const { return m_data.cend(); }
+    auto cend() const { return data_.cend(); }
 
-    const ValMap &data() const { return m_data; }
+    const ValMap &data() const { return data_; }
 
 private:
-    ValMap m_data;
+    ValMap data_;
 };
 } // namespace muse
 

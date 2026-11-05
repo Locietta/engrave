@@ -72,8 +72,8 @@ protected:
 
     XmlDomNode(const std::shared_ptr<XmlDomImplData> &xml, xml_node_handle node);
 
-    std::shared_ptr<XmlDomImplData> m_xml = nullptr;
-    xml_node_handle m_node{};
+    std::shared_ptr<XmlDomImplData> xml_ = nullptr;
+    xml_node_handle node_{};
 };
 
 class XmlDomElement : public XmlDomNode {
@@ -107,8 +107,8 @@ private:
 
     explicit XmlDomAttribute(const std::shared_ptr<XmlDomImplData> &data, xml_attr_handle attribute);
 
-    std::shared_ptr<XmlDomImplData> m_xml = nullptr;
-    xml_attr_handle m_attribute{};
+    std::shared_ptr<XmlDomImplData> xml_ = nullptr;
+    xml_attr_handle attribute_{};
 };
 
 class XmlDomDocument {
@@ -123,7 +123,7 @@ public:
     String errorString() const;
 
 private:
-    std::shared_ptr<XmlDomImplData> m_xml = nullptr;
+    std::shared_ptr<XmlDomImplData> xml_ = nullptr;
 };
 } // namespace muse
 

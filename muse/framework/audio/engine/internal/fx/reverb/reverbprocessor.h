@@ -124,7 +124,7 @@ private:
         int _blockSize = 0;
     };
 
-    Processor m_processor;
+    Processor processor_;
 
     // Specific effect data
     template <int num_lines>
@@ -137,15 +137,15 @@ private:
     struct impl;
     impl *d = nullptr; // aligned pointer
 
-    float m_lateGain = 0.1f;
-    float m_lateGainCorrection = 1.f;
-    float m_erToLateGain = 0.f;
+    float lateGain_ = 0.1f;
+    float lateGainCorrection_ = 1.f;
+    float erToLateGain_ = 0.f;
 
-    int m_delays = 16;
+    int delays_ = 16;
 
-    AudioFxParams m_params;
+    AudioFxParams params_;
 
-    float **m_signalBuffers = nullptr;
+    float **signalBuffers_ = nullptr;
 };
 } // namespace muse::audio::fx
 

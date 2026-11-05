@@ -36,7 +36,7 @@ public:
 
     void collectDiveData(const mu::engraving::Chord *chord, const mu::engraving::PitchValues &pitchValues);
 
-    DiveDataContext &context() { return m_ctx; }
+    DiveDataContext &context() { return ctx_; }
 
 private:
     struct PrevWhammy {
@@ -44,7 +44,7 @@ private:
         mu::engraving::Fraction endTick;
     };
 
-    DiveDataContext m_ctx;
-    std::unordered_map<mu::engraving::track_idx_t, PrevWhammy> m_lastWhammyByTrack;
+    DiveDataContext ctx_;
+    std::unordered_map<mu::engraving::track_idx_t, PrevWhammy> lastWhammyByTrack_;
 };
 } // namespace mu::iex::guitarpro

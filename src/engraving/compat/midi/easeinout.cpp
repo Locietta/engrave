@@ -48,8 +48,8 @@ namespace mu::engraving {
 //-------------------------------------------------------------------------------------------------
 double EaseInOut::tFromX(const double x) const {
     const double pi = 3.14159265358979323846;
-    double w1 = m_easeIn - x;
-    double w2 = 1.0 - m_easeOut - x;
+    double w1 = easeIn_ - x;
+    double w2 = 1.0 - easeOut_ - x;
     double d = x + 3.0 * w1 - 3.0 * w2 + (1.0 - x);
     double a = (-3.0 * x - 6.0 * w1 + 3 * w2) / d;
     double b = (3.0 * x + 3.0 * w1) / d;
@@ -108,7 +108,7 @@ double EaseInOut::tFromY(const double y) const { return 0.5 + std::cos((4.0 * M_
 void EaseInOut::timeList(const int nbNotes, const int duration, std::vector<int> *times) const {
     double nNotes = double(nbNotes);
     double space = double(duration);
-    if (RealIsNull(m_easeIn) && RealIsNull(m_easeOut)) {
+    if (RealIsNull(easeIn_) && RealIsNull(easeOut_)) {
         for (int n = 0; n <= nbNotes; n++) {
             times->push_back(static_cast<int>(std::lround((static_cast<double>(n) / nNotes) * space)));
         }

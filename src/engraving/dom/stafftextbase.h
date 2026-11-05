@@ -48,20 +48,20 @@ public:
 
     Segment *segment() const;
 
-    String channelName(voice_idx_t voice) const { return m_channelNames[voice]; }
+    String channelName(voice_idx_t voice) const { return channelNames_[voice]; }
 
-    void setChannelName(voice_idx_t v, const String &s) { m_channelNames[v] = s; }
+    void setChannelName(voice_idx_t v, const String &s) { channelNames_[v] = s; }
 
     void setSwingParameters(int unit, int ratio) {
-        m_swingParameters.swingUnit = unit;
-        m_swingParameters.swingRatio = ratio;
+        swingParameters_.swingUnit = unit;
+        swingParameters_.swingRatio = ratio;
     }
 
-    const std::vector<ChannelActions> &channelActions() const { return m_channelActions; }
+    const std::vector<ChannelActions> &channelActions() const { return channelActions_; }
 
-    std::vector<ChannelActions> &channelActions() { return m_channelActions; }
+    std::vector<ChannelActions> &channelActions() { return channelActions_; }
 
-    const SwingParameters &swingParameters() const { return m_swingParameters; }
+    const SwingParameters &swingParameters() const { return swingParameters_; }
 
     void clearAeolusStops();
     void setAeolusStop(int group, int idx, bool val);
@@ -69,17 +69,17 @@ public:
     bool getAeolusStop(int group, int idx) const;
     int aeolusStop(int group) const;
 
-    void setSetAeolusStops(bool val) { m_setAeolusStops = val; }
+    void setSetAeolusStops(bool val) { setAeolusStops_ = val; }
 
-    void setSwing(bool checked) { m_swing = checked; }
+    void setSwing(bool checked) { swing_ = checked; }
 
-    void setCapo(int fretId) { m_capo = fretId; }
+    void setCapo(int fretId) { capo_ = fretId; }
 
-    bool setAeolusStops() const { return m_setAeolusStops; }
+    bool setAeolusStops() const { return setAeolusStops_; }
 
-    bool swing() const { return m_swing; }
+    bool swing() const { return swing_; }
 
-    int capo() const { return m_capo; }
+    int capo() const { return capo_; }
 
     bool positionRelativeToNoteheadRest() const override { return true; }
 
@@ -87,12 +87,12 @@ public:
     void removed() override;
 
 private:
-    String m_channelNames[4];
-    std::vector<ChannelActions> m_channelActions;
-    SwingParameters m_swingParameters;
-    bool m_setAeolusStops = false;
-    int m_aeolusStops[4]{0, 0, 0, 0};
-    bool m_swing = false;
-    int m_capo = 0;
+    String channelNames_[4];
+    std::vector<ChannelActions> channelActions_;
+    SwingParameters swingParameters_;
+    bool setAeolusStops_ = false;
+    int aeolusStops_[4]{0, 0, 0, 0};
+    bool swing_ = false;
+    int capo_ = 0;
 };
 } // namespace mu::engraving

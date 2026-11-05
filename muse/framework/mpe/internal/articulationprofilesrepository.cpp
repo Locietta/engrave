@@ -69,9 +69,9 @@ static JsonObject jsonObject(const JsonValue &value) { return value.isObject() ?
 ArticulationsProfilePtr ArticulationProfilesRepository::createNew() const { return std::make_shared<ArticulationsProfile>(); }
 
 ArticulationsProfilePtr ArticulationProfilesRepository::defaultProfile(const ArticulationFamily family) const {
-    auto search = m_defaultProfiles.find(family);
+    auto search = defaultProfiles_.find(family);
 
-    if (search != m_defaultProfiles.cend()) {
+    if (search != defaultProfiles_.cend()) {
         return search->second;
     }
 
@@ -83,7 +83,7 @@ ArticulationsProfilePtr ArticulationProfilesRepository::defaultProfile(const Art
     }
 
     ArticulationsProfilePtr result = loadProfile(pathSearch->second);
-    m_defaultProfiles.emplace(family, result);
+    defaultProfiles_.emplace(family, result);
 
     return result;
 }

@@ -44,7 +44,7 @@ struct WriteRange {
 class WriteContext {
 public:
 
-    WriteContext(const Score *s, bool clipboardMode = false) : m_score(s), _clipboardmode(clipboardMode) {}
+    WriteContext(const Score *s, bool clipboardMode = false) : score_(s), _clipboardmode(clipboardMode) {}
 
     std::shared_ptr<IEngravingConfiguration> configuration() const;
 
@@ -111,7 +111,7 @@ public:
 
 private:
 
-    const Score *m_score = nullptr;
+    const Score *score_ = nullptr;
 
     Fraction _curTick{0, 1}; // used to optimize output
     Fraction _tickDiff{0, 1};

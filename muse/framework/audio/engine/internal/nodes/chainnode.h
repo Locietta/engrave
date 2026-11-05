@@ -45,13 +45,13 @@ protected:
     void doAdd(IAudioNodePtr node);
     virtual void rebuild();
 
-    std::vector<IAudioNodePtr> m_nodes;
+    std::vector<IAudioNodePtr> nodes_;
 };
 
 template <typename T>
 void ChainNode<T>::rebuild() {
     IAudioNodePtr next = this->shared_from_this();
-    for (auto &node : m_nodes) {
+    for (auto &node : nodes_) {
         node->disconnectAll();
         node->connect(next);
         next = node;
@@ -72,14 +72,14 @@ void ChainNode<T>::doAdd(IAudioNodePtr node) {
 
     node->setOutputSpec(AudioNode<T>::outputSpec());
     node->setMode(AudioNode<T>::mode());
-    m_nodes.push_back(node);
+    nodes_.push_back(node);
 }
 
 template <typename T>
 void ChainNode<T>::remove(IAudioNodePtr node) {
     IF_ASSERT_FAILED(node) { return; }
 
-    bool removed = muse::remove(m_nodes, node);
+    bool removed = muse::remove(nodes_, node);
     if (removed) {
         node->disconnectAll();
         rebuild();
@@ -88,9 +88,9 @@ void ChainNode<T>::remove(IAudioNodePtr node) {
 
 template <typename T>
 void ChainNode<T>::clear() {
-    for (auto &node : m_nodes) {
+    for (auto &node : nodes_) {
         node->disconnectAll();
     }
-    m_nodes.clear();
+    nodes_.clear();
 }
 } // namespace muse::audio
