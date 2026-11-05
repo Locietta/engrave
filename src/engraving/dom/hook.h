@@ -45,7 +45,7 @@ public:
 
     void setHookType(int v);
 
-    int hookType() const { return m_hookType; }
+    int hookType() const { return hookType_; }
 
     Chord *chord() const { return toChord(ownershipParent()); }
 
@@ -56,7 +56,7 @@ public:
     static SymId symIdForHookIndex(int index, bool straight);
 
 private:
-    int m_hookType = 0;
+    int hookType_ = 0;
 };
 } // namespace mu::engraving
 #endif

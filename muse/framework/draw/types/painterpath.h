@@ -62,7 +62,7 @@ public:
 
     PainterPath() = default;
 
-    bool operator==(const PainterPath &other) const { return other.m_elements == m_elements; }
+    bool operator==(const PainterPath &other) const { return other.elements_ == elements_; }
 
     bool operator!=(const PainterPath &other) const { return !operator==(other); }
 
@@ -119,17 +119,17 @@ private:
     void computeBoundingRect() const;
 
     inline void maybeMoveTo() {
-        if (m_requireMoveTo) {
-            Element e = m_elements.back();
+        if (requireMoveTo_) {
+            Element e = elements_.back();
             e.type = ElementType::MoveToElement;
-            m_elements.push_back(e);
-            m_requireMoveTo = false;
+            elements_.push_back(e);
+            requireMoveTo_ = false;
         }
     }
 
     inline bool isClosed() const {
-        const PainterPath::Element &first = m_elements.at(m_cStart);
-        const PainterPath::Element &last = m_elements.back();
+        const PainterPath::Element &first = elements_.at(cStart_);
+        const PainterPath::Element &last = elements_.back();
         return first.x == last.x && first.y == last.y;
     }
 
@@ -142,14 +142,14 @@ private:
 
     void setDirty();
 
-    int m_cStart = 0;
-    mutable RectF m_bounds;
-    bool m_requireMoveTo = false;
-    mutable bool m_dirtyBounds = false;
-    bool m_convex = false;
-    FillRule m_fillRule = FillRule::OddEvenFill;
+    int cStart_ = 0;
+    mutable RectF bounds_;
+    bool requireMoveTo_ = false;
+    mutable bool dirtyBounds_ = false;
+    bool convex_ = false;
+    FillRule fillRule_ = FillRule::OddEvenFill;
 
-    std::vector<Element> m_elements;
+    std::vector<Element> elements_;
 
     friend class Transform;
 };

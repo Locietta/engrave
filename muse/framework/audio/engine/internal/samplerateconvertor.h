@@ -60,18 +60,18 @@ private:
     void initWindow();
 
     const static unsigned int USE_SAMPLES = 16; //!< this value defines the quality and complexity of SRC.
-    const std::vector<float> &m_data;
+    const std::vector<float> &data_;
 
     //! values of window function for USE_SAMPLES
     const static unsigned int FIR_LENGTH = 33;
-    unsigned int m_M = 1, m_L = 1;
-    std::vector<float> m_fir;
-    mutable std::deque<float> m_y;
+    unsigned int M_ = 1, L_ = 1;
+    std::vector<float> fir_;
+    mutable std::deque<float> y_;
 
-    unsigned int m_channelsCount = 0;
-    unsigned int m_sampleRateIn = 0;
-    unsigned int m_sampleRateOut = 0;
-    Method m_method = FIR;
+    unsigned int channelsCount_ = 0;
+    unsigned int sampleRateIn_ = 0;
+    unsigned int sampleRateOut_ = 0;
+    Method method_ = FIR;
 };
 } // namespace muse::audio::engine
 

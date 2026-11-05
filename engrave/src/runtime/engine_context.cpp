@@ -157,10 +157,10 @@ void EngineContext::Impl::teardown() noexcept {
     }
 }
 
-EngineContext::EngineContext(const std::string &assets, const std::string &cache_root) : m_impl(std::make_unique<Impl>()) {
+EngineContext::EngineContext(const std::string &assets, const std::string &cache_root) : impl_(std::make_unique<Impl>()) {
     // Validates the resources and claims the process; diagnostics go to stderr.
     initialize_native_runtime(assets);
-    Impl &d = *m_impl;
+    Impl &d = *impl_;
     try {
         d.fileSystem = std::make_unique<NativeFileSystem>(std::filesystem::u8path(assets));
         io::setFileSystem(d.fileSystem.get());
@@ -205,19 +205,19 @@ EngineContext::EngineContext(const std::string &assets, const std::string &cache
     }
 }
 
-EngineContext::~EngineContext() { m_impl->teardown(); }
+EngineContext::~EngineContext() { impl_->teardown(); }
 
-io::IFileSystem &EngineContext::fileSystem() const { return *m_impl->fileSystem; }
+io::IFileSystem &EngineContext::fileSystem() const { return *impl_->fileSystem; }
 
-EngineAudio &EngineContext::audio() const { return *m_impl->audio; }
+EngineAudio &EngineContext::audio() const { return *impl_->audio; }
 
-RuntimeAssets &EngineContext::assets() const { return *m_impl->assets; }
+RuntimeAssets &EngineContext::assets() const { return *impl_->assets; }
 
-IFontsDatabase &EngineContext::fontsDatabase() const { return m_impl->assets->fontsDatabase(); }
+IFontsDatabase &EngineContext::fontsDatabase() const { return impl_->assets->fontsDatabase(); }
 
-EngravingServices &EngineContext::engraving() const { return m_impl->engraving; }
+EngravingServices &EngineContext::engraving() const { return impl_->engraving; }
 
-const mpe::IArticulationProfilesRepository &EngineContext::articulationProfiles() const { return *m_impl->articulationProfiles; }
+const mpe::IArticulationProfilesRepository &EngineContext::articulationProfiles() const { return *impl_->articulationProfiles; }
 
-const mu::iex::musicxml::IMusicXmlConfiguration &EngineContext::musicXml() const { return *m_impl->musicXml; }
+const mu::iex::musicxml::IMusicXmlConfiguration &EngineContext::musicXml() const { return *impl_->musicXml; }
 } // namespace music

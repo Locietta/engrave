@@ -49,7 +49,7 @@ public:
 
     void setTuplet(Tuplet *t);
 
-    Tuplet *tuplet() const { return m_tuplet; }
+    Tuplet *tuplet() const { return tuplet_; }
 
     Tuplet *topTuplet() const;
 
@@ -61,12 +61,12 @@ public:
     Fraction endTick() const { return tick() + actualTicks(); }
 
     // Length expressed as a fraction of a whole note
-    virtual Fraction ticks() const { return m_duration; }
+    virtual Fraction ticks() const { return duration_; }
 
     Fraction globalTicks() const;
     float timeStretchFactor() const;
 
-    void setTicks(const Fraction &f) { m_duration = f; }
+    void setTicks(const Fraction &f) { duration_ = f; }
 
     PropertyValue getProperty(Pid propertyId) const override;
     bool setProperty(Pid propertyId, const PropertyValue &) override;
@@ -77,8 +77,8 @@ protected:
     DurationElement(const DurationElement &e, bool link = false);
 
 private:
-    Fraction m_duration;
-    Tuplet *m_tuplet = nullptr;
+    Fraction duration_;
+    Tuplet *tuplet_ = nullptr;
 };
 } // namespace mu::engraving
 

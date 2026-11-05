@@ -29,17 +29,17 @@ using namespace muse::audio;
 using namespace muse::audio::engine;
 
 void AutomationControlNode::setPlayheadPosition(const PlayheadPositionPtr &playheadPosition) {
-    m_playheadPosition = playheadPosition;
-    m_lastGainsPos = std::nullopt;
+    playheadPosition_ = playheadPosition;
+    lastGainsPos_ = std::nullopt;
 }
 
 void AutomationControlNode::setVolume(const AutomatableValue<volume_db_t> &volume) {
-    m_volume = volume;
+    volume_ = volume;
     updateChannelGains(currentPos());
 }
 
 void AutomationControlNode::setPan(const AutomatableValue<balance_t> &pan) {
-    m_pan = pan;
+    pan_ = pan;
     updateChannelGains(currentPos());
 }
 
@@ -49,46 +49,46 @@ bool AutomationControlNode::muted() const { return !enabled(); }
 
 void AutomationControlNode::onOutputSpecChanged(const OutputSpec &) { updateChannelGains(currentPos()); }
 
-secs_t AutomationControlNode::currentPos() const { return m_playheadPosition ? m_playheadPosition->currentPosition().time() : secs_t(0.0); }
+secs_t AutomationControlNode::currentPos() const { return playheadPosition_ ? playheadPosition_->currentPosition().time() : secs_t(0.0); }
 
 void AutomationControlNode::updateChannelGains(secs_t pos) {
-    const volume_db_t volumeDb = m_volume.evaluateAt(pos, VOLUME_DB_MIN, VOLUME_DB_MAX);
-    const balance_t panValue = m_pan.evaluateAt(pos, BALANCE_MIN, BALANCE_MAX);
+    const volume_db_t volumeDb = volume_.evaluateAt(pos, VOLUME_DB_MIN, VOLUME_DB_MAX);
+    const balance_t panValue = pan_.evaluateAt(pos, BALANCE_MIN, BALANCE_MAX);
 
     const float volume = muse::db_to_linear(volumeDb.raw());
     const float pan = panValue.raw();
 
-    const audioch_t channelsCount = m_outputSpec.audioChannelCount;
-    const bool firstUpdate = !m_lastGainsPos.has_value();
-    m_channelGains.resize(channelsCount);
+    const audioch_t channelsCount = outputSpec_.audioChannelCount;
+    const bool firstUpdate = !lastGainsPos_.has_value();
+    channelGains_.resize(channelsCount);
 
     for (audioch_t audioChNum = 0; audioChNum < channelsCount; ++audioChNum) {
         const float gain = dsp::balanceGain(pan, audioChNum) * volume;
         if (firstUpdate) {
-            m_channelGains[audioChNum].initWithValue(gain);
+            channelGains_[audioChNum].initWithValue(gain);
         } else {
-            m_channelGains[audioChNum].setTargetValue(gain);
+            channelGains_[audioChNum].setTargetValue(gain);
         }
     }
 
-    m_lastGainsPos = pos;
+    lastGainsPos_ = pos;
 }
 
 void AutomationControlNode::doSelfProcess(float *buffer, samples_t samplesPerChannel) {
-    if (m_volume.hasAutomation() || m_pan.hasAutomation()) {
+    if (volume_.hasAutomation() || pan_.hasAutomation()) {
         const secs_t pos = currentPos();
-        if (m_lastGainsPos != pos) {
+        if (lastGainsPos_ != pos) {
             updateChannelGains(pos);
         }
     }
 
-    const audioch_t channelsCount = m_outputSpec.audioChannelCount;
+    const audioch_t channelsCount = outputSpec_.audioChannelCount;
 
     for (size_t s = 0; s < samplesPerChannel; ++s) {
         const size_t frameOffset = s * channelsCount;
         for (size_t ch = 0; ch < channelsCount; ++ch) {
             const size_t idx = frameOffset + ch;
-            dsp::SmoothLinearValue<float> &gain = m_channelGains[ch];
+            dsp::SmoothLinearValue<float> &gain = channelGains_[ch];
             buffer[idx] = buffer[idx] * gain.getValue();
             gain.tick();
         }

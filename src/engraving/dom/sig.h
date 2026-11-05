@@ -118,35 +118,35 @@ public:
 
 class SigEvent {
 public:
-    constexpr SigEvent() : m_bar(0) {} ///< default SigEvent is invalid
+    constexpr SigEvent() : bar_(0) {} ///< default SigEvent is invalid
 
-    SigEvent(const Fraction &s, int bar = 0) : m_timesig(s), m_nominal(s), m_bar(bar) {}
+    SigEvent(const Fraction &s, int bar = 0) : timesig_(s), nominal_(s), bar_(bar) {}
 
-    SigEvent(const Fraction &s, const Fraction &ss, int bar = 0) : m_timesig(s), m_nominal(ss), m_bar(bar) {}
+    SigEvent(const Fraction &s, const Fraction &ss, int bar = 0) : timesig_(s), nominal_(ss), bar_(bar) {}
 
     bool operator==(const SigEvent &e) const;
 
-    bool valid() const { return m_timesig.isValid(); }
+    bool valid() const { return timesig_.isValid(); }
 
-    String print() const { return m_timesig.toString(); }
+    String print() const { return timesig_.toString(); }
 
-    TimeSigFrac timesig() const { return m_timesig; }
+    TimeSigFrac timesig() const { return timesig_; }
 
-    void setTimesig(const TimeSigFrac &f) { m_timesig = f; }
+    void setTimesig(const TimeSigFrac &f) { timesig_ = f; }
 
-    TimeSigFrac nominal() const { return m_nominal; }
+    TimeSigFrac nominal() const { return nominal_; }
 
-    void setNominal(const TimeSigFrac &f) { m_nominal = f; }
+    void setNominal(const TimeSigFrac &f) { nominal_ = f; }
 
-    int bar() const { return m_bar; }
+    int bar() const { return bar_; }
 
-    void setBar(int val) { m_bar = val; }
+    void setBar(int val) { bar_ = val; }
 
 private:
 
-    TimeSigFrac m_timesig;
-    TimeSigFrac m_nominal;
-    int m_bar = 0; ///< precomputed value
+    TimeSigFrac timesig_;
+    TimeSigFrac nominal_;
+    int bar_ = 0; ///< precomputed value
 };
 
 //---------------------------------------------------------

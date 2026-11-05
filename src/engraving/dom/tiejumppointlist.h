@@ -38,50 +38,50 @@ public:
 
     TieJumpPoint() {}
 
-    Note *note() const { return m_note; }
+    Note *note() const { return note_; }
 
     Tie *endTie() const;
 
-    bool followingNote() const { return m_followingNote; }
+    bool followingNote() const { return followingNote_; }
 
-    const muse::String &id() const { return m_id; }
+    const muse::String &id() const { return id_; }
 
-    bool active() const { return m_active; }
+    bool active() const { return active_; }
 
-    void setActive(bool v) { m_active = v; }
+    void setActive(bool v) { active_ = v; }
 
     void undoSetActive(bool v);
 
     // Stores the list that this end point belongs to. This is needed to find the start tie from an endpoint
-    void setJumpPointList(TieJumpPointList *jumpPointList) { m_jumpPointList = jumpPointList; }
+    void setJumpPointList(TieJumpPointList *jumpPointList) { jumpPointList_ = jumpPointList; }
 
-    TieJumpPointList *jumpPointList() { return m_jumpPointList; }
+    TieJumpPointList *jumpPointList() { return jumpPointList_; }
 
     muse::TranslatableString menuTitle() const;
 
 private:
     muse::String precedingJumpItemName() const;
-    Note *m_note = nullptr;
-    bool m_active = false;
-    muse::String m_id;
-    TieJumpPointList *m_jumpPointList = nullptr;
-    bool m_followingNote = false;
+    Note *note_ = nullptr;
+    bool active_ = false;
+    muse::String id_;
+    TieJumpPointList *jumpPointList_ = nullptr;
+    bool followingNote_ = false;
 };
 
 // Created & deleted by Note
 // Manages adding and removing ties from endpoints
 class TieJumpPointList {
 public:
-    TieJumpPointList(Note *note) : m_note(note) {}
+    TieJumpPointList(Note *note) : note_(note) {}
 
     ~TieJumpPointList();
 
     void add(TieJumpPoint *item);
     void clear();
 
-    size_t size() const { return m_jumpPoints.size(); }
+    size_t size() const { return jumpPoints_.size(); }
 
-    bool empty() const { return m_jumpPoints.empty(); }
+    bool empty() const { return jumpPoints_.empty(); }
 
     Tie *startTie() const;
 
@@ -91,16 +91,16 @@ public:
     void undoAddTieToScore(TieJumpPoint *jumpPoint);
     void undoRemoveTieFromScore(TieJumpPoint *jumpPoint);
 
-    std::vector<TieJumpPoint *>::iterator begin() { return m_jumpPoints.begin(); }
+    std::vector<TieJumpPoint *>::iterator begin() { return jumpPoints_.begin(); }
 
-    std::vector<TieJumpPoint *>::const_iterator begin() const { return m_jumpPoints.begin(); }
+    std::vector<TieJumpPoint *>::const_iterator begin() const { return jumpPoints_.begin(); }
 
-    std::vector<TieJumpPoint *>::iterator end() { return m_jumpPoints.end(); }
+    std::vector<TieJumpPoint *>::iterator end() { return jumpPoints_.end(); }
 
-    std::vector<TieJumpPoint *>::const_iterator end() const { return m_jumpPoints.end(); }
+    std::vector<TieJumpPoint *>::const_iterator end() const { return jumpPoints_.end(); }
 
 private:
-    std::vector<TieJumpPoint *> m_jumpPoints;
-    Note *m_note = nullptr;
+    std::vector<TieJumpPoint *> jumpPoints_;
+    Note *note_ = nullptr;
 };
 } // namespace mu::engraving

@@ -40,18 +40,18 @@ void FxChain::setFxList(const std::vector<IFxProcessorPtr> &fxList) {
     rebuild();
     updateShouldProcessDuringSilence();
 
-    if (!name().empty() && !m_nodes.empty()) {
-        LOGD() << name() << ": " << m_nodes.front()->dump();
+    if (!name().empty() && !nodes_.empty()) {
+        LOGD() << name() << ": " << nodes_.front()->dump();
     }
 }
 
 void FxChain::setFxChainSpec(const AudioFxChain &fxChainSpec) {
-    if (m_fxChainSpec == fxChainSpec) {
+    if (fxChainSpec_ == fxChainSpec) {
         return;
     }
 
     auto findFxNode = [this](const std::pair<AudioFxChainOrder, AudioFxParams> &params) -> FxNodePtr {
-        for (auto &node : m_nodes) {
+        for (auto &node : nodes_) {
             FxNodePtr fx = std::dynamic_pointer_cast<FxNode>(node);
             IF_ASSERT_FAILED(fx) { continue; }
 
@@ -67,23 +67,23 @@ void FxChain::setFxChainSpec(const AudioFxChain &fxChainSpec) {
         return nullptr;
     };
 
-    m_fxChainSpec = fxChainSpec;
-    for (auto it = m_fxChainSpec.begin(); it != m_fxChainSpec.end();) {
+    fxChainSpec_ = fxChainSpec;
+    for (auto it = fxChainSpec_.begin(); it != fxChainSpec_.end();) {
         if (FxNodePtr fx = findFxNode(*it)) {
             fx->setBypassed(!it->second.active);
             ++it;
         } else {
-            it = m_fxChainSpec.erase(it);
+            it = fxChainSpec_.erase(it);
         }
     }
 
     updateShouldProcessDuringSilence();
 }
 
-const AudioFxChain &FxChain::fxChainSpec() const { return m_fxChainSpec; }
+const AudioFxChain &FxChain::fxChainSpec() const { return fxChainSpec_; }
 
 void FxChain::setPlayheadPosition(PlayheadPositionPtr playheadPosition) {
-    for (auto &node : m_nodes) {
+    for (auto &node : nodes_) {
         FxNodePtr fx = std::dynamic_pointer_cast<FxNode>(node);
         IF_ASSERT_FAILED(fx) { continue; }
 
@@ -92,23 +92,23 @@ void FxChain::setPlayheadPosition(PlayheadPositionPtr playheadPosition) {
 }
 
 void FxChain::rebuild() {
-    for (size_t i = 1; i < m_nodes.size(); ++i) {
-        IAudioNodePtr &prev = m_nodes.at(i - 1);
-        IAudioNodePtr &curr = m_nodes.at(i);
+    for (size_t i = 1; i < nodes_.size(); ++i) {
+        IAudioNodePtr &prev = nodes_.at(i - 1);
+        IAudioNodePtr &curr = nodes_.at(i);
         curr->disconnectAll();
         curr->connect(prev); // prev->input = curr
     }
 }
 
 void FxChain::doSelfProcess(float *buffer, samples_t samplesPerChannel) {
-    if (!m_nodes.empty()) {
-        m_nodes.front()->process(buffer, samplesPerChannel);
+    if (!nodes_.empty()) {
+        nodes_.front()->process(buffer, samplesPerChannel);
     }
 }
 
 void FxChain::updateShouldProcessDuringSilence() {
     bool shouldProcessDuringSilence = false;
-    for (const auto &node : m_nodes) {
+    for (const auto &node : nodes_) {
         FxNodePtr fx = std::dynamic_pointer_cast<FxNode>(node);
         IF_ASSERT_FAILED(fx) { continue; }
 
@@ -118,9 +118,9 @@ void FxChain::updateShouldProcessDuringSilence() {
         }
     }
 
-    if (m_shouldProcessDuringSilence != shouldProcessDuringSilence) {
-        m_shouldProcessDuringSilence = shouldProcessDuringSilence;
+    if (shouldProcessDuringSilence_ != shouldProcessDuringSilence) {
+        shouldProcessDuringSilence_ = shouldProcessDuringSilence;
     }
 }
 
-bool FxChain::shouldProcessDuringSilence() const { return m_shouldProcessDuringSilence; }
+bool FxChain::shouldProcessDuringSilence() const { return shouldProcessDuringSilence_; }

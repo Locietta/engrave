@@ -47,25 +47,25 @@ bool StringData::bFretting = false;
 
 StringData::StringData(int numFrets, int numStrings, int strings[], bool useFlats) {
     instrString strg = {0, false, 0};
-    m_frets = numFrets;
+    frets_ = numFrets;
 
     const int safeNumStrings = std::max(0, numStrings);
-    m_stringTable.reserve(static_cast<size_t>(safeNumStrings));
+    stringTable_.reserve(static_cast<size_t>(safeNumStrings));
     for (int i = 0; i < safeNumStrings; i++) {
         strg.pitch = strings[i];
         strg.useFlat = useFlats;
-        m_stringTable.push_back(strg);
+        stringTable_.push_back(strg);
     }
-    m_useFlats = useFlats;
+    useFlats_ = useFlats;
 }
 
 StringData::StringData(int numFrets, std::vector<instrString> &strings) {
-    m_frets = numFrets;
+    frets_ = numFrets;
 
-    m_stringTable.clear();
-    m_stringTable.reserve(strings.size());
+    stringTable_.clear();
+    stringTable_.reserve(strings.size());
     for (const instrString &i : strings) {
-        m_stringTable.push_back(i);
+        stringTable_.push_back(i);
     }
 }
 
@@ -312,7 +312,7 @@ void StringData::fretChords(Chord *chord) const {
 
 int StringData::frettedStrings() const {
     int num = 0;
-    for (auto s : m_stringTable) {
+    for (auto s : stringTable_) {
         if (!s.open) {
             num++;
         }
@@ -390,7 +390,7 @@ int StringData::pitchOffsetAt(const Staff *staff, const Fraction &tick, int stri
 //---------------------------------------------------------
 
 bool StringData::convertPitch(int pitch, int pitchOffset, int *string, int *fret, const CapoParams &capo) const {
-    int strings = static_cast<int>(m_stringTable.size());
+    int strings = static_cast<int>(stringTable_.size());
     if (strings < 1) {
         return false;
     }
@@ -398,7 +398,7 @@ bool StringData::convertPitch(int pitch, int pitchOffset, int *string, int *fret
     pitch += pitchOffset;
 
     // if above max fret on highest string, fret on first string, but return failure
-    if (pitch > m_stringTable.at(strings - 1).pitch + m_frets) {
+    if (pitch > stringTable_.at(strings - 1).pitch + frets_) {
         *string = 0;
         *fret = 0;
         return false;
@@ -406,14 +406,14 @@ bool StringData::convertPitch(int pitch, int pitchOffset, int *string, int *fret
 
     if (isFiveStringBanjo()) {
         // special case: open banjo 5th string
-        if (pitch == m_stringTable.at(0).pitch) {
+        if (pitch == stringTable_.at(0).pitch) {
             *string = 4;
             *fret = 0;
             return true;
         }
         // test remaining 4 strings from highest to lowest
         for (int i = 4; i > 0; i--) {
-            instrString strg = m_stringTable.at(i);
+            instrString strg = stringTable_.at(i);
             if (pitch >= strg.pitch) {
                 *string = strings - i - 1;
                 *fret = pitch - strg.pitch;
@@ -425,7 +425,7 @@ bool StringData::convertPitch(int pitch, int pitchOffset, int *string, int *fret
         // NOTE: this assumes there are always enough frets to fill
         // the interval between any fretted string and the next
         for (int i = strings - 1; i >= 0; i--) {
-            instrString strg = m_stringTable.at(i);
+            instrString strg = stringTable_.at(i);
             if (pitch >= strg.pitch) {
                 *string = strings - i - 1;
                 int fretCorrection = (capo.active && muse::contains(capo.ignoredStrings, (string_idx_t) *string)) ? capo.fretPosition : 0;
@@ -450,11 +450,11 @@ bool StringData::convertPitch(int pitch, int pitchOffset, int *string, int *fret
 //---------------------------------------------------------
 
 int StringData::getPitch(int string, int fret, int pitchOffset) const {
-    size_t strings = m_stringTable.size();
+    size_t strings = stringTable_.size();
     if (string < 0 || string >= static_cast<int>(strings)) {
         return INVALID_PITCH;
     }
-    instrString strg = m_stringTable.at(strings - string - 1);
+    instrString strg = stringTable_.at(strings - string - 1);
     int pitch = strg.pitch - pitchOffset + (strg.open ? 0 : fret);
     if (strg.startFret > 0 && fret >= strg.startFret) {
         pitch -= strg.startFret; // banjo 5th string adjustment
@@ -469,7 +469,7 @@ int StringData::getPitch(int string, int fret, int pitchOffset) const {
 //---------------------------------------------------------
 
 int StringData::fret(int pitch, int string, int pitchOffset) const {
-    int strings = static_cast<int>(m_stringTable.size());
+    int strings = static_cast<int>(stringTable_.size());
     if (strings < 1) { // no strings at all!
         return INVALID_FRET_INDEX;
     }
@@ -480,14 +480,14 @@ int StringData::fret(int pitch, int string, int pitchOffset) const {
 
     pitch += pitchOffset;
 
-    const instrString &strg = m_stringTable[strings - string - 1];
+    const instrString &strg = stringTable_[strings - string - 1];
     int fret = pitch - strg.pitch;
     if (fret > 0 && strg.startFret > 0) {
         fret += strg.startFret; // banjo 5th string adjustment
     }
 
     // fret number is invalid or string cannot be fretted
-    if (fret < 0 || fret > m_frets || (fret > 0 && strg.open)) {
+    if (fret < 0 || fret > frets_ || (fret > 0 && strg.open)) {
         return INVALID_FRET_INDEX;
     }
     return fret;
@@ -510,13 +510,13 @@ bool StringData::tryResolveStringConflictWithOutOfRangeFret(const Note *note, in
         if (bUsed[static_cast<size_t>(s)] >= 1) {
             continue;
         }
-        const int openPitch = m_stringTable.at(m_stringTable.size() - s - 1).pitch;
-        const int rawFret = note->pitch() + pitchOffsetAt(note->staff(), note->tick(), s) - openPitch; // not clamped to 0..m_frets
+        const int openPitch = stringTable_.at(stringTable_.size() - s - 1).pitch;
+        const int rawFret = note->pitch() + pitchOffsetAt(note->staff(), note->tick(), s) - openPitch; // not clamped to 0..frets_
         int distance;
         if (rawFret < 0) {
             distance = -rawFret;
-        } else if (rawFret > m_frets) {
-            distance = rawFret - m_frets;
+        } else if (rawFret > frets_) {
+            distance = rawFret - frets_;
         } else {
             continue; // only out-of-range frets here; in-range tried above in fretChords
         }
@@ -620,7 +620,7 @@ void StringData::preferBassStringForNegativeFret(const Chord *chord) const {
     if (bassStr <= 0) {
         return;
     }
-    const int openLow = m_stringTable.at(0).pitch;
+    const int openLow = stringTable_.at(0).pitch;
 
     auto bassTaken = [&](const Note *except) {
         for (Note *o : chord->notes()) {
@@ -765,9 +765,9 @@ void StringData::sortChordNotes(std::map<int, Note *> &sortedNotes, const Chord 
 
 void StringData::configBanjo5thString() {
     // banjo 5th string (pitch 67 == G)
-    instrString &strg5 = m_stringTable[0];
+    instrString &strg5 = stringTable_[0];
 
-    m_frets = 24; // not needed after bug #316931 is fixed
+    frets_ = 24; // not needed after bug #316931 is fixed
 
     // adjust startFret if using a 5th string capo (6..12)
     if (strg5.pitch > 67 && strg5.pitch < 74) {
@@ -784,7 +784,7 @@ void StringData::configBanjo5thString() {
 //   Returns adjusted fret number
 //---------------------------------------------------------
 
-int StringData::adjustBanjo5thFret(int fret) const { return (fret > 0 && isFiveStringBanjo()) ? fret + m_stringTable[0].startFret : fret; }
+int StringData::adjustBanjo5thFret(int fret) const { return (fret > 0 && isFiveStringBanjo()) ? fret + stringTable_[0].startFret : fret; }
 
 //---------------------------------------------------------
 //    isFiveStringBanjo
@@ -793,5 +793,5 @@ int StringData::adjustBanjo5thFret(int fret) const { return (fret > 0 && isFiveS
 //    pitch is higher than 4th (i.e. not a 5 string bass)
 //---------------------------------------------------------
 
-bool StringData::isFiveStringBanjo() const { return m_stringTable.size() == 5 && m_stringTable[0].pitch > m_stringTable[1].pitch; }
+bool StringData::isFiveStringBanjo() const { return stringTable_.size() == 5 && stringTable_[0].pitch > stringTable_[1].pitch; }
 } // namespace mu::engraving

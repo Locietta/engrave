@@ -118,6 +118,6 @@ public:
     int getLyricNo(const muse::String &number) const;
     void determineLyricNos();
 private:
-    std::map<muse::String, int> m_numberToNo;
+    std::map<muse::String, int> numberToNo_;
 };
 } // namespace mu::iex::musicxml

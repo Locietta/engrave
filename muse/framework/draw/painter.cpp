@@ -32,29 +32,29 @@ using namespace muse::draw;
 IPaintProviderPtr Painter::extended;
 bool PainterItemMarker::enabled = true;
 
-Painter::Painter(IPaintProviderPtr provider, const std::string &name) : m_provider(provider), m_name(name) { init(); }
+Painter::Painter(IPaintProviderPtr provider, const std::string &name) : provider_(provider), name_(name) { init(); }
 
 Painter::~Painter() { endTarget(false); }
 
 void Painter::init() {
-    m_provider->beginTarget(m_name);
+    provider_->beginTarget(name_);
     if (extended) {
-        extended->beginTarget(m_name);
+        extended->beginTarget(name_);
     }
 
     State st;
-    st.worldTransform = m_provider->transform();
+    st.worldTransform = provider_->transform();
     st.isWxF = true;
     st.transform = st.worldTransform;
 
-    m_states = std::stack<State>();
-    m_states.push(std::move(st));
+    states_ = std::stack<State>();
+    states_.push(std::move(st));
 }
 
-IPaintProviderPtr Painter::provider() const { return m_provider; }
+IPaintProviderPtr Painter::provider() const { return provider_; }
 
 void Painter::setProvider(const IPaintProviderPtr &p, bool reinit) {
-    m_provider = p;
+    provider_ = p;
     if (reinit) {
         init();
     }
@@ -63,59 +63,59 @@ void Painter::setProvider(const IPaintProviderPtr &p, bool reinit) {
 bool Painter::endDraw() { return endTarget(true); }
 
 bool Painter::endTarget(bool endDraw) {
-    m_provider->beforeEndTargetHook(this);
+    provider_->beforeEndTargetHook(this);
     if (extended) {
         extended->beforeEndTargetHook(this);
     }
 
-    bool ok = m_provider->endTarget(endDraw);
+    bool ok = provider_->endTarget(endDraw);
     if (extended) {
         extended->endTarget(endDraw);
     }
     return ok;
 }
 
-bool Painter::isActive() const { return m_provider->isActive(); }
+bool Painter::isActive() const { return provider_->isActive(); }
 
 void Painter::beginObject(const std::string &name) {
-    m_provider->beginObject(name);
+    provider_->beginObject(name);
     if (extended) {
         extended->beginObject(name);
     }
 }
 
 void Painter::endObject() {
-    m_provider->endObject();
+    provider_->endObject();
     if (extended) {
         extended->endObject();
     }
 }
 
 void Painter::setAntialiasing(bool arg) {
-    m_provider->setAntialiasing(arg);
+    provider_->setAntialiasing(arg);
     if (extended) {
         extended->setAntialiasing(arg);
     }
 }
 
 void Painter::setCompositionMode(CompositionMode mode) {
-    m_provider->setCompositionMode(mode);
+    provider_->setCompositionMode(mode);
     if (extended) {
         extended->setCompositionMode(mode);
     }
 }
 
 void Painter::setFont(const Font &font) {
-    m_provider->setFont(font);
+    provider_->setFont(font);
     if (extended) {
         extended->setFont(font);
     }
 }
 
-const Font &Painter::font() const { return m_provider->font(); }
+const Font &Painter::font() const { return provider_->font(); }
 
 void Painter::setPen(const Pen &pen) {
-    m_provider->setPen(pen);
+    provider_->setPen(pen);
     if (extended) {
         extended->setPen(pen);
     }
@@ -123,39 +123,39 @@ void Painter::setPen(const Pen &pen) {
 
 void Painter::setNoPen() { setPen(Pen(PenStyle::NoPen)); }
 
-const Pen &Painter::pen() const { return m_provider->pen(); }
+const Pen &Painter::pen() const { return provider_->pen(); }
 
 void Painter::setBrush(const Brush &brush) {
-    m_provider->setBrush(brush);
+    provider_->setBrush(brush);
     if (extended) {
         extended->setBrush(brush);
     }
 }
 
-const Brush &Painter::brush() const { return m_provider->brush(); }
+const Brush &Painter::brush() const { return provider_->brush(); }
 
 void Painter::save() {
-    State newSt = m_states.top();
-    m_states.push(newSt);
+    State newSt = states_.top();
+    states_.push(newSt);
 
-    m_provider->save();
+    provider_->save();
     if (extended) {
         extended->save();
     }
 }
 
 void Painter::restore() {
-    if (m_states.size() > 0) {
-        m_states.pop();
+    if (states_.size() > 0) {
+        states_.pop();
     }
 
-    m_provider->restore();
+    provider_->restore();
     if (extended) {
         extended->restore();
     }
 }
 
-double Painter::deviceLogicalDpi() const { return m_provider->deviceLogicalDpi(); }
+double Painter::deviceLogicalDpi() const { return provider_->deviceLogicalDpi(); }
 
 void Painter::setWorldTransform(const Transform &matrix, bool combine) {
     State &st = editableState();
@@ -200,7 +200,7 @@ void Painter::setWindow(const RectF &window) {
     updateViewTransform();
 
     // for debug purpose
-    m_provider->setWindow(window);
+    provider_->setWindow(window);
     if (extended) {
         extended->setWindow(window);
     }
@@ -215,7 +215,7 @@ void Painter::setViewport(const RectF &viewport) {
     updateViewTransform();
 
     // for debug purpose
-    m_provider->setViewport(viewport);
+    provider_->setViewport(viewport);
     if (extended) {
         extended->setViewport(viewport);
     }
@@ -248,7 +248,7 @@ void Painter::strokePath(const PainterPath &path, const Pen &pen) {
 }
 
 void Painter::drawPath(const PainterPath &path) {
-    m_provider->drawPath(path);
+    provider_->drawPath(path);
     if (extended) {
         extended->drawPath(path);
     }
@@ -284,14 +284,14 @@ void Painter::drawRects(const RectF *rects, size_t rectCount) {
 void Painter::drawEllipse(const RectF &rect) {
     PainterPath path;
     path.addEllipse(rect);
-    m_provider->drawPath(path);
+    provider_->drawPath(path);
     if (extended) {
         extended->drawPath(path);
     }
 }
 
 void Painter::drawPolyline(const PointF *points, size_t pointCount) {
-    m_provider->drawPolygon(points, pointCount, PolygonMode::Polyline);
+    provider_->drawPolygon(points, pointCount, PolygonMode::Polyline);
     if (extended) {
         extended->drawPolygon(points, pointCount, PolygonMode::Polyline);
     }
@@ -299,14 +299,14 @@ void Painter::drawPolyline(const PointF *points, size_t pointCount) {
 
 void Painter::drawPolygon(const PointF *points, size_t pointCount, FillRule fillRule) {
     PolygonMode mode = (fillRule == FillRule::OddEvenFill) ? PolygonMode::OddEven : PolygonMode::Winding;
-    m_provider->drawPolygon(points, pointCount, mode);
+    provider_->drawPolygon(points, pointCount, mode);
     if (extended) {
         extended->drawPolygon(points, pointCount, mode);
     }
 }
 
 void Painter::drawConvexPolygon(const PointF *points, size_t pointCount) {
-    m_provider->drawPolygon(points, pointCount, PolygonMode::Convex);
+    provider_->drawPolygon(points, pointCount, PolygonMode::Convex);
     if (extended) {
         extended->drawPolygon(points, pointCount, PolygonMode::Convex);
     }
@@ -345,7 +345,7 @@ void Painter::applyFontSizeScaling() {
 void Painter::drawText(const PointF &point, const String &text) {
     applyFontSizeScaling();
 
-    m_provider->drawText(point, text);
+    provider_->drawText(point, text);
     if (extended) {
         extended->drawText(point, text);
     }
@@ -354,7 +354,7 @@ void Painter::drawText(const PointF &point, const String &text) {
 void Painter::drawText(const RectF &rect, Alignment alignment, TextFlags textFlags, const String &text) {
     applyFontSizeScaling();
 
-    m_provider->drawText(rect, alignment, textFlags, text);
+    provider_->drawText(rect, alignment, textFlags, text);
     if (extended) {
         extended->drawText(rect, alignment, textFlags, text);
     }
@@ -363,7 +363,7 @@ void Painter::drawText(const RectF &rect, Alignment alignment, TextFlags textFla
 void Painter::drawSymbol(const PointF &point, char32_t ucs4Code) {
     applyFontSizeScaling();
 
-    m_provider->drawSymbol(point, ucs4Code);
+    provider_->drawSymbol(point, ucs4Code);
     if (extended) {
         extended->drawSymbol(point, ucs4Code);
     }
@@ -382,22 +382,22 @@ void Painter::fillRect(const RectF &rect, const Brush &brush) {
 }
 
 void Painter::drawPixmap(const PointF &point, const Pixmap &pm) {
-    m_provider->drawPixmap(point, pm);
+    provider_->drawPixmap(point, pm);
     if (extended) {
         extended->drawPixmap(point, pm);
     }
 }
 
 void Painter::drawTiledPixmap(const RectF &rect, const Pixmap &pm, const PointF &offset) {
-    m_provider->drawTiledPixmap(rect, pm, offset);
+    provider_->drawTiledPixmap(rect, pm, offset);
     if (extended) {
         extended->drawTiledPixmap(rect, pm, offset);
     }
 }
 
-Painter::State &Painter::editableState() { return m_states.top(); }
+Painter::State &Painter::editableState() { return states_.top(); }
 
-const Painter::State &Painter::state() const { return m_states.top(); }
+const Painter::State &Painter::state() const { return states_.top(); }
 
 void Painter::updateViewTransform() {
     State &st = editableState();
@@ -420,16 +420,16 @@ void Painter::updateMatrix() {
         st.transform *= st.viewTransform;
     }
 
-    m_provider->setTransform(st.transform);
+    provider_->setTransform(st.transform);
     if (extended) {
         extended->setTransform(st.transform);
     }
 }
 
-bool Painter::hasClipping() const { return m_provider->hasClipping(); }
+bool Painter::hasClipping() const { return provider_->hasClipping(); }
 
-void Painter::setClipRect(const RectF &rect) { m_provider->setClipRect(rect); }
+void Painter::setClipRect(const RectF &rect) { provider_->setClipRect(rect); }
 
-void Painter::setMask(const RectF &background, const std::vector<RectF> &maskRects) { m_provider->setMask(background, maskRects); }
+void Painter::setMask(const RectF &background, const std::vector<RectF> &maskRects) { provider_->setMask(background, maskRects); }
 
-void Painter::setClipping(bool enable) { m_provider->setClipping(enable); }
+void Painter::setClipping(bool enable) { provider_->setClipping(enable); }

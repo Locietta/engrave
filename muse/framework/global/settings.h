@@ -106,10 +106,10 @@ private:
     Items readItems() const;
     void writeValue(const Key &key, const Val &value);
 
-    QSettings *m_settings = nullptr;
-    mutable Items m_items;
-    mutable Items m_localSettings;
-    mutable bool m_isTransactionStarted = false;
+    QSettings *settings_ = nullptr;
+    mutable Items items_;
+    mutable Items localSettings_;
+    mutable bool isTransactionStarted_ = false;
 };
 
 inline Settings *settings() { return Settings::instance(); }

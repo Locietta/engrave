@@ -46,21 +46,21 @@ class EngravingItem;
 struct ShapeElement : public RectF {
 public:
 
-    ShapeElement(const RectF &f, const EngravingItem *p, bool ignoreForLayout) : RectF(f), m_item(p), m_ignoreForLayout(ignoreForLayout) {}
+    ShapeElement(const RectF &f, const EngravingItem *p, bool ignoreForLayout) : RectF(f), item_(p), ignoreForLayout_(ignoreForLayout) {}
 
-    ShapeElement(const RectF &f, const EngravingItem *p) : RectF(f), m_item(p) {}
+    ShapeElement(const RectF &f, const EngravingItem *p) : RectF(f), item_(p) {}
 
     ShapeElement(const RectF &f) : RectF(f) {}
 
-    const EngravingItem *item() const { return m_item; }
+    const EngravingItem *item() const { return item_; }
 
-    void setItem(const EngravingItem *item) { m_item = item; }
+    void setItem(const EngravingItem *item) { item_ = item; }
 
-    bool ignoreForLayout() const { return m_ignoreForLayout; }
+    bool ignoreForLayout() const { return ignoreForLayout_; }
 
 private:
-    const EngravingItem *m_item = nullptr;
-    bool m_ignoreForLayout = false;
+    const EngravingItem *item_ = nullptr;
+    bool ignoreForLayout_ = false;
 };
 
 //---------------------------------------------------------
@@ -77,30 +77,30 @@ public:
         Composite // composed of other shapes
     };
 
-    Shape(Type t = Type::Fixed) : m_type(t) {}
+    Shape(Type t = Type::Fixed) : type_(t) {}
 
-    Shape(const RectF &r, const EngravingItem *p = nullptr, Type t = Type::Fixed) : m_type(t) { setBBox(r, p); }
+    Shape(const RectF &r, const EngravingItem *p = nullptr, Type t = Type::Fixed) : type_(t) { setBBox(r, p); }
 
     Shape(const std::vector<RectF> &rects, const EngravingItem *p = nullptr);
 
-    Type type() const { return m_type; }
+    Type type() const { return type_; }
 
-    bool isComposite() const { return m_type == Type::Composite; }
+    bool isComposite() const { return type_ == Type::Composite; }
 
-    size_t size() const { return m_elements.size(); }
+    size_t size() const { return elements_.size(); }
 
-    bool empty() const { return m_elements.empty(); }
+    bool empty() const { return elements_.empty(); }
 
-    void clear() { m_elements.clear(); }
+    void clear() { elements_.clear(); }
 
     bool equal(const Shape &sh) const {
-        if (m_type != sh.m_type) {
+        if (type_ != sh.type_) {
             return false;
         }
 
-        switch (m_type) {
+        switch (type_) {
             case Type::Fixed: return this->bbox() == sh.bbox();
-            case Type::Composite: return this->m_elements == sh.m_elements;
+            case Type::Composite: return this->elements_ == sh.elements_;
         }
 
         return true;
@@ -125,17 +125,17 @@ public:
 
     template <typename Predicate>
     inline bool remove_if(Predicate p) {
-        size_t origSize = m_elements.size();
-        m_elements.erase(std::remove_if(m_elements.begin(), m_elements.end(), p), m_elements.end());
+        size_t origSize = elements_.size();
+        elements_.erase(std::remove_if(elements_.begin(), elements_.end(), p), elements_.end());
         invalidateBBox();
-        return origSize != m_elements.size();
+        return origSize != elements_.size();
     }
 
     // ---
 
-    const std::vector<ShapeElement> &elements() const { return m_elements; }
+    const std::vector<ShapeElement> &elements() const { return elements_; }
 
-    std::vector<ShapeElement> &elements() { return m_elements; }
+    std::vector<ShapeElement> &elements() { return elements_; }
 
     std::vector<RectF> toRects() const;
 
@@ -189,9 +189,9 @@ private:
 
     void invalidateBBox();
 
-    Type m_type = Type::Fixed;
-    std::vector<ShapeElement> m_elements;
-    mutable RectF m_bbox; // cache
+    Type type_ = Type::Fixed;
+    std::vector<ShapeElement> elements_;
+    mutable RectF bbox_; // cache
 };
 
 void dump(const ShapeElement &sh, std::stringstream &ss);

@@ -72,42 +72,42 @@ public:
     void setCustom(bool val);
     void print() const;
 
-    Key concertKey() const { return m_concertKey; }
+    Key concertKey() const { return concertKey_; }
 
-    Key key() const { return m_key; }
+    Key key() const { return key_; }
 
-    KeyMode mode() const { return m_mode; }
+    KeyMode mode() const { return mode_; }
 
-    void setMode(KeyMode m) { m_mode = m; }
+    void setMode(KeyMode m) { mode_ = m; }
 
-    bool custom() const { return m_custom; }
+    bool custom() const { return custom_; }
 
-    bool isValid() const { return m_key != Key::INVALID; }
+    bool isValid() const { return key_ != Key::INVALID; }
 
-    bool isAtonal() const { return m_mode == KeyMode::NONE; }
+    bool isAtonal() const { return mode_ == KeyMode::NONE; }
 
-    void setForInstrumentChange(bool forInstrumentChange) { m_forInstrumentChange = forInstrumentChange; }
+    void setForInstrumentChange(bool forInstrumentChange) { forInstrumentChange_ = forInstrumentChange; }
 
-    bool forInstrumentChange() const { return m_forInstrumentChange; }
+    bool forInstrumentChange() const { return forInstrumentChange_; }
 
     void initFromSubtype(int);      // for backward compatibility
     int degInKey(int degree) const; // return "absolute degree"
     SymId symInKey(SymId sym, int degree) const;
 
-    std::vector<CustDef> &customKeyDefs() { return m_customKeyDefs; }
+    std::vector<CustDef> &customKeyDefs() { return customKeyDefs_; }
 
-    const std::vector<CustDef> &customKeyDefs() const { return m_customKeyDefs; }
+    const std::vector<CustDef> &customKeyDefs() const { return customKeyDefs_; }
 
 private:
 
     void enforceLimits(bool transposing = false); // if true, enforce only trnasposing, otherways both
 
-    Key m_concertKey = Key::INVALID; // -7 -> +7
-    Key m_key = Key::INVALID;        // actual key, depends on staff transposition
-    KeyMode m_mode = KeyMode::UNKNOWN;
-    bool m_custom = false;
-    bool m_forInstrumentChange = false;
-    std::vector<CustDef> m_customKeyDefs;
+    Key concertKey_ = Key::INVALID; // -7 -> +7
+    Key key_ = Key::INVALID;        // actual key, depends on staff transposition
+    KeyMode mode_ = KeyMode::UNKNOWN;
+    bool custom_ = false;
+    bool forInstrumentChange_ = false;
+    std::vector<CustDef> customKeyDefs_;
 };
 
 //---------------------------------------------------------
@@ -134,8 +134,8 @@ public:
 
 private:
 
-    uint8_t m_state[MAX_ACC_STATE] = {}; // (0 -- 4) | TIE_CONTEXT
-    std::array<bool, MAX_ACC_STATE> m_forceRestateAccidental;
+    uint8_t state_[MAX_ACC_STATE] = {}; // (0 -- 4) | TIE_CONTEXT
+    std::array<bool, MAX_ACC_STATE> forceRestateAccidental_;
 };
 
 struct Interval;

@@ -95,8 +95,8 @@ void MusicXmlConfiguration::setExportInvisibleElements(bool value) {
 }
 
 bool MusicXmlConfiguration::needUseDefaultFont() const {
-    if (m_needUseDefaultFontOverride.has_value()) {
-        return m_needUseDefaultFontOverride.value();
+    if (needUseDefaultFontOverride_.has_value()) {
+        return needUseDefaultFontOverride_.value();
     }
 
     return settings()->value(MIGRATION_APPLY_EDWIN_FOR_XML).toBool();
@@ -104,7 +104,7 @@ bool MusicXmlConfiguration::needUseDefaultFont() const {
 
 void MusicXmlConfiguration::setNeedUseDefaultFont(bool value) { settings()->setSharedValue(MIGRATION_APPLY_EDWIN_FOR_XML, Val(value)); }
 
-void MusicXmlConfiguration::setNeedUseDefaultFontOverride(std::optional<bool> value) { m_needUseDefaultFontOverride = value; }
+void MusicXmlConfiguration::setNeedUseDefaultFontOverride(std::optional<bool> value) { needUseDefaultFontOverride_ = value; }
 
 bool MusicXmlConfiguration::needAskAboutApplyingNewStyle() const { return !settings()->value(MIGRATION_NOT_ASK_AGAIN_KEY).toBool(); }
 
@@ -113,8 +113,8 @@ void MusicXmlConfiguration::setNeedAskAboutApplyingNewStyle(bool value) {
 }
 
 bool MusicXmlConfiguration::inferTextType() const {
-    if (m_inferTextTypeOverride.has_value()) {
-        return m_inferTextTypeOverride.value();
+    if (inferTextTypeOverride_.has_value()) {
+        return inferTextTypeOverride_.value();
     }
 
     return settings()->value(MUSICXML_IMPORT_INFER_TEXT_TYPE).toBool();
@@ -122,4 +122,4 @@ bool MusicXmlConfiguration::inferTextType() const {
 
 void MusicXmlConfiguration::setInferTextType(bool value) { settings()->setSharedValue(MUSICXML_IMPORT_INFER_TEXT_TYPE, Val(value)); }
 
-void MusicXmlConfiguration::setInferTextTypeOverride(std::optional<bool> value) { m_inferTextTypeOverride = value; }
+void MusicXmlConfiguration::setInferTextTypeOverride(std::optional<bool> value) { inferTextTypeOverride_ = value; }

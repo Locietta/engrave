@@ -460,7 +460,7 @@ bool MnxExporter::createRest(mnx::sequence::Event &mnxEvent, ChordRest *chordRes
     IF_ASSERT_FAILED(chordRest->isRest()) { return false; }
     auto mnxRest = mnxEvent.ensure_rest();
 
-    if (m_exportRestPositions) {
+    if (exportRestPositions_) {
         if (Rest *rest = toRest(chordRest)) {
             const Staff *staff = rest->staff();
             if (staff && rest->ldata() && rest->ldata()->isSetPos()) {
@@ -652,7 +652,7 @@ bool MnxExporter::appendEvent(mnx::sequence::SequenceContent content, ExportCont
     auto mnxEvent = content.appendEvent(noteValue->base, noteValue->dots);
 
     mnxEvent.set_id(getOrAssignEID(chordRest).toStdString());
-    createLyrics(mnxEvent, chordRest, m_lyricLineIds);
+    createLyrics(mnxEvent, chordRest, lyricLineIds_);
     createMarkings(mnxEvent, chordRest);
     if (chordRest->staffMove() != 0) {
         const int crossStaff = ctx.mnxPartStaff + chordRest->staffMove();
@@ -677,8 +677,8 @@ bool MnxExporter::appendEvent(mnx::sequence::SequenceContent content, ExportCont
     const bool success = isRest ? createRest(mnxEvent, chordRest) : createNotes(mnxEvent, chordRest);
 
     if (success) {
-        m_crToMnxEvent.emplace(chordRest, mnxEvent.pointer());
-        if (m_exportBeams) {
+        crToMnxEvent_.emplace(chordRest, mnxEvent.pointer());
+        if (exportBeams_) {
             createBeam(ctx, chordRest);
         }
     } else {
@@ -977,7 +977,7 @@ void MnxExporter::createSequences(const Part *part, const Measure *measure, mnx:
                     if (rest->durationType().isMeasure()) {
                         if (rest->visible() && !rest->isGap()) {
                             auto fullMeasure = mnxSequence.ensure_fullMeasure();
-                            if (m_exportRestPositions && rest->staff() && rest->ldata() && rest->ldata()->isSetPos()) {
+                            if (exportRestPositions_ && rest->staff() && rest->ldata() && rest->ldata()->isSetPos()) {
                                 const double lineDist = rest->staff()->lineDistance(rest->tick());
                                 const double staffStep = lineDist * rest->spatium() * 0.5; // half-space
                                 if (staffStep > 0.0) {

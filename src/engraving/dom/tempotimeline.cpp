@@ -132,13 +132,13 @@ void TempoTimeline::rebuild(const AutomationCurve &tempoCurve, const PausesMap &
 void TempoTimeline::rebuild(const TempoValues &tempoValues, const PausesMap &pauses) {
     TRACEFUNC;
 
-    m_points.clear();
-    m_pauses = pauses;
-    m_utick2utimeHint = 0;
-    m_utime2utickHint = 0;
-    m_tempoHint = 0;
+    points_.clear();
+    pauses_ = pauses;
+    utick2utimeHint_ = 0;
+    utime2utickHint_ = 0;
+    tempoHint_ = 0;
 
-    m_points.reserve(tempoValues.size() + pauses.size());
+    points_.reserve(tempoValues.size() + pauses.size());
 
     // Merge-walk values (tick->bps) and pauses (tick->held seconds) by tick in one pass
     auto vit = tempoValues.begin();
@@ -150,80 +150,79 @@ void TempoTimeline::rebuild(const TempoValues &tempoValues, const PausesMap &pau
 
         if (valueIsNext) {
             double time = 0.0;
-            if (!m_points.empty()) {
-                const TempoTimePoint &prev = m_points.back();
+            if (!points_.empty()) {
+                const TempoTimePoint &prev = points_.back();
                 time = prev.time + double(utick - prev.utick) / (Constants::DIVISION * prev.bps);
             }
             // Clamp to the valid tempo range so a zero/negative bps can't make time math divide by zero
             const double bps = std::clamp(vit->second, Constants::MIN_TEMPO.val, Constants::MAX_TEMPO.val);
-            m_points.push_back({utick, time, bps, 0.0});
+            points_.push_back({utick, time, bps, 0.0});
             ++vit;
         }
 
         // A pause can land on the same tick as the value point just emitted above
         if (pit != pauses.end() && pit->first == utick) {
-            if (m_points.empty()) {
+            if (points_.empty()) {
                 // No tempo value at or before this pause - anchor with the default tempo
-                m_points.push_back({utick, 0.0, Constants::DEFAULT_TEMPO.val, 0.0});
+                points_.push_back({utick, 0.0, Constants::DEFAULT_TEMPO.val, 0.0});
             }
-            const TempoTimePoint &prev = m_points.back();
+            const TempoTimePoint &prev = points_.back();
             const double time = prev.utick == utick ? prev.time : prev.time + double(utick - prev.utick) / (Constants::DIVISION * prev.bps);
-            m_points.push_back({utick, time + pit->second, prev.bps, pit->second});
+            points_.push_back({utick, time + pit->second, prev.bps, pit->second});
             ++pit;
         }
     }
 }
 
 double TempoTimeline::utick2utime(int utick) const {
-    const size_t n = m_points.size();
+    const size_t n = points_.size();
     if (n == 0) {
         return 0.;
     }
 
     bool hintValid = false;
-    if (m_utick2utimeHint < n) {
-        const int hintUtick = m_points[m_utick2utimeHint].utick;
-        const bool isLastPoint = (m_utick2utimeHint + 1 == n);
-        hintValid = utick >= hintUtick && (isLastPoint || utick < m_points[m_utick2utimeHint + 1].utick);
+    if (utick2utimeHint_ < n) {
+        const int hintUtick = points_[utick2utimeHint_].utick;
+        const bool isLastPoint = (utick2utimeHint_ + 1 == n);
+        hintValid = utick >= hintUtick && (isLastPoint || utick < points_[utick2utimeHint_ + 1].utick);
     }
 
     if (!hintValid) {
-        const auto it =
-            std::upper_bound(m_points.begin(), m_points.end(), utick, [](int u, const TempoTimePoint &p) { return u < p.utick; });
-        m_utick2utimeHint = it == m_points.begin() ? 0 : size_t(std::prev(it) - m_points.begin());
+        const auto it = std::upper_bound(points_.begin(), points_.end(), utick, [](int u, const TempoTimePoint &p) { return u < p.utick; });
+        utick2utimeHint_ = it == points_.begin() ? 0 : size_t(std::prev(it) - points_.begin());
     }
 
-    const TempoTimePoint &from = m_points[m_utick2utimeHint];
+    const TempoTimePoint &from = points_[utick2utimeHint_];
     const double nominalTime = from.time + double(utick - from.utick) / (Constants::DIVISION * from.bps);
-    return nominalTime / m_tempoMultiplier.val;
+    return nominalTime / tempoMultiplier_.val;
 }
 
 int TempoTimeline::utime2utick(double time) const {
-    const size_t n = m_points.size();
+    const size_t n = points_.size();
     if (n == 0) {
         return 0;
     }
 
-    const double nominalSecs = time * m_tempoMultiplier.val;
+    const double nominalSecs = time * tempoMultiplier_.val;
 
     bool hintValid = false;
-    if (m_utime2utickHint < n) {
-        const double hintTime = m_points[m_utime2utickHint].time;
-        const bool isLastPoint = (m_utime2utickHint + 1 == n);
-        hintValid = nominalSecs >= hintTime && (isLastPoint || nominalSecs < m_points[m_utime2utickHint + 1].time);
+    if (utime2utickHint_ < n) {
+        const double hintTime = points_[utime2utickHint_].time;
+        const bool isLastPoint = (utime2utickHint_ + 1 == n);
+        hintValid = nominalSecs >= hintTime && (isLastPoint || nominalSecs < points_[utime2utickHint_ + 1].time);
     }
 
     if (!hintValid) {
         const auto it =
-            std::upper_bound(m_points.begin(), m_points.end(), nominalSecs, [](double s, const TempoTimePoint &p) { return s < p.time; });
-        m_utime2utickHint = it == m_points.begin() ? 0 : size_t(std::prev(it) - m_points.begin());
+            std::upper_bound(points_.begin(), points_.end(), nominalSecs, [](double s, const TempoTimePoint &p) { return s < p.time; });
+        utime2utickHint_ = it == points_.begin() ? 0 : size_t(std::prev(it) - points_.begin());
     }
 
-    const size_t idx = m_utime2utickHint;
-    const TempoTimePoint &from = m_points[idx];
+    const size_t idx = utime2utickHint_;
+    const TempoTimePoint &from = points_[idx];
 
     if (idx + 1 < n) {
-        const TempoTimePoint &next = m_points[idx + 1];
+        const TempoTimePoint &next = points_[idx + 1];
         if (next.pause > 0.0 && nominalSecs >= next.time - next.pause) {
             return next.utick; // still inside next's pause window: hold there
         }
@@ -234,29 +233,28 @@ int TempoTimeline::utime2utick(double time) const {
 }
 
 BeatsPerSecond TempoTimeline::tempo(int utick) const {
-    const size_t n = m_points.size();
+    const size_t n = points_.size();
     if (n == 0) {
         return Constants::DEFAULT_TEMPO;
     }
 
     bool hintValid = false;
-    if (m_tempoHint < n) {
-        const int hintUtick = m_points[m_tempoHint].utick;
-        const bool isLastPoint = (m_tempoHint + 1 == n);
-        hintValid = utick >= hintUtick && (isLastPoint || utick < m_points[m_tempoHint + 1].utick);
+    if (tempoHint_ < n) {
+        const int hintUtick = points_[tempoHint_].utick;
+        const bool isLastPoint = (tempoHint_ + 1 == n);
+        hintValid = utick >= hintUtick && (isLastPoint || utick < points_[tempoHint_ + 1].utick);
     }
 
     if (!hintValid) {
-        const auto it =
-            std::upper_bound(m_points.begin(), m_points.end(), utick, [](int u, const TempoTimePoint &p) { return u < p.utick; });
-        m_tempoHint = it == m_points.begin() ? 0 : size_t(std::prev(it) - m_points.begin());
+        const auto it = std::upper_bound(points_.begin(), points_.end(), utick, [](int u, const TempoTimePoint &p) { return u < p.utick; });
+        tempoHint_ = it == points_.begin() ? 0 : size_t(std::prev(it) - points_.begin());
     }
 
-    return BeatsPerSecond(m_points[m_tempoHint].bps);
+    return BeatsPerSecond(points_[tempoHint_].bps);
 }
 
 void TempoTimeline::setTempoMultiplier(const BeatsPerSecond &bps) {
     IF_ASSERT_FAILED(bps.val > 0.0) { return; }
 
-    m_tempoMultiplier = bps;
+    tempoMultiplier_ = bps;
 }

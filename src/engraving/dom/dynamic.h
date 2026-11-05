@@ -67,19 +67,19 @@ public:
 
     Measure *measure() const { return (Measure *) ownershipParent()->ownershipParent(); }
 
-    void setDynamicType(DynamicType val) { m_dynamicType = val; }
+    void setDynamicType(DynamicType val) { dynamicType_ = val; }
 
     void setDynamicType(const String &);
 
-    DynamicType dynamicType() const { return m_dynamicType; }
+    DynamicType dynamicType() const { return dynamicType_; }
 
-    int subtype() const override { return static_cast<int>(m_dynamicType); }
+    int subtype() const override { return static_cast<int>(dynamicType_); }
 
     TranslatableString subtypeUserName() const override;
 
     void reset() override;
 
-    void setVelocity(int v) { m_velocity = v; }
+    void setVelocity(int v) { velocity_ = v; }
 
     int velocity() const;
 
@@ -88,9 +88,9 @@ public:
     Fraction velocityChangeLength(BeatsPerSecond tempo) const;
     bool isVelocityChangeAvailable() const;
 
-    DynamicSpeed velChangeSpeed() const { return m_velChangeSpeed; }
+    DynamicSpeed velChangeSpeed() const { return velChangeSpeed_; }
 
-    void setVelChangeSpeed(DynamicSpeed val) { m_velChangeSpeed = val; }
+    void setVelChangeSpeed(DynamicSpeed val) { velChangeSpeed_ = val; }
 
     PropertyValue getProperty(Pid propertyId) const override;
     bool setProperty(Pid propertyId, const PropertyValue &) override;
@@ -99,14 +99,14 @@ public:
 
     static String dynamicText(DynamicType t);
 
-    bool hasCustomText() const { return dynamicText(m_dynamicType) != xmlText(); }
+    bool hasCustomText() const { return dynamicText(dynamicType_) != xmlText(); }
 
     Expression *snappedExpression() const;
     HairpinSegment *findSnapBeforeHairpinAcrossSystemBreak() const;
 
-    bool playDynamic() const { return m_playDynamic; }
+    bool playDynamic() const { return playDynamic_; }
 
-    void setPlayDynamic(bool v) { m_playDynamic = v; }
+    void setPlayDynamic(bool v) { playDynamic_ = v; }
 
     bool acceptDrop(EditData &ed) const override;
     EngravingItem *drop(Transaction &tx, EditData &ed) override;
@@ -121,20 +121,20 @@ public:
 
     bool sizeIsSpatiumDependent() const override { return true; }
 
-    Hairpin *leftHairpin() const { return m_leftHairpin; }
+    Hairpin *leftHairpin() const { return leftHairpin_; }
 
-    Hairpin *rightHairpin() const { return m_rightHairpin; }
+    Hairpin *rightHairpin() const { return rightHairpin_; }
 
     bool hasLeftGrip() const;
     bool hasRightGrip() const;
 
-    void resetLeftDragOffset() { m_leftDragOffset = 0.0; }
+    void resetLeftDragOffset() { leftDragOffset_ = 0.0; }
 
-    void resetRightDragOffset() { m_rightDragOffset = 0.0; }
+    void resetRightDragOffset() { rightDragOffset_ = 0.0; }
 
-    double leftDragOffset() const { return m_leftDragOffset; }
+    double leftDragOffset() const { return leftDragOffset_; }
 
-    double rightDragOffset() const { return m_rightDragOffset; }
+    double rightDragOffset() const { return rightDragOffset_; }
 
     void findAdjacentHairpins();
 
@@ -148,21 +148,21 @@ private:
     M_PROPERTY(bool, centerOnNotehead, setCenterOnNotehead)
 
     std::pair<DynamicType, String> parseDynamicText(const String &) const;
-    DynamicType m_dynamicType = DynamicType::OTHER;
-    bool m_playDynamic = true;
+    DynamicType dynamicType_ = DynamicType::OTHER;
+    bool playDynamic_ = true;
 
-    mutable PointF m_dragOffset;
-    int m_velocity = -1; // associated midi velocity 0-127
+    mutable PointF dragOffset_;
+    int velocity_ = -1; // associated midi velocity 0-127
 
-    int m_changeInVelocity = 128;
-    DynamicSpeed m_velChangeSpeed = DynamicSpeed::NORMAL;
+    int changeInVelocity_ = 128;
+    DynamicSpeed velChangeSpeed_ = DynamicSpeed::NORMAL;
 
     static const std::vector<Dyn> DYN_LIST;
 
-    double m_leftDragOffset = 0.0;
-    double m_rightDragOffset = 0.0;
+    double leftDragOffset_ = 0.0;
+    double rightDragOffset_ = 0.0;
 
-    Hairpin *m_leftHairpin = nullptr;
-    Hairpin *m_rightHairpin = nullptr;
+    Hairpin *leftHairpin_ = nullptr;
+    Hairpin *rightHairpin_ = nullptr;
 };
 } // namespace mu::engraving

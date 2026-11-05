@@ -29,20 +29,20 @@
 
 namespace muse::audio::engine {
 class AudioFactory : public IAudioFactory {
-    OutputSpec m_spec;
-    synth::ISynthResolver &m_synthResolver;
-    fx::IFxResolver &m_fxResolver;
+    OutputSpec spec_;
+    synth::ISynthResolver &synthResolver_;
+    fx::IFxResolver &fxResolver_;
 
-    synth::ISynthResolver *synthResolver() const { return &m_synthResolver; }
+    synth::ISynthResolver *synthResolver() const { return &synthResolver_; }
 
-    fx::IFxResolver *fxResolver() const { return &m_fxResolver; }
+    fx::IFxResolver *fxResolver() const { return &fxResolver_; }
 
 public:
     // Both resolvers must outlive the factory.
     AudioFactory(synth::ISynthResolver &synthResolver, fx::IFxResolver &fxResolver)
-        : m_synthResolver(synthResolver), m_fxResolver(fxResolver) {}
+        : synthResolver_(synthResolver), fxResolver_(fxResolver) {}
 
-    void setOutputSpec(const OutputSpec &spec) { m_spec = spec; }
+    void setOutputSpec(const OutputSpec &spec) { spec_ = spec; }
 
     // Available resources
     AudioResourceMetaList availableInputResources() const override;

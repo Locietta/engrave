@@ -140,45 +140,45 @@ protected:
 
     // virtual void doSelfProcess(float* buffer, samples_t samplesPerChannel) = 0;
 
-    std::string m_name;
-    OutputSpec m_outputSpec;
-    ProcessMode m_mode = ProcessMode::Undefined;
-    bool m_enabled = true;
-    bool m_bypassed = false;
+    std::string name_;
+    OutputSpec outputSpec_;
+    ProcessMode mode_ = ProcessMode::Undefined;
+    bool enabled_ = true;
+    bool bypassed_ = false;
 
-    std::vector<std::shared_ptr<IAudioNode>> m_connectedTo;
-    std::shared_ptr<IAudioNode> m_input = nullptr;
+    std::vector<std::shared_ptr<IAudioNode>> connectedTo_;
+    std::shared_ptr<IAudioNode> input_ = nullptr;
 };
 
 template <typename T>
-AudioNode<T>::AudioNode() : m_name(T::name) {}
+AudioNode<T>::AudioNode() : name_(T::name) {}
 
 template <typename T>
 void AudioNode<T>::setName(const std::string &name) {
-    m_name = name;
+    name_ = name;
 }
 
 template <typename T>
 const std::string &AudioNode<T>::name() const {
-    return m_name;
+    return name_;
 }
 
 template <typename T>
 void AudioNode<T>::setOutputSpec(const OutputSpec &spec) {
-    if (m_outputSpec == spec) {
+    if (outputSpec_ == spec) {
         return;
     }
-    m_outputSpec = spec;
+    outputSpec_ = spec;
     ANODE_LOG(name()) << "onOutputSpecChanged: " << spec.dump();
     onOutputSpecChanged(spec);
-    if (m_input) {
-        m_input->setOutputSpec(spec);
+    if (input_) {
+        input_->setOutputSpec(spec);
     }
 }
 
 template <typename T>
 const OutputSpec &AudioNode<T>::outputSpec() const {
-    return m_outputSpec;
+    return outputSpec_;
 }
 
 template <typename T>
@@ -186,20 +186,20 @@ void AudioNode<T>::onOutputSpecChanged(const OutputSpec & /*spec*/) {}
 
 template <typename T>
 void AudioNode<T>::setMode(const ProcessMode mode) {
-    if (m_mode == mode) {
+    if (mode_ == mode) {
         return;
     }
-    m_mode = mode;
+    mode_ = mode;
     ANODE_LOG(name()) << "onModeChanged: " << to_string(mode);
     onModeChanged(mode);
-    if (m_input) {
-        m_input->setMode(mode);
+    if (input_) {
+        input_->setMode(mode);
     }
 }
 
 template <typename T>
 ProcessMode AudioNode<T>::mode() const {
-    return m_mode;
+    return mode_;
 }
 
 template <typename T>
@@ -207,20 +207,20 @@ void AudioNode<T>::onModeChanged(const ProcessMode /*mode*/) {}
 
 template <typename T>
 void AudioNode<T>::setEnabled(bool enabled) {
-    if (m_enabled == enabled) {
+    if (enabled_ == enabled) {
         return;
     }
-    m_enabled = enabled;
-    ANODE_LOG(name()) << "onEnabledChanged: " << m_enabled;
+    enabled_ = enabled;
+    ANODE_LOG(name()) << "onEnabledChanged: " << enabled_;
     onEnabledChanged(enabled);
-    if (m_input) {
-        m_input->setEnabled(enabled);
+    if (input_) {
+        input_->setEnabled(enabled);
     }
 }
 
 template <typename T>
 bool AudioNode<T>::enabled() const {
-    return m_enabled;
+    return enabled_;
 }
 
 template <typename T>
@@ -228,17 +228,17 @@ void AudioNode<T>::onEnabledChanged(bool /*enabled*/) {}
 
 template <typename T>
 void AudioNode<T>::setBypassed(bool bypassed) {
-    if (m_bypassed == bypassed) {
+    if (bypassed_ == bypassed) {
         return;
     }
-    m_bypassed = bypassed;
-    ANODE_LOG(name()) << "onBypassedChanged: " << m_bypassed;
+    bypassed_ = bypassed;
+    ANODE_LOG(name()) << "onBypassedChanged: " << bypassed_;
     onBypassedChanged(bypassed);
 }
 
 template <typename T>
 bool AudioNode<T>::bypassed() const {
-    return m_bypassed;
+    return bypassed_;
 }
 
 template <typename T>
@@ -249,7 +249,7 @@ IAudioNode *AudioNode<T>::connect(std::shared_ptr<IAudioNode> other) {
     IF_ASSERT_FAILED(other) { return this; }
     bool ok = other->doAddNode(shared_from_this());
     if (ok) {
-        m_connectedTo.push_back(other);
+        connectedTo_.push_back(other);
         ANODE_LOG(name()) << "connected to: " << other->name();
     }
     return this;
@@ -260,7 +260,7 @@ IAudioNode *AudioNode<T>::disconnect(std::shared_ptr<IAudioNode> other) {
     IF_ASSERT_FAILED(other) { return this; }
     bool ok = other->doRemoveNode(shared_from_this());
     if (ok) {
-        muse::remove(m_connectedTo, other);
+        muse::remove(connectedTo_, other);
         ANODE_LOG(name()) << "disconnected from: " << other->name();
     }
     return this;
@@ -268,7 +268,7 @@ IAudioNode *AudioNode<T>::disconnect(std::shared_ptr<IAudioNode> other) {
 
 template <typename T>
 void AudioNode<T>::disconnectAll() {
-    auto copy = m_connectedTo;
+    auto copy = connectedTo_;
     for (auto &connectedTo : copy) {
         disconnect(connectedTo);
     }
@@ -278,12 +278,12 @@ template <typename T>
 bool AudioNode<T>::doAddNode(std::shared_ptr<IAudioNode> other) {
     IF_ASSERT_FAILED(other) { return false; }
 
-    IF_ASSERT_FAILED(!m_input) {
+    IF_ASSERT_FAILED(!input_) {
         LOGE() << "already connected to another node";
         return false;
     }
 
-    m_input = other;
+    input_ = other;
     return true;
 }
 
@@ -291,26 +291,26 @@ template <typename T>
 bool AudioNode<T>::doRemoveNode(std::shared_ptr<IAudioNode> other) {
     IF_ASSERT_FAILED(other) { return false; }
 
-    IF_ASSERT_FAILED(m_input == other) {
+    IF_ASSERT_FAILED(input_ == other) {
         LOGE() << "not connected to this node";
         return false;
     }
 
-    m_input = nullptr;
+    input_ = nullptr;
     return true;
 }
 
 template <typename T>
 void AudioNode<T>::process(float *buffer, samples_t samplesPerChannel) {
-    if (!m_enabled) {
+    if (!enabled_) {
         return;
     }
 
-    if (m_input) {
-        m_input->process(buffer, samplesPerChannel);
+    if (input_) {
+        input_->process(buffer, samplesPerChannel);
     }
 
-    if (m_bypassed) {
+    if (bypassed_) {
         return;
     }
 
@@ -321,8 +321,8 @@ template <typename T>
 std::string AudioNode<T>::dump() const {
     std::stringstream ss;
     ss << name();
-    if (m_input) {
-        ss << " <-- " << m_input->dump();
+    if (input_) {
+        ss << " <-- " << input_->dump();
     }
     return ss.str();
 }

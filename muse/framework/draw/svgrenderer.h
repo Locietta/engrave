@@ -40,7 +40,7 @@ public:
     void render(Painter *painter, const RectF &rect);
 
 private:
-    QSvgRenderer *m_qSvgRenderer = nullptr;
+    QSvgRenderer *qSvgRenderer_ = nullptr;
 };
 } // namespace muse::draw
 

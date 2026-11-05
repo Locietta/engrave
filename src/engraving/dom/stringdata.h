@@ -74,25 +74,25 @@ public:
     static int pitchOffsetAt(const Staff *staff, const Fraction &tick);
     static int pitchOffsetAt(const Staff *staff, const Fraction &tick, int string);
 
-    size_t strings() const { return m_stringTable.size(); }
+    size_t strings() const { return stringTable_.size(); }
 
     int frettedStrings() const;
 
-    const std::vector<instrString> &stringList() const { return m_stringTable; }
+    const std::vector<instrString> &stringList() const { return stringTable_; }
 
-    std::vector<instrString> &stringList() { return m_stringTable; }
+    std::vector<instrString> &stringList() { return stringTable_; }
 
-    int frets() const { return m_frets; }
+    int frets() const { return frets_; }
 
-    void setFrets(int val) { m_frets = val; }
+    void setFrets(int val) { frets_ = val; }
 
-    bool operator==(const StringData &d) const { return d.m_frets == m_frets && d.m_stringTable == m_stringTable; }
+    bool operator==(const StringData &d) const { return d.frets_ == frets_ && d.stringTable_ == stringTable_; }
 
     void configBanjo5thString();
     int adjustBanjo5thFret(int fret) const;
     bool isFiveStringBanjo() const;
 
-    bool useFlats() const { return m_useFlats; }
+    bool useFlats() const { return useFlats_; }
 
 private:
 
@@ -108,10 +108,10 @@ private:
 
     //      std::vector<int>  stringTable { 40, 45, 50, 55, 59, 64 };   // guitar is default
     //      int         _frets = 19;
-    std::vector<instrString> m_stringTable; // no strings by default
-    int m_frets = 0;
+    std::vector<instrString> stringTable_; // no strings by default
+    int frets_ = 0;
 
     static bool bFretting;
-    bool m_useFlats = false;
+    bool useFlats_ = false;
 };
 } // namespace mu::engraving

@@ -48,20 +48,20 @@ public:
 
     void setStaffStateType(const String &);
 
-    void setStaffStateType(StaffStateType st) { m_staffStateType = st; }
+    void setStaffStateType(StaffStateType st) { staffStateType_ = st; }
 
-    StaffStateType staffStateType() const { return m_staffStateType; }
+    StaffStateType staffStateType() const { return staffStateType_; }
 
     String staffStateTypeName() const;
 
     bool acceptDrop(EditData &) const override;
     EngravingItem *drop(Transaction &tx, EditData &) override;
 
-    Instrument *instrument() const { return m_instrument; }
+    Instrument *instrument() const { return instrument_; }
 
-    void setInstrument(const Instrument *i) { *m_instrument = *i; }
+    void setInstrument(const Instrument *i) { *instrument_ = *i; }
 
-    void setInstrument(const Instrument &&i) { *m_instrument = i; }
+    void setInstrument(const Instrument &&i) { *instrument_ = i; }
 
     Segment *segment() { return (Segment *) ownershipParent(); }
 
@@ -77,9 +77,9 @@ private:
     StaffState(DummyParentOr<EngravingItem> parent);
     StaffState(const StaffState &);
 
-    StaffStateType m_staffStateType = StaffStateType::INVISIBLE;
+    StaffStateType staffStateType_ = StaffStateType::INVISIBLE;
 
-    Instrument *m_instrument = nullptr;
+    Instrument *instrument_ = nullptr;
 };
 } // namespace mu::engraving
 #endif

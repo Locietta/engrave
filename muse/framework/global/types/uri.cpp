@@ -46,64 +46,64 @@ static std::string extractPath(const std::string &str) {
 Uri::Uri(const std::string &str) {
     auto schemePos = str.find(':');
     if (schemePos != std::string::npos) {
-        m_scheme = str.substr(0, schemePos);
+        scheme_ = str.substr(0, schemePos);
     }
 
-    m_path = extractPath(str);
+    path_ = extractPath(str);
 }
 
 Uri::Uri(const String &str) : Uri(str.toStdString()) {}
 
-Uri::Uri(const std::string &scheme, const std::string &path) : m_scheme(scheme) { m_path = extractPath(path); }
+Uri::Uri(const std::string &scheme, const std::string &path) : scheme_(scheme) { path_ = extractPath(path); }
 
 bool Uri::isValid() const {
-    if (m_scheme.empty()) {
+    if (scheme_.empty()) {
         return false;
     }
 
-    if (m_path.empty()) {
+    if (path_.empty()) {
         return false;
     }
 
     return true;
 }
 
-const Uri::Scheme &Uri::scheme() const { return m_scheme; }
+const Uri::Scheme &Uri::scheme() const { return scheme_; }
 
-void Uri::setScheme(const Scheme &scheme) { m_scheme = scheme; }
+void Uri::setScheme(const Scheme &scheme) { scheme_ = scheme; }
 
-const std::string &Uri::path() const { return m_path; }
+const std::string &Uri::path() const { return path_; }
 
-void Uri::setPath(const std::string &path) { m_path = path; }
+void Uri::setPath(const std::string &path) { path_ = path; }
 
 void Uri::addPath(const std::string &path) {
     if (path.empty()) {
         return;
     }
 
-    if (m_path.empty()) {
-        m_path = path;
+    if (path_.empty()) {
+        path_ = path;
         return;
     }
 
-    if (m_path.back() != '/') {
-        m_path += '/';
+    if (path_.back() != '/') {
+        path_ += '/';
     }
 
     if (path.front() == '/') {
-        m_path += path.substr(1);
+        path_ += path.substr(1);
     } else {
-        m_path += path;
+        path_ += path;
     }
 }
 
 std::vector<std::string> Uri::pathSegments() const {
     std::vector<std::string> segments;
-    strings::split(m_path, segments, "/");
+    strings::split(path_, segments, "/");
     return segments;
 }
 
-std::string Uri::toString() const { return m_scheme + "://" + m_path; }
+std::string Uri::toString() const { return scheme_ + "://" + path_; }
 
 static bool shouldEncode(char c) {
     static const std::string safe_chars = "abcdefghijklmnopqrstuvwxyz"
@@ -136,14 +136,14 @@ Uri Uri::fromLocalFile(const io::path_t &path) {
 
 io::path_t Uri::toLocalFile() const {
     std::string decoded;
-    for (size_t i = 0; i < m_path.size(); ++i) {
-        if (m_path[i] == '%' && i + 2 < m_path.size()) {
-            std::string hex = m_path.substr(i + 1, 2);
+    for (size_t i = 0; i < path_.size(); ++i) {
+        if (path_[i] == '%' && i + 2 < path_.size()) {
+            std::string hex = path_.substr(i + 1, 2);
             char c = static_cast<char>(std::stoi(hex, nullptr, 16));
             decoded += c;
             i += 2;
         } else {
-            decoded += m_path[i];
+            decoded += path_[i];
         }
     }
 
@@ -152,11 +152,11 @@ io::path_t Uri::toLocalFile() const {
 
 // muse://module/target/name?param1=value1&paramn=valuen
 
-UriQuery::UriQuery(const std::string &str) : m_uri(str) { parseParams(str, m_params); }
+UriQuery::UriQuery(const std::string &str) : uri_(str) { parseParams(str, params_); }
 
 UriQuery::UriQuery(const String &str) : UriQuery(str.toStdString()) {}
 
-UriQuery::UriQuery(const Uri &uri) : m_uri(uri) {}
+UriQuery::UriQuery(const Uri &uri) : uri_(uri) {}
 
 void UriQuery::parseParams(const std::string &uri, Params &out) const {
     auto paramsPos = uri.find('?');
@@ -232,10 +232,10 @@ void UriQuery::extractQuotedStrings(const std::string &str, std::vector<std::str
 }
 
 std::string UriQuery::toString() const {
-    std::string str = m_uri.toString();
-    if (!m_params.empty()) {
+    std::string str = uri_.toString();
+    if (!params_.empty()) {
         str += "?";
-        for (auto it = m_params.cbegin(); it != m_params.cend(); ++it) {
+        for (auto it = params_.cbegin(); it != params_.cend(); ++it) {
             str += it->first + "=" + it->second.toString() + "&";
         }
 
@@ -244,33 +244,33 @@ std::string UriQuery::toString() const {
     return str;
 }
 
-bool UriQuery::isValid() const { return m_uri.isValid(); }
+bool UriQuery::isValid() const { return uri_.isValid(); }
 
-const Uri &UriQuery::uri() const { return m_uri; }
+const Uri &UriQuery::uri() const { return uri_; }
 
-void UriQuery::setScheme(const Uri::Scheme &scheme) { m_uri.setScheme(scheme); }
+void UriQuery::setScheme(const Uri::Scheme &scheme) { uri_.setScheme(scheme); }
 
-const UriQuery::Params &UriQuery::params() const { return m_params; }
+const UriQuery::Params &UriQuery::params() const { return params_; }
 
-void UriQuery::setParams(const Params &params) { m_params = params; }
+void UriQuery::setParams(const Params &params) { params_ = params; }
 
 Val UriQuery::param(const std::string &key, const Val &def) const {
-    auto it = m_params.find(key);
-    if (it == m_params.end()) {
+    auto it = params_.find(key);
+    if (it == params_.end()) {
         return def;
     }
     return it->second;
 }
 
-void UriQuery::addParam(const std::string &key, const Val &val) { m_params[key] = val; }
+void UriQuery::addParam(const std::string &key, const Val &val) { params_[key] = val; }
 
 UriQuery &UriQuery::set(const ValMap &vals) {
-    m_params = vals;
+    params_ = vals;
     return *this;
 }
 
 UriQuery &UriQuery::set(const std::string &key, const Val &val) {
-    m_params[key] = val;
+    params_[key] = val;
     return *this;
 }
 
@@ -292,8 +292,8 @@ UriQuery UriQuery::addingParam(const std::string &key, const Val &val) const {
     return copy;
 }
 
-bool UriQuery::contains(const std::string &key) const { return m_params.count(key) > 0; }
+bool UriQuery::contains(const std::string &key) const { return params_.count(key) > 0; }
 
-bool UriQuery::operator==(const UriQuery &query) const { return m_uri == query.m_uri && m_params == query.m_params; }
+bool UriQuery::operator==(const UriQuery &query) const { return uri_ == query.uri_ && params_ == query.params_; }
 
 bool UriQuery::operator!=(const UriQuery &query) const { return !(*this == query); }

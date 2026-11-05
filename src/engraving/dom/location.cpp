@@ -43,10 +43,10 @@ static constexpr Location absDefaults = Location::absolute();
 //---------------------------------------------------------
 
 int Location::track() const {
-    if ((m_staff == absDefaults.m_staff) || (m_voice == absDefaults.m_voice)) {
+    if ((staff_ == absDefaults.staff_) || (voice_ == absDefaults.voice_)) {
         return INT_MIN;
     }
-    return static_cast<int>(VOICES) * m_staff + m_voice;
+    return static_cast<int>(VOICES) * staff_ + voice_;
 }
 
 //---------------------------------------------------------
@@ -54,8 +54,8 @@ int Location::track() const {
 //---------------------------------------------------------
 
 void Location::setTrack(int track) {
-    m_staff = track / VOICES;
-    m_voice = track % VOICES;
+    staff_ = track / VOICES;
+    voice_ = track % VOICES;
 }
 
 //---------------------------------------------------------
@@ -66,12 +66,12 @@ void Location::toAbsolute(const Location &ref) {
     if (isAbsolute()) {
         return;
     }
-    m_staff += ref.m_staff;
-    m_voice += ref.m_voice;
-    m_measure += ref.m_measure;
-    m_frac += ref.m_frac;
-    m_note += ref.m_note;
-    m_rel = false;
+    staff_ += ref.staff_;
+    voice_ += ref.voice_;
+    measure_ += ref.measure_;
+    frac_ += ref.frac_;
+    note_ += ref.note_;
+    rel_ = false;
 }
 
 //---------------------------------------------------------
@@ -82,12 +82,12 @@ void Location::toRelative(const Location &ref) {
     if (isRelative()) {
         return;
     }
-    m_staff -= ref.m_staff;
-    m_voice -= ref.m_voice;
-    m_measure -= ref.m_measure;
-    m_frac -= ref.m_frac;
-    m_note -= ref.m_note;
-    m_rel = true;
+    staff_ -= ref.staff_;
+    voice_ -= ref.voice_;
+    measure_ -= ref.measure_;
+    frac_ -= ref.frac_;
+    note_ -= ref.note_;
+    rel_ = true;
 }
 
 //---------------------------------------------------------
@@ -245,7 +245,7 @@ PropertyValue Location::getLocationProperty(Pid pid, const EngravingItem *start,
 
 bool Location::operator==(const Location &pi2) const {
     const Location &pi1 = *this;
-    return (pi1.m_frac == pi2.m_frac) && (pi1.m_measure == pi2.m_measure) && (pi1.m_voice == pi2.m_voice) && (pi1.m_staff == pi2.m_staff) &&
-           (pi1.m_graceIndex == pi2.m_graceIndex) && (pi1.m_note == pi2.m_note);
+    return (pi1.frac_ == pi2.frac_) && (pi1.measure_ == pi2.measure_) && (pi1.voice_ == pi2.voice_) && (pi1.staff_ == pi2.staff_) &&
+           (pi1.graceIndex_ == pi2.graceIndex_) && (pi1.note_ == pi2.note_);
 }
 } // namespace mu::engraving

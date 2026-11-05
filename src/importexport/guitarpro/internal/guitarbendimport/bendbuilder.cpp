@@ -60,8 +60,8 @@ void BendBuilder::addElementsToScore(Score *score, const BendDataContext &bendCt
     createGraceAfterNotes(diveCtx.graceAfterDiveData, GuitarBendType::DIVE, score);
 
     if (bendCtx.splitChordCtx) {
-        m_bendDataProcessorSplitChord = std::make_unique<BendDataProcessorSplitChord>(score);
-        m_bendDataProcessorSplitChord->processBends(*bendCtx.splitChordCtx);
+        bendDataProcessorSplitChord_ = std::make_unique<BendDataProcessorSplitChord>(score);
+        bendDataProcessorSplitChord_->processBends(*bendCtx.splitChordCtx);
     }
 }
 

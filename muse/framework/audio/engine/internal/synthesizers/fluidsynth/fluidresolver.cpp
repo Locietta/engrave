@@ -33,7 +33,7 @@ static const AudioResourceVendor FLUID_VENDOR_NAME = "Fluid";
 
 FluidResolver::FluidResolver(const ISoundFontRepository &soundFontRepository, const engine::IAudioEngineConfiguration &config,
                              midi::IMidiOutPort *midiOutPort)
-    : m_soundFontRepository(soundFontRepository), m_config(config), m_midiOutPort(midiOutPort) {
+    : soundFontRepository_(soundFontRepository), config_(config), midiOutPort_(midiOutPort) {
 
     fluid::FluidVorbisDecoder::decoder = new codec::VorbisDecoder();
 
@@ -47,13 +47,13 @@ FluidResolver::~FluidResolver() {
 
 ISynthesizerPtr FluidResolver::resolveSynth(const TrackId /*trackId*/, const AudioInputParams &params, const OutputSpec &spec) const {
 
-    auto search = m_resourcesCache.find(params.resourceMeta.id);
-    if (search == m_resourcesCache.end()) {
+    auto search = resourcesCache_.find(params.resourceMeta.id);
+    if (search == resourcesCache_.end()) {
         LOGE() << "Not found: " << params.resourceMeta.id;
         return nullptr;
     }
 
-    FluidSynthPtr synth = std::make_shared<FluidSynth>(params, m_config, m_midiOutPort);
+    FluidSynthPtr synth = std::make_shared<FluidSynth>(params, config_, midiOutPort_);
     synth->init(spec);
     synth->addSoundFonts({search->second.path});
     synth->setPreset(search->second.preset);
@@ -66,9 +66,9 @@ bool FluidResolver::hasCompatibleResources(const PlaybackSetupData & /*setup*/) 
 AudioResourceMetaList FluidResolver::resolveResources() const {
 
     AudioResourceMetaList result;
-    result.reserve(m_resourcesCache.size());
+    result.reserve(resourcesCache_.size());
 
-    for (const auto &pair : m_resourcesCache) {
+    for (const auto &pair : resourcesCache_) {
         result.push_back(pair.second.meta);
     }
 
@@ -83,9 +83,9 @@ static std::string makeId(const std::string &name, int bank, int program) {
 
 void FluidResolver::refresh() {
 
-    m_resourcesCache.clear();
+    resourcesCache_.clear();
 
-    for (const auto &pair : m_soundFontRepository.soundFonts()) {
+    for (const auto &pair : soundFontRepository_.soundFonts()) {
         const SoundFontMeta &soundFont = pair.second;
 
         {
@@ -98,7 +98,7 @@ void FluidResolver::refresh() {
             chooseAutomaticMeta.attributes = {{PLAYBACK_SETUP_DATA_ATTRIBUTE, muse::mpe::GENERIC_SETUP_DATA_STRING},
                                               {SOUNDFONT_NAME_ATTRIBUTE, String::fromStdString(soundFont.name)}};
 
-            m_resourcesCache.emplace(id, SoundFontResource{soundFont.path, std::nullopt, std::move(chooseAutomaticMeta)});
+            resourcesCache_.emplace(id, SoundFontResource{soundFont.path, std::nullopt, std::move(chooseAutomaticMeta)});
         }
 
         for (const SoundFontPreset &preset : soundFont.presets) {
@@ -116,7 +116,7 @@ void FluidResolver::refresh() {
                 {PRESET_PROGRAM_ATTRIBUTE, String::number(preset.program.program)},
             };
 
-            m_resourcesCache.emplace(id, SoundFontResource{soundFont.path, preset.program, std::move(meta)});
+            resourcesCache_.emplace(id, SoundFontResource{soundFont.path, preset.program, std::move(meta)});
         }
     }
 }

@@ -39,16 +39,16 @@ using namespace mu;
 using namespace muse::io;
 using namespace mu::engraving;
 
-String ScoreRW::m_rootPath;
-const EngravingServices *ScoreRW::m_services = nullptr;
+String ScoreRW::rootPath_;
+const EngravingServices *ScoreRW::services_ = nullptr;
 
-void ScoreRW::setRootPath(const String &path) { m_rootPath = path; }
+void ScoreRW::setRootPath(const String &path) { rootPath_ = path; }
 
-String ScoreRW::rootPath() { return m_rootPath; }
+String ScoreRW::rootPath() { return rootPath_; }
 
-void ScoreRW::setServices(const EngravingServices *services) { m_services = services; }
+void ScoreRW::setServices(const EngravingServices *services) { services_ = services; }
 
-const EngravingServices &ScoreRW::services() { return *m_services; }
+const EngravingServices &ScoreRW::services() { return *services_; }
 
 MasterScore *ScoreRW::readScore(const String &name, bool isAbsolutePath, ImportFunc importFunc) {
     muse::io::path_t path = isAbsolutePath ? name : (rootPath() + u"/" + name);

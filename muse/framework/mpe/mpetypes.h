@@ -477,12 +477,12 @@ struct ArticulationsProfile {
     std::vector<ArticulationFamily> supportedFamilies;
 
     const ArticulationPattern &pattern(const ArticulationType type, const ArticulationType fallback = ArticulationType::Undefined) const {
-        auto search = m_patterns.find(type);
-        if (search == m_patterns.cend() && fallback != ArticulationType::Undefined) {
-            search = m_patterns.find(fallback);
+        auto search = patterns_.find(type);
+        if (search == patterns_.cend() && fallback != ArticulationType::Undefined) {
+            search = patterns_.find(fallback);
         }
 
-        if (search == m_patterns.cend()) {
+        if (search == patterns_.cend()) {
             static const ArticulationPattern emptyPattern;
             return emptyPattern;
         }
@@ -490,20 +490,20 @@ struct ArticulationsProfile {
         return search->second;
     }
 
-    void setPattern(const ArticulationType type, const ArticulationPattern &scope) { m_patterns.insert_or_assign(type, scope); }
+    void setPattern(const ArticulationType type, const ArticulationPattern &scope) { patterns_.insert_or_assign(type, scope); }
 
-    void removePattern(const ArticulationType type) { m_patterns.erase(type); }
+    void removePattern(const ArticulationType type) { patterns_.erase(type); }
 
-    const SharedHashMap<ArticulationType, ArticulationPattern> &data() const { return m_patterns; }
+    const SharedHashMap<ArticulationType, ArticulationPattern> &data() const { return patterns_; }
 
-    bool contains(const ArticulationType type) const { return m_patterns.find(type) != m_patterns.cend(); }
+    bool contains(const ArticulationType type) const { return patterns_.find(type) != patterns_.cend(); }
 
-    bool isValid() const { return !m_patterns.empty(); }
+    bool isValid() const { return !patterns_.empty(); }
 
-    bool operator==(const ArticulationsProfile &other) const { return m_patterns == other.m_patterns; }
+    bool operator==(const ArticulationsProfile &other) const { return patterns_ == other.patterns_; }
 
 private:
-    SharedHashMap<ArticulationType, ArticulationPattern> m_patterns;
+    SharedHashMap<ArticulationType, ArticulationPattern> patterns_;
 };
 
 using ArticulationsProfilePtr = std::shared_ptr<ArticulationsProfile>;
@@ -617,19 +617,19 @@ struct ArticulationMap : public SharedHashMap<ArticulationType, ArticulationAppl
         preCalculateAverageData();
     }
 
-    duration_percentage_t averageDurationFactor() const { return m_averageDurationFactor; }
+    duration_percentage_t averageDurationFactor() const { return averageDurationFactor_; }
 
-    duration_percentage_t averageTimestampOffset() const { return m_averageTimestampOffset; }
+    duration_percentage_t averageTimestampOffset() const { return averageTimestampOffset_; }
 
-    const PitchPattern::PitchOffsetMap &averagePitchOffsetMap() const { return m_averagePitchOffsetMap; }
+    const PitchPattern::PitchOffsetMap &averagePitchOffsetMap() const { return averagePitchOffsetMap_; }
 
-    pitch_level_t averagePitchRange() const { return m_averagePitchRange; }
+    pitch_level_t averagePitchRange() const { return averagePitchRange_; }
 
-    dynamic_level_t averageMaxAmplitudeLevel() const { return m_averageMaxAmplitudeLevel; }
+    dynamic_level_t averageMaxAmplitudeLevel() const { return averageMaxAmplitudeLevel_; }
 
-    dynamic_level_t averageDynamicRange() const { return m_averageDynamicRange; }
+    dynamic_level_t averageDynamicRange() const { return averageDynamicRange_; }
 
-    const ExpressionPattern::DynamicOffsetMap &averageDynamicOffsetMap() const { return m_averageDynamicOffsetMap; }
+    const ExpressionPattern::DynamicOffsetMap &averageDynamicOffsetMap() const { return averageDynamicOffsetMap_; }
 
     void preCalculateAverageData() {
         if (empty()) {
@@ -639,13 +639,13 @@ struct ArticulationMap : public SharedHashMap<ArticulationType, ArticulationAppl
         if (size() == 1) {
             const ArticulationAppliedData &artData = cbegin()->second;
             const ArticulationPatternSegment &segment = artData.appliedPatternSegment;
-            m_averageDurationFactor = segment.arrangementPattern.durationFactor;
-            m_averageTimestampOffset = segment.arrangementPattern.timestampOffset;
-            m_averageMaxAmplitudeLevel = segment.expressionPattern.maxAmplitudeLevel();
-            m_averagePitchRange = artData.occupiedPitchChangesRange;
-            m_averageDynamicRange = artData.occupiedDynamicChangesRange;
-            m_averageDynamicOffsetMap = segment.expressionPattern.dynamicOffsetMap;
-            m_averagePitchOffsetMap = segment.pitchPattern.pitchOffsetMap;
+            averageDurationFactor_ = segment.arrangementPattern.durationFactor;
+            averageTimestampOffset_ = segment.arrangementPattern.timestampOffset;
+            averageMaxAmplitudeLevel_ = segment.expressionPattern.maxAmplitudeLevel();
+            averagePitchRange_ = artData.occupiedPitchChangesRange;
+            averageDynamicRange_ = artData.occupiedDynamicChangesRange;
+            averageDynamicOffsetMap_ = segment.expressionPattern.dynamicOffsetMap;
+            averagePitchOffsetMap_ = segment.pitchPattern.pitchOffsetMap;
             return;
         }
 
@@ -667,13 +667,13 @@ struct ArticulationMap : public SharedHashMap<ArticulationType, ArticulationAppl
 
 private:
     void resetData() {
-        m_averageDurationFactor = 0;
-        m_averageTimestampOffset = 0;
-        m_averageMaxAmplitudeLevel = 0;
-        m_averageDynamicRange = 0;
-        m_averagePitchRange = 0;
-        m_averagePitchOffsetMap.clear();
-        m_averageDynamicOffsetMap.clear();
+        averageDurationFactor_ = 0;
+        averageTimestampOffset_ = 0;
+        averageMaxAmplitudeLevel_ = 0;
+        averageDynamicRange_ = 0;
+        averagePitchRange_ = 0;
+        averagePitchOffsetMap_.clear();
+        averageDynamicOffsetMap_.clear();
     }
 
     struct ParamsSum {
@@ -765,43 +765,43 @@ private:
             }
         }
 
-        m_averageDurationFactor = paramsSum.durationFactor / count;
+        averageDurationFactor_ = paramsSum.durationFactor / count;
 
         if (timestampChangesCount > 0) {
-            m_averageTimestampOffset = paramsSum.timestampOffset / timestampChangesCount;
+            averageTimestampOffset_ = paramsSum.timestampOffset / timestampChangesCount;
         }
 
         if (dynamicChangesCount > 0) {
-            m_averageMaxAmplitudeLevel = paramsSum.maxAmplitudeLevel / dynamicChangesCount;
-            m_averageDynamicRange = paramsSum.dynamicRange / dynamicChangesCount;
+            averageMaxAmplitudeLevel_ = paramsSum.maxAmplitudeLevel / dynamicChangesCount;
+            averageDynamicRange_ = paramsSum.dynamicRange / dynamicChangesCount;
 
             for (const auto &pair : paramsSum.dynamicOffsetMap) {
-                m_averageDynamicOffsetMap.insert_or_assign(pair.first, pair.second / dynamicChangesCount);
+                averageDynamicOffsetMap_.insert_or_assign(pair.first, pair.second / dynamicChangesCount);
             }
         } else if (dynamicChangesCount == 0) {
-            m_averageMaxAmplitudeLevel = cbegin()->second.appliedPatternSegment.expressionPattern.maxAmplitudeLevel();
-            m_averageDynamicRange = cbegin()->second.meta.overallDynamicChangesRange;
-            m_averageDynamicOffsetMap = cbegin()->second.appliedPatternSegment.expressionPattern.dynamicOffsetMap;
+            averageMaxAmplitudeLevel_ = cbegin()->second.appliedPatternSegment.expressionPattern.maxAmplitudeLevel();
+            averageDynamicRange_ = cbegin()->second.meta.overallDynamicChangesRange;
+            averageDynamicOffsetMap_ = cbegin()->second.appliedPatternSegment.expressionPattern.dynamicOffsetMap;
         }
 
         if (pitchChangesCount > 0) {
-            m_averagePitchRange = paramsSum.pitchRange / pitchChangesCount;
+            averagePitchRange_ = paramsSum.pitchRange / pitchChangesCount;
 
             for (const auto &pair : paramsSum.pitchOffsetMap) {
-                m_averagePitchOffsetMap.insert_or_assign(pair.first, pair.second / pitchChangesCount);
+                averagePitchOffsetMap_.insert_or_assign(pair.first, pair.second / pitchChangesCount);
             }
         } else if (pitchChangesCount == 0) {
-            m_averagePitchRange = cbegin()->second.meta.overallPitchChangesRange;
-            m_averagePitchOffsetMap = cbegin()->second.appliedPatternSegment.pitchPattern.pitchOffsetMap;
+            averagePitchRange_ = cbegin()->second.meta.overallPitchChangesRange;
+            averagePitchOffsetMap_ = cbegin()->second.appliedPatternSegment.pitchPattern.pitchOffsetMap;
         }
     }
 
-    duration_percentage_t m_averageDurationFactor = HUNDRED_PERCENT;
-    duration_percentage_t m_averageTimestampOffset = 0;
-    pitch_level_t m_averagePitchRange = 0;
-    dynamic_level_t m_averageMaxAmplitudeLevel = 0;
-    dynamic_level_t m_averageDynamicRange = 0;
-    PitchPattern::PitchOffsetMap m_averagePitchOffsetMap;
-    ExpressionPattern::DynamicOffsetMap m_averageDynamicOffsetMap;
+    duration_percentage_t averageDurationFactor_ = HUNDRED_PERCENT;
+    duration_percentage_t averageTimestampOffset_ = 0;
+    pitch_level_t averagePitchRange_ = 0;
+    dynamic_level_t averageMaxAmplitudeLevel_ = 0;
+    dynamic_level_t averageDynamicRange_ = 0;
+    PitchPattern::PitchOffsetMap averagePitchOffsetMap_;
+    ExpressionPattern::DynamicOffsetMap averageDynamicOffsetMap_;
 };
 } // namespace muse::mpe

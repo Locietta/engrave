@@ -49,18 +49,18 @@ using namespace mu::engraving;
 //---------------------------------------------------------
 
 InsertPart::InsertPart(Part *p, size_t targetPartIdx) {
-    m_part = p;
-    m_targetPartIdx = targetPartIdx;
+    part_ = p;
+    targetPartIdx_ = targetPartIdx;
 }
 
-void InsertPart::undo() { m_part->score()->removePart(m_part); }
+void InsertPart::undo() { part_->score()->removePart(part_); }
 
-void InsertPart::redo() { m_part->score()->insertPart(m_part, m_targetPartIdx); }
+void InsertPart::redo() { part_->score()->insertPart(part_, targetPartIdx_); }
 
 void InsertPart::cleanup(bool wasDone) {
     if (!wasDone) {
-        delete m_part;
-        m_part = nullptr;
+        delete part_;
+        part_ = nullptr;
     }
 }
 
@@ -69,22 +69,22 @@ void InsertPart::cleanup(bool wasDone) {
 //---------------------------------------------------------
 
 RemovePart::RemovePart(Part *p, size_t partIdx) {
-    m_part = p;
-    m_partIdx = partIdx;
+    part_ = p;
+    partIdx_ = partIdx;
 
-    if (m_partIdx == muse::nidx) {
-        m_partIdx = muse::indexOf(m_part->score()->parts(), m_part);
+    if (partIdx_ == muse::nidx) {
+        partIdx_ = muse::indexOf(part_->score()->parts(), part_);
     }
 }
 
-void RemovePart::undo() { m_part->score()->insertPart(m_part, m_partIdx); }
+void RemovePart::undo() { part_->score()->insertPart(part_, partIdx_); }
 
-void RemovePart::redo() { m_part->score()->removePart(m_part); }
+void RemovePart::redo() { part_->score()->removePart(part_); }
 
 void RemovePart::cleanup(bool wasDone) {
     if (wasDone) {
-        delete m_part;
-        m_part = nullptr;
+        delete part_;
+        part_ = nullptr;
     }
 }
 
@@ -213,17 +213,17 @@ void ChangeDrumset::flip() {
 //---------------------------------------------------------
 
 void ChangeStringData::flip() {
-    const StringData *stringData = m_stringTunings ? m_stringTunings->stringData() : m_instrument->stringData();
+    const StringData *stringData = stringTunings_ ? stringTunings_->stringData() : instrument_->stringData();
     int frets = stringData->frets();
     std::vector<instrString> stringList = stringData->stringList();
 
-    if (m_stringTunings) {
-        m_stringTunings->setStringData(m_stringData);
+    if (stringTunings_) {
+        stringTunings_->setStringData(stringData_);
     } else {
-        m_instrument->setStringData(m_stringData);
+        instrument_->setStringData(stringData_);
     }
 
-    m_stringData.set(StringData(frets, stringList));
+    stringData_.set(StringData(frets, stringList));
 }
 
 //---------------------------------------------------------

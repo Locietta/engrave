@@ -78,7 +78,7 @@ private:
     friend class JsonArray;
 
     void detach();
-    std::shared_ptr<JsonData> m_data;
+    std::shared_ptr<JsonData> data_;
 };
 
 class JsonValueRef {
@@ -97,11 +97,11 @@ public:
     JsonValueRef &operator=(const JsonObject &obj);
 
 private:
-    std::string m_key;
-    JsonObject *m_object = nullptr;
+    std::string key_;
+    JsonObject *object_ = nullptr;
 
-    size_t m_idx = 0;
-    JsonArray *m_array = nullptr;
+    size_t idx_ = 0;
+    JsonArray *array_ = nullptr;
 };
 
 class JsonArray {
@@ -161,7 +161,7 @@ private:
     friend class JsonDocument;
 
     void detach();
-    std::shared_ptr<JsonData> m_data;
+    std::shared_ptr<JsonData> data_;
 };
 
 class JsonObject {
@@ -195,7 +195,7 @@ private:
     friend class JsonDocument;
 
     void detach();
-    std::shared_ptr<JsonData> m_data;
+    std::shared_ptr<JsonData> data_;
 };
 
 class JsonDocument {
@@ -215,7 +215,7 @@ public:
     static JsonDocument fromJson(const ByteArray &ba, std::string *err = nullptr);
 
 private:
-    std::shared_ptr<JsonData> m_data;
+    std::shared_ptr<JsonData> data_;
 };
 } // namespace muse
 

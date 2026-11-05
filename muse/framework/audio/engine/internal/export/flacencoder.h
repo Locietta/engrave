@@ -44,6 +44,6 @@ public:
     Ret end() override;
 
 private:
-    std::unique_ptr<FlacHandler> m_flac;
+    std::unique_ptr<FlacHandler> flac_;
 };
 } // namespace muse::audio::encode

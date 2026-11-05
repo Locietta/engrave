@@ -163,9 +163,9 @@ private:
 
     bool endTarget(bool endDraw);
 
-    IPaintProviderPtr m_provider;
-    std::string m_name;
-    std::stack<State> m_states;
+    IPaintProviderPtr provider_;
+    std::string name_;
+    std::stack<State> states_;
 };
 
 inline void Painter::setPen(const Color &color) { setPen(Pen(color.isValid() ? color : Color::BLACK)); }
@@ -204,7 +204,7 @@ inline void Painter::drawText(double x, double y, const String &text) { drawText
 
 class PainterItemMarker {
 public:
-    PainterItemMarker(Painter *p, const std::string &name) : m_painter(p) {
+    PainterItemMarker(Painter *p, const std::string &name) : painter_(p) {
         if (!enabled) {
             return;
         }
@@ -215,13 +215,13 @@ public:
         if (!enabled) {
             return;
         }
-        m_painter->endObject();
+        painter_->endObject();
     }
 
     static bool enabled;
 
 private:
-    Painter *m_painter = nullptr;
+    Painter *painter_ = nullptr;
 };
 } // namespace muse::draw
 

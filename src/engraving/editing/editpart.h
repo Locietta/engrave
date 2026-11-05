@@ -34,8 +34,8 @@ namespace mu::engraving {
 class InsertPart : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, InsertPart)
 
-    Part *m_part = nullptr;
-    size_t m_targetPartIdx = 0;
+    Part *part_ = nullptr;
+    size_t targetPartIdx_ = 0;
 
 public:
     InsertPart(Part *p, size_t targetPartIdx);
@@ -45,14 +45,14 @@ public:
 
     UNDO_TYPE(CommandType::InsertPart)
     UNDO_NAME("InsertPart")
-    UNDO_CHANGED_OBJECTS({m_part})
+    UNDO_CHANGED_OBJECTS({part_})
 };
 
 class RemovePart : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, RemovePart)
 
-    Part *m_part = nullptr;
-    size_t m_partIdx = muse::nidx;
+    Part *part_ = nullptr;
+    size_t partIdx_ = muse::nidx;
 
 public:
     RemovePart(Part *, size_t partIdx);
@@ -62,7 +62,7 @@ public:
 
     UNDO_TYPE(CommandType::RemovePart)
     UNDO_NAME("RemovePart")
-    UNDO_CHANGED_OBJECTS({m_part})
+    UNDO_CHANGED_OBJECTS({part_})
 };
 
 class SetSoloist : public UndoableCommand {
@@ -185,15 +185,14 @@ public:
 };
 
 class ChangeStringData : public UndoableCommand {
-    Instrument *m_instrument = nullptr;
-    StringTunings *m_stringTunings = nullptr;
-    StringData m_stringData;
+    Instrument *instrument_ = nullptr;
+    StringTunings *stringTunings_ = nullptr;
+    StringData stringData_;
 
 public:
-    ChangeStringData(StringTunings *stringTunings, const StringData &stringData)
-        : m_stringTunings(stringTunings), m_stringData(stringData) {}
+    ChangeStringData(StringTunings *stringTunings, const StringData &stringData) : stringTunings_(stringTunings), stringData_(stringData) {}
 
-    ChangeStringData(Instrument *instrument, const StringData &stringData) : m_instrument(instrument), m_stringData(stringData) {}
+    ChangeStringData(Instrument *instrument, const StringData &stringData) : instrument_(instrument), stringData_(stringData) {}
 
     void flip() override;
     UNDO_NAME("ChangeStringData")

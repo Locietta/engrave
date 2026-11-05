@@ -63,13 +63,13 @@ protected:
 
     void doSelfProcess(float *, samples_t) override {}
 
-    TrackId m_trackId = INVALID_TRACK_ID;
-    std::string m_trackName;
+    TrackId trackId_ = INVALID_TRACK_ID;
+    std::string trackName_;
 
-    IAudioNodePtr m_source;
-    FxChainPtr m_fxChain;
-    AutomationControlNodePtr m_control;
-    SignalNodePtr m_signal;
+    IAudioNodePtr source_;
+    FxChainPtr fxChain_;
+    AutomationControlNodePtr control_;
+    SignalNodePtr signal_;
 };
 
 using TrackChainPtr = std::shared_ptr<TrackChain>;

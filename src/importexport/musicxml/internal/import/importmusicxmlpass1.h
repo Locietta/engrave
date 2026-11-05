@@ -138,13 +138,13 @@ class MusicXmlParserPass1 {
 public:
     MusicXmlParserPass1(engraving::Score *score, const IMusicXmlConfiguration &configuration, MusicXmlLogger *logger);
 
-    const IMusicXmlConfiguration *configuration() const { return &m_configuration; }
+    const IMusicXmlConfiguration *configuration() const { return &configuration_; }
 
     void initPartState(const muse::String &partId);
     engraving::Err parse(const muse::ByteArray &data);
     engraving::Err parse();
 
-    muse::String errors() const { return m_errors; }
+    muse::String errors() const { return errors_; }
 
     void scorePartwise();
     void identification();
@@ -177,11 +177,11 @@ public:
     void notePrintSpacingNo(engraving::Fraction &dura);
     engraving::Fraction calcTicks(const int &intTicks, const int &_divisions, const muse::XmlStreamReader *xmlReader);
 
-    engraving::Fraction calcTicks(const int &intTicks) { return calcTicks(intTicks, m_divs, &m_e); }
+    engraving::Fraction calcTicks(const int &intTicks) { return calcTicks(intTicks, divs_, &e_); }
 
     void duration(engraving::Fraction &dura, muse::XmlStreamReader &e);
 
-    void duration(engraving::Fraction &dura) { duration(dura, m_e); }
+    void duration(engraving::Fraction &dura) { duration(dura, e_); }
 
     void forward(engraving::Fraction &dura);
     void backup(engraving::Fraction &dura);
@@ -197,13 +197,13 @@ public:
     engraving::track_idx_t trackForPart(const muse::String &id) const;
     bool hasPart(const muse::String &id) const;
 
-    engraving::Part *getPart(const muse::String &id) const { return muse::value(m_partMap, id); }
+    engraving::Part *getPart(const muse::String &id) const { return muse::value(partMap_, id); }
 
-    MusicXmlPart getMusicXmlPart(const muse::String &id) const { return muse::value(m_parts, id); }
+    MusicXmlPart getMusicXmlPart(const muse::String &id) const { return muse::value(parts_, id); }
 
-    size_t nparts() const { return m_parts.size(); }
+    size_t nparts() const { return parts_.size(); }
 
-    MusicXmlInstruments getInstruments(const muse::String &id) const { return muse::value(m_instruments, id); }
+    MusicXmlInstruments getInstruments(const muse::String &id) const { return muse::value(instruments_, id); }
 
     void setDrumsetDefault(const muse::String &id, const muse::String &instrId, const engraving::NoteHeadGroup hg, const int line,
                            const engraving::DirectionV sd);
@@ -212,13 +212,13 @@ public:
     engraving::Fraction getMeasureStart(const size_t i) const;
     int octaveShift(const muse::String &id, const engraving::staff_idx_t staff, const engraving::Fraction &f) const;
 
-    const CreditWordsList &credits() const { return m_credits; }
+    const CreditWordsList &credits() const { return credits_; }
 
-    bool hasBeamingInfo() const { return m_hasBeamingInfo; }
+    bool hasBeamingInfo() const { return hasBeamingInfo_; }
 
-    bool isVocalStaff(const muse::String &partId) const { return m_parts.at(partId).isVocalStaff(); }
+    bool isVocalStaff(const muse::String &partId) const { return parts_.at(partId).isVocalStaff(); }
 
-    bool isPercussionStaff(const muse::String &partId) const { return m_parts.at(partId).isPercussionStaff(); }
+    bool isPercussionStaff(const muse::String &partId) const { return parts_.at(partId).isPercussionStaff(); }
 
     static engraving::VBox *createAndAddVBoxForCreditWords(engraving::Score *score, engraving::Fraction tick);
     void createDefaultHeader(engraving::Score *const score);
@@ -226,19 +226,19 @@ public:
                                  const std::vector<engraving::Fraction> &ms, const std::set<int> &systemStartMeasureNrs,
                                  const std::set<int> &pageStartMeasureNrs, const CreditWordsList &crWords, const muse::Size &pageSize);
 
-    void setHasInferredHeaderText(bool b) { m_hasInferredHeaderText = b; }
+    void setHasInferredHeaderText(bool b) { hasInferredHeaderText_ = b; }
 
-    bool hasInferredHeaderText() const { return m_hasInferredHeaderText; }
+    bool hasInferredHeaderText() const { return hasInferredHeaderText_; }
 
-    int maxDiff() const { return m_maxDiff; }
+    int maxDiff() const { return maxDiff_; }
 
-    void insertAdjustedDuration(engraving::Fraction key, engraving::Fraction value) { m_adjustedDurations.insert({key, value}); }
+    void insertAdjustedDuration(engraving::Fraction key, engraving::Fraction value) { adjustedDurations_.insert({key, value}); }
 
-    std::map<engraving::Fraction, engraving::Fraction> &adjustedDurations() { return m_adjustedDurations; }
+    std::map<engraving::Fraction, engraving::Fraction> &adjustedDurations() { return adjustedDurations_; }
 
-    void insertSeenDenominator(int val) { m_seenDenominators.emplace(val); }
+    void insertSeenDenominator(int val) { seenDenominators_.emplace(val); }
 
-    MusicXmlExporterSoftware exporterSoftware() const { return m_exporterSoftware; }
+    MusicXmlExporterSoftware exporterSoftware() const { return exporterSoftware_; }
 
     bool sibOrDolet() const;
     bool dolet() const;
@@ -250,31 +250,31 @@ private:
     void setExporterStyles();
 
     // generic pass 1 data
-    muse::XmlStreamReader m_e;
-    MusicXmlExporterSoftware m_exporterSoftware = MusicXmlExporterSoftware::OTHER; // Software which exported the file
-    int m_divs = 0;                                                                // Current MusicXML divisions value
-    std::map<muse::String, MusicXmlPart> m_parts;                                  // Parts data, mapped on part id
-    std::set<int> m_systemStartMeasureNrs;                                         // Measure numbers of measures starting a page
-    std::set<int> m_pageStartMeasureNrs;                                           // Measure numbers of measures starting a page
-    std::vector<engraving::Fraction> m_measureLength;                              // Length of each measure
-    std::vector<engraving::Fraction> m_measureStart;                               // Start time of each measure
-    CreditWordsList m_credits;                                                     // All credits collected
-    PartMap m_partMap;                                                             // TODO merge into MusicXmlPart ??
-    std::map<muse::String, MusicXmlInstruments> m_instruments;                     // instruments for each part, mapped on part id
-    engraving::Score *m_score = nullptr;                                           // MuseScore score
-    const IMusicXmlConfiguration &m_configuration;
-    MusicXmlLogger *m_logger = nullptr; // Error logger
-    muse::String m_errors;              // Errors to present to the user
-    bool m_hasBeamingInfo = false;      // Whether the score supports or contains beaming info
-    bool m_hasInferredHeaderText = false;
+    muse::XmlStreamReader e_;
+    MusicXmlExporterSoftware exporterSoftware_ = MusicXmlExporterSoftware::OTHER; // Software which exported the file
+    int divs_ = 0;                                                                // Current MusicXML divisions value
+    std::map<muse::String, MusicXmlPart> parts_;                                  // Parts data, mapped on part id
+    std::set<int> systemStartMeasureNrs_;                                         // Measure numbers of measures starting a page
+    std::set<int> pageStartMeasureNrs_;                                           // Measure numbers of measures starting a page
+    std::vector<engraving::Fraction> measureLength_;                              // Length of each measure
+    std::vector<engraving::Fraction> measureStart_;                               // Start time of each measure
+    CreditWordsList credits_;                                                     // All credits collected
+    PartMap partMap_;                                                             // TODO merge into MusicXmlPart ??
+    std::map<muse::String, MusicXmlInstruments> instruments_;                     // instruments for each part, mapped on part id
+    engraving::Score *score_ = nullptr;                                           // MuseScore score
+    const IMusicXmlConfiguration &configuration_;
+    MusicXmlLogger *logger_ = nullptr; // Error logger
+    muse::String errors_;              // Errors to present to the user
+    bool hasBeamingInfo_ = false;      // Whether the score supports or contains beaming info
+    bool hasInferredHeaderText_ = false;
 
     // part specific data (TODO: move to part-specific class)
-    engraving::Fraction m_timeSigDura;                     // Measure duration according to last timesig read
-    std::map<int, MusicXmlOctaveShiftDesc> m_octaveShifts; // Pending octave-shifts
-    muse::Size m_pageSize;                                 // Page width read from defaults
+    engraving::Fraction timeSigDura_;                     // Measure duration according to last timesig read
+    std::map<int, MusicXmlOctaveShiftDesc> octaveShifts_; // Pending octave-shifts
+    muse::Size pageSize_;                                 // Page width read from defaults
 
-    const int m_maxDiff = 5;                                                // Duration rounding tick threshold;
-    std::map<engraving::Fraction, engraving::Fraction> m_adjustedDurations; // Rounded durations
-    std::set<int> m_seenDenominators;                                       // Denominators seen. Used for rounding errors.
+    const int maxDiff_ = 5;                                                // Duration rounding tick threshold;
+    std::map<engraving::Fraction, engraving::Fraction> adjustedDurations_; // Rounded durations
+    std::set<int> seenDenominators_;                                       // Denominators seen. Used for rounding errors.
 };
 } // namespace mu::iex::musicxml

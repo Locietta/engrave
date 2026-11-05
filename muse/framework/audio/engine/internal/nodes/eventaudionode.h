@@ -67,13 +67,13 @@ private:
     SynthCtx currentSynthCtx() const;
     void restoreSynthCtx(const SynthCtx &ctx);
 
-    const IAudioFactory *audioFactory() const { return &m_audioFactory; }
+    const IAudioFactory *audioFactory() const { return &audioFactory_; }
 
-    const IAudioFactory &m_audioFactory;
-    TrackId m_trackId = -1;
-    mpe::PlaybackData m_playbackData;
-    synth::ISynthesizerPtr m_synth = nullptr;
-    AudioInputParams m_params;
+    const IAudioFactory &audioFactory_;
+    TrackId trackId_ = -1;
+    mpe::PlaybackData playbackData_;
+    synth::ISynthesizerPtr synth_ = nullptr;
+    AudioInputParams params_;
 };
 
 using EventAudioNodePtr = std::shared_ptr<EventAudioNode>;

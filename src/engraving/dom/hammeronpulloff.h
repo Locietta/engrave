@@ -37,23 +37,23 @@ public:
 
     HammerOnPullOffSegment *hopoSegment() const { return toHammerOnPullOffSegment(ownershipParent()); }
 
-    Chord *startChord() const { return m_startChord; }
+    Chord *startChord() const { return startChord_; }
 
-    Chord *endChord() const { return m_endChord; }
+    Chord *endChord() const { return endChord_; }
 
-    void setStartChord(Chord *c) { m_startChord = c; }
+    void setStartChord(Chord *c) { startChord_ = c; }
 
-    void setEndChord(Chord *c) { m_endChord = c; }
+    void setEndChord(Chord *c) { endChord_ = c; }
 
     bool isUserModified() const override;
 
-    bool isValid() const { return m_isValid; }
+    bool isValid() const { return isValid_; }
 
-    void setIsValid(bool v) { m_isValid = v; }
+    void setIsValid(bool v) { isValid_ = v; }
 
-    bool isHammerOn() const { return m_isHammerOn; }
+    bool isHammerOn() const { return isHammerOn_; }
 
-    void setIsHammerOn(bool v) { m_isHammerOn = v; }
+    void setIsHammerOn(bool v) { isHammerOn_ = v; }
 
     Color curColor(const rendering::PaintOptions &opt) const override;
 
@@ -62,10 +62,10 @@ public:
     bool positionRelativeToNoteheadRest() const override { return false; }
 
 private:
-    Chord *m_startChord = nullptr;
-    Chord *m_endChord = nullptr;
-    bool m_isValid = true;
-    bool m_isHammerOn = true;
+    Chord *startChord_ = nullptr;
+    Chord *endChord_ = nullptr;
+    bool isValid_ = true;
+    bool isHammerOn_ = true;
 };
 
 class HammerOnPullOffSegment final : public SlurSegment {
@@ -89,9 +89,9 @@ public:
 
     void updateHopoText();
 
-    void addHopoText(HammerOnPullOffText *t) { m_hopoText.push_back(t); }
+    void addHopoText(HammerOnPullOffText *t) { hopoText_.push_back(t); }
 
-    const std::vector<HammerOnPullOffText *> &hopoText() const { return m_hopoText; }
+    const std::vector<HammerOnPullOffText *> &hopoText() const { return hopoText_; }
 
     bool isUserModified() const override;
     bool isValid() const;
@@ -109,7 +109,7 @@ private:
     std::vector<HopoTextRegion> computeHopoTextRegions(Chord *startChord, Chord *endChord);
     void resolveStartEndNotes(Note **startNote, Note **endNote, Chord *startChord, Chord *endChord, bool isTabStaff);
 
-    std::vector<HammerOnPullOffText *> m_hopoText;
+    std::vector<HammerOnPullOffText *> hopoText_;
 };
 
 class HammerOnPullOff final : public Slur {

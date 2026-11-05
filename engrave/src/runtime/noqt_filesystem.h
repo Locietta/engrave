@@ -74,10 +74,10 @@ private:
     bool isProtectedPath(const std::filesystem::path &path) const;
     bool isResourceAncestor(const std::filesystem::path &path) const;
 
-    std::filesystem::path m_resourceRoot;
-    bool m_hasResourceRoot = false;
-    mutable std::mutex m_streamsMutex;
-    std::unordered_map<muse::io::StreamId, std::unique_ptr<Stream>> m_streams;
-    muse::io::StreamId m_nextStreamId = 0;
+    std::filesystem::path resourceRoot_;
+    bool hasResourceRoot_ = false;
+    mutable std::mutex streamsMutex_;
+    std::unordered_map<muse::io::StreamId, std::unique_ptr<Stream>> streams_;
+    muse::io::StreamId nextStreamId_ = 0;
 };
 } // namespace music

@@ -42,7 +42,7 @@ public:
 private:
     std::unordered_map<mu::engraving::track_idx_t,
                        std::map<mu::engraving::Fraction, std::unordered_map<const mu::engraving::Note *, ImportedBendInfo>>>
-        m_bendInfoForNote;
+        bendInfoForNote_;
 
     void fillBendsDurations(BendDataContextSplitChord &bendDataCtx);
     void fillBendData(BendDataContextSplitChord &bendDataCtx);

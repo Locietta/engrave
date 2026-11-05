@@ -61,15 +61,15 @@ enum class Pid : short;
 namespace mu::iex::mnxio {
 class MnxImporter {
 public:
-    MnxImporter(engraving::Score *s, mnx::Document &&doc) : m_score(s), m_mnxDocument(std::move(doc)) {}
+    MnxImporter(engraving::Score *s, mnx::Document &&doc) : score_(s), mnxDocument_(std::move(doc)) {}
 
     void importMnx();
 
-    mnx::Document &mnxDocument() { return m_mnxDocument; }
+    mnx::Document &mnxDocument() { return mnxDocument_; }
 
-    const mnx::Document &mnxDocument() const { return m_mnxDocument; }
+    const mnx::Document &mnxDocument() const { return mnxDocument_; }
 
-    engraving::Score *score() const { return m_score; }
+    engraving::Score *score() const { return score_; }
 
 private:
     using GraceNeighborsMap = std::unordered_map<std::string, std::pair<engraving::ChordRest *, engraving::ChordRest *>>;
@@ -173,13 +173,13 @@ private:
                        engraving::track_idx_t curTrackIdx, bool useVoiceAssignment);
 
     // ordered map avoids need for hash on std::pair
-    std::map<std::pair<size_t, int>, engraving::staff_idx_t> m_mnxPartStaffToStaff;
-    std::unordered_map<engraving::staff_idx_t, size_t> m_StaffToMnxPart;
-    std::unordered_map<size_t, engraving::Fraction> m_mnxMeasToTick;
+    std::map<std::pair<size_t, int>, engraving::staff_idx_t> mnxPartStaffToStaff_;
+    std::unordered_map<engraving::staff_idx_t, size_t> StaffToMnxPart_;
+    std::unordered_map<size_t, engraving::Fraction> mnxMeasToTick_;
     std::unordered_map<engraving::staff_idx_t, std::unordered_map<std::string, std::pair<engraving::Fraction, engraving::Fraction>>>
-        m_lyricLineUsage;
-    std::unordered_map<engraving::staff_idx_t, std::unordered_map<std::string, int>> m_lyricLineToVerse;
-    std::unordered_map<std::string, std::unordered_map<std::string, engraving::track_idx_t>> m_partMeasureSequenceTracks;
+        lyricLineUsage_;
+    std::unordered_map<engraving::staff_idx_t, std::unordered_map<std::string, int>> lyricLineToVerse_;
+    std::unordered_map<std::string, std::unordered_map<std::string, engraving::track_idx_t>> partMeasureSequenceTracks_;
 
     struct GroupBarlineOverrideSpan {
         engraving::staff_idx_t startStaff{};
@@ -187,16 +187,16 @@ private:
         mnx::StaffGroupBarlineOverride barlineOverride{};
     };
 
-    std::vector<GroupBarlineOverrideSpan> m_groupBarlineOverrides;
+    std::vector<GroupBarlineOverrideSpan> groupBarlineOverrides_;
     // event tracking
-    std::unordered_map<std::string, engraving::ChordRest *> m_mnxEventToCR; // key is json_pointer, since event.id() is optional.
-    std::unordered_map<std::string, engraving::Note *> m_mnxNoteToNote;     // key is json_pointer, since event.id() is optional.
-    std::map<std::pair<size_t, std::string>, int> m_mnxKitComponentToMidi;
+    std::unordered_map<std::string, engraving::ChordRest *> mnxEventToCR_; // key is json_pointer, since event.id() is optional.
+    std::unordered_map<std::string, engraving::Note *> mnxNoteToNote_;     // key is json_pointer, since event.id() is optional.
+    std::map<std::pair<size_t, std::string>, int> mnxKitComponentToMidi_;
 
-    bool m_useBeams{};             // if true, only events in mnx beams arrays should be beamed.
-    bool m_useAccidentalDisplay{}; // if true, all accidentals are force hide or show.
+    bool useBeams_{};             // if true, only events in mnx beams arrays should be beamed.
+    bool useAccidentalDisplay_{}; // if true, all accidentals are force hide or show.
 
-    engraving::Score *m_score{};
-    mnx::Document m_mnxDocument;
+    engraving::Score *score_{};
+    mnx::Document mnxDocument_;
 };
 } // namespace mu::iex::mnxio

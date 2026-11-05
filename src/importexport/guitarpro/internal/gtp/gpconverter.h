@@ -166,15 +166,15 @@ private:
     std::unordered_multimap<int, GPMasterTracks::Automation> _tempoMap;
     std::unordered_map<track_idx_t, GPBar::Clef> _clefs;
     std::unordered_map<track_idx_t, GPBeat::DynamicType> _dynamics;
-    std::unordered_map<track_idx_t, bool> m_hasCapo;
+    std::unordered_map<track_idx_t, bool> hasCapo_;
     std::unordered_map<track_idx_t, std::vector<mu::engraving::Tie *>> _ties;         // map(track, tie)
     std::unordered_map<track_idx_t, std::vector<mu::engraving::Tie *>> _harmonicTies; // map(track, tie between harmonic note)
-    std::unordered_map<Note *, int> m_originalPitches;                                // info of changed pitches for keeping track of ties
-    std::unordered_map<mu::engraving::Chord *, mu::engraving::TremoloType> m_tremolosInChords;
+    std::unordered_map<Note *, int> originalPitches_;                                 // info of changed pitches for keeping track of ties
+    std::unordered_map<mu::engraving::Chord *, mu::engraving::TremoloType> tremolosInChords_;
     std::unordered_map<track_idx_t, mu::engraving::Slur *> _slurs; // map(track, slur)
-    std::map<uint64_t /* part ID */, int /* fret position */> m_capoParams;
+    std::map<uint64_t /* part ID */, int /* fret position */> capoParams_;
 
-    mutable GPBeat *m_currentGPBeat = nullptr; // used for passing info from notes
+    mutable GPBeat *currentGPBeat_ = nullptr; // used for passing info from notes
 
     std::map<uint16_t, uint16_t> _drumExtension;
     mu::engraving::Volta *_lastVolta = nullptr;
@@ -189,26 +189,26 @@ private:
         mu::engraving::Measure *measure = nullptr;
         int lowestBase = LOWEST_BASE; // expected denominator
         static constexpr int LOWEST_BASE = 1024;
-    } m_nextTupletInfo;
+    } nextTupletInfo_;
 
     // Index is the number of sharps. Using flat keysigs for signatures with double sharps
-    std::vector<int> m_sharpsToKeyConverter{0, 1, 2, 3, 4, 5, 6, 7, -4, -3, -2, -1};
+    std::vector<int> sharpsToKeyConverter_{0, 1, 2, 3, 4, 5, 6, 7, -4, -3, -2, -1};
     // Index is the number of sharps. Using sharp keysigs for signatures with double flats
-    std::vector<int> m_sharpsToFlatKeysConverter{0, 1, 2, 3, 4, -7, -6, -5, -4, -3, -2, -1};
+    std::vector<int> sharpsToFlatKeysConverter_{0, 1, 2, 3, 4, -7, -6, -5, -4, -3, -2, -1};
 
     static constexpr mu::engraving::voice_idx_t VOICES = 4;
 
-    bool m_showCapo = true; // TODO-gp : settings
+    bool showCapo_ = true; // TODO-gp : settings
 
-    bool m_chordExistsInBar = false;
-    std::array<bool, VOICES> m_chordExistsForVoice;
+    bool chordExistsInBar_ = false;
+    std::array<bool, VOICES> chordExistsForVoice_;
 
-    mu::engraving::BeamMode m_previousBeamMode = mu::engraving::BeamMode::AUTO;
+    mu::engraving::BeamMode previousBeamMode_ = mu::engraving::BeamMode::AUTO;
 
     std::unique_ptr<GPDrumSetResolver> _drumResolver;
-    std::unique_ptr<ContiniousElementsBuilder> m_continiousElementsBuilder;
-    std::unique_ptr<GuitarBendImporter> m_guitarBendImporter;
+    std::unique_ptr<ContiniousElementsBuilder> continiousElementsBuilder_;
+    std::unique_ptr<GuitarBendImporter> guitarBendImporter_;
 
-    std::unordered_map<mu::engraving::track_idx_t, const GPBeat *> m_lastWhammyBeat;
+    std::unordered_map<mu::engraving::track_idx_t, const GPBeat *> lastWhammyBeat_;
 };
 } // namespace mu::iex::guitarpro

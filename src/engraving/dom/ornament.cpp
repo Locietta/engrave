@@ -52,37 +52,37 @@ Ornament::Ornament(const Ornament &o) : Articulation(o) {
     _intervalBelow = o._intervalBelow;
     _showAccidental = o._showAccidental;
     _startOnUpperNote = o._startOnUpperNote;
-    m_showCueNote = o.m_showCueNote;
+    showCueNote_ = o.showCueNote_;
 
-    if (o.m_cueNoteChord) {
-        m_cueNoteChord = o.m_cueNoteChord->clone();
+    if (o.cueNoteChord_) {
+        cueNoteChord_ = o.cueNoteChord_->clone();
     }
 
-    for (size_t i = 0; i < m_accidentalsAboveAndBelow.size(); ++i) {
-        Accidental *oldAccidental = o.m_accidentalsAboveAndBelow[i];
+    for (size_t i = 0; i < accidentalsAboveAndBelow_.size(); ++i) {
+        Accidental *oldAccidental = o.accidentalsAboveAndBelow_[i];
         if (!oldAccidental) {
             continue;
         }
         Accidental *newAccidental = oldAccidental->clone();
         newAccidental->setOwnershipParent(this);
-        m_accidentalsAboveAndBelow[i] = newAccidental;
+        accidentalsAboveAndBelow_[i] = newAccidental;
     }
 }
 
 Ornament::~Ornament() {
-    std::fill(std::begin(m_notesAboveAndBelow), std::end(m_notesAboveAndBelow), nullptr);
-    std::fill(std::begin(m_accidentalsAboveAndBelow), std::end(m_accidentalsAboveAndBelow), nullptr);
+    std::fill(std::begin(notesAboveAndBelow_), std::end(notesAboveAndBelow_), nullptr);
+    std::fill(std::begin(accidentalsAboveAndBelow_), std::end(accidentalsAboveAndBelow_), nullptr);
 
-    if (m_cueNoteChord && m_cueNoteChord->notes().size()) {
-        m_cueNoteChord->notes().clear();
+    if (cueNoteChord_ && cueNoteChord_->notes().size()) {
+        cueNoteChord_->notes().clear();
     }
 
-    m_cueNoteChord = nullptr;
+    cueNoteChord_ = nullptr;
 }
 
 void Ornament::remove(EngravingItem *e) {
     if (e->isAccidental()) {
-        for (Accidental *&acc : m_accidentalsAboveAndBelow) {
+        for (Accidental *&acc : accidentalsAboveAndBelow_) {
             if (e == acc) {
                 acc = nullptr;
                 e->removed();
@@ -100,26 +100,26 @@ muse::TranslatableString Ornament::typeUserName() const {
 }
 
 void Ornament::setTrack(track_idx_t val) {
-    for (Note *note : m_notesAboveAndBelow) {
+    for (Note *note : notesAboveAndBelow_) {
         if (note) {
             note->setTrack(val);
         }
     }
-    if (m_cueNoteChord) {
-        m_cueNoteChord->setTrack(val);
+    if (cueNoteChord_) {
+        cueNoteChord_->setTrack(val);
     }
-    m_track = val;
+    track_ = val;
 }
 
 void Ornament::scanElements(std::function<void(EngravingItem *)> func) {
     func(this);
-    for (Accidental *accidental : m_accidentalsAboveAndBelow) {
+    for (Accidental *accidental : accidentalsAboveAndBelow_) {
         if (accidental) {
             func(accidental);
         }
     }
-    if (m_cueNoteChord) {
-        m_cueNoteChord->scanElements(func);
+    if (cueNoteChord_) {
+        cueNoteChord_->scanElements(func);
     }
 }
 
@@ -128,7 +128,7 @@ PropertyValue Ornament::getProperty(Pid propertyId) const {
         case Pid::INTERVAL_ABOVE: return _intervalAbove;
         case Pid::INTERVAL_BELOW: return _intervalBelow;
         case Pid::ORNAMENT_SHOW_ACCIDENTAL: return _showAccidental;
-        case Pid::ORNAMENT_SHOW_CUE_NOTE: return m_showCueNote;
+        case Pid::ORNAMENT_SHOW_CUE_NOTE: return showCueNote_;
         case Pid::START_ON_UPPER_NOTE: return _startOnUpperNote;
         default: return Articulation::getProperty(propertyId);
     }
@@ -188,11 +188,11 @@ bool Ornament::hasFullIntervalChoice() const {
 }
 
 bool Ornament::showCueNote() {
-    if (m_showCueNote == AutoOnOff::AUTO) {
+    if (showCueNote_ == AutoOnOff::AUTO) {
         return (hasFullIntervalChoice() && style().styleB(Sid::trillAlwaysShowCueNote)) || _intervalAbove.step != IntervalStep::SECOND;
     }
 
-    return m_showCueNote == AutoOnOff::ON;
+    return showCueNote_ == AutoOnOff::ON;
 }
 
 void Ornament::computeNotesAboveAndBelow(AccidentalState *accState) {
@@ -205,11 +205,11 @@ void Ornament::computeNotesAboveAndBelow(AccidentalState *accState) {
         return;
     }
 
-    if (m_cueNoteChord && !m_cueNoteChord->ownershipParent()) {
-        m_cueNoteChord->setOwnershipParent(parentChord->segment());
+    if (cueNoteChord_ && !cueNoteChord_->ownershipParent()) {
+        cueNoteChord_->setOwnershipParent(parentChord->segment());
     }
 
-    for (size_t i = 0; i < m_notesAboveAndBelow.size(); ++i) {
+    for (size_t i = 0; i < notesAboveAndBelow_.size(); ++i) {
         bool above = (i == 0);
         bool hasIntAbove = hasIntervalAbove();
         bool hasIntBelow = hasIntervalBelow();
@@ -218,9 +218,9 @@ void Ornament::computeNotesAboveAndBelow(AccidentalState *accState) {
             continue;
         }
 
-        Note *&note = m_notesAboveAndBelow.at(i);
-        if (!note && above && m_cueNoteChord) {
-            note = m_cueNoteChord->upNote();
+        Note *&note = notesAboveAndBelow_.at(i);
+        if (!note && above && cueNoteChord_) {
+            note = cueNoteChord_->upNote();
         }
 
         if (!note) {
@@ -247,9 +247,9 @@ void Ornament::computeNotesAboveAndBelow(AccidentalState *accState) {
             // key signature, but also any alteration present in the measure before this point.
             int intervalSteps = above ? static_cast<int>(_intervalAbove.step) : -static_cast<int>(_intervalBelow.step);
             note->transposeDiatonic(intervalSteps, false, true);
-            if (m_trillOldCompatAccidental) {
+            if (trillOldCompatAccidental_) {
                 mapOldTrillAccidental(note, mainNote);
-                m_trillOldCompatAccidental = nullptr;
+                trillOldCompatAccidental_ = nullptr;
             } else {
                 int pitchLine = absStep(note->tpc(), note->epitch());
                 AccidentalVal accidentalVal = accState->accidentalVal(pitchLine);
@@ -312,10 +312,10 @@ void Ornament::manageAccidentalVisibilityRules(Note *note) {
 }
 
 void Ornament::updateAccidentalsAboveAndBelow() {
-    for (size_t i = 0; i < m_notesAboveAndBelow.size(); ++i) {
-        Note *note = m_notesAboveAndBelow[i];
+    for (size_t i = 0; i < notesAboveAndBelow_.size(); ++i) {
+        Note *note = notesAboveAndBelow_[i];
         Accidental *accidental = note ? note->accidental() : nullptr;
-        Accidental *&curAccidental = m_accidentalsAboveAndBelow[i];
+        Accidental *&curAccidental = accidentalsAboveAndBelow_[i];
         if (showCueNote() || !accidental) {
             if (curAccidental) {
                 delete curAccidental;
@@ -344,10 +344,10 @@ void Ornament::updateCueNote() {
         if (noteAbove() && ownershipParent()) {
             noteAbove()->setOwnershipParent(parentChord);
         }
-        if (m_cueNoteChord) {
-            m_cueNoteChord->notes().clear();
-            delete m_cueNoteChord;
-            m_cueNoteChord = nullptr;
+        if (cueNoteChord_) {
+            cueNoteChord_->notes().clear();
+            delete cueNoteChord_;
+            cueNoteChord_ = nullptr;
         }
         return;
     }
@@ -358,19 +358,19 @@ void Ornament::updateCueNote() {
 
     Note *cueNote = noteAbove();
     // If needed, create cue note
-    if (!m_cueNoteChord) {
-        m_cueNoteChord = Factory::createChord(parentChord->segment());
-        m_cueNoteChord->setSmall(true);
+    if (!cueNoteChord_) {
+        cueNoteChord_ = Factory::createChord(parentChord->segment());
+        cueNoteChord_->setSmall(true);
         cueNote->setHeadType(NoteHeadType::HEAD_QUARTER);
-        m_cueNoteChord->add(cueNote);
-        cueNote->setOwnershipParent(m_cueNoteChord);
+        cueNoteChord_->add(cueNote);
+        cueNote->setOwnershipParent(cueNoteChord_);
 
         Transaction &tx = score()->transactionManager()->currentOrDummyTransaction();
         EditParentheses::addParenthesesToNotes(tx, {cueNote});
     }
-    m_cueNoteChord->setTrack(track());
-    m_cueNoteChord->setOwnershipParent(parentChord->segment());
-    m_cueNoteChord->setStaffMove(parentChord->staffMove());
+    cueNoteChord_->setTrack(track());
+    cueNoteChord_->setOwnershipParent(parentChord->segment());
+    cueNoteChord_->setStaffMove(parentChord->staffMove());
     cueNote->updateLine();
     cueNote->setIsTrillCueNote(true);
 }
@@ -387,7 +387,7 @@ SymId Ornament::fromTrillType(TrillType trillType) {
 
 void Ornament::mapOldTrillAccidental(Note *note, const Note *mainNote) {
     // Compatibility with trills pre-4.1
-    AccidentalVal oldCompatValue = Accidental::subtype2value(m_trillOldCompatAccidental->accidentalType());
+    AccidentalVal oldCompatValue = Accidental::subtype2value(trillOldCompatAccidental_->accidentalType());
     AccidentalVal noteAccidentalVal = tpc2alter(note->tpc());
     int accidentalDiff = static_cast<int>(oldCompatValue) - static_cast<int>(noteAccidentalVal);
     note->transpose(Interval(0, accidentalDiff), true);

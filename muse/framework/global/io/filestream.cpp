@@ -28,71 +28,71 @@
 using namespace muse;
 using namespace muse::io;
 
-FileStream::FileStream(const path_t &filePath) : m_filePath(filePath) {}
+FileStream::FileStream(const path_t &filePath) : filePath_(filePath) {}
 
 FileStream::~FileStream() { doClose(); }
 
 void FileStream::doClose() {
-    if (m_streamId != INVALID_STREAM_ID) {
-        fileSystem()->closeStream(m_streamId);
-        m_streamId = INVALID_STREAM_ID;
+    if (streamId_ != INVALID_STREAM_ID) {
+        fileSystem()->closeStream(streamId_);
+        streamId_ = INVALID_STREAM_ID;
     }
 }
 
-const path_t &FileStream::filePath() const { return m_filePath; }
+const path_t &FileStream::filePath() const { return filePath_; }
 
 bool FileStream::doOpen(OpenMode m) {
-    if (m_streamId != INVALID_STREAM_ID) {
-        fileSystem()->closeStream(m_streamId);
-        m_streamId = INVALID_STREAM_ID;
+    if (streamId_ != INVALID_STREAM_ID) {
+        fileSystem()->closeStream(streamId_);
+        streamId_ = INVALID_STREAM_ID;
     }
 
     io::OpenMode fsMode;
     switch (m) {
         case OpenMode::WriteOnly:
             fsMode = io::OpenMode::WriteOnly;
-            m_size = 0;
+            size_ = 0;
             break;
         case OpenMode::Append: {
             fsMode = io::OpenMode::Append;
-            RetVal<uint64_t> sz = fileSystem()->fileSize(m_filePath);
-            m_size = sz.ret ? static_cast<size_t>(sz.val) : 0;
+            RetVal<uint64_t> sz = fileSystem()->fileSize(filePath_);
+            size_ = sz.ret ? static_cast<size_t>(sz.val) : 0;
             break;
         }
         default: setError(int(Err::FSWriteError), "FileStream supports only WriteOnly and Append modes"); return false;
     }
 
-    RetVal<StreamId> rv = fileSystem()->openStream(m_filePath, fsMode);
+    RetVal<StreamId> rv = fileSystem()->openStream(filePath_, fsMode);
     if (!rv.ret) {
         setError(rv.ret.code(), rv.ret.text());
         return false;
     }
 
-    m_streamId = rv.val;
-    m_expectedPos = m_size;
+    streamId_ = rv.val;
+    expectedPos_ = size_;
     return true;
 }
 
-size_t FileStream::dataSize() const { return m_size; }
+size_t FileStream::dataSize() const { return size_; }
 
 const uint8_t *FileStream::rawData() const { return nullptr; }
 
 bool FileStream::resizeData(size_t size) {
-    m_size = size;
+    size_ = size;
     return true;
 }
 
 size_t FileStream::writeData(const uint8_t *data, size_t len) {
-    IF_ASSERT_FAILED(m_streamId != INVALID_STREAM_ID) { return 0; }
+    IF_ASSERT_FAILED(streamId_ != INVALID_STREAM_ID) { return 0; }
 
-    uint64_t offset = (pos() == m_expectedPos) ? STREAM_POS_CURRENT : static_cast<uint64_t>(pos());
+    uint64_t offset = (pos() == expectedPos_) ? STREAM_POS_CURRENT : static_cast<uint64_t>(pos());
 
-    Ret ret = fileSystem()->writeToStream(m_streamId, ByteArray::fromRawData(data, len), offset);
+    Ret ret = fileSystem()->writeToStream(streamId_, ByteArray::fromRawData(data, len), offset);
     if (!ret) {
         setError(ret.code(), ret.text());
         return 0;
     }
 
-    m_expectedPos = pos() + len;
+    expectedPos_ = pos() + len;
     return len;
 }

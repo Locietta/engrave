@@ -66,96 +66,96 @@ public:
 
     Fraction tick() const;
 
-    void setDuration(const TDuration &d) { m_duration = d; }
+    void setDuration(const TDuration &d) { duration_ = d; }
 
-    TDuration duration() const { return m_duration; }
+    TDuration duration() const { return duration_; }
 
     void setDots(int n);
 
-    Fraction ticks() const { return m_duration.ticks(); }
+    Fraction ticks() const { return duration_.ticks(); }
 
-    Segment *segment() const { return m_segment; }
+    Segment *segment() const { return segment_; }
 
     void setSegment(Segment *s);
 
-    Segment *lastSegment() const { return m_lastSegment; }
+    Segment *lastSegment() const { return lastSegment_; }
 
-    void setLastSegment(Segment *s) { m_lastSegment = s; }
+    void setLastSegment(Segment *s) { lastSegment_ = s; }
 
     Staff *staff() const;
     staff_idx_t staffIdx() const;
 
     Drumset *drumset() const;
 
-    int drumNote() const { return m_drumNote; }
+    int drumNote() const { return drumNote_; }
 
-    void setDrumNote(int v) { m_drumNote = v; }
+    void setDrumNote(int v) { drumNote_ = v; }
 
     // Used in the input-by-duration mode
-    const NoteValList &notes() const { return m_notes; }
+    const NoteValList &notes() const { return notes_; }
 
-    void setNotes(const NoteValList &v) { m_notes = v; }
+    void setNotes(const NoteValList &v) { notes_ = v; }
 
-    voice_idx_t voice() const { return m_track == muse::nidx ? 0 : (m_track % VOICES); }
+    voice_idx_t voice() const { return track_ == muse::nidx ? 0 : (track_ % VOICES); }
 
     void setVoice(voice_idx_t v);
 
-    track_idx_t track() const { return m_track; }
+    track_idx_t track() const { return track_; }
 
     void setTrack(track_idx_t v) {
-        m_prevTrack = m_track;
-        m_track = v;
+        prevTrack_ = track_;
+        track_ = v;
     }
 
-    track_idx_t prevTrack() const { return m_prevTrack; }
+    track_idx_t prevTrack() const { return prevTrack_; }
 
-    int string() const { return m_string; }
+    int string() const { return string_; }
 
-    void setString(int val) { m_string = val; }
+    void setString(int val) { string_ = val; }
 
     StaffGroup staffGroup() const;
 
-    bool rest() const { return m_rest; }
+    bool rest() const { return rest_; }
 
-    void setRest(bool v) { m_rest = v; }
+    void setRest(bool v) { rest_ = v; }
 
-    NoteType noteType() const { return m_noteType; }
+    NoteType noteType() const { return noteType_; }
 
-    void setNoteType(NoteType t) { m_noteType = t; }
+    void setNoteType(NoteType t) { noteType_ = t; }
 
-    BeamMode beamMode() const { return m_beamMode; }
+    BeamMode beamMode() const { return beamMode_; }
 
-    void setBeamMode(BeamMode m) { m_beamMode = m; }
+    void setBeamMode(BeamMode m) { beamMode_ = m; }
 
-    bool noteEntryMode() const { return m_noteEntryMode; }
+    bool noteEntryMode() const { return noteEntryMode_; }
 
-    void setNoteEntryMode(bool v) { m_noteEntryMode = v; }
+    void setNoteEntryMode(bool v) { noteEntryMode_ = v; }
 
-    NoteEntryMethod noteEntryMethod() const { return m_noteEntryMethod; }
+    NoteEntryMethod noteEntryMethod() const { return noteEntryMethod_; }
 
-    void setNoteEntryMethod(NoteEntryMethod m) { m_noteEntryMethod = m; }
+    void setNoteEntryMethod(NoteEntryMethod m) { noteEntryMethod_ = m; }
 
     bool usingNoteEntryMethod(NoteEntryMethod m) const { return m == noteEntryMethod(); }
 
-    AccidentalType accidentalType() const { return m_accidentalType; }
+    AccidentalType accidentalType() const { return accidentalType_; }
 
-    void setAccidentalType(AccidentalType val) { m_accidentalType = val; }
+    void setAccidentalType(AccidentalType val) { accidentalType_ = val; }
 
-    const std::set<SymId> &articulationIds() const { return m_articulationIds; }
+    const std::set<SymId> &articulationIds() const { return articulationIds_; }
 
-    void setArticulationIds(const std::set<SymId> &ids) { m_articulationIds = ids; }
+    void setArticulationIds(const std::set<SymId> &ids) { articulationIds_ = ids; }
 
-    Slur *slur() const { return m_slur; }
+    Slur *slur() const { return slur_; }
 
-    void setSlur(Slur *s) { m_slur = s; }
+    void setSlur(Slur *s) { slur_ = s; }
 
     void update(Selection &selection);
     void moveInputPos(EngravingItem *e);
     void moveToNextInputPos();
 
-    bool beyondScore() const { return m_beyondScore; }
+    bool beyondScore() const { return beyondScore_; }
 
-    void setBeyondScore(bool val) { m_beyondScore = val; }
+    void setBeyondScore(bool val) { beyondScore_ = val; }
 
     // TODO: unify with Selection::cr()?
     static Note *note(EngravingItem *);
@@ -165,32 +165,32 @@ private:
 
     Segment *nextInputPos() const;
 
-    track_idx_t m_track = 0;
-    track_idx_t m_prevTrack = 0; // used for navigation
+    track_idx_t track_ = 0;
+    track_idx_t prevTrack_ = 0; // used for navigation
 
-    int m_drumNote = -1;
-    int m_string = VISUAL_INVALID_STRING_INDEX; // visual string selected for input (TAB staves only)
+    int drumNote_ = -1;
+    int string_ = VISUAL_INVALID_STRING_INDEX; // visual string selected for input (TAB staves only)
 
-    NoteValList m_notes;
+    NoteValList notes_;
 
-    Segment *m_lastSegment = nullptr;
-    Segment *m_segment = nullptr; // current segment
+    Segment *lastSegment_ = nullptr;
+    Segment *segment_ = nullptr; // current segment
 
-    bool m_noteEntryMode = false;
-    NoteEntryMethod m_noteEntryMethod = NoteEntryMethod::BY_NOTE_NAME;
+    bool noteEntryMode_ = false;
+    NoteEntryMethod noteEntryMethod_ = NoteEntryMethod::BY_NOTE_NAME;
 
-    TDuration m_duration = DurationType::V_INVALID; // currently duration
-    bool m_rest = false;                            // rest mode
+    TDuration duration_ = DurationType::V_INVALID; // currently duration
+    bool rest_ = false;                            // rest mode
 
-    NoteType m_noteType = NoteType::NORMAL;
-    BeamMode m_beamMode = BeamMode::AUTO;
+    NoteType noteType_ = NoteType::NORMAL;
+    BeamMode beamMode_ = BeamMode::AUTO;
 
-    AccidentalType m_accidentalType = AccidentalType::NONE;
-    Slur *m_slur = nullptr;
+    AccidentalType accidentalType_ = AccidentalType::NONE;
+    Slur *slur_ = nullptr;
 
-    std::set<SymId> m_articulationIds;
+    std::set<SymId> articulationIds_;
 
-    bool m_beyondScore = false;
+    bool beyondScore_ = false;
 };
 } // namespace mu::engraving
 #endif

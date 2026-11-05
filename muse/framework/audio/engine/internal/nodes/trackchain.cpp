@@ -26,57 +26,57 @@ using namespace muse;
 using namespace muse::audio;
 using namespace muse::audio::engine;
 
-TrackChain::TrackChain(TrackId trackId, const std::string &trackName) : m_trackId(trackId), m_trackName(trackName) {
-    setName(std::string(TrackChainTag::name) + "[" + m_trackName + "]");
+TrackChain::TrackChain(TrackId trackId, const std::string &trackName) : trackId_(trackId), trackName_(trackName) {
+    setName(std::string(TrackChainTag::name) + "[" + trackName_ + "]");
 }
 
 void TrackChain::rebuild() {
     clear();
 
-    if (m_signal) {
-        doAdd(m_signal);
+    if (signal_) {
+        doAdd(signal_);
     }
-    if (m_control) {
-        doAdd(m_control);
+    if (control_) {
+        doAdd(control_);
     }
-    if (m_fxChain) {
-        doAdd(m_fxChain);
+    if (fxChain_) {
+        doAdd(fxChain_);
     }
-    if (m_source) {
-        doAdd(m_source);
+    if (source_) {
+        doAdd(source_);
     }
 
     ChainNode<TrackChainTag>::rebuild();
 }
 
-TrackId TrackChain::trackId() const { return m_trackId; }
+TrackId TrackChain::trackId() const { return trackId_; }
 
-const std::string &TrackChain::trackName() const { return m_trackName; }
+const std::string &TrackChain::trackName() const { return trackName_; }
 
 void TrackChain::setSource(IAudioNodePtr source) {
     clear();
-    m_source = source;
+    source_ = source;
 }
 
-IAudioNodePtr TrackChain::source() const { return m_source; }
+IAudioNodePtr TrackChain::source() const { return source_; }
 
 void TrackChain::setFxChain(FxChainPtr fxChain) {
     clear();
-    m_fxChain = fxChain;
+    fxChain_ = fxChain;
 }
 
-FxChainPtr TrackChain::fxChain() const { return m_fxChain; }
+FxChainPtr TrackChain::fxChain() const { return fxChain_; }
 
 void TrackChain::setControl(AutomationControlNodePtr controlNode) {
     clear();
-    m_control = controlNode;
+    control_ = controlNode;
 }
 
-AutomationControlNodePtr TrackChain::control() const { return m_control; }
+AutomationControlNodePtr TrackChain::control() const { return control_; }
 
 void TrackChain::setSignal(SignalNodePtr signalNode) {
     clear();
-    m_signal = signalNode;
+    signal_ = signalNode;
 }
 
-SignalNodePtr TrackChain::signal() const { return m_signal; }
+SignalNodePtr TrackChain::signal() const { return signal_; }

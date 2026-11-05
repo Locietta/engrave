@@ -43,9 +43,9 @@ public:
 
 private:
 
-    BendDataCollector m_bendCollector;
-    DiveDataCollector m_diveCollector;
-    BendBuilder m_bendBuilder;
-    mu::engraving::Score *m_score = nullptr;
+    BendDataCollector bendCollector_;
+    DiveDataCollector diveCollector_;
+    BendBuilder bendBuilder_;
+    mu::engraving::Score *score_ = nullptr;
 };
 } // namespace mu::iex::guitarpro

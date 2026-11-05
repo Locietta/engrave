@@ -118,38 +118,38 @@ LineSegment *GradualTempoChange::createLineSegment() {
     return lineSegment;
 }
 
-GradualTempoChangeType GradualTempoChange::tempoChangeType() const { return m_tempoChangeType; }
+GradualTempoChangeType GradualTempoChange::tempoChangeType() const { return tempoChangeType_; }
 
-ChangeMethod GradualTempoChange::easingMethod() const { return m_tempoEasingMethod; }
+ChangeMethod GradualTempoChange::easingMethod() const { return tempoEasingMethod_; }
 
-void GradualTempoChange::setTempoChangeType(const GradualTempoChangeType type) { m_tempoChangeType = type; }
+void GradualTempoChange::setTempoChangeType(const GradualTempoChangeType type) { tempoChangeType_ = type; }
 
 double GradualTempoChange::tempoChangeFactor() const {
-    if (m_tempoChangeFactor.has_value()) {
-        return m_tempoChangeFactor.value();
+    if (tempoChangeFactor_.has_value()) {
+        return tempoChangeFactor_.value();
     }
 
-    return muse::value(DEFAULT_FACTORS_MAP, m_tempoChangeType, 1.0);
+    return muse::value(DEFAULT_FACTORS_MAP, tempoChangeType_, 1.0);
 }
 
 PropertyValue GradualTempoChange::getProperty(Pid id) const {
     switch (id) {
-        case Pid::TEMPO_CHANGE_TYPE: return m_tempoChangeType;
-        case Pid::TEMPO_EASING_METHOD: return m_tempoEasingMethod;
+        case Pid::TEMPO_CHANGE_TYPE: return tempoChangeType_;
+        case Pid::TEMPO_EASING_METHOD: return tempoEasingMethod_;
         case Pid::TEMPO_CHANGE_FACTOR: return tempoChangeFactor();
         case Pid::SNAP_AFTER: return snapToItemAfter();
-        case Pid::TEMPO_ALIGN_RIGHT_OF_REHEARSAL_MARK: return m_alignRightOfRehearsalMark;
+        case Pid::TEMPO_ALIGN_RIGHT_OF_REHEARSAL_MARK: return alignRightOfRehearsalMark_;
         default: return TextLineBase::getProperty(id);
     }
 }
 
 bool GradualTempoChange::setProperty(Pid id, const PropertyValue &val) {
     switch (id) {
-        case Pid::TEMPO_CHANGE_TYPE: m_tempoChangeType = val.value<GradualTempoChangeType>(); break;
-        case Pid::TEMPO_EASING_METHOD: m_tempoEasingMethod = val.value<ChangeMethod>(); break;
-        case Pid::TEMPO_CHANGE_FACTOR: m_tempoChangeFactor = val.toReal(); break;
+        case Pid::TEMPO_CHANGE_TYPE: tempoChangeType_ = val.value<GradualTempoChangeType>(); break;
+        case Pid::TEMPO_EASING_METHOD: tempoEasingMethod_ = val.value<ChangeMethod>(); break;
+        case Pid::TEMPO_CHANGE_FACTOR: tempoChangeFactor_ = val.toReal(); break;
         case Pid::SNAP_AFTER: setSnapToItemAfter(val.toBool()); break;
-        case Pid::TEMPO_ALIGN_RIGHT_OF_REHEARSAL_MARK: m_alignRightOfRehearsalMark = val.toBool(); break;
+        case Pid::TEMPO_ALIGN_RIGHT_OF_REHEARSAL_MARK: alignRightOfRehearsalMark_ = val.toBool(); break;
         default:
             if (!TextLineBase::setProperty(id, val)) {
                 return false;
@@ -186,7 +186,7 @@ PropertyValue GradualTempoChange::propertyDefault(Pid propertyId) const {
 
         case Pid::TEMPO_CHANGE_TYPE: return GradualTempoChangeType::Undefined;
         case Pid::TEMPO_EASING_METHOD: return ChangeMethod::NORMAL;
-        case Pid::TEMPO_CHANGE_FACTOR: return muse::value(DEFAULT_FACTORS_MAP, m_tempoChangeType, 1.0);
+        case Pid::TEMPO_CHANGE_FACTOR: return muse::value(DEFAULT_FACTORS_MAP, tempoChangeType_, 1.0);
 
         case Pid::SNAP_AFTER: return true;
 
@@ -221,7 +221,7 @@ Sid GradualTempoChange::getPropertyStyle(Pid id) const {
 
 bool GradualTempoChange::adjustForRehearsalMark(bool start) const {
     const Segment *segment = start ? startSegment() : endSegment();
-    if (!m_alignRightOfRehearsalMark || !segment) {
+    if (!alignRightOfRehearsalMark_ || !segment) {
         return false;
     }
 
@@ -275,7 +275,7 @@ PointF GradualTempoChange::linePos(Grip grip, System **system) const {
     return PointF(x, 0.0);
 }
 
-TranslatableString GradualTempoChange::subtypeUserName() const { return TConv::userName(m_tempoChangeType); }
+TranslatableString GradualTempoChange::subtypeUserName() const { return TConv::userName(tempoChangeType_); }
 
 Sid GradualTempoChange::defaultPosSid() const { return placeAbove() ? Sid::tempoChangePosAbove : Sid::tempoChangePosBelow; }
 
@@ -283,8 +283,8 @@ GradualTempoChangeSegment::GradualTempoChangeSegment(GradualTempoChange *annotat
     : TextLineBaseSegment(ElementType::GRADUAL_TEMPO_CHANGE_SEGMENT, annotation,
                           ElementFlag::MOVABLE | ElementFlag::ON_STAFF | ElementFlag::SYSTEM) {
     initElementStyle(&tempoSegmentStyle);
-    m_text->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
-    m_endText->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
+    text_->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
+    endText_->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
 }
 
 GradualTempoChangeSegment *GradualTempoChangeSegment::clone() const { return new GradualTempoChangeSegment(*this); }

@@ -74,19 +74,19 @@ public:
     staff_idx_t rstaff() const;
     staff_idx_t idx() const;
 
-    Part *part() const { return m_part; }
+    Part *part() const { return part_; }
 
-    void setPart(Part *p) { m_part = p; }
+    void setPart(Part *p) { part_ = p; }
 
     Part *originPart(const Fraction &tick) const;
 
-    ClefList &clefList() { return m_clefs; }
+    ClefList &clefList() { return clefs_; }
 
     ClefTypeList clefType(const Fraction &) const;
 
-    ClefTypeList defaultClefType() const { return m_defaultClefType; }
+    ClefTypeList defaultClefType() const { return defaultClefType_; }
 
-    void setDefaultClefType(const ClefTypeList &l) { m_defaultClefType = l; }
+    void setDefaultClefType(const ClefTypeList &l) { defaultClefType_ = l; }
 
     ClefType clef(const Fraction &) const;
     Fraction nextClefTick(const Fraction &) const;
@@ -109,7 +109,7 @@ public:
 
     Interval transpose(const Fraction &tick) const;
 
-    KeyList *keyList() { return &m_keys; }
+    KeyList *keyList() { return &keys_; }
 
     Key key(const Fraction &tick) const { return keySigEvent(tick).key(); }
 
@@ -125,56 +125,56 @@ public:
     bool show() const;
     bool stemless(const Fraction &) const;
 
-    bool cutaway() const { return m_cutaway; }
+    bool cutaway() const { return cutaway_; }
 
-    void setCutaway(bool val) { m_cutaway = val; }
+    void setCutaway(bool val) { cutaway_ = val; }
 
-    bool showIfEntireSystemEmpty() const { return m_showIfEntireSystemEmpty; }
+    bool showIfEntireSystemEmpty() const { return showIfEntireSystemEmpty_; }
 
-    void setShowIfEntireSystemEmpty(bool val) { m_showIfEntireSystemEmpty = val; }
+    void setShowIfEntireSystemEmpty(bool val) { showIfEntireSystemEmpty_ = val; }
 
-    bool hideSystemBarLine() const { return m_hideSystemBarLine; }
+    bool hideSystemBarLine() const { return hideSystemBarLine_; }
 
-    void setHideSystemBarLine(bool val) { m_hideSystemBarLine = val; }
+    void setHideSystemBarLine(bool val) { hideSystemBarLine_ = val; }
 
-    AutoOnOff hideWhenEmpty() const { return m_hideWhenEmpty; }
+    AutoOnOff hideWhenEmpty() const { return hideWhenEmpty_; }
 
-    void setHideWhenEmpty(AutoOnOff v) { m_hideWhenEmpty = v; }
+    void setHideWhenEmpty(AutoOnOff v) { hideWhenEmpty_ = v; }
 
-    AutoOnOff mergeMatchingRests() const { return m_mergeMatchingRests; }
+    AutoOnOff mergeMatchingRests() const { return mergeMatchingRests_; }
 
-    void setMergeMatchingRests(AutoOnOff val) { m_mergeMatchingRests = val; }
+    void setMergeMatchingRests(AutoOnOff val) { mergeMatchingRests_ = val; }
 
     bool shouldMergeMatchingRests() const;
 
-    bool barLineSpan() const { return m_barLineSpan; }
+    bool barLineSpan() const { return barLineSpan_; }
 
-    int barLineFrom() const { return m_barLineFrom; }
+    int barLineFrom() const { return barLineFrom_; }
 
-    int barLineTo() const { return m_barLineTo; }
+    int barLineTo() const { return barLineTo_; }
 
-    void setBarLineSpan(const bool val) { m_barLineSpan = val; }
+    void setBarLineSpan(const bool val) { barLineSpan_ = val; }
 
-    void setBarLineFrom(int val) { m_barLineFrom = val; }
+    void setBarLineFrom(int val) { barLineFrom_ = val; }
 
-    void setBarLineTo(int val) { m_barLineTo = val; }
+    void setBarLineTo(int val) { barLineTo_ = val; }
 
     double staffHeight() const;
     double staffHeight(const Fraction &tick) const;
 
     int channel(const Fraction &, voice_idx_t voice) const;
 
-    void clearChannelList(voice_idx_t voice) { m_channelList[voice].clear(); }
+    void clearChannelList(voice_idx_t voice) { channelList_[voice].clear(); }
 
     void insertIntoChannelList(voice_idx_t voice, const Fraction &tick, int channelId) {
-        m_channelList[voice].insert({tick.ticks(), channelId});
+        channelList_[voice].insert({tick.ticks(), channelId});
     }
 
     SwingParameters swing(const Fraction &) const;
 
-    void clearSwingMap() { m_swingMap.clear(); }
+    void clearSwingMap() { swingMap_.clear(); }
 
-    void insertIntoSwingMap(const Fraction &tick, SwingParameters sp) { m_swingMap.insert({tick.ticks(), sp}); }
+    void insertIntoSwingMap(const Fraction &tick, SwingParameters sp) { swingMap_.insert({tick.ticks(), sp}); }
 
     const CapoParams &capo(const Fraction &) const;
     void insertCapoParams(const Fraction &tick, const CapoParams &params, bool ignoreNotationUpdate);
@@ -221,9 +221,9 @@ public:
     Staff *primaryStaff() const;
     bool isPrimaryStaff() const;
 
-    Spatium userDist() const { return m_userDist; }
+    Spatium userDist() const { return userDist_; }
 
-    void setUserDist(Spatium val) { m_userDist = val; }
+    void setUserDist(Spatium val) { userDist_ = val; }
 
     void setLocalSpatium(double oldVal, double newVal, Fraction tick);
     bool genKeySig();
@@ -291,39 +291,39 @@ private:
     void setVoiceVisible(voice_idx_t voice, bool visible);
     void updateVisibilityVoices(const Staff *masterStaff, const TracksMap &tracks);
 
-    ID m_id = INVALID_ID;
-    Part *m_part = nullptr;
+    ID id_ = INVALID_ID;
+    Part *part_ = nullptr;
 
-    ClefList m_clefs;
-    ClefTypeList m_defaultClefType;
+    ClefList clefs_;
+    ClefTypeList defaultClefType_;
 
-    KeyList m_keys;
-    std::map<int, TimeSig *> m_timesigs;
+    KeyList keys_;
+    std::map<int, TimeSig *> timesigs_;
 
-    bool m_barLineSpan = false; // true - span barline to next staff
-    int m_barLineFrom = 0;      // line of start staff to draw the barline from (0 = staff top line, ...)
-    int m_barLineTo = 0;        // line of end staff to draw the bar line to (0= staff bottom line, ...)
+    bool barLineSpan_ = false; // true - span barline to next staff
+    int barLineFrom_ = 0;      // line of start staff to draw the barline from (0 = staff top line, ...)
+    int barLineTo_ = 0;        // line of end staff to draw the bar line to (0= staff bottom line, ...)
 
-    bool m_cutaway = false;
-    bool m_showIfEntireSystemEmpty = false;           // show this staff if system is empty and hideEmptyStaves is true
-    bool m_hideSystemBarLine = false;                 // no system barline if not preceded by staff with barline
-    AutoOnOff m_mergeMatchingRests = AutoOnOff::AUTO; // merge matching rests in multiple voices
-    AutoOnOff m_hideWhenEmpty = AutoOnOff::AUTO;      // hide empty staves
+    bool cutaway_ = false;
+    bool showIfEntireSystemEmpty_ = false;           // show this staff if system is empty and hideEmptyStaves is true
+    bool hideSystemBarLine_ = false;                 // no system barline if not preceded by staff with barline
+    AutoOnOff mergeMatchingRests_ = AutoOnOff::AUTO; // merge matching rests in multiple voices
+    AutoOnOff hideWhenEmpty_ = AutoOnOff::AUTO;      // hide empty staves
 
-    Color m_color;
-    Spatium m_userDist{0.0_sp}; ///< user edited extra distance
+    Color color_;
+    Spatium userDist_{0.0_sp}; ///< user edited extra distance
 
-    StaffTypeList m_staffTypeList;
+    StaffTypeList staffTypeList_;
 
-    std::map<int, int> m_channelList[VOICES];
-    std::map<int, SwingParameters> m_swingMap;
-    std::map<int, CapoParams> m_capoMap;
-    std::map<int, int> m_pitchOffsetMap;
-    bool m_playbackVoice[VOICES]{true, true, true, true};
-    std::array<bool, VOICES> m_visibilityVoices{true, true, true, true};
+    std::map<int, int> channelList_[VOICES];
+    std::map<int, SwingParameters> swingMap_;
+    std::map<int, CapoParams> capoMap_;
+    std::map<int, int> pitchOffsetMap_;
+    bool playbackVoice_[VOICES]{true, true, true, true};
+    std::array<bool, VOICES> visibilityVoices_{true, true, true, true};
 
-    bool m_reflectTranspositionInLinkedTab = true;
+    bool reflectTranspositionInLinkedTab_ = true;
 
-    AutoOnOff m_showMeasureNumbers = AutoOnOff::AUTO;
+    AutoOnOff showMeasureNumbers_ = AutoOnOff::AUTO;
 };
 } // namespace mu::engraving

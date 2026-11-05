@@ -73,15 +73,15 @@ void TrillSegment::symbolLine(SymId start, SymId fill) {
     double mag = magS();
     IEngravingFontPtr f = score()->engravingFont();
 
-    m_symbols.clear();
-    m_symbols.push_back(start);
+    symbols_.clear();
+    symbols_.push_back(start);
     double w1 = f->advance(start, mag);
     double w2 = f->advance(fill, mag);
     int n = lrint((w - w1) / w2);
     for (int i = 0; i < n; ++i) {
-        m_symbols.push_back(fill);
+        symbols_.push_back(fill);
     }
-    RectF r(f->bbox(m_symbols, mag));
+    RectF r(f->bbox(symbols_, mag));
     setbbox(r);
 }
 
@@ -92,17 +92,17 @@ void TrillSegment::symbolLine(SymId start, SymId fill, SymId end) {
     double mag = magS();
     IEngravingFontPtr f = score()->engravingFont();
 
-    m_symbols.clear();
-    m_symbols.push_back(start);
+    symbols_.clear();
+    symbols_.push_back(start);
     double w1 = f->advance(start, mag);
     double w2 = f->advance(fill, mag);
     double w3 = f->advance(end, mag);
     int n = lrint((w - w1 - w3) / w2);
     for (int i = 0; i < n; ++i) {
-        m_symbols.push_back(fill);
+        symbols_.push_back(fill);
     }
-    m_symbols.push_back(end);
-    RectF r(f->bbox(m_symbols, mag));
+    symbols_.push_back(end);
+    RectF r(f->bbox(symbols_, mag));
     setbbox(r);
 }
 
@@ -140,24 +140,24 @@ EngravingObject *TrillSegment::propertyDelegate(Pid pid) const {
 //---------------------------------------------------------
 
 Trill::Trill(DummyParentOr<EngravingItem> parent) : SLine(ElementType::TRILL, parent) {
-    m_trillType = TrillType::TRILL_LINE;
-    m_ornament = nullptr;
-    m_accidental = nullptr;
-    m_cueNoteChord = nullptr;
-    m_ornamentStyle = OrnamentStyle::DEFAULT;
+    trillType_ = TrillType::TRILL_LINE;
+    ornament_ = nullptr;
+    accidental_ = nullptr;
+    cueNoteChord_ = nullptr;
+    ornamentStyle_ = OrnamentStyle::DEFAULT;
     initElementStyle(&trillStyle);
 }
 
 Trill::Trill(const Trill &t) : SLine(t) {
-    m_trillType = t.m_trillType;
-    m_ornament = t.m_ornament ? t.m_ornament->clone() : nullptr;
-    m_ornamentStyle = t.m_ornamentStyle;
+    trillType_ = t.trillType_;
+    ornament_ = t.ornament_ ? t.ornament_->clone() : nullptr;
+    ornamentStyle_ = t.ornamentStyle_;
     initElementStyle(&trillStyle);
 }
 
 EngravingItem *Trill::linkedClone() {
     Trill *linkedTrill = clone();
-    Ornament *linkedOrnament = toOrnament(m_ornament->linkedClone());
+    Ornament *linkedOrnament = toOrnament(ornament_->linkedClone());
     linkedTrill->setOrnament(linkedOrnament);
     linkedTrill->setAutoplace(true);
     score()->undo(new Link(linkedTrill, this));
@@ -169,8 +169,8 @@ EngravingItem *Trill::linkedClone() {
 //---------------------------------------------------------
 
 void Trill::remove(EngravingItem *e) {
-    if (e == m_accidental) {
-        m_accidental = nullptr;
+    if (e == accidental_) {
+        accidental_ = nullptr;
         e->removed();
     }
 }
@@ -182,24 +182,24 @@ void Trill::setTrack(track_idx_t n) {
         ss->setTrack(n);
     }
 
-    if (m_ornament) {
-        m_ornament->setTrack(n);
+    if (ornament_) {
+        ornament_->setTrack(n);
     }
 }
 
 void Trill::setScore(Score *s) {
     Spanner::setScore(s);
-    if (m_ornament) {
-        m_ornament->setScore(s);
+    if (ornament_) {
+        ornament_->setScore(s);
     }
 }
 
 void Trill::computeStartElement() {
     Spanner::computeStartElement();
-    if (startElement() && startElement()->isChord() && m_ornament) {
-        m_ornament->setOwnershipParent(startElement());
+    if (startElement() && startElement()->isChord() && ornament_) {
+        ornament_->setOwnershipParent(startElement());
 
-        Chord *cueChord = m_ornament->cueNoteChord();
+        Chord *cueChord = ornament_->cueNoteChord();
         if (cueChord) {
             cueChord->setOwnershipParent(toChord(startElement())->segment());
         }
@@ -274,13 +274,13 @@ PointF Trill::trillLinePos(const SLine *line, Grip grip, System **system) {
 PointF Trill::linePos(Grip grip, System **system) const { return trillLinePos(this, grip, system); }
 
 void Trill::setTrillType(TrillType tt) {
-    m_trillType = tt;
-    if (!m_ornament) {
+    trillType_ = tt;
+    if (!ornament_) {
         // ornament parent will be explicitely set at layout stage
-        m_ornament = Factory::createOrnament(score()->dummy());
+        ornament_ = Factory::createOrnament(score()->dummy());
     }
-    m_ornament->setTrack(track());
-    m_ornament->setSymId(Ornament::fromTrillType(tt));
+    ornament_->setTrack(track());
+    ornament_->setSymId(Ornament::fromTrillType(tt));
 }
 
 //---------------------------------------------------------

@@ -71,7 +71,7 @@ Marker::Marker(DummyParentOr<EngravingItem> parent, TextStyleType tid)
     : TextBase(ElementType::MARKER, parent, tid, ElementFlag::MOVABLE | ElementFlag::ON_STAFF | ElementFlag::SYSTEM) {
     initElementStyle(&markerStyle);
     resetProperty(Pid::MUSIC_SYMBOL_SIZE);
-    m_markerType = MarkerType::FINE;
+    markerType_ = MarkerType::FINE;
 }
 
 //---------------------------------------------------------
@@ -80,7 +80,7 @@ Marker::Marker(DummyParentOr<EngravingItem> parent, TextStyleType tid)
 
 void Marker::setMarkerType(MarkerType t) {
     bool changeLabel = getProperty(Pid::LABEL) == propertyDefault(Pid::LABEL);
-    m_markerType = t;
+    markerType_ = t;
     for (const MarkerTypeTableItem &p : markerTypeTable) {
         if (p.type == t) {
             if (empty()) {
@@ -103,7 +103,7 @@ void Marker::setMarkerType(MarkerType t) {
 //   markerTypeUserName
 //---------------------------------------------------------
 
-String Marker::markerTypeUserName() const { return TConv::translatedUserName(m_markerType); }
+String Marker::markerTypeUserName() const { return TConv::translatedUserName(markerType_); }
 
 //---------------------------------------------------------
 //   getProperty
@@ -146,7 +146,7 @@ PropertyValue Marker::propertyDefault(Pid propertyId) const {
     switch (propertyId) {
         case Pid::LABEL:
             for (const MarkerTypeTableItem &p : markerTypeTable) {
-                if (m_markerType == p.type) {
+                if (markerType_ == p.type) {
                     return String::fromAscii(p.label.ascii());
                 }
             }
@@ -212,5 +212,5 @@ String Marker::symbolString() const {
 //   subtypeUserName
 //---------------------------------------------------------
 
-muse::TranslatableString Marker::subtypeUserName() const { return TConv::userName(m_markerType); }
+muse::TranslatableString Marker::subtypeUserName() const { return TConv::userName(markerType_); }
 } // namespace mu::engraving

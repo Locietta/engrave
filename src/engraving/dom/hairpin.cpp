@@ -95,8 +95,8 @@ static const ElementStyle hairpinStyle{
 
 HairpinSegment::HairpinSegment(Hairpin *sp)
     : TextLineBaseSegment(ElementType::HAIRPIN_SEGMENT, sp, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
-    m_text->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
-    m_endText->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
+    text_->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
+    endText_->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
 }
 
 bool HairpinSegment::acceptDrop(EditData &data) const {
@@ -140,7 +140,7 @@ void HairpinSegment::setPropertyFlags(Pid id, PropertyFlags f) {
         hairpin()->setPropertyFlags(id, f);
         return;
     }
-    m_propertyFlagsList[i] = f;
+    propertyFlagsList_[i] = f;
 }
 
 //---------------------------------------------------------
@@ -366,14 +366,14 @@ Hairpin::Hairpin(DummyParentOr<EngravingItem> parent) : TextLineBase(ElementType
     resetProperty(Pid::HAIRPIN_TYPE);
     resetProperty(Pid::LINE_VISIBLE);
 
-    m_hairpinCircledTip = false;
-    m_veloChange = 0;
-    m_singleNoteDynamics = true;
-    m_veloChangeMethod = ChangeMethod::NORMAL;
+    hairpinCircledTip_ = false;
+    veloChange_ = 0;
+    singleNoteDynamics_ = true;
+    veloChangeMethod_ = ChangeMethod::NORMAL;
 }
 
 DynamicType Hairpin::dynamicTypeFrom() const {
-    if (m_hairpinType == HairpinType::CRESC_HAIRPIN && hairpinCircledTip()) {
+    if (hairpinType_ == HairpinType::CRESC_HAIRPIN && hairpinCircledTip()) {
         return DynamicType::N;
     }
 
@@ -382,7 +382,7 @@ DynamicType Hairpin::dynamicTypeFrom() const {
 }
 
 DynamicType Hairpin::dynamicTypeTo() const {
-    if (m_hairpinType == HairpinType::DIM_HAIRPIN && hairpinCircledTip()) {
+    if (hairpinType_ == HairpinType::DIM_HAIRPIN && hairpinCircledTip()) {
         return DynamicType::N;
     }
 
@@ -423,10 +423,10 @@ const Dynamic *Hairpin::dynamicSnappedAfter() const {
 //---------------------------------------------------------
 
 void Hairpin::setHairpinType(HairpinType val) {
-    if (m_hairpinType == val) {
+    if (hairpinType_ == val) {
         return;
     }
-    m_hairpinType = val;
+    hairpinType_ = val;
     styleChanged();
 }
 
@@ -451,13 +451,13 @@ LineSegment *Hairpin::createLineSegment() {
 
 PropertyValue Hairpin::getProperty(Pid id) const {
     switch (id) {
-        case Pid::HAIRPIN_CIRCLEDTIP: return m_hairpinCircledTip;
-        case Pid::HAIRPIN_TYPE: return int(m_hairpinType);
-        case Pid::VELO_CHANGE: return m_veloChange;
-        case Pid::HAIRPIN_HEIGHT: return m_hairpinHeight;
-        case Pid::HAIRPIN_CONT_HEIGHT: return m_hairpinContHeight;
-        case Pid::SINGLE_NOTE_DYNAMICS: return m_singleNoteDynamics;
-        case Pid::VELO_CHANGE_METHOD: return m_veloChangeMethod;
+        case Pid::HAIRPIN_CIRCLEDTIP: return hairpinCircledTip_;
+        case Pid::HAIRPIN_TYPE: return int(hairpinType_);
+        case Pid::VELO_CHANGE: return veloChange_;
+        case Pid::HAIRPIN_HEIGHT: return hairpinHeight_;
+        case Pid::HAIRPIN_CONT_HEIGHT: return hairpinContHeight_;
+        case Pid::SINGLE_NOTE_DYNAMICS: return singleNoteDynamics_;
+        case Pid::VELO_CHANGE_METHOD: return veloChangeMethod_;
         case Pid::VOICE_ASSIGNMENT: return voiceAssignment();
         case Pid::CENTER_BETWEEN_STAVES: return centerBetweenStaves();
         case Pid::DIRECTION: return direction();
@@ -474,13 +474,13 @@ PropertyValue Hairpin::getProperty(Pid id) const {
 
 bool Hairpin::setProperty(Pid id, const PropertyValue &v) {
     switch (id) {
-        case Pid::HAIRPIN_CIRCLEDTIP: m_hairpinCircledTip = v.toBool(); break;
+        case Pid::HAIRPIN_CIRCLEDTIP: hairpinCircledTip_ = v.toBool(); break;
         case Pid::HAIRPIN_TYPE: setHairpinType(HairpinType(v.toInt())); break;
-        case Pid::VELO_CHANGE: m_veloChange = v.toInt(); break;
-        case Pid::HAIRPIN_HEIGHT: m_hairpinHeight = v.value<Spatium>(); break;
-        case Pid::HAIRPIN_CONT_HEIGHT: m_hairpinContHeight = v.value<Spatium>(); break;
-        case Pid::SINGLE_NOTE_DYNAMICS: m_singleNoteDynamics = v.toBool(); break;
-        case Pid::VELO_CHANGE_METHOD: m_veloChangeMethod = v.value<ChangeMethod>(); break;
+        case Pid::VELO_CHANGE: veloChange_ = v.toInt(); break;
+        case Pid::HAIRPIN_HEIGHT: hairpinHeight_ = v.value<Spatium>(); break;
+        case Pid::HAIRPIN_CONT_HEIGHT: hairpinContHeight_ = v.value<Spatium>(); break;
+        case Pid::SINGLE_NOTE_DYNAMICS: singleNoteDynamics_ = v.toBool(); break;
+        case Pid::VELO_CHANGE_METHOD: veloChangeMethod_ = v.value<ChangeMethod>(); break;
         case Pid::VOICE_ASSIGNMENT: setVoiceAssignment(v.value<VoiceAssignment>()); break;
         case Pid::CENTER_BETWEEN_STAVES: setCenterBetweenStaves(v.value<AutoOnOff>()); break;
         case Pid::DIRECTION: setDirection(v.value<DirectionV>()); break;
@@ -503,19 +503,19 @@ PropertyValue Hairpin::propertyDefault(Pid id) const {
         case Pid::VELO_CHANGE: return 0;
 
         case Pid::BEGIN_TEXT:
-            if (m_hairpinType == HairpinType::CRESC_LINE) {
+            if (hairpinType_ == HairpinType::CRESC_LINE) {
                 return style().styleV(Sid::hairpinCrescText);
             }
-            if (m_hairpinType == HairpinType::DIM_LINE) {
+            if (hairpinType_ == HairpinType::DIM_LINE) {
                 return style().styleV(Sid::hairpinDecrescText);
             }
             return String();
 
         case Pid::CONTINUE_TEXT:
-            if (m_hairpinType == HairpinType::CRESC_LINE) {
+            if (hairpinType_ == HairpinType::CRESC_LINE) {
                 return style().styleV(Sid::hairpinCrescContText);
             }
-            if (m_hairpinType == HairpinType::DIM_LINE) {
+            if (hairpinType_ == HairpinType::DIM_LINE) {
                 return style().styleV(Sid::hairpinDecrescContText);
             }
             return String();

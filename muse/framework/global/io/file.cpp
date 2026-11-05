@@ -38,13 +38,13 @@ IFileSystem *muse::io::fileSystem() { return s_fileSystem; }
 
 void muse::io::setFileSystem(IFileSystem *fileSystem) { s_fileSystem = fileSystem; }
 
-File::File(const path_t &filePath) : m_filePath(filePath) { setMeta("file_path", m_filePath.toStdString()); }
+File::File(const path_t &filePath) : filePath_(filePath) { setMeta("file_path", filePath_.toStdString()); }
 
 File::~File() { close(); }
 
-const path_t &File::filePath() const { return m_filePath; }
+const path_t &File::filePath() const { return filePath_; }
 
-bool File::exists() const { return fileSystem()->exists(m_filePath); }
+bool File::exists() const { return fileSystem()->exists(filePath_); }
 
 bool File::exists(const path_t &filePath) { return fileSystem()->exists(filePath); }
 
@@ -61,11 +61,11 @@ Ret File::writeFile(const io::path_t &filePath, const ByteArray &data) { return 
 
 bool File::setPermissionsAllowedForAll(const path_t &filePath) { return fileSystem()->setPermissionsAllowedForAll(filePath); }
 
-bool File::remove() { return fileSystem()->remove(m_filePath); }
+bool File::remove() { return fileSystem()->remove(filePath_); }
 
 bool File::doOpen(OpenMode m) {
     if (m == IODevice::WriteOnly) {
-        Ret ret = fileSystem()->isWritable(m_filePath);
+        Ret ret = fileSystem()->isWritable(filePath_);
         if (!ret) {
             setError(ret.code(), ret.text());
         }
@@ -82,8 +82,8 @@ bool File::doOpen(OpenMode m) {
         }
     }
 
-    m_data = ByteArray();
-    Ret ret = fileSystem()->readFile(m_filePath, m_data);
+    data_ = ByteArray();
+    Ret ret = fileSystem()->readFile(filePath_, data_);
     if (!ret) {
         setError(ret.code(), ret.text());
         return false;
@@ -92,18 +92,18 @@ bool File::doOpen(OpenMode m) {
     return true;
 }
 
-size_t File::dataSize() const { return m_data.size(); }
+size_t File::dataSize() const { return data_.size(); }
 
-const uint8_t *File::rawData() const { return m_data.constData(); }
+const uint8_t *File::rawData() const { return data_.constData(); }
 
 bool File::resizeData(size_t size) {
-    m_data.resize(size);
+    data_.resize(size);
     return true;
 }
 
 size_t File::writeData(const uint8_t *data, size_t len) {
-    std::memcpy(m_data.data() + pos(), data, len);
-    Ret ret = fileSystem()->writeFile(m_filePath, m_data);
+    std::memcpy(data_.data() + pos(), data, len);
+    Ret ret = fileSystem()->writeFile(filePath_, data_);
     if (!ret) {
         setError(ret.code(), ret.text());
         return 0;

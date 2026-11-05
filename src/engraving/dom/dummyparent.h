@@ -40,13 +40,13 @@ public:
 
     void init();
 
-    RootItem *rootItem() const { return m_root; }
+    RootItem *rootItem() const { return root_; }
 
     PropertyValue getProperty(Pid) const override { return PropertyValue(); }
 
     bool setProperty(Pid, const PropertyValue &) override { return false; }
 
 private:
-    RootItem *m_root = nullptr;
+    RootItem *root_ = nullptr;
 };
 } // namespace mu::engraving

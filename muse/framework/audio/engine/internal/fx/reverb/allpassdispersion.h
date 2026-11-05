@@ -30,37 +30,37 @@ class AllPassDispersion {
 public:
     AllPassDispersion() {
         // these values have been manually tuned to produce a 50-sample IR that has a (low) peak of 0.453731
-        m_processor[0].setTargetCoefficients(IirBiquadFilter::createAllpass2P(0.2492, 2.168, 1.0));
-        m_processor[1].setTargetCoefficients(IirBiquadFilter::createAllpass2P(0.1119, 2.033, 1.0));
+        processor_[0].setTargetCoefficients(IirBiquadFilter::createAllpass2P(0.2492, 2.168, 1.0));
+        processor_[1].setTargetCoefficients(IirBiquadFilter::createAllpass2P(0.1119, 2.033, 1.0));
         reset();
     }
 
     void reset() {
-        for (auto &p : m_processor) {
+        for (auto &p : processor_) {
             p.reset();
         }
     }
 
     void process(float **signalPtr, int numCh, int n) {
-        for (auto &p : m_processor) {
+        for (auto &p : processor_) {
             p.process(signalPtr, numCh, n);
         }
     }
 
     void processMonoSample(float &s) {
-        for (auto &p : m_processor) {
+        for (auto &p : processor_) {
             p.processMonoSample(s);
         }
     }
 
     void processStereoSample(float &l, float &r) {
-        for (auto &p : m_processor) {
+        for (auto &p : processor_) {
             p.processStereoSample(l, r);
         }
     }
 
 private:
-    std::array<IirBiquadFilter::DF1Processor<double>, 2> m_processor;
+    std::array<IirBiquadFilter::DF1Processor<double>, 2> processor_;
 };
 } // namespace muse::audio::fx
 

@@ -21,15 +21,15 @@ struct OfflineTiming {
 
 class OfflineTimer {
     using Clock = std::chrono::steady_clock;
-    double &m_total;
-    Clock::time_point m_start;
+    double &total_;
+    Clock::time_point start_;
 public:
-    explicit OfflineTimer(double &total) : m_total(total) {
-        if (OfflineTiming::enabled()) m_start = Clock::now();
+    explicit OfflineTimer(double &total) : total_(total) {
+        if (OfflineTiming::enabled()) start_ = Clock::now();
     }
 
     ~OfflineTimer() {
-        if (OfflineTiming::enabled()) m_total += std::chrono::duration<double>(Clock::now() - m_start).count();
+        if (OfflineTiming::enabled()) total_ += std::chrono::duration<double>(Clock::now() - start_).count();
     }
 };
 

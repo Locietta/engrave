@@ -41,15 +41,15 @@ public:
     bool isStaffTypeStartFrom(const Fraction &) const;
     void moveStaffType(const Fraction &from, const Fraction &to);
 
-    bool uniqueStaffType() const { return m_staffTypeChanges.empty(); }
+    bool uniqueStaffType() const { return staffTypeChanges_.empty(); }
 
     std::pair<int, int> staffTypeRange(const Fraction &) const;
 
-    const std::map<int, StaffType> &staffTypeChanges() const { return m_staffTypeChanges; }
+    const std::map<int, StaffType> &staffTypeChanges() const { return staffTypeChanges_; }
 
 private:
-    StaffType m_firstStaffType; // staff type at tick 0
-    std::map<int, StaffType> m_staffTypeChanges;
+    StaffType firstStaffType_; // staff type at tick 0
+    std::map<int, StaffType> staffTypeChanges_;
 };
 } // namespace mu::engraving
 

@@ -117,7 +117,7 @@ Glissando::Glissando(const Glissando &g) : SLine(g) {
     _easeOut = g._easeOut;
     _showText = g._showText;
     _fontStyle = g._fontStyle;
-    m_isHarpGliss = g.m_isHarpGliss;
+    isHarpGliss_ = g.isHarpGliss_;
 }
 
 //---------------------------------------------------------

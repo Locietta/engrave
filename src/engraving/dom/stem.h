@@ -55,23 +55,23 @@ public:
 
     bool up() const;
 
-    Spatium baseLength() const { return m_baseLength; }
+    Spatium baseLength() const { return baseLength_; }
 
     void setBaseLength(Spatium baseLength);
 
-    Spatium userLength() const { return m_userLength; }
+    Spatium userLength() const { return userLength_; }
 
-    void setUserLength(Spatium userLength) { m_userLength = userLength; }
+    void setUserLength(Spatium userLength) { userLength_ = userLength; }
 
-    Spatium lineWidth() const { return m_lineWidth; }
+    Spatium lineWidth() const { return lineWidth_; }
 
     double lineWidthMag() const;
 
-    void setLineWidth(Spatium lineWidth) { m_lineWidth = lineWidth; }
+    void setLineWidth(Spatium lineWidth) { lineWidth_ = lineWidth; }
 
     PointF flagPosition() const;
 
-    double length() const { return absoluteFromSpatium(m_baseLength + m_userLength); }
+    double length() const { return absoluteFromSpatium(baseLength_ + userLength_); }
 
     struct LayoutData : public EngravingItem::LayoutData {
         LineF line;
@@ -83,9 +83,9 @@ private:
     friend class Factory;
     Stem(DummyParentOr<Chord> parent);
 
-    Spatium m_baseLength = 0.0_sp;
+    Spatium baseLength_ = 0.0_sp;
 
-    Spatium m_userLength = 0.0_sp;
-    Spatium m_lineWidth = 0.0_sp;
+    Spatium userLength_ = 0.0_sp;
+    Spatium lineWidth_ = 0.0_sp;
 };
 } // namespace mu::engraving

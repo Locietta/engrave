@@ -51,54 +51,54 @@ public:
 
     ~SysStaff();
 
-    const std::unordered_map<InstrumentNameRole, InstrumentName *> &instrumentNames() const { return m_instrumentNames; }
+    const std::unordered_map<InstrumentNameRole, InstrumentName *> &instrumentNames() const { return instrumentNames_; }
 
     InstrumentName *name(InstrumentNameRole role) const;
     void addInstrumentName(InstrumentName *n);
     void removeInstrumentName(InstrumentNameRole role);
 
-    const RectF &bbox() const { return m_bbox; }
+    const RectF &bbox() const { return bbox_; }
 
-    RectF &bbox() { return m_bbox; }
+    RectF &bbox() { return bbox_; }
 
-    void setbbox(const RectF &r) { m_bbox = r; }
+    void setbbox(const RectF &r) { bbox_ = r; }
 
-    void setbbox(double x, double y, double w, double h) { m_bbox.setRect(x, y, w, h); }
+    void setbbox(double x, double y, double w, double h) { bbox_.setRect(x, y, w, h); }
 
-    double y() const { return m_bbox.y() + m_yOff; }
+    double y() const { return bbox_.y() + yOff_; }
 
-    void setYOff(double offset) { m_yOff = offset; }
+    void setYOff(double offset) { yOff_ = offset; }
 
-    double yOffset() const { return m_yOff; }
+    double yOffset() const { return yOff_; }
 
     double yBottom() const;
 
     void saveLayout();
     void restoreLayout();
 
-    double continuousDist() const { return m_continuousDist; }
+    double continuousDist() const { return continuousDist_; }
 
-    void setContinuousDist(double val) { m_continuousDist = val; }
+    void setContinuousDist(double val) { continuousDist_ = val; }
 
-    bool show() const { return m_show; }
+    bool show() const { return show_; }
 
-    void setShow(bool v) { m_show = v; }
+    void setShow(bool v) { show_ = v; }
 
-    const Skyline &skyline() const { return m_skyline; }
+    const Skyline &skyline() const { return skyline_; }
 
-    Skyline &skyline() { return m_skyline; }
+    Skyline &skyline() { return skyline_; }
 
 private:
-    std::unordered_map<InstrumentNameRole, InstrumentName *> m_instrumentNames;
+    std::unordered_map<InstrumentNameRole, InstrumentName *> instrumentNames_;
 
-    RectF m_bbox; // Bbox of StaffLines.
-    Skyline m_skyline;
-    double m_yOff = 0.0;            // offset of top staff line within bbox
-    double m_yPos = 0.0;            // y position of bbox after System::layout2
-    double m_height = 0.0;          // height of bbox after System::layout2
-    double m_continuousDist = -1.0; // distance for continuous mode
-    bool m_show = true;             // derived from Staff or false if empty
-                                    // staff is hidden
+    RectF bbox_; // Bbox of StaffLines.
+    Skyline skyline_;
+    double yOff_ = 0.0;            // offset of top staff line within bbox
+    double yPos_ = 0.0;            // y position of bbox after System::layout2
+    double height_ = 0.0;          // height of bbox after System::layout2
+    double continuousDist_ = -1.0; // distance for continuous mode
+    bool show_ = true;             // derived from Staff or false if empty
+                                   // staff is hidden
 };
 
 //---------------------------------------------------------
@@ -128,9 +128,9 @@ public:
     void removeLastMeasure();
 
     //! The page this system is currently laid out on; null if not placed.
-    Page *page() const { return m_page; }
+    Page *page() const { return page_; }
 
-    void setPage(Page *p) { m_page = p; }
+    void setPage(Page *p) { page_ = p; }
 
     EngravingItem *layoutParent() const override;
 
@@ -141,9 +141,9 @@ public:
 
     void clear(); ///< Clear measure list.
 
-    std::vector<SysStaff *> &staves() { return m_staves; }
+    std::vector<SysStaff *> &staves() { return staves_; }
 
-    const std::vector<SysStaff *> &staves() const { return m_staves; }
+    const std::vector<SysStaff *> &staves() const { return staves_; }
 
     double staffYpage(staff_idx_t staffIdx) const;
     double staffCanvasYpage(staff_idx_t staffIdx) const;
@@ -159,15 +159,15 @@ public:
     Fraction snap(const Fraction &tick, const PointF p) const;
     Fraction snapNote(const Fraction &tick, const PointF p, int staff) const;
 
-    const std::vector<MeasureBase *> &measures() const { return m_ml; }
+    const std::vector<MeasureBase *> &measures() const { return ml_; }
 
-    std::vector<MeasureBase *> &measures() { return m_ml; }
+    std::vector<MeasureBase *> &measures() { return ml_; }
 
-    MeasureBase *measure(int idx) { return m_ml[idx]; }
+    MeasureBase *measure(int idx) { return ml_[idx]; }
 
-    MeasureBase *first() const { return m_ml.front(); }
+    MeasureBase *first() const { return ml_.front(); }
 
-    MeasureBase *last() const { return m_ml.back(); }
+    MeasureBase *last() const { return ml_.back(); }
 
     Measure *firstMeasure() const;
     Measure *lastMeasure() const;
@@ -175,27 +175,27 @@ public:
 
     MeasureBase *nextMeasure(const MeasureBase *) const;
 
-    double leftMargin() const { return m_leftMargin; }
+    double leftMargin() const { return leftMargin_; }
 
-    void setLeftMargin(double val) { m_leftMargin = val; }
+    void setLeftMargin(double val) { leftMargin_ = val; }
 
-    double systemHeight() const { return m_systemHeight; }
+    double systemHeight() const { return systemHeight_; }
 
-    void setSystemHeight(double h) { m_systemHeight = h; }
+    void setSystemHeight(double h) { systemHeight_ = h; }
 
     Box *vbox() const;
 
-    const std::vector<Bracket *> &brackets() const { return m_brackets; }
+    const std::vector<Bracket *> &brackets() const { return brackets_; }
 
-    std::vector<Bracket *> &brackets() { return m_brackets; }
+    std::vector<Bracket *> &brackets() { return brackets_; }
 
-    std::list<SpannerSegment *> &spannerSegments() { return m_spannerSegments; }
+    std::list<SpannerSegment *> &spannerSegments() { return spannerSegments_; }
 
-    const std::list<SpannerSegment *> &spannerSegments() const { return m_spannerSegments; }
+    const std::list<SpannerSegment *> &spannerSegments() const { return spannerSegments_; }
 
-    SystemDivider *systemDividerLeft() const { return m_systemDividerLeft; }
+    SystemDivider *systemDividerLeft() const { return systemDividerLeft_; }
 
-    SystemDivider *systemDividerRight() const { return m_systemDividerRight; }
+    SystemDivider *systemDividerRight() const { return systemDividerRight_; }
 
     EngravingItem *nextSegmentElement() override;
     EngravingItem *prevSegmentElement() override;
@@ -213,18 +213,18 @@ public:
     ChordRest *lastChordRest(track_idx_t track) const;
     ChordRest *firstChordRest(track_idx_t track) const;
 
-    bool hasFixedDownDistance() const { return m_fixedDownDistance; }
+    bool hasFixedDownDistance() const { return fixedDownDistance_; }
 
-    void setFixedDownDistance(bool val) const { m_fixedDownDistance = val; }
+    void setFixedDownDistance(bool val) const { fixedDownDistance_ = val; }
 
     staff_idx_t firstVisibleStaff() const;
     staff_idx_t nextVisibleStaff(staff_idx_t) const;
     staff_idx_t prevVisibleStaff(staff_idx_t) const;
     staff_idx_t lastVisibleStaff() const;
 
-    double distance() const { return m_distance; }
+    double distance() const { return distance_; }
 
-    void setDistance(double d) { m_distance = d; }
+    void setDistance(double d) { distance_ = d; }
 
     staff_idx_t firstSysStaffOfPart(const Part *part) const;
     staff_idx_t firstVisibleSysStaffOfPart(const Part *part) const;
@@ -238,72 +238,70 @@ public:
 
     void resetShortestLongestChordRest();
 
-    StaffVisibilityIndicator *staffVisibilityIndicator() const { return m_staffVisibilityIndicator; }
+    StaffVisibilityIndicator *staffVisibilityIndicator() const { return staffVisibilityIndicator_; }
 
     void setHasStaffVisibilityIndicator(bool has);
 
     bool isLocked() const;
     const RangeLock *systemLock() const;
 
-    const std::vector<SystemLockIndicator *> systemLockIndicators() const { return m_systemLockIndicators; }
+    const std::vector<SystemLockIndicator *> systemLockIndicators() const { return systemLockIndicators_; }
 
     void addSystemLockIndicator(SystemLockIndicator *sli);
     void deleteSystemLockIndicators();
 
-    PageLockIndicator *pageLockIndicator() const { return m_pageLockIndicator; }
+    PageLockIndicator *pageLockIndicator() const { return pageLockIndicator_; }
 
     void setPageLockIndicator(PageLockIndicator *pli);
     void deletePageLockIndicator();
 
     struct LayoutData : public EngravingItem::LayoutData {
     public:
-        bool useLongNames() const { return m_useLongNames; }
+        bool useLongNames() const { return useLongNames_; }
 
-        void setUseLongNames(bool v) { m_useLongNames = v; }
+        void setUseLongNames(bool v) { useLongNames_ = v; }
 
-        double instrumentNameOffset() const { return m_instrumentNameOffset; }
+        double instrumentNameOffset() const { return instrumentNameOffset_; }
 
-        void setInstrumentNameOffset(double v) { m_instrumentNameOffset = v; }
+        void setInstrumentNameOffset(double v) { instrumentNameOffset_ = v; }
 
-        double firstColumnWidth() const { return m_firstColumnWidth; }
+        double firstColumnWidth() const { return firstColumnWidth_; }
 
-        void setFirstColumnWidth(double v) { m_firstColumnWidth = v; }
+        void setFirstColumnWidth(double v) { firstColumnWidth_ = v; }
 
-        double secondColumnWidth() const { return m_secondColumnWidth; }
+        double secondColumnWidth() const { return secondColumnWidth_; }
 
-        void setSecondColumnWidth(double v) { m_secondColumnWidth = v; }
+        void setSecondColumnWidth(double v) { secondColumnWidth_ = v; }
 
-        double totalNamesWidth() const { return m_totalNamesWidth; }
+        double totalNamesWidth() const { return totalNamesWidth_; }
 
-        void setTotalNamesWidth(double v) { m_totalNamesWidth = v; }
+        void setTotalNamesWidth(double v) { totalNamesWidth_ = v; }
 
-        const std::unordered_map<staff_idx_t, double> &groupBracketsWidth() const { return m_groupBracketsWidth; }
+        const std::unordered_map<staff_idx_t, double> &groupBracketsWidth() const { return groupBracketsWidth_; }
 
-        void setGroupBracketsWidthAtStaffIdx(staff_idx_t i, double w) { m_groupBracketsWidth[i] = w; }
+        void setGroupBracketsWidthAtStaffIdx(staff_idx_t i, double w) { groupBracketsWidth_[i] = w; }
 
-        double groupBracketsWidthAtStaffIdx(staff_idx_t i) const {
-            return m_groupBracketsWidth.count(i) ? m_groupBracketsWidth.at(i) : 0.0;
-        }
+        double groupBracketsWidthAtStaffIdx(staff_idx_t i) const { return groupBracketsWidth_.count(i) ? groupBracketsWidth_.at(i) : 0.0; }
 
-        void clearGroupBracketsWidth() { m_groupBracketsWidth.clear(); }
+        void clearGroupBracketsWidth() { groupBracketsWidth_.clear(); }
 
-        const std::unordered_map<Part *, InstrumentName *> &partsWithGroupName() const { return m_partsWithGroupName; }
+        const std::unordered_map<Part *, InstrumentName *> &partsWithGroupName() const { return partsWithGroupName_; }
 
-        void addPartWithGroupNames(Part *p, InstrumentName *n) { m_partsWithGroupName.emplace(p, n); }
+        void addPartWithGroupNames(Part *p, InstrumentName *n) { partsWithGroupName_.emplace(p, n); }
 
-        void clearPartsWithGroupNames() { m_partsWithGroupName.clear(); }
+        void clearPartsWithGroupNames() { partsWithGroupName_.clear(); }
 
     private:
-        bool m_useLongNames = false;
-        double m_instrumentNameOffset = 0.0;
+        bool useLongNames_ = false;
+        double instrumentNameOffset_ = 0.0;
 
-        double m_firstColumnWidth = 0.0;
-        double m_secondColumnWidth = 0.0;
-        double m_totalNamesWidth = 0.0;
+        double firstColumnWidth_ = 0.0;
+        double secondColumnWidth_ = 0.0;
+        double totalNamesWidth_ = 0.0;
 
-        std::unordered_map<staff_idx_t, double> m_groupBracketsWidth;
+        std::unordered_map<staff_idx_t, double> groupBracketsWidth_;
 
-        std::unordered_map<Part *, InstrumentName *> m_partsWithGroupName;
+        std::unordered_map<Part *, InstrumentName *> partsWithGroupName_;
     };
     DECLARE_LAYOUTDATA_METHODS(System)
 
@@ -317,24 +315,24 @@ private:
 
     staff_idx_t firstVisibleStaffFrom(staff_idx_t startStaffIdx) const;
 
-    Page *m_page = nullptr; // current layout placement; not owned, not copied
+    Page *page_ = nullptr; // current layout placement; not owned, not copied
 
-    SystemDivider *m_systemDividerLeft = nullptr; // to the next system
-    SystemDivider *m_systemDividerRight = nullptr;
+    SystemDivider *systemDividerLeft_ = nullptr; // to the next system
+    SystemDivider *systemDividerRight_ = nullptr;
 
-    std::vector<MeasureBase *> m_ml;
-    std::vector<SysStaff *> m_staves;
-    std::vector<Bracket *> m_brackets;
-    std::list<SpannerSegment *> m_spannerSegments;
-    std::vector<SystemLockIndicator *> m_systemLockIndicators;
-    PageLockIndicator *m_pageLockIndicator = nullptr;
+    std::vector<MeasureBase *> ml_;
+    std::vector<SysStaff *> staves_;
+    std::vector<Bracket *> brackets_;
+    std::list<SpannerSegment *> spannerSegments_;
+    std::vector<SystemLockIndicator *> systemLockIndicators_;
+    PageLockIndicator *pageLockIndicator_ = nullptr;
 
-    StaffVisibilityIndicator *m_staffVisibilityIndicator = nullptr;
+    StaffVisibilityIndicator *staffVisibilityIndicator_ = nullptr;
 
-    double m_leftMargin = 0.0; // left margin for instrument name, brackets etc.
-    mutable bool m_fixedDownDistance = false;
-    double m_distance = 0.0; // temp. variable used during layout
-    double m_systemHeight = 0.0;
+    double leftMargin_ = 0.0; // left margin for instrument name, brackets etc.
+    mutable bool fixedDownDistance_ = false;
+    double distance_ = 0.0; // temp. variable used during layout
+    double systemHeight_ = 0.0;
 };
 
 typedef std::vector<System *>::iterator iSystem;

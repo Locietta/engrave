@@ -75,7 +75,7 @@ public:
 //   BspTree
 //---------------------------------------------------------
 
-BspTree::BspTree() : m_leafCnt(0) { m_depth = 0; }
+BspTree::BspTree() : leafCnt_(0) { depth_ = 0; }
 
 //---------------------------------------------------------
 //   intmaxlog
@@ -88,13 +88,13 @@ static inline int intmaxlog(int n) { return n > 0 ? std::max(int(::ceil(::log(do
 //---------------------------------------------------------
 
 void BspTree::initialize(const RectF &rec, int n) {
-    m_depth = intmaxlog(n);
-    this->m_rect = rec;
-    m_leafCnt = 0;
+    depth_ = intmaxlog(n);
+    this->rect_ = rec;
+    leafCnt_ = 0;
 
-    m_nodes.resize((1 << (m_depth + 1)) - 1);
-    m_leaves.assign(1LL << m_depth, std::vector<EngravingItem *>());
-    initialize(rec, m_depth, 0);
+    nodes_.resize((1 << (depth_ + 1)) - 1);
+    leaves_.assign(1LL << depth_, std::vector<EngravingItem *>());
+    initialize(rec, depth_, 0);
 }
 
 //---------------------------------------------------------
@@ -102,9 +102,9 @@ void BspTree::initialize(const RectF &rec, int n) {
 //---------------------------------------------------------
 
 void BspTree::clear() {
-    m_leafCnt = 0;
-    m_nodes.clear();
-    m_leaves.clear();
+    leafCnt_ = 0;
+    nodes_.clear();
+    leaves_.clear();
 }
 
 //---------------------------------------------------------
@@ -178,15 +178,15 @@ EngravingItem *BspTree::nearestNeighbor(const PointF &pos) {
 //---------------------------------------------------------
 
 void BspTree::nearestNeighbor(const PointF &pos, EngravingItem **bestItem, double &bestDistance, int nodeIndex) {
-    if (m_nodes.empty()) {
+    if (nodes_.empty()) {
         return;
     }
 
-    Node *node = &m_nodes[nodeIndex];
+    Node *node = &nodes_[nodeIndex];
 
     // Base case: go through the items in the leaf node (if any), and update bestItem/bestDistance accordingly
     if (node->type == Node::Type::LEAF) {
-        for (auto item : m_leaves[node->leafIndex]) {
+        for (auto item : leaves_[node->leafIndex]) {
             PointF itemPos = item->pageBoundingRect().center();
             double currDistance = std::sqrt(std::pow(pos.x() - itemPos.x(), 2) + std::pow(pos.y() - itemPos.y(), 2));
             if (currDistance < bestDistance) {
@@ -234,18 +234,18 @@ void BspTree::nearestNeighbor(const PointF &pos, EngravingItem **bestItem, doubl
 //---------------------------------------------------------
 
 String BspTree::debug(int index) const {
-    const Node *node = &m_nodes.at(index);
+    const Node *node = &nodes_.at(index);
 
     String tmp;
     if (node->type == Node::Type::LEAF) {
         RectF rec = rectForIndex(index);
-        if (!m_leaves[node->leafIndex].empty()) {
+        if (!leaves_[node->leafIndex].empty()) {
             tmp += String(u"[%1, %2, %3, %4] contains %5 items\n")
                        .arg(rec.left())
                        .arg(rec.top())
                        .arg(rec.width())
                        .arg(rec.height())
-                       .arg(m_leaves[node->leafIndex].size());
+                       .arg(leaves_[node->leafIndex].size());
         }
     } else {
         if (node->type == Node::Type::HORIZONTAL) {
@@ -266,7 +266,7 @@ String BspTree::debug(int index) const {
 //---------------------------------------------------------
 
 void BspTree::initialize(const RectF &rec, int dep, int index) {
-    Node *node = &m_nodes[index];
+    Node *node = &nodes_[index];
     if (index == 0) {
         node->type = Node::Type::HORIZONTAL;
         node->offset = rec.center().y();
@@ -293,11 +293,11 @@ void BspTree::initialize(const RectF &rec, int dep, int index) {
 
         int childIndex = firstChildIndex(index);
 
-        Node *child = &m_nodes[childIndex];
+        Node *child = &nodes_[childIndex];
         child->offset = offset1;
         child->type = type;
 
-        child = &m_nodes[childIndex + 1];
+        child = &nodes_[childIndex + 1];
         child->offset = offset2;
         child->type = type;
 
@@ -305,7 +305,7 @@ void BspTree::initialize(const RectF &rec, int dep, int index) {
         initialize(rect2, dep - 1, childIndex + 1);
     } else {
         node->type = Node::Type::LEAF;
-        node->leafIndex = m_leafCnt++;
+        node->leafIndex = leafCnt_++;
     }
 }
 
@@ -314,15 +314,15 @@ void BspTree::initialize(const RectF &rec, int dep, int index) {
 //---------------------------------------------------------
 
 void BspTree::climbTree(BspTreeVisitor *visitor, const PointF &pos, int index) {
-    if (m_nodes.empty()) {
+    if (nodes_.empty()) {
         return;
     }
 
-    Node *node = &m_nodes[index];
+    Node *node = &nodes_[index];
     int childIndex = firstChildIndex(index);
 
     switch (node->type) {
-        case Node::Type::LEAF: visitor->visit(m_leaves[node->leafIndex]); break;
+        case Node::Type::LEAF: visitor->visit(leaves_[node->leafIndex]); break;
         case Node::Type::VERTICAL:
             if (pos.x() < node->offset) {
                 climbTree(visitor, pos, childIndex);
@@ -345,15 +345,15 @@ void BspTree::climbTree(BspTreeVisitor *visitor, const PointF &pos, int index) {
 //---------------------------------------------------------
 
 void BspTree::climbTree(BspTreeVisitor *visitor, const RectF &rec, int index) {
-    if (m_nodes.empty()) {
+    if (nodes_.empty()) {
         return;
     }
 
-    Node *node = &m_nodes[index];
+    Node *node = &nodes_[index];
     int childIndex = firstChildIndex(index);
 
     switch (node->type) {
-        case Node::Type::LEAF: visitor->visit(m_leaves[node->leafIndex]); break;
+        case Node::Type::LEAF: visitor->visit(leaves_[node->leafIndex]); break;
         case Node::Type::VERTICAL:
             if (rec.left() < node->offset) {
                 climbTree(visitor, rec, childIndex);
@@ -382,12 +382,12 @@ void BspTree::climbTree(BspTreeVisitor *visitor, const RectF &rec, int index) {
 
 RectF BspTree::rectForIndex(int index) const {
     if (index <= 0) {
-        return m_rect;
+        return rect_;
     }
 
     int parentIdx = parentIndex(index);
     RectF rec = rectForIndex(parentIdx);
-    const Node *parent = &m_nodes.at(parentIdx);
+    const Node *parent = &nodes_.at(parentIdx);
 
     if (parent->type == Node::Type::HORIZONTAL) {
         if (index & 1) {

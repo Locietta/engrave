@@ -43,46 +43,46 @@ public:
     NoteEvent() {}
 
     NoteEvent(int a, int b, int c, double d = 1.0, double play = true, int offset = 0)
-        : m_pitch(a), m_ontime(b), m_len(c), m_velocityMultiplier(d), m_play(play), m_offset(offset) {}
+        : pitch_(a), ontime_(b), len_(c), velocityMultiplier_(d), play_(play), offset_(offset) {}
 
-    int pitch() const { return m_pitch; }
+    int pitch() const { return pitch_; }
 
-    int ontime() const { return m_ontime; }
+    int ontime() const { return ontime_; }
 
-    int offtime() const { return m_ontime + m_len; }
+    int offtime() const { return ontime_ + len_; }
 
-    int len() const { return m_len; }
+    int len() const { return len_; }
 
-    double velocityMultiplier() const { return m_velocityMultiplier; }
+    double velocityMultiplier() const { return velocityMultiplier_; }
 
-    bool play() const { return m_play; }
+    bool play() const { return play_; }
 
-    int offset() const { return m_offset; }
+    int offset() const { return offset_; }
 
-    bool slide() const { return m_slide; }
+    bool slide() const { return slide_; }
 
-    void setPitch(int v) { m_pitch = v; }
+    void setPitch(int v) { pitch_ = v; }
 
-    void setOntime(int v) { m_ontime = v; }
+    void setOntime(int v) { ontime_ = v; }
 
-    void setLen(int v) { m_len = v; }
+    void setLen(int v) { len_ = v; }
 
-    void setVelocityMultiplier(double velocityMultiplier) { m_velocityMultiplier = velocityMultiplier; }
+    void setVelocityMultiplier(double velocityMultiplier) { velocityMultiplier_ = velocityMultiplier; }
 
-    void setOffset(int v) { m_offset = v; }
+    void setOffset(int v) { offset_ = v; }
 
-    void setSlide(bool slide) { m_slide = slide; }
+    void setSlide(bool slide) { slide_ = slide; }
 
     bool operator==(const NoteEvent &) const;
 
 private:
-    int m_pitch = 0;                                           // relative pitch to note pitch
-    int m_ontime = 0;                                          // one unit is 1/1000 of nominal note len
-    int m_len = NOTE_LENGTH;                                   // one unit is 1/1000 of nominal note len
-    double m_velocityMultiplier = DEFAULT_VELOCITY_MULTIPLIER; // can be used to lower sound (0-1)
-    bool m_play = true;                                        // when 'false', note event is used only for length calculation
-    int m_offset = 0;
-    bool m_slide = false; // event is slide or glissando
+    int pitch_ = 0;                                           // relative pitch to note pitch
+    int ontime_ = 0;                                          // one unit is 1/1000 of nominal note len
+    int len_ = NOTE_LENGTH;                                   // one unit is 1/1000 of nominal note len
+    double velocityMultiplier_ = DEFAULT_VELOCITY_MULTIPLIER; // can be used to lower sound (0-1)
+    bool play_ = true;                                        // when 'false', note event is used only for length calculation
+    int offset_ = 0;
+    bool slide_ = false; // event is slide or glissando
 };
 
 //---------------------------------------------------------

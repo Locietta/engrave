@@ -60,9 +60,9 @@ private:
         AudioResourceMeta meta;
     };
 
-    const ISoundFontRepository &m_soundFontRepository;
-    const engine::IAudioEngineConfiguration &m_config;
-    midi::IMidiOutPort *m_midiOutPort = nullptr;
-    std::unordered_map<AudioResourceId, SoundFontResource> m_resourcesCache;
+    const ISoundFontRepository &soundFontRepository_;
+    const engine::IAudioEngineConfiguration &config_;
+    midi::IMidiOutPort *midiOutPort_ = nullptr;
+    std::unordered_map<AudioResourceId, SoundFontResource> resourcesCache_;
 };
 } // namespace muse::audio::synth

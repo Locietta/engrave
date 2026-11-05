@@ -349,7 +349,7 @@ static void buildContent(LayoutBuildContext &ctx, mnx::layout::LayoutContent con
 //---------------------------------------------------------
 
 void MnxExporter::createLayout(const std::vector<Staff *> &staves, const std::string &layoutId) {
-    auto mnxLayout = m_mnxDocument.ensure_layouts().append();
+    auto mnxLayout = mnxDocument_.ensure_layouts().append();
     if (!layoutId.empty()) {
         mnxLayout.set_id(layoutId);
     }

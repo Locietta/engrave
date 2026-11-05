@@ -55,7 +55,7 @@ public:
     void removeItem(const EngravingObject *item);
     void onItemDestroyed(const EngravingObject *item);
 
-    void noteMalformedEID() { ++m_repairs.malformed; }
+    void noteMalformedEID() { ++repairs_.malformed; }
 
     EIDRepairCount repairs() const;
 
@@ -68,13 +68,13 @@ public:
 private:
     EIDRegister(const EIDRegister &) = delete;
 
-    std::unordered_map<EID, EngravingObject *> m_eidToItem;
-    std::unordered_map<EngravingObject *, EID> m_itemToEid;
+    std::unordered_map<EID, EngravingObject *> eidToItem_;
+    std::unordered_map<EngravingObject *, EID> itemToEid_;
 
-    EIDRepairCount m_repairs;
+    EIDRepairCount repairs_;
 
-    uint64_t m_maxValTestMode = 0;
+    uint64_t maxValTestMode_ = 0;
 
-    mutable std::shared_mutex m_mutex;
+    mutable std::shared_mutex mutex_;
 };
 } // namespace mu::engraving

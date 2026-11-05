@@ -27,15 +27,15 @@
 namespace muse {
 struct Defer {
     template <class F>
-    Defer(F f) : m_f(f) {}
+    Defer(F f) : f_(f) {}
 
     ~Defer() {
-        if (m_f) {
-            m_f();
+        if (f_) {
+            f_();
         }
     }
 
-    std::function<void()> m_f;
+    std::function<void()> f_;
 };
 } // namespace muse
 

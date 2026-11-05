@@ -44,27 +44,27 @@ public:
 
     TremoloBar *clone() const override { return new TremoloBar(*this); }
 
-    PitchValues &points() { return m_points; }
+    PitchValues &points() { return points_; }
 
-    const PitchValues &points() const { return m_points; }
+    const PitchValues &points() const { return points_; }
 
-    void setPoints(const PitchValues &p) { m_points = p; }
+    void setPoints(const PitchValues &p) { points_ = p; }
 
     PropertyValue getProperty(Pid propertyId) const override;
     bool setProperty(Pid propertyId, const PropertyValue &) override;
     PropertyValue propertyDefault(Pid) const override;
 
-    double userMag() const { return m_userMag; }
+    double userMag() const { return userMag_; }
 
-    void setUserMag(double m) { m_userMag = m; }
+    void setUserMag(double m) { userMag_ = m; }
 
-    void setLineWidth(Spatium v) { m_lw = v; }
+    void setLineWidth(Spatium v) { lw_ = v; }
 
-    Spatium lineWidth() const { return m_lw; }
+    Spatium lineWidth() const { return lw_; }
 
-    bool play() const { return m_play; }
+    bool play() const { return play_; }
 
-    void setPlay(bool val) { m_play = val; }
+    void setPlay(bool val) { play_ = val; }
 
     struct LayoutData : public EngravingItem::LayoutData {
         PolygonF polygon;
@@ -79,11 +79,11 @@ private:
     TremoloBarType parseTremoloBarTypeFromCurve(const PitchValues &curve) const;
     void updatePointsByTremoloBarType(const TremoloBarType type);
 
-    Spatium m_lw;
-    double m_userMag = 1.0; // allowed 0.1 - 10.0
-    bool m_play = true;
+    Spatium lw_;
+    double userMag_ = 1.0; // allowed 0.1 - 10.0
+    bool play_ = true;
 
-    PitchValues m_points;
+    PitchValues points_;
 };
 } // namespace mu::engraving
 #endif

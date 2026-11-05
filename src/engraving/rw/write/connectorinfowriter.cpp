@@ -38,15 +38,15 @@ using namespace mu::engraving::write;
 
 ConnectorInfoWriter::ConnectorInfoWriter(XmlWriter &xml, WriteContext *ctx, const EngravingItem *current, const EngravingItem *connector,
                                          int track, Fraction frac)
-    : ConnectorInfo(current, track, frac), _connector(connector), m_xml(&xml), m_ctx(ctx) {
+    : ConnectorInfo(current, track, frac), _connector(connector), xml_(&xml), ctx_(ctx) {
     IF_ASSERT_FAILED(current) { return; }
-    m_type = connector->type();
-    updateCurrentInfo(m_ctx->clipboardmode());
+    type_ = connector->type();
+    updateCurrentInfo(ctx_->clipboardmode());
 }
 
 void ConnectorInfoWriter::write() {
-    XmlWriter &xml = *m_xml;
-    WriteContext &ctx = *m_ctx;
+    XmlWriter &xml = *xml_;
+    WriteContext &ctx = *ctx_;
     if (!ctx.canWrite(_connector)) {
         return;
     }
@@ -56,14 +56,14 @@ void ConnectorInfoWriter::write() {
     }
     if (hasPrevious()) {
         xml.startElement("prev");
-        m_prevLoc.toRelative(m_currentLoc);
-        TWrite::write(&m_prevLoc, xml, ctx);
+        prevLoc_.toRelative(currentLoc_);
+        TWrite::write(&prevLoc_, xml, ctx);
         xml.endElement();
     }
     if (hasNext()) {
         xml.startElement("next");
-        m_nextLoc.toRelative(m_currentLoc);
-        TWrite::write(&m_nextLoc, xml, ctx);
+        nextLoc_.toRelative(currentLoc_);
+        TWrite::write(&nextLoc_, xml, ctx);
         xml.endElement();
     }
     xml.endElement();
@@ -109,23 +109,23 @@ SpannerWriter::SpannerWriter(XmlWriter &xml, WriteContext *ctx, const EngravingI
         // We cannot determine position of the spanner from its start/end
         // elements and will try to obtain this info from the spanner itself.
         if (!start) {
-            m_prevLoc.setTrack(static_cast<int>(sp->track()));
+            prevLoc_.setTrack(static_cast<int>(sp->track()));
             Measure *m = sp->score()->tick2measure(sp->tick());
-            fillSpannerPosition(m_prevLoc, m, sp->tick(), clipboardmode);
+            fillSpannerPosition(prevLoc_, m, sp->tick(), clipboardmode);
         } else {
             const track_idx_t track2 = (sp->track2() != muse::nidx) ? sp->track2() : sp->track();
-            m_nextLoc.setTrack(static_cast<int>(track2));
+            nextLoc_.setTrack(static_cast<int>(track2));
             Measure *m = sp->score()->tick2measure(sp->tick2());
-            fillSpannerPosition(m_nextLoc, m, sp->tick2(), clipboardmode);
+            fillSpannerPosition(nextLoc_, m, sp->tick2(), clipboardmode);
         }
     } else {
         // We can obtain the spanner position info from its start/end
         // elements and will prefer this source of information.
         // Reason: some spanners contain no or wrong information (e.g. Ties).
         if (!start) {
-            updateLocation(sp->startElement(), m_prevLoc, clipboardmode);
+            updateLocation(sp->startElement(), prevLoc_, clipboardmode);
         } else {
-            updateLocation(sp->endElement(), m_nextLoc, clipboardmode);
+            updateLocation(sp->endElement(), nextLoc_, clipboardmode);
         }
     }
 }

@@ -73,7 +73,7 @@ void finish_load(engraving::EngravingProject &project) {
     // into the MSCX reader (rw/read500/read500.cpp:307-315), so a score that did not
     // come from MSCX keeps an empty MasterScore::midiMapping(): every InstrChannel
     // still has channel() == -1 (dom/instrument.cpp:319) and
-    // MasterScore::playbackChannel() indexes m_midiMapping with it
+    // MasterScore::playbackChannel() indexes midiMapping_ with it
     // (dom/masterscore.h:185), i.e. reads 72*(channel()+1) bytes out of bounds.
     // Run the same three steps, in the same order, where every reader converges.
     for (auto *part : score->parts()) part->updateHarmonyChannels(false);

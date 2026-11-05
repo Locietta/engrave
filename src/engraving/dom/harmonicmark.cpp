@@ -66,8 +66,8 @@ static const ElementStyle harmonicMarkStyle{
 
 HarmonicMarkSegment::HarmonicMarkSegment(HarmonicMark *sp)
     : TextLineBaseSegment(ElementType::HARMONIC_MARK_SEGMENT, sp, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
-    m_text->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
-    m_endText->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
+    text_->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
+    endText_->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
 }
 
 //---------------------------------------------------------
@@ -88,7 +88,7 @@ HarmonicMark::HarmonicMark(DummyParentOr<EngravingItem> parent) : ChordTextLineB
 
 bool HarmonicMark::setProperty(Pid propertyId, const PropertyValue &value) {
     if (propertyId == Pid::BEGIN_TEXT || propertyId == Pid::CONTINUE_TEXT) {
-        m_text = value.value<String>();
+        text_ = value.value<String>();
     }
 
     return TextLineBase::setProperty(propertyId, value);
@@ -129,7 +129,7 @@ PropertyValue HarmonicMark::propertyDefault(Pid propertyId) const {
         case Pid::BEGIN_FONT_STYLE: return style().styleV(Sid::letRingFontStyle);
 
         case Pid::BEGIN_TEXT:
-        case Pid::CONTINUE_TEXT: return PropertyValue::fromValue(m_text); // TODO: fix the style
+        case Pid::CONTINUE_TEXT: return PropertyValue::fromValue(text_); // TODO: fix the style
         case Pid::END_TEXT: return "";
 
         case Pid::BEGIN_HOOK_TYPE: return HookType::NONE;

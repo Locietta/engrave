@@ -48,9 +48,9 @@ staff_idx_t Stem::vStaffIdx() const { return staffIdx() + chord()->staffMove(); 
 
 bool Stem::up() const { return chord() ? chord()->up() : true; }
 
-void Stem::setBaseLength(Spatium baseLength) { m_baseLength = Spatium(std::abs(baseLength.val())); }
+void Stem::setBaseLength(Spatium baseLength) { baseLength_ = Spatium(std::abs(baseLength.val())); }
 
-double Stem::lineWidthMag() const { return absoluteFromSpatium(m_lineWidth) * chord()->intrinsicMag(); }
+double Stem::lineWidthMag() const { return absoluteFromSpatium(lineWidth_) * chord()->intrinsicMag(); }
 
 //! In chord coordinates
 PointF Stem::flagPosition() const { return pos() + PointF(ldata()->bbox().left(), up() ? -length() : length()); }

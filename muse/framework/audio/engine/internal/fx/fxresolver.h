@@ -38,8 +38,8 @@ public:
     void clearAllFx() override;
 
 private:
-    std::map<AudioFxType, IResolverPtr> m_resolvers;
-    mutable std::mutex m_mutex;
+    std::map<AudioFxType, IResolverPtr> resolvers_;
+    mutable std::mutex mutex_;
 };
 } // namespace muse::audio::fx
 

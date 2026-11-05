@@ -24,17 +24,17 @@
 using namespace muse;
 using namespace muse::io;
 
-Dir::Dir(const path_t &path) : m_path(path) {}
+Dir::Dir(const path_t &path) : path_(path) {}
 
-path_t Dir::path() const { return m_path; }
+path_t Dir::path() const { return path_; }
 
-path_t Dir::absolutePath() const { return fileSystem()->absoluteFilePath(m_path); }
+path_t Dir::absolutePath() const { return fileSystem()->absoluteFilePath(path_); }
 
-bool Dir::exists() const { return fileSystem()->exists(m_path); }
+bool Dir::exists() const { return fileSystem()->exists(path_); }
 
-Ret Dir::removeRecursively() { return fileSystem()->remove(m_path); }
+Ret Dir::removeRecursively() { return fileSystem()->remove(path_); }
 
-Ret Dir::mkpath() { return mkpath(m_path); }
+Ret Dir::mkpath() { return mkpath(path_); }
 
 Ret Dir::mkpath(const path_t &path) { return fileSystem()->makePath(path); }
 

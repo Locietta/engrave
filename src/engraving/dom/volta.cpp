@@ -79,8 +79,8 @@ static const ElementStyle voltaStyle{
 
 VoltaSegment::VoltaSegment(Volta *sp)
     : TextLineBaseSegment(ElementType::VOLTA_SEGMENT, sp, ElementFlag::MOVABLE | ElementFlag::ON_STAFF | ElementFlag::SYSTEM) {
-    m_text->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
-    m_endText->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
+    text_->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
+    endText_->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
 }
 
 //---------------------------------------------------------
@@ -119,8 +119,8 @@ Volta::Volta(DummyParentOr<EngravingItem> parent) : TextLineBase(ElementType::VO
 /// \brief sorts the provided list in ascending order
 ///
 void Volta::setEndings(const std::vector<int> &l) {
-    m_endings = l;
-    std::sort(m_endings.begin(), m_endings.end());
+    endings_ = l;
+    std::sort(endings_.begin(), endings_.end());
 }
 
 //---------------------------------------------------------
@@ -168,10 +168,10 @@ bool Volta::hasEnding(int repeat) const {
 //---------------------------------------------------------
 
 int Volta::firstEnding() const {
-    if (m_endings.empty()) {
+    if (endings_.empty()) {
         return 0;
     }
-    return m_endings.front();
+    return endings_.front();
 }
 
 //---------------------------------------------------------
@@ -179,10 +179,10 @@ int Volta::firstEnding() const {
 //---------------------------------------------------------
 
 int Volta::lastEnding() const {
-    if (m_endings.empty()) {
+    if (endings_.empty()) {
         return 0;
     }
-    return m_endings.back();
+    return endings_.back();
 }
 
 //---------------------------------------------------------

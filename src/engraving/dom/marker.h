@@ -42,34 +42,34 @@ public:
 
     void setMarkerType(MarkerType t);
 
-    MarkerType markerType() const { return m_markerType; }
+    MarkerType markerType() const { return markerType_; }
 
     String markerTypeUserName() const;
 
-    inline bool isSegno() const { return m_markerType == MarkerType::SEGNO || m_markerType == MarkerType::VARSEGNO; }
+    inline bool isSegno() const { return markerType_ == MarkerType::SEGNO || markerType_ == MarkerType::VARSEGNO; }
 
     inline bool isCoda() const {
-        return m_markerType == MarkerType::CODA || m_markerType == MarkerType::VARCODA || m_markerType == MarkerType::CODETTA;
+        return markerType_ == MarkerType::CODA || markerType_ == MarkerType::VARCODA || markerType_ == MarkerType::CODETTA;
     }
 
     inline bool isToCoda() const {
-        return m_markerType == MarkerType::TOCODA || m_markerType == MarkerType::TOCODASYM || m_markerType == MarkerType::DA_CODA ||
-               m_markerType == MarkerType::DA_DBLCODA;
+        return markerType_ == MarkerType::TOCODA || markerType_ == MarkerType::TOCODASYM || markerType_ == MarkerType::DA_CODA ||
+               markerType_ == MarkerType::DA_DBLCODA;
     }
 
-    inline bool isRightMarker() const { return muse::contains(Marker::RIGHT_MARKERS, m_markerType); }
+    inline bool isRightMarker() const { return muse::contains(Marker::RIGHT_MARKERS, markerType_); }
 
     Marker *clone() const override { return new Marker(*this); }
 
-    int subtype() const override { return int(m_markerType); }
+    int subtype() const override { return int(markerType_); }
 
     TranslatableString subtypeUserName() const override;
 
     Measure *measure() const { return (Measure *) ownershipParent(); }
 
-    String label() const { return m_label; }
+    String label() const { return label_; }
 
-    void setLabel(const String &s) { m_label = s; }
+    void setLabel(const String &s) { label_ = s; }
 
     PropertyValue getProperty(Pid propertyId) const override;
     bool setProperty(Pid propertyId, const PropertyValue &) override;
@@ -80,9 +80,9 @@ public:
 
     bool positionRelativeToNoteheadRest() const override { return false; }
 
-    bool centerOnSymbol() const { return m_centerOnSymbol; }
+    bool centerOnSymbol() const { return centerOnSymbol_; }
 
-    void setCenterOnSymbol(bool val) { m_centerOnSymbol = val; }
+    void setCenterOnSymbol(bool val) { centerOnSymbol_ = val; }
 
     static constexpr std::array<MarkerType, 5> RIGHT_MARKERS{
         MarkerType::FINE, MarkerType::TOCODA, MarkerType::TOCODASYM, MarkerType::DA_CODA, MarkerType::DA_DBLCODA,
@@ -91,10 +91,10 @@ public:
     String symbolString() const;
 
 private:
-    MarkerType m_markerType = MarkerType::FINE;
-    String m_label = u"fine"; ///< referenced from Jump() element
+    MarkerType markerType_ = MarkerType::FINE;
+    String label_ = u"fine"; ///< referenced from Jump() element
 
-    bool m_centerOnSymbol = true;
+    bool centerOnSymbol_ = true;
 };
 
 struct MarkerTypeTableItem {

@@ -56,11 +56,11 @@ TimeSig::TimeSig(DummyParentOr<Segment> parent)
     : EngravingItem(ElementType::TIMESIG, parent, ElementFlag::ON_STAFF | ElementFlag::MOVABLE | ElementFlag::PLACE_ABOVE) {
     initElementStyle(&tsStyle);
 
-    m_showCourtesySig = true;
-    m_stretch.set(1, 1);
-    m_sig.set(0, 1); // initialize to invalid
-    m_timeSigType = TimeSigType::NORMAL;
-    m_largeParentheses = false;
+    showCourtesySig_ = true;
+    stretch_.set(1, 1);
+    sig_.set(0, 1); // initialize to invalid
+    timeSigType_ = TimeSigType::NORMAL;
+    largeParentheses_ = false;
     setMinDistance(0.5_sp); // TODO: style
 }
 
@@ -78,11 +78,11 @@ double TimeSig::mag() const { return timeSigPlacement() == TimeSigPlacement::NOR
 //---------------------------------------------------------
 
 void TimeSig::setSig(const Fraction &f, TimeSigType st) {
-    m_sig = f;
-    m_timeSigType = st;
-    m_largeParentheses = false;
-    m_numeratorString.clear();
-    m_denominatorString.clear();
+    sig_ = f;
+    timeSigType_ = st;
+    largeParentheses_ = false;
+    numeratorString_.clear();
+    denominatorString_.clear();
 }
 
 //---------------------------------------------------------
@@ -131,8 +131,8 @@ EngravingItem *TimeSig::drop(Transaction &tx, EditData &data) {
 //---------------------------------------------------------
 
 void TimeSig::setNumeratorString(const String &a) {
-    if (m_timeSigType == TimeSigType::NORMAL) {
-        m_numeratorString = a;
+    if (timeSigType_ == TimeSigType::NORMAL) {
+        numeratorString_ = a;
     }
 }
 
@@ -142,8 +142,8 @@ void TimeSig::setNumeratorString(const String &a) {
 //---------------------------------------------------------
 
 void TimeSig::setDenominatorString(const String &a) {
-    if (m_timeSigType == TimeSigType::NORMAL) {
-        m_denominatorString = a;
+    if (timeSigType_ == TimeSigType::NORMAL) {
+        denominatorString_ = a;
     }
 }
 
@@ -152,18 +152,18 @@ void TimeSig::setDenominatorString(const String &a) {
 //---------------------------------------------------------
 
 void TimeSig::setFrom(const TimeSig *ts) {
-    m_timeSigType = ts->timeSigType();
-    m_numeratorString = ts->m_numeratorString;
-    m_denominatorString = ts->m_denominatorString;
-    m_sig = ts->m_sig;
-    m_stretch = ts->m_stretch;
+    timeSigType_ = ts->timeSigType();
+    numeratorString_ = ts->numeratorString_;
+    denominatorString_ = ts->denominatorString_;
+    sig_ = ts->sig_;
+    stretch_ = ts->stretch_;
 }
 
 //---------------------------------------------------------
 //   ssig
 //---------------------------------------------------------
 
-String TimeSig::ssig() const { return String(u"%1/%2").arg(m_sig.numerator()).arg(m_sig.denominator()); }
+String TimeSig::ssig() const { return String(u"%1/%2").arg(sig_.numerator()).arg(sig_.denominator()); }
 
 //---------------------------------------------------------
 //   setSSig
@@ -172,8 +172,8 @@ String TimeSig::ssig() const { return String(u"%1/%2").arg(m_sig.numerator()).ar
 void TimeSig::setSSig(const String &s) {
     StringList sl = s.split(u'/');
     if (sl.size() == 2) {
-        m_sig.setNumerator(sl[0].toInt());
-        m_sig.setDenominator(sl[1].toInt());
+        sig_.setNumerator(sl[0].toInt());
+        sig_.setDenominator(sl[1].toInt());
     }
 }
 
@@ -187,10 +187,10 @@ PropertyValue TimeSig::getProperty(Pid propertyId) const {
         case Pid::NUMERATOR_STRING: return numeratorString();
         case Pid::DENOMINATOR_STRING: return denominatorString();
         case Pid::GROUP_NODES: return groups().nodes();
-        case Pid::TIMESIG: return PropertyValue::fromValue(m_sig);
+        case Pid::TIMESIG: return PropertyValue::fromValue(sig_);
         case Pid::TIMESIG_STRETCH: return PropertyValue::fromValue(stretch());
-        case Pid::TIMESIG_TYPE: return int(m_timeSigType);
-        case Pid::SCALE: return m_scale;
+        case Pid::TIMESIG_TYPE: return int(timeSigType_);
+        case Pid::SCALE: return scale_;
         case Pid::IS_COURTESY: return _isCourtesy;
 
         default: return EngravingItem::getProperty(propertyId);
@@ -214,8 +214,8 @@ bool TimeSig::setProperty(Pid propertyId, const PropertyValue &v) {
         case Pid::GROUP_NODES: setGroups(v.value<GroupNodes>()); break;
         case Pid::TIMESIG: setSig(v.value<Fraction>()); break;
         case Pid::TIMESIG_STRETCH: setStretch(v.value<Fraction>()); break;
-        case Pid::TIMESIG_TYPE: m_timeSigType = (TimeSigType) (v.toInt()); break;
-        case Pid::SCALE: m_scale = v.value<ScaleF>(); break;
+        case Pid::TIMESIG_TYPE: timeSigType_ = (TimeSigType) (v.toInt()); break;
+        case Pid::SCALE: scale_ = v.value<ScaleF>(); break;
         case Pid::IS_COURTESY: _isCourtesy = v.toBool(); break;
         default:
             if (!EngravingItem::setProperty(propertyId, v)) {
@@ -299,12 +299,12 @@ muse::TranslatableString TimeSig::subtypeUserName() const {
 void TimeSig::initElementStyle(const ElementStyle *elementStype) {
     EngravingItem::initElementStyle(elementStype);
 
-    m_scale = propertyDefault(Pid::SCALE).value<ScaleF>();
+    scale_ = propertyDefault(Pid::SCALE).value<ScaleF>();
 }
 
 void TimeSig::styleChanged() {
     if (isStyled(Pid::SCALE)) {
-        m_scale = propertyDefault(Pid::SCALE).value<ScaleF>();
+        scale_ = propertyDefault(Pid::SCALE).value<ScaleF>();
     }
     EngravingItem::styleChanged();
 }
@@ -366,7 +366,7 @@ bool TimeSig::isAcrossStaves() const { return timeSigPlacement() == TimeSigPlace
 
 bool TimeSig::operator==(const TimeSig &ts) const {
     return (timeSigType() == ts.timeSigType()) && (sig().identical(ts.sig())) && (stretch() == ts.stretch()) && (groups() == ts.groups()) &&
-           (m_numeratorString == ts.m_numeratorString) && (m_denominatorString == ts.m_denominatorString);
+           (numeratorString_ == ts.numeratorString_) && (denominatorString_ == ts.denominatorString_);
 }
 
 void TimeSig::added() {

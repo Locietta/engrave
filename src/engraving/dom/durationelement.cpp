@@ -38,7 +38,7 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 DurationElement::DurationElement(const ElementType &type, EngravingObject *parent, ElementFlags f) : EngravingItem(type, parent, f) {
-    m_tuplet = 0;
+    tuplet_ = 0;
 }
 
 //---------------------------------------------------------
@@ -46,8 +46,8 @@ DurationElement::DurationElement(const ElementType &type, EngravingObject *paren
 //---------------------------------------------------------
 
 DurationElement::DurationElement(const DurationElement &e, bool link) : EngravingItem(e, link) {
-    m_tuplet = 0; // e._tuplet;
-    m_duration = e.m_duration;
+    tuplet_ = 0; // e._tuplet;
+    duration_ = e.duration_;
 }
 
 //---------------------------------------------------------
@@ -55,7 +55,7 @@ DurationElement::DurationElement(const DurationElement &e, bool link) : Engravin
 //---------------------------------------------------------
 
 DurationElement::~DurationElement() {
-    if (m_tuplet) {
+    if (tuplet_) {
         setTuplet(nullptr);
     }
 }
@@ -79,7 +79,7 @@ Tuplet *DurationElement::topTuplet() const {
 //---------------------------------------------------------
 
 Fraction DurationElement::globalTicks() const {
-    Fraction f(m_duration);
+    Fraction f(duration_);
     for (Tuplet *t = tuplet(); t; t = t->tuplet()) {
         f /= t->ratio();
     }
@@ -87,7 +87,7 @@ Fraction DurationElement::globalTicks() const {
 }
 
 float DurationElement::timeStretchFactor() const {
-    int nominalDuration = m_duration.ticks();
+    int nominalDuration = duration_.ticks();
     int actualDuration = actualTicks().ticks();
 
     return actualDuration / static_cast<float>(nominalDuration);
@@ -116,14 +116,14 @@ void DurationElement::readAddTuplet(Tuplet *t) {
 }
 
 void DurationElement::setTuplet(Tuplet *t) {
-    if (m_tuplet) {
-        m_tuplet->removeDurationElement(this);
+    if (tuplet_) {
+        tuplet_->removeDurationElement(this);
     }
 
-    m_tuplet = t;
+    tuplet_ = t;
 
-    if (m_tuplet) {
-        m_tuplet->addDurationElement(this);
+    if (tuplet_) {
+        tuplet_->addDurationElement(this);
     }
 }
 
@@ -133,7 +133,7 @@ void DurationElement::setTuplet(Tuplet *t) {
 
 PropertyValue DurationElement::getProperty(Pid propertyId) const {
     switch (propertyId) {
-        case Pid::DURATION: return PropertyValue::fromValue(m_duration);
+        case Pid::DURATION: return PropertyValue::fromValue(duration_);
         default: return EngravingItem::getProperty(propertyId);
     }
 }

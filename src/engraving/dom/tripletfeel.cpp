@@ -110,7 +110,7 @@ static const std::map<TripletFeelType, TranslatableString> tripletFeelNames = {
 
 TripletFeel::TripletFeel(DummyParentOr<Segment> parent, TripletFeelType tripletFillType)
     : SystemText(parent, TextStyleType::SYSTEM, ElementType::TRIPLET_FEEL) {
-    m_tripletFeelType = tripletFillType;
+    tripletFeelType_ = tripletFillType;
     setTripletProperty();
     initElementStyle(&tripletFeelStyle);
 }
@@ -118,7 +118,7 @@ TripletFeel::TripletFeel(DummyParentOr<Segment> parent, TripletFeelType tripletF
 void TripletFeel::setTripletProperty() {
     setSwing(true);
 
-    switch (m_tripletFeelType) {
+    switch (tripletFeelType_) {
         case TripletFeelType::TRIPLET_8TH: setSwingParameters(Constants::DIVISION / eightDivision, tripletRatio); break;
 
         case TripletFeelType::TRIPLET_16TH: setSwingParameters(Constants::DIVISION / sixteenthDivision, tripletRatio); break;
@@ -134,7 +134,7 @@ void TripletFeel::setTripletProperty() {
         case TripletFeelType::NONE: setSwingParameters(0, zeroRatio); break;
     }
 
-    setXmlText(tupletSymbols.at(m_tripletFeelType).arg(String(u"<sym>staffPosLower3</sym><sym>"), String(u"</sym>")));
+    setXmlText(tupletSymbols.at(tripletFeelType_).arg(String(u"<sym>staffPosLower3</sym><sym>"), String(u"</sym>")));
 }
 
 //---------------------------------------------------------
@@ -170,7 +170,7 @@ Sid TripletFeel::getPropertyStyle(Pid id) const {
 //   typeUserName
 //---------------------------------------------------------
 
-TranslatableString TripletFeel::subtypeUserName() const { return tripletFeelNames.at(m_tripletFeelType); }
+TranslatableString TripletFeel::subtypeUserName() const { return tripletFeelNames.at(tripletFeelType_); }
 
 //---------------------------------------------------------
 //   accessibleInfo

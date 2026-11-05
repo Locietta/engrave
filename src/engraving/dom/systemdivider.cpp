@@ -41,22 +41,22 @@ static const ElementStyle dividerStyle{{Sid::dividerLeftSize, Pid::SYMBOLS_SIZE}
 SystemDivider::SystemDivider(DummyParentOr<System> parent)
     : Symbol(ElementType::SYSTEM_DIVIDER, parent, ElementFlag::SYSTEM | ElementFlag::MOVABLE) {
     // default value, but not valid until setDividerType()
-    m_dividerType = SystemDividerType::LEFT;
-    m_sym = SymId::systemDivider;
+    dividerType_ = SystemDividerType::LEFT;
+    sym_ = SymId::systemDivider;
 }
 
 //---------------------------------------------------------
 //   SystemDivider
 //---------------------------------------------------------
 
-SystemDivider::SystemDivider(const SystemDivider &sd) : Symbol(sd) { m_dividerType = sd.m_dividerType; }
+SystemDivider::SystemDivider(const SystemDivider &sd) : Symbol(sd) { dividerType_ = sd.dividerType_; }
 
 //---------------------------------------------------------
 //   setDividerType
 //---------------------------------------------------------
 
 void SystemDivider::setDividerType(SystemDividerType v) {
-    m_dividerType = v;
+    dividerType_ = v;
 
     if (v == SystemDividerType::LEFT) {
         setSym(SymNames::symIdByName(style().styleSt(Sid::dividerLeftSym)));
@@ -68,14 +68,14 @@ void SystemDivider::setDividerType(SystemDividerType v) {
 }
 
 void SystemDivider::styleChanged() {
-    if (m_dividerType == SystemDividerType::LEFT) {
+    if (dividerType_ == SystemDividerType::LEFT) {
         setSym(SymNames::symIdByName(style().styleSt(Sid::dividerLeftSym)));
     } else {
         setSym(SymNames::symIdByName(style().styleSt(Sid::dividerRightSym)));
     }
 
     if (isStyled(Pid::SYMBOLS_SIZE)) {
-        m_symbolsSize = style().styleD(getPropertyStyle(Pid::SYMBOLS_SIZE));
+        symbolsSize_ = style().styleD(getPropertyStyle(Pid::SYMBOLS_SIZE));
     }
 
     Symbol::styleChanged();
@@ -83,7 +83,7 @@ void SystemDivider::styleChanged() {
 
 Sid SystemDivider::getPropertyStyle(Pid id) const {
     if (id == Pid::SYMBOLS_SIZE) {
-        return m_dividerType == SystemDividerType::LEFT ? Sid::dividerLeftSize : Sid::dividerRightSize;
+        return dividerType_ == SystemDividerType::LEFT ? Sid::dividerLeftSize : Sid::dividerRightSize;
     }
 
     return Symbol::getPropertyStyle(id);
@@ -101,7 +101,7 @@ void SystemDivider::reset() {
 PropertyValue SystemDivider::propertyDefault(Pid id) const {
     switch (id) {
         case Pid::SYMBOLS_SIZE:
-            return style().styleD(m_dividerType == SystemDividerType::LEFT ? Sid::dividerLeftSize : Sid::dividerRightSize);
+            return style().styleD(dividerType_ == SystemDividerType::LEFT ? Sid::dividerLeftSize : Sid::dividerRightSize);
         default: return Symbol::propertyDefault(id);
     }
 }

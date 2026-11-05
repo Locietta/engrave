@@ -46,18 +46,18 @@ struct path_t {
     path_t appendingSuffix(const path_t &suffix) const;
 
     inline path_t &operator=(const String &other) {
-        m_path = other.toStdString();
+        path_ = other.toStdString();
         return *this;
     }
 
     inline path_t &operator=(const char *other) {
-        m_path = other;
+        path_ = other;
         return *this;
     }
 
-    inline bool operator==(const path_t &other) const { return m_path == other.m_path; }
+    inline bool operator==(const path_t &other) const { return path_ == other.path_; }
 
-    inline bool operator!=(const path_t &other) const { return !(m_path == other.m_path); }
+    inline bool operator!=(const path_t &other) const { return !(path_ == other.path_); }
 
     inline path_t operator+(const path_t &other) const {
         path_t p = *this;
@@ -84,26 +84,26 @@ struct path_t {
     }
 
     inline path_t &operator+=(const path_t &other) {
-        m_path += other.m_path;
+        path_ += other.path_;
         return *this;
     }
 
     inline path_t &operator+=(const String &other) {
-        m_path += other.toStdString();
+        path_ += other.toStdString();
         return *this;
     }
 
     inline path_t &operator+=(const char *other) {
-        m_path += other;
+        path_ += other;
         return *this;
     }
 
     inline path_t &operator+=(const char other) {
-        m_path += other;
+        path_ += other;
         return *this;
     }
 
-    inline bool operator<(const path_t &other) const { return m_path < other.m_path; }
+    inline bool operator<(const path_t &other) const { return path_ < other.path_; }
 
     String toString() const;
     const std::string &toStdString() const;
@@ -111,7 +111,7 @@ struct path_t {
 
 
 private:
-    std::string m_path;
+    std::string path_;
 };
 
 inline path_t operator+(const String &one, const path_t &other) { return path_t(one) + other; }

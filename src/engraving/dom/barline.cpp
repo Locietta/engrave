@@ -88,18 +88,18 @@ BarLine::BarLine(DummyParentOr<Segment> parent) : EngravingItem(ElementType::BAR
 }
 
 BarLine::BarLine(const BarLine &bl) : EngravingItem(bl) {
-    m_spanStaff = bl.m_spanStaff;
-    m_spanFrom = bl.m_spanFrom;
-    m_spanTo = bl.m_spanTo;
-    m_barLineType = bl.m_barLineType;
-    m_playCount = bl.m_playCount;
+    spanStaff_ = bl.spanStaff_;
+    spanFrom_ = bl.spanFrom_;
+    spanTo_ = bl.spanTo_;
+    barLineType_ = bl.barLineType_;
+    playCount_ = bl.playCount_;
 
-    for (EngravingItem *e : bl.m_el) {
+    for (EngravingItem *e : bl.el_) {
         add(e->clone());
     }
 }
 
-BarLine::~BarLine() { muse::DeleteAll(m_el); }
+BarLine::~BarLine() { muse::DeleteAll(el_); }
 
 void BarLine::setOwnershipParent(DummyParentOr<Segment> parent) { EngravingItem::setOwnershipParent(parent); }
 
@@ -217,12 +217,12 @@ void BarLine::calcY() {
     double _spatium = spatium();
     if (!ownershipParent()) {
         // for use in palette
-        data->y1 = m_spanFrom * _spatium * .5;
-        data->y2 = (8 - m_spanTo) * _spatium * .5;
+        data->y1 = spanFrom_ * _spatium * .5;
+        data->y2 = (8 - spanTo_) * _spatium * .5;
         return;
     }
     staff_idx_t staffIdx1 = staffIdx();
-    staff_idx_t staffIdx2 = m_spanStaff ? nextVisibleSpannedStaff(this) : staffIdx1;
+    staff_idx_t staffIdx2 = spanStaff_ ? nextVisibleSpannedStaff(this) : staffIdx1;
 
     bool spanStaff = staffIdx2 != staffIdx1;
 
@@ -238,10 +238,10 @@ void BarLine::calcY() {
 
     bool oneLine = staffType1->lines() <= 1;
 
-    int from = m_spanFrom;
-    int to = m_spanTo;
+    int from = spanFrom_;
+    int to = spanTo_;
 
-    if (oneLine && m_spanFrom == 0 && m_spanTo == 0) {
+    if (oneLine && spanFrom_ == 0 && spanTo_ == 0) {
         from = BARLINE_SPAN_1LINESTAFF_FROM;
         if (!spanStaff) {
             to = BARLINE_SPAN_1LINESTAFF_TO;
@@ -282,10 +282,10 @@ void BarLine::calcY() {
         bool oneLineNext = staffType1Next->lines() <= 1;
         if (systemNext && systemNext == system && staffType1Next != staffType1) {
             if (oneLine && !oneLineNext) {
-                from = m_spanFrom;
-                to = m_spanTo;
+                from = spanFrom_;
+                to = spanTo_;
             }
-            if (oneLineNext && m_spanFrom == 0 && m_spanTo == 0) {
+            if (oneLineNext && spanFrom_ == 0 && spanTo_ == 0) {
                 from = BARLINE_SPAN_1LINESTAFF_FROM;
                 if (!spanStaff) {
                     to = BARLINE_SPAN_1LINESTAFF_TO;
@@ -336,7 +336,7 @@ bool BarLine::isTop() const {
 //---------------------------------------------------------
 
 bool BarLine::isBottom() const {
-    if (!m_spanStaff) {
+    if (!spanStaff_) {
         return true;
     }
     size_t idx = staffIdx();
@@ -506,7 +506,7 @@ void BarLine::setSelected(bool f) {
 //---------------------------------------------------------
 
 void BarLine::styleChanged() {
-    if (ownershipParent() && m_barLineType == BarLineType::END_REPEAT) {
+    if (ownershipParent() && barLineType_ == BarLineType::END_REPEAT) {
         score()->undoUpdatePlayCountText(measure());
     }
     EngravingItem::styleChanged();
@@ -518,7 +518,7 @@ void BarLine::styleChanged() {
 
 void BarLine::scanElements(std::function<void(EngravingItem *)> func) {
     func(this);
-    for (EngravingItem *e : m_el) {
+    for (EngravingItem *e : el_) {
         e->scanElements(func);
     }
 }
@@ -529,7 +529,7 @@ void BarLine::scanElements(std::function<void(EngravingItem *)> func) {
 
 void BarLine::setTrack(track_idx_t t) {
     EngravingItem::setTrack(t);
-    for (EngravingItem *e : m_el) {
+    for (EngravingItem *e : el_) {
         e->setTrack(t);
     }
 }
@@ -544,7 +544,7 @@ void BarLine::add(EngravingItem *e) {
         case ElementType::ARTICULATION:
         case ElementType::SYMBOL:
         case ElementType::IMAGE:
-            m_el.push_back(e);
+            el_.push_back(e);
             setGenerated(false);
             e->added();
             break;
@@ -561,7 +561,7 @@ void BarLine::remove(EngravingItem *e) {
         case ElementType::ARTICULATION:
         case ElementType::SYMBOL:
         case ElementType::IMAGE:
-            if (!m_el.remove(e)) {
+            if (!el_.remove(e)) {
                 LOGD("BarLine::remove(): cannot find %s", e->typeName());
             } else {
                 e->removed();
@@ -581,7 +581,7 @@ PropertyValue BarLine::getProperty(Pid id) const {
     }
 
     switch (id) {
-        case Pid::BARLINE_TYPE: return PropertyValue::fromValue(m_barLineType);
+        case Pid::BARLINE_TYPE: return PropertyValue::fromValue(barLineType_);
         case Pid::BARLINE_SPAN: return spanStaff();
         case Pid::BARLINE_SPAN_FROM: return spanFrom();
         case Pid::BARLINE_SPAN_TO: return spanTo();

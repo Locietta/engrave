@@ -38,38 +38,38 @@ static constexpr double DPI = 72.0 * DPI_F;
 struct FontDataKey {
     FontDataKey() = default;
 
-    FontDataKey(const Font::FontFamily &fa) : m_family(fa), m_bold(false), m_italic(false) {}
+    FontDataKey(const Font::FontFamily &fa) : family_(fa), bold_(false), italic_(false) {}
 
-    FontDataKey(const Font::FontFamily &fa, bool bo, bool it) : m_family(fa), m_bold(bo), m_italic(it) {}
+    FontDataKey(const Font::FontFamily &fa, bool bo, bool it) : family_(fa), bold_(bo), italic_(it) {}
 
-    inline bool valid() const { return m_family.valid(); }
+    inline bool valid() const { return family_.valid(); }
 
-    const Font::FontFamily &family() const { return m_family; }
+    const Font::FontFamily &family() const { return family_; }
 
-    bool bold() const { return m_bold; }
+    bool bold() const { return bold_; }
 
-    bool italic() const { return m_italic; }
+    bool italic() const { return italic_; }
 
-    inline bool operator==(const FontDataKey &o) const { return m_bold == o.m_bold && m_italic == o.m_italic && m_family == o.m_family; }
+    inline bool operator==(const FontDataKey &o) const { return bold_ == o.bold_ && italic_ == o.italic_ && family_ == o.family_; }
 
     inline bool operator!=(const FontDataKey &o) const { return !this->operator==(o); }
 
     inline bool operator<(const FontDataKey &o) const {
-        if (m_bold != o.m_bold) {
-            return m_bold < o.m_bold;
+        if (bold_ != o.bold_) {
+            return bold_ < o.bold_;
         }
 
-        if (m_italic != o.m_italic) {
-            return m_italic < o.m_italic;
+        if (italic_ != o.italic_) {
+            return italic_ < o.italic_;
         }
 
-        return m_family < o.m_family;
+        return family_ < o.family_;
     }
 
 private:
-    Font::FontFamily m_family;
-    bool m_bold = false;
-    bool m_italic = false;
+    Font::FontFamily family_;
+    bool bold_ = false;
+    bool italic_ = false;
 };
 
 inline FontDataKey dataKeyForFont(const Font &f) { return FontDataKey(f.family(), f.bold(), f.italic()); }

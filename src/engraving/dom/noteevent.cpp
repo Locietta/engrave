@@ -35,5 +35,5 @@ NoteEventList::NoteEventList() : std::vector<NoteEvent>() {}
 //   operator==
 //---------------------------------------------------------
 
-bool NoteEvent::operator==(const NoteEvent &e) const { return (e.m_pitch == m_pitch) && (e.m_ontime == m_ontime) && (e.m_len == m_len); }
+bool NoteEvent::operator==(const NoteEvent &e) const { return (e.pitch_ == pitch_) && (e.ontime_ == ontime_) && (e.len_ == len_); }
 } // namespace mu::engraving

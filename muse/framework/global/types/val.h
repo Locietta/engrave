@@ -212,8 +212,8 @@ private:
 
     //! NOTE Should be sync with valueType method
     using Value = std::variant<std::monostate, bool, int, int64_t, double, std::string, ValList, ValMap>;
-    Value m_val;
-    Type m_type = Type::Undefined;
+    Value val_;
+    Type type_ = Type::Undefined;
 };
 
 //! NOTE Helper class for the serialization/deserialization of lists and maps

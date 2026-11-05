@@ -69,7 +69,7 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 Staff::Staff(Part *parent) : EngravingItem(ElementType::STAFF, parent) {
-    m_color = configuration()->defaultColor();
+    color_ = configuration()->defaultColor();
     initFromStaffType(0);
 }
 
@@ -79,7 +79,7 @@ Staff::Staff(Part *parent) : EngravingItem(ElementType::STAFF, parent) {
 
 Staff::Staff(const Staff &staff) : EngravingItem(staff) {
     init(&staff);
-    m_part = staff.m_part;
+    part_ = staff.part_;
 }
 
 //---------------------------------------------------------
@@ -97,11 +97,11 @@ staff_idx_t Staff::idx() const { return muse::indexOf(score()->staves(), (Staff 
 Part *Staff::originPart(const Fraction &tick) const {
     // Hides EngravingItem::originPart, whose track and tick are meaningless for a staff
     // Always returns part of voice 0
-    if (!m_part || !m_part->isSharedPart()) {
-        return m_part;
+    if (!part_ || !part_->isSharedPart()) {
+        return part_;
     }
 
-    return m_part->originPart(staff2track(idx(), 0), tick);
+    return part_->originPart(staff2track(idx(), 0), tick);
 }
 
 //---------------------------------------------------------
@@ -227,8 +227,7 @@ bool Staff::shouldShowMeasureNumbers() const {
         case MeasureNumberPlacement::BELOW_SYSTEM: return score()->staves().back() == this;
         case MeasureNumberPlacement::ON_SYSTEM_OBJECT_STAVES: {
             bool isTopStave = score()->staves().front() == this;
-            return (isTopStave && m_showMeasureNumbers != AutoOnOff::OFF) ||
-                   (isSystemObjectStaff() && m_showMeasureNumbers == AutoOnOff::ON);
+            return (isTopStave && showMeasureNumbers_ != AutoOnOff::OFF) || (isSystemObjectStaff() && showMeasureNumbers_ == AutoOnOff::ON);
         }
         case MeasureNumberPlacement::ON_ALL_STAVES: return show();
     }
@@ -245,29 +244,29 @@ bool Staff::hasSystemObjectsBelowBottomStaff() const {
 }
 
 String Staff::individualStaffNameLong(const Fraction &tick) const {
-    IF_ASSERT_FAILED(m_part) { return String(); }
+    IF_ASSERT_FAILED(part_) { return String(); }
 
     return staffType(tick)->longName();
 }
 
 String Staff::individualStaffNameShort(const Fraction &tick) const {
-    IF_ASSERT_FAILED(m_part) { return String(); }
+    IF_ASSERT_FAILED(part_) { return String(); }
 
     return staffType(tick)->shortName();
 }
 
-bool Staff::playbackVoice(int voice) const { return m_playbackVoice[voice]; }
+bool Staff::playbackVoice(int voice) const { return playbackVoice_[voice]; }
 
-void Staff::setPlaybackVoice(int voice, bool val) { m_playbackVoice[voice] = val; }
+void Staff::setPlaybackVoice(int voice, bool val) { playbackVoice_[voice] = val; }
 
-const std::array<bool, VOICES> &Staff::visibilityVoices() const { return m_visibilityVoices; }
+const std::array<bool, VOICES> &Staff::visibilityVoices() const { return visibilityVoices_; }
 
 bool Staff::isVoiceVisible(voice_idx_t voice) const {
     if (voice >= VOICES) {
         return false;
     }
 
-    return m_visibilityVoices[voice];
+    return visibilityVoices_[voice];
 }
 
 void Staff::setVoiceVisible(voice_idx_t voice, bool visible) {
@@ -275,7 +274,7 @@ void Staff::setVoiceVisible(voice_idx_t voice, bool visible) {
         return;
     }
 
-    m_visibilityVoices[voice] = visible;
+    visibilityVoices_[voice] = visible;
 }
 
 bool Staff::canDisableVoice() const {
@@ -292,7 +291,7 @@ bool Staff::canDisableVoice() const {
 
 void Staff::updateVisibilityVoices(const Staff *masterStaff, const TracksMap &tracks) {
     if (tracks.empty()) {
-        m_visibilityVoices = {true, true, true, true};
+        visibilityVoices_ = {true, true, true, true};
         return;
     }
 
@@ -311,25 +310,25 @@ void Staff::updateVisibilityVoices(const Staff *masterStaff, const TracksMap &tr
         }
     }
 
-    m_visibilityVoices = voices;
+    visibilityVoices_ = voices;
 }
 
-bool Staff::reflectTranspositionInLinkedTab() const { return m_reflectTranspositionInLinkedTab; }
+bool Staff::reflectTranspositionInLinkedTab() const { return reflectTranspositionInLinkedTab_; }
 
-void Staff::setReflectTranspositionInLinkedTab(bool reflect) { m_reflectTranspositionInLinkedTab = reflect; }
+void Staff::setReflectTranspositionInLinkedTab(bool reflect) { reflectTranspositionInLinkedTab_ = reflect; }
 
 //---------------------------------------------------------
 //   partName
 //---------------------------------------------------------
 
-String Staff::partName() const { return m_part->partName(); }
+String Staff::partName() const { return part_->partName(); }
 
 //---------------------------------------------------------
 //   Staff::clefType
 //---------------------------------------------------------
 
 ClefTypeList Staff::clefType(const Fraction &tick) const {
-    ClefTypeList ct = m_clefs.clef(tick.ticks());
+    ClefTypeList ct = clefs_.clef(tick.ticks());
     if (ct.concertClef == ClefType::INVALID) {
         // Clef compatibility based on instrument (override StaffGroup)
         StaffGroup staffGroup = staffType(tick)->group();
@@ -367,7 +366,7 @@ ClefType Staff::clef(const Fraction &tick) const {
 //---------------------------------------------------------
 
 Fraction Staff::nextClefTick(const Fraction &tick) const {
-    Fraction t = Fraction::fromTicks(m_clefs.nextClefTick(tick.ticks()));
+    Fraction t = Fraction::fromTicks(clefs_.nextClefTick(tick.ticks()));
     return t != Fraction(-1, 1) ? t : score()->endTick();
 }
 
@@ -379,7 +378,7 @@ Fraction Staff::nextClefTick(const Fraction &tick) const {
 //    return 0, if no such clef
 //---------------------------------------------------------
 
-Fraction Staff::currentClefTick(const Fraction &tick) const { return Fraction::fromTicks(m_clefs.currentClefTick(tick.ticks())); }
+Fraction Staff::currentClefTick(const Fraction &tick) const { return Fraction::fromTicks(clefs_.currentClefTick(tick.ticks())); }
 
 String Staff::staffName() const { return TConv::translatedUserName(clefType(Fraction()).transposingClef); }
 
@@ -389,8 +388,8 @@ String Staff::staffName() const { return TConv::translatedUserName(clefType(Frac
 //---------------------------------------------------------
 
 void Staff::dumpClefs(const char *title) const {
-    LOGD("(%zd): %s", m_clefs.size(), title);
-    for (auto &i : m_clefs) {
+    LOGD("(%zd): %s", clefs_.size(), title);
+    for (auto &i : clefs_) {
         LOGD("  %d: %d %d", i.first, int(i.second.concertClef), int(i.second.transposingClef));
     }
 }
@@ -400,8 +399,8 @@ void Staff::dumpClefs(const char *title) const {
 //---------------------------------------------------------
 
 void Staff::dumpKeys(const char *title) const {
-    LOGD("(%zd): %s", m_keys.size(), title);
-    for (auto &i : m_keys) {
+    LOGD("(%zd): %s", keys_.size(), title);
+    for (auto &i : keys_) {
         LOGD("  %d: %d", i.first, int(i.second.key()));
     }
 }
@@ -411,8 +410,8 @@ void Staff::dumpKeys(const char *title) const {
 //---------------------------------------------------------
 
 void Staff::dumpTimeSigs(const char *title) const {
-    LOGD("size (%zd) staffIdx %zu: %s", m_timesigs.size(), idx(), title);
-    for (auto &i : m_timesigs) {
+    LOGD("size (%zd) staffIdx %zu: %s", timesigs_.size(), idx(), title);
+    for (auto &i : timesigs_) {
         LOGD("  %d: %d/%d", i.first, i.second->sig().numerator(), i.second->sig().denominator());
     }
 }
@@ -435,7 +434,7 @@ void Staff::setClef(Clef *clef) {
             return;
         }
     }
-    m_clefs.setClef(clef->segment()->tick().ticks(), clef->clefTypeList());
+    clefs_.setClef(clef->segment()->tick().ticks(), clef->clefTypeList());
     DUMP_CLEFS("setClef");
 }
 
@@ -455,12 +454,12 @@ void Staff::removeClef(const Clef *clef) {
             return;
         }
     }
-    m_clefs.erase(clef->segment()->tick().ticks());
+    clefs_.erase(clef->segment()->tick().ticks());
     for (Segment *s = clef->segment()->prev1(); s && s->tick() == tick; s = s->prev1()) {
         if ((s->segmentType() == SegmentType::Clef || s->segmentType() == SegmentType::HeaderClef) && s->element(clef->track()) &&
             !s->element(clef->track())->generated()) {
             // a previous clef at the same tick position gets valid
-            m_clefs.setClef(tick.ticks(), toClef(s->element(clef->track()))->clefTypeList());
+            clefs_.setClef(tick.ticks(), toClef(s->element(clef->track()))->clefTypeList());
             break;
         }
     }
@@ -482,11 +481,11 @@ Fraction Staff::timeStretch(const Fraction &tick) const {
 //---------------------------------------------------------
 
 TimeSig *Staff::timeSig(const Fraction &tick) const {
-    auto i = m_timesigs.upper_bound(tick.ticks());
-    if (i != m_timesigs.begin()) {
+    auto i = timesigs_.upper_bound(tick.ticks());
+    if (i != timesigs_.begin()) {
         --i;
     }
-    if (i == m_timesigs.end()) {
+    if (i == timesigs_.end()) {
         return 0;
     } else if (tick < Fraction::fromTicks(i->first)) {
         return 0;
@@ -500,8 +499,8 @@ TimeSig *Staff::timeSig(const Fraction &tick) const {
 //---------------------------------------------------------
 
 TimeSig *Staff::nextTimeSig(const Fraction &tick) const {
-    auto i = m_timesigs.lower_bound(tick.ticks());
-    return (i == m_timesigs.end()) ? 0 : i->second;
+    auto i = timesigs_.lower_bound(tick.ticks());
+    return (i == timesigs_.end()) ? 0 : i->second;
 }
 
 //---------------------------------------------------------
@@ -512,11 +511,11 @@ TimeSig *Staff::nextTimeSig(const Fraction &tick) const {
 //---------------------------------------------------------
 
 Fraction Staff::currentTimeSigTick(const Fraction &tick) const {
-    if (m_timesigs.empty()) {
+    if (timesigs_.empty()) {
         return Fraction(0, 1);
     }
-    auto i = m_timesigs.upper_bound(tick.ticks());
-    if (i == m_timesigs.begin()) {
+    auto i = timesigs_.upper_bound(tick.ticks());
+    if (i == timesigs_.begin()) {
         return Fraction(0, 1);
     }
     --i;
@@ -545,7 +544,7 @@ const Groups &Staff::group(const Fraction &tick) const {
 
 void Staff::addTimeSig(TimeSig *timesig) {
     if (timesig->segment()->segmentType() == SegmentType::TimeSig) {
-        m_timesigs[timesig->segment()->tick().ticks()] = timesig;
+        timesigs_[timesig->segment()->tick().ticks()] = timesig;
     }
     //      dumpTimeSigs("after addTimeSig");
 }
@@ -556,8 +555,8 @@ void Staff::addTimeSig(TimeSig *timesig) {
 
 void Staff::removeTimeSig(TimeSig *timesig) {
     if (timesig->segment()->segmentType() == SegmentType::TimeSig) {
-        if (m_timesigs[timesig->segment()->tick().ticks()] == timesig) {
-            m_timesigs.erase(timesig->segment()->tick().ticks());
+        if (timesigs_[timesig->segment()->tick().ticks()] == timesig) {
+            timesigs_.erase(timesig->segment()->tick().ticks());
         }
     }
     //      dumpTimeSigs("after removeTimeSig");
@@ -567,7 +566,7 @@ void Staff::removeTimeSig(TimeSig *timesig) {
 //   clearTimeSig
 //---------------------------------------------------------
 
-void Staff::clearTimeSig() { m_timesigs.clear(); }
+void Staff::clearTimeSig() { timesigs_.clear(); }
 
 //---------------------------------------------------------
 //   Staff::transpose
@@ -615,25 +614,25 @@ Interval Staff::transpose(const Fraction &tick) const {
 //    locates the key sig currently in effect at tick
 //---------------------------------------------------------
 
-KeySigEvent Staff::keySigEvent(const Fraction &tick) const { return m_keys.key(tick.ticks()); }
+KeySigEvent Staff::keySigEvent(const Fraction &tick) const { return keys_.key(tick.ticks()); }
 
 //---------------------------------------------------------
 //   setKey
 //---------------------------------------------------------
 
-void Staff::setKey(const Fraction &tick, KeySigEvent k) { m_keys.setKey(tick.ticks(), k); }
+void Staff::setKey(const Fraction &tick, KeySigEvent k) { keys_.setKey(tick.ticks(), k); }
 
 //---------------------------------------------------------
 //   removeKey
 //---------------------------------------------------------
 
-void Staff::removeKey(const Fraction &tick) { m_keys.erase(tick.ticks()); }
+void Staff::removeKey(const Fraction &tick) { keys_.erase(tick.ticks()); }
 
 //---------------------------------------------------------
 //   prevkey
 //---------------------------------------------------------
 
-KeySigEvent Staff::prevKey(const Fraction &tick) const { return m_keys.prevKey(tick.ticks()); }
+KeySigEvent Staff::prevKey(const Fraction &tick) const { return keys_.prevKey(tick.ticks()); }
 
 //---------------------------------------------------------
 //   Staff::nextKeyTick
@@ -643,7 +642,7 @@ KeySigEvent Staff::prevKey(const Fraction &tick) const { return m_keys.prevKey(t
 //---------------------------------------------------------
 
 Fraction Staff::nextKeyTick(const Fraction &tick) const {
-    Fraction t = Fraction::fromTicks(m_keys.nextKeyTick(tick.ticks()));
+    Fraction t = Fraction::fromTicks(keys_.nextKeyTick(tick.ticks()));
     return t != Fraction(-1, 1) ? t : score()->endTick();
 }
 
@@ -655,7 +654,7 @@ Fraction Staff::nextKeyTick(const Fraction &tick) const {
 //    return 0, if no such a key sig
 //---------------------------------------------------------
 
-Fraction Staff::currentKeyTick(const Fraction &tick) const { return Fraction::fromTicks(m_keys.currentKeyTick(tick.ticks())); }
+Fraction Staff::currentKeyTick(const Fraction &tick) const { return Fraction::fromTicks(keys_.currentKeyTick(tick.ticks())); }
 
 //---------------------------------------------------------
 //   height
@@ -705,27 +704,27 @@ SwingParameters Staff::swing(const Fraction &tick) const {
     }
     sp.swingRatio = swingRatio;
     sp.swingUnit = swingUnit;
-    if (m_swingMap.empty()) {
+    if (swingMap_.empty()) {
         return sp;
     }
 
-    auto it = muse::findLessOrEqual(m_swingMap, tick.ticks());
-    return it == m_swingMap.cend() ? sp : it->second;
+    auto it = muse::findLessOrEqual(swingMap_, tick.ticks());
+    return it == swingMap_.cend() ? sp : it->second;
 }
 
 const CapoParams &Staff::capo(const Fraction &tick) const {
     static const CapoParams dummy;
-    if (m_capoMap.empty()) {
+    if (capoMap_.empty()) {
         return dummy;
     }
 
-    auto it = muse::findLessOrEqual(m_capoMap, tick.ticks());
-    return it == m_capoMap.cend() ? dummy : it->second;
+    auto it = muse::findLessOrEqual(capoMap_, tick.ticks());
+    return it == capoMap_.cend() ? dummy : it->second;
 }
 
 void Staff::insertCapoParams(const Fraction &tick, const CapoParams &params, bool ignoreNotationUpdate) {
     if (ignoreNotationUpdate) {
-        m_capoMap.insert_or_assign(tick.ticks(), params);
+        capoMap_.insert_or_assign(tick.ticks(), params);
         return;
     }
     auto isNeedUpdate = [](const CapoParams &oldParams, const CapoParams &newParams) -> bool {
@@ -736,12 +735,12 @@ void Staff::insertCapoParams(const Fraction &tick, const CapoParams &params, boo
     int startTick = tick.ticks();
     int endTick = -1;
 
-    if (auto it = m_capoMap.find(startTick); it == m_capoMap.end()) {
-        auto result = m_capoMap.insert({startTick, params});
-        if (const auto nextIt = std::next(result.first); nextIt != m_capoMap.end()) {
+    if (auto it = capoMap_.find(startTick); it == capoMap_.end()) {
+        auto result = capoMap_.insert({startTick, params});
+        if (const auto nextIt = std::next(result.first); nextIt != capoMap_.end()) {
             endTick = nextIt->first;
         }
-        if (result.first != m_capoMap.begin()) {
+        if (result.first != capoMap_.begin()) {
             const auto prevIt = std::prev(result.first);
             CapoParams oldParams = prevIt->second;
             // We don't need to apply any changes if the previous capo is inactive
@@ -762,8 +761,8 @@ void Staff::insertCapoParams(const Fraction &tick, const CapoParams &params, boo
         if (!isNeedUpdate(oldParams, params)) {
             return;
         }
-        auto result = m_capoMap.insert_or_assign(startTick, params);
-        if (const auto nextIt = std::next(result.first); nextIt != m_capoMap.end()) {
+        auto result = capoMap_.insert_or_assign(startTick, params);
+        if (const auto nextIt = std::next(result.first); nextIt != capoMap_.end()) {
             endTick = nextIt->first;
         }
         EditCapo::updateNotationForCapoChange(oldParams, params, this, startTick, endTick);
@@ -773,14 +772,14 @@ void Staff::insertCapoParams(const Fraction &tick, const CapoParams &params, boo
 void Staff::removeCapoParams(const mu::engraving::Fraction &tick) {
     const int startTick = tick.ticks();
 
-    const auto it = m_capoMap.find(startTick);
-    IF_ASSERT_FAILED(it != m_capoMap.end()) {
+    const auto it = capoMap_.find(startTick);
+    IF_ASSERT_FAILED(it != capoMap_.end()) {
         LOGE() << "Key must exist in capo map!";
         return;
     }
 
     const auto nextCapoIt = std::next(it);
-    const int endTick = nextCapoIt == m_capoMap.end() ? -1 : nextCapoIt->first;
+    const int endTick = nextCapoIt == capoMap_.end() ? -1 : nextCapoIt->first;
 
     CapoParams revertParams;
     revertParams.fretPosition = it->second.fretPosition;
@@ -791,7 +790,7 @@ void Staff::removeCapoParams(const mu::engraving::Fraction &tick) {
         oldParams.transposeMode = CapoParams::TransposeMode::PLAYBACK_ONLY;
     }
 
-    if (it != m_capoMap.begin()) {
+    if (it != capoMap_.begin()) {
         revertParams = std::prev(it)->second;
         // If not active, treat as PLAYBACK_ONLY
         if (!revertParams.active) {
@@ -800,7 +799,7 @@ void Staff::removeCapoParams(const mu::engraving::Fraction &tick) {
     }
     EditCapo::updateNotationForCapoChange(oldParams, revertParams, this, startTick, endTick);
 
-    m_capoMap.erase(startTick);
+    capoMap_.erase(startTick);
 }
 
 bool Staff::shouldMergeMatchingRests() const {
@@ -813,7 +812,7 @@ bool Staff::shouldMergeMatchingRests() const {
 //---------------------------------------------------------
 
 int Staff::channel(const Fraction &tick, voice_idx_t voice) const {
-    const std::map<int, int> &map = m_channelList[voice];
+    const std::map<int, int> &map = channelList_[voice];
     if (map.empty()) {
         return 0;
     }
@@ -857,14 +856,14 @@ void Staff::setSlashStyle(const Fraction &tick, bool val) { staffType(tick)->set
 //---------------------------------------------------------
 
 bool Staff::isPrimaryStaff() const {
-    if (!m_links) {
+    if (!links_) {
         return true;
     }
 
     std::vector<const Staff *> linkedStavesInThisScore;
     std::vector<const Staff *> linkedNonTabStavesInThisScore;
 
-    for (const EngravingObject *linked : *m_links) {
+    for (const EngravingObject *linked : *links_) {
         const Staff *staff = toStaff(linked);
 
         if (staff->score() == score()) {
@@ -889,31 +888,31 @@ bool Staff::isPrimaryStaff() const {
 //   staffType
 //---------------------------------------------------------
 
-const StaffType *Staff::staffType(const Fraction &tick) const { return &m_staffTypeList.staffType(tick); }
+const StaffType *Staff::staffType(const Fraction &tick) const { return &staffTypeList_.staffType(tick); }
 
-const StaffType *Staff::constStaffType(const Fraction &tick) const { return &m_staffTypeList.staffType(tick); }
+const StaffType *Staff::constStaffType(const Fraction &tick) const { return &staffTypeList_.staffType(tick); }
 
-StaffType *Staff::staffType(const Fraction &tick) { return &m_staffTypeList.staffType(tick); }
+StaffType *Staff::staffType(const Fraction &tick) { return &staffTypeList_.staffType(tick); }
 
 const StaffType *Staff::staffTypeForElement(const EngravingItem *e) const {
-    if (m_staffTypeList.uniqueStaffType()) {
+    if (staffTypeList_.uniqueStaffType()) {
         // if one staff type spans for the entire staff, optimize by omitting a call to `tick()`
-        return &m_staffTypeList.staffType({0, 1});
+        return &staffTypeList_.staffType({0, 1});
     }
     // Handle items at the last tick of measures as StaffTypeList::staffType rounds up
     const Measure *measure = e->findMeasure();
     const Fraction tick = measure ? measure->tick() : e->tick();
-    return &m_staffTypeList.staffType(tick);
+    return &staffTypeList_.staffType(tick);
 }
 
-bool Staff::isStaffTypeStartFrom(const Fraction &tick) const { return m_staffTypeList.isStaffTypeStartFrom(tick); }
+bool Staff::isStaffTypeStartFrom(const Fraction &tick) const { return staffTypeList_.isStaffTypeStartFrom(tick); }
 
 void Staff::moveStaffType(const Fraction &from, const Fraction &to) {
-    m_staffTypeList.moveStaffType(from, to);
+    staffTypeList_.moveStaffType(from, to);
     staffTypeListChanged(from);
 }
 
-std::pair<int, int> Staff::staffTypeRange(const Fraction &tick) const { return m_staffTypeList.staffTypeRange(tick); }
+std::pair<int, int> Staff::staffTypeRange(const Fraction &tick) const { return staffTypeList_.staffTypeRange(tick); }
 
 //---------------------------------------------------------
 //   staffTypeListChanged
@@ -922,7 +921,7 @@ std::pair<int, int> Staff::staffTypeRange(const Fraction &tick) const { return m
 //---------------------------------------------------------
 
 void Staff::staffTypeListChanged(const Fraction &tick) {
-    std::pair<int, int> range = m_staffTypeList.staffTypeRange(tick);
+    std::pair<int, int> range = staffTypeList_.staffTypeRange(tick);
 
     if (range.first < 0) {
         triggerLayout(Fraction(0, 1));
@@ -946,7 +945,7 @@ void Staff::staffTypeListChanged(const Fraction &tick) {
 //---------------------------------------------------------
 
 StaffType *Staff::setStaffType(const Fraction &tick, const StaffType &nst) {
-    StaffType *stt = m_staffTypeList.setStaffType(tick, nst);
+    StaffType *stt = staffTypeList_.setStaffType(tick, nst);
     stt->setScore(score());
     return stt;
 }
@@ -957,7 +956,7 @@ StaffType *Staff::setStaffType(const Fraction &tick, const StaffType &nst) {
 
 void Staff::removeStaffType(const Fraction &tick) {
     double old = spatium(tick);
-    const bool removed = m_staffTypeList.removeStaffType(tick);
+    const bool removed = staffTypeList_.removeStaffType(tick);
     if (!removed) {
         return;
     }
@@ -997,32 +996,32 @@ void Staff::init(const InstrumentTemplate *t, const StaffType *staffType, staff_
 //---------------------------------------------------------
 
 void Staff::init(const Staff *s) {
-    m_id = s->m_id;
+    id_ = s->id_;
 
-    setStaffType(Fraction(0, 1), s->m_staffTypeList.staffType(Fraction(0, 1)));
-    for (const auto &stPair : s->m_staffTypeList.staffTypeChanges()) {
+    setStaffType(Fraction(0, 1), s->staffTypeList_.staffType(Fraction(0, 1)));
+    for (const auto &stPair : s->staffTypeList_.staffTypeChanges()) {
         const StaffType &st = stPair.second;
         StaffType newStaffType(st);
         setStaffType(Fraction::fromTicks(stPair.first), newStaffType);
     }
 
     setDefaultClefType(s->defaultClefType());
-    m_barLineFrom = s->m_barLineFrom;
-    m_barLineTo = s->m_barLineTo;
-    m_hideWhenEmpty = s->m_hideWhenEmpty;
-    m_cutaway = s->m_cutaway;
-    m_showIfEntireSystemEmpty = s->m_showIfEntireSystemEmpty;
-    m_hideSystemBarLine = s->m_hideSystemBarLine;
-    m_mergeMatchingRests = s->m_mergeMatchingRests;
-    m_color = s->m_color;
-    m_userDist = s->m_userDist;
-    m_visibilityVoices = s->m_visibilityVoices;
-    m_capoMap = s->m_capoMap;
+    barLineFrom_ = s->barLineFrom_;
+    barLineTo_ = s->barLineTo_;
+    hideWhenEmpty_ = s->hideWhenEmpty_;
+    cutaway_ = s->cutaway_;
+    showIfEntireSystemEmpty_ = s->showIfEntireSystemEmpty_;
+    hideSystemBarLine_ = s->hideSystemBarLine_;
+    mergeMatchingRests_ = s->mergeMatchingRests_;
+    color_ = s->color_;
+    userDist_ = s->userDist_;
+    visibilityVoices_ = s->visibilityVoices_;
+    capoMap_ = s->capoMap_;
 }
 
-const ID &Staff::id() const { return m_id; }
+const ID &Staff::id() const { return id_; }
 
-void Staff::setId(const ID &id) { m_id = id; }
+void Staff::setId(const ID &id) { id_ = id; }
 
 //---------------------------------------------------------
 //   initFromStaffType
@@ -1042,7 +1041,7 @@ void Staff::initFromStaffType(const StaffType *staffType) {
 //   show
 //---------------------------------------------------------
 
-bool Staff::show() const { return m_part->show() && visible(); }
+bool Staff::show() const { return part_->show() && visible(); }
 
 //---------------------------------------------------------
 //   genKeySig
@@ -1080,24 +1079,24 @@ void Staff::setColor(const Fraction &tick, const Color &val) { staffType(tick)->
 
 void Staff::updateOttava() {
     staff_idx_t staffIdx = idx();
-    m_pitchOffsetMap.clear();
+    pitchOffsetMap_.clear();
     for (auto i : score()->spanner()) {
         const Spanner *s = i.second;
         if (s->isOttava() && s->staffIdx() == staffIdx && s->playSpanner()) {
             const Ottava *o = toOttava(s);
-            m_pitchOffsetMap.insert_or_assign(o->tick().ticks(), o->pitchShift());
-            m_pitchOffsetMap.insert_or_assign(o->tick2().ticks(), 0);
+            pitchOffsetMap_.insert_or_assign(o->tick().ticks(), o->pitchShift());
+            pitchOffsetMap_.insert_or_assign(o->tick2().ticks(), 0);
         }
     }
 }
 
 int Staff::pitchOffset(const Fraction &tick) const {
-    if (m_pitchOffsetMap.empty()) {
+    if (pitchOffsetMap_.empty()) {
         return 0;
     }
 
-    const auto it = muse::findLessOrEqual(m_pitchOffsetMap, tick.ticks());
-    return it == m_pitchOffsetMap.cend() ? 0 : it->second;
+    const auto it = muse::findLessOrEqual(pitchOffsetMap_, tick.ticks());
+    return it == pitchOffsetMap_.cend() ? 0 : it->second;
 }
 
 //---------------------------------------------------------
@@ -1113,22 +1112,22 @@ void Staff::insertTime(const Fraction &tick, const Fraction &len) {
 
     if (len < Fraction(0, 1)) {
         // remove entries between tickpos >= tick and tickpos < (tick+len)
-        m_keys.erase(m_keys.lower_bound(tick.ticks()), m_keys.lower_bound((tick - len).ticks()));
-        m_clefs.erase(m_clefs.lower_bound(tick.ticks()), m_clefs.lower_bound((tick - len).ticks()));
+        keys_.erase(keys_.lower_bound(tick.ticks()), keys_.lower_bound((tick - len).ticks()));
+        clefs_.erase(clefs_.lower_bound(tick.ticks()), clefs_.lower_bound((tick - len).ticks()));
     }
 
     KeyList kl2;
-    for (auto i = m_keys.lower_bound(tick.ticks()); i != m_keys.end();) {
+    for (auto i = keys_.lower_bound(tick.ticks()); i != keys_.end();) {
         KeySigEvent kse = i->second;
         Fraction t = Fraction::fromTicks(i->first);
         if (t + len < score()->endTick()) {
-            m_keys.erase(i++);
+            keys_.erase(i++);
             kl2[(t + len).ticks()] = kse;
         } else {
             ++i;
         }
     }
-    m_keys.insert(kl2.begin(), kl2.end());
+    keys_.insert(kl2.begin(), kl2.end());
 
     // check if there is a clef at the end of measure
     // before tick
@@ -1144,17 +1143,17 @@ void Staff::insertTime(const Fraction &tick, const Fraction &len) {
     }
 
     ClefList cl2;
-    for (auto i = m_clefs.lower_bound(tick.ticks()); i != m_clefs.end();) {
+    for (auto i = clefs_.lower_bound(tick.ticks()); i != clefs_.end();) {
         ClefTypeList ctl = i->second;
         Fraction t = Fraction::fromTicks(i->first);
         if (clef && tick == t) {
             ++i;
             continue;
         }
-        m_clefs.erase(i++);
+        clefs_.erase(i++);
         cl2.setClef((t + len).ticks(), ctl);
     }
-    m_clefs.insert(cl2.begin(), cl2.end());
+    clefs_.insert(cl2.begin(), cl2.end());
 
     // check if there is a clef at the end of measure
     // before tick: do not remove from clefs list
@@ -1174,9 +1173,9 @@ void Staff::insertTime(const Fraction &tick, const Fraction &len) {
 
 std::vector<Staff *> Staff::staffList() const {
     std::vector<Staff *> staffList;
-    if (m_links) {
-        staffList.reserve(m_links->size());
-        for (EngravingObject *e : *m_links) {
+    if (links_) {
+        staffList.reserve(links_->size());
+        for (EngravingObject *e : *links_) {
             staffList.push_back(toStaff(e));
         }
     } else {
@@ -1205,18 +1204,18 @@ Staff *Staff::primaryStaff() const {
 //   rstaff
 //---------------------------------------------------------
 
-staff_idx_t Staff::rstaff() const { return muse::indexOf(m_part->staves(), this); }
+staff_idx_t Staff::rstaff() const { return muse::indexOf(part_->staves(), this); }
 
 //---------------------------------------------------------
 //   isTop
 //---------------------------------------------------------
 
 bool Staff::isTop() const {
-    if (m_part->staves().empty()) {
+    if (part_->staves().empty()) {
         return false;
     }
 
-    return m_part->staves().front() == this;
+    return part_->staves().front() == this;
 }
 
 //---------------------------------------------------------
@@ -1229,7 +1228,7 @@ PropertyValue Staff::getProperty(Pid id) const {
         case Pid::MAG: return staffType(Fraction(0, 1))->userMag();
         case Pid::LINE_DISTANCE: return staffType(Fraction(0, 1))->lineDistance();
         case Pid::STAFF_INVISIBLE: return staffType(Fraction(0, 1))->invisible();
-        case Pid::HIDE_WHEN_EMPTY: return m_hideWhenEmpty;
+        case Pid::HIDE_WHEN_EMPTY: return hideWhenEmpty_;
         case Pid::STAFF_COLOR: return PropertyValue::fromValue(staffType(Fraction(0, 1))->color());
         case Pid::PLAYBACK_VOICE1: return playbackVoice(0);
         case Pid::PLAYBACK_VOICE2: return playbackVoice(1);
@@ -1240,8 +1239,8 @@ PropertyValue Staff::getProperty(Pid id) const {
         case Pid::STAFF_BARLINE_SPAN_TO: return barLineTo();
         case Pid::STAFF_USERDIST: return userDist();
         case Pid::GENERATED: return false;
-        case Pid::SHOW_MEASURE_NUMBERS: return m_showMeasureNumbers;
-        case Pid::SHOW_IF_ENTIRE_SYSTEM_EMPTY: return m_showIfEntireSystemEmpty;
+        case Pid::SHOW_MEASURE_NUMBERS: return showMeasureNumbers_;
+        case Pid::SHOW_IF_ENTIRE_SYSTEM_EMPTY: return showIfEntireSystemEmpty_;
         case Pid::VISIBLE: return visible();
         case Pid::STAFF_CUTAWAY: return cutaway();
         case Pid::STAFF_HIDE_SYSTEM_BARLINE: return hideSystemBarLine();
@@ -1305,8 +1304,8 @@ bool Staff::setProperty(Pid id, const PropertyValue &v) {
         case Pid::STAFF_BARLINE_SPAN_FROM: setBarLineFrom(v.toInt()); break;
         case Pid::STAFF_BARLINE_SPAN_TO: setBarLineTo(v.toInt()); break;
         case Pid::STAFF_USERDIST: setUserDist(v.value<Spatium>()); break;
-        case Pid::SHOW_MEASURE_NUMBERS: m_showMeasureNumbers = v.value<AutoOnOff>(); break;
-        case Pid::SHOW_IF_ENTIRE_SYSTEM_EMPTY: m_showIfEntireSystemEmpty = v.toBool(); break;
+        case Pid::SHOW_MEASURE_NUMBERS: showMeasureNumbers_ = v.value<AutoOnOff>(); break;
+        case Pid::SHOW_IF_ENTIRE_SYSTEM_EMPTY: showIfEntireSystemEmpty_ = v.toBool(); break;
         case Pid::VISIBLE:
             setVisible(v.toBool());
             masterScore()->rebuildMidiMapping();
@@ -1355,7 +1354,7 @@ PropertyValue Staff::propertyDefault(Pid id) const {
 //---------------------------------------------------------
 
 void Staff::setLocalSpatium(double oldVal, double newVal, Fraction tick) {
-    const int intEndTick = m_staffTypeList.staffTypeRange(tick).second;
+    const int intEndTick = staffTypeList_.staffTypeRange(tick).second;
     const Fraction etick = (intEndTick == -1) ? score()->lastMeasure()->endTick() : Fraction::fromTicks(intEndTick);
 
     staff_idx_t staffIdx = idx();

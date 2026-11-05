@@ -90,56 +90,56 @@ public:
 
     std::vector<MidiCoreEvent> &initList() const;
 
-    String name() const { return m_name; }
+    String name() const { return name_; }
 
     void setName(const String &value);
 
-    String synti() const { return m_synti; }
+    String synti() const { return synti_; }
 
     void setSynti(const String &value);
 
-    int color() const { return m_color; }
+    int color() const { return color_; }
 
     void setColor(int value);
 
-    char volume() const { return m_volume; }
+    char volume() const { return volume_; }
 
     void setVolume(char value);
 
-    char pan() const { return m_pan; }
+    char pan() const { return pan_; }
 
     void setPan(char value);
 
-    char chorus() const { return m_chorus; }
+    char chorus() const { return chorus_; }
 
     void setChorus(char value);
 
-    char reverb() const { return m_reverb; }
+    char reverb() const { return reverb_; }
 
     void setReverb(char value);
 
-    void addToInit(const MidiCoreEvent &e) { m_init.push_back(e); }
+    void addToInit(const MidiCoreEvent &e) { init_.push_back(e); }
 
-    void setMustUpdateInit(bool arg) { m_mustUpdateInit = arg; }
+    void setMustUpdateInit(bool arg) { mustUpdateInit_ = arg; }
 
-    int program() const { return m_program; }
+    int program() const { return program_; }
 
     void setProgram(int value);
 
-    int bank() const { return m_bank; }
+    int bank() const { return bank_; }
 
     void setBank(int value);
 
-    int channel() const { return m_channel; }
+    int channel() const { return channel_; }
 
     void setChannel(int value);
 
     // If the bank controller is set by the user or not
-    bool userBankController() const { return m_userBankController; }
+    bool userBankController() const { return userBankController_; }
 
     void setUserBankController(bool val);
 
-    bool isHarmonyChannel() const { return m_name == String::fromUtf8(InstrChannel::HARMONY_NAME); }
+    bool isHarmonyChannel() const { return name_ == String::fromUtf8(InstrChannel::HARMONY_NAME); }
 
     std::vector<NamedEventList> midiActions;
     std::vector<MidiArticulation> articulation;
@@ -148,7 +148,7 @@ public:
 
     void updateInitList() const;
 
-    bool operator==(const InstrChannel &c) const { return (m_name == c.m_name) && (m_channel == c.m_channel); }
+    bool operator==(const InstrChannel &c) const { return (name_ == c.name_) && (channel_ == c.channel_); }
 
     bool operator!=(const InstrChannel &c) const { return !(*this == c); }
 
@@ -157,43 +157,43 @@ public:
 
     void switchExpressive(Synthesizer *synth, bool expressive, bool force = false);
 
-    void setNotifyAboutChangedEnabled(bool arg) { m_notifyAboutChangedEnabled = arg; }
+    void setNotifyAboutChangedEnabled(bool arg) { notifyAboutChangedEnabled_ = arg; }
 
 private:
     void firePropertyChanged(InstrChannel::Prop prop) {
-        if (m_notifyAboutChangedEnabled) {
-            m_notifier.notify(prop);
+        if (notifyAboutChangedEnabled_) {
+            notifier_.notify(prop);
         }
     }
 
-    Notifier<InstrChannel::Prop> m_notifier;
-    bool m_notifyAboutChangedEnabled = true;
+    Notifier<InstrChannel::Prop> notifier_;
+    bool notifyAboutChangedEnabled_ = true;
 
     // this are the indexes of controllers which are always present in
     // Channel init EventList (maybe zero)
-    String m_name;
+    String name_;
 
-    int m_color = 0; //rgb
+    int color_ = 0; //rgb
 
-    String m_synti;
+    String synti_;
 
-    char m_volume = 0;
-    char m_pan = 0;
+    char volume_ = 0;
+    char pan_ = 0;
 
-    char m_chorus = 0;
-    char m_reverb = 0;
+    char chorus_ = 0;
+    char reverb_ = 0;
 
-    int m_program = 0; // current values as shown in mixer
-    int m_bank = 0;    // initialized from "init"
-    int m_channel = 0; // mscore channel number, mapped to midi port/channel
+    int program_ = 0; // current values as shown in mixer
+    int bank_ = 0;    // initialized from "init"
+    int channel_ = 0; // mscore channel number, mapped to midi port/channel
 
     // MuseScore General-specific SND flags:
     //! TODO Needs porting to MU4
-    bool m_userBankController = false; // if the user has changed the bank controller as opposed to switchExpressive
+    bool userBankController_ = false; // if the user has changed the bank controller as opposed to switchExpressive
     //bool _switchedToExpressive = false;   // if the patch has been automatically switched to an expr variant
 
-    mutable std::vector<MidiCoreEvent> m_init;
-    mutable bool m_mustUpdateInit = true;
+    mutable std::vector<MidiCoreEvent> init_;
+    mutable bool mustUpdateInit_ = true;
 };
 
 //---------------------------------------------------------
@@ -238,9 +238,9 @@ private:
     static void applyProperty(InstrChannel::Prop p, const InstrChannel *from, InstrChannel *to);
     void propertyChanged(InstrChannel::Prop p) override;
 
-    InstrChannel *m_main = nullptr;
-    InstrChannel *m_bound = nullptr;
-    bool m_excerpt = false;
+    InstrChannel *main_ = nullptr;
+    InstrChannel *bound_ = nullptr;
+    bool excerpt_ = false;
 };
 
 //---------------------------------------------------------
@@ -285,54 +285,54 @@ public:
 
     bool isDifferentInstrument(const Instrument &i) const;
 
-    const String &id() const { return m_id; }
+    const String &id() const { return id_; }
 
-    const String &soundId() const { return m_soundId; }
+    const String &soundId() const { return soundId_; }
 
-    void setSoundId(const String &id) { m_soundId = id; }
+    void setSoundId(const String &id) { soundId_ = id; }
 
     String family() const;
     String group() const;
 
-    void setId(const String &id) { m_id = id; }
+    void setId(const String &id) { id_ = id; }
 
-    void setMinPitchP(int v) { m_minPitchP = v; }
+    void setMinPitchP(int v) { minPitchP_ = v; }
 
-    void setMaxPitchP(int v) { m_maxPitchP = v; }
+    void setMaxPitchP(int v) { maxPitchP_ = v; }
 
-    void setMinPitchA(int v) { m_minPitchA = v; }
+    void setMinPitchA(int v) { minPitchA_ = v; }
 
-    void setMaxPitchA(int v) { m_maxPitchA = v; }
+    void setMaxPitchA(int v) { maxPitchA_ = v; }
 
-    Interval transpose() const { return m_transpose; }
+    Interval transpose() const { return transpose_; }
 
-    void setTranspose(const Interval &v) { m_transpose = v; }
+    void setTranspose(const Interval &v) { transpose_ = v; }
 
-    void setMusicXmlId(const String &musicXmlId) { m_musicXmlId = musicXmlId; }
+    void setMusicXmlId(const String &musicXmlId) { musicXmlId_ = musicXmlId; }
 
     void setDrumset(const Drumset *ds);
 
-    const Drumset *drumset() const { return m_drumset; }
+    const Drumset *drumset() const { return drumset_; }
 
-    Drumset *drumset() { return m_drumset; }
+    Drumset *drumset() { return drumset_; }
 
-    bool useDrumset() const { return m_useDrumset; }
+    bool useDrumset() const { return useDrumset_; }
 
     void setUseDrumset(bool val);
 
     void setAmateurPitchRange(int a, int b) {
-        m_minPitchA = a;
-        m_maxPitchA = b;
+        minPitchA_ = a;
+        maxPitchA_ = b;
     }
 
     void setProfessionalPitchRange(int a, int b) {
-        m_minPitchP = a;
-        m_maxPitchP = b;
+        minPitchP_ = a;
+        maxPitchP_ = b;
     }
 
-    InstrChannel *channel(int idx) { return muse::value(m_channel, idx); }
+    InstrChannel *channel(int idx) { return muse::value(channel_, idx); }
 
-    const InstrChannel *channel(int idx) const { return muse::value(m_channel, idx); }
+    const InstrChannel *channel(int idx) const { return muse::value(channel_, idx); }
 
     InstrChannel *playbackChannel(int idx, MasterScore *);
     const InstrChannel *playbackChannel(int idx, const MasterScore *) const;
@@ -340,53 +340,53 @@ public:
     ClefTypeList clefType(size_t staffIdx) const;
     void setClefType(size_t staffIdx, const ClefTypeList &c);
 
-    const std::vector<NamedEventList> &midiActions() const { return m_midiActions; }
+    const std::vector<NamedEventList> &midiActions() const { return midiActions_; }
 
-    void addMidiAction(const NamedEventList &l) { m_midiActions.push_back(l); }
+    void addMidiAction(const NamedEventList &l) { midiActions_.push_back(l); }
 
-    const std::vector<MidiArticulation> &articulation() const { return m_articulation; }
+    const std::vector<MidiArticulation> &articulation() const { return articulation_; }
 
-    void addMidiArticulation(const MidiArticulation &a) { m_articulation.push_back(a); }
+    void addMidiArticulation(const MidiArticulation &a) { articulation_.push_back(a); }
 
-    const std::vector<InstrChannel *> &channel() const { return m_channel; }
+    const std::vector<InstrChannel *> &channel() const { return channel_; }
 
-    void appendChannel(InstrChannel *c) { m_channel.push_back(c); }
+    void appendChannel(InstrChannel *c) { channel_.push_back(c); }
 
-    void removeChannel(InstrChannel *c) { muse::remove(m_channel, c); }
+    void removeChannel(InstrChannel *c) { muse::remove(channel_, c); }
 
-    void clearChannels() { m_channel.clear(); }
+    void clearChannels() { channel_.clear(); }
 
-    void setMidiActions(const std::vector<NamedEventList> &l) { m_midiActions = l; }
+    void setMidiActions(const std::vector<NamedEventList> &l) { midiActions_ = l; }
 
-    void setArticulation(const std::vector<MidiArticulation> &l) { m_articulation = l; }
+    void setArticulation(const std::vector<MidiArticulation> &l) { articulation_ = l; }
 
-    const StringData *stringData() const { return &m_stringData; }
+    const StringData *stringData() const { return &stringData_; }
 
-    void setStringData(const StringData &d) { m_stringData.set(d); }
+    void setStringData(const StringData &d) { stringData_.set(d); }
 
-    bool hasStrings() const { return m_stringData.strings() > 0; }
+    bool hasStrings() const { return stringData_.strings() > 0; }
 
-    void setLongName(const String &f) { m_instrumentLabel.setLongName(f); }
+    void setLongName(const String &f) { instrumentLabel_.setLongName(f); }
 
-    void setShortName(const String &f) { m_instrumentLabel.setShortName(f); }
+    void setShortName(const String &f) { instrumentLabel_.setShortName(f); }
 
-    void setInstrumentName(const InstrumentLabel &n) { m_instrumentLabel = n; }
+    void setInstrumentName(const InstrumentLabel &n) { instrumentLabel_ = n; }
 
-    const String &longName() const { return m_instrumentLabel.longName(); }
+    const String &longName() const { return instrumentLabel_.longName(); }
 
-    const String &shortName() const { return m_instrumentLabel.shortName(); }
+    const String &shortName() const { return instrumentLabel_.shortName(); }
 
-    const InstrumentLabel &instrumentLabel() const { return m_instrumentLabel; }
+    const InstrumentLabel &instrumentLabel() const { return instrumentLabel_; }
 
-    InstrumentLabel &instrumentLabel() { return m_instrumentLabel; }
+    InstrumentLabel &instrumentLabel() { return instrumentLabel_; }
 
-    int number() const { return m_instrumentLabel.number(); }
+    int number() const { return instrumentLabel_.number(); }
 
-    void setNumber(int v) { return m_instrumentLabel.setNumber(v); }
+    void setNumber(int v) { return instrumentLabel_.setNumber(v); }
 
-    const String &transposition() const { return m_instrumentLabel.transposition(); }
+    const String &transposition() const { return instrumentLabel_.transposition(); }
 
-    void setTransposition(const String &s) { m_instrumentLabel.setTransposition(s); }
+    void setTransposition(const String &s) { instrumentLabel_.setTransposition(s); }
 
     int minPitchP() const;
     int maxPitchP() const;
@@ -410,9 +410,9 @@ public:
 
     void updateInstrumentId();
 
-    bool singleNoteDynamics() const { return m_singleNoteDynamics; }
+    bool singleNoteDynamics() const { return singleNoteDynamics_; }
 
-    void setSingleNoteDynamics(bool val) { m_singleNoteDynamics = val; }
+    void setSingleNoteDynamics(bool val) { singleNoteDynamics_ = val; }
 
     void setSingleNoteDynamicsFromTemplate();
     bool getSingleNoteDynamicsFromTemplate() const;
@@ -426,37 +426,37 @@ public:
 
 private:
 
-    InstrumentLabel m_instrumentLabel;
+    InstrumentLabel instrumentLabel_;
 
-    String m_trackName;
-    String m_id;
-    String m_soundId;
+    String trackName_;
+    String id_;
+    String soundId_;
 
-    int m_minPitchA = 0;
-    int m_maxPitchA = 0;
-    int m_minPitchP = 0;
-    int m_maxPitchP = 0;
-    Interval m_transpose;
-    String m_musicXmlId;
+    int minPitchA_ = 0;
+    int maxPitchA_ = 0;
+    int minPitchP_ = 0;
+    int maxPitchP_ = 0;
+    Interval transpose_;
+    String musicXmlId_;
 
-    bool m_useDrumset = false;
-    Drumset *m_drumset = nullptr;
-    StringData m_stringData;
+    bool useDrumset_ = false;
+    Drumset *drumset_ = nullptr;
+    StringData stringData_;
 
-    std::vector<NamedEventList> m_midiActions;
-    std::vector<MidiArticulation> m_articulation;
-    std::vector<InstrChannel *> m_channel; // at least one entry
-    std::vector<ClefTypeList> m_clefType;
+    std::vector<NamedEventList> midiActions_;
+    std::vector<MidiArticulation> articulation_;
+    std::vector<InstrChannel *> channel_; // at least one entry
+    std::vector<ClefTypeList> clefType_;
 
-    bool m_singleNoteDynamics = false;
+    bool singleNoteDynamics_ = false;
 
-    Trait m_trait;
-    bool m_isPrimary = false;
+    Trait trait_;
+    bool isPrimary_ = false;
 
-    mutable String m_familyCache;
-    mutable String m_groupCache;
+    mutable String familyCache_;
+    mutable String groupCache_;
 
-    GlissandoStyle m_glissandoStyle = GlissandoStyle::CHROMATIC;
+    GlissandoStyle glissandoStyle_ = GlissandoStyle::CHROMATIC;
 };
 
 //---------------------------------------------------------

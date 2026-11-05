@@ -52,46 +52,46 @@ public:
 
     Measure *measure() const { return ownershipParent() ? (Measure *) ownershipParent()->ownershipParent() : nullptr; }
 
-    Key key() const { return m_sig.key(); }
+    Key key() const { return sig_.key(); }
 
-    Key concertKey() const { return m_sig.concertKey(); }
+    Key concertKey() const { return sig_.concertKey(); }
 
-    const std::vector<CustDef> &customKeyDefs() const { return m_sig.customKeyDefs(); }
+    const std::vector<CustDef> &customKeyDefs() const { return sig_.customKeyDefs(); }
 
-    int degInKey(int degree) const { return m_sig.degInKey(degree); }
+    int degInKey(int degree) const { return sig_.degInKey(degree); }
 
-    SymId symInKey(SymId sym, int degree) const { return m_sig.symInKey(sym, degree); }
+    SymId symInKey(SymId sym, int degree) const { return sig_.symInKey(sym, degree); }
 
-    bool isCustom() const { return m_sig.custom(); }
+    bool isCustom() const { return sig_.custom(); }
 
-    bool isAtonal() const { return m_sig.isAtonal(); }
+    bool isAtonal() const { return sig_.isAtonal(); }
 
     bool isChange() const;
 
-    const KeySigEvent &keySigEvent() const { return m_sig; }
+    const KeySigEvent &keySigEvent() const { return sig_; }
 
     bool operator==(const KeySig &) const;
     void changeKeySigEvent(const KeySigEvent &);
 
-    void setKeySigEvent(const KeySigEvent &e) { m_sig = e; }
+    void setKeySigEvent(const KeySigEvent &e) { sig_ = e; }
 
-    bool showCourtesy() const { return m_showCourtesy; }
+    bool showCourtesy() const { return showCourtesy_; }
 
-    void setShowCourtesy(bool v) { m_showCourtesy = v; }
+    void setShowCourtesy(bool v) { showCourtesy_ = v; }
 
-    KeyMode mode() const { return m_sig.mode(); }
+    KeyMode mode() const { return sig_.mode(); }
 
-    void setMode(KeyMode v) { m_sig.setMode(v); }
+    void setMode(KeyMode v) { sig_.setMode(v); }
 
     PointF staffOffset() const override;
 
-    bool hideNaturals() const { return m_hideNaturals; }
+    bool hideNaturals() const { return hideNaturals_; }
 
-    void setHideNaturals(bool hide) { m_hideNaturals = hide; }
+    void setHideNaturals(bool hide) { hideNaturals_ = hide; }
 
-    void setForInstrumentChange(bool forInstrumentChange) { m_sig.setForInstrumentChange(forInstrumentChange); }
+    void setForInstrumentChange(bool forInstrumentChange) { sig_.setForInstrumentChange(forInstrumentChange); }
 
-    bool forInstrumentChange() const { return m_sig.forInstrumentChange(); }
+    bool forInstrumentChange() const { return sig_.forInstrumentChange(); }
 
     PropertyValue getProperty(Pid propertyId) const override;
     bool setProperty(Pid propertyId, const PropertyValue &) override;
@@ -120,8 +120,8 @@ private:
 
     void addLayout(SymId sym, int line);
 
-    bool m_showCourtesy;
-    bool m_hideNaturals; // used in layout to override score style (needed for the Continuous panel)
-    KeySigEvent m_sig;
+    bool showCourtesy_;
+    bool hideNaturals_; // used in layout to override score style (needed for the Continuous panel)
+    KeySigEvent sig_;
 };
 } // namespace mu::engraving

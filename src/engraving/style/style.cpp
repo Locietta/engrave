@@ -49,7 +49,7 @@ const PropertyValue &MStyle::value(Sid idx) const {
         return dummy;
     }
 
-    const PropertyValue &val = m_values[size_t(idx)];
+    const PropertyValue &val = values_[size_t(idx)];
     if (val.isValid()) {
         return val;
     }
@@ -62,7 +62,7 @@ double MStyle::valueAbsolute(Sid idx) const {
         return 0.0;
     }
 
-    return m_precomputedValues[size_t(idx)];
+    return precomputedValues_[size_t(idx)];
 }
 
 void MStyle::set(const Sid t, const PropertyValue &val) {
@@ -71,13 +71,13 @@ void MStyle::set(const Sid t, const PropertyValue &val) {
     }
 
     const size_t idx = size_t(t);
-    m_values[idx] = val;
+    values_[idx] = val;
     if (t == Sid::spatium) {
         precomputeValues();
     } else {
         if (StyleDef::styleValues[idx].valueType() == P_TYPE::SPATIUM) {
             double _spatium = value(Sid::spatium).toReal();
-            m_precomputedValues[idx] = m_values[idx].value<Spatium>().val() * _spatium;
+            precomputedValues_[idx] = values_[idx].value<Spatium>().val() * _spatium;
         }
     }
 }
@@ -88,7 +88,7 @@ void MStyle::precomputeValues() {
     double _spatium = value(Sid::spatium).toReal();
     for (const StyleDef::StyleValue &t : StyleDef::styleValues) {
         if (t.valueType() == P_TYPE::SPATIUM) {
-            m_precomputedValues[t.idx()] = value(t.sid).value<Spatium>().val() * _spatium;
+            precomputedValues_[t.idx()] = value(t.sid).value<Spatium>().val() * _spatium;
         }
     }
 }
@@ -521,7 +521,7 @@ void MStyle::read(XmlReader &e, compat::ReadChordListHook *readChordListHook, in
         } else if (tag == "staffPlacement") { // pre-4.4 typo
             set(Sid::staffTextPlacement, PlacementV(e.readText().toInt()));
         } else if (tag == "staffTextPosAbove" // pre-4.4 typo, certainly before 3.6, even before 3.5
-                   && mscVersion <= 410) {    // so we might test for < 302, however m_version seems set to 410 here?!?
+                   && mscVersion <= 410) {    // so we might test for < 302, however version_ seems set to 410 here?!?
             double staffTextPosAboveY = e.readDouble();
             set(Sid::staffTextPosAbove, PointF(0.0, staffTextPosAboveY));
         } else if (tag == "staffPosAbove") { // pre-4.4 typo
@@ -529,7 +529,7 @@ void MStyle::read(XmlReader &e, compat::ReadChordListHook *readChordListHook, in
         } else if (tag == "staffPosBelow") { // pre-4.4 typo
             set(Sid::staffTextPosBelow, e.readPoint());
         } else if (tag == "staffTextMinDistance" // pre-4.4 typo, certainly before 3.6, even before 3.5
-                   && mscVersion <= 410) {       // so we might test for < 302, however m_version seems set to 410 here?!?
+                   && mscVersion <= 410) {       // so we might test for < 302, however version_ seems set to 410 here?!?
             set(Sid::staffTextMinDistance, Spatium(e.readDouble()));
         } else if (tag == "staffMinDistance") { // pre-4.4 typo
             set(Sid::staffTextMinDistance, Spatium(e.readDouble()));

@@ -28,17 +28,17 @@ using namespace muse::audio;
 using namespace muse::audio::synth;
 
 AbstractSynthesizer::AbstractSynthesizer(const AudioInputParams &params, const engine::IAudioEngineConfiguration &config)
-    : m_params(params), m_config(config) {}
+    : params_(params), config_(config) {}
 
-void AbstractSynthesizer::setMode(const ProcessMode mode) { m_mode = mode; }
+void AbstractSynthesizer::setMode(const ProcessMode mode) { mode_ = mode; }
 
-ProcessMode AbstractSynthesizer::mode() const { return m_mode; }
+ProcessMode AbstractSynthesizer::mode() const { return mode_; }
 
-const AudioInputParams &AbstractSynthesizer::params() const { return m_params; }
+const AudioInputParams &AbstractSynthesizer::params() const { return params_; }
 
 void AbstractSynthesizer::setup(const mpe::PlaybackData &playbackData) {
 
-    m_setupData = playbackData.setupData;
+    setupData_ = playbackData.setupData;
 
     setupSound(playbackData.setupData);
     setupEvents(playbackData);
@@ -48,11 +48,11 @@ void AbstractSynthesizer::prepareToPlay() {}
 
 bool AbstractSynthesizer::readyToPlay() const { return true; }
 
-bool AbstractSynthesizer::hasPendingChunks() const { return m_hasPendingChunks; }
+bool AbstractSynthesizer::hasPendingChunks() const { return hasPendingChunks_; }
 
 void AbstractSynthesizer::processInput() {}
 
-InputProcessingProgress AbstractSynthesizer::inputProcessingProgress() const { return m_inputProcessingProgress; }
+InputProcessingProgress AbstractSynthesizer::inputProcessingProgress() const { return inputProcessingProgress_; }
 
 void AbstractSynthesizer::clearCache() {}
 

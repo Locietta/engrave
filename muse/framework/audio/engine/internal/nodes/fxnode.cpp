@@ -27,23 +27,23 @@ using namespace muse::audio;
 using namespace muse::audio::engine;
 
 FxNode::FxNode(IFxProcessorPtr fxProcessor, PlayheadPositionPtr playheadPosition)
-    : m_fxProcessor(fxProcessor), m_playheadPosition(playheadPosition) {
-    assert(m_fxProcessor && "FxNode requires a non-null IFxProcessor");
+    : fxProcessor_(fxProcessor), playheadPosition_(playheadPosition) {
+    assert(fxProcessor_ && "FxNode requires a non-null IFxProcessor");
 
-    setName(std::string("Fx[") + m_fxProcessor->name() + "]");
+    setName(std::string("Fx[") + fxProcessor_->name() + "]");
 }
 
-void FxNode::setPlayheadPosition(PlayheadPositionPtr playheadPosition) { m_playheadPosition = playheadPosition; }
+void FxNode::setPlayheadPosition(PlayheadPositionPtr playheadPosition) { playheadPosition_ = playheadPosition; }
 
-void FxNode::onModeChanged(const ProcessMode mode) { m_fxProcessor->setMode(mode); }
+void FxNode::onModeChanged(const ProcessMode mode) { fxProcessor_->setMode(mode); }
 
-const AudioFxParams &FxNode::params() const { return m_fxProcessor->params(); }
+const AudioFxParams &FxNode::params() const { return fxProcessor_->params(); }
 
-bool FxNode::shouldProcessDuringSilence() const { return m_fxProcessor->shouldProcessDuringSilence(); }
+bool FxNode::shouldProcessDuringSilence() const { return fxProcessor_->shouldProcessDuringSilence(); }
 
-void FxNode::onOutputSpecChanged(const OutputSpec &spec) { m_fxProcessor->setOutputSpec(spec); }
+void FxNode::onOutputSpecChanged(const OutputSpec &spec) { fxProcessor_->setOutputSpec(spec); }
 
 void FxNode::doSelfProcess(float *buffer, samples_t samplesPerChannel) {
-    samples_t pos = m_playheadPosition ? m_playheadPosition->currentPosition().samples() : 0;
-    m_fxProcessor->process(buffer, samplesPerChannel, pos);
+    samples_t pos = playheadPosition_ ? playheadPosition_->currentPosition().samples() : 0;
+    fxProcessor_->process(buffer, samplesPerChannel, pos);
 }

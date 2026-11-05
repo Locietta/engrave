@@ -44,25 +44,25 @@ using namespace mu::engraving;
 //---------------------------------------------------------
 
 TieJumpPoint::TieJumpPoint(Note *note, bool active, int idx, bool followingNote)
-    : m_note(note), m_active(active), m_followingNote(followingNote) {
-    m_id = u"jumpPoint" + String::fromStdString(std::to_string(idx));
+    : note_(note), active_(active), followingNote_(followingNote) {
+    id_ = u"jumpPoint" + String::fromStdString(std::to_string(idx));
     if (active && endTie()) {
         endTie()->setJumpPoint(this);
     }
 }
 
-Tie *TieJumpPoint::endTie() const { return m_note ? m_note->tieBack() : nullptr; }
+Tie *TieJumpPoint::endTie() const { return note_ ? note_->tieBack() : nullptr; }
 
 void TieJumpPoint::undoSetActive(bool v) {
-    Score *score = m_note ? m_note->score() : nullptr;
-    if (!score || m_active == v) {
+    Score *score = note_ ? note_->score() : nullptr;
+    if (!score || active_ == v) {
         return;
     }
-    score->undo(new ChangeTieJumpPointActive(m_jumpPointList, m_id, v));
+    score->undo(new ChangeTieJumpPointActive(jumpPointList_, id_, v));
 }
 
 TranslatableString TieJumpPoint::menuTitle() const {
-    const Measure *measure = m_note->findMeasure();
+    const Measure *measure = note_->findMeasure();
     const int measureNo = measure ? measure->measureNumber() + 1 : 0;
 
     //: %1 represents the preceding jump item eg. coda. %2 represents the measure number
@@ -70,7 +70,7 @@ TranslatableString TieJumpPoint::menuTitle() const {
 }
 
 String TieJumpPoint::precedingJumpItemName() const {
-    const Chord *startChord = m_note->chord();
+    const Chord *startChord = note_->chord();
     const Segment *seg = startChord->segment();
     const Measure *measure = seg->measure();
 
@@ -100,7 +100,7 @@ String TieJumpPoint::precedingJumpItemName() const {
     }
 
     // Voltas
-    auto spanners = m_note->score()->spannerMap().findOverlapping(measure->tick().ticks(), measure->tick().ticks());
+    auto spanners = note_->score()->spannerMap().findOverlapping(measure->tick().ticks(), measure->tick().ticks());
     for (auto &spanner : spanners) {
         if (!spanner.value->isVolta() || Fraction::fromTicks(spanner.start) != startChord->tick()) {
             continue;
@@ -132,7 +132,7 @@ String TieJumpPoint::precedingJumpItemName() const {
         }
     }
 
-    if (m_followingNote) {
+    if (followingNote_) {
         //: Used at %1 in the string "Tie to %1 (m. %2)"
         return muse::mtrc("engraving", "next note", "partial tie menu");
     }
@@ -146,31 +146,31 @@ String TieJumpPoint::precedingJumpItemName() const {
 //---------------------------------------------------------
 
 TieJumpPointList::~TieJumpPointList() {
-    muse::DeleteAll(m_jumpPoints);
-    m_jumpPoints.clear();
+    muse::DeleteAll(jumpPoints_);
+    jumpPoints_.clear();
 }
 
 void TieJumpPointList::add(TieJumpPoint *item) {
     item->setJumpPointList(this);
-    m_jumpPoints.push_back(item);
+    jumpPoints_.push_back(item);
 }
 
 void TieJumpPointList::clear() {
-    for (const TieJumpPoint *jumpPoint : m_jumpPoints) {
+    for (const TieJumpPoint *jumpPoint : jumpPoints_) {
         Tie *endTie = jumpPoint->endTie();
         if (!endTie) {
             continue;
         }
         endTie->setJumpPoint(nullptr);
     }
-    muse::DeleteAll(m_jumpPoints);
-    m_jumpPoints.clear();
+    muse::DeleteAll(jumpPoints_);
+    jumpPoints_.clear();
 }
 
-Tie *TieJumpPointList::startTie() const { return m_note ? m_note->tieFor() : nullptr; }
+Tie *TieJumpPointList::startTie() const { return note_ ? note_->tieFor() : nullptr; }
 
 TieJumpPoint *TieJumpPointList::findJumpPoint(const String &id) {
-    for (TieJumpPoint *jumpPoint : m_jumpPoints) {
+    for (TieJumpPoint *jumpPoint : jumpPoints_) {
         if (jumpPoint->id() != id) {
             continue;
         }

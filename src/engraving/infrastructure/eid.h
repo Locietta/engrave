@@ -35,16 +35,16 @@ public:
     // 2 * uint64_t as base64 + separator
     static constexpr size_t MAX_STR_SIZE = 2 * MAX_UINT64_BASE64_SIZE + 1;
 
-    bool isValid() const { return m_first != INVALID || m_second != INVALID; }
+    bool isValid() const { return first_ != INVALID || second_ != INVALID; }
 
-    inline bool operator==(const EID &other) const { return m_first == other.m_first && m_second == other.m_second; }
+    inline bool operator==(const EID &other) const { return first_ == other.first_ && second_ == other.second_; }
 
-    inline bool operator!=(const EID &other) const { return m_first != other.m_first || m_second != other.m_second; }
+    inline bool operator!=(const EID &other) const { return first_ != other.first_ || second_ != other.second_; }
 
     // The two values the text form encodes; 0xFFFFFFFFFFFFFFFF is INVALID.
-    uint64_t first() const { return m_first; }
+    uint64_t first() const { return first_; }
 
-    uint64_t second() const { return m_second; }
+    uint64_t second() const { return second_; }
 
     char *toChars(char *first, char *last) const;
     std::string toStdString() const;
@@ -68,12 +68,12 @@ public:
 private:
     EID() = delete;
 
-    EID(uint64_t f, uint64_t s) : m_first(f), m_second(s) {}
+    EID(uint64_t f, uint64_t s) : first_(f), second_(s) {}
 
     static constexpr uint64_t INVALID = uint64_t(-1);
 
-    uint64_t m_first = INVALID;
-    uint64_t m_second = INVALID;
+    uint64_t first_ = INVALID;
+    uint64_t second_ = INVALID;
 
     friend struct std::hash<EID>;
 };
@@ -82,7 +82,7 @@ private:
 template <>
 struct std::hash<mu::engraving::EID> {
     size_t operator()(const mu::engraving::EID &eid) const {
-        return std::hash<uint64_t>()(eid.m_first) ^ (std::hash<uint64_t>()(eid.m_second) << 1);
+        return std::hash<uint64_t>()(eid.first_) ^ (std::hash<uint64_t>()(eid.second_) << 1);
     }
 };
 

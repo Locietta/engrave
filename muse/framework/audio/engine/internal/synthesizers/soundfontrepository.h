@@ -47,9 +47,9 @@ private:
 
     void doAddSoundFont(const SoundFontUri &uri, const SoundFontsMap *cache = nullptr, std::function<void()> onFinished = nullptr);
 
-    SoundFontsMap m_soundFonts;
+    SoundFontsMap soundFonts_;
 
-    size_t m_loadingSoundFontCount = 0;
-    std::function<void()> m_onSoundFontsChanged;
+    size_t loadingSoundFontCount_ = 0;
+    std::function<void()> onSoundFontsChanged_;
 };
 } // namespace muse::audio::synth

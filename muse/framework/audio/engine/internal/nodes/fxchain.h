@@ -51,9 +51,9 @@ private:
 
     void updateShouldProcessDuringSilence();
 
-    AudioFxChain m_fxChainSpec;
+    AudioFxChain fxChainSpec_;
 
-    bool m_shouldProcessDuringSilence = false;
+    bool shouldProcessDuringSilence_ = false;
 };
 
 using FxChainPtr = std::shared_ptr<FxChain>;

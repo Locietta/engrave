@@ -41,7 +41,7 @@ public:
 
     TripletFeel *clone() const override { return new TripletFeel(*this); }
 
-    TripletFeelType getTripletFeelType() const { return m_tripletFeelType; }
+    TripletFeelType getTripletFeelType() const { return tripletFeelType_; }
 
     PropertyValue propertyDefault(Pid propertyId) const override;
     Sid getPropertyStyle(Pid id) const override;
@@ -57,6 +57,6 @@ private:
     constexpr static int scottishRatio = 25;
     constexpr static int zeroRatio = 0;
 
-    TripletFeelType m_tripletFeelType = TripletFeelType::NONE;
+    TripletFeelType tripletFeelType_ = TripletFeelType::NONE;
 };
 } // namespace mu::engraving

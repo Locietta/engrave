@@ -98,13 +98,13 @@ void SkylineLine::add(const Shape &s) {
 SkylineLine SkylineLine::getFilteredCopy(std::function<bool(const ShapeElement &)> filterOut) const {
     SkylineLine newSkylineLine(*this);
 
-    newSkylineLine.m_shape.clear();
+    newSkylineLine.shape_.clear();
 
-    for (const ShapeElement &shapeEl : m_shape.elements()) {
+    for (const ShapeElement &shapeEl : shape_.elements()) {
         if (filterOut(shapeEl)) {
             continue;
         }
-        newSkylineLine.m_shape.add(shapeEl);
+        newSkylineLine.shape_.add(shapeEl);
     }
 
     return newSkylineLine;
@@ -123,27 +123,27 @@ void SkylineLine::add(const ShapeElement &r) {
 
     if (r.item() && r.item()->isStaffLines()) {
         if (!(muse::RealIsEqual(top, staffLinesTop) && muse::RealIsEqual(bottom, staffLinesBottom))) {
-            m_staffLineEdges.emplace(round(x), StaffLineEdge(top, bottom));
+            staffLineEdges_.emplace(round(x), StaffLineEdge(top, bottom));
         }
     } else if (hasValidStaffLineEdges()) {
-        if (m_isNorth && muse::RealIsEqualOrMore(top, staffLinesTop)) {
+        if (isNorth_ && muse::RealIsEqualOrMore(top, staffLinesTop)) {
             return; // Only add if it pokes above the staff
         }
-        if (!m_isNorth && muse::RealIsEqualOrLess(bottom, staffLinesBottom)) {
+        if (!isNorth_ && muse::RealIsEqualOrLess(bottom, staffLinesBottom)) {
             return; // Only add if it pokes below the staff
         }
     }
 
-    m_shape.add(r);
+    shape_.add(r);
 }
 
 double SkylineLine::staffLinesTopAtX(double x) const {
-    if (m_staffLineEdges.empty()) {
+    if (staffLineEdges_.empty()) {
         return 0.0;
     }
 
-    auto upperBound = m_staffLineEdges.upper_bound(std::round(x)); // iterator to first element in map with key larger than x
-    if (upperBound != m_staffLineEdges.begin()) {
+    auto upperBound = staffLineEdges_.upper_bound(std::round(x)); // iterator to first element in map with key larger than x
+    if (upperBound != staffLineEdges_.begin()) {
         --upperBound; // back by one (i.e. get last element with key smaller than x)
     }
 
@@ -151,12 +151,12 @@ double SkylineLine::staffLinesTopAtX(double x) const {
 }
 
 double SkylineLine::staffLinesBottomAtX(double x) const {
-    if (m_staffLineEdges.empty()) {
+    if (staffLineEdges_.empty()) {
         return 0.0;
     }
 
-    auto upperBound = m_staffLineEdges.upper_bound(std::round(x)); // iterator to first element in map with key larger than x
-    if (upperBound != m_staffLineEdges.begin()) {
+    auto upperBound = staffLineEdges_.upper_bound(std::round(x)); // iterator to first element in map with key larger than x
+    if (upperBound != staffLineEdges_.begin()) {
         --upperBound; // back by one (i.e. get last element with key smaller than x)
     }
 
@@ -175,8 +175,8 @@ void Skyline::clear() {
 }
 
 void SkylineLine::clear() {
-    m_staffLineEdges.clear();
-    m_shape.clear();
+    staffLineEdges_.clear();
+    shape_.clear();
 }
 
 //-------------------------------------------------------------------
@@ -190,20 +190,20 @@ double Skyline::minDistance(const Skyline &s, double minHorizontalClearance) con
 }
 
 double SkylineLine::minDistance(const SkylineLine &sl, double minHorizontalClearance) const {
-    return m_shape.minVerticalDistance(sl.m_shape, minHorizontalClearance);
+    return shape_.minVerticalDistance(sl.shape_, minHorizontalClearance);
 }
 
 double SkylineLine::minDistanceToShapeAbove(const Shape &shapeAbove, double minHorizontalClearance) const {
-    return shapeAbove.minVerticalDistance(m_shape, minHorizontalClearance);
+    return shapeAbove.minVerticalDistance(shape_, minHorizontalClearance);
 }
 
 double SkylineLine::minDistanceToShapeBelow(const Shape &shapeBelow, double minHorizontalClearance) const {
-    return m_shape.minVerticalDistance(shapeBelow, minHorizontalClearance);
+    return shape_.minVerticalDistance(shapeBelow, minHorizontalClearance);
 }
 
-double SkylineLine::verticalClearanceAbove(const Shape &shapeAbove) const { return shapeAbove.verticalClearance(m_shape); }
+double SkylineLine::verticalClearanceAbove(const Shape &shapeAbove) const { return shapeAbove.verticalClearance(shape_); }
 
-double SkylineLine::verticalClearanceBelow(const Shape &shapeBelow) const { return m_shape.verticalClearance(shapeBelow); }
+double SkylineLine::verticalClearanceBelow(const Shape &shapeBelow) const { return shape_.verticalClearance(shapeBelow); }
 
 void Skyline::paint(Painter &painter, double lineWidth) const // DEBUG only
 {
@@ -240,16 +240,16 @@ void Skyline::paint(Painter &painter, double lineWidth) const // DEBUG only
     painter.restore();
 }
 
-bool SkylineLine::valid() const { return !m_shape.empty(); }
+bool SkylineLine::valid() const { return !shape_.empty(); }
 
 SkylineLine &SkylineLine::translateY(double y) {
-    m_shape.translateY(y);
+    shape_.translateY(y);
     return *this;
 }
 
 double SkylineLine::top(double startX, double endX) {
     double top = DBL_MAX;
-    for (const ShapeElement &element : m_shape.elements()) {
+    for (const ShapeElement &element : shape_.elements()) {
         if (element.right() > startX && element.left() < endX) {
             top = std::min(top, element.top());
         }
@@ -264,7 +264,7 @@ double SkylineLine::top(double startX, double endX) {
 
 double SkylineLine::bottom(double startX, double endX) {
     double bottom = -DBL_MAX;
-    for (const ShapeElement &element : m_shape.elements()) {
+    for (const ShapeElement &element : shape_.elements()) {
         if (element.right() > startX && element.left() < endX) {
             bottom = std::max(bottom, element.bottom());
         }
@@ -277,7 +277,7 @@ double SkylineLine::bottom(double startX, double endX) {
     return bottom;
 }
 
-double SkylineLine::max() const { return m_isNorth ? m_shape.top() : m_shape.bottom(); }
+double SkylineLine::max() const { return isNorth_ ? shape_.top() : shape_.bottom(); }
 } // namespace mu::engraving
 
 std::string mu::engraving::dump(const Skyline &skyline) {

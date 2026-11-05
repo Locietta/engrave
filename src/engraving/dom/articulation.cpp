@@ -57,11 +57,11 @@ static const ElementStyle articulationStyle{
 //---------------------------------------------------------
 
 Articulation::Articulation(DummyParentOr<ChordRest> parent, ElementType type) : EngravingItem(type, parent, ElementFlag::MOVABLE) {
-    m_symId = SymId::noSym;
-    m_anchor = ArticulationAnchor::AUTO;
-    m_direction = DirectionV::AUTO;
-    m_ornamentStyle = OrnamentStyle::DEFAULT;
-    m_playArticulation = true;
+    symId_ = SymId::noSym;
+    anchor_ = ArticulationAnchor::AUTO;
+    direction_ = DirectionV::AUTO;
+    ornamentStyle_ = OrnamentStyle::DEFAULT;
+    playArticulation_ = true;
 
     initElementStyle(&articulationStyle);
     setupShowOnTabStyles();
@@ -72,30 +72,30 @@ Articulation::Articulation(DummyParentOr<ChordRest> parent, ElementType type) : 
 //---------------------------------------------------------
 
 void Articulation::setSymId(SymId id) {
-    m_symId = id;
+    symId_ = id;
     computeCategories();
     setupShowOnTabStyles();
-    m_anchor = ArticulationAnchor(propertyDefault(Pid::ARTICULATION_ANCHOR).toInt());
-    m_textType = ArticulationTextType::NO_TEXT;
+    anchor_ = ArticulationAnchor(propertyDefault(Pid::ARTICULATION_ANCHOR).toInt());
+    textType_ = ArticulationTextType::NO_TEXT;
 }
 
 //---------------------------------------------------------
 //   setTextType
 //---------------------------------------------------------
 
-void Articulation::setTextType(ArticulationTextType textType) { m_textType = textType; }
+void Articulation::setTextType(ArticulationTextType textType) { textType_ = textType; }
 
 void Articulation::setSelected(bool f) {
-    if (m_text) {
-        m_text->setSelected(f);
+    if (text_) {
+        text_->setSelected(f);
     }
 
     EngravingItem::setSelected(f);
 }
 
 void Articulation::setVisible(bool f) {
-    if (m_text) {
-        m_text->setVisible(f);
+    if (text_) {
+        text_->setVisible(f);
     }
 
     EngravingItem::setVisible(f);
@@ -106,17 +106,17 @@ void Articulation::setVisible(bool f) {
 //---------------------------------------------------------
 
 int Articulation::subtype() const {
-    if (m_textType != ArticulationTextType::NO_TEXT) {
-        return int(m_textType);
+    if (textType_ != ArticulationTextType::NO_TEXT) {
+        return int(textType_);
     }
-    String s = String::fromAscii(SymNames::nameForSymId(m_symId).ascii());
+    String s = String::fromAscii(SymNames::nameForSymId(symId_).ascii());
     if (s.endsWith(u"Below")) {
         return int(SymNames::symIdByName(s.left(s.size() - 5) + u"Above"));
     } else if (s.endsWith(u"Turned")) {
         return int(SymNames::symIdByName(s.left(s.size() - 6)));
     }
 
-    return int(m_symId);
+    return int(symId_);
 }
 
 //---------------------------------------------------------
@@ -127,30 +127,30 @@ void Articulation::setUp(bool val) {
     Articulation::LayoutData *ldata = mutldata();
     ldata->up = val;
 
-    //! NOTE member of Articulation m_symId - this is `given` data
-    //! member of LayoutData m_symId - this is layout data
+    //! NOTE member of Articulation symId_ - this is `given` data
+    //! member of LayoutData symId_ - this is layout data
     //! I would not like to change the `given` data here, but they are changing for backward compatibility
     //! Even better, I wouldn’t want symId to be `given` data,
     //! it would be better if there was some type,
     //! and from it we would already figure out how (with what symbol) to display it
 
-    bool dup = m_direction == DirectionV::AUTO ? val : m_direction == DirectionV::UP;
-    String s = String::fromAscii(SymNames::nameForSymId(m_symId).ascii());
+    bool dup = direction_ == DirectionV::AUTO ? val : direction_ == DirectionV::UP;
+    String s = String::fromAscii(SymNames::nameForSymId(symId_).ascii());
     if (s.endsWith(!dup ? u"Above" : u"Below")) {
         String s2 = s.left(s.size() - 5) + (dup ? u"Above" : u"Below");
-        m_symId = SymNames::symIdByName(s2);
+        symId_ = SymNames::symIdByName(s2);
     } else if (s.endsWith(u"Turned")) {
         String s2 = dup ? s.left(s.size() - 6) : s;
-        m_symId = SymNames::symIdByName(s2);
+        symId_ = SymNames::symIdByName(s2);
     } else if (!dup) {
         String s2 = s + u"Turned";
         SymId sym = SymNames::symIdByName(s2);
         if (sym != SymId::noSym) {
-            m_symId = sym;
+            symId_ = sym;
         }
     }
 
-    ldata->symId = m_symId;
+    ldata->symId = symId_;
 }
 
 //---------------------------------------------------------
@@ -158,7 +158,7 @@ void Articulation::setUp(bool val) {
 //---------------------------------------------------------
 
 muse::TranslatableString Articulation::typeUserName() const {
-    if (m_textType != ArticulationTextType::NO_TEXT) {
+    if (textType_ != ArticulationTextType::NO_TEXT) {
         return TranslatableString("engraving", "Articulation text");
     }
 
@@ -170,8 +170,8 @@ muse::TranslatableString Articulation::typeUserName() const {
 //---------------------------------------------------------
 
 muse::TranslatableString Articulation::subtypeUserName() const {
-    if (m_textType != ArticulationTextType::NO_TEXT) {
-        return TConv::userName(m_textType);
+    if (textType_ != ArticulationTextType::NO_TEXT) {
+        return TConv::userName(textType_);
     }
 
     return SymNames::userNameForSymId(symId());
@@ -222,7 +222,7 @@ Page *Articulation::page() const {
 }
 
 bool Articulation::isHiddenOnTabStaff() const {
-    if (m_showOnTabStyles.first == Sid::NOSTYLE || m_showOnTabStyles.second == Sid::NOSTYLE) {
+    if (showOnTabStyles_.first == Sid::NOSTYLE || showOnTabStyles_.second == Sid::NOSTYLE) {
         return false;
     }
 
@@ -232,7 +232,7 @@ bool Articulation::isHiddenOnTabStaff() const {
         return false;
     }
 
-    return stType->isHiddenElementOnTab(m_showOnTabStyles.first, m_showOnTabStyles.second);
+    return stType->isHiddenElementOnTab(showOnTabStyles_.first, showOnTabStyles_.second);
 }
 
 //---------------------------------------------------------
@@ -257,7 +257,7 @@ bool Articulation::layoutCloseToNote() const {
 
 PropertyValue Articulation::getProperty(Pid propertyId) const {
     switch (propertyId) {
-        case Pid::SYMBOL: return PropertyValue::fromValue(m_symId);
+        case Pid::SYMBOL: return PropertyValue::fromValue(symId_);
         case Pid::DIRECTION: return PropertyValue::fromValue<DirectionV>(direction());
         case Pid::ARTICULATION_ANCHOR: return int(anchor());
         case Pid::ORNAMENT_STYLE: return ornamentStyle();
@@ -430,7 +430,7 @@ String Articulation::symId2ArticulationName(SymId symId) {
 //   articulationName
 //---------------------------------------------------------
 
-String Articulation::articulationName() const { return symId2ArticulationName(m_symId); }
+String Articulation::articulationName() const { return symId2ArticulationName(symId_); }
 
 //---------------------------------------------------------
 //   getPropertyStyle
@@ -445,7 +445,7 @@ Sid Articulation::getPropertyStyle(Pid id) const {
                 return Sid::articulationAnchorDefault;
             }
 
-            switch (anchorGroup(m_symId)) {
+            switch (anchorGroup(symId_)) {
                 case AnchorGroup::ARTICULATION: return Sid::articulationAnchorDefault;
                 case AnchorGroup::LUTE_FINGERING: return Sid::articulationAnchorLuteFingering;
                 case AnchorGroup::OTHER: return Sid::articulationAnchorOther;
@@ -479,47 +479,46 @@ void Articulation::resetProperty(Pid id) {
 double Articulation::mag() const { return layoutParent() ? layoutParent()->mag() * style().styleD(Sid::articulationMag) : 1.0; }
 
 void Articulation::computeCategories() {
-    m_categories.setFlag(ArticulationCategory::DOUBLE,
-                         m_symId == SymId::articMarcatoStaccatoAbove || m_symId == SymId::articMarcatoStaccatoBelow ||
-                             m_symId == SymId::articTenutoStaccatoAbove || m_symId == SymId::articTenutoStaccatoBelow ||
-                             m_symId == SymId::articAccentStaccatoAbove || m_symId == SymId::articAccentStaccatoBelow ||
-                             m_symId == SymId::articMarcatoTenutoAbove || m_symId == SymId::articMarcatoTenutoBelow ||
-                             m_symId == SymId::articTenutoAccentAbove || m_symId == SymId::articTenutoAccentBelow);
+    categories_.setFlag(ArticulationCategory::DOUBLE,
+                        symId_ == SymId::articMarcatoStaccatoAbove || symId_ == SymId::articMarcatoStaccatoBelow ||
+                            symId_ == SymId::articTenutoStaccatoAbove || symId_ == SymId::articTenutoStaccatoBelow ||
+                            symId_ == SymId::articAccentStaccatoAbove || symId_ == SymId::articAccentStaccatoBelow ||
+                            symId_ == SymId::articMarcatoTenutoAbove || symId_ == SymId::articMarcatoTenutoBelow ||
+                            symId_ == SymId::articTenutoAccentAbove || symId_ == SymId::articTenutoAccentBelow);
 
-    m_categories.setFlag(ArticulationCategory::TENUTO,
-                         m_symId == SymId::articTenutoAbove || m_symId == SymId::articTenutoBelow ||
-                             m_symId == SymId::articMarcatoTenutoAbove || m_symId == SymId::articMarcatoTenutoBelow ||
-                             m_symId == SymId::articTenutoAccentAbove || m_symId == SymId::articTenutoAccentBelow);
+    categories_.setFlag(ArticulationCategory::TENUTO,
+                        symId_ == SymId::articTenutoAbove || symId_ == SymId::articTenutoBelow ||
+                            symId_ == SymId::articMarcatoTenutoAbove || symId_ == SymId::articMarcatoTenutoBelow ||
+                            symId_ == SymId::articTenutoAccentAbove || symId_ == SymId::articTenutoAccentBelow);
 
-    m_categories.setFlag(ArticulationCategory::STACCATO,
-                         m_symId == SymId::articStaccatoAbove || m_symId == SymId::articStaccatoBelow ||
-                             m_symId == SymId::articMarcatoStaccatoAbove || m_symId == SymId::articMarcatoStaccatoBelow ||
-                             m_symId == SymId::articTenutoStaccatoAbove || m_symId == SymId::articTenutoStaccatoBelow ||
-                             m_symId == SymId::articAccentStaccatoAbove || m_symId == SymId::articAccentStaccatoBelow ||
-                             m_symId == SymId::tremoloDivisiDots2 || m_symId == SymId::tremoloDivisiDots3 ||
-                             m_symId == SymId::tremoloDivisiDots4 || m_symId == SymId::tremoloDivisiDots6);
+    categories_.setFlag(ArticulationCategory::STACCATO,
+                        symId_ == SymId::articStaccatoAbove || symId_ == SymId::articStaccatoBelow ||
+                            symId_ == SymId::articMarcatoStaccatoAbove || symId_ == SymId::articMarcatoStaccatoBelow ||
+                            symId_ == SymId::articTenutoStaccatoAbove || symId_ == SymId::articTenutoStaccatoBelow ||
+                            symId_ == SymId::articAccentStaccatoAbove || symId_ == SymId::articAccentStaccatoBelow ||
+                            symId_ == SymId::tremoloDivisiDots2 || symId_ == SymId::tremoloDivisiDots3 ||
+                            symId_ == SymId::tremoloDivisiDots4 || symId_ == SymId::tremoloDivisiDots6);
 
-    m_categories.setFlag(ArticulationCategory::ACCENT, m_symId == SymId::articAccentAbove || m_symId == SymId::articAccentBelow ||
-                                                           m_symId == SymId::articAccentStaccatoAbove ||
-                                                           m_symId == SymId::articAccentStaccatoBelow);
+    categories_.setFlag(ArticulationCategory::ACCENT, symId_ == SymId::articAccentAbove || symId_ == SymId::articAccentBelow ||
+                                                          symId_ == SymId::articAccentStaccatoAbove ||
+                                                          symId_ == SymId::articAccentStaccatoBelow);
 
-    m_categories.setFlag(ArticulationCategory::MARCATO,
-                         m_symId == SymId::articMarcatoAbove || m_symId == SymId::articMarcatoBelow ||
-                             m_symId == SymId::articMarcatoStaccatoAbove || m_symId == SymId::articMarcatoStaccatoBelow ||
-                             m_symId == SymId::articMarcatoTenutoAbove || m_symId == SymId::articMarcatoTenutoBelow);
+    categories_.setFlag(ArticulationCategory::MARCATO,
+                        symId_ == SymId::articMarcatoAbove || symId_ == SymId::articMarcatoBelow ||
+                            symId_ == SymId::articMarcatoStaccatoAbove || symId_ == SymId::articMarcatoStaccatoBelow ||
+                            symId_ == SymId::articMarcatoTenutoAbove || symId_ == SymId::articMarcatoTenutoBelow);
 
-    m_categories.setFlag(ArticulationCategory::LUTE_FINGERING,
-                         m_symId == SymId::stringsThumbPosition || m_symId == SymId::luteFingeringRHThumb ||
-                             m_symId == SymId::luteFingeringRHFirst || m_symId == SymId::luteFingeringRHSecond ||
-                             m_symId == SymId::luteFingeringRHThird);
-    m_categories.setFlag(ArticulationCategory::LAISSEZ_VIB,
-                         m_symId == SymId::articLaissezVibrerAbove || m_symId == SymId::articLaissezVibrerBelow);
+    categories_.setFlag(ArticulationCategory::LUTE_FINGERING,
+                        symId_ == SymId::stringsThumbPosition || symId_ == SymId::luteFingeringRHThumb ||
+                            symId_ == SymId::luteFingeringRHFirst || symId_ == SymId::luteFingeringRHSecond ||
+                            symId_ == SymId::luteFingeringRHThird);
+    categories_.setFlag(ArticulationCategory::LAISSEZ_VIB,
+                        symId_ == SymId::articLaissezVibrerAbove || symId_ == SymId::articLaissezVibrerBelow);
 
-    m_categories.setFlag(ArticulationCategory::HANDBELLS,
-                         (static_cast<int>(m_symId) >= static_cast<int>(SymId::handbellsBelltree) &&
-                          static_cast<int>(m_symId) <= static_cast<int>(SymId::handbellsTableSingleBell)) ||
-                             (static_cast<int>(m_textType) >= static_cast<int>(ArticulationTextType::TD) &&
-                              static_cast<int>(m_textType) <= static_cast<int>(ArticulationTextType::VIB)));
+    categories_.setFlag(ArticulationCategory::HANDBELLS, (static_cast<int>(symId_) >= static_cast<int>(SymId::handbellsBelltree) &&
+                                                          static_cast<int>(symId_) <= static_cast<int>(SymId::handbellsTableSingleBell)) ||
+                                                             (static_cast<int>(textType_) >= static_cast<int>(ArticulationTextType::TD) &&
+                                                              static_cast<int>(textType_) <= static_cast<int>(ArticulationTextType::VIB)));
 }
 
 bool Articulation::isBasicArticulation() const {
@@ -561,41 +560,41 @@ bool Articulation::isBasicArticulation() const {
 void Articulation::setupShowOnTabStyles() {
     /// staccato
     if (isStaccato()) {
-        m_showOnTabStyles = {Sid::staccatoShowTabCommon, Sid::staccatoShowTabSimple};
+        showOnTabStyles_ = {Sid::staccatoShowTabCommon, Sid::staccatoShowTabSimple};
     }
 
     /// accent
     if (isAccent() || isMarcato()) {
-        m_showOnTabStyles = {Sid::accentShowTabCommon, Sid::accentShowTabSimple};
+        showOnTabStyles_ = {Sid::accentShowTabCommon, Sid::accentShowTabSimple};
     }
 
     /// turn
-    if (m_symId == SymId::ornamentTurn || m_symId == SymId::ornamentTurnInverted) {
-        m_showOnTabStyles = {Sid::turnShowTabCommon, Sid::turnShowTabSimple};
+    if (symId_ == SymId::ornamentTurn || symId_ == SymId::ornamentTurnInverted) {
+        showOnTabStyles_ = {Sid::turnShowTabCommon, Sid::turnShowTabSimple};
     }
 
     /// mordent
-    if (m_symId == SymId::ornamentMordent || m_symId == SymId::ornamentShortTrill) {
-        m_showOnTabStyles = {Sid::mordentShowTabCommon, Sid::mordentShowTabSimple};
+    if (symId_ == SymId::ornamentMordent || symId_ == SymId::ornamentShortTrill) {
+        showOnTabStyles_ = {Sid::mordentShowTabCommon, Sid::mordentShowTabSimple};
     }
 
     /// wah
-    if (m_symId == SymId::brassMuteOpen || m_symId == SymId::brassMuteClosed) {
-        m_showOnTabStyles = {Sid::wahShowTabCommon, Sid::wahShowTabSimple};
+    if (symId_ == SymId::brassMuteOpen || symId_ == SymId::brassMuteClosed) {
+        showOnTabStyles_ = {Sid::wahShowTabCommon, Sid::wahShowTabSimple};
     }
 
     /// golpe
-    if (m_symId == SymId::guitarGolpe) {
-        m_showOnTabStyles = {Sid::golpeShowTabCommon, Sid::golpeShowTabSimple};
+    if (symId_ == SymId::guitarGolpe) {
+        showOnTabStyles_ = {Sid::golpeShowTabCommon, Sid::golpeShowTabSimple};
     }
 }
 
 void Articulation::styleChanged() {
-    if (m_text) {
-        m_text->styleChanged();
+    if (text_) {
+        text_->styleChanged();
     }
 
-    bool isGolpeThumb = m_symId == SymId::guitarGolpe && m_anchor == ArticulationAnchor::BOTTOM;
+    bool isGolpeThumb = symId_ == SymId::guitarGolpe && anchor_ == ArticulationAnchor::BOTTOM;
     EngravingItem::styleChanged();
     if (isGolpeThumb) {
         setAnchor(ArticulationAnchor::BOTTOM);
@@ -843,9 +842,9 @@ std::set<SymId> flipArticulations(const std::set<SymId> &articulationSymbolIds, 
 
 double Articulation::LayoutData::opticalCenter() const {
     switch (symId.value()) {
-        case SymId::handbellsMartellatoLift: return 0.5 * m_item->symWidth(SymId::handbellsMartellato);
-        case SymId::handbellsMalletLft: return 0.5 * m_item->symWidth(SymId::handbellsMalletBellOnTable);
-        case SymId::handbellsPluckLift: return 0.5 * m_item->symWidth(SymId::articStaccatoAbove);
+        case SymId::handbellsMartellatoLift: return 0.5 * item_->symWidth(SymId::handbellsMartellato);
+        case SymId::handbellsMalletLft: return 0.5 * item_->symWidth(SymId::handbellsMalletBellOnTable);
+        case SymId::handbellsPluckLift: return 0.5 * item_->symWidth(SymId::articStaccatoAbove);
         default: return 0.5 * bbox().width();
     }
 }

@@ -42,34 +42,34 @@ static const DummyGlyph &dummyGlyph() {
     return g;
 }
 
-FontFaceDU::FontFaceDU(IFontFace *origin) : m_origin(origin) {}
+FontFaceDU::FontFaceDU(IFontFace *origin) : origin_(origin) {}
 
-FontFaceDU::~FontFaceDU() { delete m_origin; }
+FontFaceDU::~FontFaceDU() { delete origin_; }
 
 bool FontFaceDU::load(const FaceKey &key, const FontData &fontData, bool isSymbolMode) {
-    return m_origin->load(key, fontData, isSymbolMode);
+    return origin_->load(key, fontData, isSymbolMode);
 }
 
-const FaceKey &FontFaceDU::key() const { return m_origin->key(); }
+const FaceKey &FontFaceDU::key() const { return origin_->key(); }
 
-bool FontFaceDU::isSymbolMode() const { return m_origin->isSymbolMode(); }
+bool FontFaceDU::isSymbolMode() const { return origin_->isSymbolMode(); }
 
-f26dot6_t FontFaceDU::leading() const { return m_origin->leading(); }
+f26dot6_t FontFaceDU::leading() const { return origin_->leading(); }
 
-f26dot6_t FontFaceDU::ascent() const { return m_origin->ascent(); }
+f26dot6_t FontFaceDU::ascent() const { return origin_->ascent(); }
 
-f26dot6_t FontFaceDU::descent() const { return m_origin->descent(); }
+f26dot6_t FontFaceDU::descent() const { return origin_->descent(); }
 
-f26dot6_t FontFaceDU::xHeight() const { return m_origin->xHeight(); }
+f26dot6_t FontFaceDU::xHeight() const { return origin_->xHeight(); }
 
-f26dot6_t FontFaceDU::capHeight() const { return m_origin->capHeight(); }
+f26dot6_t FontFaceDU::capHeight() const { return origin_->capHeight(); }
 
-f26dot6_t FontFaceDU::underlinePos() const { return m_origin->underlinePos(); }
+f26dot6_t FontFaceDU::underlinePos() const { return origin_->underlinePos(); }
 
-f26dot6_t FontFaceDU::lineWidth() const { return m_origin->lineWidth(); }
+f26dot6_t FontFaceDU::lineWidth() const { return origin_->lineWidth(); }
 
 std::vector<ShapedGlyph> FontFaceDU::glyphs(const char32_t *text, int text_length) const {
-    std::vector<ShapedGlyph> glyphs = m_origin->glyphs(text, text_length);
+    std::vector<ShapedGlyph> glyphs = origin_->glyphs(text, text_length);
     std::vector<ShapedGlyph> ret;
     ret.reserve(glyphs.size());
     for (ShapedGlyph &gp : glyphs) {
@@ -81,24 +81,24 @@ std::vector<ShapedGlyph> FontFaceDU::glyphs(const char32_t *text, int text_lengt
     return ret;
 }
 
-glyph_idx_t FontFaceDU::glyphIndex(char32_t ucs4) const { return m_origin->glyphIndex(ucs4); }
+glyph_idx_t FontFaceDU::glyphIndex(char32_t ucs4) const { return origin_->glyphIndex(ucs4); }
 
-glyph_idx_t FontFaceDU::glyphIndex(const std::string &glyphName) const { return m_origin->glyphIndex(glyphName); }
+glyph_idx_t FontFaceDU::glyphIndex(const std::string &glyphName) const { return origin_->glyphIndex(glyphName); }
 
-char32_t FontFaceDU::findCharCode(glyph_idx_t idx) const { return m_origin->findCharCode(idx); }
+char32_t FontFaceDU::findCharCode(glyph_idx_t idx) const { return origin_->findCharCode(idx); }
 
 FBBox FontFaceDU::glyphBbox(glyph_idx_t idx) const {
     if (idx == 0) {
-        return m_origin->isSymbolMode() ? dummyGlyph().symBbox : dummyGlyph().textBbox;
+        return origin_->isSymbolMode() ? dummyGlyph().symBbox : dummyGlyph().textBbox;
     }
-    return m_origin->glyphBbox(idx);
+    return origin_->glyphBbox(idx);
 }
 
 f26dot6_t FontFaceDU::glyphAdvance(glyph_idx_t idx) const {
     if (idx == 0) {
-        return m_origin->isSymbolMode() ? dummyGlyph().symAdvance : dummyGlyph().textAdvance;
+        return origin_->isSymbolMode() ? dummyGlyph().symAdvance : dummyGlyph().textAdvance;
     }
-    return m_origin->glyphAdvance(idx);
+    return origin_->glyphAdvance(idx);
 }
 
 const GlyphImage &FontFaceDU::glyphImage(glyph_idx_t idx) const {
@@ -107,5 +107,5 @@ const GlyphImage &FontFaceDU::glyphImage(glyph_idx_t idx) const {
         return emptyImage;
     }
 
-    return m_origin->glyphImage(idx);
+    return origin_->glyphImage(idx);
 }

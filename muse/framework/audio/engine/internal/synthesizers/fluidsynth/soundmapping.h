@@ -969,53 +969,53 @@ struct ChannelMap {
 
     void init(const mpe::PlaybackSetupData &setupData, const std::optional<midi::Program> &programOverride,
               const midi::channel_t maxChannels) {
-        m_maxChannels = maxChannels;
-        m_programOverride = programOverride;
-        m_usesStaffLayers = setupData.supportsSingleNoteDynamics;
+        maxChannels_ = maxChannels;
+        programOverride_ = programOverride;
+        usesStaffLayers_ = setupData.supportsSingleNoteDynamics;
 
-        if (m_programOverride.has_value()) {
-            resolveChannel(0, mpe::ArticulationType::Standard, m_programOverride.value());
+        if (programOverride_.has_value()) {
+            resolveChannel(0, mpe::ArticulationType::Standard, programOverride_.value());
         }
 
-        m_standardPrograms = findPrograms(setupData);
-        m_articulationMapping = articulationSounds(setupData);
+        standardPrograms_ = findPrograms(setupData);
+        articulationMapping_ = articulationSounds(setupData);
 
-        if (m_standardPrograms.empty()) {
+        if (standardPrograms_.empty()) {
             return;
         }
 
         //!Note ensuring that the default channel being pre-initialized
-        const midi::Program &standardProgram = m_standardPrograms.at(0);
+        const midi::Program &standardProgram = standardPrograms_.at(0);
         resolveChannel(0, mpe::ArticulationType::Standard, standardProgram);
     }
 
     midi::channel_t resolveChannelForEvent(const mpe::NoteEvent &event) {
         //! NOTE: without single-note dynamics, voices don't need their own channel per staff
-        const mpe::staff_layer_idx_t staffIdx = m_usesStaffLayers ? event.arrangementCtx().staffLayerIndex : 0;
+        const mpe::staff_layer_idx_t staffIdx = usesStaffLayers_ ? event.arrangementCtx().staffLayerIndex : 0;
         const mpe::layer_idx_t layerIdx = mpe::makeLayerIdx(staffIdx, event.arrangementCtx().voiceLayerIndex);
 
-        if (m_programOverride.has_value()) {
-            return resolveChannel(layerIdx, mpe::ArticulationType::Standard, m_programOverride.value());
+        if (programOverride_.has_value()) {
+            return resolveChannel(layerIdx, mpe::ArticulationType::Standard, programOverride_.value());
         }
 
-        if (m_standardPrograms.empty()) {
+        if (standardPrograms_.empty()) {
             return 0;
         }
 
-        const midi::Program &standardProgram = m_standardPrograms.at(0);
+        const midi::Program &standardProgram = standardPrograms_.at(0);
 
         //! NOTE: always resolve the layer's own channel first: it must exist so that articulation
         //! channels below have somewhere to fall back to once the channel budget runs out
         const midi::channel_t standardChannel = resolveChannel(layerIdx, mpe::ArticulationType::Standard, standardProgram);
 
         if (event.expressionCtx().articulations.contains(mpe::ArticulationType::Standard) || event.expressionCtx().articulations.empty() ||
-            m_articulationMapping.empty()) {
+            articulationMapping_.empty()) {
             return standardChannel;
         }
 
         for (const auto &pair : event.expressionCtx().articulations) {
-            auto search = m_articulationMapping.find(pair.first);
-            if (search == m_articulationMapping.cend()) {
+            auto search = articulationMapping_.find(pair.first);
+            if (search == articulationMapping_.cend()) {
                 continue;
             }
 
@@ -1025,9 +1025,9 @@ struct ChannelMap {
         return standardChannel;
     }
 
-    midi::channel_t channelCount() const { return m_channelCount; }
+    midi::channel_t channelCount() const { return channelCount_; }
 
-    const std::map<mpe::layer_idx_t, VoiceMappings> &data() const { return m_data; }
+    const std::map<mpe::layer_idx_t, VoiceMappings> &data() const { return data_; }
 
     // Called when a new channel is mapped, before its first event; the
     // synthesizer that owns the mapping programs the channel.
@@ -1035,11 +1035,11 @@ struct ChannelMap {
 
 private:
     //! Resolves the channel for a (layer, articulation) pair. Same-program articulations share a channel;
-    //! once m_maxChannels is exhausted, new ones fold onto the layer's own channel (fallbackChannel/fallbackProgram)
+    //! once maxChannels_ is exhausted, new ones fold onto the layer's own channel (fallbackChannel/fallbackProgram)
     midi::channel_t resolveChannel(const mpe::layer_idx_t layerIdx, const mpe::ArticulationType type, const midi::Program &program,
                                    const std::optional<midi::channel_t> &fallbackChannel = std::nullopt,
                                    const std::optional<midi::Program> &fallbackProgram = std::nullopt) {
-        VoiceMappings &mapping = m_data[layerIdx];
+        VoiceMappings &mapping = data_[layerIdx];
 
         auto it = mapping.find(type);
         if (it != mapping.cend()) {
@@ -1053,8 +1053,8 @@ private:
             }
         }
 
-        if (m_channelCount < m_maxChannels) {
-            const midi::channel_t channelIdx = m_channelCount++;
+        if (channelCount_ < maxChannels_) {
+            const midi::channel_t channelIdx = channelCount_++;
             mapping.insert({type, {channelIdx, program}});
             if (onChannelAdded) {
                 onChannelAdded(channelIdx, program);
@@ -1064,7 +1064,7 @@ private:
 
         //! NOTE: channel budget exhausted; prefer reusing a channel that already has this program
         //! over folding onto fallbackChannel, which may carry an unrelated layer's program
-        for (const auto &[otherLayerIdx, otherMapping] : m_data) {
+        for (const auto &[otherLayerIdx, otherMapping] : data_) {
             if (otherLayerIdx == layerIdx) {
                 continue;
             }
@@ -1081,21 +1081,21 @@ private:
         const midi::Program actualProgram = fallbackProgram.value_or(program);
         mapping.insert({type, {channelIdx, actualProgram}});
 
-        LOGW() << "Channel budget of " << m_maxChannels << " exhausted: layer " << layerIdx << ", articulation " << static_cast<int>(type)
+        LOGW() << "Channel budget of " << maxChannels_ << " exhausted: layer " << layerIdx << ", articulation " << static_cast<int>(type)
                << " reused channel " << channelIdx << " (wanted program " << program.bank << "/" << program.program << ", got "
                << actualProgram.bank << "/" << actualProgram.program << ")";
 
         return channelIdx;
     }
 
-    std::map<mpe::layer_idx_t, VoiceMappings> m_data;
-    midi::channel_t m_channelCount = 0;
-    midi::channel_t m_maxChannels = 16;
+    std::map<mpe::layer_idx_t, VoiceMappings> data_;
+    midi::channel_t channelCount_ = 0;
+    midi::channel_t maxChannels_ = 16;
 
-    bool m_usesStaffLayers = false;
-    std::optional<midi::Program> m_programOverride;
-    midi::Programs m_standardPrograms;
-    ArticulationMapping m_articulationMapping;
+    bool usesStaffLayers_ = false;
+    std::optional<midi::Program> programOverride_;
+    midi::Programs standardPrograms_;
+    ArticulationMapping articulationMapping_;
 };
 } // namespace muse::audio::synth
 

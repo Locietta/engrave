@@ -40,11 +40,11 @@ using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
 class CmdStateLocker {
-    Score *m_score = nullptr;
+    Score *score_ = nullptr;
 public:
-    CmdStateLocker(Score *s) : m_score(s) { m_score->cmdState().lock(); }
+    CmdStateLocker(Score *s) : score_(s) { score_->cmdState().lock(); }
 
-    ~CmdStateLocker() { m_score->cmdState().unlock(); }
+    ~CmdStateLocker() { score_->cmdState().unlock(); }
 };
 
 void ScoreLayout::layoutRange(Score *score, const Fraction &st, const Fraction &et) {

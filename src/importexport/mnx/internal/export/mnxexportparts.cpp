@@ -70,7 +70,7 @@ void MnxExporter::exportDrumsetKit(const Part *part, const Instrument *instrumen
     IF_ASSERT_FAILED(drumset) { return; }
 
     const Staff *staffForKit = part->staff(0);
-    const Measure *firstMeasure = m_score ? m_score->firstMeasure() : nullptr;
+    const Measure *firstMeasure = score_ ? score_->firstMeasure() : nullptr;
     const StaffType *staffType = nullptr;
     if (staffForKit && firstMeasure) {
         staffType = staffForKit->staffType(firstMeasure->tick());
@@ -81,7 +81,7 @@ void MnxExporter::exportDrumsetKit(const Part *part, const Instrument *instrumen
     const int middleLine = staffType ? staffType->middleLine() : 4;
 
     auto mnxKit = mnxPart.ensure_kit();
-    auto mnxSounds = m_mnxDocument.global().ensure_sounds();
+    auto mnxSounds = mnxDocument_.global().ensure_sounds();
 
     for (int pitch = 0; pitch < DRUM_INSTRUMENTS; ++pitch) {
         if (!drumset->isValid(pitch)) {
@@ -346,8 +346,8 @@ void MnxExporter::createHairpin(const Hairpin *hairpin) {
         return;
     }
 
-    const Staff *startStaff = m_score->staff(track2staff(hairpin->track()));
-    const Staff *endStaff = m_score->staff(track2staff(hairpin->effectiveTrack2()));
+    const Staff *startStaff = score_->staff(track2staff(hairpin->track()));
+    const Staff *endStaff = score_->staff(track2staff(hairpin->effectiveTrack2()));
     IF_ASSERT_FAILED(startStaff && startStaff->part()) {
         LOGW() << "Skipping hairpin with missing start staff or part context.";
         return;
@@ -357,14 +357,14 @@ void MnxExporter::createHairpin(const Hairpin *hairpin) {
         LOGW() << "Hairpin has no end staff and will be exported using the start staff/voice only.";
     }
 
-    const Measure *startMeasure = m_score->tick2measure(hairpin->tick());
+    const Measure *startMeasure = score_->tick2measure(hairpin->tick());
     IF_ASSERT_FAILED(startMeasure) {
         LOGW() << "Skipping hairpin with missing start measure for tick " << hairpin->tick().ticks() << ".";
         return;
     }
 
     const Fraction adjustedEndTick = hairpin->tick2() - Fraction::eps();
-    Measure *endMeasure = m_score->tick2measure(adjustedEndTick);
+    Measure *endMeasure = score_->tick2measure(adjustedEndTick);
     IF_ASSERT_FAILED(endMeasure) {
         LOGW() << "Skipping hairpin with missing end measure.";
         return;
@@ -486,7 +486,7 @@ void MnxExporter::createOttava(const Ottava *ottava) {
 
 void MnxExporter::exportSpanners() {
     const SpannerMap::IntervalList &spanners =
-        m_score->spannerMap().findOverlapping(m_score->firstMeasure()->tick().ticks(), m_score->lastMeasure()->endTick().ticks());
+        score_->spannerMap().findOverlapping(score_->firstMeasure()->tick().ticks(), score_->lastMeasure()->endTick().ticks());
 
     for (const auto &entry : spanners) {
         Spanner *sp = entry.value;
@@ -514,7 +514,7 @@ void MnxExporter::createArpeggios(const Part *part, const Measure *measure, mnx:
     const TrackRange trackRange = part->trackRange();
     std::unordered_set<const Arpeggio *> exportedArpeggios;
 
-    auto isExportedChord = [this](const Chord *chord) { return chord && m_crToMnxEvent.find(chord) != m_crToMnxEvent.end(); };
+    auto isExportedChord = [this](const Chord *chord) { return chord && crToMnxEvent_.find(chord) != crToMnxEvent_.end(); };
 
     auto isExportableEndpoint = [&](const Note *note) {
         if (!note || !isExportedChord(note->chord())) {
@@ -857,18 +857,18 @@ static bool exportMeasureRepeat(const Part *part, const Measure *measure, mnx::p
 //---------------------------------------------------------
 
 bool MnxExporter::createParts() {
-    if (!m_score) {
+    if (!score_) {
         return false;
     }
 
-    auto mnxParts = m_mnxDocument.parts();
-    m_staffToPartStaff.clear();
-    m_exportedStaves.clear();
+    auto mnxParts = mnxDocument_.parts();
+    staffToPartStaff_.clear();
+    exportedStaves_.clear();
     bool hasPart = false;
 
-    for (Part *part : m_score->parts()) {
+    for (Part *part : score_->parts()) {
         bool hasTabStaff = false;
-        const Measure *firstMeasure = m_score->firstMeasure();
+        const Measure *firstMeasure = score_->firstMeasure();
         const Fraction tick = firstMeasure ? firstMeasure->tick() : Fraction(0, 1);
         for (staff_idx_t s = 0; s < part->nstaves(); ++s) {
             if (const Staff *staff = part->staff(s)) {
@@ -916,13 +916,13 @@ bool MnxExporter::createParts() {
 
         for (staff_idx_t s = 0; s < part->nstaves(); ++s) {
             if (const Staff *staff = part->staff(s)) {
-                m_staffToPartStaff.emplace(staff->idx(), std::make_pair(mnxPart.calcArrayIndex(), static_cast<int>(s + 1)));
-                m_exportedStaves.push_back(m_score->staff(staff->idx()));
+                staffToPartStaff_.emplace(staff->idx(), std::make_pair(mnxPart.calcArrayIndex(), static_cast<int>(s + 1)));
+                exportedStaves_.push_back(score_->staff(staff->idx()));
             }
         }
 
         auto mnxMeasures = mnxPart.measures();
-        for (const Measure *measure = m_score->firstMeasure(); measure; measure = measure->nextMeasure()) {
+        for (const Measure *measure = score_->firstMeasure(); measure; measure = measure->nextMeasure()) {
             auto mnxMeasure = mnxMeasures.append();
 
             appendClefsForMeasure(part, measure, mnxMeasure);
@@ -940,16 +940,16 @@ bool MnxExporter::createParts() {
 
     exportSpanners();
 
-    if (!m_lyricLineIds.empty()) {
+    if (!lyricLineIds_.empty()) {
         auto mnxLyricsGlobal = mnxDocument().global().ensure_lyrics();
         /// @todo line metadata if MNX spec expands to include anything we can export.
         auto mnxLineOrder = mnxLyricsGlobal.ensure_lineOrder();
-        for (const auto &lineId : m_lyricLineIds) {
+        for (const auto &lineId : lyricLineIds_) {
             mnxLineOrder.push_back(lineId);
         }
     }
 
-    std::sort(m_exportedStaves.begin(), m_exportedStaves.end(), [](const Staff *lhs, const Staff *rhs) {
+    std::sort(exportedStaves_.begin(), exportedStaves_.end(), [](const Staff *lhs, const Staff *rhs) {
         if (!lhs || !rhs) {
             return lhs != nullptr;
         }

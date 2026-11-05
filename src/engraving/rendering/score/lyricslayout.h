@@ -39,16 +39,16 @@ namespace mu::engraving::rendering::score {
 class LyricsLayout {
     struct LyricsVerse {
     private:
-        std::vector<Lyrics *> m_lyrics;
-        std::vector<LyricsLineSegment *> m_lines;
+        std::vector<Lyrics *> lyrics_;
+        std::vector<LyricsLineSegment *> lines_;
     public:
-        void addLyrics(Lyrics *l) { m_lyrics.push_back(l); }
+        void addLyrics(Lyrics *l) { lyrics_.push_back(l); }
 
-        void addLine(LyricsLineSegment *lls) { m_lines.push_back(lls); }
+        void addLine(LyricsLineSegment *lls) { lines_.push_back(lls); }
 
-        const std::vector<Lyrics *> &lyrics() const { return m_lyrics; }
+        const std::vector<Lyrics *> &lyrics() const { return lyrics_; }
 
-        const std::vector<LyricsLineSegment *> &lines() const { return m_lines; }
+        const std::vector<LyricsLineSegment *> &lines() const { return lines_; }
     };
 
     using LyricsVersesMap = std::map<int, LyricsVerse>;

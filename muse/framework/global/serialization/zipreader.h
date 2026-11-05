@@ -59,8 +59,8 @@ public:
 
 private:
     struct Impl;
-    Impl *m_impl = nullptr;
-    io::path_t m_filePath;
+    Impl *impl_ = nullptr;
+    io::path_t filePath_;
 };
 
 class ZipUnpack {

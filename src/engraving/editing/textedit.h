@@ -45,7 +45,7 @@ public:
     String selectedPlainText;
     static constexpr const char *mimeRichTextFormat = "application/musescore/richtext";
 
-    TextEditData(TextBase *t) : m_textBase(t) {}
+    TextEditData(TextBase *t) : textBase_(t) {}
 
     TextEditData(const TextEditData &) = delete;
     TextEditData &operator=(const TextEditData &) = delete;
@@ -56,7 +56,7 @@ public:
     void setDeleteText(bool val) { deleteText = val; }
 
 private:
-    TextBase *m_textBase = nullptr;
+    TextBase *textBase_ = nullptr;
 };
 
 //---------------------------------------------------------
@@ -69,20 +69,20 @@ class TextEditUndoableCommand : public UndoableCommand {
 public:
     UNDO_TYPE(CommandType::TextEdit)
     UNDO_NAME("TextEdit")
-    UNDO_CHANGED_OBJECTS({m_cursor.text()})
+    UNDO_CHANGED_OBJECTS({cursor_.text()})
 
-    TextEditUndoableCommand(const TextCursor &tc) : m_cursor(tc) {}
+    TextEditUndoableCommand(const TextCursor &tc) : cursor_(tc) {}
 
     bool matchesFilter(UndoableCommandFilter f, const EngravingItem *target) const override {
-        return f == UndoableCommandFilter::TextEdit && m_cursor.text() == target;
+        return f == UndoableCommandFilter::TextEdit && cursor_.text() == target;
     }
 
-    TextCursor &cursor() { return m_cursor; }
+    TextCursor &cursor() { return cursor_; }
 
-    const TextCursor &cursor() const { return m_cursor; }
+    const TextCursor &cursor() const { return cursor_; }
 
 protected:
-    TextCursor m_cursor;
+    TextCursor cursor_;
 };
 
 //---------------------------------------------------------
@@ -101,11 +101,11 @@ private:
 
     void restoreSelection();
 
-    String m_xmlText;
-    Pid m_propertyId;
-    PropertyValue m_propertyVal;
-    FontStyle m_existingStyle;
-    PropertyFlags m_flags;
+    String xmlText_;
+    Pid propertyId_;
+    PropertyValue propertyVal_;
+    FontStyle existingStyle_;
+    PropertyFlags flags_;
 };
 
 //---------------------------------------------------------
@@ -116,12 +116,12 @@ class ChangeText : public TextEditUndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeText)
 
 public:
-    ChangeText(const TextCursor *tc, const String &t) : TextEditUndoableCommand(*tc), m_s(t), m_format(*tc->format()) {}
+    ChangeText(const TextCursor *tc, const String &t) : TextEditUndoableCommand(*tc), s_(t), format_(*tc->format()) {}
 
     virtual void undo() override = 0;
     virtual void redo() override = 0;
 
-    const String &string() const { return m_s; }
+    const String &string() const { return s_; }
 
 protected:
     void insertText();
@@ -129,8 +129,8 @@ protected:
 
 private:
 
-    String m_s;
-    CharFormat m_format;
+    String s_;
+    CharFormat format_;
 };
 
 //---------------------------------------------------------

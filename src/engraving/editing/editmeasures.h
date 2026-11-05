@@ -108,36 +108,36 @@ public:
 };
 
 // ChangeMMRestNext & ChangeMMRestPrev SHOULD ONLY BE USED FOR MMRests
-// Setting m_next & m_prev involves the score's MeasureList for regular measures
+// Setting next_ & prev_ involves the score's MeasureList for regular measures
 // This is handled through undo commands above
 class ChangeMMRestNext : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeMMRestNext)
 
-    Measure *m_mmrest = nullptr;
-    MeasureBase *m_next = nullptr;
+    Measure *mmrest_ = nullptr;
+    MeasureBase *next_ = nullptr;
 
     void flip() override;
 
 public:
-    ChangeMMRestNext(Measure *mmrest, MeasureBase *next) : m_mmrest(mmrest), m_next(next) {}
+    ChangeMMRestNext(Measure *mmrest, MeasureBase *next) : mmrest_(mmrest), next_(next) {}
 
     UNDO_NAME("ChangeMMRestNext")
-    UNDO_CHANGED_OBJECTS({m_mmrest})
+    UNDO_CHANGED_OBJECTS({mmrest_})
 };
 
 class ChangeMMRestPrev : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeMMRestPrev)
 
-    Measure *m_mmrest = nullptr;
-    MeasureBase *m_prev = nullptr;
+    Measure *mmrest_ = nullptr;
+    MeasureBase *prev_ = nullptr;
 
     void flip() override;
 
 public:
-    ChangeMMRestPrev(Measure *mmrest, MeasureBase *prev) : m_mmrest(mmrest), m_prev(prev) {}
+    ChangeMMRestPrev(Measure *mmrest, MeasureBase *prev) : mmrest_(mmrest), prev_(prev) {}
 
     UNDO_NAME("ChangeMMRestPrev")
-    UNDO_CHANGED_OBJECTS({m_mmrest})
+    UNDO_CHANGED_OBJECTS({mmrest_})
 };
 
 class ChangeMeasureRepeatCount : public UndoableCommand {

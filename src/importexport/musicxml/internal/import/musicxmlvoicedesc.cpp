@@ -28,24 +28,24 @@ using namespace mu::iex::musicxml;
 //   VoiceDesc
 //---------------------------------------------------------
 
-VoiceDesc::VoiceDesc() : m_staff(-1), m_voice(-1), m_overlaps(false) {
+VoiceDesc::VoiceDesc() : staff_(-1), voice_(-1), overlaps_(false) {
     for (int i = 0; i < MAX_STAVES; ++i) {
-        m_chordRests[i] = 0;
-        m_staffAlloc[i] = -1;
-        m_voices[i] = -1;
+        chordRests_[i] = 0;
+        staffAlloc_[i] = -1;
+        voices_[i] = -1;
     }
 }
 
 void VoiceDesc::incrChordRests(int s) {
     if (0 <= s && s < MAX_STAVES) {
-        m_chordRests[s]++;
+        chordRests_[s]++;
     }
 }
 
 int VoiceDesc::numberChordRests() const {
     int res = 0;
     for (int i = 0; i < MAX_STAVES; ++i) {
-        res += m_chordRests[i];
+        res += chordRests_[i];
     }
     return res;
 }
@@ -54,8 +54,8 @@ int VoiceDesc::preferredStaff() const {
     int max = 0;
     int res = 0;
     for (int i = 0; i < MAX_STAVES; ++i) {
-        if (m_chordRests[i] > max) {
-            max = m_chordRests[i];
+        if (chordRests_[i] > max) {
+            max = chordRests_[i];
             res = i;
         }
     }
@@ -65,21 +65,21 @@ int VoiceDesc::preferredStaff() const {
 String VoiceDesc::toString() const {
     String res = u"[";
     for (int i = 0; i < MAX_STAVES; ++i) {
-        res += String(u" %1").arg(m_chordRests[i]);
+        res += String(u" %1").arg(chordRests_[i]);
     }
-    res += String(u" ] overlaps %1").arg(m_overlaps);
-    if (m_overlaps) {
+    res += String(u" ] overlaps %1").arg(overlaps_);
+    if (overlaps_) {
         res += u" staffAlloc [";
         for (int i = 0; i < MAX_STAVES; ++i) {
-            res += String(u" %1").arg(m_staffAlloc[i]);
+            res += String(u" %1").arg(staffAlloc_[i]);
         }
         res += u" ] voices [";
         for (int i = 0; i < MAX_STAVES; ++i) {
-            res += String(u" %1").arg(m_voices[i]);
+            res += String(u" %1").arg(voices_[i]);
         }
         res += u" ]";
     } else {
-        res += String(u" staff %1 voice %2").arg(m_staff + 1).arg(m_voice + 1);
+        res += String(u" staff %1 voice %2").arg(staff_ + 1).arg(voice_ + 1);
     }
     return res;
 }

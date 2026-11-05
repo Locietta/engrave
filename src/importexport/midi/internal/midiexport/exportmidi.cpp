@@ -50,18 +50,18 @@ namespace mu::iex::midi {
 //---------------------------------------------------------
 
 void ExportMidi::writeHeader(const CompatMidiRendererInternal::Context &context) {
-    if (m_midiFile.tracks().empty()) {
+    if (midiFile_.tracks().empty()) {
         return;
     }
-    MidiTrack &track = m_midiFile.tracks().front();
+    MidiTrack &track = midiFile_.tracks().front();
 
     //--------------------------------------------
     //    write track names
     //--------------------------------------------
 
     int staffIdx = 0;
-    for (auto &track1 : m_midiFile.tracks()) {
-        Staff *staff = m_score->staff(staffIdx);
+    for (auto &track1 : midiFile_.tracks()) {
+        Staff *staff = score_->staff(staffIdx);
 
         muse::ByteArray partName = staff->partName().toUtf8();
         size_t len = partName.size() + 1;
@@ -82,8 +82,8 @@ void ExportMidi::writeHeader(const CompatMidiRendererInternal::Context &context)
     //    write time signature
     //--------------------------------------------
 
-    TimeSigMap *sigmap = m_score->sigmap();
-    for (const RepeatSegment *rs : m_score->repeatList()) {
+    TimeSigMap *sigmap = score_->sigmap();
+    for (const RepeatSegment *rs : score_->repeatList()) {
         int startTick = rs->tick;
         int endTick = rs->endTick();
         int tickOffset = rs->utick - rs->tick;
@@ -123,12 +123,12 @@ void ExportMidi::writeHeader(const CompatMidiRendererInternal::Context &context)
     //---------------------------------------------------
 
     staffIdx = 0;
-    for (auto &track1 : m_midiFile.tracks()) {
-        Staff *staff = m_score->staff(staffIdx);
+    for (auto &track1 : midiFile_.tracks()) {
+        Staff *staff = score_->staff(staffIdx);
         KeyList *keys = staff->keyList();
 
         bool initialKeySigFound = false;
-        for (const RepeatSegment *rs : m_score->repeatList()) {
+        for (const RepeatSegment *rs : score_->repeatList()) {
             int startTick = rs->tick;
             int endTick = startTick + rs->len();
             int tickOffset = rs->utick - rs->tick;
@@ -174,7 +174,7 @@ void ExportMidi::writeHeader(const CompatMidiRendererInternal::Context &context)
     }
 
     const std::map<int, double> &tempoEvents = context.pauseMap->tempoEvents();
-    BeatsPerSecond tempoMultiplier = m_score->tempoTimeline().tempoMultiplier();
+    BeatsPerSecond tempoMultiplier = score_->tempoTimeline().tempoMultiplier();
     for (const auto &[tick, bps] : tempoEvents) {
         MidiEvent ev;
         ev.setType(ME_META);
@@ -203,11 +203,11 @@ void ExportMidi::writeHeader(const CompatMidiRendererInternal::Context &context)
 //---------------------------------------------------------
 
 bool ExportMidi::write(MidiIODevice *device, bool midiExpandRepeats, bool exportRPNs, const SynthesizerState &synthState) {
-    m_midiFile.setDivision(Constants::DIVISION);
-    m_midiFile.setFormat(1);
-    std::vector<MidiTrack> &tracks = m_midiFile.tracks();
+    midiFile_.setDivision(Constants::DIVISION);
+    midiFile_.setFormat(1);
+    std::vector<MidiTrack> &tracks = midiFile_.tracks();
 
-    for (size_t i = 0; i < m_score->nstaves(); ++i) {
+    for (size_t i = 0; i < score_->nstaves(); ++i) {
         tracks.push_back(MidiTrack());
     }
 
@@ -216,17 +216,17 @@ bool ExportMidi::write(MidiIODevice *device, bool midiExpandRepeats, bool export
     context.eachStringHasChannel = false;
     context.instrumentsHaveEffects = false;
     context.harmonyChannelSetting = CompatMidiRendererInternal::HarmonyChannelSetting::DEFAULT;
-    context.sndController = CompatMidiRender::getControllerForSnd(m_score, synthState.ccToUse());
+    context.sndController = CompatMidiRender::getControllerForSnd(score_, synthState.ccToUse());
     context.useDefaultArticulations = false;
     context.applyCaesuras = true;
 
-    CompatMidiRender::renderScore(m_score, events, context, midiExpandRepeats);
+    CompatMidiRender::renderScore(score_, events, context, midiExpandRepeats);
 
     writeHeader(context);
 
     staff_idx_t staffIdx = 0;
     for (auto &track : tracks) {
-        Staff *staff = m_score->staff(staffIdx);
+        Staff *staff = score_->staff(staffIdx);
         Part *part = staff->part();
 
         track.setOutPort(part->midiPort());
@@ -295,7 +295,7 @@ bool ExportMidi::write(MidiIODevice *device, bool midiExpandRepeats, bool export
                         }
 
                         staff_idx_t equivalentStaffIdx = staffIdx;
-                        for (Staff *st : m_score->masterScore()->staves()) {
+                        for (Staff *st : score_->masterScore()->staves()) {
                             if (staff->id() == st->id()) {
                                 equivalentStaffIdx = st->idx();
                             }
@@ -315,8 +315,8 @@ bool ExportMidi::write(MidiIODevice *device, bool midiExpandRepeats, bool export
                             continue;
                         }
 
-                        char eventPort = m_score->masterScore()->midiPort(event.channel());
-                        char eventChannel = m_score->masterScore()->midiChannel(event.channel());
+                        char eventPort = score_->masterScore()->midiPort(event.channel());
+                        char eventChannel = score_->masterScore()->midiChannel(event.channel());
                         if (port != eventPort || channel != eventChannel) {
                             continue;
                         }
@@ -346,7 +346,7 @@ bool ExportMidi::write(MidiIODevice *device, bool midiExpandRepeats, bool export
 
         // Export lyrics and RehearsalMarks as Meta events
         const TrackRange trackRange = part->trackRange();
-        for (const RepeatSegment *rs : m_score->repeatList()) {
+        for (const RepeatSegment *rs : score_->repeatList()) {
             int endTick = rs->endTick();
             int tickOffset = rs->utick - rs->tick;
 
@@ -406,7 +406,7 @@ bool ExportMidi::write(MidiIODevice *device, bool midiExpandRepeats, bool export
         }
         ++staffIdx;
     }
-    return !m_midiFile.write(device);
+    return !midiFile_.write(device);
 }
 
 bool ExportMidi::write(const MidiPath &name, bool midiExpandRepeats, bool exportRPNs, const SynthesizerState &synthState) {

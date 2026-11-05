@@ -36,34 +36,34 @@ enum class BeatType : unsigned char;
 
 class TDuration {
 public:
-    TDuration() : m_val(DurationType::V_INVALID), m_dots(0) {}
+    TDuration() : val_(DurationType::V_INVALID), dots_(0) {}
 
     TDuration(const Fraction &l, bool truncate = false, int maxDots = 4, DurationType maxType = DurationType::V_LONG);
 
-    TDuration(DurationType t) : m_val(t), m_dots(0) {}
+    TDuration(DurationType t) : val_(t), dots_(0) {}
 
-    TDuration(DurationTypeWithDots t) : m_val(t.type), m_dots(t.dots) {}
+    TDuration(DurationTypeWithDots t) : val_(t.type), dots_(t.dots) {}
 
-    DurationType type() const { return m_val; }
+    DurationType type() const { return val_; }
 
-    DurationTypeWithDots typeWithDots() const { return DurationTypeWithDots(m_val, m_dots); }
+    DurationTypeWithDots typeWithDots() const { return DurationTypeWithDots(val_, dots_); }
 
-    bool isValid() const { return m_val != DurationType::V_INVALID; }
+    bool isValid() const { return val_ != DurationType::V_INVALID; }
 
-    bool isZero() const { return m_val == DurationType::V_ZERO; }
+    bool isZero() const { return val_ == DurationType::V_ZERO; }
 
-    bool isMeasure() const { return m_val == DurationType::V_MEASURE; }
+    bool isMeasure() const { return val_ == DurationType::V_MEASURE; }
 
     void setVal(int tick);
     void setType(DurationType t);
 
     Fraction ticks() const;
 
-    bool operator==(const TDuration &t) const { return t.m_val == m_val && t.m_dots == m_dots; }
+    bool operator==(const TDuration &t) const { return t.val_ == val_ && t.dots_ == dots_; }
 
-    bool operator==(const DurationType &t) const { return t == m_val; }
+    bool operator==(const DurationType &t) const { return t == val_; }
 
-    bool operator!=(const TDuration &t) const { return t.m_val != m_val || t.m_dots != m_dots; }
+    bool operator!=(const TDuration &t) const { return t.val_ != val_ || t.dots_ != dots_; }
 
     bool operator<(const TDuration &t) const;
     bool operator>(const TDuration &t) const;
@@ -89,12 +89,12 @@ public:
 
     TDuration shiftRetainDots(int nSteps, bool stepDotted = false) const {
         TDuration d(type());
-        d.setDots(m_dots);
+        d.setDots(dots_);
         d.shiftType(nSteps, stepDotted);
         return d;
     }
 
-    int dots() const { return m_dots; }
+    int dots() const { return dots_; }
 
     void setDots(int v);
     Fraction fraction() const;
@@ -105,8 +105,8 @@ private:
     void truncateToFraction(const Fraction &l, int maxDots);
     bool setDotsToFitFraction(const Fraction &l, int maxDots);
 
-    DurationType m_val = DurationType::V_INVALID;
-    int m_dots = 0;
+    DurationType val_ = DurationType::V_INVALID;
+    int dots_ = 0;
 };
 
 std::vector<TDuration> toDurationList(Fraction l, bool useDots, int maxDots = 4, bool printRestRemains = true);

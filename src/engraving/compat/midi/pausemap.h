@@ -44,12 +44,12 @@ public:
 
     inline int tickWithPauses(int utick) const { return utick + offsetAtUTick(utick); }
 
-    const std::map<int, double> &tempoEvents() const { return m_tempoEvents; }
+    const std::map<int, double> &tempoEvents() const { return tempoEvents_; }
 
 private:
     int offsetAtUTick(int utick) const;
 
-    std::map<int, double> m_tempoEvents;
+    std::map<int, double> tempoEvents_;
 };
 } // namespace mu::engraving
 #endif

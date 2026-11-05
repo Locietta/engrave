@@ -46,10 +46,10 @@ class VelocityEvent {
 public:
     VelocityEvent() {}
 
-    VelocityEvent(int val) : m_value(val), m_type(VelocityEventType::DYNAMIC) {}
+    VelocityEvent(int val) : value_(val), type_(VelocityEventType::DYNAMIC) {}
 
     VelocityEvent(Fraction s, Fraction e, int diff, ChangeMethod m, ChangeDirection d)
-        : m_value(diff), m_type(VelocityEventType::HAIRPIN), m_length(e - s), m_method(m), m_direction(d) {}
+        : value_(diff), type_(VelocityEventType::HAIRPIN), length_(e - s), method_(m), direction_(d) {}
 
     bool operator==(const VelocityEvent &event) const;
 
@@ -58,13 +58,13 @@ public:
 private:
     friend class VelocityMap;
 
-    int m_value = 0;
-    VelocityEventType m_type = VelocityEventType::INVALID;
-    Fraction m_length;
-    ChangeMethod m_method = ChangeMethod::NORMAL;
-    ChangeDirection m_direction = ChangeDirection::INCREASING;
-    int m_cachedStartVal = -1;
-    int m_cachedEndVal = -1;
+    int value_ = 0;
+    VelocityEventType type_ = VelocityEventType::INVALID;
+    Fraction length_;
+    ChangeMethod method_ = ChangeMethod::NORMAL;
+    ChangeDirection direction_ = ChangeDirection::INCREASING;
+    int cachedStartVal_ = -1;
+    int cachedEndVal_ = -1;
 };
 
 //---------------------------------------------------------
@@ -95,7 +95,7 @@ private:
         const char *name;
     };
 
-    static bool compareHairpinEvents(VelocityEvent &a, VelocityEvent &b) { return a.m_length > b.m_length; }
+    static bool compareHairpinEvents(VelocityEvent &a, VelocityEvent &b) { return a.length_ > b.length_; }
 
     void sortHairpins();
     void resolveHairpinCollisions();

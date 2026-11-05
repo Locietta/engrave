@@ -56,33 +56,33 @@ static void applyPageSizeToStyle(MStyle *style, const SizeF &pageSize) {
 }
 
 void DefaultStyle::init(const path_t &defaultStyleFilePath, const path_t &partStyleFilePath, const SizeF &defaultPageSize) {
-    m_baseStyle.precomputeValues();
+    baseStyle_.precomputeValues();
 
     {
-        applyPageSizeToStyle(&m_defaultStyle, defaultPageSize);
+        applyPageSizeToStyle(&defaultStyle_, defaultPageSize);
 
         if (!defaultStyleFilePath.empty()) {
-            bool ok = doLoadStyle(&m_defaultStyle, defaultStyleFilePath);
+            bool ok = doLoadStyle(&defaultStyle_, defaultStyleFilePath);
             if (!ok) {
                 LOGW() << "Failed to load default style file from " << defaultStyleFilePath;
             }
         }
 
-        m_defaultStyle.precomputeValues();
+        defaultStyle_.precomputeValues();
     }
 
     if (!partStyleFilePath.empty()) {
-        m_defaultStyleForParts = new MStyle();
+        defaultStyleForParts_ = new MStyle();
 
-        applyPageSizeToStyle(m_defaultStyleForParts, defaultPageSize);
+        applyPageSizeToStyle(defaultStyleForParts_, defaultPageSize);
 
-        bool ok = doLoadStyle(m_defaultStyleForParts, partStyleFilePath);
+        bool ok = doLoadStyle(defaultStyleForParts_, partStyleFilePath);
         if (!ok) {
             LOGW() << "Failed to load default part style file from " << partStyleFilePath;
-            delete m_defaultStyleForParts;
-            m_defaultStyleForParts = nullptr;
+            delete defaultStyleForParts_;
+            defaultStyleForParts_ = nullptr;
         } else {
-            m_defaultStyleForParts->precomputeValues();
+            defaultStyleForParts_->precomputeValues();
         }
     }
 }
@@ -99,11 +99,11 @@ bool DefaultStyle::doLoadStyle(MStyle *style, const path_t &filePath) {
 
 // Static
 
-const MStyle &DefaultStyle::baseStyle() { return instance()->m_baseStyle; }
+const MStyle &DefaultStyle::baseStyle() { return instance()->baseStyle_; }
 
-const MStyle &DefaultStyle::defaultStyle() { return instance()->m_defaultStyle; }
+const MStyle &DefaultStyle::defaultStyle() { return instance()->defaultStyle_; }
 
-const MStyle *DefaultStyle::defaultStyleForParts() { return instance()->m_defaultStyleForParts; }
+const MStyle *DefaultStyle::defaultStyleForParts() { return instance()->defaultStyleForParts_; }
 
 const MStyle &DefaultStyle::resolveStyleDefaults(const int defaultsVersion) {
     static auto loadedStyle = [](MStyle &style, const String &path, bool &loaded_flag) -> const MStyle & {

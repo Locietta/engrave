@@ -73,7 +73,7 @@ public:
 private:
     static IFontProvider *fontProvider();
 
-    Font m_font;
+    Font font_;
 };
 } // namespace muse::draw
 

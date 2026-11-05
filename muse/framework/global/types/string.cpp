@@ -138,7 +138,7 @@ int Char::digitValue() const {
     if (!isDigit()) {
         return -1;
     }
-    return m_ch - '0';
+    return ch_ - '0';
 }
 
 bool Char::isPunct(char16_t ch) { return std::ispunct(static_cast<unsigned char>(ch)); }
@@ -240,18 +240,18 @@ void UtfCodec::replaceInvalid(std::string_view src, std::string &dst) {
 // String
 // ============================
 
-String::String() { m_data = std::make_shared<std::u16string>(); }
+String::String() { data_ = std::make_shared<std::u16string>(); }
 
 String::String(const char16_t *str) {
-    m_data = std::make_shared<std::u16string>(str ? str : u"");
+    data_ = std::make_shared<std::u16string>(str ? str : u"");
 #ifdef MUSE_STRING_DEBUG_HACK
     updateDebugView();
 #endif
 }
 
 String::String(const Char &ch) {
-    m_data = std::make_shared<std::u16string>();
-    *m_data.get() += ch.unicode();
+    data_ = std::make_shared<std::u16string>();
+    *data_.get() += ch.unicode();
 #ifdef MUSE_STRING_DEBUG_HACK
     updateDebugView();
 #endif
@@ -259,16 +259,16 @@ String::String(const Char &ch) {
 
 String::String(const Char *unicode, size_t size) {
     if (!unicode) {
-        m_data = std::make_shared<std::u16string>();
+        data_ = std::make_shared<std::u16string>();
         return;
     }
 
     static_assert(sizeof(Char) == sizeof(char16_t));
     const char16_t *str = reinterpret_cast<const char16_t *>(unicode);
     if (size == muse::nidx) {
-        m_data = std::make_shared<std::u16string>(str);
+        data_ = std::make_shared<std::u16string>(str);
     } else {
-        m_data = std::make_shared<std::u16string>(str, size);
+        data_ = std::make_shared<std::u16string>(str, size);
     }
 
 #ifdef MUSE_STRING_DEBUG_HACK
@@ -287,7 +287,7 @@ void String::updateDebugView() {
 
 #endif
 
-const std::u16string &String::constStr() const { return *m_data.get(); }
+const std::u16string &String::constStr() const { return *data_.get(); }
 
 struct String::Mutator {
     std::u16string &s;
@@ -334,7 +334,7 @@ String::Mutator String::mutStr(bool do_detach) {
     if (do_detach) {
         detach();
     }
-    return Mutator(*m_data.get(), this);
+    return Mutator(*data_.get(), this);
 }
 
 void String::reserve(size_t i) { mutStr().reserve(i); }
@@ -384,15 +384,15 @@ bool String::operator==(const char *s) const {
 }
 
 void String::detach() {
-    if (!m_data) {
+    if (!data_) {
         return;
     }
 
-    if (m_data.use_count() == 1) {
+    if (data_.use_count() == 1) {
         return;
     }
 
-    m_data = std::make_shared<std::u16string>(*m_data);
+    data_ = std::make_shared<std::u16string>(*data_);
 }
 
 String &String::operator=(const char16_t *str) {
@@ -1285,28 +1285,28 @@ char AsciiChar::toUpper(char ch) { return static_cast<char>(std::toupper(static_
 // ============================
 // AsciiStringView
 // ============================
-const char *AsciiStringView::ascii() const { return m_data; }
+const char *AsciiStringView::ascii() const { return data_; }
 
-size_t AsciiStringView::size() const { return m_size; }
+size_t AsciiStringView::size() const { return size_; }
 
-bool AsciiStringView::empty() const { return m_size == 0; }
+bool AsciiStringView::empty() const { return size_ == 0; }
 
 AsciiChar AsciiStringView::at(size_t i) const {
     IF_ASSERT_FAILED(i < size()) { return AsciiChar(); }
-    return AsciiChar(m_data[i]);
+    return AsciiChar(data_[i]);
 }
 
 bool AsciiStringView::contains(char ch) const { return indexOf(ch) != muse::nidx; }
 
 size_t AsciiStringView::indexOf(char ch) const {
-    for (size_t i = 0; i < m_size; ++i) {
-        if (m_data[i] == ch) {
+    for (size_t i = 0; i < size_; ++i) {
+        if (data_[i] == ch) {
             return i;
         }
     }
     return muse::nidx;
 }
 
-int AsciiStringView::toInt(bool *ok, int base) const { return toInt_helper(m_data, ok, base); }
+int AsciiStringView::toInt(bool *ok, int base) const { return toInt_helper(data_, ok, base); }
 
-double AsciiStringView::toDouble(bool *ok) const { return toDouble_helper(m_data, ok); }
+double AsciiStringView::toDouble(bool *ok) const { return toDouble_helper(data_, ok); }

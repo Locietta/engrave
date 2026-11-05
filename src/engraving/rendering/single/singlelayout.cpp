@@ -218,11 +218,11 @@ void SingleLayout::layoutLineSegment(LineSegment *item, const Context &ctx) {
     }
 }
 
-const MStyle &SingleLayout::Context::style() const { return m_score->style(); }
+const MStyle &SingleLayout::Context::style() const { return score_->style(); }
 
-std::shared_ptr<IEngravingFont> SingleLayout::Context::engravingFont() const { return m_score->engravingFont(); }
+std::shared_ptr<IEngravingFont> SingleLayout::Context::engravingFont() const { return score_->engravingFont(); }
 
-DummyParent *SingleLayout::Context::dummyParent() const { return m_score->dummy(); }
+DummyParent *SingleLayout::Context::dummyParent() const { return score_->dummy(); }
 
 void SingleLayout::layout(Accidental *item, const Context &) {
     if (!item->ldata() || !item->ldata()->isValid()) {

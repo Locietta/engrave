@@ -34,7 +34,7 @@
 using namespace mu::engraving;
 
 namespace mu::iex::guitarpro {
-ContiniousElementsBuilder::ContiniousElementsBuilder(Score *score) : m_score(score) {}
+ContiniousElementsBuilder::ContiniousElementsBuilder(Score *score) : score_(score) {}
 
 static mu::engraving::ElementType muTypeFromImportType(ContiniousElementsBuilder::ImportType importType) {
     using import_t = ContiniousElementsBuilder::ImportType;
@@ -149,13 +149,13 @@ void ContiniousElementsBuilder::buildContiniousElement(ChordRest *cr, ElementTyp
 
     track_idx_t track = cr->track();
 
-    auto &elements = m_elementsByType[importType];
+    auto &elements = elementsByType_[importType];
     while (elements.size() < track + 1) {
         elements.push_back(nullptr);
     }
 
     auto &elem = elements[track];
-    auto &lastTypeForTrack = m_lastImportTypes[muType][track][subType];
+    auto &lastTypeForTrack = lastImportTypes_[muType][track][subType];
 
     ContiniousElementState state = calculateState(cr->isRest(), elemExists, splitByRests, lastTypeForTrack != importType);
 
@@ -175,7 +175,7 @@ void ContiniousElementsBuilder::buildContiniousElement(ChordRest *cr, ElementTyp
         case ContiniousElementState::
             ELEMENT_ON_REST: // currently it's mistake: we cannot indicate Rest with any of continious elements in guitar pro
             if (lastTypeForTrack != ImportType::NONE) {
-                m_elementsToAddToScore[track][lastTypeForTrack].endedOnRest = true;
+                elementsToAddToScore_[track][lastTypeForTrack].endedOnRest = true;
             }
 
             break;
@@ -188,7 +188,7 @@ void ContiniousElementsBuilder::buildContiniousElement(ChordRest *cr, ElementTyp
 
             if (elem->tick2() < cr->tick()) {
                 if (lastTypeForTrack != ImportType::NONE) {
-                    auto &lastTypeElementsToAdd = m_elementsToAddToScore[track][lastTypeForTrack];
+                    auto &lastTypeElementsToAdd = elementsToAddToScore_[track][lastTypeForTrack];
 
                     /// removing info about the Rest and updating last element's ticks
                     if (lastTypeElementsToAdd.endedOnRest) {
@@ -214,7 +214,7 @@ void ContiniousElementsBuilder::buildContiniousElement(ChordRest *cr, ElementTyp
         }
 
         case ContiniousElementState::CREATE_NEW_ITEM: {
-            EngravingItem *engItem = Factory::createItem(muType, m_score->dummy());
+            EngravingItem *engItem = Factory::createItem(muType, score_->dummy());
 
             Spanner *newElem = dynamic_cast<Spanner *>(engItem);
             IF_ASSERT_FAILED(newElem) { return; }
@@ -227,8 +227,8 @@ void ContiniousElementsBuilder::buildContiniousElement(ChordRest *cr, ElementTyp
             newElem->setTrack(track);
             newElem->setTrack2(track);
 
-            m_elementsToAddToScore[track][importType].elements.push_back(newElem);
-            m_orderedAddedElements.push_back(newElem);
+            elementsToAddToScore_[track][importType].elements.push_back(newElem);
+            orderedAddedElements_.push_back(newElem);
             lastTypeForTrack = importType;
             break;
         }
@@ -244,7 +244,7 @@ void ContiniousElementsBuilder::buildContiniousElement(ChordRest *cr, ElementTyp
 }
 
 void ContiniousElementsBuilder::notifyUncompletedMeasure() {
-    for (auto &trackMaps : m_elementsToAddToScore) {
+    for (auto &trackMaps : elementsToAddToScore_) {
         for (auto &typeMaps : trackMaps.second) {
             typeMaps.second.endedOnRest = true;
         }
@@ -287,7 +287,7 @@ static Chord *searchEndChord(Chord *startChord) {
 }
 
 void ContiniousElementsBuilder::addElementsToScore() {
-    for (auto &trackMaps : m_spannersWithoutEndElement) {
+    for (auto &trackMaps : spannersWithoutEndElement_) {
         for (auto &typeMaps : trackMaps.second) {
             for (Spanner *elem : typeMaps.second) {
                 elem->setEndElement(searchEndChord(elem->endChord()));
@@ -295,8 +295,8 @@ void ContiniousElementsBuilder::addElementsToScore() {
         }
     }
 
-    for (Spanner *elem : m_orderedAddedElements) {
-        m_score->addElement(elem);
+    for (Spanner *elem : orderedAddedElements_) {
+        score_->addElement(elem);
     }
 }
 
@@ -332,7 +332,7 @@ ContiniousElementsBuilder::ContiniousElementState ContiniousElementsBuilder::cal
 void ContiniousElementsBuilder::setupAddedElement(track_idx_t trackIdx, ImportType importType) {
     ElementType muType = muTypeFromImportType(importType);
 
-    Spanner *lineElem = m_elementsByType[importType][trackIdx];
+    Spanner *lineElem = elementsByType_[importType][trackIdx];
     if (!lineElem) {
         return;
     }
@@ -380,7 +380,7 @@ void ContiniousElementsBuilder::setupAddedElement(track_idx_t trackIdx, ImportTy
             }
 
             break;
-        case ElementType::HAMMER_ON_PULL_OFF: m_spannersWithoutEndElement[trackIdx][importType].insert(lineElem); break;
+        case ElementType::HAMMER_ON_PULL_OFF: spannersWithoutEndElement_[trackIdx][importType].insert(lineElem); break;
         default: break;
     }
 }

@@ -30,30 +30,30 @@
 using namespace mu::engraving::compat;
 using namespace mu::engraving;
 
-ReadChordListHook::ReadChordListHook(Score *score) : m_score(score) {
-    if (m_score) {
-        m_oldChordDescriptionFile = m_score->style().styleSt(Sid::chordDescriptionFile);
+ReadChordListHook::ReadChordListHook(Score *score) : score_(score) {
+    if (score_) {
+        oldChordDescriptionFile_ = score_->style().styleSt(Sid::chordDescriptionFile);
     }
 }
 
 void ReadChordListHook::read(XmlReader &e) {
-    if (!m_score) {
+    if (!score_) {
         return;
     }
 
-    m_score->chordList()->clear();
-    m_score->chordList()->read(e, m_score->mscVersion());
-    m_score->chordList()->setCustomChordList(true);
+    score_->chordList()->clear();
+    score_->chordList()->read(e, score_->mscVersion());
+    score_->chordList()->setCustomChordList(true);
 
-    m_chordListTag = true;
+    chordListTag_ = true;
 }
 
 void ReadChordListHook::validate() {
-    if (!m_score) {
+    if (!score_) {
         return;
     }
 
-    if (m_chordListTag) {
+    if (chordListTag_) {
         // if we encountered a ChordList tag, everything is fine already
         return;
     }
@@ -62,11 +62,11 @@ void ReadChordListHook::validate() {
     // and didn't encounter a ChordList tag
     // then load the chord description file
 
-    MStyle &style = m_score->style();
-    ChordList *chordList = m_score->chordList();
+    MStyle &style = score_->style();
+    ChordList *chordList = score_->chordList();
 
     String newChordDescriptionFile = style.styleSt(Sid::chordDescriptionFile);
-    if (newChordDescriptionFile != m_oldChordDescriptionFile) {
+    if (newChordDescriptionFile != oldChordDescriptionFile_) {
         if (!newChordDescriptionFile.startsWith(u"chords_") &&
             style.styleV(Sid::chordStyle).value<ChordStylePreset>() == ChordStylePreset::STANDARD) {
             // should not normally happen,

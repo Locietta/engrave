@@ -47,14 +47,14 @@ public:
     const muse::TranslatableString &title() const;
     char16_t icon() const;
 
-    const muse::draw::Font &iconFont() const { return m_iconFont; }
+    const muse::draw::Font &iconFont() const { return iconFont_; }
 
     PropertyValue getProperty(Pid) const override;
     bool setProperty(Pid, const PropertyValue &) override;
 
 private:
-    ActionIconType m_actionType = ActionIconType::UNDEFINED;
-    muse::TranslatableString m_title;
-    muse::draw::Font m_iconFont;
+    ActionIconType actionType_ = ActionIconType::UNDEFINED;
+    muse::TranslatableString title_;
+    muse::draw::Font iconFont_;
 };
 } // namespace mu::engraving

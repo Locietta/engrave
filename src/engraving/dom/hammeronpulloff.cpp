@@ -49,7 +49,7 @@ Color HammerOnPullOffSegment::curColor(const rendering::PaintOptions &opt) const
 }
 
 void HammerOnPullOffSegment::scanElements(std::function<void(EngravingItem *)> func) {
-    for (HammerOnPullOffText *hopo : m_hopoText) {
+    for (HammerOnPullOffText *hopo : hopoText_) {
         hopo->scanElements(func);
     }
 
@@ -57,14 +57,14 @@ void HammerOnPullOffSegment::scanElements(std::function<void(EngravingItem *)> f
 }
 
 void HammerOnPullOffSegment::setTrack(track_idx_t idx) {
-    m_track = idx;
-    for (HammerOnPullOffText *hopo : m_hopoText) {
+    track_ = idx;
+    for (HammerOnPullOffText *hopo : hopoText_) {
         hopo->setTrack(idx);
     }
 }
 
 void HammerOnPullOffSegment::setSelected(bool f) {
-    for (HammerOnPullOffText *text : m_hopoText) {
+    for (HammerOnPullOffText *text : hopoText_) {
         text->setSelected(f);
     }
 
@@ -95,8 +95,8 @@ void HammerOnPullOffSegment::updateHopoText() {
     }
 
     if (!startChord || !endChord) {
-        muse::DeleteAll(m_hopoText);
-        m_hopoText.clear();
+        muse::DeleteAll(hopoText_);
+        hopoText_.clear();
         return;
     }
 
@@ -108,13 +108,13 @@ void HammerOnPullOffSegment::updateHopoText() {
         HopoTextRegion curRegion = hopoTextRegions[curRegionIdx];
 
         HammerOnPullOffText *curHopoText;
-        if (curRegionIdx < m_hopoText.size()) {
+        if (curRegionIdx < hopoText_.size()) {
             // Reuse existing, if available
-            curHopoText = m_hopoText[curRegionIdx];
+            curHopoText = hopoText_[curRegionIdx];
         } else {
             // Create new
             curHopoText = new HammerOnPullOffText(this);
-            m_hopoText.push_back(curHopoText);
+            hopoText_.push_back(curHopoText);
         }
 
         curHopoText->setTrack(track());
@@ -127,11 +127,11 @@ void HammerOnPullOffSegment::updateHopoText() {
     }
 
     // Delete unused
-    if (curRegionIdx < m_hopoText.size()) {
-        size_t unusedHopoCount = m_hopoText.size() - curRegionIdx;
+    if (curRegionIdx < hopoText_.size()) {
+        size_t unusedHopoCount = hopoText_.size() - curRegionIdx;
         for (size_t i = 0; i < unusedHopoCount; ++i) {
-            delete m_hopoText.back();
-            m_hopoText.pop_back();
+            delete hopoText_.back();
+            hopoText_.pop_back();
         }
     }
 }
@@ -216,7 +216,7 @@ void HammerOnPullOffSegment::resolveStartEndNotes(Note **startNote, Note **endNo
 }
 
 bool HammerOnPullOffSegment::isUserModified() const {
-    for (const HammerOnPullOffText *hopoText : m_hopoText) {
+    for (const HammerOnPullOffText *hopoText : hopoText_) {
         if (hopoText->isUserModified()) {
             return true;
         }
@@ -226,7 +226,7 @@ bool HammerOnPullOffSegment::isUserModified() const {
 }
 
 bool HammerOnPullOffSegment::isValid() const {
-    for (const HammerOnPullOffText *hopoText : m_hopoText) {
+    for (const HammerOnPullOffText *hopoText : hopoText_) {
         if (!hopoText->isValid()) {
             return false;
         }
@@ -236,7 +236,7 @@ bool HammerOnPullOffSegment::isValid() const {
 }
 
 void HammerOnPullOffSegment::reset() {
-    for (HammerOnPullOffText *hopoText : m_hopoText) {
+    for (HammerOnPullOffText *hopoText : hopoText_) {
         hopoText->reset();
     }
 

@@ -275,9 +275,9 @@ void LineSegment::rebaseOffsetsOnAnchorChanged(Grip grip, const PointF &oldPos, 
     PointF delta = oldPos - newPos;
     if (grip == Grip::START) {
         setOffset(offset() + delta);
-        m_offset2 -= delta;
+        offset2_ -= delta;
     } else {
-        m_offset2 += delta;
+        offset2_ += delta;
     }
 }
 
@@ -288,7 +288,7 @@ void LineSegment::rebaseOffsetsOnAnchorChanged(Grip grip, const PointF &oldPos, 
 void LineSegment::spatiumChanged(double ov, double nv) {
     EngravingItem::spatiumChanged(ov, nv);
     double scale = nv / ov;
-    m_offset2 *= scale;
+    offset2_ *= scale;
 }
 
 //---------------------------------------------------------
@@ -297,7 +297,7 @@ void LineSegment::spatiumChanged(double ov, double nv) {
 
 void LineSegment::localSpatiumChanged(double ov, double nv) {
     EngravingItem::localSpatiumChanged(ov, nv);
-    m_offset2 *= nv / ov;
+    offset2_ *= nv / ov;
 }
 
 //---------------------------------------------------------
@@ -338,17 +338,17 @@ double LineSegment::absoluteFromSpatium(const Spatium &sp) const {
 
 SLine::SLine(const ElementType &type, EngravingObject *parent, ElementFlags f) : Spanner(type, parent, f) {
     setTrack(0);
-    m_lineColor = configuration()->defaultColor();
-    m_lineWidth = 0.15_sp;
+    lineColor_ = configuration()->defaultColor();
+    lineWidth_ = 0.15_sp;
 }
 
 SLine::SLine(const SLine &s) : Spanner(s) {
-    m_diagonal = s.m_diagonal;
-    m_lineWidth = s.m_lineWidth;
-    m_lineColor = s.m_lineColor;
-    m_lineStyle = s.m_lineStyle;
-    m_dashLineLen = s.m_dashLineLen;
-    m_dashGapLen = s.m_dashGapLen;
+    diagonal_ = s.diagonal_;
+    lineWidth_ = s.lineWidth_;
+    lineColor_ = s.lineColor_;
+    lineStyle_ = s.lineStyle_;
+    dashLineLen_ = s.dashLineLen_;
+    dashGapLen_ = s.dashGapLen_;
 }
 
 PointF SLine::linePos(Grip grip, System **system) const {
@@ -425,10 +425,10 @@ void SLine::setLen(double l) {
 
 PropertyValue SLine::getProperty(Pid id) const {
     switch (id) {
-        case Pid::DIAGONAL: return m_diagonal;
-        case Pid::COLOR: return PropertyValue::fromValue(m_lineColor);
-        case Pid::LINE_WIDTH: return m_lineWidth;
-        case Pid::LINE_STYLE: return m_lineStyle;
+        case Pid::DIAGONAL: return diagonal_;
+        case Pid::COLOR: return PropertyValue::fromValue(lineColor_);
+        case Pid::LINE_WIDTH: return lineWidth_;
+        case Pid::LINE_STYLE: return lineStyle_;
         case Pid::DASH_LINE_LEN: return dashLineLen();
         case Pid::DASH_GAP_LEN: return dashGapLen();
         default: return Spanner::getProperty(id);
@@ -441,16 +441,16 @@ PropertyValue SLine::getProperty(Pid id) const {
 
 bool SLine::setProperty(Pid id, const PropertyValue &v) {
     switch (id) {
-        case Pid::DIAGONAL: m_diagonal = v.toBool(); break;
+        case Pid::DIAGONAL: diagonal_ = v.toBool(); break;
         case Pid::COLOR: setLineColor(v.value<Color>()); break;
         case Pid::LINE_WIDTH:
             if (v.type() == P_TYPE::ABSOLUTE) {
-                m_lineWidth = Spatium::fromAbsolute(v.value<double>(), spatium());
+                lineWidth_ = Spatium::fromAbsolute(v.value<double>(), spatium());
             } else if (v.type() == P_TYPE::SPATIUM) {
-                m_lineWidth = v.value<Spatium>();
+                lineWidth_ = v.value<Spatium>();
             }
             break;
-        case Pid::LINE_STYLE: m_lineStyle = v.value<LineType>(); break;
+        case Pid::LINE_STYLE: lineStyle_ = v.value<LineType>(); break;
         case Pid::DASH_LINE_LEN: setDashLineLen(v.toDouble()); break;
         case Pid::DASH_GAP_LEN: setDashGapLen(v.toDouble()); break;
         default: return Spanner::setProperty(id, v);

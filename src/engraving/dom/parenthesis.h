@@ -62,6 +62,6 @@ public:
     DECLARE_LAYOUTDATA_METHODS(Parenthesis);
 
 private:
-    bool m_followParentColor = false;
+    bool followParentColor_ = false;
 };
 } // namespace mu::engraving

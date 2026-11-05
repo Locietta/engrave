@@ -84,10 +84,10 @@ static bool isScopedAutomationChange(const ScoreChanges &changes) {
 PlaybackModel::~PlaybackModel() { detachFromScore(); }
 
 void PlaybackModel::detachFromScore() {
-    if (m_listenedScore && Score::isAlive(m_listenedScore)) {
-        m_listenedScore->removeChangesListener(this);
+    if (listenedScore_ && Score::isAlive(listenedScore_)) {
+        listenedScore_->removeChangesListener(this);
     }
-    m_listenedScore = nullptr;
+    listenedScore_ = nullptr;
 }
 
 void PlaybackModel::load(Score *score, const std::function<void()> &checkpointCallback) {
@@ -97,19 +97,19 @@ void PlaybackModel::load(Score *score, const std::function<void()> &checkpointCa
         return;
     }
 
-    m_checkpoint = checkpointCallback;
-    DEFER { m_checkpoint = {}; };
+    checkpoint_ = checkpointCallback;
+    DEFER { checkpoint_ = {}; };
     checkpoint();
-    m_score = score;
-    m_playbackCtx = std::make_shared<PlaybackContext>(score);
+    score_ = score;
+    playbackCtx_ = std::make_shared<PlaybackContext>(score);
 
     detachFromScore();
-    m_listenedScore = score->masterScore();
-    m_listenedScore->addChangesListener(this);
+    listenedScore_ = score->masterScore();
+    listenedScore_->addChangesListener(this);
 
-    update(0, m_score->lastMeasure()->endTick().ticks(), 0, m_score->ntracks());
+    update(0, score_->lastMeasure()->endTick().ticks(), 0, score_->ntracks());
 
-    m_changedTrackIdSet.clear();
+    changedTrackIdSet_.clear();
 }
 
 void PlaybackModel::onScoreChanges(const ScoreChanges &changes) {
@@ -122,7 +122,7 @@ void PlaybackModel::onScoreChanges(const ScoreChanges &changes) {
     ChangedTrackIdSet trackChanges;
 
     clearExpiredTracks();
-    m_playbackCtx->clear(trackRange.trackFrom, trackRange.trackTo, tickRange.tickFrom, tickRange.tickTo);
+    playbackCtx_->clear(trackRange.trackFrom, trackRange.trackTo, tickRange.tickFrom, tickRange.tickTo);
     clearExpiredEvents(tickRange.tickFrom, tickRange.tickTo, trackRange.trackFrom, trackRange.trackTo, &trackChanges);
 
     update(tickRange.tickFrom, tickRange.tickTo, trackRange.trackFrom, trackRange.trackTo, &trackChanges);
@@ -131,78 +131,78 @@ void PlaybackModel::onScoreChanges(const ScoreChanges &changes) {
 }
 
 void PlaybackModel::reload() {
-    if (!m_score) {
+    if (!score_) {
         return;
     }
 
     TRACEFUNC;
 
     const int trackFrom = 0;
-    const size_t trackTo = m_score->ntracks();
+    const size_t trackTo = score_->ntracks();
 
-    const Measure *lastMeasure = m_score->lastMeasure();
+    const Measure *lastMeasure = score_->lastMeasure();
 
     const int tickFrom = 0;
     const int tickTo = lastMeasure ? lastMeasure->endTick().ticks() : 0;
 
     clearExpiredTracks();
-    m_playbackCtx->clear(trackFrom, trackTo, tickFrom, tickTo);
+    playbackCtx_->clear(trackFrom, trackTo, tickFrom, tickTo);
 
-    for (auto &pair : m_playbackDataMap) {
+    for (auto &pair : playbackDataMap_) {
         pair.second.originEvents.clear();
     }
 
     update(tickFrom, tickTo, trackFrom, trackTo);
 
-    m_changedTrackIdSet.clear();
+    changedTrackIdSet_.clear();
 }
 
 void PlaybackModel::setSendEventsOnScoreChange(const InstrumentTrackId &trackId, bool send) {
-    m_sendEventsOnScoreChangeMap[trackId] = send;
+    sendEventsOnScoreChangeMap_[trackId] = send;
 
     if (send) {
-        auto it = m_changedTrackIdSet.find(trackId);
-        if (it != m_changedTrackIdSet.end()) {
+        auto it = changedTrackIdSet_.find(trackId);
+        if (it != changedTrackIdSet_.end()) {
             sendEvents(trackId);
-            m_changedTrackIdSet.erase(it);
+            changedTrackIdSet_.erase(it);
         }
     }
 }
 
 void PlaybackModel::sendEventsForChangedTracks() {
-    if (m_changedTrackIdSet.empty()) {
+    if (changedTrackIdSet_.empty()) {
         return;
     }
 
     TRACEFUNC;
 
-    for (const InstrumentTrackId &trackId : m_changedTrackIdSet) {
+    for (const InstrumentTrackId &trackId : changedTrackIdSet_) {
         sendEvents(trackId);
     }
 
-    m_changedTrackIdSet.clear();
+    changedTrackIdSet_.clear();
 }
 
-bool PlaybackModel::isPlayRepeatsEnabled() const { return m_expandRepeats; }
+bool PlaybackModel::isPlayRepeatsEnabled() const { return expandRepeats_; }
 
-void PlaybackModel::setPlayRepeats(const bool isEnabled) { m_expandRepeats = isEnabled; }
+void PlaybackModel::setPlayRepeats(const bool isEnabled) { expandRepeats_ = isEnabled; }
 
-bool PlaybackModel::isPlayChordSymbolsEnabled() const { return m_playChordSymbols; }
+bool PlaybackModel::isPlayChordSymbolsEnabled() const { return playChordSymbols_; }
 
-void PlaybackModel::setPlayChordSymbols(const bool isEnabled) { m_playChordSymbols = isEnabled; }
+void PlaybackModel::setPlayChordSymbols(const bool isEnabled) { playChordSymbols_ = isEnabled; }
 
-bool PlaybackModel::useScoreDynamicsForOffstreamPlayback() const { return m_useScoreDynamicsForOffstreamPlayback; }
+bool PlaybackModel::useScoreDynamicsForOffstreamPlayback() const { return useScoreDynamicsForOffstreamPlayback_; }
 
-void PlaybackModel::setUseScoreDynamicsForOffstreamPlayback(bool use) { m_useScoreDynamicsForOffstreamPlayback = use; }
+void PlaybackModel::setUseScoreDynamicsForOffstreamPlayback(bool use) { useScoreDynamicsForOffstreamPlayback_ = use; }
 
-bool PlaybackModel::isMetronomeEnabled() const { return m_metronomeEnabled; }
+bool PlaybackModel::isMetronomeEnabled() const { return metronomeEnabled_; }
 
 void PlaybackModel::setIsMetronomeEnabled(const bool isEnabled) {
-    if (m_metronomeEnabled == isEnabled) {
+    if (metronomeEnabled_ == isEnabled) {
         return;
     }
 
-    m_metronomeEnabled = isEnabled;
+    metronomeEnabled_ = isEnabled;
     reloadMetronomeEvents();
 }
 
@@ -213,23 +213,23 @@ InstrumentTrackId PlaybackModel::chordSymbolsTrackId(const ID &partId) const { r
 bool PlaybackModel::isChordSymbolsTrack(const InstrumentTrackId &trackId) const { return trackId == chordSymbolsTrackId(trackId.partId); }
 
 bool PlaybackModel::hasSoundFlags(const InstrumentTrackId &trackId) const {
-    const Part *part = m_score ? m_score->partById(trackId.partId) : nullptr;
+    const Part *part = score_ ? score_->partById(trackId.partId) : nullptr;
     if (!part) {
         return false;
     }
 
     const TrackRange trackRange = part->trackRange();
-    return m_playbackCtx->hasSoundFlags(trackRange.startTrack, trackRange.endTrack);
+    return playbackCtx_->hasSoundFlags(trackRange.startTrack, trackRange.endTrack);
 }
 
 PlaybackData &PlaybackModel::resolveTrackPlaybackData(const InstrumentTrackId &trackId) {
-    auto search = m_playbackDataMap.find(trackId);
+    auto search = playbackDataMap_.find(trackId);
 
-    if (search != m_playbackDataMap.cend()) {
+    if (search != playbackDataMap_.cend()) {
         return search->second;
     }
 
-    const Part *part = m_score ? m_score->partById(trackId.partId.toUint64()) : nullptr;
+    const Part *part = score_ ? score_->partById(trackId.partId.toUint64()) : nullptr;
 
     if (!part) {
         static PlaybackData empty;
@@ -237,9 +237,9 @@ PlaybackData &PlaybackModel::resolveTrackPlaybackData(const InstrumentTrackId &t
     }
 
     const TrackRange trackRange = part->trackRange();
-    update(0, m_score->lastMeasure()->tick().ticks(), trackRange.startTrack, trackRange.endTrack);
+    update(0, score_->lastMeasure()->tick().ticks(), trackRange.startTrack, trackRange.endTrack);
 
-    return m_playbackDataMap[trackId];
+    return playbackDataMap_[trackId];
 }
 
 PlaybackData &PlaybackModel::resolveTrackPlaybackData(const ID &partId, const String &instrumentId) {
@@ -256,8 +256,8 @@ PlaybackEventsMap PlaybackModel::triggerEventsForItems(const std::vector<const E
         return {};
     }
 
-    auto trackPlaybackDataIt = m_playbackDataMap.find(trackId);
-    if (trackPlaybackDataIt == m_playbackDataMap.cend()) {
+    auto trackPlaybackDataIt = playbackDataMap_.find(trackId);
+    if (trackPlaybackDataIt == playbackDataMap_.cend()) {
         return {};
     }
 
@@ -277,17 +277,17 @@ PlaybackEventsMap PlaybackModel::triggerEventsForItems(const std::vector<const E
     PlaybackEventsMap result;
     PlaybackEventList &events = result[timestamp];
 
-    SoundPresetChangeEventList soundPresets = m_playbackCtx->soundPresets(firstItemTrackIdx, firstItemUtick);
+    SoundPresetChangeEventList soundPresets = playbackCtx_->soundPresets(firstItemTrackIdx, firstItemUtick);
     if (!soundPresets.empty()) {
         events.insert(events.end(), std::make_move_iterator(soundPresets.begin()), std::make_move_iterator(soundPresets.end()));
     }
 
-    const TextArticulationEvent textArticulation = m_playbackCtx->textArticulation(firstItemTrackIdx, firstItemUtick);
+    const TextArticulationEvent textArticulation = playbackCtx_->textArticulation(firstItemTrackIdx, firstItemUtick);
     if (!textArticulation.text.empty()) {
         events.push_back(textArticulation);
     }
 
-    const SyllableEvent syllable = m_playbackCtx->syllable(firstItemTrackIdx, firstItemUtick);
+    const SyllableEvent syllable = playbackCtx_->syllable(firstItemTrackIdx, firstItemUtick);
     if (!syllable.text.empty()) {
         events.push_back(syllable);
     }
@@ -295,55 +295,55 @@ PlaybackEventsMap PlaybackModel::triggerEventsForItems(const std::vector<const E
     dynamic_level_t dynamicLevel = dynamicLevelFromType(muse::mpe::DynamicType::Natural);
 
     for (const EngravingItem *item : items) {
-        if (m_useScoreDynamicsForOffstreamPlayback) {
+        if (useScoreDynamicsForOffstreamPlayback_) {
             if (!item->isNote() || toNote(item)->userVelocity() == 0) {
                 const int utick = repeats.tick2utick(item->tick().ticks());
-                dynamicLevel = m_playbackCtx->appliableDynamicLevel(item->track(), utick);
+                dynamicLevel = playbackCtx_->appliableDynamicLevel(item->track(), utick);
             }
         }
 
         if (item->isHarmony()) {
-            m_renderer.renderChordSymbol(toHarmony(item), timestamp, duration, dynamicLevel, profile, result);
+            renderer_.renderChordSymbol(toHarmony(item), timestamp, duration, dynamicLevel, profile, result);
             continue;
         }
 
-        m_renderer.render(item, timestamp, duration, dynamicLevel, m_playbackCtx, profile, result);
+        renderer_.render(item, timestamp, duration, dynamicLevel, playbackCtx_, profile, result);
     }
 
     return result;
 }
 
 PlaybackEventsMap PlaybackModel::triggerMetronome(int tick) {
-    auto trackPlaybackData = m_playbackDataMap.find(METRONOME_TRACK_ID);
-    if (trackPlaybackData == m_playbackDataMap.cend()) {
+    auto trackPlaybackData = playbackDataMap_.find(METRONOME_TRACK_ID);
+    if (trackPlaybackData == playbackDataMap_.cend()) {
         return {};
     }
 
     const ArticulationsProfilePtr profile = defaultActiculationProfile(METRONOME_TRACK_ID);
 
     PlaybackEventsMap result;
-    m_renderer.renderMetronome(m_score, tick, 0, profile, result);
+    renderer_.renderMetronome(score_, tick, 0, profile, result);
     return result;
 }
 
 PlaybackEventsMap PlaybackModel::triggerCountIn(int tick, muse::mpe::duration_t &countInDuration) {
-    auto trackPlaybackData = m_playbackDataMap.find(METRONOME_TRACK_ID);
-    if (trackPlaybackData == m_playbackDataMap.cend()) {
+    auto trackPlaybackData = playbackDataMap_.find(METRONOME_TRACK_ID);
+    if (trackPlaybackData == playbackDataMap_.cend()) {
         return {};
     }
 
     const ArticulationsProfilePtr profile = defaultActiculationProfile(METRONOME_TRACK_ID);
 
     PlaybackEventsMap result;
-    m_renderer.renderCountIn(m_score, tick, 0, profile, result, countInDuration);
+    renderer_.renderCountIn(score_, tick, 0, profile, result, countInDuration);
     return result;
 }
 
 InstrumentTrackIdSet PlaybackModel::existingTrackIdSet() const {
     InstrumentTrackIdSet result;
-    result.reserve(m_playbackDataMap.size());
+    result.reserve(playbackDataMap_.size());
 
-    for (const auto &pair : m_playbackDataMap) {
+    for (const auto &pair : playbackDataMap_) {
         result.insert(pair.first);
     }
 
@@ -352,51 +352,51 @@ InstrumentTrackIdSet PlaybackModel::existingTrackIdSet() const {
 
 void PlaybackModel::update(const int tickFrom, const int tickTo, const track_idx_t trackFrom, const track_idx_t trackTo,
                            ChangedTrackIdSet *trackChanges) {
-    m_score->masterScore()->setExpandRepeats(m_expandRepeats);
+    score_->masterScore()->setExpandRepeats(expandRepeats_);
     updateSetupData();
     updateContext(trackFrom, trackTo, tickFrom, tickTo);
     updateEvents(tickFrom, tickTo, trackFrom, trackTo, trackChanges);
 }
 
 void PlaybackModel::updateSetupData() {
-    EID scoreEID = m_score->eid();
+    EID scoreEID = score_->eid();
     if (!scoreEID.isValid()) {
-        scoreEID = m_score->assignNewEID();
+        scoreEID = score_->assignNewEID();
     }
 
     std::string scoreId = scoreEID.toStdString();
 
-    for (const Part *part : m_score->parts()) {
+    for (const Part *part : score_->parts()) {
         checkpoint();
         for (const auto &pair : part->instruments()) {
             checkpoint();
             InstrumentTrackId trackId = idKey(part->id(), pair.second->id());
-            if (!trackId.isValid() || muse::contains(m_playbackDataMap, trackId)) {
+            if (!trackId.isValid() || muse::contains(playbackDataMap_, trackId)) {
                 continue;
             }
 
-            PlaybackSetupData &setupData = m_playbackDataMap[trackId].setupData;
-            m_setupResolver.resolveSetupData(pair.second, setupData);
+            PlaybackSetupData &setupData = playbackDataMap_[trackId].setupData;
+            setupResolver_.resolveSetupData(pair.second, setupData);
             setupData.scoreId = scoreId;
         }
 
         if (part->hasChordSymbol()) {
             InstrumentTrackId trackId = chordSymbolsTrackId(part->id());
-            PlaybackSetupData &setupData = m_playbackDataMap[trackId].setupData;
-            m_setupResolver.resolveChordSymbolsSetupData(part->instrument(), setupData);
+            PlaybackSetupData &setupData = playbackDataMap_[trackId].setupData;
+            setupResolver_.resolveChordSymbolsSetupData(part->instrument(), setupData);
             setupData.scoreId = scoreId;
         }
     }
 
-    PlaybackSetupData &metronomeSetupData = m_playbackDataMap[METRONOME_TRACK_ID].setupData;
-    m_setupResolver.resolveMetronomeSetupData(metronomeSetupData);
+    PlaybackSetupData &metronomeSetupData = playbackDataMap_[METRONOME_TRACK_ID].setupData;
+    setupResolver_.resolveMetronomeSetupData(metronomeSetupData);
     metronomeSetupData.scoreId = scoreId;
 }
 
 void PlaybackModel::updateContext(const track_idx_t trackFrom, const track_idx_t trackTo, const int tickFrom, const int tickTo) {
-    m_playbackCtx->update(trackFrom, trackTo, tickFrom, tickTo, m_expandRepeats, m_checkpoint);
+    playbackCtx_->update(trackFrom, trackTo, tickFrom, tickTo, expandRepeats_, checkpoint_);
 
-    for (const Part *part : m_score->parts()) {
+    for (const Part *part : score_->parts()) {
         checkpoint();
         const TrackRange trackRange = part->trackRange();
         if (trackTo <= trackRange.startTrack || trackFrom >= trackRange.endTrack) {
@@ -412,10 +412,10 @@ void PlaybackModel::updateContext(const track_idx_t trackFrom, const track_idx_t
             continue;
         }
 
-        const PartData data{m_playbackCtx->dynamicLevelLayers(trackRange.startTrack, trackRange.endTrack),
-                            m_playbackCtx->soundPresets(trackRange.startTrack, trackRange.endTrack),
-                            m_playbackCtx->textArticulations(trackRange.startTrack, trackRange.endTrack),
-                            m_playbackCtx->syllables(trackRange.startTrack, trackRange.endTrack)};
+        const PartData data{playbackCtx_->dynamicLevelLayers(trackRange.startTrack, trackRange.endTrack),
+                            playbackCtx_->soundPresets(trackRange.startTrack, trackRange.endTrack),
+                            playbackCtx_->textArticulations(trackRange.startTrack, trackRange.endTrack),
+                            playbackCtx_->syllables(trackRange.startTrack, trackRange.endTrack)};
 
         for (const InstrumentTrackId &trackId : trackIds) {
             checkpoint();
@@ -425,7 +425,7 @@ void PlaybackModel::updateContext(const track_idx_t trackFrom, const track_idx_t
 }
 
 void PlaybackModel::applyContextToTrackData(const InstrumentTrackId &trackId, const PartData &data) {
-    PlaybackData &trackData = m_playbackDataMap[trackId];
+    PlaybackData &trackData = playbackDataMap_[trackId];
     trackData.dynamics = data.dynamics;
 
     std::set<timestamp_t> newEventTimestamps;
@@ -476,7 +476,7 @@ void PlaybackModel::processSegment(const int tickPositionOffset, const Segment *
         }
 
         if (chordSymbol->play()) {
-            m_renderer.renderChordSymbol(chordSymbol, tickPositionOffset, profile, m_playbackCtx, m_playbackDataMap[trackId].originEvents);
+            renderer_.renderChordSymbol(chordSymbol, tickPositionOffset, profile, playbackCtx_, playbackDataMap_[trackId].originEvents);
         }
 
         collectChangesTracks(trackId, trackChanges);
@@ -533,7 +533,7 @@ void PlaybackModel::processSegment(const int tickPositionOffset, const Segment *
             continue;
         }
 
-        m_renderer.render(item, tickPositionOffset, profile, m_playbackCtx, m_playbackDataMap[trackId].originEvents);
+        renderer_.render(item, tickPositionOffset, profile, playbackCtx_, playbackDataMap_[trackId].originEvents);
 
         collectChangesTracks(trackId, trackChanges);
     }
@@ -578,12 +578,12 @@ void PlaybackModel::updateEvents(const int tickFrom, const int tickTo, const tra
                                  ChangedTrackIdSet *trackChanges) {
     TRACEFUNC;
 
-    std::set<staff_idx_t> staffToProcessIdxSet = m_score->staffIdxSetFromRange(trackFrom, trackTo, [](const Staff &staff) {
+    std::set<staff_idx_t> staffToProcessIdxSet = score_->staffIdxSetFromRange(trackFrom, trackTo, [](const Staff &staff) {
         return staff.isPrimaryStaff(); // skip linked staves
     });
 
     const ArticulationsProfilePtr metronomeProfile = defaultActiculationProfile(METRONOME_TRACK_ID);
-    PlaybackEventsMap &metronomeEvents = m_playbackDataMap[METRONOME_TRACK_ID].originEvents;
+    PlaybackEventsMap &metronomeEvents = playbackDataMap_[METRONOME_TRACK_ID].originEvents;
 
     for (const RepeatSegment *repeatSegment : repeatList()) {
         checkpoint();
@@ -626,8 +626,8 @@ void PlaybackModel::updateEvents(const int tickFrom, const int tickTo, const tra
                 processSegment(tickPositionOffset, segment, staffToProcessIdxSet, chordRestSegmentNum == 0, trackChanges);
             }
 
-            if (m_metronomeEnabled) {
-                m_renderer.renderMetronome(m_score, measure, tickPositionOffset, metronomeProfile, metronomeEvents);
+            if (metronomeEnabled_) {
+                renderer_.renderMetronome(score_, measure, tickPositionOffset, metronomeProfile, metronomeEvents);
                 collectChangesTracks(METRONOME_TRACK_ID, trackChanges);
             }
         }
@@ -637,10 +637,10 @@ void PlaybackModel::updateEvents(const int tickFrom, const int tickTo, const tra
 void PlaybackModel::reloadMetronomeEvents() {
     TRACEFUNC;
 
-    PlaybackData &metronomeData = m_playbackDataMap[METRONOME_TRACK_ID];
+    PlaybackData &metronomeData = playbackDataMap_[METRONOME_TRACK_ID];
     metronomeData.originEvents.clear();
 
-    if (!m_metronomeEnabled) {
+    if (!metronomeEnabled_) {
         return;
     }
 
@@ -652,11 +652,11 @@ void PlaybackModel::reloadMetronomeEvents() {
 
         for (const Measure *measure : repeatSegment->measureList()) {
             checkpoint();
-            m_renderer.renderMetronome(m_score, measure, tickPositionOffset, metronomeProfile, metronomeData.originEvents);
+            renderer_.renderMetronome(score_, measure, tickPositionOffset, metronomeProfile, metronomeData.originEvents);
         }
     }
 
-    muse::remove(m_changedTrackIdSet, METRONOME_TRACK_ID);
+    muse::remove(changedTrackIdSet_, METRONOME_TRACK_ID);
 }
 
 bool PlaybackModel::hasToReloadTracks(const ScoreChanges &changes) const {
@@ -674,7 +674,7 @@ bool PlaybackModel::hasToReloadTracks(const ScoreChanges &changes) const {
     }
 
     if (changes.isValidBoundary()) {
-        const Measure *measureTo = m_score->tick2measure(Fraction::fromTicks(changes.tickTo));
+        const Measure *measureTo = score_->tick2measure(Fraction::fromTicks(changes.tickTo));
         if (!measureTo) {
             return false;
         }
@@ -753,7 +753,7 @@ bool PlaybackModel::hasAutomationChange(const ScoreChanges &changes) const {
 
 void PlaybackModel::clearExpiredTracks() {
     auto needRemoveTrack = [this](const InstrumentTrackId &trackId) {
-        const Part *part = m_score->partById(trackId.partId.toUint64());
+        const Part *part = score_->partById(trackId.partId.toUint64());
 
         if (!part) {
             return true;
@@ -766,16 +766,16 @@ void PlaybackModel::clearExpiredTracks() {
         return !part->instruments().contains(trackId.instrumentId);
     };
 
-    auto it = m_playbackDataMap.cbegin();
+    auto it = playbackDataMap_.cbegin();
 
-    while (it != m_playbackDataMap.cend()) {
+    while (it != playbackDataMap_.cend()) {
         if (it->first == METRONOME_TRACK_ID) {
             ++it;
             continue;
         }
 
         if (needRemoveTrack(it->first)) {
-            it = m_playbackDataMap.erase(it);
+            it = playbackDataMap_.erase(it);
             continue;
         }
 
@@ -786,7 +786,7 @@ void PlaybackModel::clearExpiredTracks() {
 void mu::engraving::PlaybackModel::removeEventsFromRange(const track_idx_t trackFrom, const track_idx_t trackTo,
                                                          const timestamp_t timestampFrom, const timestamp_t timestampTo,
                                                          ChangedTrackIdSet *trackChanges) {
-    for (const Part *part : m_score->parts()) {
+    for (const Part *part : score_->parts()) {
         const TrackRange trackRange = part->trackRange();
         if (trackRange.startTrack > trackTo || trackRange.endTrack <= trackFrom) {
             continue;
@@ -804,11 +804,11 @@ void PlaybackModel::clearExpiredEvents(const int tickFrom, const int tickTo, con
                                        ChangedTrackIdSet *trackChanges) {
     TRACEFUNC;
 
-    if (!m_score) {
+    if (!score_) {
         return;
     }
 
-    const Measure *lastMeasure = m_score->lastMeasure();
+    const Measure *lastMeasure = score_->lastMeasure();
     if (!lastMeasure) {
         return;
     }
@@ -829,16 +829,16 @@ void PlaybackModel::clearExpiredEvents(const int tickFrom, const int tickTo, con
         }
 
         int removeEventsFromTick = std::max(tickFrom, repeatStartTick);
-        timestamp_t removeEventsFrom = timestampFromTicks(m_score, removeEventsFromTick + tickPositionOffset);
+        timestamp_t removeEventsFrom = timestampFromTicks(score_, removeEventsFromTick + tickPositionOffset);
 
         //! NOTE: the end tick of the current repeat segment == the start tick of the next repeat segment
         //! so subtract 1 to avoid removing events belonging to the next segment
         int removeEventsToTick = std::min(tickTo, repeatEndTick - 1);
-        timestamp_t removeEventsTo = timestampFromTicks(m_score, removeEventsToTick + tickPositionOffset);
+        timestamp_t removeEventsTo = timestampFromTicks(score_, removeEventsToTick + tickPositionOffset);
 
         removeEventsFromRange(trackFrom, trackTo, removeEventsFrom, removeEventsTo, trackChanges);
 
-        if (!m_metronomeEnabled) {
+        if (!metronomeEnabled_) {
             continue;
         }
 
@@ -850,8 +850,8 @@ void PlaybackModel::clearExpiredEvents(const int tickFrom, const int tickTo, con
                 continue;
             }
 
-            removeEventsFrom = timestampFromTicks(m_score, measureStartTick + tickPositionOffset);
-            removeEventsTo = timestampFromTicks(m_score, measureEndTick + tickPositionOffset - 1);
+            removeEventsFrom = timestampFromTicks(score_, measureStartTick + tickPositionOffset);
+            removeEventsTo = timestampFromTicks(score_, measureEndTick + tickPositionOffset - 1);
 
             removeTrackEvents(METRONOME_TRACK_ID, removeEventsFrom, removeEventsTo, trackChanges);
         }
@@ -868,17 +868,17 @@ void PlaybackModel::collectChangesTracks(const InstrumentTrackId &trackId, Chang
 
 void PlaybackModel::notifyAboutChanges(const InstrumentTrackIdSet &changedTracks) {
     for (const InstrumentTrackId &trackId : changedTracks) {
-        if (muse::value(m_sendEventsOnScoreChangeMap, trackId, false)) {
+        if (muse::value(sendEventsOnScoreChangeMap_, trackId, false)) {
             sendEvents(trackId);
         } else {
-            m_changedTrackIdSet.insert(trackId);
+            changedTrackIdSet_.insert(trackId);
         }
     }
 }
 
 void PlaybackModel::sendEvents(const InstrumentTrackId &trackId) {
-    auto it = m_playbackDataMap.find(trackId);
-    if (it == m_playbackDataMap.cend()) {
+    auto it = playbackDataMap_.find(trackId);
+    if (it == playbackDataMap_.cend()) {
         return;
     }
 
@@ -889,8 +889,8 @@ void PlaybackModel::removeTrackEvents(const InstrumentTrackId &trackId, const mu
                                       const muse::mpe::timestamp_t timestampTo, ChangedTrackIdSet *trackChanges) {
     IF_ASSERT_FAILED(timestampFrom <= timestampTo) { return; }
 
-    auto search = m_playbackDataMap.find(trackId);
-    if (search == m_playbackDataMap.cend()) {
+    auto search = playbackDataMap_.find(trackId);
+    if (search == playbackDataMap_.cend()) {
         return;
     }
 
@@ -946,9 +946,9 @@ bool PlaybackModel::shouldSkipChanges(const ScoreChanges &changes) const {
         return false;
     }
 
-    if (text->isHarmony() && m_playChordSymbols) {
+    if (text->isHarmony() && playChordSymbols_) {
         const InstrumentTrackId trackId = chordSymbolsTrackId(text->part()->id());
-        if (!muse::contains(m_playbackDataMap, trackId)) {
+        if (!muse::contains(playbackDataMap_, trackId)) {
             return false;
         }
     }
@@ -969,7 +969,7 @@ PlaybackModel::TrackBoundaries PlaybackModel::trackBoundaries(const ScoreChanges
 
     if (hasToReloadScore(changes) || !changes.isValidBoundary()) {
         result.trackFrom = 0;
-        result.trackTo = m_score->ntracks();
+        result.trackTo = score_->ntracks();
     }
 
     return result;
@@ -982,7 +982,7 @@ PlaybackModel::TickBoundaries PlaybackModel::tickBoundaries(const ScoreChanges &
     result.tickTo = changes.tickTo;
 
     if (hasToReloadTracks(changes) || hasToReloadScore(changes) || hasAutomationChange(changes) || !changes.isValidBoundary()) {
-        const Measure *lastMeasure = m_score->lastMeasure();
+        const Measure *lastMeasure = score_->lastMeasure();
         result.tickFrom = 0;
         result.tickTo = lastMeasure ? lastMeasure->endTick().ticks() : 0;
 
@@ -1042,9 +1042,9 @@ PlaybackModel::TickBoundaries PlaybackModel::tickBoundaries(const ScoreChanges &
 }
 
 const RepeatList &PlaybackModel::repeatList() const {
-    m_score->masterScore()->setExpandRepeats(m_expandRepeats);
+    score_->masterScore()->setExpandRepeats(expandRepeats_);
 
-    return m_score->repeatList();
+    return score_->repeatList();
 }
 
 InstrumentTrackId PlaybackModel::idKey(const EngravingItem *item) const {
@@ -1074,8 +1074,8 @@ InstrumentTrackId PlaybackModel::idKey(const std::vector<const EngravingItem *> 
 InstrumentTrackId PlaybackModel::idKey(const ID &partId, const String &instrumentId) const { return {partId, instrumentId}; }
 
 muse::mpe::ArticulationsProfilePtr PlaybackModel::defaultActiculationProfile(const InstrumentTrackId &trackId) const {
-    auto it = m_playbackDataMap.find(trackId);
-    if (it == m_playbackDataMap.cend()) {
+    auto it = playbackDataMap_.find(trackId);
+    if (it == playbackDataMap_.cend()) {
         return nullptr;
     }
 

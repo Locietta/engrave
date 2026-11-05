@@ -395,58 +395,58 @@ void SwapCR::flip() {
 //---------------------------------------------------------
 
 void ChangeSpanArpeggio::flip() {
-    Arpeggio *f_spanArp = m_chord->spanArpeggio();
+    Arpeggio *f_spanArp = chord_->spanArpeggio();
 
-    m_chord->setSpanArpeggio(m_spanArpeggio);
-    m_spanArpeggio = f_spanArp;
+    chord_->setSpanArpeggio(spanArpeggio_);
+    spanArpeggio_ = f_spanArp;
 }
 
 void AddNoteParenthesisInfo::redo() {
-    m_chord->addNoteParenthesisInfo(m_noteParenInfo);
+    chord_->addNoteParenthesisInfo(noteParenInfo_);
 
-    m_chord->triggerLayout();
+    chord_->triggerLayout();
 }
 
 void mu::engraving::AddNoteParenthesisInfo::undo() {
-    m_chord->removeNoteParenthesisInfo(m_noteParenInfo);
+    chord_->removeNoteParenthesisInfo(noteParenInfo_);
 
-    m_chord->triggerLayout();
+    chord_->triggerLayout();
 }
 
 void AddNoteParenthesisInfo::cleanup(bool wasDone) {
     if (!wasDone) {
-        delete m_noteParenInfo;
-        m_noteParenInfo = nullptr;
+        delete noteParenInfo_;
+        noteParenInfo_ = nullptr;
     }
 }
 
 void RemoveNoteParenthesisInfo::redo() {
-    m_chord->removeNoteParenthesisInfo(m_noteParenInfo);
+    chord_->removeNoteParenthesisInfo(noteParenInfo_);
 
-    m_chord->triggerLayout();
+    chord_->triggerLayout();
 }
 
 void RemoveNoteParenthesisInfo::undo() {
-    m_chord->addNoteParenthesisInfo(m_noteParenInfo);
+    chord_->addNoteParenthesisInfo(noteParenInfo_);
 
-    m_chord->triggerLayout();
+    chord_->triggerLayout();
 }
 
 void RemoveNoteParenthesisInfo::cleanup(bool wasDone) {
     if (wasDone) {
-        delete m_noteParenInfo;
-        m_noteParenInfo = nullptr;
+        delete noteParenInfo_;
+        noteParenInfo_ = nullptr;
     }
 }
 
 void RemoveSingleNoteParentheses::redo() {
-    m_chord->removeNoteFromParenthesisInfo(m_note, m_paren);
+    chord_->removeNoteFromParenthesisInfo(note_, paren_);
 
-    m_chord->triggerLayout();
+    chord_->triggerLayout();
 }
 
 void RemoveSingleNoteParentheses::undo() {
-    m_chord->addNoteToParenthesisInfo(m_note, m_paren);
+    chord_->addNoteToParenthesisInfo(note_, paren_);
 
-    m_chord->triggerLayout();
+    chord_->triggerLayout();
 }

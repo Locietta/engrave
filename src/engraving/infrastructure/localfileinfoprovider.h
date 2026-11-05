@@ -44,6 +44,6 @@ public:
     bool isNewlyCreated() const override;
 
 private:
-    muse::io::path_t m_path;
+    muse::io::path_t path_;
 };
 } // namespace mu::engraving

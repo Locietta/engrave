@@ -28,16 +28,16 @@
 
 namespace mu::engraving {
 class ChangeSoundFlag : public UndoableCommand {
-    SoundFlag *m_soundFlag = nullptr;
-    SoundFlag::PresetCodes m_presets;
-    SoundFlag::PlayingTechniqueCode m_playingTechnique;
+    SoundFlag *soundFlag_ = nullptr;
+    SoundFlag::PresetCodes presets_;
+    SoundFlag::PlayingTechniqueCode playingTechnique_;
 
 public:
     ChangeSoundFlag(SoundFlag *soundFlag, const SoundFlag::PresetCodes &presets, const SoundFlag::PlayingTechniqueCode &technique)
-        : m_soundFlag(soundFlag), m_presets(presets), m_playingTechnique(technique) {}
+        : soundFlag_(soundFlag), presets_(presets), playingTechnique_(technique) {}
 
     void flip() override;
     UNDO_NAME("ChangeSoundFlag")
-    UNDO_CHANGED_OBJECTS({m_soundFlag})
+    UNDO_CHANGED_OBJECTS({soundFlag_})
 };
 } // namespace mu::engraving

@@ -48,10 +48,10 @@ protected:
     void onOutputSpecChanged(const OutputSpec &spec) override;
     void doSelfProcess(float *buffer, samples_t samplesPerChannel) override;
 
-    std::vector<float> m_channelGains;
+    std::vector<float> channelGains_;
 
-    float m_volume = 1.0f;
-    float m_pan = 0.0f;
+    float volume_ = 1.0f;
+    float pan_ = 0.0f;
 };
 
 using ControlNodePtr = std::shared_ptr<ControlNode>;

@@ -43,30 +43,30 @@ using namespace mu::engraving;
 class AddPageLock : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, AddPageLock)
 
-    const RangeLock *m_pageLock;
+    const RangeLock *pageLock_;
 public:
-    AddPageLock(const RangeLock *pageLock) : m_pageLock(pageLock) {}
+    AddPageLock(const RangeLock *pageLock) : pageLock_(pageLock) {}
 
     void undo() override {
-        Score *score = m_pageLock->startMB()->score();
-        score->removePageLock(m_pageLock);
+        Score *score = pageLock_->startMB()->score();
+        score->removePageLock(pageLock_);
     }
 
     void redo() override {
-        Score *score = m_pageLock->startMB()->score();
-        score->addPageLock(m_pageLock);
+        Score *score = pageLock_->startMB()->score();
+        score->addPageLock(pageLock_);
     }
 
     void cleanup(bool undo) override {
         if (!undo) {
-            delete m_pageLock;
-            m_pageLock = nullptr;
+            delete pageLock_;
+            pageLock_ = nullptr;
         }
     }
 
     UNDO_NAME("AddPageLock")
 
-    std::vector<EngravingObject *> objectItems() const override { return {m_pageLock->startMB(), m_pageLock->endMB()}; }
+    std::vector<EngravingObject *> objectItems() const override { return {pageLock_->startMB(), pageLock_->endMB()}; }
 };
 
 //---------------------------------------------------------
@@ -76,30 +76,30 @@ public:
 class RemovePageLock : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, RemovePageLock)
 
-    const RangeLock *m_pageLock;
+    const RangeLock *pageLock_;
 public:
-    RemovePageLock(const RangeLock *pageLock) : m_pageLock(pageLock) {}
+    RemovePageLock(const RangeLock *pageLock) : pageLock_(pageLock) {}
 
     void undo() override {
-        Score *score = m_pageLock->startMB()->score();
-        score->addPageLock(m_pageLock);
+        Score *score = pageLock_->startMB()->score();
+        score->addPageLock(pageLock_);
     }
 
     void redo() override {
-        Score *score = m_pageLock->startMB()->score();
-        score->removePageLock(m_pageLock);
+        Score *score = pageLock_->startMB()->score();
+        score->removePageLock(pageLock_);
     }
 
     void cleanup(bool undo) override {
         if (undo) {
-            delete m_pageLock;
-            m_pageLock = nullptr;
+            delete pageLock_;
+            pageLock_ = nullptr;
         }
     }
 
     UNDO_NAME("RemovePageLock")
 
-    std::vector<EngravingObject *> objectItems() const override { return {m_pageLock->startMB(), m_pageLock->endMB()}; }
+    std::vector<EngravingObject *> objectItems() const override { return {pageLock_->startMB(), pageLock_->endMB()}; }
 };
 
 //---------------------------------------------------------

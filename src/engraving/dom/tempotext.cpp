@@ -60,16 +60,16 @@ static const ElementStyle tempoStyle{
 TempoText::TempoText(DummyParentOr<Segment> parent)
     : TextBase(ElementType::TEMPO_TEXT, parent, TextStyleType::TEMPO, ElementFlag::SYSTEM | ElementFlag::ON_STAFF) {
     initElementStyle(&tempoStyle);
-    m_tempoTextType = TempoTextType::NORMAL;
-    m_tempo = 2.0; // propertyDefault(P_TEMPO).toDouble();
-    m_followText = false;
-    m_relative = 1.0;
-    m_isRelative = false;
+    tempoTextType_ = TempoTextType::NORMAL;
+    tempo_ = 2.0; // propertyDefault(P_TEMPO).toDouble();
+    followText_ = false;
+    relative_ = 1.0;
+    isRelative_ = false;
 
     resetProperty(Pid::MUSIC_SYMBOL_SIZE);
 }
 
-void TempoText::setTempoTextType(TempoTextType ttt) { m_tempoTextType = ttt; }
+void TempoText::setTempoTextType(TempoTextType ttt) { tempoTextType_ = ttt; }
 
 double TempoText::tempoBpm() const {
     //! NOTE: find tempo in format " = 180"
@@ -211,12 +211,12 @@ String TempoText::duration2tempoTextString(const TDuration dur) {
 //---------------------------------------------------------
 
 BeatsPerSecond TempoText::tempo() const {
-    if (m_isRelative) {
+    if (isRelative_) {
         const BeatsPerSecond tempoBefore = score()->tempo(tick() - Fraction::eps());
-        const BeatsPerSecond v = tempoBefore * m_relative;
+        const BeatsPerSecond v = tempoBefore * relative_;
         return BeatsPerSecond(std::clamp(v.val, Constants::MIN_TEMPO.val, Constants::MAX_TEMPO.val));
     }
-    return m_tempo;
+    return tempo_;
 }
 
 //---------------------------------------------------------
@@ -226,7 +226,7 @@ BeatsPerSecond TempoText::tempo() const {
 void TempoText::undoChangeProperty(Pid id, const PropertyValue &v, PropertyFlags ps) {
     if (id == Pid::TEMPO_FOLLOW_TEXT) {
         EngravingObject::undoChangeProperty(id, v, ps);
-        if (m_followText) {
+        if (followText_) {
             updateTempo();
         }
     } else {
@@ -265,10 +265,10 @@ void TempoText::updateTempo() {
         if (!match.empty()) {
             if (match.size() == 2) {
                 BeatsPerSecond nt = BeatsPerSecond(String::fromStdString(match[1].str()).toDouble() * pa.f);
-                if (m_isRelative || nt != m_tempo) {
+                if (isRelative_ || nt != tempo_) {
                     undoChangeProperty(Pid::TEMPO, PropertyValue(nt), propertyFlags(Pid::TEMPO));
-                    m_relative = 1.0;
-                    m_isRelative = false;
+                    relative_ = 1.0;
+                    isRelative_ = false;
                 }
                 break;
             }
@@ -285,8 +285,8 @@ void TempoText::updateTempo() {
                 std::smatch match2;
                 std::regex_search(su8, match2, re2);
                 if (!match2.empty()) {
-                    m_relative = pa2.f / pa.f;
-                    m_isRelative = true;
+                    relative_ = pa2.f / pa.f;
+                    isRelative_ = true;
                     return;
                 }
             }
@@ -304,9 +304,9 @@ void TempoText::setTempo(BeatsPerSecond v) {
     } else if (v.val > Constants::MAX_TEMPO.val) {
         v = Constants::MAX_TEMPO;
     }
-    m_tempo = v;
-    m_relative = 1.0;
-    m_isRelative = false;
+    tempo_ = v;
+    relative_ = 1.0;
+    isRelative_ = false;
 }
 
 //---------------------------------------------------------
@@ -315,10 +315,10 @@ void TempoText::setTempo(BeatsPerSecond v) {
 
 PropertyValue TempoText::getProperty(Pid propertyId) const {
     switch (propertyId) {
-        case Pid::PLAY: return m_playTempoText;
-        case Pid::TEMPO: return m_tempo;
-        case Pid::TEMPO_FOLLOW_TEXT: return m_followText;
-        case Pid::TEMPO_ALIGN_RIGHT_OF_REHEARSAL_MARK: return m_alignRightOfRehearsalMark;
+        case Pid::PLAY: return playTempoText_;
+        case Pid::TEMPO: return tempo_;
+        case Pid::TEMPO_FOLLOW_TEXT: return followText_;
+        case Pid::TEMPO_ALIGN_RIGHT_OF_REHEARSAL_MARK: return alignRightOfRehearsalMark_;
         default: return TextBase::getProperty(propertyId);
     }
 }
@@ -332,7 +332,7 @@ bool TempoText::setProperty(Pid propertyId, const PropertyValue &v) {
         case Pid::PLAY: setPlayTempoText(v.toBool()); break;
         case Pid::TEMPO: setTempo(v.value<BeatsPerSecond>()); break;
         case Pid::TEMPO_FOLLOW_TEXT: setFollowText(v.toBool()); break;
-        case Pid::TEMPO_ALIGN_RIGHT_OF_REHEARSAL_MARK: m_alignRightOfRehearsalMark = v.toBool(); break;
+        case Pid::TEMPO_ALIGN_RIGHT_OF_REHEARSAL_MARK: alignRightOfRehearsalMark_ = v.toBool(); break;
         default:
             if (!TextBase::setProperty(propertyId, v)) {
                 return false;
@@ -388,7 +388,7 @@ String TempoText::tempoInfo() const {
     String secondPart = text.split(u" = ").back();
     int x1 = findTempoDuration(firstPart, len1, t1);
     int x2 = -1;
-    if (m_relative) {
+    if (relative_) {
         x2 = findTempoDuration(secondPart, len2, t2);
     }
 
@@ -417,7 +417,7 @@ String TempoText::tempoInfo() const {
 }
 
 void TempoText::commitText() {
-    if (m_followText) {
+    if (followText_) {
         updateTempo();
     }
 

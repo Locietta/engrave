@@ -37,28 +37,28 @@ Capo::Capo(DummyParentOr<Segment> parent, TextStyleType textStyleType)
     : StaffTextBase(ElementType::CAPO, parent, textStyleType, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
     initElementStyle(&CAPO_STYLE);
 
-    m_params.active = true;
-    m_params.fretPosition = 1;
+    params_.active = true;
+    params_.fretPosition = 1;
 }
 
 Capo *Capo::clone() const { return new Capo(*this); }
 
 PropertyValue Capo::getProperty(Pid id) const {
     if (id == Pid::ACTIVE) {
-        return m_params.active;
+        return params_.active;
     } else if (id == Pid::CAPO_FRET_POSITION) {
-        return m_params.fretPosition;
+        return params_.fretPosition;
     } else if (id == Pid::CAPO_IGNORED_STRINGS) {
         std::vector<int> ignoredStrings;
-        ignoredStrings.reserve(m_params.ignoredStrings.size());
-        for (string_idx_t string : m_params.ignoredStrings) {
+        ignoredStrings.reserve(params_.ignoredStrings.size());
+        for (string_idx_t string : params_.ignoredStrings) {
             ignoredStrings.push_back(static_cast<int>(string));
         }
         return ignoredStrings;
     } else if (id == Pid::CAPO_GENERATE_TEXT) {
-        return m_shouldAutomaticallyGenerateText;
+        return shouldAutomaticallyGenerateText_;
     } else if (id == Pid::CAPO_TRANSPOSE_MODE) {
-        return m_params.transposeMode;
+        return params_.transposeMode;
     }
 
     return StaffTextBase::getProperty(id);
@@ -82,23 +82,23 @@ PropertyValue Capo::propertyDefault(Pid id) const {
 
 bool Capo::setProperty(Pid id, const PropertyValue &val) {
     if (id == Pid::ACTIVE) {
-        m_params.active = val.toBool();
+        params_.active = val.toBool();
     } else if (id == Pid::CAPO_FRET_POSITION) {
-        m_params.fretPosition = val.toInt();
+        params_.fretPosition = val.toInt();
     } else if (id == Pid::CAPO_IGNORED_STRINGS) {
-        m_params.ignoredStrings.clear();
+        params_.ignoredStrings.clear();
         auto ignoredStrings = val.value<std::vector<int>>();
         for (int string : ignoredStrings) {
-            m_params.ignoredStrings.insert(static_cast<string_idx_t>(string));
+            params_.ignoredStrings.insert(static_cast<string_idx_t>(string));
         }
     } else if (id == Pid::CAPO_GENERATE_TEXT) {
-        m_shouldAutomaticallyGenerateText = val.toBool();
+        shouldAutomaticallyGenerateText_ = val.toBool();
 
-        if (!m_shouldAutomaticallyGenerateText) {
-            setXmlText(m_customText);
+        if (!shouldAutomaticallyGenerateText_) {
+            setXmlText(customText_);
         }
     } else if (id == Pid::CAPO_TRANSPOSE_MODE) {
-        m_params.transposeMode = val.value<CapoParams::TransposeMode>();
+        params_.transposeMode = val.value<CapoParams::TransposeMode>();
     } else {
         return StaffTextBase::setProperty(id, val);
     }
@@ -113,32 +113,32 @@ bool Capo::setProperty(Pid id, const PropertyValue &val) {
 }
 
 void Capo::setXmlText(const String &text) {
-    if (!m_shouldAutomaticallyGenerateText) {
-        m_customText = text;
+    if (!shouldAutomaticallyGenerateText_) {
+        customText_ = text;
     }
 
     StaffTextBase::setXmlText(text);
 }
 
-const CapoParams &Capo::params() const { return m_params; }
+const CapoParams &Capo::params() const { return params_; }
 
-void Capo::setParams(const CapoParams &params) { m_params = params; }
+void Capo::setParams(const CapoParams &params) { params_ = params; }
 
-bool Capo::shouldAutomaticallyGenerateText() const { return m_shouldAutomaticallyGenerateText; }
+bool Capo::shouldAutomaticallyGenerateText() const { return shouldAutomaticallyGenerateText_; }
 
 muse::String Capo::generateText(size_t stringCount) const {
-    if (!m_params.active || m_params.fretPosition == 0) {
+    if (!params_.active || params_.fretPosition == 0) {
         return muse::mtrc("engraving", "No capo");
     }
 
-    if (m_params.ignoredStrings.empty()) {
-        return muse::mtrc("engraving", "Capo %1").arg(m_params.fretPosition);
+    if (params_.ignoredStrings.empty()) {
+        return muse::mtrc("engraving", "Capo %1").arg(params_.fretPosition);
     }
 
     StringList stringsToApply;
 
     for (string_idx_t idx = 0; idx < stringCount; ++idx) {
-        if (muse::contains(m_params.ignoredStrings, idx)) {
+        if (muse::contains(params_.ignoredStrings, idx)) {
             continue;
         }
 
@@ -149,8 +149,7 @@ muse::String Capo::generateText(size_t stringCount) const {
         return muse::mtrc("engraving", "No capo");
     }
 
-    String text =
-        muse::mtrc("engraving", "Partial capo:\nFret %1 on strings %2").arg(m_params.fretPosition).arg(stringsToApply.join(u", "));
+    String text = muse::mtrc("engraving", "Partial capo:\nFret %1 on strings %2").arg(params_.fretPosition).arg(stringsToApply.join(u", "));
 
     return text;
 }

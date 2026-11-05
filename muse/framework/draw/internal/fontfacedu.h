@@ -54,6 +54,6 @@ public:
     const GlyphImage &glyphImage(glyph_idx_t idx) const override;
 
 private:
-    IFontFace *m_origin = nullptr;
+    IFontFace *origin_ = nullptr;
 };
 } // namespace muse::draw

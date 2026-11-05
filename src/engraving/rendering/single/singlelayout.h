@@ -139,17 +139,17 @@ public:
     static void layoutItem(engraving::EngravingItem *item);
 
     struct Context {
-        Context(engraving::Score *s) : m_score(s) {}
+        Context(engraving::Score *s) : score_(s) {}
 
         const engraving::MStyle &style() const;
         std::shared_ptr<engraving::IEngravingFont> engravingFont() const;
         engraving::DummyParent *dummyParent() const;
 
         //! NOTE Temporarily, do not use
-        engraving::Score *dontUseScore() const { return m_score; }
+        engraving::Score *dontUseScore() const { return score_; }
 
     private:
-        engraving::Score *m_score = nullptr;
+        engraving::Score *score_ = nullptr;
     };
 
     static void layout(Accidental *item, const Context &ctx);

@@ -61,9 +61,9 @@ TieSegment::TieSegment(const ElementType &type, Tie *sp) : SlurTieSegment(type, 
 TieSegment::TieSegment(const TieSegment &s) : SlurTieSegment(s) {}
 
 void TieSegment::consolidateAdjustmentOffsetIntoUserOffset() {
-    for (size_t i = 0; i < m_adjustmentOffsets.size(); ++i) {
+    for (size_t i = 0; i < adjustmentOffsets_.size(); ++i) {
         Grip grip = static_cast<Grip>(i);
-        PointF adjustOffset = m_adjustmentOffsets[i];
+        PointF adjustOffset = adjustmentOffsets_[i];
         if (!adjustOffset.isNull()) {
             ups(grip).p -= adjustOffset;
             ups(grip).off = adjustOffset;
@@ -74,7 +74,7 @@ void TieSegment::consolidateAdjustmentOffsetIntoUserOffset() {
 
 bool TieSegment::isEdited() const {
     for (int i = 0; i < int(Grip::GRIPS); ++i) {
-        if (!m_ups[i].off.isNull()) {
+        if (!ups_[i].off.isNull()) {
             return true;
         }
     }
@@ -97,7 +97,7 @@ double TieSegment::dottedWidth() const { return style().styleAbsolute(Sid::tieDo
 
 Tie::Tie(const ElementType &type, EngravingObject *parent) : SlurTie(type, parent) {}
 
-TieJumpPointList *Tie::startTieJumpPoints() const { return m_jumpPoint ? m_jumpPoint->jumpPointList() : nullptr; }
+TieJumpPointList *Tie::startTieJumpPoints() const { return jumpPoint_ ? jumpPoint_->jumpPointList() : nullptr; }
 
 void Tie::updatePossibleJumpPoints() {
     if (!tieJumpPoints()) {
@@ -232,10 +232,10 @@ const TieJumpPointList *Tie::tieJumpPoints() const { return startNote() ? startN
 Tie::Tie(EngravingObject *parent) : SlurTie(ElementType::TIE, parent) {}
 
 Tie::Tie(const Tie &t) : SlurTie(t) {
-    m_isInside = t.m_isInside;
-    m_tiePlacement = t.m_tiePlacement;
+    isInside_ = t.isInside_;
+    tiePlacement_ = t.tiePlacement_;
     // Jump points must be recalculated for this tie
-    m_jumpPoint = nullptr;
+    jumpPoint_ = nullptr;
 }
 
 PropertyValue Tie::getProperty(Pid propertyId) const {
@@ -295,7 +295,7 @@ Note *Tie::startNote() const {
 Note *Tie::endNote() const { return toNote(endElement()); }
 
 bool Tie::isOuterTieOfChord(Grip startOrEnd) const {
-    if (m_isInside) {
+    if (isInside_) {
         return false;
     }
 

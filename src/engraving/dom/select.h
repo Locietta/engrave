@@ -107,34 +107,34 @@ struct SelectedSymbol {
 class Selection {
 public:
     Selection() {
-        m_score = 0;
-        m_state = SelState::NONE;
+        score_ = 0;
+        state_ = SelState::NONE;
     }
 
     Selection(Score *);
 
-    Score *score() const { return m_score; }
+    Score *score() const { return score_; }
 
-    SelState state() const { return m_state; }
+    SelState state() const { return state_; }
 
-    bool isNone() const { return m_state == SelState::NONE; }
+    bool isNone() const { return state_ == SelState::NONE; }
 
-    bool isRange() const { return m_state == SelState::RANGE; }
+    bool isRange() const { return state_ == SelState::RANGE; }
 
-    bool isList() const { return m_state == SelState::LIST; }
+    bool isList() const { return state_ == SelState::LIST; }
 
     void setState(SelState s);
 
     //! NOTE If locked, the selected items should not be changed.
-    void lock(const String &reason) { m_lockReason = reason; }
+    void lock(const String &reason) { lockReason_ = reason; }
 
-    void unlock(const String & /*reason*/) { m_lockReason.clear(); } // reason for clarity
+    void unlock(const String & /*reason*/) { lockReason_.clear(); } // reason for clarity
 
-    bool isLocked() const { return !m_lockReason.isEmpty(); }
+    bool isLocked() const { return !lockReason_.isEmpty(); }
 
-    const String &lockReason() const { return m_lockReason; }
+    const String &lockReason() const { return lockReason_; }
 
-    const std::vector<EngravingItem *> &elements() const { return m_el; }
+    const std::vector<EngravingItem *> &elements() const { return el_; }
 
     std::vector<EngravingItem *> elements(ElementType type) const;
     std::vector<Note *> noteList(track_idx_t track = muse::nidx) const;
@@ -142,7 +142,7 @@ public:
     const std::list<EngravingItem *> uniqueElements() const;
     std::vector<Note *> uniqueNotes(track_idx_t track = muse::nidx, bool tied = true) const;
 
-    bool isSingle() const { return (m_state == SelState::LIST) && (m_el.size() == 1); }
+    bool isSingle() const { return (state_ == SelState::LIST) && (el_.size() == 1); }
 
     bool elementsSelected(const ElementTypeSet &types) const;
 
@@ -165,25 +165,25 @@ public:
     String mimeType() const;
     muse::ByteArray mimeData() const;
 
-    Segment *startSegment() const { return m_startSegment; }
+    Segment *startSegment() const { return startSegment_; }
 
-    Segment *endSegment() const { return m_endSegment; }
+    Segment *endSegment() const { return endSegment_; }
 
     void setStartSegment(Segment *s);
     void setEndSegment(Segment *s);
 
-    Box *startBox() const { return m_startBox; }
+    Box *startBox() const { return startBox_; }
 
-    Box *endBox() const { return m_endBox; }
+    Box *endBox() const { return endBox_; }
 
     void setRange(Segment *startSegment, Segment *endSegment, staff_idx_t staffStart, staff_idx_t staffEnd, Box *startBox = nullptr,
                   Box *endBox = nullptr);
     void setRangeTicks(const Fraction &tick1, const Fraction &tick2, staff_idx_t staffStart, staff_idx_t staffEnd, Box *startBox = nullptr,
                        Box *endBox = nullptr);
 
-    Segment *activeSegment() const { return m_activeSegment; }
+    Segment *activeSegment() const { return activeSegment_; }
 
-    void setActiveSegment(Segment *s) { m_activeSegment = s; }
+    void setActiveSegment(Segment *s) { activeSegment_ = s; }
 
     ChordRest *activeCR() const;
     bool isStartActive() const;
@@ -192,17 +192,17 @@ public:
     Fraction tickStart() const;
     Fraction tickEnd() const;
 
-    staff_idx_t staffStart() const { return m_staffStart; }
+    staff_idx_t staffStart() const { return staffStart_; }
 
-    staff_idx_t staffEnd() const { return m_staffEnd; }
+    staff_idx_t staffEnd() const { return staffEnd_; }
 
-    track_idx_t activeTrack() const { return m_activeTrack; }
+    track_idx_t activeTrack() const { return activeTrack_; }
 
-    void setStaffStart(int v) { m_staffStart = v; }
+    void setStaffStart(int v) { staffStart_ = v; }
 
-    void setStaffEnd(int v) { m_staffEnd = v; }
+    void setStaffEnd(int v) { staffEnd_ = v; }
 
-    void setActiveTrack(track_idx_t v) { m_activeTrack = v; }
+    void setActiveTrack(track_idx_t v) { activeTrack_ = v; }
 
     bool canCopy() const;
     void updateSelectedElements();
@@ -236,32 +236,32 @@ private:
 
     bool rangeIsValid() const;
 
-    Score *m_score = nullptr;
-    SelState m_state = SelState::NONE;
-    std::vector<EngravingItem *> m_el; // valid in mode SelState::LIST
+    Score *score_ = nullptr;
+    SelState state_ = SelState::NONE;
+    std::vector<EngravingItem *> el_; // valid in mode SelState::LIST
 
-    staff_idx_t m_staffStart = 0; // valid if selState is SelState::RANGE
-    staff_idx_t m_staffEnd = 0;
+    staff_idx_t staffStart_ = 0; // valid if selState is SelState::RANGE
+    staff_idx_t staffEnd_ = 0;
 
-    Segment *m_startSegment = nullptr;
-    Segment *m_endSegment = nullptr; // next segment after selection
+    Segment *startSegment_ = nullptr;
+    Segment *endSegment_ = nullptr; // next segment after selection
 
-    Box *m_startBox = nullptr;
-    Box *m_endBox = nullptr; // the last Box included in the selection
+    Box *startBox_ = nullptr;
+    Box *endBox_ = nullptr; // the last Box included in the selection
 
-    Fraction m_plannedTick1{-1, 1}; // Will be actually selected on updateSelectedElements() call.
-    Fraction m_plannedTick2{-1, 1}; // Used by setRangeTicks() to restore proper selection after
+    Fraction plannedTick1_{-1, 1}; // Will be actually selected on updateSelectedElements() call.
+    Fraction plannedTick2_{-1, 1}; // Used by setRangeTicks() to restore proper selection after
     // command end in case some changes are expected to segments'
     // structure (e.g. MMRests reconstruction).
 
-    Segment *m_activeSegment = nullptr;
-    track_idx_t m_activeTrack = 0;
+    Segment *activeSegment_ = nullptr;
+    track_idx_t activeTrack_ = 0;
 
-    Fraction m_currentTick; // tracks the most recent selection
-    track_idx_t m_currentTrack = 0;
+    Fraction currentTick_; // tracks the most recent selection
+    track_idx_t currentTrack_ = 0;
 
-    bool m_rangeContainsMultiNoteChords = false; // cached - calculating this isn't free
+    bool rangeContainsMultiNoteChords_ = false; // cached - calculating this isn't free
 
-    String m_lockReason;
+    String lockReason_;
 };
 } // namespace mu::engraving

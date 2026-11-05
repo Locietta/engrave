@@ -51,7 +51,7 @@ public:
     // profilesRepository may be null (no default articulation profiles); it must
     // outlive the model.
     explicit PlaybackModel(const muse::mpe::IArticulationProfilesRepository *profilesRepository)
-        : m_profilesRepository(profilesRepository) {}
+        : profilesRepository_(profilesRepository) {}
 
     ~PlaybackModel() override;
 
@@ -68,7 +68,7 @@ public:
 
     // The tracks changed since the last send, for the tracks that do not send
     // their events on each change.
-    const InstrumentTrackIdSet &changedTrackIdSet() const { return m_changedTrackIdSet; }
+    const InstrumentTrackIdSet &changedTrackIdSet() const { return changedTrackIdSet_; }
 
     bool isPlayRepeatsEnabled() const;
     void setPlayRepeats(const bool isEnabled);
@@ -100,7 +100,7 @@ public:
     void onScoreChanges(const ScoreChanges &changes) override;
 
 private:
-    const muse::mpe::IArticulationProfilesRepository *profilesRepository() const { return m_profilesRepository; }
+    const muse::mpe::IArticulationProfilesRepository *profilesRepository() const { return profilesRepository_; }
 
     void detachFromScore();
 
@@ -174,28 +174,28 @@ private:
     static void applyTiedNotesTickBoundaries(const Note *note, TickBoundaries &tickBoundaries);
     static void applyTieTickBoundaries(const Tie *tie, TickBoundaries &tickBoundaries);
 
-    const muse::mpe::IArticulationProfilesRepository *m_profilesRepository = nullptr;
-    std::function<void()> m_checkpoint;
+    const muse::mpe::IArticulationProfilesRepository *profilesRepository_ = nullptr;
+    std::function<void()> checkpoint_;
 
     void checkpoint() const {
-        if (m_checkpoint) m_checkpoint();
+        if (checkpoint_) checkpoint_();
     }
 
-    Score *m_score = nullptr;
+    Score *score_ = nullptr;
     // The master score this model listens to; checked with Score::isAlive before detaching.
-    MasterScore *m_listenedScore = nullptr;
-    bool m_expandRepeats = true;
-    bool m_playChordSymbols = true;
-    bool m_useScoreDynamicsForOffstreamPlayback = true;
-    bool m_metronomeEnabled = true;
+    MasterScore *listenedScore_ = nullptr;
+    bool expandRepeats_ = true;
+    bool playChordSymbols_ = true;
+    bool useScoreDynamicsForOffstreamPlayback_ = true;
+    bool metronomeEnabled_ = true;
 
-    PlaybackEventsRenderer m_renderer;
-    PlaybackSetupDataResolver m_setupResolver;
+    PlaybackEventsRenderer renderer_;
+    PlaybackSetupDataResolver setupResolver_;
 
-    PlaybackContextPtr m_playbackCtx;
-    std::unordered_map<InstrumentTrackId, muse::mpe::PlaybackData> m_playbackDataMap;
-    std::unordered_map<InstrumentTrackId, bool> m_sendEventsOnScoreChangeMap;
+    PlaybackContextPtr playbackCtx_;
+    std::unordered_map<InstrumentTrackId, muse::mpe::PlaybackData> playbackDataMap_;
+    std::unordered_map<InstrumentTrackId, bool> sendEventsOnScoreChangeMap_;
 
-    InstrumentTrackIdSet m_changedTrackIdSet;
+    InstrumentTrackIdSet changedTrackIdSet_;
 };
 } // namespace mu::engraving

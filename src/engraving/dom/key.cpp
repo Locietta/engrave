@@ -89,11 +89,11 @@ const SymId accTable[] = {
 //---------------------------------------------------------
 
 void KeySigEvent::enforceLimits(bool transposing) {
-    if (m_key < Key::MIN) {
-        m_key = Key::MIN;
+    if (key_ < Key::MIN) {
+        key_ = Key::MIN;
         LOGD("key < -7");
-    } else if (m_key > Key::MAX) {
-        m_key = Key::MAX;
+    } else if (key_ > Key::MAX) {
+        key_ = Key::MAX;
         LOGD("key > 7");
     }
 
@@ -101,11 +101,11 @@ void KeySigEvent::enforceLimits(bool transposing) {
         return;
     }
 
-    if (m_concertKey < Key::MIN) {
-        m_concertKey = Key::MIN;
+    if (concertKey_ < Key::MIN) {
+        concertKey_ = Key::MIN;
         LOGD("key < -7");
-    } else if (m_concertKey > Key::MAX) {
-        m_concertKey = Key::MAX;
+    } else if (concertKey_ > Key::MAX) {
+        concertKey_ = Key::MAX;
         LOGD("key > 7");
     }
 }
@@ -124,7 +124,7 @@ void KeySigEvent::print() const {
         } else if (custom()) {
             LOGD("custom>");
         } else {
-            LOGD("accidental %d>", int(m_key));
+            LOGD("accidental %d>", int(key_));
         }
     }
 }
@@ -134,7 +134,7 @@ void KeySigEvent::print() const {
 //---------------------------------------------------------
 
 void KeySigEvent::setKey(Key v) {
-    m_key = v;
+    key_ = v;
     enforceLimits(true);
 }
 
@@ -143,8 +143,8 @@ void KeySigEvent::setKey(Key v) {
 //---------------------------------------------------------
 
 void KeySigEvent::setConcertKey(Key v) {
-    m_key = v;
-    m_concertKey = v;
+    key_ = v;
+    concertKey_ = v;
     enforceLimits();
 }
 
@@ -153,10 +153,10 @@ void KeySigEvent::setConcertKey(Key v) {
 //---------------------------------------------------------
 
 void KeySigEvent::setCustom(bool val) {
-    m_custom = val;
-    if (m_key == Key::INVALID) {
-        m_concertKey = Key::C;
-        m_key = Key::C;
+    custom_ = val;
+    if (key_ == Key::INVALID) {
+        concertKey_ = Key::C;
+        key_ = Key::C;
     }
 }
 
@@ -165,23 +165,23 @@ void KeySigEvent::setCustom(bool val) {
 //---------------------------------------------------------
 
 bool KeySigEvent::operator==(const KeySigEvent &e) const {
-    if (e.m_custom != m_custom || e.m_mode != m_mode || e.m_forInstrumentChange != m_forInstrumentChange) {
+    if (e.custom_ != custom_ || e.mode_ != mode_ || e.forInstrumentChange_ != forInstrumentChange_) {
         return false;
     }
-    if (m_custom && !isAtonal()) {
-        if (e.m_customKeyDefs.size() != m_customKeyDefs.size()) {
+    if (custom_ && !isAtonal()) {
+        if (e.customKeyDefs_.size() != customKeyDefs_.size()) {
             return false;
         }
-        for (size_t i = 0; i < m_customKeyDefs.size(); ++i) {
+        for (size_t i = 0; i < customKeyDefs_.size(); ++i) {
             // check note and sym, don't care xAlt and octAlt
-            if (e.m_customKeyDefs[i].degree != m_customKeyDefs[i].degree || e.m_customKeyDefs[i].sym != m_customKeyDefs[i].sym) {
+            if (e.customKeyDefs_[i].degree != customKeyDefs_[i].degree || e.customKeyDefs_[i].sym != customKeyDefs_[i].sym) {
                 return false;
             }
             // TODO: position matters // does it?
         }
         return true;
     }
-    return e.m_concertKey == m_concertKey && e.m_key == m_key;
+    return e.concertKey_ == concertKey_ && e.key_ == key_;
 }
 
 //---------------------------------------------------------
@@ -221,12 +221,12 @@ void KeySigEvent::initFromSubtype(int st) {
     a._invalid = (st >> 25) & 0x1;
     //end of legacy code
 
-    m_key = Key(a._key);
-    m_concertKey = m_key;
+    key_ = Key(a._key);
+    concertKey_ = key_;
     //      _customType     = a._customType;
-    m_custom = a._custom;
+    custom_ = a._custom;
     if (a._invalid) {
-        m_key = Key::INVALID;
+        key_ = Key::INVALID;
     }
     enforceLimits();
 }
@@ -240,7 +240,7 @@ AccidentalVal AccidentalState::accidentalVal(int line, bool &error) const {
         error = true;
         return AccidentalVal::NATURAL;
     }
-    return AccidentalVal((m_state[line] & 0x0f) + int(AccidentalVal::MIN));
+    return AccidentalVal((state_[line] & 0x0f) + int(AccidentalVal::MIN));
 }
 
 //---------------------------------------------------------
@@ -253,7 +253,7 @@ static const int ACC_STATE_FLAT = int(AccidentalVal::FLAT) - int(AccidentalVal::
 static const int ACC_STATE_SHARP = int(AccidentalVal::SHARP) - int(AccidentalVal::MIN);
 
 void AccidentalState::init(Key key) {
-    memset(m_state, ACC_STATE_NATURAL, MAX_ACC_STATE);
+    memset(state_, ACC_STATE_NATURAL, MAX_ACC_STATE);
     // The numerical value of key tells us the number of sharps (or flats, if negative) in the key signature
     if (key > 0 && key <= Key::MAX) {
         for (int i = 0; i < int(key); ++i) {
@@ -264,7 +264,7 @@ void AccidentalState::init(Key key) {
                 if (j >= MAX_ACC_STATE) {
                     break;
                 }
-                m_state[j] = ACC_STATE_SHARP;
+                state_[j] = ACC_STATE_SHARP;
             }
         }
     } else if (key < 0 && key >= Key::MIN) {
@@ -276,7 +276,7 @@ void AccidentalState::init(Key key) {
                 if (j >= MAX_ACC_STATE) {
                     break;
                 }
-                m_state[j] = ACC_STATE_FLAT;
+                state_[j] = ACC_STATE_FLAT;
             }
         }
     }
@@ -298,11 +298,11 @@ void AccidentalState::init(const KeySigEvent &keySig) {
                 if (i >= MAX_ACC_STATE) {
                     break;
                 }
-                m_state[i] = static_cast<uint8_t>(int(a) - int(AccidentalVal::MIN));
+                state_[i] = static_cast<uint8_t>(int(a) - int(AccidentalVal::MIN));
             }
         }
     }
-    m_forceRestateAccidental.fill(false);
+    forceRestateAccidental_.fill(false);
 }
 
 //---------------------------------------------------------
@@ -311,12 +311,12 @@ void AccidentalState::init(const KeySigEvent &keySig) {
 
 AccidentalVal AccidentalState::accidentalVal(int line) const {
     assert(line >= MIN_ACC_STATE && line < MAX_ACC_STATE);
-    return AccidentalVal((m_state[line] & 0x0f) + int(AccidentalVal::MIN));
+    return AccidentalVal((state_[line] & 0x0f) + int(AccidentalVal::MIN));
 }
 
 bool AccidentalState::forceRestateAccidental(int line) const {
     assert(line >= MIN_ACC_STATE && line < MAX_ACC_STATE);
-    return m_forceRestateAccidental[line];
+    return forceRestateAccidental_[line];
 }
 
 //---------------------------------------------------------
@@ -325,7 +325,7 @@ bool AccidentalState::forceRestateAccidental(int line) const {
 
 bool AccidentalState::tieContext(int line) const {
     assert(line >= MIN_ACC_STATE && line < MAX_ACC_STATE);
-    return m_state[line] & TIE_CONTEXT;
+    return state_[line] & TIE_CONTEXT;
 }
 
 //---------------------------------------------------------
@@ -336,12 +336,12 @@ void AccidentalState::setAccidentalVal(int line, AccidentalVal val, bool tieCont
     assert(line >= MIN_ACC_STATE && line < MAX_ACC_STATE);
     // casts needed to work around a bug in Xcode 4.2 on Mac, see #25910
     assert(int(val) >= int(AccidentalVal::MIN) && int(val) <= int(AccidentalVal::MAX));
-    m_state[line] = (int(val) - int(AccidentalVal::MIN)) | (tieContext ? TIE_CONTEXT : 0);
+    state_[line] = (int(val) - int(AccidentalVal::MIN)) | (tieContext ? TIE_CONTEXT : 0);
 }
 
 void AccidentalState::setForceRestateAccidental(int line, bool forceRestate) {
     assert(line >= MIN_ACC_STATE && line < MAX_ACC_STATE);
-    m_forceRestateAccidental[line] = forceRestate;
+    forceRestateAccidental_[line] = forceRestate;
 }
 
 //---------------------------------------------------------

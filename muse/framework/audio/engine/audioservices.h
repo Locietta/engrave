@@ -18,18 +18,18 @@ public:
     AudioServices(const AudioServices &) = delete;
     AudioServices &operator=(const AudioServices &) = delete;
 
-    AudioEngineConfiguration &configuration() { return m_configuration; }
+    AudioEngineConfiguration &configuration() { return configuration_; }
 
-    synth::SoundFontRepository &soundFontRepository() { return m_soundFontRepository; }
+    synth::SoundFontRepository &soundFontRepository() { return soundFontRepository_; }
 
-    synth::SynthResolver &synthResolver() { return m_synthResolver; }
+    synth::SynthResolver &synthResolver() { return synthResolver_; }
 
-    AudioFactory &factory() { return m_factory; }
+    AudioFactory &factory() { return factory_; }
 private:
-    AudioEngineConfiguration m_configuration;
-    synth::SoundFontRepository m_soundFontRepository;
-    synth::SynthResolver m_synthResolver;
-    fx::FxResolver m_fxResolver;
-    AudioFactory m_factory;
+    AudioEngineConfiguration configuration_;
+    synth::SoundFontRepository soundFontRepository_;
+    synth::SynthResolver synthResolver_;
+    fx::FxResolver fxResolver_;
+    AudioFactory factory_;
 };
 } // namespace muse::audio::engine

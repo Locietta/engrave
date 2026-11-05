@@ -29,21 +29,21 @@ class MnemonicString {
 public:
     MnemonicString() = default;
 
-    MnemonicString(const TranslatableString &raw) : m_raw(raw) {}
+    MnemonicString(const TranslatableString &raw) : raw_(raw) {}
 
     MnemonicString(const char *context, const char *str, const char *disambiguation = nullptr, int n = -1)
-        : m_raw(context, str, disambiguation, n) {}
+        : raw_(context, str, disambiguation, n) {}
 
-    inline bool isEmpty() const { return m_raw.isEmpty(); }
+    inline bool isEmpty() const { return raw_.isEmpty(); }
 
-    inline const TranslatableString &raw() const { return m_raw; }
+    inline const TranslatableString &raw() const { return raw_; }
 
-    inline bool operator==(const MnemonicString &other) const { return m_raw == other.m_raw; }
+    inline bool operator==(const MnemonicString &other) const { return raw_ == other.raw_; }
 
-    inline bool operator!=(const MnemonicString &other) const { return m_raw != other.m_raw; }
+    inline bool operator!=(const MnemonicString &other) const { return raw_ != other.raw_; }
 
 private:
-    TranslatableString m_raw;
+    TranslatableString raw_;
 };
 } // namespace muse
 

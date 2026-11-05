@@ -43,18 +43,18 @@
 using namespace mu::engraving;
 
 void ChangeTieJumpPointActive::flip() {
-    TieJumpPoint *jumpPoint = m_jumpPointList->findJumpPoint(m_id);
+    TieJumpPoint *jumpPoint = jumpPointList_->findJumpPoint(id_);
     if (!jumpPoint) {
         return;
     }
     bool oldActive = jumpPoint->active();
 
-    if (m_active && jumpPoint->endTie() && jumpPoint->endTie()->jumpPoint() != jumpPoint) {
+    if (active_ && jumpPoint->endTie() && jumpPoint->endTie()->jumpPoint() != jumpPoint) {
         jumpPoint->endTie()->setJumpPoint(jumpPoint);
     }
 
-    jumpPoint->setActive(m_active);
-    m_active = oldActive;
+    jumpPoint->setActive(active_);
+    active_ = oldActive;
 }
 
 std::vector<Note *> EditTie::cmdTieNoteList(const Selection &selection, bool noteEntryMode) {

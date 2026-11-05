@@ -49,16 +49,16 @@ public:
     void undo();
     void redo();
 
-    void appendCommand(UndoableCommand *cmd) { m_commands.push_back(cmd); }
+    void appendCommand(UndoableCommand *cmd) { commands_.push_back(cmd); }
 
     void append(UndoableTransaction &&other);
 
     void unwind(bool cleanUp = true);
     void cleanup(bool wasDone);
 
-    const std::vector<UndoableCommand *> &commands() const { return m_commands; }
+    const std::vector<UndoableCommand *> &commands() const { return commands_; }
 
-    bool empty() const { return m_commands.empty(); }
+    bool empty() const { return commands_.empty(); }
 
     bool hasCommandsMatchingFilter(UndoableCommandFilter, const EngravingItem *target) const;
     bool hasCommandsNotMatchingFilters(const std::vector<UndoableCommandFilter> &filters, const EngravingItem *target) const;
@@ -99,15 +99,15 @@ public:
 private:
     void appendCommands(UndoableTransaction &other);
 
-    std::vector<UndoableCommand *> m_commands;
+    std::vector<UndoableCommand *> commands_;
 
-    InputState m_undoInputState;
-    InputState m_redoInputState;
-    SelectionInfo m_undoSelectionInfo;
-    SelectionInfo m_redoSelectionInfo;
-    muse::TranslatableString m_actionName;
+    InputState undoInputState_;
+    InputState redoInputState_;
+    SelectionInfo undoSelectionInfo_;
+    SelectionInfo redoSelectionInfo_;
+    muse::TranslatableString actionName_;
 
-    Score *m_score = nullptr;
+    Score *score_ = nullptr;
 
     static void fillSelectionInfo(SelectionInfo &, const Selection &);
     static void applySelectionInfo(const SelectionInfo &, Selection &);
@@ -121,34 +121,34 @@ public:
     bool isLocked() const;
     void setLocked(bool locked);
 
-    bool hasActiveTransaction() const { return m_activeTransaction != nullptr; }
+    bool hasActiveTransaction() const { return activeTransaction_ != nullptr; }
 
     void beginTransaction(Score *, const muse::TranslatableString &actionName);
     void endTransaction(bool rollback);
 
-    bool canUndo() const { return m_currentIndex > 0; }
+    bool canUndo() const { return currentIndex_ > 0; }
 
-    bool canRedo() const { return m_currentIndex < m_transactions.size(); }
+    bool canRedo() const { return currentIndex_ < transactions_.size(); }
 
-    bool isClean() const { return m_cleanState == m_states[m_currentIndex]; }
+    bool isClean() const { return cleanState_ == states_[currentIndex_]; }
 
-    size_t size() const { return m_transactions.size(); }
+    size_t size() const { return transactions_.size(); }
 
-    size_t currentIndex() const { return m_currentIndex; }
+    size_t currentIndex() const { return currentIndex_; }
 
-    UndoableTransaction *activeTransaction() const { return m_activeTransaction; }
+    UndoableTransaction *activeTransaction() const { return activeTransaction_; }
 
-    UndoableTransaction *last() const { return m_currentIndex > 0 ? m_transactions[m_currentIndex - 1] : nullptr; }
+    UndoableTransaction *last() const { return currentIndex_ > 0 ? transactions_[currentIndex_ - 1] : nullptr; }
 
-    UndoableTransaction *prev() const { return m_currentIndex > 1 ? m_transactions[m_currentIndex - 2] : nullptr; }
+    UndoableTransaction *prev() const { return currentIndex_ > 1 ? transactions_[currentIndex_ - 2] : nullptr; }
 
-    UndoableTransaction *next() const { return canRedo() ? m_transactions[m_currentIndex] : nullptr; }
+    UndoableTransaction *next() const { return canRedo() ? transactions_[currentIndex_] : nullptr; }
 
     /// Returns the transaction that led to the state with the given `idx`.
     /// For further discussion of the indices involved in UndoStack, see:
     /// https://github.com/musescore/MuseScore/pull/25389#discussion_r1825782176
     UndoableTransaction *lastAtIndex(size_t idx) const {
-        return idx > 0 && idx - 1 < m_transactions.size() ? m_transactions[idx - 1] : nullptr;
+        return idx > 0 && idx - 1 < transactions_.size() ? transactions_[idx - 1] : nullptr;
     }
 
     void undo(EditData *);
@@ -157,7 +157,7 @@ public:
 
     void mergeTransactions(size_t startIdx);
 
-    void cleanRedoStack() { remove(m_currentIndex); }
+    void cleanRedoStack() { remove(currentIndex_); }
 
     // Retire history without changing the currently applied score state.
     bool clearHistory();
@@ -165,12 +165,12 @@ public:
 private:
     void remove(size_t idx);
 
-    UndoableTransaction *m_activeTransaction = nullptr;
-    std::vector<UndoableTransaction *> m_transactions;
-    std::vector<int> m_states;
-    int m_nextState = 0;
-    int m_cleanState = 0;
-    size_t m_currentIndex = 0;
-    bool m_isLocked = false;
+    UndoableTransaction *activeTransaction_ = nullptr;
+    std::vector<UndoableTransaction *> transactions_;
+    std::vector<int> states_;
+    int nextState_ = 0;
+    int cleanState_ = 0;
+    size_t currentIndex_ = 0;
+    bool isLocked_ = false;
 };
 } // namespace mu::engraving

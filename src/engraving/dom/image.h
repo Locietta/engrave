@@ -65,32 +65,32 @@ public:
     bool isImageFramed() const;
     double imageAspectRatio() const;
 
-    void setSize(const SizeF &s) { m_size = s; }
+    void setSize(const SizeF &s) { size_ = s; }
 
-    const SizeF &size() const { return m_size; }
+    const SizeF &size() const { return size_; }
 
     void updateImageHeight(const double &height);
     void updateImageWidth(const double &width);
     double imageHeight() const;
     double imageWidth() const;
 
-    bool lockAspectRatio() const { return m_lockAspectRatio; }
+    bool lockAspectRatio() const { return lockAspectRatio_; }
 
-    void setLockAspectRatio(bool v) { m_lockAspectRatio = v; }
+    void setLockAspectRatio(bool v) { lockAspectRatio_ = v; }
 
-    bool autoScale() const { return m_autoScale; }
+    bool autoScale() const { return autoScale_; }
 
-    void setAutoScale(bool v) { m_autoScale = v; }
+    void setAutoScale(bool v) { autoScale_ = v; }
 
-    ImageStoreItem *storeItem() const { return m_storeItem; }
+    ImageStoreItem *storeItem() const { return storeItem_; }
 
-    bool sizeIsSpatium() const { return m_sizeIsSpatium; }
+    bool sizeIsSpatium() const { return sizeIsSpatium_; }
 
-    void setSizeIsSpatium(bool val) { m_sizeIsSpatium = val; }
+    void setSizeIsSpatium(bool val) { sizeIsSpatium_ = val; }
 
-    const std::string &storePath() const { return m_storePath; }
+    const std::string &storePath() const { return storePath_; }
 
-    void setStorePath(const std::string &p) { m_storePath = p; }
+    void setStorePath(const std::string &p) { storePath_ = p; }
 
     PropertyValue getProperty(Pid) const override;
     bool setProperty(Pid propertyId, const PropertyValue &) override;
@@ -100,39 +100,39 @@ public:
 
     void setImageType(ImageType);
 
-    ImageType imageType() const { return m_imageType; }
+    ImageType imageType() const { return imageType_; }
 
-    bool isValid() const { return m_rasterDoc || m_svgDoc; }
+    bool isValid() const { return rasterDoc_ || svgDoc_; }
 
-    muse::draw::SvgRenderer *svgRenderer() const { return m_svgDoc; }
+    muse::draw::SvgRenderer *svgRenderer() const { return svgDoc_; }
 
-    const std::shared_ptr<muse::draw::Pixmap> &rasterImage() const { return m_rasterDoc; }
+    const std::shared_ptr<muse::draw::Pixmap> &rasterImage() const { return rasterDoc_; }
 
     SizeF pixel2size(const SizeF &s) const;
     SizeF size2pixel(const SizeF &s) const;
 
-    const muse::draw::Pixmap &buffer() const { return m_buffer; }
+    const muse::draw::Pixmap &buffer() const { return buffer_; }
 
-    void setBuffer(const muse::draw::Pixmap &p) const { m_buffer = p; }
+    void setBuffer(const muse::draw::Pixmap &p) const { buffer_ = p; }
 
-    bool dirty() const { return m_dirty; }
+    bool dirty() const { return dirty_; }
 
-    void setDirty(bool val) const { m_dirty = val; }
+    void setDirty(bool val) const { dirty_ = val; }
 
 private:
 
-    ImageStoreItem *m_storeItem = nullptr;
-    std::string m_storePath;             // the path of the img in the ImageStore
-    mutable muse::draw::Pixmap m_buffer; // cached rendering
-    SizeF m_size;                        // in absolute or spatium units
-    bool m_lockAspectRatio = false;
-    bool m_autoScale = false; // fill parent frame
-    bool m_sizeIsSpatium = false;
-    mutable bool m_dirty = false;
+    ImageStoreItem *storeItem_ = nullptr;
+    std::string storePath_;             // the path of the img in the ImageStore
+    mutable muse::draw::Pixmap buffer_; // cached rendering
+    SizeF size_;                        // in absolute or spatium units
+    bool lockAspectRatio_ = false;
+    bool autoScale_ = false; // fill parent frame
+    bool sizeIsSpatium_ = false;
+    mutable bool dirty_ = false;
 
-    std::shared_ptr<muse::draw::Pixmap> m_rasterDoc;
-    muse::draw::SvgRenderer *m_svgDoc = nullptr;
+    std::shared_ptr<muse::draw::Pixmap> rasterDoc_;
+    muse::draw::SvgRenderer *svgDoc_ = nullptr;
 
-    ImageType m_imageType = ImageType::NONE;
+    ImageType imageType_ = ImageType::NONE;
 };
 } // namespace mu::engraving

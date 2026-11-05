@@ -50,14 +50,14 @@ public:
 
     int displayNumber(const Measure *measure) {
         updateForMeasure(measure);
-        return m_displayNumber;
+        return displayNumber_;
     }
 
 private:
     void init() {
-        m_measureNumber = 1;
-        m_measureNumberOffset = 0;
-        m_displayNumber = 1;
+        measureNumber_ = 1;
+        measureNumberOffset_ = 0;
+        displayNumber_ = 1;
     }
 
     void updateForMeasure(const Measure *measure) {
@@ -72,20 +72,20 @@ private:
             }
         }
 
-        m_measureNumberOffset = measure->measureNumberOffset();
-        m_measureNumber += m_measureNumberOffset;
+        measureNumberOffset_ = measure->measureNumberOffset();
+        measureNumber_ += measureNumberOffset_;
 
         if (measure->isAnacrusis()) {
-            m_displayNumber = 0;
+            displayNumber_ = 0;
             return;
         }
 
-        m_displayNumber = m_measureNumber++;
+        displayNumber_ = measureNumber_++;
     }
 
-    int m_measureNumber = 1;
-    int m_measureNumberOffset = 0;
-    int m_displayNumber = 1;
+    int measureNumber_ = 1;
+    int measureNumberOffset_ = 0;
+    int displayNumber_ = 1;
 };
 } // namespace
 
@@ -330,26 +330,26 @@ void MnxExporter::createGlobal() {
     /// @note Lyrics metadata is exported at the end of `createParts`.
     /// @todo Export global sounds dictionary (mnx::global::Sound).
 
-    if (!m_score) {
+    if (!score_) {
         return;
     }
 
-    auto mnxMeasures = m_mnxDocument.global().measures();
+    auto mnxMeasures = mnxDocument_.global().measures();
     MeasureNumberState measureNumberState;
     std::optional<Fraction> prevTimeSig;
     std::optional<mnx::TimeSignatureDisplay> prevTimeSigDisplay;
     std::optional<int> prevKeyFifths;
     size_t measureIndex = 0;
 
-    for (const Measure *measure = m_score->firstMeasure(); measure; measure = measure->nextMeasure()) {
+    for (const Measure *measure = score_->firstMeasure(); measure; measure = measure->nextMeasure()) {
         auto mnxMeasure = mnxMeasures.append();
         mnxMeasure.set_id(getOrAssignEID(const_cast<Measure *>(measure)).toStdString());
-        m_measToMnxMeas.emplace(measure, measureIndex);
+        measToMnxMeas_.emplace(measure, measureIndex);
 
         assignBarline(mnxMeasure, measure);
         assignRepeats(mnxMeasure, measure);
         assignTimeSignature(mnxMeasure, measure, prevTimeSig, prevTimeSigDisplay);
-        assignKeySignature(mnxMeasure, m_score, measure, prevKeyFifths);
+        assignKeySignature(mnxMeasure, score_, measure, prevKeyFifths);
         exportMeasureElements(mnxMeasure, measure);
 
         const int displayNumber = measureNumberState.displayNumber(measure);

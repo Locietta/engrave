@@ -106,18 +106,18 @@ public:
 
     virtual double mag() const override;
 
-    SymId symId() const { return m_symId; }
+    SymId symId() const { return symId_; }
 
     void setSymId(SymId id);
     virtual int subtype() const override;
 
     void setTextType(ArticulationTextType textType);
 
-    ArticulationTextType textType() const { return m_textType; }
+    ArticulationTextType textType() const { return textType_; }
 
-    Text *text() const { return m_text; }
+    Text *text() const { return text_; }
 
-    void setText(Text *t) { m_text = t; }
+    void setText(Text *t) { text_ = t; }
 
     void setSelected(bool f) override;
     void setVisible(bool f) override;
@@ -137,9 +137,9 @@ public:
     void resetProperty(Pid id) override;
     Sid getPropertyStyle(Pid id) const override;
 
-    void setDirection(DirectionV d) { m_direction = d; }
+    void setDirection(DirectionV d) { direction_ = d; }
 
-    DirectionV direction() const { return m_direction; }
+    DirectionV direction() const { return direction_; }
 
     ChordRest *chordRest() const;
     Segment *segment() const;
@@ -147,37 +147,37 @@ public:
     System *system() const;
     Page *page() const;
 
-    ArticulationAnchor anchor() const { return m_anchor; }
+    ArticulationAnchor anchor() const { return anchor_; }
 
-    void setAnchor(ArticulationAnchor v) { m_anchor = v; }
+    void setAnchor(ArticulationAnchor v) { anchor_ = v; }
 
-    OrnamentStyle ornamentStyle() const { return m_ornamentStyle; }
+    OrnamentStyle ornamentStyle() const { return ornamentStyle_; }
 
-    void setOrnamentStyle(OrnamentStyle val) { m_ornamentStyle = val; }
+    void setOrnamentStyle(OrnamentStyle val) { ornamentStyle_ = val; }
 
-    bool playArticulation() const { return m_playArticulation; }
+    bool playArticulation() const { return playArticulation_; }
 
-    void setPlayArticulation(bool val) { m_playArticulation = val; }
+    void setPlayArticulation(bool val) { playArticulation_ = val; }
 
-    String channelName() const { return m_channelName; }
+    String channelName() const { return channelName_; }
 
-    void setChannelName(const String &s) { m_channelName = s; }
+    void setChannelName(const String &s) { channelName_ = s; }
 
-    bool isDouble() const { return m_categories & ArticulationCategory::DOUBLE; }
+    bool isDouble() const { return categories_ & ArticulationCategory::DOUBLE; }
 
-    bool isTenuto() const { return m_categories & ArticulationCategory::TENUTO; }
+    bool isTenuto() const { return categories_ & ArticulationCategory::TENUTO; }
 
-    bool isStaccato() const { return m_categories & ArticulationCategory::STACCATO; }
+    bool isStaccato() const { return categories_ & ArticulationCategory::STACCATO; }
 
-    bool isAccent() const { return m_categories & ArticulationCategory::ACCENT; }
+    bool isAccent() const { return categories_ & ArticulationCategory::ACCENT; }
 
-    bool isMarcato() const { return m_categories & ArticulationCategory::MARCATO; }
+    bool isMarcato() const { return categories_ & ArticulationCategory::MARCATO; }
 
-    bool isLuteFingering() const { return m_categories & ArticulationCategory::LUTE_FINGERING; }
+    bool isLuteFingering() const { return categories_ & ArticulationCategory::LUTE_FINGERING; }
 
-    bool isLaissezVib() const { return m_categories & ArticulationCategory::LAISSEZ_VIB; }
+    bool isLaissezVib() const { return categories_ & ArticulationCategory::LAISSEZ_VIB; }
 
-    bool isHandbellsArticulation() const { return m_categories & ArticulationCategory::HANDBELLS; }
+    bool isHandbellsArticulation() const { return categories_ & ArticulationCategory::HANDBELLS; }
 
     bool isBasicArticulation() const;
 
@@ -221,21 +221,21 @@ private:
 
     void computeCategories();
 
-    ArticulationCategories m_categories = ArticulationCategory::NONE;
+    ArticulationCategories categories_ = ArticulationCategory::NONE;
 
-    SymId m_symId = SymId::noSym;
-    DirectionV m_direction = DirectionV::AUTO;
-    String m_channelName;
+    SymId symId_ = SymId::noSym;
+    DirectionV direction_ = DirectionV::AUTO;
+    String channelName_;
 
-    ArticulationTextType m_textType = ArticulationTextType::NO_TEXT;
-    Text *m_text = nullptr;
+    ArticulationTextType textType_ = ArticulationTextType::NO_TEXT;
+    Text *text_ = nullptr;
 
-    ArticulationAnchor m_anchor = ArticulationAnchor::AUTO;
+    ArticulationAnchor anchor_ = ArticulationAnchor::AUTO;
 
-    OrnamentStyle m_ornamentStyle = OrnamentStyle::DEFAULT; // for use in ornaments such as trill
-    bool m_playArticulation = true;
+    OrnamentStyle ornamentStyle_ = OrnamentStyle::DEFAULT; // for use in ornaments such as trill
+    bool playArticulation_ = true;
 
-    std::pair<Sid, Sid> m_showOnTabStyles = {Sid::NOSTYLE, Sid::NOSTYLE};
+    std::pair<Sid, Sid> showOnTabStyles_ = {Sid::NOSTYLE, Sid::NOSTYLE};
 };
 } // namespace mu::engraving
 

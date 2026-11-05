@@ -127,19 +127,19 @@ private:
 
     Block allocateBlock(size_t chunkSize) const;
 
-    const char *m_module = nullptr;
-    const char *m_name = nullptr;
-    size_t m_chunkSize = 0;
-    destroyer_t m_dtor = nullptr;
-    Chunk *m_free = nullptr;
-    std::vector<Block> m_blocks;
+    const char *module_ = nullptr;
+    const char *name_ = nullptr;
+    size_t chunkSize_ = 0;
+    destroyer_t dtor_ = nullptr;
+    Chunk *free_ = nullptr;
+    std::vector<Block> blocks_;
 
     struct Statistic {
         uint64_t totalAllocatedCount = 0;
         uint64_t totalFreeCount = 0;
     };
 
-    Statistic m_statistic;
+    Statistic statistic_;
 };
 
 class AllocatorsRegister {
@@ -159,7 +159,7 @@ public:
     void printState(const std::string &title);
 
 private:
-    std::list<ObjectAllocator *> m_allocators;
+    std::list<ObjectAllocator *> allocators_;
 };
 } // namespace muse
 

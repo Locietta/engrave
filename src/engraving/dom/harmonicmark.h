@@ -72,7 +72,7 @@ protected:
 
 private:
 
-    String m_text;
+    String text_;
 };
 } // namespace mu::engraving
 #endif

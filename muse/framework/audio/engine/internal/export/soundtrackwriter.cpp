@@ -61,8 +61,8 @@ SoundTrackWriter::SoundTrackWriter(io::IODevice &dstDevice, const SoundTrackForm
                                    IAudioNodePtr source, std::function<void(uint64_t)> blockCompleted,
                                    std::function<encode::AbstractAudioEncoderPtr(const SoundTrackFormat &, io::IODevice &)> encoderFactory,
                                    std::function<bool()> cancelled)
-    : m_cancelled(std::move(cancelled)), m_source(std::move(source)), m_blockCompleted(std::move(blockCompleted)) {
-    if (!m_source) {
+    : cancelled_(std::move(cancelled)), source_(std::move(source)), blockCompleted_(std::move(blockCompleted)) {
+    if (!source_) {
         return;
     }
     IF_ASSERT_FAILED(format.isValid()) { return; }
@@ -74,23 +74,23 @@ SoundTrackWriter::SoundTrackWriter(io::IODevice &dstDevice, const SoundTrackForm
         return static_cast<samples_t>(std::llround(sec * static_cast<double>(outputSpec.sampleRate)));
     };
 
-    m_dataSamples = durationToSamples(totalDuration);
-    m_leadingSilenceSamples = durationToSamples(format.leadingSilenceDuration);
+    dataSamples_ = durationToSamples(totalDuration);
+    leadingSilenceSamples_ = durationToSamples(format.leadingSilenceDuration);
     const samples_t trailingSilenceSamples = durationToSamples(format.trailingSilenceDuration);
-    m_totalSamples = m_leadingSilenceSamples + m_dataSamples + trailingSilenceSamples;
+    totalSamples_ = leadingSilenceSamples_ + dataSamples_ + trailingSilenceSamples;
 
     const samples_t intermediateSamplesNumber = outputSpec.samplesPerChannel * outputSpec.audioChannelCount;
-    m_intermBuffer.resize(intermediateSamplesNumber);
-    m_renderStep = outputSpec.samplesPerChannel;
+    intermBuffer_.resize(intermediateSamplesNumber);
+    renderStep_ = outputSpec.samplesPerChannel;
 
     OfflineTimer timer(OfflineTiming::current().encode);
-    m_encoderPtr = encoderFactory ? encoderFactory(format, dstDevice) : createEncoder(format, dstDevice);
-    if (!m_encoderPtr) {
+    encoderPtr_ = encoderFactory ? encoderFactory(format, dstDevice) : createEncoder(format, dstDevice);
+    if (!encoderPtr_) {
         return;
     }
 
-    if (pollCancellation() || !m_encoderPtr->begin(m_totalSamples)) {
-        m_encoderPtr.reset();
+    if (pollCancellation() || !encoderPtr_->begin(totalSamples_)) {
+        encoderPtr_.reset();
     }
 }
 
@@ -98,31 +98,31 @@ Ret SoundTrackWriter::write() {
     TRACEFUNC;
 
     if (pollCancellation()) return make_ret(Ret::Code::Cancel);
-    if (!m_source || !m_encoderPtr) {
+    if (!source_ || !encoderPtr_) {
         return false;
     }
 
-    m_source->setOutputSpec(m_encoderPtr->format().outputSpec);
-    m_source->setMode(ProcessMode::PlayingOffline);
+    source_->setOutputSpec(encoderPtr_->format().outputSpec);
+    source_->setMode(ProcessMode::PlayingOffline);
 
     bool finalized = false;
     DEFER {
         // Keep cleanup on an exception, but do not discard the normal result.
-        if (!m_isAborted && !finalized) {
+        if (!isAborted_ && !finalized) {
             OfflineTimer timer(OfflineTiming::current().encode);
-            m_encoderPtr->end();
+            encoderPtr_->end();
         }
 
-        m_isAborted = false;
+        isAborted_ = false;
     };
 
     Ret ret = writeStreaming();
     if (pollCancellation()) return make_ret(Ret::Code::Cancel);
-    if (!m_isAborted) {
+    if (!isAborted_) {
         finalized = true;
         OfflineTimer timer(OfflineTiming::current().encode);
         OfflineTimer flushTimer(OfflineTiming::current().flush);
-        const Ret finalRet = m_encoderPtr->end();
+        const Ret finalRet = encoderPtr_->end();
         if (pollCancellation()) return make_ret(Ret::Code::Cancel);
         // Encoding may already have failed; preserve that first error.
         if (ret && !finalRet) return finalRet;
@@ -131,15 +131,15 @@ Ret SoundTrackWriter::write() {
 }
 
 bool SoundTrackWriter::pollCancellation() {
-    if (m_cancelled && m_cancelled()) m_isAborted = true;
-    return m_isAborted;
+    if (cancelled_ && cancelled_()) isAborted_ = true;
+    return isAborted_;
 }
 
-void SoundTrackWriter::abort() { m_isAborted = true; }
+void SoundTrackWriter::abort() { isAborted_ = true; }
 
 Ret SoundTrackWriter::writeStreaming() {
     TRACEFUNC;
-    if (m_totalSamples == 0) {
+    if (totalSamples_ == 0) {
         LOGI() << "No audio to export";
         return make_ret(Err::NoAudioToExport);
     }
@@ -147,75 +147,75 @@ Ret SoundTrackWriter::writeStreaming() {
     samples_t framesWritten = 0;
 
     // Phase 1: leading silence
-    const samples_t leadingEnd = m_leadingSilenceSamples;
+    const samples_t leadingEnd = leadingSilenceSamples_;
     while (framesWritten < leadingEnd && !pollCancellation()) {
-        const samples_t chunk = static_cast<samples_t>(std::min<uint64_t>(m_renderStep, leadingEnd - framesWritten));
+        const samples_t chunk = static_cast<samples_t>(std::min<uint64_t>(renderStep_, leadingEnd - framesWritten));
 
-        std::fill(m_intermBuffer.begin(), m_intermBuffer.end(), 0.f);
+        std::fill(intermBuffer_.begin(), intermBuffer_.end(), 0.f);
 
         if (pollCancellation()) return make_ret(Ret::Code::Cancel);
         const size_t encoded = [&] {
             OfflineTimer timer(OfflineTiming::current().encode);
             OfflineCancellation::EncodingScope phase;
-            return m_encoderPtr->encode(chunk, m_intermBuffer.data());
+            return encoderPtr_->encode(chunk, intermBuffer_.data());
         }();
         if (encoded == 0) {
             return make_ret(Err::ErrorEncode);
         }
 
         framesWritten += chunk;
-        if (m_blockCompleted) m_blockCompleted(framesWritten);
+        if (blockCompleted_) blockCompleted_(framesWritten);
     }
 
     // Phase 2: actual audio data
-    const samples_t audioEnd = m_leadingSilenceSamples + m_dataSamples;
+    const samples_t audioEnd = leadingSilenceSamples_ + dataSamples_;
     while (framesWritten < audioEnd && !pollCancellation()) {
-        const samples_t chunk = static_cast<samples_t>(std::min<uint64_t>(m_renderStep, audioEnd - framesWritten));
+        const samples_t chunk = static_cast<samples_t>(std::min<uint64_t>(renderStep_, audioEnd - framesWritten));
 
         //! NOTE The mixer mixes additively and relies on the caller to zero the output buffer
         //! (real time does this via AudioEngine::fillSilent), so clear it before each block.
-        std::fill(m_intermBuffer.begin(), m_intermBuffer.end(), 0.f);
+        std::fill(intermBuffer_.begin(), intermBuffer_.end(), 0.f);
 
         {
             OfflineTimer timer(OfflineTiming::current().render);
-            m_source->process(m_intermBuffer.data(), chunk);
+            source_->process(intermBuffer_.data(), chunk);
         }
 
         if (pollCancellation()) return make_ret(Ret::Code::Cancel);
         const size_t encoded = [&] {
             OfflineTimer timer(OfflineTiming::current().encode);
             OfflineCancellation::EncodingScope phase;
-            return m_encoderPtr->encode(chunk, m_intermBuffer.data());
+            return encoderPtr_->encode(chunk, intermBuffer_.data());
         }();
         if (encoded == 0) {
             return make_ret(Err::ErrorEncode);
         }
 
         framesWritten += chunk;
-        if (m_blockCompleted) m_blockCompleted(framesWritten);
+        if (blockCompleted_) blockCompleted_(framesWritten);
     }
 
     // Phase 3: trailing silence
-    while (framesWritten < m_totalSamples && !pollCancellation()) {
-        const samples_t chunk = static_cast<samples_t>(std::min<uint64_t>(m_renderStep, m_totalSamples - framesWritten));
+    while (framesWritten < totalSamples_ && !pollCancellation()) {
+        const samples_t chunk = static_cast<samples_t>(std::min<uint64_t>(renderStep_, totalSamples_ - framesWritten));
 
-        std::fill(m_intermBuffer.begin(), m_intermBuffer.end(), 0.f);
+        std::fill(intermBuffer_.begin(), intermBuffer_.end(), 0.f);
 
         if (pollCancellation()) return make_ret(Ret::Code::Cancel);
         const size_t encoded = [&] {
             OfflineTimer timer(OfflineTiming::current().encode);
             OfflineCancellation::EncodingScope phase;
-            return m_encoderPtr->encode(chunk, m_intermBuffer.data());
+            return encoderPtr_->encode(chunk, intermBuffer_.data());
         }();
         if (encoded == 0) {
             return make_ret(Err::ErrorEncode);
         }
 
         framesWritten += chunk;
-        if (m_blockCompleted) m_blockCompleted(framesWritten);
+        if (blockCompleted_) blockCompleted_(framesWritten);
     }
 
-    if (m_isAborted) {
+    if (isAborted_) {
         return make_ret(Ret::Code::Cancel);
     }
 

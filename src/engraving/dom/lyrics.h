@@ -63,42 +63,42 @@ public:
 
     ChordRest *chordRest() const { return toChordRest(ownershipParent()); }
 
-    int subtype() const override { return m_verse; }
+    int subtype() const override { return verse_; }
 
     TranslatableString subtypeUserName() const override;
 
-    void setVerse(int n) { m_verse = n; }
+    void setVerse(int n) { verse_ = n; }
 
-    int verse() const { return m_verse; }
+    int verse() const { return verse_; }
 
-    bool isEven() const { return m_verse % 2; }
+    bool isEven() const { return verse_ % 2; }
 
-    void setSyllabic(LyricsSyllabic s) { m_syllabic = s; }
+    void setSyllabic(LyricsSyllabic s) { syllabic_ = s; }
 
-    LyricsSyllabic syllabic() const { return m_syllabic; }
+    LyricsSyllabic syllabic() const { return syllabic_; }
 
     void add(EngravingItem *) override;
     void remove(EngravingItem *) override;
 
     bool positionRelativeToNoteheadRest() const override { return true; }
 
-    const Fraction &ticks() const { return m_ticks; }
+    const Fraction &ticks() const { return ticks_; }
 
-    void setTicks(const Fraction &tick) { m_ticks = tick; }
+    void setTicks(const Fraction &tick) { ticks_ = tick; }
 
     Fraction endTick() const;
     void removeFromScore();
 
     void adjustPrevious();
 
-    bool needRemoveInvalidSegments() const { return m_needRemoveInvalidSegments; }
+    bool needRemoveInvalidSegments() const { return needRemoveInvalidSegments_; }
 
     void setNeedRemoveInvalidSegments();
     void removeInvalidSegments();
 
-    LyricsLine *separator() const { return m_separator; }
+    LyricsLine *separator() const { return separator_; }
 
-    void setSeparator(LyricsLine *s) { m_separator = s; }
+    void setSeparator(LyricsLine *s) { separator_ = s; }
 
     bool isMelisma() const;
 
@@ -117,9 +117,9 @@ public:
     double yRelativeToStaff() const;
     void setYRelativeToStaff(double y);
 
-    bool avoidBarlines() const { return m_avoidBarlines; }
+    bool avoidBarlines() const { return avoidBarlines_; }
 
-    void setAvoidBarlines(bool v) { m_avoidBarlines = v; }
+    void setAvoidBarlines(bool v) { avoidBarlines_ = v; }
 
 private:
 
@@ -127,12 +127,12 @@ private:
     Lyrics(DummyParentOr<ChordRest> parent);
     Lyrics(const Lyrics &);
 
-    int m_verse = 0;  // row index
-    Fraction m_ticks; // if > 0 then draw an underline to tick() + _ticks (melisma)
-    LyricsSyllabic m_syllabic = LyricsSyllabic::SINGLE;
-    LyricsLine *m_separator = nullptr;
-    bool m_needRemoveInvalidSegments = false;
-    bool m_avoidBarlines = true;
+    int verse_ = 0;  // row index
+    Fraction ticks_; // if > 0 then draw an underline to tick() + _ticks (melisma)
+    LyricsSyllabic syllabic_ = LyricsSyllabic::SINGLE;
+    LyricsLine *separator_ = nullptr;
+    bool needRemoveInvalidSegments_ = false;
+    bool avoidBarlines_ = true;
 };
 
 //---------------------------------------------------------
@@ -157,9 +157,9 @@ public:
 
     virtual Lyrics *lyrics() const { return toLyrics(ownershipParent()); }
 
-    Lyrics *nextLyrics() const { return m_nextLyrics; }
+    Lyrics *nextLyrics() const { return nextLyrics_; }
 
-    void setNextLyrics(Lyrics *l) { m_nextLyrics = l; }
+    void setNextLyrics(Lyrics *l) { nextLyrics_ = l; }
 
     virtual bool isEndMelisma() const { return lyrics() && lyrics()->ticks().isNotZero(); }
 
@@ -174,7 +174,7 @@ protected:
 
     bool isInSpannerMap() const override { return false; }
 
-    Lyrics *m_nextLyrics = nullptr;
+    Lyrics *nextLyrics_ = nullptr;
 
     void doComputeEndElement() override;
 };
@@ -218,13 +218,13 @@ public:
 
     struct LayoutData : public LineSegment::LayoutData {
     public:
-        const std::vector<LineF> &dashes() const { return m_dashes; }
+        const std::vector<LineF> &dashes() const { return dashes_; }
 
-        void clearDashes() { m_dashes.clear(); }
+        void clearDashes() { dashes_.clear(); }
 
-        void addDash(const LineF &dash) { m_dashes.push_back(dash); }
+        void addDash(const LineF &dash) { dashes_.push_back(dash); }
     private:
-        std::vector<LineF> m_dashes;
+        std::vector<LineF> dashes_;
     };
     DECLARE_LAYOUTDATA_METHODS(LyricsLineSegment)
 
@@ -246,17 +246,17 @@ public:
 
     Lyrics *lyrics() const override { return nullptr; }
 
-    void setIsEndMelisma(bool val) { m_isEndMelisma = val; }
+    void setIsEndMelisma(bool val) { isEndMelisma_ = val; }
 
-    bool isEndMelisma() const override { return m_isEndMelisma; }
+    bool isEndMelisma() const override { return isEndMelisma_; }
 
-    void setVerse(int val) { m_verse = val; }
+    void setVerse(int val) { verse_ = val; }
 
-    int verse() const { return m_verse; }
+    int verse() const { return verse_; }
 
-    void setCenterBetweenStaves(AutoOnOff v) { m_centerBetweenStaves = v; }
+    void setCenterBetweenStaves(AutoOnOff v) { centerBetweenStaves_ = v; }
 
-    AutoOnOff centerBetweenStaves() const { return m_centerBetweenStaves; }
+    AutoOnOff centerBetweenStaves() const { return centerBetweenStaves_; }
 
     PropertyValue getProperty(Pid propertyId) const override;
     bool setProperty(Pid propertyId, const PropertyValue &) override;
@@ -274,9 +274,9 @@ protected:
     bool isInSpannerMap() const override { return true; }
 
 private:
-    bool m_isEndMelisma = false;
-    int m_verse = 0;
-    AutoOnOff m_centerBetweenStaves = AutoOnOff::AUTO;
+    bool isEndMelisma_ = false;
+    int verse_ = 0;
+    AutoOnOff centerBetweenStaves_ = AutoOnOff::AUTO;
 };
 
 class PartialLyricsLineSegment final : public LyricsLineSegment {

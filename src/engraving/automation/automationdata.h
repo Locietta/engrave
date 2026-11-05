@@ -47,7 +47,7 @@ public:
 
 private:
 
-    AutomationCurveMap m_curveMap;
+    AutomationCurveMap curveMap_;
 };
 
 using AutomationDataPtr = std::shared_ptr<AutomationData>;

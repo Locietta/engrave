@@ -83,9 +83,9 @@ public:
     void setClipping(bool enable) override;
 
 private:
-    muse::draw::IPaintProviderPtr m_real = nullptr;
+    muse::draw::IPaintProviderPtr real_ = nullptr;
 
-    muse::draw::Color m_originalPenColor;
-    muse::draw::Color m_debugPenColor;
+    muse::draw::Color originalPenColor_;
+    muse::draw::Color debugPenColor_;
 };
 } // namespace mu::engraving::rendering::score

@@ -30,7 +30,7 @@ using namespace mu::engraving;
 void EditData::clear() { *this = EditData(); }
 
 std::shared_ptr<ElementEditData> EditData::getData(const EngravingItem *e) const {
-    for (std::shared_ptr<ElementEditData> ed : m_data) {
+    for (std::shared_ptr<ElementEditData> ed : data_) {
         if (ed->e == e) {
             return ed;
         }

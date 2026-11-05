@@ -54,9 +54,9 @@ public:
 
     void setSpanner(Spanner *val);
 
-    void setSpannerSegmentType(SpannerSegmentType s) { m_spannerSegmentType = s; }
+    void setSpannerSegmentType(SpannerSegmentType s) { spannerSegmentType_ = s; }
 
-    SpannerSegmentType spannerSegmentType() const { return m_spannerSegmentType; }
+    SpannerSegmentType spannerSegmentType() const { return spannerSegmentType_; }
 
     bool isSingleType() const { return spannerSegmentType() == SpannerSegmentType::SINGLE; }
 
@@ -74,13 +74,13 @@ public:
     TranslatableString subtypeUserName() const override;
 
     //! The system this segment is currently laid out on; null if not placed.
-    System *system() const { return m_system; }
+    System *system() const { return system_; }
 
     //! Records the placement only. Reserved for System itself, which maintains its own
     //! segment list; everyone else must use moveToSystem(), so that a non-null system()
     //! always implies that the segment is in that system's segment list - otherwise the
     //! pointer is left dangling when the system is destroyed.
-    void setSystem(System *s) { m_system = s; }
+    void setSystem(System *s) { system_ = s; }
 
     //! Detach from the current system's segment list and attach to the given one.
     void moveToSystem(System *s);
@@ -92,31 +92,31 @@ public:
     //! so that no other parent can be set by accident.
     void setOwnershipParent(Spanner *spanner);
 
-    const PointF &userOff2() const { return m_offset2; }
+    const PointF &userOff2() const { return offset2_; }
 
-    void setUserOff2(const PointF &o) { m_offset2 = o; }
+    void setUserOff2(const PointF &o) { offset2_ = o; }
 
-    void setUserXoffset2(double x) { m_offset2.setX(x); }
+    void setUserXoffset2(double x) { offset2_.setX(x); }
 
-    void setUserYoffset2(double y) { m_offset2.setY(y); }
+    void setUserYoffset2(double y) { offset2_.setY(y); }
 
-    real_t &rUserXoffset2() { return m_offset2.rx(); }
+    real_t &rUserXoffset2() { return offset2_.rx(); }
 
-    real_t &rUserYoffset2() { return m_offset2.ry(); }
+    real_t &rUserYoffset2() { return offset2_.ry(); }
 
-    void setPos2(const PointF &p) { m_p2 = p; }
+    void setPos2(const PointF &p) { p2_ = p; }
 
     //TODO: rename to spanSegPosWithUserOffset()
-    PointF pos2() const { return m_p2 + m_offset2; }
+    PointF pos2() const { return p2_ + offset2_; }
 
     //TODO: rename to spanSegPos()
-    const PointF &ipos2() const { return m_p2; }
+    const PointF &ipos2() const { return p2_; }
 
-    PointF &rpos2() { return m_p2; }
+    PointF &rpos2() { return p2_; }
 
-    real_t &rxpos2() { return m_p2.rx(); }
+    real_t &rxpos2() { return p2_.rx(); }
 
-    real_t &rypos2() { return m_p2.ry(); }
+    real_t &rypos2() { return p2_.ry(); }
 
     muse::ByteArray mimeData(const PointF &dragOffset) const override;
 
@@ -160,16 +160,16 @@ protected:
     SpannerSegment(const ElementType &type, Spanner *, ElementFlags f = ElementFlag::ON_STAFF | ElementFlag::MOVABLE);
     SpannerSegment(const SpannerSegment &);
 
-    PointF m_p2;
-    PointF m_offset2;
+    PointF p2_;
+    PointF offset2_;
 
 private:
     String formatBarsAndBeats() const override;
     String formatStartBarsAndBeats(const Segment *segment) const;
     String formatEndBarsAndBeats(const Segment *segment) const;
 
-    System *m_system = nullptr; // current layout placement; not owned, not copied
-    SpannerSegmentType m_spannerSegmentType = SpannerSegmentType::SINGLE;
+    System *system_ = nullptr; // current layout placement; not owned, not copied
+    SpannerSegmentType spannerSegmentType_ = SpannerSegmentType::SINGLE;
 };
 
 //----------------------------------------------------------------------------------
@@ -194,11 +194,11 @@ public:
 
     virtual void setScore(Score *s) override;
 
-    virtual Fraction tick() const override { return m_tick; }
+    virtual Fraction tick() const override { return tick_; }
 
-    Fraction tick2() const { return m_tick + m_ticks; }
+    Fraction tick2() const { return tick_ + ticks_; }
 
-    Fraction ticks() const { return m_ticks; }
+    Fraction ticks() const { return ticks_; }
 
     void setTick(const Fraction &);
     void setTick2(const Fraction &);
@@ -209,31 +209,31 @@ public:
     void setTrack2(track_idx_t v);
     track_idx_t effectiveTrack2() const;
 
-    bool playSpanner() const { return m_playSpanner; }
+    bool playSpanner() const { return playSpanner_; }
 
-    void setPlaySpanner(bool p) { m_playSpanner = p; }
+    void setPlaySpanner(bool p) { playSpanner_ = p; }
 
     virtual Anchor anchor() const = 0;
 
-    const std::vector<SpannerSegment *> &spannerSegments() const { return m_segments; }
+    const std::vector<SpannerSegment *> &spannerSegments() const { return segments_; }
 
-    void setSpannerSegments(const std::vector<SpannerSegment *> &s) { m_segments = s; }
+    void setSpannerSegments(const std::vector<SpannerSegment *> &s) { segments_ = s; }
 
-    SpannerSegment *frontSegment() { return m_segments.front(); }
+    SpannerSegment *frontSegment() { return segments_.front(); }
 
-    const SpannerSegment *frontSegment() const { return m_segments.front(); }
+    const SpannerSegment *frontSegment() const { return segments_.front(); }
 
-    SpannerSegment *backSegment() { return m_segments.back(); }
+    SpannerSegment *backSegment() { return segments_.back(); }
 
-    const SpannerSegment *backSegment() const { return m_segments.back(); }
+    const SpannerSegment *backSegment() const { return segments_.back(); }
 
-    SpannerSegment *segmentAt(int n) { return m_segments[n]; }
+    SpannerSegment *segmentAt(int n) { return segments_[n]; }
 
-    const SpannerSegment *segmentAt(int n) const { return m_segments[n]; }
+    const SpannerSegment *segmentAt(int n) const { return segments_[n]; }
 
-    size_t nsegments() const { return m_segments.size(); }
+    size_t nsegments() const { return segments_.size(); }
 
-    bool segmentsEmpty() const { return m_segments.empty(); }
+    bool segmentsEmpty() const { return segments_.empty(); }
 
     void eraseSpannerSegments();
     bool eitherEndVisible() const;
@@ -261,9 +261,9 @@ public:
     static Note *startElementFromSpanner(Spanner *sp, EngravingItem *newEnd);
     void setNoteSpan(Note *startNote, Note *endNote);
 
-    EngravingItem *startElement() const { return m_startElement; }
+    EngravingItem *startElement() const { return startElement_; }
 
-    EngravingItem *endElement() const { return m_endElement; }
+    EngravingItem *endElement() const { return endElement_; }
 
     Measure *startMeasure() const;
     Measure *endMeasure() const;
@@ -329,18 +329,18 @@ private:
 
     friend class SpannerSegment;
 
-    EngravingItem *m_startElement = nullptr;
-    EngravingItem *m_endElement = nullptr;
+    EngravingItem *startElement_ = nullptr;
+    EngravingItem *endElement_ = nullptr;
 
-    bool m_playSpanner = true;
+    bool playSpanner_ = true;
 
-    Fraction m_tick = Fraction(-1, 1);
-    Fraction m_ticks = Fraction(0, 1);
-    track_idx_t m_track2 = muse::nidx;
+    Fraction tick_ = Fraction(-1, 1);
+    Fraction ticks_ = Fraction(0, 1);
+    track_idx_t track2_ = muse::nidx;
 
-    std::vector<SpannerSegment *> m_segments;
-    std::deque<SpannerSegment *> m_unusedSegments; // Currently unused segments which can be reused later.
-                                                   // We cannot just delete them as they can be referenced
-                                                   // in undo stack or other places already.
+    std::vector<SpannerSegment *> segments_;
+    std::deque<SpannerSegment *> unusedSegments_; // Currently unused segments which can be reused later.
+                                                  // We cannot just delete them as they can be referenced
+                                                  // in undo stack or other places already.
 };
 } // namespace mu::engraving

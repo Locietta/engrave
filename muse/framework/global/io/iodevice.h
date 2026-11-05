@@ -86,11 +86,11 @@ private:
 
     const uint8_t *cdataOffsetted() const;
 
-    OpenMode m_mode = OpenMode::Unknown;
-    size_t m_pos = 0;
-    std::map<std::string, std::string> m_meta;
+    OpenMode mode_ = OpenMode::Unknown;
+    size_t pos_ = 0;
+    std::map<std::string, std::string> meta_;
 
-    int m_error = 0;
-    std::string m_errorString;
+    int error_ = 0;
+    std::string errorString_;
 };
 } // namespace muse::io

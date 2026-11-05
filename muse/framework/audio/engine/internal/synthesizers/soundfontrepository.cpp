@@ -30,7 +30,7 @@ using namespace muse::audio;
 using namespace muse::audio::synth;
 
 bool SoundFontRepository::isSoundFontLoaded(const std::string &name) const {
-    for (const auto &p : m_soundFonts) {
+    for (const auto &p : soundFonts_) {
         if (p.second.name == name) {
             return true;
         }
@@ -38,25 +38,25 @@ bool SoundFontRepository::isSoundFontLoaded(const std::string &name) const {
     return false;
 }
 
-bool SoundFontRepository::isLoadingSoundFonts() const { return m_loadingSoundFontCount > 0; }
+bool SoundFontRepository::isLoadingSoundFonts() const { return loadingSoundFontCount_ > 0; }
 
-const SoundFontsMap &SoundFontRepository::soundFonts() const { return m_soundFonts; }
+const SoundFontsMap &SoundFontRepository::soundFonts() const { return soundFonts_; }
 
 void SoundFontRepository::setOnSoundFontsChanged(std::function<void()> onSoundFontsChanged) {
-    m_onSoundFontsChanged = std::move(onSoundFontsChanged);
+    onSoundFontsChanged_ = std::move(onSoundFontsChanged);
 }
 
 void SoundFontRepository::notifySoundFontsChanged() {
-    if (m_onSoundFontsChanged) {
-        m_onSoundFontsChanged();
+    if (onSoundFontsChanged_) {
+        onSoundFontsChanged_();
     }
 }
 
 void SoundFontRepository::addSoundFont(const SoundFontUri &uri) {
 
-    m_loadingSoundFontCount++;
+    loadingSoundFontCount_++;
     doAddSoundFont(uri, nullptr, [this]() {
-        --m_loadingSoundFontCount;
+        --loadingSoundFontCount_;
         notifySoundFontsChanged();
     });
 }
@@ -83,7 +83,7 @@ void SoundFontRepository::addSoundFontData(const SoundFontUri &uri, const ByteAr
     RetVal<SoundFontMeta> meta = FluidSoundFontParser::parseSoundFont(fileName);
 
     if (meta.ret) {
-        m_soundFonts.insert_or_assign(uri, std::move(meta.val));
+        soundFonts_.insert_or_assign(uri, std::move(meta.val));
         LOGI() << "added sound font, uri: " << uri;
     } else {
         LOGE() << "Failed parse SoundFont presets for " << fileName << ": " << meta.ret.toString();
@@ -96,7 +96,7 @@ void SoundFontRepository::doAddSoundFont(const SoundFontUri &uri, const SoundFon
     if (cache) {
         auto it = cache->find(uri);
         if (it != cache->cend()) {
-            m_soundFonts.insert(*it);
+            soundFonts_.insert(*it);
             if (onFinished) {
                 onFinished();
             }
@@ -108,7 +108,7 @@ void SoundFontRepository::doAddSoundFont(const SoundFontUri &uri, const SoundFon
         RetVal<SoundFontMeta> meta = FluidSoundFontParser::parseSoundFont(path);
 
         if (meta.ret) {
-            m_soundFonts.insert_or_assign(uri, std::move(meta.val));
+            soundFonts_.insert_or_assign(uri, std::move(meta.val));
             LOGI() << "added sound font, uri: " << uri;
         } else {
             LOGE() << "Failed parse SoundFont presets for " << path << ": " << meta.ret.toString();
@@ -133,17 +133,17 @@ void SoundFontRepository::doAddSoundFont(const SoundFontUri &uri, const SoundFon
 void SoundFontRepository::loadSoundFonts(const std::vector<SoundFontUri> &uris) {
 
     SoundFontsMap *cache = new SoundFontsMap();
-    m_soundFonts.swap(*cache);
+    soundFonts_.swap(*cache);
 
-    m_loadingSoundFontCount = m_loadingSoundFontCount + uris.size();
-    const size_t total = m_loadingSoundFontCount;
+    loadingSoundFontCount_ = loadingSoundFontCount_ + uris.size();
+    const size_t total = loadingSoundFontCount_;
 
     for (const SoundFontUri &uri : uris) {
         LOGI() << "try add sound font: " << uri.toString();
         doAddSoundFont(uri, cache, [this, total, cache]() {
-            --m_loadingSoundFontCount;
-            LOGI() << "remaining: " << m_loadingSoundFontCount << ", total: " << total;
-            if (m_loadingSoundFontCount == 0) {
+            --loadingSoundFontCount_;
+            LOGI() << "remaining: " << loadingSoundFontCount_ << ", total: " << total;
+            if (loadingSoundFontCount_ == 0) {
                 delete cache;
                 notifySoundFontsChanged();
                 LOGI() << "all added notify about sound fonts changed";

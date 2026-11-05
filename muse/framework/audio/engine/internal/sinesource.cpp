@@ -33,13 +33,13 @@ unsigned int SineSource::audioChannelsCount() const { return 2; }
 samples_t SineSource::process(float *buffer, samples_t samplesPerChannel) {
     auto streams = audioChannelsCount();
     for (unsigned int i = 0; i < samplesPerChannel; ++i) {
-        m_phase += m_frequency / m_outputSpec.sampleRate * 2 * M_PI;
-        if (m_phase > 2 * M_PI) {
-            m_phase -= 2 * float(M_PI);
+        phase_ += frequency_ / outputSpec_.sampleRate * 2 * M_PI;
+        if (phase_ > 2 * M_PI) {
+            phase_ -= 2 * float(M_PI);
         }
 
         for (unsigned int s = 0; s < streams; ++s) {
-            buffer[streams * i + s] = 0.1 * std::sin(m_phase + s * 2 * M_PI / streams);
+            buffer[streams * i + s] = 0.1 * std::sin(phase_ + s * 2 * M_PI / streams);
         }
     }
 

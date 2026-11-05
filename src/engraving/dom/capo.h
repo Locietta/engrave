@@ -49,8 +49,8 @@ public:
     void removed() override;
 
 private:
-    CapoParams m_params;
-    bool m_shouldAutomaticallyGenerateText = true;
-    String m_customText;
+    CapoParams params_;
+    bool shouldAutomaticallyGenerateText_ = true;
+    String customText_;
 };
 } // namespace mu::engraving

@@ -46,14 +46,14 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 KeySig::KeySig(DummyParentOr<Segment> s) : EngravingItem(ElementType::KEYSIG, s, ElementFlag::ON_STAFF) {
-    m_showCourtesy = true;
-    m_hideNaturals = false;
+    showCourtesy_ = true;
+    hideNaturals_ = false;
 }
 
 KeySig::KeySig(const KeySig &k) : EngravingItem(k) {
-    m_showCourtesy = k.m_showCourtesy;
-    m_sig = k.m_sig;
-    m_hideNaturals = false;
+    showCourtesy_ = k.showCourtesy_;
+    sig_ = k.sig_;
+    hideNaturals_ = false;
 }
 
 //---------------------------------------------------------
@@ -128,7 +128,7 @@ void KeySig::setKey(Key concertKey, Key transposedKey) {
 //   operator==
 //---------------------------------------------------------
 
-bool KeySig::operator==(const KeySig &k) const { return m_sig == k.m_sig; }
+bool KeySig::operator==(const KeySig &k) const { return sig_ == k.sig_; }
 
 //---------------------------------------------------------
 //   isChange
@@ -150,7 +150,7 @@ bool KeySig::isChange() const {
 //---------------------------------------------------------
 
 void KeySig::changeKeySigEvent(const KeySigEvent &t) {
-    if (m_sig == t) {
+    if (sig_ == t) {
         return;
     }
     setKeySigEvent(t);
@@ -219,7 +219,7 @@ bool KeySig::setProperty(Pid propertyId, const PropertyValue &v) {
             if (generated()) {
                 return false;
             }
-            setKey(m_sig.concertKey(), Key(v.toInt()));
+            setKey(sig_.concertKey(), Key(v.toInt()));
             break;
         case Pid::KEY_CONCERT:
             if (generated()) {

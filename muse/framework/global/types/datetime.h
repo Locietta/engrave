@@ -41,7 +41,7 @@ public:
     int month() const;
     int day() const;
 
-    inline bool operator==(const Date &d) const { return m_year == d.m_year && m_month == d.m_month && m_day == d.m_day; }
+    inline bool operator==(const Date &d) const { return year_ == d.year_ && month_ == d.month_ && day_ == d.day_; }
 
     inline bool operator!=(const Date &d) const { return !this->operator==(d); }
 
@@ -54,9 +54,9 @@ public:
 
 
 private:
-    int m_year = 0;
-    int m_month = 0;
-    int m_day = 0;
+    int year_ = 0;
+    int month_ = 0;
+    int day_ = 0;
 };
 
 class Time {
@@ -69,7 +69,7 @@ public:
     int minute() const;
     int second() const;
 
-    inline bool operator==(const Time &t) const { return m_hour == t.m_hour && m_minute == t.m_minute && m_second == t.m_second; }
+    inline bool operator==(const Time &t) const { return hour_ == t.hour_ && minute_ == t.minute_ && second_ == t.second_; }
 
     inline bool operator!=(const Time &t) const { return !this->operator==(t); }
 
@@ -80,9 +80,9 @@ public:
 
 
 private:
-    int m_hour = 0;
-    int m_minute = 0;
-    int m_second = 0;
+    int hour_ = 0;
+    int minute_ = 0;
+    int second_ = 0;
 };
 
 class DateTime {
@@ -105,8 +105,8 @@ public:
 
 private:
 
-    Date m_date;
-    Time m_time;
+    Date date_;
+    Time time_;
 };
 } // namespace muse
 

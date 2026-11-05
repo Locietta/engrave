@@ -277,30 +277,30 @@ static ChangeRelevance classifyChanges(const ScoreChanges &changes) {
 }
 
 const TempoTimeline &ScoreAutomationController::tempoTimeline(bool expandRepeats) const {
-    if (m_tempoTimelineOverride) {
-        return *m_tempoTimelineOverride;
+    if (tempoTimelineOverride_) {
+        return *tempoTimelineOverride_;
     }
 
-    return expandRepeats ? m_tempoTimeline : m_flattenedTempoTimeline;
+    return expandRepeats ? tempoTimeline_ : flattenedTempoTimeline_;
 }
 
 void ScoreAutomationController::setTempoMultiplier(const BeatsPerSecond &bps) {
-    m_tempoTimeline.setTempoMultiplier(bps);
-    m_flattenedTempoTimeline.setTempoMultiplier(bps);
+    tempoTimeline_.setTempoMultiplier(bps);
+    flattenedTempoTimeline_.setTempoMultiplier(bps);
 }
 
 void ScoreAutomationController::setTempoTimelineOverride(std::optional<TempoTimeline> timeline) {
-    m_tempoTimelineOverride = std::move(timeline);
+    tempoTimelineOverride_ = std::move(timeline);
 }
 
 void ScoreAutomationController::init(Score *score) {
-    m_score = score;
+    score_ = score;
 
-    if (!m_automationData) {
-        m_automationData = std::make_shared<AutomationData>();
+    if (!automationData_) {
+        automationData_ = std::make_shared<AutomationData>();
     }
 
-    AutomationCurveMap curves = m_automationData->curves();
+    AutomationCurveMap curves = automationData_->curves();
     fullRebuild(curves);
 }
 
@@ -310,7 +310,7 @@ void ScoreAutomationController::fullRebuild(AutomationCurveMap &curves, bool inc
 }
 
 void ScoreAutomationController::ensureInitialized(Score *score) {
-    if (m_score) {
+    if (score_) {
         return;
     }
     init(score);
@@ -320,14 +320,14 @@ void ScoreAutomationController::insertTime(const Fraction &tick, const Fraction 
     TRACEFUNC;
 
     const int diff = len.ticks();
-    if (!m_score || !m_automationData || m_automationData->isEmpty() || diff == 0) {
+    if (!score_ || !automationData_ || automationData_->isEmpty() || diff == 0) {
         return;
     }
 
     const int rawInsertTick = tick.ticks();
-    const std::vector<RepeatSegmentInfo> newSegments = m_score->expandedRepeatList().segmentInfoList();
+    const std::vector<RepeatSegmentInfo> newSegments = score_->expandedRepeatList().segmentInfoList();
 
-    AutomationCurveMap curves = m_automationData->curves();
+    AutomationCurveMap curves = automationData_->curves();
 
     for (auto &entry : curves) {
         AutomationCurve &curve = entry.second;
@@ -398,19 +398,19 @@ void ScoreAutomationController::update(const ScoreChanges &changes) {
         }
     }
 
-    if (!m_automationData) {
-        m_automationData = std::make_shared<AutomationData>();
+    if (!automationData_) {
+        automationData_ = std::make_shared<AutomationData>();
     }
 
-    update(request, m_automationData->curves());
+    update(request, automationData_->curves());
 }
 
 void ScoreAutomationController::editPoints(const AutomationCurveKey &key, AutomationPointEdits &edits) {
-    IF_ASSERT_FAILED(m_automationData && m_score) { return; }
+    IF_ASSERT_FAILED(automationData_ && score_) { return; }
 
     // Tempo edits can affect later relative tempo markings, so we need a full rescan
     if (key.type == AutomationType::Tempo) {
-        AutomationCurveMap curves = m_automationData->curves();
+        AutomationCurveMap curves = automationData_->curves();
         AutomationCurve &tempoCurve = curves[key];
 
         for (const AutomationPointEdit &edit : edits) {
@@ -432,17 +432,17 @@ void ScoreAutomationController::editPoints(const AutomationCurveKey &key, Automa
 
     // Dynamics/Volume/Pan edits don't affect other points, so no rescan is needed
     mirrorEditsToRepeats(key, edits);
-    m_automationData->editPoints(key, edits);
+    automationData_->editPoints(key, edits);
 }
 
 void ScoreAutomationController::update(const UpdateRequest &request, const AutomationCurveMap &curves) {
     TRACEFUNC;
 
-    if (!m_score) {
+    if (!score_) {
         return;
     }
 
-    const RepeatList &repeatList = m_score->expandedRepeatList();
+    const RepeatList &repeatList = score_->expandedRepeatList();
     if (repeatList.empty()) {
         return;
     }
@@ -452,12 +452,12 @@ void ScoreAutomationController::update(const UpdateRequest &request, const Autom
 
     IF_ASSERT_FAILED(repeatFromIt != repeatList.cend()) { return; }
 
-    const StaffRange range(m_score, request.staffIdxFrom, request.staffIdxTo);
+    const StaffRange range(score_, request.staffIdxFrom, request.staffIdxTo);
     const RepeatSegment *firstSeg = *repeatFromIt;
 
     UpdateContext ctx;
     ctx.request = request;
-    ctx.tempoMultiplier = m_tempoTimeline.tempoMultiplier();
+    ctx.tempoMultiplier = tempoTimeline_.tempoMultiplier();
 
     // The first utick the rebuild will regenerate; everything before it is kept as is
     ctx.clearFromUTick = std::max(firstSeg->utick, request.tickFrom + (firstSeg->utick - firstSeg->tick));
@@ -539,7 +539,7 @@ void ScoreAutomationController::update(const UpdateRequest &request, const Autom
     // ctx.dynamicPriorities fully populated; sets inValues on hairpin-end dynamics
     for (auto it = repeatFromIt; it != repeatList.cend(); ++it) {
         const RepeatSegment *seg = *it;
-        addSpannerPoints(m_score, seg->tick, seg->endTick(), seg->utick - seg->tick, range, ctx);
+        addSpannerPoints(score_, seg->tick, seg->endTick(), seg->utick - seg->tick, range, ctx);
     }
 
     // Step 3: resolve pending tempo resets now that noRepeatTempoCurve is fully built
@@ -556,18 +556,18 @@ void ScoreAutomationController::update(const UpdateRequest &request, const Autom
 
     if (request.includeTempo) {
         // TempoTimeline falls back to the default tempo when the curve has no points
-        m_tempoTimeline.rebuild(*ctx.tempoCurve, ctx.pauses);
-        m_flattenedTempoTimeline.rebuild(ctx.noRepeatTempoCurve, ctx.noRepeatPauses);
+        tempoTimeline_.rebuild(*ctx.tempoCurve, ctx.pauses);
+        flattenedTempoTimeline_.rebuild(ctx.noRepeatTempoCurve, ctx.noRepeatPauses);
     }
 
     // Passed through as-is: replaceCurves() clears a key when given an empty curve for it
-    m_automationData->replaceCurves(ctx.curves);
+    automationData_->replaceCurves(ctx.curves);
 }
 
 void ScoreAutomationController::fillNoRepeatTempoCurve(const AutomationCurve &tempoCurve, AutomationCurve &noRepeatTempoCurve) {
     TRACEFUNC;
 
-    const RepeatList &repeatList = m_score->expandedRepeatList();
+    const RepeatList &repeatList = score_->expandedRepeatList();
 
     // tempoCurve is expected to be authored-only
     for (const auto &[utick, point] : tempoCurve) {
@@ -1384,7 +1384,7 @@ std::vector<AutomationCurveKey> ScoreAutomationController::resolveKeys(const Eng
 void ScoreAutomationController::mirrorEditsToRepeats(const AutomationCurveKey &key, AutomationPointEdits &edits) {
     TRACEFUNC;
 
-    const RepeatList &repeatList = m_score->expandedRepeatList();
+    const RepeatList &repeatList = score_->expandedRepeatList();
     if (repeatList.size() <= 1) {
         return;
     }
@@ -1393,10 +1393,10 @@ void ScoreAutomationController::mirrorEditsToRepeats(const AutomationCurveKey &k
     // aren't tied to any staff, so they're mirrored to regular repeats only, not measure repeats
     std::optional<StaffRange> staffRange;
     if (const std::optional<muse::ID> staffId = key.staffId()) {
-        const Staff *staff = m_score->staffById(*staffId);
+        const Staff *staff = score_->staffById(*staffId);
         IF_ASSERT_FAILED(staff) { return; }
 
-        staffRange.emplace(m_score, staff->idx(), staff->idx());
+        staffRange.emplace(score_, staff->idx(), staff->idx());
     }
 
     // Bounded by the original size, since mirrored edits are appended to the same vector below

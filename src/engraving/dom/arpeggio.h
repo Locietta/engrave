@@ -45,13 +45,13 @@ public:
 
     Arpeggio *clone() const override { return new Arpeggio(*this); }
 
-    ArpeggioType arpeggioType() const { return m_arpeggioType; }
+    ArpeggioType arpeggioType() const { return arpeggioType_; }
 
-    void setArpeggioType(ArpeggioType v) { m_arpeggioType = v; }
+    void setArpeggioType(ArpeggioType v) { arpeggioType_ = v; }
 
     const TranslatableString &arpeggioTypeName() const;
 
-    int subtype() const override { return int(m_arpeggioType); }
+    int subtype() const override { return int(arpeggioType_); }
 
     TranslatableString subtypeUserName() const override;
 
@@ -62,11 +62,11 @@ public:
 
     void reset() override;
 
-    int span() const { return m_span; }
+    int span() const { return span_; }
 
-    void setSpan(int val) { m_span = val; }
+    void setSpan(int val) { span_ = val; }
 
-    track_idx_t endTrack() const { return track() + m_span - 1; }
+    track_idx_t endTrack() const { return track() + span_ - 1; }
 
     bool crossStaff() const;
     staff_idx_t vStaffIdx() const override;
@@ -75,21 +75,21 @@ public:
     void rebaseStartAnchor(AnchorRebaseDirection direction);
     void rebaseEndAnchor(AnchorRebaseDirection direction);
 
-    double userLen1() const { return m_userLen1; }
+    double userLen1() const { return userLen1_; }
 
-    double userLen2() const { return m_userLen2; }
+    double userLen2() const { return userLen2_; }
 
-    void setUserLen1(double v) { m_userLen1 = v; }
+    void setUserLen1(double v) { userLen1_ = v; }
 
-    void setUserLen2(double v) { m_userLen2 = v; }
+    void setUserLen2(double v) { userLen2_ = v; }
 
-    bool playArpeggio() const { return m_playArpeggio; }
+    bool playArpeggio() const { return playArpeggio_; }
 
-    void setPlayArpeggio(bool p) { m_playArpeggio = p; }
+    void setPlayArpeggio(bool p) { playArpeggio_ = p; }
 
-    double Stretch() const { return m_stretch; }
+    double Stretch() const { return stretch_; }
 
-    void setStretch(double val) { m_stretch = val; }
+    void setStretch(double val) { stretch_ = val; }
 
     PropertyValue getProperty(Pid propertyId) const override;
     bool setProperty(Pid propertyId, const PropertyValue &) override;
@@ -118,13 +118,13 @@ protected:
 private:
     void spatiumChanged(double /*oldValue*/, double /*newValue*/) override;
 
-    ArpeggioType m_arpeggioType = ArpeggioType::NORMAL;
-    double m_userLen1 = 0.0;
-    double m_userLen2 = 0.0;
+    ArpeggioType arpeggioType_ = ArpeggioType::NORMAL;
+    double userLen1_ = 0.0;
+    double userLen2_ = 0.0;
 
-    int m_span = 1; // how many voices the arpeggio spans
-    bool m_playArpeggio = true;
+    int span_ = 1; // how many voices the arpeggio spans
+    bool playArpeggio_ = true;
 
-    double m_stretch = 1.0;
+    double stretch_ = 1.0;
 };
 } // namespace mu::engraving

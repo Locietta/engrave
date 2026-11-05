@@ -58,29 +58,29 @@ class ScoreAutomationController;
 
 class MidiMapping {
 public:
-    Part *part() { return m_part; }
+    Part *part() { return part_; }
 
-    const Part *part() const { return m_part; }
+    const Part *part() const { return part_; }
 
-    InstrChannel *articulation() { return m_articulation.get(); }
+    InstrChannel *articulation() { return articulation_.get(); }
 
-    const InstrChannel *articulation() const { return m_articulation.get(); }
+    const InstrChannel *articulation() const { return articulation_.get(); }
 
-    signed char port() const { return m_port; }
+    signed char port() const { return port_; }
 
-    signed char channel() const { return m_channel; }
+    signed char channel() const { return channel_; }
 
 private:
 
     MidiMapping() = default; // should be created only within MasterScore
     friend class MasterScore;
 
-    Part *m_part = nullptr;
-    std::unique_ptr<InstrChannel> m_articulation;
-    signed char m_port = 0;
-    signed char m_channel = 0;
-    InstrChannel *m_masterChannel = nullptr;
-    PartChannelSettingsLink m_link;
+    Part *part_ = nullptr;
+    std::unique_ptr<InstrChannel> articulation_;
+    signed char port_ = 0;
+    signed char channel_ = 0;
+    InstrChannel *masterChannel_ = nullptr;
+    PartChannelSettingsLink link_;
 };
 
 class MasterScore : public Score {
@@ -94,23 +94,23 @@ public:
     Score *createScore();
     Score *createScore(const MStyle &s);
 
-    std::weak_ptr<EngravingProject> project() const { return m_project; }
+    std::weak_ptr<EngravingProject> project() const { return project_; }
 
     bool isMaster() const override { return true; }
 
-    EIDRegister *eidRegister() { return &m_eidRegister; }
+    EIDRegister *eidRegister() { return &eidRegister_; }
 
-    const EIDRegister *eidRegister() const { return &m_eidRegister; }
+    const EIDRegister *eidRegister() const { return &eidRegister_; }
 
-    bool readOnly() const override { return m_readOnly; }
+    bool readOnly() const override { return readOnly_; }
 
-    void setReadOnly(bool ro) { m_readOnly = ro; }
+    void setReadOnly(bool ro) { readOnly_ = ro; }
 
-    TransactionManager *transactionManager() const { return m_transactionManager.get(); }
+    TransactionManager *transactionManager() const { return transactionManager_.get(); }
 
-    UndoStack *undoStack() const { return m_undoStack; }
+    UndoStack *undoStack() const { return undoStack_; }
 
-    TimeSigMap *sigmap() const override { return m_sigmap; }
+    TimeSigMap *sigmap() const override { return sigmap_; }
 
     void addChangesListener(IScoreChangesListener *listener);
     void removeChangesListener(IScoreChangesListener *listener);
@@ -124,7 +124,7 @@ public:
     /// No need to set it back after use, because everyone always calls it before using `repeatList()`
     void setExpandRepeats(bool expandRepeats);
 
-    bool expandRepeats() const { return m_expandRepeats; }
+    bool expandRepeats() const { return expandRepeats_; }
 
     void updateRepeatListTempo();
     void updateRepeatList();
@@ -139,9 +139,9 @@ public:
     bool setTempoMultiplier(BeatsPerSecond val);
     void setTempoTimelineOverride(std::optional<TempoTimeline> timeline);
 
-    std::vector<Excerpt *> &excerpts() { return m_excerpts; }
+    std::vector<Excerpt *> &excerpts() { return excerpts_; }
 
-    const std::vector<Excerpt *> &excerpts() const { return m_excerpts; }
+    const std::vector<Excerpt *> &excerpts() const { return excerpts_; }
 
     void setUpdateAll() override;
 
@@ -149,43 +149,43 @@ public:
     void setLayout(const Fraction &tick, staff_idx_t staff, const EngravingItem *e = nullptr);
     void setLayout(const Fraction &tick1, const Fraction &tick2, staff_idx_t staff1, staff_idx_t staff2, const EngravingItem *e = nullptr);
 
-    CmdState &cmdState() override { return m_cmdState; }
+    CmdState &cmdState() override { return cmdState_; }
 
-    const CmdState &cmdState() const override { return m_cmdState; }
+    const CmdState &cmdState() const override { return cmdState_; }
 
-    void addLayoutFlags(LayoutFlags val) override { m_cmdState.layoutFlags |= val; }
+    void addLayoutFlags(LayoutFlags val) override { cmdState_.layoutFlags |= val; }
 
-    void setInstrumentsChanged(bool val) override { m_cmdState.instrumentsChanged = val; }
+    void setInstrumentsChanged(bool val) override { cmdState_.instrumentsChanged = val; }
 
-    void setExcerptsChanged(bool val) { m_cmdState.excerptsChanged = val; }
+    void setExcerptsChanged(bool val) { cmdState_.excerptsChanged = val; }
 
-    bool excerptsChanged() const { return m_cmdState.excerptsChanged; }
+    bool excerptsChanged() const { return cmdState_.excerptsChanged; }
 
-    bool instrumentsChanged() const { return m_cmdState.instrumentsChanged; }
+    bool instrumentsChanged() const { return cmdState_.instrumentsChanged; }
 
     void update() { update(true); }
 
     void lockUpdates(bool locked);
 
-    int midiPortCount() const { return m_midiPortCount; }
+    int midiPortCount() const { return midiPortCount_; }
 
-    void setMidiPortCount(int val) { m_midiPortCount = val; }
+    void setMidiPortCount(int val) { midiPortCount_ = val; }
 
-    std::vector<MidiMapping> &midiMapping() { return m_midiMapping; }
+    std::vector<MidiMapping> &midiMapping() { return midiMapping_; }
 
-    MidiMapping *midiMapping(int channel) { return &m_midiMapping[channel]; }
+    MidiMapping *midiMapping(int channel) { return &midiMapping_[channel]; }
 
     void addMidiMapping(InstrChannel *channel, Part *part, int midiPort, int midiChannel);
     void updateMidiMapping(InstrChannel *channel, Part *part, int midiPort, int midiChannel);
 
-    int midiPort(int idx) const { return m_midiMapping[idx].port(); }
+    int midiPort(int idx) const { return midiMapping_[idx].port(); }
 
-    int midiChannel(int idx) const { return m_midiMapping[idx].channel(); }
+    int midiChannel(int idx) const { return midiMapping_[idx].channel(); }
 
     void rebuildMidiMapping();
     void checkMidiMapping();
 
-    bool exportMidiMapping() { return !m_isSimpleMidiMapping; }
+    bool exportMidiMapping() { return !isSimpleMidiMapping_; }
 
     int getNextFreeMidiMapping(std::set<int> &occupiedMidiChannels, unsigned int &searchMidiMappingFrom, int p = -1, int ch = -1);
     int getNextFreeDrumMidiMapping(std::set<int> &occupiedMidiChannels);
@@ -209,13 +209,13 @@ public:
 
     void setPlaybackScore(Score *);
 
-    Score *playbackScore() { return m_playbackScore; }
+    Score *playbackScore() { return playbackScore_; }
 
-    const Score *playbackScore() const { return m_playbackScore; }
+    const Score *playbackScore() const { return playbackScore_; }
 
-    InstrChannel *playbackChannel(const InstrChannel *c) { return m_midiMapping[c->channel()].articulation(); }
+    InstrChannel *playbackChannel(const InstrChannel *c) { return midiMapping_[c->channel()].articulation(); }
 
-    const InstrChannel *playbackChannel(const InstrChannel *c) const { return m_midiMapping[c->channel()].articulation(); }
+    const InstrChannel *playbackChannel(const InstrChannel *c) const { return midiMapping_[c->channel()].articulation(); }
 
     MasterScore *unrollRepeats();
 
@@ -255,36 +255,36 @@ private:
 
     void initParts(Excerpt *);
 
-    EIDRegister m_eidRegister;
-    std::unique_ptr<TransactionManager> m_transactionManager;
-    UndoStack *m_undoStack = nullptr;
-    TimeSigMap *m_sigmap = nullptr;
-    RepeatList *m_expandedRepeatList = nullptr;
-    RepeatList *m_nonExpandedRepeatList = nullptr;
-    ScoreAutomationController *m_automationController = nullptr;
-    bool m_expandRepeats = true;
+    EIDRegister eidRegister_;
+    std::unique_ptr<TransactionManager> transactionManager_;
+    UndoStack *undoStack_ = nullptr;
+    TimeSigMap *sigmap_ = nullptr;
+    RepeatList *expandedRepeatList_ = nullptr;
+    RepeatList *nonExpandedRepeatList_ = nullptr;
+    ScoreAutomationController *automationController_ = nullptr;
+    bool expandRepeats_ = true;
 
-    std::vector<Excerpt *> m_excerpts;
-    std::vector<PartChannelSettingsLink> m_playbackSettingsLinks;
-    Score *m_playbackScore = nullptr;
-    std::vector<IScoreChangesListener *> m_changesListeners;
+    std::vector<Excerpt *> excerpts_;
+    std::vector<PartChannelSettingsLink> playbackSettingsLinks_;
+    Score *playbackScore_ = nullptr;
+    std::vector<IScoreChangesListener *> changesListeners_;
 
-    bool m_readOnly = false;
+    bool readOnly_ = false;
 
-    CmdState m_cmdState; // modified during cmd processing
-    bool m_updatesLocked = false;
+    CmdState cmdState_; // modified during cmd processing
+    bool updatesLocked_ = false;
 
-    std::array<Fraction, 2> m_loopBoundaries; ///< 0 - LoopIn, 1 - LoopOut
+    std::array<Fraction, 2> loopBoundaries_; ///< 0 - LoopIn, 1 - LoopOut
 
-    int m_midiPortCount = 0; // A count of ALSA midi out ports
-    std::vector<MidiMapping> m_midiMapping;
-    bool m_isSimpleMidiMapping = false; // midi mapping is simple if all ports and channels
+    int midiPortCount_ = 0; // A count of ALSA midi out ports
+    std::vector<MidiMapping> midiMapping_;
+    bool isSimpleMidiMapping_ = false; // midi mapping is simple if all ports and channels
     // don't decrease and don't have gaps
 
-    std::weak_ptr<EngravingProject> m_project;
+    std::weak_ptr<EngravingProject> project_;
 
     // FIXME: Move to EngravingProject
-    // We can't yet, because m_project is not set on every MasterScore
-    IFileInfoProviderPtr m_fileInfoProvider;
+    // We can't yet, because project_ is not set on every MasterScore
+    IFileInfoProviderPtr fileInfoProvider_;
 };
 } // namespace mu::engraving

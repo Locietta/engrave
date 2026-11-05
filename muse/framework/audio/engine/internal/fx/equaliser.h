@@ -46,14 +46,14 @@ public:
 private:
     void calculate();
 
-    OutputSpec m_outputSpec;
-    bool m_active = true;
+    OutputSpec outputSpec_;
+    bool active_ = true;
 
-    float m_gain = 0, m_frequency = 1000.f, m_q = 1.f;
-    float m_a[3] = {0, 0, 0};
-    float m_b[3] = {0, 0, 0};
-    float m_x[3] = {0, 0, 0};
-    float m_y[3] = {0, 0, 0};
+    float gain_ = 0, frequency_ = 1000.f, q_ = 1.f;
+    float a_[3] = {0, 0, 0};
+    float b_[3] = {0, 0, 0};
+    float x_[3] = {0, 0, 0};
+    float y_[3] = {0, 0, 0};
 };
 } // namespace muse::audio::fx
 

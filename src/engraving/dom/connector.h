@@ -52,16 +52,16 @@ public:
     ConnectorInfo(const Score *score, const Location &currentLocation);
     virtual ~ConnectorInfo() = default;
 
-    ConnectorInfo *prev() const { return m_prev; }
+    ConnectorInfo *prev() const { return prev_; }
 
-    ConnectorInfo *next() const { return m_next; }
+    ConnectorInfo *next() const { return next_; }
 
     ConnectorInfo *start();
     ConnectorInfo *end();
 
-    ElementType type() const { return m_type; }
+    ElementType type() const { return type_; }
 
-    const Location &location() const { return m_currentLoc; }
+    const Location &location() const { return currentLoc_; }
 
     bool connect(ConnectorInfo *other);
     bool finished() const;
@@ -70,9 +70,9 @@ public:
     int connectionDistance(const ConnectorInfo &c2) const;
     void forceConnect(ConnectorInfo *c2);
 
-    bool hasPrevious() const { return m_prevLoc.measure() != INT_MIN; }
+    bool hasPrevious() const { return prevLoc_.measure() != INT_MIN; }
 
-    bool hasNext() const { return m_nextLoc.measure() != INT_MIN; }
+    bool hasNext() const { return nextLoc_.measure() != INT_MIN; }
 
     bool isStart() const { return !hasPrevious() && hasNext(); }
 
@@ -85,22 +85,22 @@ protected:
     void updateLocation(const EngravingItem *e, Location &i, bool clipboardmode);
     void updateCurrentInfo(bool clipboardmode);
 
-    bool currentUpdated() const { return m_currentUpdated; }
+    bool currentUpdated() const { return currentUpdated_; }
 
-    void setCurrentUpdated(bool v) { m_currentUpdated = v; }
+    void setCurrentUpdated(bool v) { currentUpdated_ = v; }
 
     ConnectorInfo *findFirst();
     const ConnectorInfo *findFirst() const;
     ConnectorInfo *findLast();
     const ConnectorInfo *findLast() const;
 
-    ElementType m_type = ElementType::INVALID;
-    Location m_currentLoc;
-    Location m_prevLoc = Location::absolute();
-    Location m_nextLoc = Location::absolute();
+    ElementType type_ = ElementType::INVALID;
+    Location currentLoc_;
+    Location prevLoc_ = Location::absolute();
+    Location nextLoc_ = Location::absolute();
 
-    ConnectorInfo *m_prev = nullptr;
-    ConnectorInfo *m_next = nullptr;
+    ConnectorInfo *prev_ = nullptr;
+    ConnectorInfo *next_ = nullptr;
 
 private:
     bool finishedLeft() const;
@@ -108,9 +108,9 @@ private:
 
     static int orderedConnectionDistance(const ConnectorInfo &c1, const ConnectorInfo &c2);
 
-    const EngravingItem *m_current = nullptr;
-    bool m_currentUpdated = false;
-    const Score *m_score = nullptr;
+    const EngravingItem *current_ = nullptr;
+    bool currentUpdated_ = false;
+    const Score *score_ = nullptr;
 };
 } // namespace mu::engraving
 #endif

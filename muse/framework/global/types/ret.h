@@ -128,8 +128,8 @@ public:
         static_assert(!std::is_reference_v<DataType>, "DataType must not be a reference");
         static_assert(!std::is_pointer_v<DataType>, "DataType must not be a pointer");
 
-        const auto it = m_data.find(key);
-        if (it == m_data.end()) {
+        const auto it = data_.find(key);
+        if (it == data_.end()) {
             return defaultValue;
         }
 
@@ -150,12 +150,12 @@ public:
     }
 
     inline Ret &operator=(int c) {
-        m_code = c;
+        code_ = c;
         return *this;
     }
 
     inline Ret &operator=(bool arg) {
-        m_code = arg ? int(Code::Ok) : int(Code::UnknownError);
+        code_ = arg ? int(Code::Ok) : int(Code::UnknownError);
         return *this;
     }
 
@@ -166,9 +166,9 @@ public:
     std::string toString() const;
 
 private:
-    int m_code = int(Code::Undefined);
-    std::string m_text;
-    std::map<std::string, std::any> m_data;
+    int code_ = int(Code::Undefined);
+    std::string text_;
+    std::map<std::string, std::any> data_;
 };
 
 inline muse::Ret make_ok() { return Ret(static_cast<int>(Ret::Code::Ok)); }

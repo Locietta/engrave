@@ -41,7 +41,7 @@ public:
 
     SystemDivider *clone() const override { return new SystemDivider(*this); }
 
-    SystemDividerType dividerType() const { return m_dividerType; }
+    SystemDividerType dividerType() const { return dividerType_; }
 
     void setDividerType(SystemDividerType v);
 
@@ -57,7 +57,7 @@ public:
     void reset() override;
 
 private:
-    SystemDividerType m_dividerType = SystemDividerType::LEFT;
+    SystemDividerType dividerType_ = SystemDividerType::LEFT;
 };
 } // namespace mu::engraving
 

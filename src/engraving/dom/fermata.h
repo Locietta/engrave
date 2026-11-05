@@ -52,9 +52,9 @@ public:
 
     double mag() const override;
 
-    SymId symId() const { return m_symId; }
+    SymId symId() const { return symId_; }
 
-    void setSymId(SymId id) { m_symId = id; }
+    void setSymId(SymId id) { symId_ = id; }
 
     void setSymIdAndTimeStretch(SymId id);
     FermataType fermataType() const;
@@ -72,13 +72,13 @@ public:
     System *system() const;
     Page *page() const;
 
-    double timeStretch() const { return m_timeStretch; }
+    double timeStretch() const { return timeStretch_; }
 
-    void setTimeStretch(double val) { m_timeStretch = val; }
+    void setTimeStretch(double val) { timeStretch_ = val; }
 
-    bool play() const { return m_play; }
+    bool play() const { return play_; }
 
-    void setPlay(bool val) { m_play = val; }
+    void setPlay(bool val) { play_ = val; }
 
     Sid defaultPosSid() const override;
 
@@ -87,9 +87,9 @@ private:
     friend class Factory;
     Fermata(EngravingObject *parent);
 
-    SymId m_symId = SymId::noSym;
-    double m_timeStretch = -1.0;
-    bool m_play = true;
+    SymId symId_ = SymId::noSym;
+    double timeStretch_ = -1.0;
+    bool play_ = true;
 };
 } // namespace mu::engraving
 #endif

@@ -132,11 +132,11 @@ struct EngineAudio::State {
     std::string soundfontId;
 };
 
-EngineAudio::EngineAudio(const muse::mpe::IArticulationProfilesRepository &profiles) : m_state(std::make_unique<State>(profiles)) {}
+EngineAudio::EngineAudio(const muse::mpe::IArticulationProfilesRepository &profiles) : state_(std::make_unique<State>(profiles)) {}
 
 EngineAudio::~EngineAudio() {
-    const bool initialized = m_state && m_state->servicesInitialized;
-    m_state.reset();
+    const bool initialized = state_ && state_->servicesInitialized;
+    state_.reset();
     if (initialized) synth::releaseSoundFontCache();
 }
 

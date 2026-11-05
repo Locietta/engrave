@@ -43,7 +43,7 @@ using MidiPath = muse::io::path_t;
 
 class ExportMidi {
 public:
-    ExportMidi(engraving::Score *s) { m_score = s; }
+    ExportMidi(engraving::Score *s) { score_ = s; }
 
     bool write(const MidiPath &name, bool midiExpandRepeats, bool exportRPNs);
     bool write(MidiIODevice *device, bool midiExpandRepeats, bool exportRPNs);
@@ -53,8 +53,8 @@ public:
 private:
     void writeHeader(const engraving::CompatMidiRendererInternal::Context &context);
 
-    MidiFile m_midiFile;
-    engraving::Score *m_score = nullptr;
+    MidiFile midiFile_;
+    engraving::Score *score_ = nullptr;
 };
 } // namespace mu::iex::midi
 #endif // EXPORTMIDI_H

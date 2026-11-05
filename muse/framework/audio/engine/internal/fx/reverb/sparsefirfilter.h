@@ -33,47 +33,47 @@ class SparseFirFilter {
 public:
     SparseFirFilter() {}
 
-    void reset() { m_buffer.reset(); }
+    void reset() { buffer_.reset(); }
 
     void setFormat(int maxBlockSize, int maxImpulseOffset) {
-        m_buffer.setSize(maxBlockSize + maxImpulseOffset + 1);
-        m_blockSize = maxBlockSize;
-        m_maxAllowedOffset = maxImpulseOffset;
+        buffer_.setSize(maxBlockSize + maxImpulseOffset + 1);
+        blockSize_ = maxBlockSize;
+        maxAllowedOffset_ = maxImpulseOffset;
     }
 
     void processBlock(const float *signal_in, float *signal_out, int n) {
-        assert(n <= m_blockSize);
-        assert(m_impulses.size() > 0);
+        assert(n <= blockSize_);
+        assert(impulses_.size() > 0);
 
-        m_buffer.writeBlock(0, n, signal_in);
+        buffer_.writeBlock(0, n, signal_in);
 
-        m_buffer.readBlockWithGain(-m_impulses[0].offset, n, signal_out, m_impulses[0].gainFact);
-        for (size_t i = 1; i < m_impulses.size(); ++i) {
-            m_buffer.readAddBlockWithGain(-m_impulses[i].offset, n, signal_out, m_impulses[i].gainFact);
+        buffer_.readBlockWithGain(-impulses_[0].offset, n, signal_out, impulses_[0].gainFact);
+        for (size_t i = 1; i < impulses_.size(); ++i) {
+            buffer_.readAddBlockWithGain(-impulses_[i].offset, n, signal_out, impulses_[i].gainFact);
         }
 
-        m_buffer.advance(n);
+        buffer_.advance(n);
     }
 
     float processSample(float smp) {
-        m_buffer.writeOffset0(smp);
+        buffer_.writeOffset0(smp);
 
         smp = 0.f;
-        for (const auto &i : m_impulses) {
-            smp += m_buffer.read(-i.offset) * i.gainFact;
+        for (const auto &i : impulses_) {
+            smp += buffer_.read(-i.offset) * i.gainFact;
         }
 
-        m_buffer.advance(1);
+        buffer_.advance(1);
         return smp;
     }
 
-    void clearImpulses() { m_impulses.clear(); }
+    void clearImpulses() { impulses_.clear(); }
 
     void appendImpulse(int offset, float value) {
-        assert(offset >= 0 && offset <= m_maxAllowedOffset);
+        assert(offset >= 0 && offset <= maxAllowedOffset_);
 
-        m_impulses.push_back({offset, value});
-        m_buffer.setSize(offset + 1);
+        impulses_.push_back({offset, value});
+        buffer_.setSize(offset + 1);
     }
 
 private:
@@ -82,11 +82,11 @@ private:
         float gainFact;
     };
 
-    std::vector<Impulse> m_impulses;
+    std::vector<Impulse> impulses_;
 
-    int m_blockSize = 0;
-    int m_maxAllowedOffset = 0;
-    CircularSampleBuffer<float> m_buffer;
+    int blockSize_ = 0;
+    int maxAllowedOffset_ = 0;
+    CircularSampleBuffer<float> buffer_;
 };
 } // namespace muse::audio::fx
 

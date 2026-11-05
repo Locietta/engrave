@@ -199,9 +199,9 @@ public:
 
     Wah wah() const { return _wah; }
 
-    void setGolpe(Golpe g) { m_golpe = g; }
+    void setGolpe(Golpe g) { golpe_ = g; }
 
-    Golpe golpe() const { return m_golpe; }
+    Golpe golpe() const { return golpe_; }
 
     void setBarreFret(int v) { _barre.fret = v; }
 
@@ -213,31 +213,31 @@ public:
 
     int id() const { return _id; }
 
-    void setWhammy(const Whammy &whammy) { m_whammy = whammy; }
+    void setWhammy(const Whammy &whammy) { whammy_ = whammy; }
 
-    const Whammy &whammy() const { return m_whammy; }
+    const Whammy &whammy() const { return whammy_; }
 
-    bool hasWhammy() const { return !m_whammy.isEmpty(); }
+    bool hasWhammy() const { return !whammy_.isEmpty(); }
 
-    void setPickScrape(bool pickScrape) { m_pickScrape = pickScrape; }
+    void setPickScrape(bool pickScrape) { pickScrape_ = pickScrape; }
 
-    bool pickScrape() const { return m_pickScrape; }
+    bool pickScrape() const { return pickScrape_; }
 
-    void setDeadSlapped(bool deadSlapped) { m_deadSlapped = deadSlapped; }
+    void setDeadSlapped(bool deadSlapped) { deadSlapped_ = deadSlapped; }
 
-    bool deadSlapped() const { return m_deadSlapped; }
+    bool deadSlapped() const { return deadSlapped_; }
 
-    void setStemOrientationUp(bool up) { m_stemOrientation.up = up; }
+    void setStemOrientationUp(bool up) { stemOrientation_.up = up; }
 
-    void setStemOrientationUserDefined(bool userDefined) { m_stemOrientation.userDefined = userDefined; }
+    void setStemOrientationUserDefined(bool userDefined) { stemOrientation_.userDefined = userDefined; }
 
-    bool stemOrientationUp() const { return m_stemOrientation.up; }
+    bool stemOrientationUp() const { return stemOrientation_.up; }
 
-    bool stemOrientationUserDefined() const { return m_stemOrientation.userDefined; }
+    bool stemOrientationUserDefined() const { return stemOrientation_.userDefined; }
 
-    void setBeamMode(BeamMode mode) { m_beamMode = mode; }
+    void setBeamMode(BeamMode mode) { beamMode_ = mode; }
 
-    BeamMode beamMode() const { return m_beamMode; }
+    BeamMode beamMode() const { return beamMode_; }
 
     const std::vector<std::shared_ptr<GPNote>> &notes() const { return _notes; }
 
@@ -327,14 +327,14 @@ private:
     PickStroke _pickStroke = PickStroke::None;
     Tremolo _tremolo;
     Wah _wah = Wah::None;
-    Golpe m_golpe = Golpe::None;
+    Golpe golpe_ = Golpe::None;
     Barre _barre;
     double _arpeggioStretch = 0.0;
-    Whammy m_whammy;
-    bool m_pickScrape = false;
-    bool m_deadSlapped = false;
-    StemOrientation m_stemOrientation;
-    BeamMode m_beamMode = BeamMode::AUTO;
+    Whammy whammy_;
+    bool pickScrape_ = false;
+    bool deadSlapped_ = false;
+    StemOrientation stemOrientation_;
+    BeamMode beamMode_ = BeamMode::AUTO;
 };
 } // namespace mu::iex::guitarpro
 

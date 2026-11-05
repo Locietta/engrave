@@ -265,7 +265,7 @@ void PaddingTable::update(const MStyle &style) {
 
 double ParenPaddingTable::padding(ElementType type1, ElementType type2) const {
     assert(type1 == ElementType::PARENTHESIS || type2 == ElementType::PARENTHESIS);
-    const PaddingVector<double> &row = type1 == ElementType::PARENTHESIS ? m_parenAfter : m_parenBefore;
+    const PaddingVector<double> &row = type1 == ElementType::PARENTHESIS ? parenAfter_ : parenBefore_;
     const ElementType &otherType = type1 == ElementType::PARENTHESIS ? type2 : type1;
 
     return row.at(otherType);
@@ -284,8 +284,8 @@ const ParenPaddingTable &ParenPaddingTables::getTableFor(const EngravingItem *pa
 
 void ParenPaddingTable::init(double minPadUnit) {
     for (size_t i = 0; i < TOT_ELEMENT_TYPES; ++i) {
-        m_parenBefore[i] = minPadUnit;
-        m_parenAfter[i] = minPadUnit;
+        parenBefore_[i] = minPadUnit;
+        parenAfter_[i] = minPadUnit;
     }
 }
 
@@ -294,30 +294,30 @@ void NoteParenPaddingTable::update(const MStyle &style) {
     const double minPadUnit = 0.1 * spatium;
     init(minPadUnit);
 
-    m_parenBefore[ElementType::ARPEGGIO] = style.styleAbsolute(Sid::arpeggioAccidentalDistance);
-    m_parenBefore[ElementType::BAR_LINE] = style.styleAbsolute(Sid::barAccidentalDistance);
-    m_parenBefore[ElementType::CLEF] = 0.6 * spatium;
-    m_parenBefore[ElementType::HOOK] = 0.35 * spatium;
-    m_parenBefore[ElementType::KEYSIG] = 1.6 * spatium;
-    m_parenBefore[ElementType::LEDGER_LINE] = style.styleAbsolute(Sid::accidentalNoteDistance);
-    m_parenBefore[ElementType::NOTEDOT] = 0.35 * spatium;
-    m_parenBefore[ElementType::NOTE] = 0.35 * spatium;
-    m_parenBefore[ElementType::REST] = 0.45 * spatium;
-    m_parenBefore[ElementType::STEM] = 0.35 * spatium;
-    m_parenBefore[ElementType::TIMESIG] = 0.8 * spatium;
-    m_parenBefore[ElementType::PARENTHESIS] = style.styleAbsolute(Sid::minNoteDistance) * 0.5;
+    parenBefore_[ElementType::ARPEGGIO] = style.styleAbsolute(Sid::arpeggioAccidentalDistance);
+    parenBefore_[ElementType::BAR_LINE] = style.styleAbsolute(Sid::barAccidentalDistance);
+    parenBefore_[ElementType::CLEF] = 0.6 * spatium;
+    parenBefore_[ElementType::HOOK] = 0.35 * spatium;
+    parenBefore_[ElementType::KEYSIG] = 1.6 * spatium;
+    parenBefore_[ElementType::LEDGER_LINE] = style.styleAbsolute(Sid::accidentalNoteDistance);
+    parenBefore_[ElementType::NOTEDOT] = 0.35 * spatium;
+    parenBefore_[ElementType::NOTE] = 0.35 * spatium;
+    parenBefore_[ElementType::REST] = 0.45 * spatium;
+    parenBefore_[ElementType::STEM] = 0.35 * spatium;
+    parenBefore_[ElementType::TIMESIG] = 0.8 * spatium;
+    parenBefore_[ElementType::PARENTHESIS] = style.styleAbsolute(Sid::minNoteDistance) * 0.5;
 
-    m_parenAfter[ElementType::ACCIDENTAL] = std::max(style.styleAbsolute(Sid::accidentalNoteDistance), 0.35 * spatium);
-    m_parenAfter[ElementType::ARPEGGIO] = 0.6 * spatium;
-    m_parenAfter[ElementType::BAR_LINE] = style.styleAbsolute(Sid::noteBarDistance);
-    m_parenAfter[ElementType::CLEF] = 0.8 * spatium;
-    m_parenAfter[ElementType::KEYSIG] = 0.75 * spatium;
-    m_parenAfter[ElementType::LEDGER_LINE] = 0.35 * spatium;
-    m_parenAfter[ElementType::NOTE] = std::max(style.styleAbsolute(Sid::accidentalNoteDistance), 0.35 * spatium);
-    m_parenAfter[ElementType::REST] = style.styleAbsolute(Sid::minNoteDistance);
-    m_parenAfter[ElementType::STEM] = style.styleAbsolute(Sid::minNoteDistance);
-    m_parenAfter[ElementType::TIMESIG] = 0.75 * spatium;
-    m_parenAfter[ElementType::PARENTHESIS] = style.styleAbsolute(Sid::minNoteDistance) * 0.5;
+    parenAfter_[ElementType::ACCIDENTAL] = std::max(style.styleAbsolute(Sid::accidentalNoteDistance), 0.35 * spatium);
+    parenAfter_[ElementType::ARPEGGIO] = 0.6 * spatium;
+    parenAfter_[ElementType::BAR_LINE] = style.styleAbsolute(Sid::noteBarDistance);
+    parenAfter_[ElementType::CLEF] = 0.8 * spatium;
+    parenAfter_[ElementType::KEYSIG] = 0.75 * spatium;
+    parenAfter_[ElementType::LEDGER_LINE] = 0.35 * spatium;
+    parenAfter_[ElementType::NOTE] = std::max(style.styleAbsolute(Sid::accidentalNoteDistance), 0.35 * spatium);
+    parenAfter_[ElementType::REST] = style.styleAbsolute(Sid::minNoteDistance);
+    parenAfter_[ElementType::STEM] = style.styleAbsolute(Sid::minNoteDistance);
+    parenAfter_[ElementType::TIMESIG] = 0.75 * spatium;
+    parenAfter_[ElementType::PARENTHESIS] = style.styleAbsolute(Sid::minNoteDistance) * 0.5;
 }
 
 void KeySigParenPaddingTable::update(const MStyle &style) {
@@ -325,27 +325,27 @@ void KeySigParenPaddingTable::update(const MStyle &style) {
     const double minPadUnit = 0.1 * spatium;
     init(minPadUnit);
 
-    m_parenBefore[ElementType::BAR_LINE] = 0.5 * spatium;
-    m_parenBefore[ElementType::CLEF] = 0.25 * spatium;
-    m_parenBefore[ElementType::HOOK] = 0.35 * spatium;
-    m_parenBefore[ElementType::KEYSIG] = 0.25 * spatium;
-    m_parenBefore[ElementType::NOTEDOT] = 0.35 * spatium;
-    m_parenBefore[ElementType::NOTE] = style.styleAbsolute(Sid::noteBarDistance);
-    m_parenBefore[ElementType::REST] = m_parenBefore[ElementType::NOTE];
-    m_parenBefore[ElementType::STEM] = 0.35 * spatium;
-    m_parenBefore[ElementType::TIMESIG] = 0.25 * spatium;
-    m_parenBefore[ElementType::PARENTHESIS] = 1.0 * spatium;
+    parenBefore_[ElementType::BAR_LINE] = 0.5 * spatium;
+    parenBefore_[ElementType::CLEF] = 0.25 * spatium;
+    parenBefore_[ElementType::HOOK] = 0.35 * spatium;
+    parenBefore_[ElementType::KEYSIG] = 0.25 * spatium;
+    parenBefore_[ElementType::NOTEDOT] = 0.35 * spatium;
+    parenBefore_[ElementType::NOTE] = style.styleAbsolute(Sid::noteBarDistance);
+    parenBefore_[ElementType::REST] = parenBefore_[ElementType::NOTE];
+    parenBefore_[ElementType::STEM] = 0.35 * spatium;
+    parenBefore_[ElementType::TIMESIG] = 0.25 * spatium;
+    parenBefore_[ElementType::PARENTHESIS] = 1.0 * spatium;
 
-    m_parenAfter[ElementType::BAR_LINE] = 0.5 * spatium;
-    m_parenAfter[ElementType::CLEF] = 0.2 * spatium;
-    m_parenAfter[ElementType::HOOK] = 0.35 * spatium;
-    m_parenAfter[ElementType::KEYSIG] = 0.25 * spatium;
-    m_parenAfter[ElementType::NOTEDOT] = 0.35 * spatium;
-    m_parenAfter[ElementType::NOTE] = style.styleAbsolute(Sid::barNoteDistance);
-    m_parenAfter[ElementType::REST] = m_parenAfter[ElementType::NOTE];
-    m_parenAfter[ElementType::STEM] = 0.35 * spatium;
-    m_parenAfter[ElementType::TIMESIG] = 0.25 * spatium;
-    m_parenAfter[ElementType::PARENTHESIS] = 1.0 * spatium;
+    parenAfter_[ElementType::BAR_LINE] = 0.5 * spatium;
+    parenAfter_[ElementType::CLEF] = 0.2 * spatium;
+    parenAfter_[ElementType::HOOK] = 0.35 * spatium;
+    parenAfter_[ElementType::KEYSIG] = 0.25 * spatium;
+    parenAfter_[ElementType::NOTEDOT] = 0.35 * spatium;
+    parenAfter_[ElementType::NOTE] = style.styleAbsolute(Sid::barNoteDistance);
+    parenAfter_[ElementType::REST] = parenAfter_[ElementType::NOTE];
+    parenAfter_[ElementType::STEM] = 0.35 * spatium;
+    parenAfter_[ElementType::TIMESIG] = 0.25 * spatium;
+    parenAfter_[ElementType::PARENTHESIS] = 1.0 * spatium;
 }
 
 void TimeSigParenPaddingTable::update(const MStyle &style) {
@@ -353,27 +353,27 @@ void TimeSigParenPaddingTable::update(const MStyle &style) {
     const double minPadUnit = 0.1 * spatium;
     init(minPadUnit);
 
-    m_parenBefore[ElementType::BAR_LINE] = 0.5 * spatium;
-    m_parenBefore[ElementType::CLEF] = 0.25 * spatium;
-    m_parenBefore[ElementType::HOOK] = 0.35 * spatium;
-    m_parenBefore[ElementType::KEYSIG] = 0.25 * spatium;
-    m_parenBefore[ElementType::NOTEDOT] = 0.35 * spatium;
-    m_parenBefore[ElementType::NOTE] = style.styleAbsolute(Sid::noteBarDistance);
-    m_parenBefore[ElementType::REST] = m_parenBefore[ElementType::NOTE];
-    m_parenBefore[ElementType::STEM] = 0.35 * spatium;
-    m_parenBefore[ElementType::TIMESIG] = 0.25 * spatium;
-    m_parenBefore[ElementType::PARENTHESIS] = 1.0 * spatium;
+    parenBefore_[ElementType::BAR_LINE] = 0.5 * spatium;
+    parenBefore_[ElementType::CLEF] = 0.25 * spatium;
+    parenBefore_[ElementType::HOOK] = 0.35 * spatium;
+    parenBefore_[ElementType::KEYSIG] = 0.25 * spatium;
+    parenBefore_[ElementType::NOTEDOT] = 0.35 * spatium;
+    parenBefore_[ElementType::NOTE] = style.styleAbsolute(Sid::noteBarDistance);
+    parenBefore_[ElementType::REST] = parenBefore_[ElementType::NOTE];
+    parenBefore_[ElementType::STEM] = 0.35 * spatium;
+    parenBefore_[ElementType::TIMESIG] = 0.25 * spatium;
+    parenBefore_[ElementType::PARENTHESIS] = 1.0 * spatium;
 
-    m_parenAfter[ElementType::BAR_LINE] = 0.5 * spatium;
-    m_parenAfter[ElementType::CLEF] = 0.2 * spatium;
-    m_parenAfter[ElementType::HOOK] = 0.35 * spatium;
-    m_parenAfter[ElementType::KEYSIG] = 0.35 * spatium;
-    m_parenAfter[ElementType::NOTEDOT] = 0.2 * spatium;
-    m_parenAfter[ElementType::NOTE] = style.styleAbsolute(Sid::barNoteDistance);
-    m_parenAfter[ElementType::REST] = m_parenAfter[ElementType::NOTE];
-    m_parenAfter[ElementType::STEM] = 0.35 * spatium;
-    m_parenAfter[ElementType::TIMESIG] = 0.25 * spatium;
-    m_parenAfter[ElementType::PARENTHESIS] = 1.0 * spatium;
+    parenAfter_[ElementType::BAR_LINE] = 0.5 * spatium;
+    parenAfter_[ElementType::CLEF] = 0.2 * spatium;
+    parenAfter_[ElementType::HOOK] = 0.35 * spatium;
+    parenAfter_[ElementType::KEYSIG] = 0.35 * spatium;
+    parenAfter_[ElementType::NOTEDOT] = 0.2 * spatium;
+    parenAfter_[ElementType::NOTE] = style.styleAbsolute(Sid::barNoteDistance);
+    parenAfter_[ElementType::REST] = parenAfter_[ElementType::NOTE];
+    parenAfter_[ElementType::STEM] = 0.35 * spatium;
+    parenAfter_[ElementType::TIMESIG] = 0.25 * spatium;
+    parenAfter_[ElementType::PARENTHESIS] = 1.0 * spatium;
 }
 
 void ClefParenPaddingTable::update(const MStyle &style) {
@@ -381,25 +381,25 @@ void ClefParenPaddingTable::update(const MStyle &style) {
     const double minPadUnit = 0.1 * spatium;
     init(minPadUnit);
 
-    m_parenBefore[ElementType::BAR_LINE] = 0.5 * spatium;
-    m_parenBefore[ElementType::CLEF] = 0.25 * spatium;
-    m_parenBefore[ElementType::HOOK] = 0.35 * spatium;
-    m_parenBefore[ElementType::KEYSIG] = 0.25 * spatium;
-    m_parenBefore[ElementType::NOTEDOT] = 0.35 * spatium;
-    m_parenBefore[ElementType::NOTE] = style.styleAbsolute(Sid::noteBarDistance);
-    m_parenBefore[ElementType::REST] = m_parenBefore[ElementType::NOTE];
-    m_parenBefore[ElementType::STEM] = 0.35 * spatium;
-    m_parenBefore[ElementType::TIMESIG] = 0.25 * spatium;
-    m_parenBefore[ElementType::PARENTHESIS] = 1.0 * spatium;
+    parenBefore_[ElementType::BAR_LINE] = 0.5 * spatium;
+    parenBefore_[ElementType::CLEF] = 0.25 * spatium;
+    parenBefore_[ElementType::HOOK] = 0.35 * spatium;
+    parenBefore_[ElementType::KEYSIG] = 0.25 * spatium;
+    parenBefore_[ElementType::NOTEDOT] = 0.35 * spatium;
+    parenBefore_[ElementType::NOTE] = style.styleAbsolute(Sid::noteBarDistance);
+    parenBefore_[ElementType::REST] = parenBefore_[ElementType::NOTE];
+    parenBefore_[ElementType::STEM] = 0.35 * spatium;
+    parenBefore_[ElementType::TIMESIG] = 0.25 * spatium;
+    parenBefore_[ElementType::PARENTHESIS] = 1.0 * spatium;
 
-    m_parenAfter[ElementType::BAR_LINE] = 0.5 * spatium;
-    m_parenAfter[ElementType::CLEF] = 0.25 * spatium;
-    m_parenAfter[ElementType::HOOK] = 0.35 * spatium;
-    m_parenAfter[ElementType::KEYSIG] = 0.35 * spatium;
-    m_parenAfter[ElementType::NOTEDOT] = 0.35 * spatium;
-    m_parenAfter[ElementType::NOTE] = style.styleAbsolute(Sid::barNoteDistance);
-    m_parenAfter[ElementType::REST] = m_parenAfter[ElementType::NOTE];
-    m_parenAfter[ElementType::STEM] = 0.35 * spatium;
-    m_parenAfter[ElementType::TIMESIG] = 0.2 * spatium;
-    m_parenAfter[ElementType::PARENTHESIS] = 1.0 * spatium;
+    parenAfter_[ElementType::BAR_LINE] = 0.5 * spatium;
+    parenAfter_[ElementType::CLEF] = 0.25 * spatium;
+    parenAfter_[ElementType::HOOK] = 0.35 * spatium;
+    parenAfter_[ElementType::KEYSIG] = 0.35 * spatium;
+    parenAfter_[ElementType::NOTEDOT] = 0.35 * spatium;
+    parenAfter_[ElementType::NOTE] = style.styleAbsolute(Sid::barNoteDistance);
+    parenAfter_[ElementType::REST] = parenAfter_[ElementType::NOTE];
+    parenAfter_[ElementType::STEM] = 0.35 * spatium;
+    parenAfter_[ElementType::TIMESIG] = 0.2 * spatium;
+    parenAfter_[ElementType::PARENTHESIS] = 1.0 * spatium;
 }

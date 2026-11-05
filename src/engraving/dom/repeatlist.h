@@ -61,9 +61,9 @@ public:
     int endTick() const;
     void popMeasure();
 
-    Measure const *firstMeasure() const { return m_measureList.empty() ? nullptr : m_measureList.front(); }
+    Measure const *firstMeasure() const { return measureList_.empty() ? nullptr : measureList_.front(); }
 
-    Measure const *lastMeasure() const { return m_measureList.empty() ? nullptr : m_measureList.back(); }
+    Measure const *lastMeasure() const { return measureList_.empty() ? nullptr : measureList_.back(); }
 
     const std::vector<const Measure *> &measureList() const;
 
@@ -73,7 +73,7 @@ public:
 
     friend class RepeatList;
 private:
-    std::vector<const Measure *> m_measureList;
+    std::vector<const Measure *> measureList_;
 };
 
 struct RepeatSegmentInfo {
@@ -97,9 +97,9 @@ public:
 
     void update(bool expand, bool updateTies = true);
 
-    void setScoreChanged() { m_scoreChanged = true; }
+    void setScoreChanged() { scoreChanged_ = true; }
 
-    const Score *score() const { return m_score; }
+    const Score *score() const { return score_; }
 
     int utick2tick(int tick) const;
     int tick2utick(int tick) const;
@@ -121,14 +121,14 @@ private:
     void unwind();
     void flatten();
 
-    Score *m_score = nullptr;
-    mutable unsigned m_utick2tickHint = 0; // cached RepeatList index for utick2tick
+    Score *score_ = nullptr;
+    mutable unsigned utick2tickHint_ = 0; // cached RepeatList index for utick2tick
 
-    bool m_expanded = false;
-    bool m_scoreChanged = true;
+    bool expanded_ = false;
+    bool scoreChanged_ = true;
 
-    std::set<std::pair<Jump const *const, int>> m_jumpsTaken; // take the jumps only once, so track them during unwind
-    std::vector<RepeatListElementList> m_rlElements;          // all elements of the score that influence the RepeatList
+    std::set<std::pair<Jump const *const, int>> jumpsTaken_; // take the jumps only once, so track them during unwind
+    std::vector<RepeatListElementList> rlElements_;          // all elements of the score that influence the RepeatList
 };
 } // namespace mu::engraving
 #endif

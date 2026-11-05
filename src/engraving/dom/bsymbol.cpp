@@ -43,15 +43,15 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 BSymbol::BSymbol(const ElementType &type, EngravingObject *parent, ElementFlags f) : EngravingItem(type, parent, f) {
-    m_align = {AlignH::LEFT, AlignV::BASELINE};
+    align_ = {AlignH::LEFT, AlignV::BASELINE};
 }
 
 BSymbol::BSymbol(const BSymbol &s) : EngravingItem(s) {
-    m_align = s.m_align;
-    for (EngravingItem *e : s.m_leafs) {
+    align_ = s.align_;
+    for (EngravingItem *e : s.leafs_) {
         EngravingItem *ee = e->clone();
         ee->setOwnershipParent(this);
-        m_leafs.push_back(ee);
+        leafs_.push_back(ee);
     }
 }
 
@@ -63,7 +63,7 @@ void BSymbol::add(EngravingItem *e) {
     if (e->isSymbol() || e->isImage()) {
         e->setOwnershipParent(this);
         e->setTrack(track());
-        m_leafs.push_back(e);
+        leafs_.push_back(e);
         toBSymbol(e)->setZ(z() - 1); // draw on top of parent
         e->added();
     } else {
@@ -77,7 +77,7 @@ void BSymbol::add(EngravingItem *e) {
 
 void BSymbol::scanElements(std::function<void(EngravingItem *)> func) {
     func(this);
-    for (EngravingItem *e : m_leafs) {
+    for (EngravingItem *e : leafs_) {
         e->scanElements(func);
     }
 }
@@ -88,7 +88,7 @@ void BSymbol::scanElements(std::function<void(EngravingItem *)> func) {
 
 void BSymbol::remove(EngravingItem *e) {
     if (e->isSymbol() || e->isImage()) {
-        if (muse::remove(m_leafs, e)) {
+        if (muse::remove(leafs_, e)) {
             e->removed();
         } else {
             LOGD("BSymbol::remove: element <%s> not found", e->typeName());

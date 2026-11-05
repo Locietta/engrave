@@ -57,7 +57,7 @@ public:
 
 private:
     void write(const char *ch, size_t len);
-    io::IODevice *m_device = nullptr;
-    std::vector<uint8_t> m_buf;
+    io::IODevice *device_ = nullptr;
+    std::vector<uint8_t> buf_;
 };
 } // namespace muse

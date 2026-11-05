@@ -728,25 +728,25 @@ class TransposeHarmony : public UndoableCommand {
 
 public:
     TransposeHarmony(Harmony *harmony, Interval interval, bool useDoubleSharpsFlats)
-        : m_harmony(harmony), m_interval(interval), m_useDoubleSharpsFlats(useDoubleSharpsFlats) {}
+        : harmony_(harmony), interval_(interval), useDoubleSharpsFlats_(useDoubleSharpsFlats) {}
 
     UNDO_TYPE(CommandType::TransposeHarmony)
     UNDO_NAME("TransposeHarmony")
-    UNDO_CHANGED_OBJECTS({m_harmony})
+    UNDO_CHANGED_OBJECTS({harmony_})
 
 private:
     void flip() override;
 
-    Harmony *m_harmony = nullptr;
+    Harmony *harmony_ = nullptr;
 
-    Interval m_interval = Interval(0, 0);
-    bool m_useDoubleSharpsFlats = false;
+    Interval interval_ = Interval(0, 0);
+    bool useDoubleSharpsFlats_ = false;
 };
 } // namespace
 
 void TransposeHarmony::flip() {
-    Transpose::doUndoTransposeHarmony(m_harmony, m_interval, m_useDoubleSharpsFlats);
-    m_interval.flip();
+    Transpose::doUndoTransposeHarmony(harmony_, interval_, useDoubleSharpsFlats_);
+    interval_.flip();
 }
 
 void Transpose::undoTransposeHarmony(Transaction &tx, Harmony *harmony, Interval interval, bool doubleSharpFlat) {
@@ -775,26 +775,26 @@ class TransposeHarmonyDiatonic : public UndoableCommand {
 
 public:
     TransposeHarmonyDiatonic(Harmony *harmony, int interval, bool useDoubleSharpsFlats, bool transposeKeys)
-        : m_harmony(harmony), m_interval(interval), m_useDoubleSharpsFlats(useDoubleSharpsFlats), m_transposeKeys(transposeKeys) {}
+        : harmony_(harmony), interval_(interval), useDoubleSharpsFlats_(useDoubleSharpsFlats), transposeKeys_(transposeKeys) {}
 
     UNDO_TYPE(CommandType::TransposeHarmony)
     UNDO_NAME("TransposeHarmonyDiatonic")
-    UNDO_CHANGED_OBJECTS({m_harmony})
+    UNDO_CHANGED_OBJECTS({harmony_})
 
 private:
     void flip() override;
 
-    Harmony *m_harmony = nullptr;
-    int m_interval = 0;
-    bool m_useDoubleSharpsFlats = false;
-    bool m_transposeKeys = false;
+    Harmony *harmony_ = nullptr;
+    int interval_ = 0;
+    bool useDoubleSharpsFlats_ = false;
+    bool transposeKeys_ = false;
 };
 } // namespace
 
 void TransposeHarmonyDiatonic::flip() {
-    Transpose::doUndoTransposeHarmonyDiatonic(m_harmony, m_interval, m_useDoubleSharpsFlats, m_transposeKeys);
+    Transpose::doUndoTransposeHarmonyDiatonic(harmony_, interval_, useDoubleSharpsFlats_, transposeKeys_);
 
-    m_interval *= -1;
+    interval_ *= -1;
 }
 
 void Transpose::undoTransposeHarmonyDiatonic(Transaction &tx, Harmony *harmony, int interval, bool doubleSharpFlat, bool transposeKeys) {

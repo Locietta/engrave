@@ -27,41 +27,41 @@
 using namespace muse;
 using namespace muse::io;
 
-path_t::path_t(const String &s) : m_path(s.toStdString()) {}
+path_t::path_t(const String &s) : path_(s.toStdString()) {}
 
-path_t::path_t(const std::string &s) : m_path(s) {}
+path_t::path_t(const std::string &s) : path_(s) {}
 
-path_t::path_t(std::string &&s) : m_path(std::move(s)) {}
+path_t::path_t(std::string &&s) : path_(std::move(s)) {}
 
-path_t::path_t(const char *s) : m_path(s ? s : "") {}
+path_t::path_t(const char *s) : path_(s ? s : "") {}
 
-bool path_t::empty() const { return m_path.empty(); }
+bool path_t::empty() const { return path_.empty(); }
 
-size_t path_t::size() const { return m_path.size(); }
+size_t path_t::size() const { return path_.size(); }
 
-bool path_t::hasSuffix(const char *str) const { return io::FileInfo::suffix(m_path).toLower() == str; }
+bool path_t::hasSuffix(const char *str) const { return io::FileInfo::suffix(path_).toLower() == str; }
 
 path_t path_t::appendingComponent(const path_t &other) const {
-    if ((!m_path.empty() && m_path.back() == '/') || (!other.m_path.empty() && other.m_path.front() == '/')) {
-        return m_path + other.m_path;
+    if ((!path_.empty() && path_.back() == '/') || (!other.path_.empty() && other.path_.front() == '/')) {
+        return path_ + other.path_;
     }
 
-    return m_path + '/' + other.m_path;
+    return path_ + '/' + other.path_;
 }
 
 path_t path_t::appendingSuffix(const path_t &suffix) const {
-    if (!suffix.m_path.empty() && suffix.m_path.front() == '.') {
-        return m_path + suffix.m_path;
+    if (!suffix.path_.empty() && suffix.path_.front() == '.') {
+        return path_ + suffix.path_;
     }
 
-    return m_path + '.' + suffix.m_path;
+    return path_ + '.' + suffix.path_;
 }
 
-String path_t::toString() const { return String::fromStdString(m_path); }
+String path_t::toString() const { return String::fromStdString(path_); }
 
-const std::string &path_t::toStdString() const { return m_path; }
+const std::string &path_t::toStdString() const { return path_; }
 
-const char *path_t::c_str() const { return m_path.c_str(); }
+const char *path_t::c_str() const { return path_.c_str(); }
 
 std::string muse::io::suffix(const io::path_t &path) { return FileInfo::suffix(path).toLower().toStdString(); }
 

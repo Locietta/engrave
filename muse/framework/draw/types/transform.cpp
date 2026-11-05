@@ -32,11 +32,11 @@ using namespace muse::draw;
 static constexpr double NEAR_CLIP = 0.000001;
 
 Transform::Transform(double h11, double h12, double h21, double h22, double dx, double dy)
-    : m_affine(h11, h12, h21, h22, dx, dy), m_dirty(TransformationType::Shear) {}
+    : affine_(h11, h12, h21, h22, dx, dy), dirty_(TransformationType::Shear) {}
 
 Transform::Transform(double h11, double h12, double h13, double h21, double h22, double h23, double h31, double h32, double h33)
-    : m_affine(h11, h12, h21, h22, h31, h32), m_13(h13), m_23(h23), m_33(h33), m_type(TransformationType::None),
-      m_dirty(TransformationType::Project) {}
+    : affine_(h11, h12, h21, h22, h31, h32), m13_(h13), m23_(h23), m33_(h33), type_(TransformationType::None),
+      dirty_(TransformationType::Project) {}
 
 Transform Transform::operator*(const Transform &m) const {
     const TransformationType otherType = m.inline_type();
@@ -53,59 +53,59 @@ Transform Transform::operator*(const Transform &m) const {
     switch (type) {
         case TransformationType::None: break;
         case TransformationType::Translate:
-            t.m_affine.m_dx = m_affine.m_dx + m.m_affine.m_dx;
-            t.m_affine.m_dy = m_affine.m_dy + m.m_affine.m_dy;
+            t.affine_.dx_ = affine_.dx_ + m.affine_.dx_;
+            t.affine_.dy_ = affine_.dy_ + m.affine_.dy_;
             break;
         case TransformationType::Scale: {
-            double m11 = m_affine.m_11 * m.m_affine.m_11;
-            double m22 = m_affine.m_22 * m.m_affine.m_22;
-            double m31 = m_affine.m_dx * m.m_affine.m_11 + m.m_affine.m_dx;
-            double m32 = m_affine.m_dy * m.m_affine.m_22 + m.m_affine.m_dy;
-            t.m_affine.m_11 = m11;
-            t.m_affine.m_22 = m22;
-            t.m_affine.m_dx = m31;
-            t.m_affine.m_dy = m32;
+            double m11 = affine_.m11_ * m.affine_.m11_;
+            double m22 = affine_.m22_ * m.affine_.m22_;
+            double m31 = affine_.dx_ * m.affine_.m11_ + m.affine_.dx_;
+            double m32 = affine_.dy_ * m.affine_.m22_ + m.affine_.dy_;
+            t.affine_.m11_ = m11;
+            t.affine_.m22_ = m22;
+            t.affine_.dx_ = m31;
+            t.affine_.dy_ = m32;
             break;
         }
         case TransformationType::Rotate:
         case TransformationType::Shear: {
-            double m11 = m_affine.m_11 * m.m_affine.m_11 + m_affine.m_12 * m.m_affine.m_21;
-            double m12 = m_affine.m_11 * m.m_affine.m_12 + m_affine.m_12 * m.m_affine.m_22;
-            double m21 = m_affine.m_21 * m.m_affine.m_11 + m_affine.m_22 * m.m_affine.m_21;
-            double m22 = m_affine.m_21 * m.m_affine.m_12 + m_affine.m_22 * m.m_affine.m_22;
-            double m31 = m_affine.m_dx * m.m_affine.m_11 + m_affine.m_dy * m.m_affine.m_21 + m.m_affine.m_dx;
-            double m32 = m_affine.m_dx * m.m_affine.m_12 + m_affine.m_dy * m.m_affine.m_22 + m.m_affine.m_dy;
-            t.m_affine.m_11 = m11;
-            t.m_affine.m_12 = m12;
-            t.m_affine.m_21 = m21;
-            t.m_affine.m_22 = m22;
-            t.m_affine.m_dx = m31;
-            t.m_affine.m_dy = m32;
+            double m11 = affine_.m11_ * m.affine_.m11_ + affine_.m12_ * m.affine_.m21_;
+            double m12 = affine_.m11_ * m.affine_.m12_ + affine_.m12_ * m.affine_.m22_;
+            double m21 = affine_.m21_ * m.affine_.m11_ + affine_.m22_ * m.affine_.m21_;
+            double m22 = affine_.m21_ * m.affine_.m12_ + affine_.m22_ * m.affine_.m22_;
+            double m31 = affine_.dx_ * m.affine_.m11_ + affine_.dy_ * m.affine_.m21_ + m.affine_.dx_;
+            double m32 = affine_.dx_ * m.affine_.m12_ + affine_.dy_ * m.affine_.m22_ + m.affine_.dy_;
+            t.affine_.m11_ = m11;
+            t.affine_.m12_ = m12;
+            t.affine_.m21_ = m21;
+            t.affine_.m22_ = m22;
+            t.affine_.dx_ = m31;
+            t.affine_.dy_ = m32;
             break;
         }
         case TransformationType::Project: {
-            double m11 = m_affine.m_11 * m.m_affine.m_11 + m_affine.m_12 * m.m_affine.m_21 + m_13 * m.m_affine.m_dx;
-            double m12 = m_affine.m_11 * m.m_affine.m_12 + m_affine.m_12 * m.m_affine.m_22 + m_13 * m.m_affine.m_dy;
-            double m13 = m_affine.m_11 * m.m_13 + m_affine.m_12 * m.m_23 + m_13 * m.m_33;
-            double m21 = m_affine.m_21 * m.m_affine.m_11 + m_affine.m_22 * m.m_affine.m_21 + m_23 * m.m_affine.m_dx;
-            double m22 = m_affine.m_21 * m.m_affine.m_12 + m_affine.m_22 * m.m_affine.m_22 + m_23 * m.m_affine.m_dy;
-            double m23 = m_affine.m_21 * m.m_13 + m_affine.m_22 * m.m_23 + m_23 * m.m_33;
-            double m31 = m_affine.m_dx * m.m_affine.m_11 + m_affine.m_dy * m.m_affine.m_21 + m_33 * m.m_affine.m_dx;
-            double m32 = m_affine.m_dx * m.m_affine.m_12 + m_affine.m_dy * m.m_affine.m_22 + m_33 * m.m_affine.m_dy;
-            double m33 = m_affine.m_dx * m.m_13 + m_affine.m_dy * m.m_23 + m_33 * m.m_33;
-            t.m_affine.m_11 = m11;
-            t.m_affine.m_12 = m12;
-            t.m_13 = m13;
-            t.m_affine.m_21 = m21;
-            t.m_affine.m_22 = m22;
-            t.m_23 = m23;
-            t.m_affine.m_dx = m31;
-            t.m_affine.m_dy = m32;
-            t.m_33 = m33;
+            double m11 = affine_.m11_ * m.affine_.m11_ + affine_.m12_ * m.affine_.m21_ + m13_ * m.affine_.dx_;
+            double m12 = affine_.m11_ * m.affine_.m12_ + affine_.m12_ * m.affine_.m22_ + m13_ * m.affine_.dy_;
+            double m13 = affine_.m11_ * m.m13_ + affine_.m12_ * m.m23_ + m13_ * m.m33_;
+            double m21 = affine_.m21_ * m.affine_.m11_ + affine_.m22_ * m.affine_.m21_ + m23_ * m.affine_.dx_;
+            double m22 = affine_.m21_ * m.affine_.m12_ + affine_.m22_ * m.affine_.m22_ + m23_ * m.affine_.dy_;
+            double m23 = affine_.m21_ * m.m13_ + affine_.m22_ * m.m23_ + m23_ * m.m33_;
+            double m31 = affine_.dx_ * m.affine_.m11_ + affine_.dy_ * m.affine_.m21_ + m33_ * m.affine_.dx_;
+            double m32 = affine_.dx_ * m.affine_.m12_ + affine_.dy_ * m.affine_.m22_ + m33_ * m.affine_.dy_;
+            double m33 = affine_.dx_ * m.m13_ + affine_.dy_ * m.m23_ + m33_ * m.m33_;
+            t.affine_.m11_ = m11;
+            t.affine_.m12_ = m12;
+            t.m13_ = m13;
+            t.affine_.m21_ = m21;
+            t.affine_.m22_ = m22;
+            t.m23_ = m23;
+            t.affine_.dx_ = m31;
+            t.affine_.dy_ = m32;
+            t.m33_ = m33;
         }
     }
-    t.m_dirty = type;
-    t.m_type = type;
+    t.dirty_ = type;
+    t.type_ = type;
     return t;
 }
 
@@ -122,134 +122,134 @@ Transform &Transform::operator*=(const Transform &o) {
     switch (t) {
         case TransformationType::None: break;
         case TransformationType::Translate:
-            m_affine.m_dx += o.m_affine.m_dx;
-            m_affine.m_dy += o.m_affine.m_dy;
+            affine_.dx_ += o.affine_.dx_;
+            affine_.dy_ += o.affine_.dy_;
             break;
         case TransformationType::Scale: {
-            double m11 = m_affine.m_11 * o.m_affine.m_11;
-            double m22 = m_affine.m_22 * o.m_affine.m_22;
-            double m31 = m_affine.m_dx * o.m_affine.m_11 + o.m_affine.m_dx;
-            double m32 = m_affine.m_dy * o.m_affine.m_22 + o.m_affine.m_dy;
-            m_affine.m_11 = m11;
-            m_affine.m_22 = m22;
-            m_affine.m_dx = m31;
-            m_affine.m_dy = m32;
+            double m11 = affine_.m11_ * o.affine_.m11_;
+            double m22 = affine_.m22_ * o.affine_.m22_;
+            double m31 = affine_.dx_ * o.affine_.m11_ + o.affine_.dx_;
+            double m32 = affine_.dy_ * o.affine_.m22_ + o.affine_.dy_;
+            affine_.m11_ = m11;
+            affine_.m22_ = m22;
+            affine_.dx_ = m31;
+            affine_.dy_ = m32;
             break;
         }
         case TransformationType::Rotate:
         case TransformationType::Shear: {
-            double m11 = m_affine.m_11 * o.m_affine.m_11 + m_affine.m_12 * o.m_affine.m_21;
-            double m12 = m_affine.m_11 * o.m_affine.m_12 + m_affine.m_12 * o.m_affine.m_22;
-            double m21 = m_affine.m_21 * o.m_affine.m_11 + m_affine.m_22 * o.m_affine.m_21;
-            double m22 = m_affine.m_21 * o.m_affine.m_12 + m_affine.m_22 * o.m_affine.m_22;
-            double m31 = m_affine.m_dx * o.m_affine.m_11 + m_affine.m_dy * o.m_affine.m_21 + o.m_affine.m_dx;
-            double m32 = m_affine.m_dx * o.m_affine.m_12 + m_affine.m_dy * o.m_affine.m_22 + o.m_affine.m_dy;
-            m_affine.m_11 = m11;
-            m_affine.m_12 = m12;
-            m_affine.m_21 = m21;
-            m_affine.m_22 = m22;
-            m_affine.m_dx = m31;
-            m_affine.m_dy = m32;
+            double m11 = affine_.m11_ * o.affine_.m11_ + affine_.m12_ * o.affine_.m21_;
+            double m12 = affine_.m11_ * o.affine_.m12_ + affine_.m12_ * o.affine_.m22_;
+            double m21 = affine_.m21_ * o.affine_.m11_ + affine_.m22_ * o.affine_.m21_;
+            double m22 = affine_.m21_ * o.affine_.m12_ + affine_.m22_ * o.affine_.m22_;
+            double m31 = affine_.dx_ * o.affine_.m11_ + affine_.dy_ * o.affine_.m21_ + o.affine_.dx_;
+            double m32 = affine_.dx_ * o.affine_.m12_ + affine_.dy_ * o.affine_.m22_ + o.affine_.dy_;
+            affine_.m11_ = m11;
+            affine_.m12_ = m12;
+            affine_.m21_ = m21;
+            affine_.m22_ = m22;
+            affine_.dx_ = m31;
+            affine_.dy_ = m32;
             break;
         }
 
         case TransformationType::Project: {
-            double m11 = m_affine.m_11 * o.m_affine.m_11 + m_affine.m_12 * o.m_affine.m_21 + m_13 * o.m_affine.m_dx;
-            double m12 = m_affine.m_11 * o.m_affine.m_12 + m_affine.m_12 * o.m_affine.m_22 + m_13 * o.m_affine.m_dy;
-            double m13 = m_affine.m_11 * o.m_13 + m_affine.m_12 * o.m_23 + m_13 * o.m_33;
-            double m21 = m_affine.m_21 * o.m_affine.m_11 + m_affine.m_22 * o.m_affine.m_21 + m_23 * o.m_affine.m_dx;
-            double m22 = m_affine.m_21 * o.m_affine.m_12 + m_affine.m_22 * o.m_affine.m_22 + m_23 * o.m_affine.m_dy;
-            double m23 = m_affine.m_21 * o.m_13 + m_affine.m_22 * o.m_23 + m_23 * o.m_33;
-            double m31 = m_affine.m_dx * o.m_affine.m_11 + m_affine.m_dy * o.m_affine.m_21 + m_33 * o.m_affine.m_dx;
-            double m32 = m_affine.m_dx * o.m_affine.m_12 + m_affine.m_dy * o.m_affine.m_22 + m_33 * o.m_affine.m_dy;
-            double m33 = m_affine.m_dx * o.m_13 + m_affine.m_dy * o.m_23 + m_33 * o.m_33;
-            m_affine.m_11 = m11;
-            m_affine.m_12 = m12;
-            m_13 = m13;
-            m_affine.m_21 = m21;
-            m_affine.m_22 = m22;
-            m_23 = m23;
-            m_affine.m_dx = m31;
-            m_affine.m_dy = m32;
-            m_33 = m33;
+            double m11 = affine_.m11_ * o.affine_.m11_ + affine_.m12_ * o.affine_.m21_ + m13_ * o.affine_.dx_;
+            double m12 = affine_.m11_ * o.affine_.m12_ + affine_.m12_ * o.affine_.m22_ + m13_ * o.affine_.dy_;
+            double m13 = affine_.m11_ * o.m13_ + affine_.m12_ * o.m23_ + m13_ * o.m33_;
+            double m21 = affine_.m21_ * o.affine_.m11_ + affine_.m22_ * o.affine_.m21_ + m23_ * o.affine_.dx_;
+            double m22 = affine_.m21_ * o.affine_.m12_ + affine_.m22_ * o.affine_.m22_ + m23_ * o.affine_.dy_;
+            double m23 = affine_.m21_ * o.m13_ + affine_.m22_ * o.m23_ + m23_ * o.m33_;
+            double m31 = affine_.dx_ * o.affine_.m11_ + affine_.dy_ * o.affine_.m21_ + m33_ * o.affine_.dx_;
+            double m32 = affine_.dx_ * o.affine_.m12_ + affine_.dy_ * o.affine_.m22_ + m33_ * o.affine_.dy_;
+            double m33 = affine_.dx_ * o.m13_ + affine_.dy_ * o.m23_ + m33_ * o.m33_;
+            affine_.m11_ = m11;
+            affine_.m12_ = m12;
+            m13_ = m13;
+            affine_.m21_ = m21;
+            affine_.m22_ = m22;
+            m23_ = m23;
+            affine_.dx_ = m31;
+            affine_.dy_ = m32;
+            m33_ = m33;
         }
     }
-    m_dirty = t;
-    m_type = t;
+    dirty_ = t;
+    type_ = t;
     return *this;
 }
 
 void Transform::setMatrix(double m11, double m12, double m13, double m21, double m22, double m23, double m31, double m32, double m33) {
-    m_affine.m_11 = m11;
-    m_affine.m_12 = m12;
-    m_13 = m13;
-    m_affine.m_21 = m21;
-    m_affine.m_22 = m22;
-    m_23 = m23;
-    m_affine.m_dx = m31;
-    m_affine.m_dy = m32;
-    m_33 = m33;
-    m_dirty = TransformationType::Project;
+    affine_.m11_ = m11;
+    affine_.m12_ = m12;
+    m13_ = m13;
+    affine_.m21_ = m21;
+    affine_.m22_ = m22;
+    m23_ = m23;
+    affine_.dx_ = m31;
+    affine_.dy_ = m32;
+    m33_ = m33;
+    dirty_ = TransformationType::Project;
 }
 
 void Transform::reset() {
-    m_affine.m_11 = m_affine.m_22 = m_33 = 1.0;
-    m_affine.m_12 = m_13 = m_affine.m_21 = m_23 = m_affine.m_dx = m_affine.m_dy = 0.0;
+    affine_.m11_ = affine_.m22_ = m33_ = 1.0;
+    affine_.m12_ = m13_ = affine_.m21_ = m23_ = affine_.dx_ = affine_.dy_ = 0.0;
 }
 
 Transform Transform::adjoint() const {
     double h11, h12, h13, h21, h22, h23, h31, h32, h33;
-    h11 = m_affine.m_22 * m_33 - m_23 * m_affine.m_dy;
-    h21 = m_23 * m_affine.m_dx - m_affine.m_21 * m_33;
-    h31 = m_affine.m_21 * m_affine.m_dy - m_affine.m_22 * m_affine.m_dx;
-    h12 = m_13 * m_affine.m_dy - m_affine.m_12 * m_33;
-    h22 = m_affine.m_11 * m_33 - m_13 * m_affine.m_dx;
-    h32 = m_affine.m_12 * m_affine.m_dx - m_affine.m_11 * m_affine.m_dy;
-    h13 = m_affine.m_12 * m_23 - m_13 * m_affine.m_22;
-    h23 = m_13 * m_affine.m_21 - m_affine.m_11 * m_23;
-    h33 = m_affine.m_11 * m_affine.m_22 - m_affine.m_12 * m_affine.m_21;
+    h11 = affine_.m22_ * m33_ - m23_ * affine_.dy_;
+    h21 = m23_ * affine_.dx_ - affine_.m21_ * m33_;
+    h31 = affine_.m21_ * affine_.dy_ - affine_.m22_ * affine_.dx_;
+    h12 = m13_ * affine_.dy_ - affine_.m12_ * m33_;
+    h22 = affine_.m11_ * m33_ - m13_ * affine_.dx_;
+    h32 = affine_.m12_ * affine_.dx_ - affine_.m11_ * affine_.dy_;
+    h13 = affine_.m12_ * m23_ - m13_ * affine_.m22_;
+    h23 = m13_ * affine_.m21_ - affine_.m11_ * m23_;
+    h33 = affine_.m11_ * affine_.m22_ - affine_.m12_ * affine_.m21_;
     return Transform(h11, h12, h13, h21, h22, h23, h31, h32, h33);
 }
 
 Transform::TransformationType Transform::type() const {
-    if (m_dirty == TransformationType::None || m_dirty < m_type) {
-        return m_type;
+    if (dirty_ == TransformationType::None || dirty_ < type_) {
+        return type_;
     }
-    switch (m_dirty) {
+    switch (dirty_) {
         case TransformationType::Project:
-            if (!RealIsNull(m_13) || !RealIsNull(m_23) || !RealIsNull(m_33 - 1)) {
-                m_type = TransformationType::Project;
+            if (!RealIsNull(m13_) || !RealIsNull(m23_) || !RealIsNull(m33_ - 1)) {
+                type_ = TransformationType::Project;
                 break;
             }
         // fall through
         case TransformationType::Shear:
         case TransformationType::Rotate:
-            if (!RealIsNull(m_affine.m_12) || !RealIsNull(m_affine.m_21)) {
-                const double dot = m_affine.m_11 * m_affine.m_12 + m_affine.m_21 * m_affine.m_22;
+            if (!RealIsNull(affine_.m12_) || !RealIsNull(affine_.m21_)) {
+                const double dot = affine_.m11_ * affine_.m12_ + affine_.m21_ * affine_.m22_;
                 if (RealIsNull(dot)) {
-                    m_type = TransformationType::Rotate;
+                    type_ = TransformationType::Rotate;
                 } else {
-                    m_type = TransformationType::Shear;
+                    type_ = TransformationType::Shear;
                 }
                 break;
             }
         // fall through
         case TransformationType::Scale:
-            if (!RealIsNull(m_affine.m_11 - 1) || !RealIsNull(m_affine.m_22 - 1)) {
-                m_type = TransformationType::Scale;
+            if (!RealIsNull(affine_.m11_ - 1) || !RealIsNull(affine_.m22_ - 1)) {
+                type_ = TransformationType::Scale;
                 break;
             }
         // fall through
         case TransformationType::Translate:
-            if (!RealIsNull(m_affine.m_dx) || !RealIsNull(m_affine.m_dy)) {
-                m_type = TransformationType::Translate;
+            if (!RealIsNull(affine_.dx_) || !RealIsNull(affine_.dy_)) {
+                type_ = TransformationType::Translate;
                 break;
             }
         // fall through
-        case TransformationType::None: m_type = TransformationType::None; break;
+        case TransformationType::None: type_ = TransformationType::None; break;
     }
-    m_dirty = TransformationType::None;
-    return m_type;
+    dirty_ = TransformationType::None;
+    return type_;
 }
 
 PointF Transform::map(const PointF &p) const {
@@ -263,20 +263,20 @@ PointF Transform::map(const PointF &p) const {
             y = fy;
             break;
         case TransformationType::Translate:
-            x = fx + m_affine.m_dx;
-            y = fy + m_affine.m_dy;
+            x = fx + affine_.dx_;
+            y = fy + affine_.dy_;
             break;
         case TransformationType::Scale:
-            x = m_affine.m_11 * fx + m_affine.m_dx;
-            y = m_affine.m_22 * fy + m_affine.m_dy;
+            x = affine_.m11_ * fx + affine_.dx_;
+            y = affine_.m22_ * fy + affine_.dy_;
             break;
         case TransformationType::Rotate:
         case TransformationType::Shear:
         case TransformationType::Project:
-            x = m_affine.m_11 * fx + m_affine.m_21 * fy + m_affine.m_dx;
-            y = m_affine.m_12 * fx + m_affine.m_22 * fy + m_affine.m_dy;
+            x = affine_.m11_ * fx + affine_.m21_ * fy + affine_.dx_;
+            y = affine_.m12_ * fx + affine_.m22_ * fy + affine_.dy_;
             if (t == TransformationType::Project) {
-                double w = 1. / (m_13 * fx + m_23 * fy + m_33);
+                double w = 1. / (m13_ * fx + m23_ * fy + m33_);
                 x *= w;
                 y *= w;
             }
@@ -299,29 +299,29 @@ LineF Transform::map(const LineF &l) const {
             y2 = fy2;
             break;
         case TransformationType::Translate:
-            x1 = fx1 + m_affine.m_dx;
-            y1 = fy1 + m_affine.m_dy;
-            x2 = fx2 + m_affine.m_dx;
-            y2 = fy2 + m_affine.m_dy;
+            x1 = fx1 + affine_.dx_;
+            y1 = fy1 + affine_.dy_;
+            x2 = fx2 + affine_.dx_;
+            y2 = fy2 + affine_.dy_;
             break;
         case TransformationType::Scale:
-            x1 = m_affine.m_11 * fx1 + m_affine.m_dx;
-            y1 = m_affine.m_22 * fy1 + m_affine.m_dy;
-            x2 = m_affine.m_11 * fx2 + m_affine.m_dx;
-            y2 = m_affine.m_22 * fy2 + m_affine.m_dy;
+            x1 = affine_.m11_ * fx1 + affine_.dx_;
+            y1 = affine_.m22_ * fy1 + affine_.dy_;
+            x2 = affine_.m11_ * fx2 + affine_.dx_;
+            y2 = affine_.m22_ * fy2 + affine_.dy_;
             break;
         case TransformationType::Rotate:
         case TransformationType::Shear:
         case TransformationType::Project:
-            x1 = m_affine.m_11 * fx1 + m_affine.m_21 * fy1 + m_affine.m_dx;
-            y1 = m_affine.m_12 * fx1 + m_affine.m_22 * fy1 + m_affine.m_dy;
-            x2 = m_affine.m_11 * fx2 + m_affine.m_21 * fy2 + m_affine.m_dx;
-            y2 = m_affine.m_12 * fx2 + m_affine.m_22 * fy2 + m_affine.m_dy;
+            x1 = affine_.m11_ * fx1 + affine_.m21_ * fy1 + affine_.dx_;
+            y1 = affine_.m12_ * fx1 + affine_.m22_ * fy1 + affine_.dy_;
+            x2 = affine_.m11_ * fx2 + affine_.m21_ * fy2 + affine_.dx_;
+            y2 = affine_.m12_ * fx2 + affine_.m22_ * fy2 + affine_.dy_;
             if (t == TransformationType::Project) {
-                double w = 1. / (m_13 * fx1 + m_23 * fy1 + m_33);
+                double w = 1. / (m13_ * fx1 + m23_ * fy1 + m33_);
                 x1 *= w;
                 y1 *= w;
-                w = 1. / (m_13 * fx2 + m_23 * fy2 + m_33);
+                w = 1. / (m13_ * fx2 + m23_ * fy2 + m33_);
                 x2 *= w;
                 y2 *= w;
             }
@@ -339,14 +339,14 @@ static inline bool needsPerspectiveClipping(const RectF &rect, const Transform &
 RectF Transform::map(const RectF &rect) const {
     TransformationType t = inline_type();
     if (t <= TransformationType::Translate) {
-        return rect.translated(m_affine.m_dx, m_affine.m_dy);
+        return rect.translated(affine_.dx_, affine_.dy_);
     }
 
     if (t <= TransformationType::Scale) {
-        double x = m_affine.m_11 * rect.x() + m_affine.m_dx;
-        double y = m_affine.m_22 * rect.y() + m_affine.m_dy;
-        double w = m_affine.m_11 * rect.width();
-        double h = m_affine.m_22 * rect.height();
+        double x = affine_.m11_ * rect.x() + affine_.dx_;
+        double y = affine_.m22_ * rect.y() + affine_.dy_;
+        double w = affine_.m11_ * rect.width();
+        double h = affine_.m22_ * rect.height();
         if (w < 0) {
             w = -w;
             x -= w;
@@ -406,11 +406,11 @@ PainterPath Transform::map(const PainterPath &path) const {
     PainterPath copy = path;
 
     if (t == TransformationType::Translate) {
-        copy.translate(m_affine.m_dx, m_affine.m_dy);
+        copy.translate(affine_.dx_, affine_.dy_);
     } else {
         // Full xform
         for (size_t i = 0; i < path.elementCount(); ++i) {
-            PainterPath::Element &e = copy.m_elements[i];
+            PainterPath::Element &e = copy.elements_[i];
             mapElement(e.x, e.y, t);
         }
 
@@ -443,44 +443,44 @@ Transform &Transform::rotate(double a) {
     switch (inline_type()) {
         case TransformationType::None:
         case TransformationType::Translate:
-            m_affine.m_11 = cosa;
-            m_affine.m_12 = sina;
-            m_affine.m_21 = -sina;
-            m_affine.m_22 = cosa;
+            affine_.m11_ = cosa;
+            affine_.m12_ = sina;
+            affine_.m21_ = -sina;
+            affine_.m22_ = cosa;
             break;
         case TransformationType::Scale: {
-            double tm11 = cosa * m_affine.m_11;
-            double tm12 = sina * m_affine.m_22;
-            double tm21 = -sina * m_affine.m_11;
-            double tm22 = cosa * m_affine.m_22;
-            m_affine.m_11 = tm11;
-            m_affine.m_12 = tm12;
-            m_affine.m_21 = tm21;
-            m_affine.m_22 = tm22;
+            double tm11 = cosa * affine_.m11_;
+            double tm12 = sina * affine_.m22_;
+            double tm21 = -sina * affine_.m11_;
+            double tm22 = cosa * affine_.m22_;
+            affine_.m11_ = tm11;
+            affine_.m12_ = tm12;
+            affine_.m21_ = tm21;
+            affine_.m22_ = tm22;
             break;
         }
         case TransformationType::Project: {
-            double tm13 = cosa * m_13 + sina * m_23;
-            double tm23 = -sina * m_13 + cosa * m_23;
-            m_13 = tm13;
-            m_23 = tm23;
+            double tm13 = cosa * m13_ + sina * m23_;
+            double tm23 = -sina * m13_ + cosa * m23_;
+            m13_ = tm13;
+            m23_ = tm23;
         }
         // fallthrough
         case TransformationType::Rotate:
         case TransformationType::Shear: {
-            double tm11 = cosa * m_affine.m_11 + sina * m_affine.m_21;
-            double tm12 = cosa * m_affine.m_12 + sina * m_affine.m_22;
-            double tm21 = -sina * m_affine.m_11 + cosa * m_affine.m_21;
-            double tm22 = -sina * m_affine.m_12 + cosa * m_affine.m_22;
-            m_affine.m_11 = tm11;
-            m_affine.m_12 = tm12;
-            m_affine.m_21 = tm21;
-            m_affine.m_22 = tm22;
+            double tm11 = cosa * affine_.m11_ + sina * affine_.m21_;
+            double tm12 = cosa * affine_.m12_ + sina * affine_.m22_;
+            double tm21 = -sina * affine_.m11_ + cosa * affine_.m21_;
+            double tm22 = -sina * affine_.m12_ + cosa * affine_.m22_;
+            affine_.m11_ = tm11;
+            affine_.m12_ = tm12;
+            affine_.m21_ = tm21;
+            affine_.m22_ = tm22;
             break;
         }
     }
-    if (m_dirty < TransformationType::Rotate) {
-        m_dirty = TransformationType::Rotate;
+    if (dirty_ < TransformationType::Rotate) {
+        dirty_ = TransformationType::Rotate;
     }
 
     return *this;
@@ -492,44 +492,44 @@ Transform &Transform::rotateRadians(double a) {
     switch (inline_type()) {
         case TransformationType::None:
         case TransformationType::Translate:
-            m_affine.m_11 = cosa;
-            m_affine.m_12 = sina;
-            m_affine.m_21 = -sina;
-            m_affine.m_22 = cosa;
+            affine_.m11_ = cosa;
+            affine_.m12_ = sina;
+            affine_.m21_ = -sina;
+            affine_.m22_ = cosa;
             break;
         case TransformationType::Scale: {
-            double tm11 = cosa * m_affine.m_11;
-            double tm12 = sina * m_affine.m_22;
-            double tm21 = -sina * m_affine.m_11;
-            double tm22 = cosa * m_affine.m_22;
-            m_affine.m_11 = tm11;
-            m_affine.m_12 = tm12;
-            m_affine.m_21 = tm21;
-            m_affine.m_22 = tm22;
+            double tm11 = cosa * affine_.m11_;
+            double tm12 = sina * affine_.m22_;
+            double tm21 = -sina * affine_.m11_;
+            double tm22 = cosa * affine_.m22_;
+            affine_.m11_ = tm11;
+            affine_.m12_ = tm12;
+            affine_.m21_ = tm21;
+            affine_.m22_ = tm22;
             break;
         }
         case TransformationType::Project: {
-            double tm13 = cosa * m_13 + sina * m_23;
-            double tm23 = -sina * m_13 + cosa * m_23;
-            m_13 = tm13;
-            m_23 = tm23;
+            double tm13 = cosa * m13_ + sina * m23_;
+            double tm23 = -sina * m13_ + cosa * m23_;
+            m13_ = tm13;
+            m23_ = tm23;
         }
         // fallthrough
         case TransformationType::Rotate:
         case TransformationType::Shear: {
-            double tm11 = cosa * m_affine.m_11 + sina * m_affine.m_21;
-            double tm12 = cosa * m_affine.m_12 + sina * m_affine.m_22;
-            double tm21 = -sina * m_affine.m_11 + cosa * m_affine.m_21;
-            double tm22 = -sina * m_affine.m_12 + cosa * m_affine.m_22;
-            m_affine.m_11 = tm11;
-            m_affine.m_12 = tm12;
-            m_affine.m_21 = tm21;
-            m_affine.m_22 = tm22;
+            double tm11 = cosa * affine_.m11_ + sina * affine_.m21_;
+            double tm12 = cosa * affine_.m12_ + sina * affine_.m22_;
+            double tm21 = -sina * affine_.m11_ + cosa * affine_.m21_;
+            double tm22 = -sina * affine_.m12_ + cosa * affine_.m22_;
+            affine_.m11_ = tm11;
+            affine_.m12_ = tm12;
+            affine_.m21_ = tm21;
+            affine_.m22_ = tm22;
             break;
         }
     }
-    if (m_dirty < TransformationType::Rotate) {
-        m_dirty = TransformationType::Rotate;
+    if (dirty_ < TransformationType::Rotate) {
+        dirty_ = TransformationType::Rotate;
     }
 
     return *this;
@@ -541,27 +541,27 @@ Transform &Transform::translate(double dx, double dy) {
     }
     switch (inline_type()) {
         case TransformationType::None:
-            m_affine.m_dx = dx;
-            m_affine.m_dy = dy;
+            affine_.dx_ = dx;
+            affine_.dy_ = dy;
             break;
         case TransformationType::Translate:
-            m_affine.m_dx += dx;
-            m_affine.m_dy += dy;
+            affine_.dx_ += dx;
+            affine_.dy_ += dy;
             break;
         case TransformationType::Scale:
-            m_affine.m_dx += dx * m_affine.m_11;
-            m_affine.m_dy += dy * m_affine.m_22;
+            affine_.dx_ += dx * affine_.m11_;
+            affine_.dy_ += dy * affine_.m22_;
             break;
-        case TransformationType::Project: m_33 += dx * m_13 + dy * m_23;
+        case TransformationType::Project: m33_ += dx * m13_ + dy * m23_;
         // fallthrough
         case TransformationType::Shear:
         case TransformationType::Rotate:
-            m_affine.m_dx += dx * m_affine.m_11 + dy * m_affine.m_21;
-            m_affine.m_dy += dy * m_affine.m_22 + dx * m_affine.m_12;
+            affine_.dx_ += dx * affine_.m11_ + dy * affine_.m21_;
+            affine_.dy_ += dy * affine_.m22_ + dx * affine_.m12_;
             break;
     }
-    if (m_dirty < TransformationType::Translate) {
-        m_dirty = TransformationType::Translate;
+    if (dirty_ < TransformationType::Translate) {
+        dirty_ = TransformationType::Translate;
     }
     return *this;
 }
@@ -573,21 +573,21 @@ Transform &Transform::scale(double sx, double sy) {
     switch (inline_type()) {
         case TransformationType::None:
         case TransformationType::Translate:
-            m_affine.m_11 = sx;
-            m_affine.m_22 = sy;
+            affine_.m11_ = sx;
+            affine_.m22_ = sy;
             break;
-        case TransformationType::Project: m_13 *= sx; m_23 *= sy;
+        case TransformationType::Project: m13_ *= sx; m23_ *= sy;
         // fall through
         case TransformationType::Rotate:
-        case TransformationType::Shear: m_affine.m_12 *= sx; m_affine.m_21 *= sy;
+        case TransformationType::Shear: affine_.m12_ *= sx; affine_.m21_ *= sy;
         // fall through
         case TransformationType::Scale:
-            m_affine.m_11 *= sx;
-            m_affine.m_22 *= sy;
+            affine_.m11_ *= sx;
+            affine_.m22_ *= sy;
             break;
     }
-    if (m_dirty < TransformationType::Scale) {
-        m_dirty = TransformationType::Scale;
+    if (dirty_ < TransformationType::Scale) {
+        dirty_ = TransformationType::Scale;
     }
     return *this;
 }
@@ -599,35 +599,35 @@ Transform &Transform::shear(double sh, double sv) {
     switch (inline_type()) {
         case TransformationType::None:
         case TransformationType::Translate:
-            m_affine.m_12 = sv;
-            m_affine.m_21 = sh;
+            affine_.m12_ = sv;
+            affine_.m21_ = sh;
             break;
         case TransformationType::Scale:
-            m_affine.m_12 = sv * m_affine.m_22;
-            m_affine.m_21 = sh * m_affine.m_11;
+            affine_.m12_ = sv * affine_.m22_;
+            affine_.m21_ = sh * affine_.m11_;
             break;
         case TransformationType::Project: {
-            double tm13 = sv * m_23;
-            double tm23 = sh * m_13;
-            m_13 += tm13;
-            m_23 += tm23;
+            double tm13 = sv * m23_;
+            double tm23 = sh * m13_;
+            m13_ += tm13;
+            m23_ += tm23;
         }
         // fallthrough
         case TransformationType::Rotate:
         case TransformationType::Shear: {
-            double tm11 = sv * m_affine.m_21;
-            double tm22 = sh * m_affine.m_12;
-            double tm12 = sv * m_affine.m_22;
-            double tm21 = sh * m_affine.m_11;
-            m_affine.m_11 += tm11;
-            m_affine.m_12 += tm12;
-            m_affine.m_21 += tm21;
-            m_affine.m_22 += tm22;
+            double tm11 = sv * affine_.m21_;
+            double tm22 = sh * affine_.m12_;
+            double tm12 = sv * affine_.m22_;
+            double tm21 = sh * affine_.m11_;
+            affine_.m11_ += tm11;
+            affine_.m12_ += tm12;
+            affine_.m21_ += tm21;
+            affine_.m22_ += tm22;
             break;
         }
     }
-    if (m_dirty < TransformationType::Shear) {
-        m_dirty = TransformationType::Shear;
+    if (dirty_ < TransformationType::Shear) {
+        dirty_ = TransformationType::Shear;
     }
     return *this;
 }
@@ -638,21 +638,21 @@ Transform Transform::inverted() const {
     switch (inline_type()) {
         case TransformationType::None: break;
         case TransformationType::Translate:
-            invert.m_affine.m_dx = -m_affine.m_dx;
-            invert.m_affine.m_dy = -m_affine.m_dy;
+            invert.affine_.dx_ = -affine_.dx_;
+            invert.affine_.dy_ = -affine_.dy_;
             break;
         case TransformationType::Scale:
-            inv = !RealIsNull(m_affine.m_11);
-            inv &= !RealIsNull(m_affine.m_22);
+            inv = !RealIsNull(affine_.m11_);
+            inv &= !RealIsNull(affine_.m22_);
             if (inv) {
-                invert.m_affine.m_11 = 1. / m_affine.m_11;
-                invert.m_affine.m_22 = 1. / m_affine.m_22;
-                invert.m_affine.m_dx = -m_affine.m_dx * invert.m_affine.m_11;
-                invert.m_affine.m_dy = -m_affine.m_dy * invert.m_affine.m_22;
+                invert.affine_.m11_ = 1. / affine_.m11_;
+                invert.affine_.m22_ = 1. / affine_.m22_;
+                invert.affine_.dx_ = -affine_.dx_ * invert.affine_.m11_;
+                invert.affine_.dy_ = -affine_.dy_ * invert.affine_.m22_;
             }
             break;
         case TransformationType::Rotate:
-        case TransformationType::Shear: invert.m_affine = m_affine.inverted(&inv); break;
+        case TransformationType::Shear: invert.affine_ = affine_.inverted(&inv); break;
         default:
             // general case
             double det = determinant();
@@ -665,8 +665,8 @@ Transform Transform::inverted() const {
 
     if (inv) {
         // inverting doesn't change the type
-        invert.m_type = m_type;
-        invert.m_dirty = m_dirty;
+        invert.type_ = type_;
+        invert.dirty_ = dirty_;
     }
     return invert;
 }
@@ -680,20 +680,20 @@ void Transform::mapElement(double &nx, double &ny, TransformationType t) const {
             ny = FY_;
             break;
         case TransformationType::Translate:
-            nx = FX_ + m_affine.m_dx;
-            ny = FY_ + m_affine.m_dy;
+            nx = FX_ + affine_.dx_;
+            ny = FY_ + affine_.dy_;
             break;
         case TransformationType::Scale:
-            nx = m_affine.m_11 * FX_ + m_affine.m_dx;
-            ny = m_affine.m_22 * FY_ + m_affine.m_dy;
+            nx = affine_.m11_ * FX_ + affine_.dx_;
+            ny = affine_.m22_ * FY_ + affine_.dy_;
             break;
         case TransformationType::Rotate:
         case TransformationType::Shear:
         case TransformationType::Project:
-            nx = m_affine.m_11 * FX_ + m_affine.m_21 * FY_ + m_affine.m_dx;
-            ny = m_affine.m_12 * FX_ + m_affine.m_22 * FY_ + m_affine.m_dy;
+            nx = affine_.m11_ * FX_ + affine_.m21_ * FY_ + affine_.dx_;
+            ny = affine_.m12_ * FX_ + affine_.m22_ * FY_ + affine_.dy_;
             if (t == TransformationType::Project) {
-                double w = (m_13 * FX_ + m_23 * FY_ + m_33);
+                double w = (m13_ * FX_ + m23_ * FY_ + m33_);
                 if (w < NEAR_CLIP) {
                     w = NEAR_CLIP;
                 }

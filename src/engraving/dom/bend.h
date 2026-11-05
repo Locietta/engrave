@@ -54,33 +54,33 @@ public:
 
     static const char *label[13];
 
-    PitchValues &points() { return m_points; }
+    PitchValues &points() { return points_; }
 
-    const PitchValues &points() const { return m_points; }
+    const PitchValues &points() const { return points_; }
 
-    void addPoint(const PitchValue &pv) { m_points.push_back(pv); }
+    void addPoint(const PitchValue &pv) { points_.push_back(pv); }
 
-    void setPoints(const PitchValues &p) { m_points = p; }
+    void setPoints(const PitchValues &p) { points_ = p; }
 
-    bool playBend() const { return m_playBend; }
+    bool playBend() const { return playBend_; }
 
-    void setPlayBend(bool v) { m_playBend = v; }
+    void setPlayBend(bool v) { playBend_ = v; }
 
-    String fontFace() const { return m_fontFace; }
+    String fontFace() const { return fontFace_; }
 
-    void setFontFace(String f) { m_fontFace = f; }
+    void setFontFace(String f) { fontFace_ = f; }
 
-    double fontSize() const { return m_fontSize; }
+    double fontSize() const { return fontSize_; }
 
-    void setFontSize(double s) { m_fontSize = s; }
+    void setFontSize(double s) { fontSize_ = s; }
 
-    FontStyle fontStyle() const { return m_fontStyle; }
+    FontStyle fontStyle() const { return fontStyle_; }
 
-    void setFontStyle(FontStyle s) { m_fontStyle = s; }
+    void setFontStyle(FontStyle s) { fontStyle_ = s; }
 
-    Spatium lineWidth() const { return m_lineWidth; }
+    Spatium lineWidth() const { return lineWidth_; }
 
-    void setLineWidth(Spatium w) { m_lineWidth = w; }
+    void setLineWidth(Spatium w) { lineWidth_ = w; }
 
     muse::draw::Font font(double) const;
 
@@ -105,12 +105,12 @@ private:
     BendType parseBendTypeFromCurve() const;
     void updatePointsByBendType(const BendType bendType);
 
-    bool m_playBend = true;
-    PitchValues m_points;
+    bool playBend_ = true;
+    PitchValues points_;
 
-    String m_fontFace;
-    double m_fontSize = 0.0;
-    FontStyle m_fontStyle = FontStyle::Undefined;
-    Spatium m_lineWidth;
+    String fontFace_;
+    double fontSize_ = 0.0;
+    FontStyle fontStyle_ = FontStyle::Undefined;
+    Spatium lineWidth_;
 };
 } // namespace mu::engraving

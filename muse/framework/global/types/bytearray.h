@@ -80,8 +80,8 @@ private:
 
     void detach();
 
-    std::shared_ptr<Data> m_data;
-    RawData m_raw;
+    std::shared_ptr<Data> data_;
+    RawData raw_;
 };
 } // namespace muse
 

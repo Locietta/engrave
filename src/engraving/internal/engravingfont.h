@@ -125,22 +125,22 @@ private:
 
     bool useFallbackFont(SymId id) const;
 
-    muse::draw::IFontProvider *fontProvider() const { return m_fontProvider; }
+    muse::draw::IFontProvider *fontProvider() const { return fontProvider_; }
 
-    const IEngravingFontsProvider *engravingFonts() const { return m_engravingFonts; }
+    const IEngravingFontsProvider *engravingFonts() const { return engravingFonts_; }
 
-    muse::draw::IFontProvider *m_fontProvider = nullptr;
-    const IEngravingFontsProvider *m_engravingFonts = nullptr;
-    bool m_loaded = false;
-    std::vector<Sym> m_symbols;
-    mutable muse::draw::Font m_font;
+    muse::draw::IFontProvider *fontProvider_ = nullptr;
+    const IEngravingFontsProvider *engravingFonts_ = nullptr;
+    bool loaded_ = false;
+    std::vector<Sym> symbols_;
+    mutable muse::draw::Font font_;
 
-    std::string m_name;
-    std::string m_family;
-    std::shared_ptr<muse::io::IODevice> m_fontDevice;
-    std::shared_ptr<muse::io::IODevice> m_metadataDevice;
+    std::string name_;
+    std::string family_;
+    std::shared_ptr<muse::io::IODevice> fontDevice_;
+    std::shared_ptr<muse::io::IODevice> metadataDevice_;
 
-    std::unordered_map<Sid, PropertyValue> m_engravingDefaults;
-    double m_textEnclosureThickness = 0;
+    std::unordered_map<Sid, PropertyValue> engravingDefaults_;
+    double textEnclosureThickness_ = 0;
 };
 } // namespace mu::engraving

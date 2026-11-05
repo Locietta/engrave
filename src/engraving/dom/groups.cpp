@@ -286,7 +286,7 @@ BeamMode Groups::beamMode(int tick, DurationType d) const {
         default: return BeamMode::AUTO;
     }
     const int dm = Constants::DIVISION / 8;
-    for (const GroupNode &e : m_nodes) {
+    for (const GroupNode &e : nodes_) {
         if (e.pos * dm < tick) {
             continue;
         }
@@ -366,8 +366,8 @@ void Groups::addStop(int pos, DurationType d, BeamMode bm) {
     pos /= 60;
     action <<= shift;
 
-    auto i = m_nodes.begin();
-    for (; i != m_nodes.end(); ++i) {
+    auto i = nodes_.begin();
+    for (; i != nodes_.end(); ++i) {
         if (i->pos == pos) {
             i->action = (i->action & ~(0xf << shift)) | action;
             return;
@@ -376,7 +376,7 @@ void Groups::addStop(int pos, DurationType d, BeamMode bm) {
             break;
         }
     }
-    m_nodes.insert(i, GroupNode({pos, action}));
+    nodes_.insert(i, GroupNode({pos, action}));
 }
 
 //---------------------------------------------------------
@@ -385,7 +385,7 @@ void Groups::addStop(int pos, DurationType d, BeamMode bm) {
 
 void Groups::dump(const char *m) const {
     LOGD("%s", m);
-    for (const GroupNode &n : m_nodes) {
+    for (const GroupNode &n : nodes_) {
         LOGD("  group tick %d action 0x%02x", n.pos * 60, n.action);
     }
 }

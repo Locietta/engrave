@@ -38,11 +38,11 @@
 namespace muse::audio::encode {
 class FlacHandler final : public FLAC::Encoder::Stream {
 public:
-    explicit FlacHandler(io::IODevice &outDev) : m_outDev{&outDev} { DO_ASSERT(m_outDev); }
+    explicit FlacHandler(io::IODevice &outDev) : outDev_{&outDev} { DO_ASSERT(outDev_); }
 
 protected:
     FLAC__StreamEncoderWriteStatus write_callback(const FLAC__byte buffer[], const size_t bytes, uint32_t, uint32_t) override {
-        if (m_outDev->write(buffer, bytes) != bytes) {
+        if (outDev_->write(buffer, bytes) != bytes) {
             return FLAC__STREAM_ENCODER_WRITE_STATUS_FATAL_ERROR;
         }
 
@@ -50,7 +50,7 @@ protected:
     }
 
     FLAC__StreamEncoderSeekStatus seek_callback(const FLAC__uint64 absolute_byte_offset) override {
-        if (!m_outDev->seek(absolute_byte_offset)) {
+        if (!outDev_->seek(absolute_byte_offset)) {
             return FLAC__STREAM_ENCODER_SEEK_STATUS_ERROR;
         }
 
@@ -58,30 +58,30 @@ protected:
     }
 
     FLAC__StreamEncoderTellStatus tell_callback(FLAC__uint64 *absolute_byte_offset) override {
-        *absolute_byte_offset = m_outDev->pos();
+        *absolute_byte_offset = outDev_->pos();
         return FLAC__STREAM_ENCODER_TELL_STATUS_OK;
     }
 
 private:
-    io::IODevice *m_outDev;
+    io::IODevice *outDev_;
 };
 
 FlacEncoder::FlacEncoder(const SoundTrackFormat &format, io::IODevice &dstDevice)
-    : AbstractAudioEncoder(format), m_flac{std::make_unique<FlacHandler>(dstDevice)} {}
+    : AbstractAudioEncoder(format), flac_{std::make_unique<FlacHandler>(dstDevice)} {}
 
 FlacEncoder::~FlacEncoder() noexcept = default;
 
 bool FlacEncoder::begin(const samples_t totalSamplesNumber) {
     int bitsPerSample = 0;
-    switch (m_format.sampleFormat) {
+    switch (format_.sampleFormat) {
         case AudioSampleFormat::Int16: bitsPerSample = 16; break;
         case AudioSampleFormat::Int24: bitsPerSample = 24; break;
         default: return false;
     }
 
-    if (!m_flac->set_verify(true) || !m_flac->set_compression_level(0) || !m_flac->set_channels(m_format.outputSpec.audioChannelCount) ||
-        !m_flac->set_sample_rate(m_format.outputSpec.sampleRate) || !m_flac->set_bits_per_sample(bitsPerSample) ||
-        !m_flac->set_total_samples_estimate(totalSamplesNumber)) {
+    if (!flac_->set_verify(true) || !flac_->set_compression_level(0) || !flac_->set_channels(format_.outputSpec.audioChannelCount) ||
+        !flac_->set_sample_rate(format_.outputSpec.sampleRate) || !flac_->set_bits_per_sample(bitsPerSample) ||
+        !flac_->set_total_samples_estimate(totalSamplesNumber)) {
         return false;
     }
 
@@ -95,9 +95,9 @@ bool FlacEncoder::begin(const samples_t totalSamplesNumber) {
     FLAC__metadata_object_vorbiscomment_append_comment(metadata[0], entry, /*copy=*/false);
 
     metadata[1]->length = 1234; /* set the padding length */
-    m_flac->set_metadata(metadata, 2);
+    flac_->set_metadata(metadata, 2);
 
-    if (m_flac->init() != FLAC__STREAM_ENCODER_INIT_STATUS_OK) {
+    if (flac_->init() != FLAC__STREAM_ENCODER_INIT_STATUS_OK) {
         return false;
     }
 
@@ -106,13 +106,13 @@ bool FlacEncoder::begin(const samples_t totalSamplesNumber) {
 
 size_t FlacEncoder::encode(const samples_t samplesPerChannel, const float *input) {
     int bitsPerSample = 0;
-    switch (m_format.sampleFormat) {
+    switch (format_.sampleFormat) {
         case AudioSampleFormat::Int16: bitsPerSample = 16; break;
         case AudioSampleFormat::Int24: bitsPerSample = 24; break;
         default: return 0;
     }
 
-    const auto channels = m_format.outputSpec.audioChannelCount;
+    const auto channels = format_.outputSpec.audioChannelCount;
     if (channels == 0 || samplesPerChannel == 0) {
         return 0;
     }
@@ -131,7 +131,7 @@ size_t FlacEncoder::encode(const samples_t samplesPerChannel, const float *input
             }
         }
 
-        if (!m_flac->process_interleaved(blockBuffer.data(), framesCount)) {
+        if (!flac_->process_interleaved(blockBuffer.data(), framesCount)) {
             return 0;
         }
 
@@ -141,5 +141,5 @@ size_t FlacEncoder::encode(const samples_t samplesPerChannel, const float *input
     return static_cast<size_t>(samplesPerChannel) * channels;
 }
 
-Ret FlacEncoder::end() { return m_flac->finish() ? make_ok() : make_ret(Err::ErrorEncode, "FLAC finalization failed"); }
+Ret FlacEncoder::end() { return flac_->finish() ? make_ok() : make_ret(Err::ErrorEncode, "FLAC finalization failed"); }
 } // namespace muse::audio::encode

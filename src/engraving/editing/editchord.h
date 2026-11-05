@@ -88,15 +88,15 @@ public:
 class ChangeSpanArpeggio : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, ChangeSpanArpeggio)
 
-    Chord *m_chord = nullptr;
-    Arpeggio *m_spanArpeggio = nullptr;
+    Chord *chord_ = nullptr;
+    Arpeggio *spanArpeggio_ = nullptr;
 
     void flip() override;
 public:
-    ChangeSpanArpeggio(Chord *chord, Arpeggio *spanArp) : m_chord(chord), m_spanArpeggio(spanArp) {}
+    ChangeSpanArpeggio(Chord *chord, Arpeggio *spanArp) : chord_(chord), spanArpeggio_(spanArp) {}
 
     UNDO_NAME("ChangeSpanArpeggio")
-    UNDO_CHANGED_OBJECTS({m_chord})
+    UNDO_CHANGED_OBJECTS({chord_})
 };
 
 class AddNoteParenthesisInfo : public UndoableCommand {
@@ -107,11 +107,11 @@ class AddNoteParenthesisInfo : public UndoableCommand {
 
     void cleanup(bool wasDone) override;
 
-    Chord *m_chord = nullptr;
-    NoteParenthesisInfo *m_noteParenInfo = nullptr;
+    Chord *chord_ = nullptr;
+    NoteParenthesisInfo *noteParenInfo_ = nullptr;
 
 public:
-    AddNoteParenthesisInfo(Chord *chord, NoteParenthesisInfo *noteParenInfo) : m_chord(chord), m_noteParenInfo(noteParenInfo) {}
+    AddNoteParenthesisInfo(Chord *chord, NoteParenthesisInfo *noteParenInfo) : chord_(chord), noteParenInfo_(noteParenInfo) {}
 
     UNDO_NAME("AddNoteParenthesesInfo")
     UNDO_TYPE(CommandType::AddNoteParenthesesInfo)
@@ -125,11 +125,11 @@ class RemoveNoteParenthesisInfo : public UndoableCommand {
 
     void cleanup(bool wasDone) override;
 
-    Chord *m_chord = nullptr;
-    NoteParenthesisInfo *m_noteParenInfo = nullptr;
+    Chord *chord_ = nullptr;
+    NoteParenthesisInfo *noteParenInfo_ = nullptr;
 
 public:
-    RemoveNoteParenthesisInfo(Chord *chord, NoteParenthesisInfo *noteParenInfo) : m_chord(chord), m_noteParenInfo(noteParenInfo) {}
+    RemoveNoteParenthesisInfo(Chord *chord, NoteParenthesisInfo *noteParenInfo) : chord_(chord), noteParenInfo_(noteParenInfo) {}
 
     UNDO_NAME("RemoveNoteParenthesesInfo")
     UNDO_TYPE(CommandType::RemoveNoteParenthesesInfo)
@@ -138,18 +138,18 @@ public:
 class RemoveSingleNoteParentheses : public UndoableCommand {
     OBJECT_ALLOCATOR(engraving, RemoveSingleNoteParentheses)
 
-    Chord *m_chord = nullptr;
-    Note *m_note = nullptr;
-    Parenthesis *m_paren = nullptr;
+    Chord *chord_ = nullptr;
+    Note *note_ = nullptr;
+    Parenthesis *paren_ = nullptr;
 
     void redo() override;
     void undo() override;
 
 public:
-    RemoveSingleNoteParentheses(Chord *chord, Note *note, Parenthesis *paren) : m_chord(chord), m_note(note), m_paren(paren) {}
+    RemoveSingleNoteParentheses(Chord *chord, Note *note, Parenthesis *paren) : chord_(chord), note_(note), paren_(paren) {}
 
     UNDO_NAME("RemoveSingleNoteParentheses")
     UNDO_TYPE(CommandType::RemoveSingleNoteParentheses)
-    UNDO_CHANGED_OBJECTS({m_chord, m_paren})
+    UNDO_CHANGED_OBJECTS({chord_, paren_})
 };
 } // namespace mu::engraving

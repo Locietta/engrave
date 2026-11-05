@@ -56,41 +56,41 @@ public:
     void initFrom(Ambitus *a);
 
     // getters and setters
-    NoteHeadGroup noteHeadGroup() const { return m_noteHeadGroup; }
+    NoteHeadGroup noteHeadGroup() const { return noteHeadGroup_; }
 
-    NoteHeadType noteHeadType() const { return m_noteHeadType; }
+    NoteHeadType noteHeadType() const { return noteHeadType_; }
 
-    DirectionH direction() const { return m_direction; }
+    DirectionH direction() const { return direction_; }
 
-    bool hasLine() const { return m_hasLine; }
+    bool hasLine() const { return hasLine_; }
 
-    Spatium lineWidth() const { return m_lineWidth; }
+    Spatium lineWidth() const { return lineWidth_; }
 
-    int topOctave() const { return (m_topPitch / PITCH_DELTA_OCTAVE) - 1; }
+    int topOctave() const { return (topPitch_ / PITCH_DELTA_OCTAVE) - 1; }
 
-    int bottomOctave() const { return (m_bottomPitch / PITCH_DELTA_OCTAVE) - 1; }
+    int bottomOctave() const { return (bottomPitch_ / PITCH_DELTA_OCTAVE) - 1; }
 
-    int topPitch() const { return m_topPitch; }
+    int topPitch() const { return topPitch_; }
 
-    int bottomPitch() const { return m_bottomPitch; }
+    int bottomPitch() const { return bottomPitch_; }
 
-    int topTpc() const { return m_topTpc; }
+    int topTpc() const { return topTpc_; }
 
-    int bottomTpc() const { return m_bottomTpc; }
+    int bottomTpc() const { return bottomTpc_; }
 
-    Accidental *topAccidental() const { return m_topAccidental; }
+    Accidental *topAccidental() const { return topAccidental_; }
 
-    Accidental *bottomAccidental() const { return m_bottomAccidental; }
+    Accidental *bottomAccidental() const { return bottomAccidental_; }
 
-    void setNoteHeadGroup(NoteHeadGroup val) { m_noteHeadGroup = val; }
+    void setNoteHeadGroup(NoteHeadGroup val) { noteHeadGroup_ = val; }
 
-    void setNoteHeadType(NoteHeadType val) { m_noteHeadType = val; }
+    void setNoteHeadType(NoteHeadType val) { noteHeadType_ = val; }
 
-    void setDirection(DirectionH val) { m_direction = val; }
+    void setDirection(DirectionH val) { direction_ = val; }
 
-    void setHasLine(bool val) { m_hasLine = val; }
+    void setHasLine(bool val) { hasLine_ = val; }
 
-    void setLineWidth(Spatium val) { m_lineWidth = val; }
+    void setLineWidth(Spatium val) { lineWidth_ = val; }
 
     void setTopPitch(int val, bool applyLogic = true);
     void setBottomPitch(int val, bool applyLogic = true);
@@ -144,14 +144,14 @@ private:
 
     Ranges estimateRanges() const; // scan staff up to next section break and update range pitches
 
-    NoteHeadGroup m_noteHeadGroup = NOTEHEADGROUP_DEFAULT;
-    NoteHeadType m_noteHeadType = NOTEHEADTYPE_DEFAULT;
-    DirectionH m_direction = DIRECTION_DEFAULT;
-    bool m_hasLine = HASLINE_DEFAULT;
-    Spatium m_lineWidth;
-    Accidental *m_topAccidental = nullptr;
-    Accidental *m_bottomAccidental = nullptr;
-    int m_topPitch = INVALID_PITCH, m_bottomPitch = INVALID_PITCH;
-    int m_topTpc = Tpc::TPC_INVALID, m_bottomTpc = Tpc::TPC_INVALID;
+    NoteHeadGroup noteHeadGroup_ = NOTEHEADGROUP_DEFAULT;
+    NoteHeadType noteHeadType_ = NOTEHEADTYPE_DEFAULT;
+    DirectionH direction_ = DIRECTION_DEFAULT;
+    bool hasLine_ = HASLINE_DEFAULT;
+    Spatium lineWidth_;
+    Accidental *topAccidental_ = nullptr;
+    Accidental *bottomAccidental_ = nullptr;
+    int topPitch_ = INVALID_PITCH, bottomPitch_ = INVALID_PITCH;
+    int topTpc_ = Tpc::TPC_INVALID, bottomTpc_ = Tpc::TPC_INVALID;
 };
 } // namespace mu::engraving

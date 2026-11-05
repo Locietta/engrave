@@ -39,30 +39,30 @@ static const AudioResourceMeta DEFAULT_AUDIO_RESOURCE_META = {DEFAULT_SOUND_FONT
 
 void AudioEngineConfiguration::setConfig(const AudioEngineConfig &conf) {
 
-    if (conf.autoProcessOnlineSoundsInBackground != m_conf.autoProcessOnlineSoundsInBackground) {
-        m_conf.autoProcessOnlineSoundsInBackground = conf.autoProcessOnlineSoundsInBackground;
+    if (conf.autoProcessOnlineSoundsInBackground != conf_.autoProcessOnlineSoundsInBackground) {
+        conf_.autoProcessOnlineSoundsInBackground = conf.autoProcessOnlineSoundsInBackground;
     }
 
     setIsLazyProcessingOfOnlineSoundsEnabled(conf.isLazyProcessingOfOnlineSoundsEnabled);
 
-    if (conf.useSoundFontLowPassFilter != m_conf.useSoundFontLowPassFilter) {
-        m_conf.useSoundFontLowPassFilter = conf.useSoundFontLowPassFilter;
+    if (conf.useSoundFontLowPassFilter != conf_.useSoundFontLowPassFilter) {
+        conf_.useSoundFontLowPassFilter = conf.useSoundFontLowPassFilter;
     }
 }
 
-bool AudioEngineConfiguration::autoProcessOnlineSoundsInBackground() const { return m_conf.autoProcessOnlineSoundsInBackground; }
+bool AudioEngineConfiguration::autoProcessOnlineSoundsInBackground() const { return conf_.autoProcessOnlineSoundsInBackground; }
 
 void AudioEngineConfiguration::setIsLazyProcessingOfOnlineSoundsEnabled(bool enabled) {
-    if (m_conf.isLazyProcessingOfOnlineSoundsEnabled == enabled) {
+    if (conf_.isLazyProcessingOfOnlineSoundsEnabled == enabled) {
         return;
     }
 
-    m_conf.isLazyProcessingOfOnlineSoundsEnabled = enabled;
+    conf_.isLazyProcessingOfOnlineSoundsEnabled = enabled;
 }
 
-bool AudioEngineConfiguration::isLazyProcessingOfOnlineSoundsEnabled() const { return m_conf.isLazyProcessingOfOnlineSoundsEnabled; }
+bool AudioEngineConfiguration::isLazyProcessingOfOnlineSoundsEnabled() const { return conf_.isLazyProcessingOfOnlineSoundsEnabled; }
 
-bool AudioEngineConfiguration::useSoundFontLowPassFilter() const { return m_conf.useSoundFontLowPassFilter; }
+bool AudioEngineConfiguration::useSoundFontLowPassFilter() const { return conf_.useSoundFontLowPassFilter; }
 
 AudioInputParams AudioEngineConfiguration::defaultAudioInputParams() const {
     AudioInputParams result;

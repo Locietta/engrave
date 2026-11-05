@@ -35,7 +35,7 @@ using namespace mu::engraving;
 //   Page
 //---------------------------------------------------------
 
-Page::Page(Score *parent) : EngravingItem(ElementType::PAGE, parent, ElementFlag::NOT_SELECTABLE) { m_bspTreeValid = false; }
+Page::Page(Score *parent) : EngravingItem(ElementType::PAGE, parent, ElementFlag::NOT_SELECTABLE) { bspTreeValid_ = false; }
 
 void Page::setOwnershipParent(Score *score) { EngravingItem::setOwnershipParent(score); }
 
@@ -52,7 +52,7 @@ EngravingItem *Page::accessibleParentItem() const {
 }
 
 Page::~Page() {
-    for (System *s : m_systems) {
+    for (System *s : systems_) {
         if (s->page() == this) {
             s->setPage(nullptr);
         }
@@ -60,18 +60,18 @@ Page::~Page() {
 }
 
 MeasureBase *Page::firstMeasureBase() const {
-    if (m_systems.empty()) {
+    if (systems_.empty()) {
         return nullptr;
     }
-    System *firstSys = m_systems.front();
+    System *firstSys = systems_.front();
     return firstSys ? firstSys->first() : nullptr;
 }
 
 MeasureBase *Page::lastMeasureBase() const {
-    if (m_systems.empty()) {
+    if (systems_.empty()) {
         return nullptr;
     }
-    System *lastSys = m_systems.back();
+    System *lastSys = systems_.back();
     return lastSys ? lastSys->last() : nullptr;
 }
 
@@ -80,14 +80,14 @@ MeasureBase *Page::lastMeasureBase() const {
 //---------------------------------------------------------
 
 std::vector<EngravingItem *> Page::items(const RectF &rect) {
-    if (!m_bspTreeValid) {
+    if (!bspTreeValid_) {
         doRebuildBspTree();
     }
     return bspTree.items(rect);
 }
 
 std::vector<EngravingItem *> Page::items(const PointF &point) {
-    if (!m_bspTreeValid) {
+    if (!bspTreeValid_) {
         doRebuildBspTree();
     }
     return bspTree.items(point);
@@ -99,14 +99,14 @@ std::vector<EngravingItem *> Page::items(const PointF &point) {
 
 void Page::appendSystem(System *s) {
     s->setPage(this);
-    m_systems.push_back(s);
+    systems_.push_back(s);
 }
 
 EngravingItemList Page::accessibleChildren() const {
     // The systems are owned by the score, but it is the page that places them, so the
     // page is where the accessibility tree finds them.
     EngravingItemList children = EngravingItem::accessibleChildren();
-    children.insert(children.end(), m_systems.begin(), m_systems.end());
+    children.insert(children.end(), systems_.begin(), systems_.end());
 
     return children;
 }
@@ -116,7 +116,7 @@ EngravingItemList Page::accessibleChildren() const {
 //---------------------------------------------------------
 
 void Page::scanElements(std::function<void(EngravingItem *)> func) {
-    for (System *s : m_systems) {
+    for (System *s : systems_) {
         for (MeasureBase *m : s->measures()) {
             m->scanElements(func);
         }
@@ -155,10 +155,10 @@ void Page::doRebuildBspTree() {
     if (score()->linearMode()) {
         double w = 0.0;
         double h = 0.0;
-        if (!m_systems.empty()) {
-            h = m_systems.front()->height();
-            if (!m_systems.front()->measures().empty()) {
-                MeasureBase *mb = m_systems.front()->measures().back();
+        if (!systems_.empty()) {
+            h = systems_.front()->height();
+            if (!systems_.front()->measures().empty()) {
+                MeasureBase *mb = systems_.front()->measures().back();
                 w = mb->x() + mb->width();
             }
         }
@@ -176,14 +176,14 @@ void Page::doRebuildBspTree() {
     };
     scanElements(bspInsert);
 
-    m_bspTreeValid = true;
+    bspTreeValid_ = true;
 }
 
 //---------------------------------------------------------
 //   getDisplayPageNumber
 //---------------------------------------------------------
 
-int Page::getDisplayPageNumber() const { return static_cast<int>(m_pageNumber) + 1 + score()->pageNumberOffset(); }
+int Page::getDisplayPageNumber() const { return static_cast<int>(pageNumber_) + 1 + score()->pageNumberOffset(); }
 
 //---------------------------------------------------------
 //   isOdd
@@ -273,10 +273,10 @@ RectF Page::tbbox() const {
 //   endTick
 //---------------------------------------------------------
 
-Fraction Page::endTick() const { return m_systems.empty() ? Fraction(-1, 1) : m_systems.back()->measures().back()->endTick(); }
+Fraction Page::endTick() const { return systems_.empty() ? Fraction(-1, 1) : systems_.back()->measures().back()->endTick(); }
 
 Measure *Page::firstMeasure() const {
-    for (System *s : m_systems) {
+    for (System *s : systems_) {
         if (Measure *m = s->firstMeasure()) {
             return m;
         }

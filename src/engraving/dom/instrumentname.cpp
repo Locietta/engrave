@@ -83,7 +83,7 @@ double InstrumentName::largestStaffSpatium() const {
 //---------------------------------------------------------
 
 void InstrumentName::setInstrumentNameType(InstrumentNameType st) {
-    m_instrumentNameType = st;
+    instrumentNameType_ = st;
     if (st == InstrumentNameType::SHORT) {
         setTextStyleType(TextStyleType::INSTRUMENT_SHORT);
         initElementStyle(&shortInstrumentStyle);
@@ -105,9 +105,9 @@ bool InstrumentName::setProperty(Pid id, const PropertyValue &v) {
 }
 
 mu::engraving::staff_idx_t mu::engraving::InstrumentName::effectiveStaffIdx() const {
-    if (m_sysStaff->show() || m_instrumentNameRole == InstrumentNameRole::STAFF) {
+    if (sysStaff_->show() || instrumentNameRole_ == InstrumentNameRole::STAFF) {
         return staffIdx();
-    } else if (m_instrumentNameRole == InstrumentNameRole::PART) {
+    } else if (instrumentNameRole_ == InstrumentNameRole::PART) {
         return system()->firstVisibleSysStaffOfPart(score()->staff(staffIdx())->part());
     } else {
         staff_idx_t curIdx = staffIdx();

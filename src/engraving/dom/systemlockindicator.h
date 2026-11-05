@@ -36,13 +36,13 @@ public:
 
     void setSelected(bool v) override;
 
-    const RangeLock *systemLock() const { return m_systemLock; }
+    const RangeLock *systemLock() const { return systemLock_; }
 
     char16_t iconCode() const override { return 0xF487; }
 
     String formatBarsAndBeats() const override;
 
 private:
-    const RangeLock *m_systemLock = nullptr;
+    const RangeLock *systemLock_ = nullptr;
 };
 } // namespace mu::engraving

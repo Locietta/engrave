@@ -136,7 +136,7 @@ int GuitarPro5::readBeatEffects(int track, Segment *segment) {
         readTremoloBar(track, segment); // readBend();
     }
     if (fxBits2 & BEAT_RASGUEADO) {
-        m_currentBeatHasRasgueado = true;
+        currentBeatHasRasgueado_ = true;
     }
     if (fxBits1 & BEAT_ARPEGGIO) {
         int strokeup = readUInt8();   // up stroke length
@@ -203,7 +203,7 @@ Fraction GuitarPro5::readBeat(const Fraction &tick, int voice, Measure *measure,
     bool hasHarmonicTap = false;
     bool hasHarmonicSemi = false;
 
-    m_currentBeatHasRasgueado = false;
+    currentBeatHasRasgueado_ = false;
 
     slide = -1;
     int track = staffIdx * VOICES + voice;
@@ -412,14 +412,14 @@ Fraction GuitarPro5::readBeat(const Fraction &tick, int voice, Measure *measure,
     if (cr) {
         //  fixing gp5 bug with not storying let ring for tied notes
         if (hasLetRing) {
-            m_letRingForChords.insert(cr);
+            letRingForChords_.insert(cr);
         }
 
         addLetRing(cr, hasLetRing);
         addPalmMute(cr, hasPalmMute);
         addTrill(cr, hasTrill);
         addHammerOnPullOff(cr, hasHammerOnPullOff);
-        addRasgueado(cr, m_currentBeatHasRasgueado);
+        addRasgueado(cr, currentBeatHasRasgueado_);
         addVibratoLeftHand(cr, hasVibratoLeftHand);
         addVibratoWTremBar(cr, hasVibratoWTremBar);
         addHarmonicMarks(cr, hasHarmonicArtificial, hasHarmonicPinch, hasHarmonicTap, hasHarmonicSemi);
@@ -463,7 +463,7 @@ void GuitarPro5::readMeasure(Measure *measure, int staffIdx, Tuplet **tuplets, b
         }
         if (measureLen < measure->ticks()) {
             score->setRest(tick, staffIdx * VOICES + voice, measure->ticks() - measureLen, false, nullptr, false);
-            m_continiousElementsBuilder->notifyUncompletedMeasure();
+            continiousElementsBuilder_->notifyUncompletedMeasure();
         }
     }
 }
@@ -853,8 +853,8 @@ void GuitarPro5::readMeasures(int /*startingTempo*/) {
 //---------------------------------------------------------
 
 bool GuitarPro5::read(IODevice *io) {
-    m_continiousElementsBuilder = std::make_unique<ContiniousElementsBuilder>(score);
-    m_guitarBendImporter = std::make_unique<GuitarBendImporter>(score);
+    continiousElementsBuilder_ = std::make_unique<ContiniousElementsBuilder>(score);
+    guitarBendImporter_ = std::make_unique<GuitarBendImporter>(score);
 
     f = io;
 
@@ -1051,7 +1051,7 @@ bool GuitarPro5::read(IODevice *io) {
                             break;
                         }
 
-                        m_glissandoNotePairs.push_back({n, nt});
+                        glissandoNotePairs_.push_back({n, nt});
                         br = true;
                         break;
                     }
@@ -1108,8 +1108,8 @@ bool GuitarPro5::read(IODevice *io) {
         }
     }
 
-    m_continiousElementsBuilder->addElementsToScore();
-    m_guitarBendImporter->addElementsToScore();
+    continiousElementsBuilder_->addElementsToScore();
+    guitarBendImporter_->addElementsToScore();
     addGlissandos();
     utils::addPlayCountTexts(score);
 
@@ -1212,7 +1212,7 @@ GuitarPro::ReadNoteResult GuitarPro5::readNoteEffects(Note *note) {
             TremoloSingleChord *t = Factory::createTremoloSingleChord(chord);
             t->setTremoloType(type);
             chord->add(t);
-            m_tremolosInChords[chord] = type;
+            tremolosInChords_[chord] = type;
         } else {
             LOGD("Unknown tremolo value");
         }
@@ -1300,7 +1300,7 @@ GuitarPro::ReadNoteResult GuitarPro5::readNoteEffects(Note *note) {
             ///harmonicNote->setDisplayFret(Note::DisplayFretOption::ArtificialHarmonic);
             ///note->setDisplayFret(Note::DisplayFretOption::Hide);
             harmonicNote->setDisplayFret(Note::DisplayFretOption::Hide);
-            m_harmonicNotes[note] = harmonicNote;
+            harmonicNotes_[note] = harmonicNote;
 
             Staff *staff = note->staff();
             float harmonicFret = 0;
@@ -1526,34 +1526,34 @@ GuitarPro::ReadNoteResult GuitarPro5::readNote(int string, Note *note) {
                         }
 
                         //  fixing gp5 bug with not storying let ring for tied notes
-                        if (m_letRingForChords.find(chord2) != m_letRingForChords.end()) {
+                        if (letRingForChords_.find(chord2) != letRingForChords_.end()) {
                             result.letRing = true;
-                            muse::remove(m_letRingForChords, chord2);
+                            muse::remove(letRingForChords_, chord2);
                         }
 
-                        if (m_harmonicNotes.find(note) != m_harmonicNotes.end() && m_harmonicNotes.find(note2) != m_harmonicNotes.end()) {
-                            Note *startHarmonicNote = m_harmonicNotes.at(note2);
-                            Note *endHarmonicNote = m_harmonicNotes.at(note);
+                        if (harmonicNotes_.find(note) != harmonicNotes_.end() && harmonicNotes_.find(note2) != harmonicNotes_.end()) {
+                            Note *startHarmonicNote = harmonicNotes_.at(note2);
+                            Note *endHarmonicNote = harmonicNotes_.at(note);
 
                             Tie *tieHarmonic = Factory::createTie(startHarmonicNote);
                             tieHarmonic->setEndNote(endHarmonicNote);
                             startHarmonicNote->add(tieHarmonic);
 
-                            muse::remove(m_harmonicNotes, startHarmonicNote);
-                            muse::remove(m_harmonicNotes, endHarmonicNote);
+                            muse::remove(harmonicNotes_, startHarmonicNote);
+                            muse::remove(harmonicNotes_, endHarmonicNote);
                         }
 
                         note->setFret(note2->fret());
                         note->setPitch(note2->pitch());
                         true_note = note2;
-                        if (m_tremolosInChords.find(chord2) != m_tremolosInChords.end()) {
-                            TremoloType type = m_tremolosInChords.at(chord2);
+                        if (tremolosInChords_.find(chord2) != tremolosInChords_.end()) {
+                            TremoloType type = tremolosInChords_.at(chord2);
                             DO_ASSERT(!isTremoloTwoChord(type));
                             TremoloSingleChord *t = Factory::createTremoloSingleChord(chord);
                             t->setTremoloType(type);
                             chord->add(t);
-                            muse::remove(m_tremolosInChords, chord2);
-                            m_tremolosInChords[chord] = type;
+                            muse::remove(tremolosInChords_, chord2);
+                            tremolosInChords_[chord] = type;
                         }
 
                         found = true;
@@ -1651,7 +1651,7 @@ float GuitarPro5::naturalHarmonicFromFret(int fret) {
 }
 
 void GuitarPro5::addGlissandos() {
-    for (auto &[startNote, endNote] : m_glissandoNotePairs) {
+    for (auto &[startNote, endNote] : glissandoNotePairs_) {
         Note *currentStart = startNote;
         if (startNote->bendFor()) {
             Note *bendNote = startNote;

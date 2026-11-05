@@ -41,7 +41,7 @@ static void fillBendDataForNote(BendDataContextSplitChord &bendDataCtx, const Im
 
 void BendDataCollectorSplitChord::storeBendData(const mu::engraving::Note *note, const mu::engraving::PitchValues &pitchValues) {
     if (!pitchValues.empty()) {
-        m_bendInfoForNote[note->track()][note->tick()][note] = BendInfoConverter::fillBendInfo(note, pitchValues);
+        bendInfoForNote_[note->track()][note->tick()][note] = BendInfoConverter::fillBendInfo(note, pitchValues);
     }
 }
 
@@ -115,7 +115,7 @@ static void fillBendDataForNote(BendDataContextSplitChord &bendDataCtx, const Im
 }
 
 void BendDataCollectorSplitChord::fillBendData(BendDataContextSplitChord &bendDataCtx) {
-    for (auto &[track, trackInfo] : m_bendInfoForNote) {
+    for (auto &[track, trackInfo] : bendInfoForNote_) {
         for (auto &[tick, tickInfo] : trackInfo) {
             for (auto &[note, dataByNote] : tickInfo) {
                 Chord *chord = note->chord();
@@ -128,7 +128,7 @@ void BendDataCollectorSplitChord::fillBendData(BendDataContextSplitChord &bendDa
 
 void BendDataCollectorSplitChord::fillBendsDurations(BendDataContextSplitChord &bendDataCtx) {
     std::unordered_map<mu::engraving::track_idx_t, std::map<Fraction, std::vector<const Chord *>>> tiedNotesAfterBend;
-    for (const auto &[track, trackInfo] : m_bendInfoForNote) {
+    for (const auto &[track, trackInfo] : bendInfoForNote_) {
         for (const auto &[mainTick, tickInfo] : trackInfo) {
             // now using the top note of chord to fill durations
             const Note *currentNote = tickInfo.begin()->first;
@@ -166,7 +166,7 @@ void BendDataCollectorSplitChord::fillBendsDurations(BendDataContextSplitChord &
     auto isPowerOfTwo = [](int n) { return n > 0 && (n & (n - 1)) == 0; };
 
     for (const auto &[track, trackInfo] : tiedNotesAfterBend) {
-        const auto &importedInfoForTrack = m_bendInfoForNote.at(track);
+        const auto &importedInfoForTrack = bendInfoForNote_.at(track);
         for (const auto &[mainTick, chords] : trackInfo) {
             const auto &importedInfoForTick = importedInfoForTrack.at(mainTick);
             const Chord *lastChord = chords.back();

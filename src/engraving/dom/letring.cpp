@@ -67,8 +67,8 @@ static const ElementStyle letRingStyle{
 
 LetRingSegment::LetRingSegment(LetRing *sp)
     : TextLineBaseSegment(ElementType::LET_RING_SEGMENT, sp, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
-    m_text->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
-    m_endText->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
+    text_->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
+    endText_->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
 }
 
 //---------------------------------------------------------

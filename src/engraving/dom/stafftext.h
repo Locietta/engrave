@@ -52,7 +52,7 @@ public:
 private:
     PropertyValue propertyDefault(Pid id) const override;
 
-    SoundFlag *m_soundFlag = nullptr;
+    SoundFlag *soundFlag_ = nullptr;
 };
 } // namespace mu::engraving
 #endif // MU_ENGRAVING_STAFFTEXT_H

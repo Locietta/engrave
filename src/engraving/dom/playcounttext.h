@@ -38,13 +38,13 @@ public:
 
     bool allowTimeAnchor() const override { return false; }
 
-    String playCountCustomText() const { return m_playCountCustomText; }
+    String playCountCustomText() const { return playCountCustomText_; }
 
-    void setPlayCountCustomText(const String &v) { m_playCountCustomText = v; }
+    void setPlayCountCustomText(const String &v) { playCountCustomText_ = v; }
 
-    void setPlayCountTextSetting(const AutoCustomHide &v) { m_playCountTextSetting = v; }
+    void setPlayCountTextSetting(const AutoCustomHide &v) { playCountTextSetting_ = v; }
 
-    AutoCustomHide playCountTextSetting() const { return m_playCountTextSetting; }
+    AutoCustomHide playCountTextSetting() const { return playCountTextSetting_; }
 
     PropertyValue getProperty(Pid propertyId) const override;
     bool setProperty(Pid propertyId, const PropertyValue &) override;
@@ -56,7 +56,7 @@ private:
     friend class Factory;
     PlayCountText(DummyParentOr<Segment> parent, TextStyleType tid = TextStyleType::REPEAT_PLAY_COUNT);
 
-    AutoCustomHide m_playCountTextSetting = AutoCustomHide::AUTO;
-    String m_playCountCustomText = u"";
+    AutoCustomHide playCountTextSetting_ = AutoCustomHide::AUTO;
+    String playCountCustomText_ = u"";
 };
 } // namespace mu::engraving

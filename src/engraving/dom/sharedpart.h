@@ -38,7 +38,7 @@ public:
     void addOriginPart(Part *p);
     void removeOriginPart(Part *p);
 
-    const std::vector<Part *> &originParts() const { return m_originParts; }
+    const std::vector<Part *> &originParts() const { return originParts_; }
 
     const Part *originPart(track_idx_t sharedTrack, const Fraction &tick) const override;
     using Part::originPart;
@@ -59,16 +59,16 @@ public:
 
     bool isSameInstrumentsAtTick(const Fraction &tick);
 
-    bool isSameInstruments() const { return m_isSameInstruments; }
+    bool isSameInstruments() const { return isSameInstruments_; }
 
 private:
     Part *mappedOriginPart(track_idx_t sharedTrack, const Fraction &tick) const;
 
     void computeIsSameInstruments();
-    bool m_isSameInstruments = true;
+    bool isSameInstruments_ = true;
 
-    bool m_enabled = true;
-    std::vector<Part *> m_originParts;
-    std::map<Fraction, SharedTrackMap> m_trackMapsByTick{{Fraction(0, 1), SharedTrackMap()}};
+    bool enabled_ = true;
+    std::vector<Part *> originParts_;
+    std::map<Fraction, SharedTrackMap> trackMapsByTick_{{Fraction(0, 1), SharedTrackMap()}};
 };
 } // namespace mu::engraving

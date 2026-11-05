@@ -56,24 +56,24 @@ template <typename T>
 class ld_field_debug {
 public:
 
-    ld_field_debug(const char *name, T def = T()) : m_name(name), m_def(def) {}
+    ld_field_debug(const char *name, T def = T()) : name_(name), def_(def) {}
 
-    inline void reset() { m_val.reset(); }
+    inline void reset() { val_.reset(); }
 
-    inline bool has_value() const { return m_val.has_value(); }
+    inline bool has_value() const { return val_.has_value(); }
 
     inline const T &value(LD_ACCESS mode = LD_ACCESS::CHECK) const {
-        if (!m_val.has_value()) {
+        if (!val_.has_value()) {
 #ifdef MUE_ENABLE_ENGRAVING_LD_ACCESS
             if (mode == LD_ACCESS::CHECK) {
-                LOGE_T("LD_ACCESS")() << "BAD ACCESS to: " << m_name;
+                LOGE_T("LD_ACCESS")() << "BAD ACCESS to: " << name_;
             }
 #else
             (void) mode;
 #endif
-            return m_def;
+            return def_;
         }
-        return m_val.value();
+        return val_.value();
     }
 
     inline const T &operator()() const { return value(); }
@@ -81,52 +81,52 @@ public:
     operator T() const { return value(); }
 
     inline T &mut_value() {
-        if (!m_val.has_value()) {
-            m_val = std::make_optional<T>(m_def);
+        if (!val_.has_value()) {
+            val_ = std::make_optional<T>(def_);
         }
-        return m_val.value();
+        return val_.value();
     }
 
-    inline void set_value(const T &v) { m_val = std::make_optional<T>(v); }
+    inline void set_value(const T &v) { val_ = std::make_optional<T>(v); }
 
     ld_field_debug &operator=(const T &v) {
-        m_val = v;
+        val_ = v;
         return *this;
     }
 
 private:
-    const char *m_name = nullptr;
-    T m_def;
-    std::optional<T> m_val;
+    const char *name_ = nullptr;
+    T def_;
+    std::optional<T> val_;
 };
 
 template <typename T>
 class ld_field_prod {
 public:
 
-    ld_field_prod(const char *, T def = T()) : m_val(def) {}
+    ld_field_prod(const char *, T def = T()) : val_(def) {}
 
-    inline void reset() { m_val = T(); }
+    inline void reset() { val_ = T(); }
 
     inline bool has_value() const { return true; }
 
-    inline const T &value(LD_ACCESS = LD_ACCESS::CHECK) const { return m_val; }
+    inline const T &value(LD_ACCESS = LD_ACCESS::CHECK) const { return val_; }
 
     inline const T &operator()() const { return value(); }
 
     operator T() const { return value(); }
 
-    inline T &mut_value() { return m_val; }
+    inline T &mut_value() { return val_; }
 
-    inline void set_value(const T &v) { m_val = v; }
+    inline void set_value(const T &v) { val_ = v; }
 
     ld_field_prod &operator=(const T &v) {
-        m_val = v;
+        val_ = v;
         return *this;
     }
 
 private:
-    T m_val;
+    T val_;
 };
 
 #ifdef NDEBUG

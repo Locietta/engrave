@@ -425,7 +425,7 @@ void GuitarPro6::readGpif(ByteArray *data) {
 
     GPConverter scoreBuilder(score, builder->getGPDomModel());
     scoreBuilder.convertGP();
-    m_gpifRead = true;
+    gpifRead_ = true;
 }
 
 //---------------------------------------------------------
@@ -567,7 +567,7 @@ bool GuitarPro6::read(IODevice *io) {
     f = io;
     previousTempo = -1;
     position = 0;
-    m_gpifRead = false;
+    gpifRead_ = false;
     // decompress and read files contained within GPX file
     ByteArray ba = io->readAll();
     if (ba.empty()) {
@@ -576,6 +576,6 @@ bool GuitarPro6::read(IODevice *io) {
 
     readGPX(&ba);
 
-    return m_gpifRead;
+    return gpifRead_;
 }
 } // namespace mu::iex::guitarpro

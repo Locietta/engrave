@@ -62,13 +62,13 @@ class BagpipeEmbellishment final : public EngravingItem {
 
 public:
     BagpipeEmbellishment(DummyParentOr<EngravingItem> parent)
-        : EngravingItem(ElementType::BAGPIPE_EMBELLISHMENT, parent), m_embelType(EmbellishmentType(0)) {}
+        : EngravingItem(ElementType::BAGPIPE_EMBELLISHMENT, parent), embelType_(EmbellishmentType(0)) {}
 
     BagpipeEmbellishment *clone() const override { return new BagpipeEmbellishment(*this); }
 
-    EmbellishmentType embelType() const { return m_embelType; }
+    EmbellishmentType embelType() const { return embelType_; }
 
-    void setEmbelType(EmbellishmentType val) { m_embelType = val; }
+    void setEmbelType(EmbellishmentType val) { embelType_ = val; }
 
     double mag() const override;
 
@@ -103,7 +103,7 @@ public:
 
 private:
 
-    EmbellishmentType m_embelType;
+    EmbellishmentType embelType_;
 };
 } // namespace mu::engraving
 

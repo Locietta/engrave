@@ -39,19 +39,19 @@ public:
 
     void reset() override;
 
-    Spatium hookLength() const { return m_hookLength; }
+    Spatium hookLength() const { return hookLength_; }
 
-    DirectionV hookPos() const { return m_hookPos; }
+    DirectionV hookPos() const { return hookPos_; }
 
-    bool rightSide() const { return m_rightSide; }
+    bool rightSide() const { return rightSide_; }
 
 private:
     friend class Factory;
 
     ChordBracket(DummyParentOr<Chord> parent);
 
-    Spatium m_hookLength = Spatium(1);
-    DirectionV m_hookPos = DirectionV::AUTO; // AUTO == both up and down hooks
-    bool m_rightSide = false;
+    Spatium hookLength_ = Spatium(1);
+    DirectionV hookPos_ = DirectionV::AUTO; // AUTO == both up and down hooks
+    bool rightSide_ = false;
 };
 } // namespace mu::engraving

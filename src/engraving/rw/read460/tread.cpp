@@ -1927,8 +1927,8 @@ bool TRead::readProperties(Box *b, XmlReader &e, ReadContext &ctx) {
         //! but when we add it to Box, the parent will be rewritten.
         b->add(f);
     } else if (tag == "HBox") {
-        // m_parent is used here (rather than system()) because explicit parent isn't set for this object
-        // until it is fully read. m_parent is nonetheless valid and using it here matches MU3 behavior.
+        // parent_ is used here (rather than system()) because explicit parent isn't set for this object
+        // until it is fully read. parent_ is nonetheless valid and using it here matches MU3 behavior.
         // If we do not set the parent of this new box correctly, it will cause a crash on read()
         // because it needs access to the system it is being added to. (c.r. issue #14643)
         if (b->parent() && b->parent()->isSystem()) {

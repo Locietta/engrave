@@ -57,7 +57,7 @@ void PauseMap::calculate(const Score *s) {
 
         if (point.pause <= 0.0) {
             // We have a regular tempo change.
-            m_tempoEvents[tickWithPauses(utick)] = point.bps;
+            tempoEvents_[tickWithPauses(utick)] = point.bps;
             continue;
         }
 
@@ -66,9 +66,9 @@ void PauseMap::calculate(const Score *s) {
         Fraction timeSig(sigmap->timesig(tick).timesig());
         double quarterNotesPerMeasure = (4.0 * timeSig.numerator()) / timeSig.denominator();
         int ticksPerMeasure = quarterNotesPerMeasure * Constants::DIVISION; // store a full measure of ticks to keep barlines in same places
-        m_tempoEvents[tickWithPauses(utick)] = quarterNotesPerMeasure / point.pause;      // new tempo for pause
+        tempoEvents_[tickWithPauses(utick)] = quarterNotesPerMeasure / point.pause;       // new tempo for pause
         insert(std::pair<const int, int>(utick, ticksPerMeasure + offsetAtUTick(utick))); // store running total of extra ticks
-        m_tempoEvents[tickWithPauses(utick)] = point.bps;                                 // restore previous tempo
+        tempoEvents_[tickWithPauses(utick)] = point.bps;                                  // restore previous tempo
     }
 }
 

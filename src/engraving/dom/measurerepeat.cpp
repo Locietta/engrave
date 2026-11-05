@@ -39,18 +39,18 @@ namespace mu::engraving {
 //   MeasureRepeat
 //---------------------------------------------------------
 
-MeasureRepeat::MeasureRepeat(DummyParentOr<Segment> parent) : Rest(ElementType::MEASURE_REPEAT, parent), m_numMeasures(0) {
+MeasureRepeat::MeasureRepeat(DummyParentOr<Segment> parent) : Rest(ElementType::MEASURE_REPEAT, parent), numMeasures_(0) {
     // however many measures the group, the element itself is always exactly the duration of its containing measure
     setDurationType(DurationType::V_MEASURE);
 }
 
 void MeasureRepeat::setNumMeasures(int n) {
     IF_ASSERT_FAILED(n <= MAX_NUM_MEASURES) {
-        m_numMeasures = MAX_NUM_MEASURES;
+        numMeasures_ = MAX_NUM_MEASURES;
         return;
     }
 
-    m_numMeasures = n;
+    numMeasures_ = n;
 }
 
 //---------------------------------------------------------
@@ -69,7 +69,7 @@ const Measure *MeasureRepeat::referringMeasure(const Measure *measure) const {
 
     const Measure *referringMeasure = firstMeasure->prevMeasure();
 
-    int measuresBack = m_numMeasures - measure->measureRepeatCount(staffIdx());
+    int measuresBack = numMeasures_ - measure->measureRepeatCount(staffIdx());
 
     for (int i = 0; i < measuresBack && referringMeasure; ++i) {
         referringMeasure = referringMeasure->prevMeasure();
@@ -93,7 +93,7 @@ PointF MeasureRepeat::numberPosition(const RectF &numberBbox) const {
     if (staffType() && staffType()->lines() == 1) {
         staffTop -= 2.0 * spatium();
     }
-    double yNumberPos = absoluteFromSpatium(style().styleS(Sid::measureRepeatNumberPos) + m_numberOffset);
+    double yNumberPos = absoluteFromSpatium(style().styleS(Sid::measureRepeatNumberPos) + numberOffset_);
     double y = std::min(staffTop, -symBbox(ldata()->symId).height() / 2) + yNumberPos - 0.5 * numberBbox.height();
 
     return PointF(x, y);
@@ -123,7 +123,7 @@ PropertyValue MeasureRepeat::propertyDefault(Pid propertyId) const {
 PropertyValue MeasureRepeat::getProperty(Pid propertyId) const {
     switch (propertyId) {
         case Pid::SUBTYPE: return numMeasures();
-        case Pid::MEASURE_REPEAT_NUMBER_OFFSET: return m_numberOffset;
+        case Pid::MEASURE_REPEAT_NUMBER_OFFSET: return numberOffset_;
         default: return Rest::getProperty(propertyId);
     }
 }

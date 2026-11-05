@@ -31,8 +31,8 @@ void SynthResolver::init(const AudioInputParams &defaultInputParams, const Outpu
 
     IF_ASSERT_FAILED(defaultInputParams.isValid() && defaultOutputSpec.isValid()) { return; }
 
-    m_defaultInputParams = defaultInputParams;
-    m_defaultOutputSpec = defaultOutputSpec;
+    defaultInputParams_ = defaultInputParams;
+    defaultOutputSpec_ = defaultOutputSpec;
 }
 
 ISynthesizerPtr SynthResolver::resolveSynth(const TrackId trackId, const AudioInputParams &params, const audio::OutputSpec &spec,
@@ -45,11 +45,11 @@ ISynthesizerPtr SynthResolver::resolveSynth(const TrackId trackId, const AudioIn
         return nullptr;
     }
 
-    std::lock_guard lock(m_mutex);
+    std::lock_guard lock(mutex_);
 
-    auto search = m_resolvers.find(params.type());
+    auto search = resolvers_.find(params.type());
 
-    if (search == m_resolvers.end()) {
+    if (search == resolvers_.end()) {
         return nullptr;
     }
 
@@ -64,20 +64,20 @@ ISynthesizerPtr SynthResolver::resolveSynth(const TrackId trackId, const AudioIn
 
 ISynthesizerPtr SynthResolver::resolveDefaultSynth(const TrackId trackId) const {
 
-    return resolveSynth(trackId, m_defaultInputParams, m_defaultOutputSpec, {});
+    return resolveSynth(trackId, defaultInputParams_, defaultOutputSpec_, {});
 }
 
-AudioInputParams SynthResolver::resolveDefaultInputParams() const { return m_defaultInputParams; }
+AudioInputParams SynthResolver::resolveDefaultInputParams() const { return defaultInputParams_; }
 
 AudioResourceMetaList SynthResolver::resolveAvailableResources() const {
 
     TRACEFUNC;
 
-    std::lock_guard lock(m_mutex);
+    std::lock_guard lock(mutex_);
 
     AudioResourceMetaList result;
 
-    for (const auto &pair : m_resolvers) {
+    for (const auto &pair : resolvers_) {
         const AudioResourceMetaList &resolvedResources = pair.second->resolveResources();
         result.insert(result.end(), resolvedResources.begin(), resolvedResources.end());
     }
@@ -89,10 +89,10 @@ SoundPresetList SynthResolver::resolveAvailableSoundPresets(const AudioResourceM
 
     TRACEFUNC;
 
-    std::lock_guard lock(m_mutex);
+    std::lock_guard lock(mutex_);
 
-    auto search = m_resolvers.find(audio::sourceTypeFromResourceType(resourceMeta.type));
-    if (search == m_resolvers.end()) {
+    auto search = resolvers_.find(audio::sourceTypeFromResourceType(resourceMeta.type));
+    if (search == resolvers_.end()) {
         return SoundPresetList();
     }
 
@@ -101,16 +101,16 @@ SoundPresetList SynthResolver::resolveAvailableSoundPresets(const AudioResourceM
 
 void SynthResolver::registerResolver(const AudioSourceType type, IResolverPtr resolver) {
 
-    std::lock_guard lock(m_mutex);
+    std::lock_guard lock(mutex_);
 
-    m_resolvers.insert_or_assign(type, std::move(resolver));
+    resolvers_.insert_or_assign(type, std::move(resolver));
 }
 
 void SynthResolver::clearSources() {
 
-    std::lock_guard lock(m_mutex);
+    std::lock_guard lock(mutex_);
 
-    for (auto it = m_resolvers.begin(); it != m_resolvers.end(); ++it) {
+    for (auto it = resolvers_.begin(); it != resolvers_.end(); ++it) {
         it->second->clearSources();
     }
 }

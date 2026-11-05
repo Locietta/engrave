@@ -163,7 +163,7 @@ protected:
         bool harmonicSemi = false;
     };
 
-    GPProperties m_properties;
+    GPProperties properties_;
 
     std::vector<Note *> slideList; //list of start slide notes
 
@@ -323,8 +323,8 @@ public:
     size_t staves = 0;
     size_t measures = 0;
     std::vector<GpBar> bars;
-    std::unique_ptr<ContiniousElementsBuilder> m_continiousElementsBuilder;
-    std::unique_ptr<GuitarBendImporter> m_guitarBendImporter;
+    std::unique_ptr<ContiniousElementsBuilder> continiousElementsBuilder_;
+    std::unique_ptr<GuitarBendImporter> guitarBendImporter_;
 
     enum class GuitarProError : char { GP_NO_ERROR, GP_UNKNOWN_FORMAT, GP_EOF, GP_BAD_NUMBER_OF_STRINGS };
 
@@ -402,11 +402,11 @@ public:
 class GuitarPro5 : public GuitarPro {
     std::map<std::pair<int, int>, bool> dead_end;
     int _beat_counter{0};
-    std::unordered_map<mu::engraving::Chord *, mu::engraving::TremoloType> m_tremolosInChords; // for adding tremolo for tied notes
-    std::unordered_map<Note *, Note *> m_harmonicNotes;                                        // for adding ties for harmonic notes
-    bool m_currentBeatHasRasgueado = false;
-    std::unordered_set<ChordRest *> m_letRingForChords; // fixing gp5 bug with no storing let ring for tied notes
-    std::vector<std::pair<Note *, Note *>> m_glissandoNotePairs;
+    std::unordered_map<mu::engraving::Chord *, mu::engraving::TremoloType> tremolosInChords_; // for adding tremolo for tied notes
+    std::unordered_map<Note *, Note *> harmonicNotes_;                                        // for adding ties for harmonic notes
+    bool currentBeatHasRasgueado_ = false;
+    std::unordered_set<ChordRest *> letRingForChords_; // fixing gp5 bug with no storing let ring for tied notes
+    std::vector<std::pair<Note *, Note *>> glissandoNotePairs_;
 
     void readInfo();
     void readPageSetup();
@@ -472,7 +472,7 @@ class GuitarPro6 : public GuitarPro {
     std::map<std::pair<int, int>, Note *> slideMap;
 
 protected:
-    bool m_gpifRead = false;
+    bool gpifRead_ = false;
     const static std::map<std::string, std::string> instrumentMapping;
     void readGpif(muse::ByteArray *data);
 

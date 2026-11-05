@@ -350,7 +350,7 @@ static void copyOverlapData(VoiceOverlapDetector &vod, VoiceList &vcLst) {
 //---------------------------------------------------------
 
 MusicXmlParserPass1::MusicXmlParserPass1(Score *score, const IMusicXmlConfiguration &configuration, MusicXmlLogger *logger)
-    : m_divs(0), m_score(score), m_configuration(configuration), m_logger(logger), m_hasBeamingInfo(false) {
+    : divs_(0), score_(score), configuration_(configuration), logger_(logger), hasBeamingInfo_(false) {
     // nothing
 }
 
@@ -360,33 +360,33 @@ MusicXmlParserPass1::MusicXmlParserPass1(Score *score, const IMusicXmlConfigurat
 
 void MusicXmlParserPass1::addError(const String &error) {
     if (!error.empty()) {
-        m_logger->logError(error, &m_e);
-        m_errors += errorStringWithLocation(m_e.byteOffset(), error) + '\n';
+        logger_->logError(error, &e_);
+        errors_ += errorStringWithLocation(e_.byteOffset(), error) + '\n';
     }
 }
 
 void MusicXmlParserPass1::setExporterSoftware(String &exporter) {
     if (exporter.contains(u"sibelius")) {
         if (exporter.contains(u"dolet 6")) {
-            m_exporterSoftware = MusicXmlExporterSoftware::DOLET6;
+            exporterSoftware_ = MusicXmlExporterSoftware::DOLET6;
         } else if (exporter.contains(u"dolet 8")) {
-            m_exporterSoftware = MusicXmlExporterSoftware::DOLET8;
+            exporterSoftware_ = MusicXmlExporterSoftware::DOLET8;
         } else {
-            m_exporterSoftware = MusicXmlExporterSoftware::SIBELIUS;
+            exporterSoftware_ = MusicXmlExporterSoftware::SIBELIUS;
         }
     } else if (exporter.contains(u"dorico")) {
-        m_exporterSoftware = MusicXmlExporterSoftware::DORICO;
+        exporterSoftware_ = MusicXmlExporterSoftware::DORICO;
     } else if (exporter.contains(u"finale")) {
-        m_exporterSoftware = MusicXmlExporterSoftware::FINALE;
+        exporterSoftware_ = MusicXmlExporterSoftware::FINALE;
     } else if (exporter.contains(u"noteflight")) {
-        m_exporterSoftware = MusicXmlExporterSoftware::NOTEFLIGHT;
+        exporterSoftware_ = MusicXmlExporterSoftware::NOTEFLIGHT;
     }
 }
 
 void MusicXmlParserPass1::setExporterStyles() {
     // If exporters have different default styles to MuseScore, assume they are being used here
     if (sibOrDolet()) {
-        m_score->style().set(Sid::fretFrets, 5);
+        score_->style().set(Sid::fretFrets, 5);
     }
 }
 
@@ -401,8 +401,8 @@ void MusicXmlParserPass1::setExporterStyles() {
  */
 
 void MusicXmlParserPass1::initPartState(const String & /* partId */) {
-    m_timeSigDura = Fraction(0, 0); // invalid
-    m_octaveShifts.clear();
+    timeSigDura_ = Fraction(0, 0); // invalid
+    octaveShifts_.clear();
 }
 
 //---------------------------------------------------------
@@ -419,7 +419,7 @@ bool MusicXmlParserPass1::determineMeasureLength(std::vector<Fraction> &ml) cons
 
     // determine number of measures: max number of measures in any part
     size_t nMeasures = 0;
-    for (const auto &[_, part] : m_parts) {
+    for (const auto &[_, part] : parts_) {
         if (part.nMeasures() > nMeasures) {
             nMeasures = part.nMeasures();
         }
@@ -428,7 +428,7 @@ bool MusicXmlParserPass1::determineMeasureLength(std::vector<Fraction> &ml) cons
     // determine max length of a specific measure in all parts
     for (size_t i = 0; i < nMeasures; ++i) {
         Fraction maxMeasDur;
-        for (const auto &[_, part] : m_parts) {
+        for (const auto &[_, part] : parts_) {
             if (i < part.nMeasures()) {
                 Fraction measDurPartJ = part.measureDuration(i);
                 if (measDurPartJ > maxMeasDur) {
@@ -452,8 +452,8 @@ bool MusicXmlParserPass1::determineMeasureLength(std::vector<Fraction> &ml) cons
  */
 
 VoiceList MusicXmlParserPass1::getVoiceList(const String &id) const {
-    if (muse::contains(m_parts, id)) {
-        return m_parts.at(id).voicelist;
+    if (muse::contains(parts_, id)) {
+        return parts_.at(id).voicelist;
     }
     return VoiceList();
 }
@@ -468,8 +468,8 @@ VoiceList MusicXmlParserPass1::getVoiceList(const String &id) const {
  */
 
 MusicXmlInstrList MusicXmlParserPass1::getInstrList(const String &id) const {
-    if (muse::contains(m_parts, id)) {
-        return m_parts.at(id)._instrList;
+    if (muse::contains(parts_, id)) {
+        return parts_.at(id)._instrList;
     }
     return MusicXmlInstrList();
 }
@@ -484,8 +484,8 @@ MusicXmlInstrList MusicXmlParserPass1::getInstrList(const String &id) const {
  */
 
 MusicXmlIntervalList MusicXmlParserPass1::getIntervals(const String &id) const {
-    if (muse::contains(m_parts, id)) {
-        return m_parts.at(id)._intervals;
+    if (muse::contains(parts_, id)) {
+        return parts_.at(id)._intervals;
     }
     return MusicXmlIntervalList();
 }
@@ -502,10 +502,10 @@ MusicXmlIntervalList MusicXmlParserPass1::getIntervals(const String &id) const {
 
 void MusicXmlParserPass1::setDrumsetDefault(const String &id, const String &instrId, const NoteHeadGroup hg, const int line,
                                             const DirectionV sd) {
-    if (muse::contains(m_instruments, id) && muse::contains(m_instruments.at(id), instrId)) {
-        m_instruments[id][instrId].notehead = hg;
-        m_instruments[id][instrId].line = line;
-        m_instruments[id][instrId].stemDirection = sd;
+    if (muse::contains(instruments_, id) && muse::contains(instruments_.at(id), instrId)) {
+        instruments_[id][instrId].notehead = hg;
+        instruments_[id][instrId].line = line;
+        instruments_[id][instrId].stemDirection = sd;
     }
 }
 
@@ -563,9 +563,9 @@ bool MusicXmlParserPass1::determineStaffMoveVoice(const String &id, const int mx
     msVoice = v;
 
     // make score-relative instead on part-relative
-    Part *part = muse::value(m_partMap, id);
+    Part *part = muse::value(partMap_, id);
     IF_ASSERT_FAILED(part) { return false; }
-    staff_idx_t scoreRelStaff = m_score->staffIdx(part); // zero-based number of parts first staff in the score
+    staff_idx_t scoreRelStaff = score_->staffIdx(part); // zero-based number of parts first staff in the score
     msTrack = static_cast<int>((scoreRelStaff + s) * VOICES);
 
     //LOGD("voice mapper after: scoreRelStaff=%d partRelStaff=%d msMove=%d msTrack=%d msVoice=%d",
@@ -584,7 +584,7 @@ bool MusicXmlParserPass1::determineStaffMoveVoice(const String &id, const int mx
  Check if part \a id is found.
  */
 
-bool MusicXmlParserPass1::hasPart(const String &id) const { return muse::contains(m_parts, id); }
+bool MusicXmlParserPass1::hasPart(const String &id) const { return muse::contains(parts_, id); }
 
 //---------------------------------------------------------
 //   trackForPart
@@ -595,9 +595,9 @@ bool MusicXmlParserPass1::hasPart(const String &id) const { return muse::contain
  */
 
 track_idx_t MusicXmlParserPass1::trackForPart(const String &id) const {
-    Part *part = muse::value(m_partMap, id);
+    Part *part = muse::value(partMap_, id);
     IF_ASSERT_FAILED(part) { return muse::nidx; }
-    staff_idx_t scoreRelStaff = m_score->staffIdx(part); // zero-based number of parts first staff in the score
+    staff_idx_t scoreRelStaff = score_->staffIdx(part); // zero-based number of parts first staff in the score
     return scoreRelStaff * VOICES;
 }
 
@@ -610,8 +610,8 @@ track_idx_t MusicXmlParserPass1::trackForPart(const String &id) const {
  */
 
 Fraction MusicXmlParserPass1::getMeasureStart(const size_t i) const {
-    if (i < m_measureStart.size()) {
-        return m_measureStart.at(i);
+    if (i < measureStart_.size()) {
+        return measureStart_.at(i);
     } else {
         return Fraction(0, 0); // invalid
     }
@@ -626,8 +626,8 @@ Fraction MusicXmlParserPass1::getMeasureStart(const size_t i) const {
  */
 
 int MusicXmlParserPass1::octaveShift(const String &id, const staff_idx_t staff, const Fraction &f) const {
-    if (muse::contains(m_parts, id)) {
-        return m_parts.at(id).octaveShift(staff, f);
+    if (muse::contains(parts_, id)) {
+        return parts_.at(id).octaveShift(staff, f);
     }
 
     return 0;
@@ -642,8 +642,8 @@ int MusicXmlParserPass1::octaveShift(const String &id, const staff_idx_t staff, 
  */
 
 void MusicXmlParserPass1::skipLogCurrElem() {
-    m_logger->logDebugInfo(String(u"skipping '%1'").arg(String::fromAscii(m_e.name().ascii())), &m_e);
-    m_e.skipCurrentElement();
+    logger_->logDebugInfo(String(u"skipping '%1'").arg(String::fromAscii(e_.name().ascii())), &e_);
+    e_.skipCurrentElement();
 }
 
 //---------------------------------------------------------
@@ -1040,7 +1040,7 @@ void MusicXmlParserPass1::createDefaultHeader(Score *score) {
     }
     if (!inferredStrSubTitle.isEmpty()) {
         strSubTitle = inferredStrSubTitle;
-        m_hasInferredHeaderText = true;
+        hasInferredHeaderText_ = true;
     }
     String metaComposer = score->metaTag(u"composer");
     String metaLyricist = score->metaTag(u"lyricist");
@@ -1050,7 +1050,7 @@ void MusicXmlParserPass1::createDefaultHeader(Score *score) {
     }
     if (!inferredStrComposer.isEmpty()) {
         strComposer = inferredStrComposer;
-        m_hasInferredHeaderText = true;
+        hasInferredHeaderText_ = true;
     }
     if (metaLyricist.isEmpty()) {
         metaLyricist = score->metaTag(u"poet");
@@ -1127,10 +1127,10 @@ void MusicXmlParserPass1::createMeasuresAndVboxes(Score *score, const std::vecto
     }
 }
 
-bool MusicXmlParserPass1::sibOrDolet() const { return m_exporterSoftware == MusicXmlExporterSoftware::SIBELIUS || dolet(); }
+bool MusicXmlParserPass1::sibOrDolet() const { return exporterSoftware_ == MusicXmlExporterSoftware::SIBELIUS || dolet(); }
 
 bool MusicXmlParserPass1::dolet() const {
-    return m_exporterSoftware == MusicXmlExporterSoftware::DOLET6 || m_exporterSoftware == MusicXmlExporterSoftware::DOLET8;
+    return exporterSoftware_ == MusicXmlExporterSoftware::DOLET6 || exporterSoftware_ == MusicXmlExporterSoftware::DOLET8;
 }
 
 //---------------------------------------------------------
@@ -1188,22 +1188,21 @@ static void fixupSigmap(MusicXmlLogger *logger, Score *score, const std::vector<
  */
 
 Err MusicXmlParserPass1::parse(const ByteArray &data) {
-    m_logger->logDebugTrace(u"MusicXmlParserPass1::parse device");
-    m_parts.clear();
-    m_e.setData(data);
+    logger_->logDebugTrace(u"MusicXmlParserPass1::parse device");
+    parts_.clear();
+    e_.setData(data);
     Err res = parse();
     if (res != Err::NoError) {
         return res;
     }
 
     // Determine the start tick of each measure in the part
-    determineMeasureLength(m_measureLength);
-    determineMeasureStart(m_measureLength, m_measureStart);
+    determineMeasureLength(measureLength_);
+    determineMeasureStart(measureLength_, measureStart_);
     // Fixup timesig at tick = 0 if necessary
-    fixupSigmap(m_logger, m_score, m_measureLength);
+    fixupSigmap(logger_, score_, measureLength_);
     // Create the measures
-    createMeasuresAndVboxes(m_score, m_measureLength, m_measureStart, m_systemStartMeasureNrs, m_pageStartMeasureNrs, m_credits,
-                            m_pageSize);
+    createMeasuresAndVboxes(score_, measureLength_, measureStart_, systemStartMeasureNrs_, pageStartMeasureNrs_, credits_, pageSize_);
 
     return res;
 }
@@ -1217,26 +1216,25 @@ Err MusicXmlParserPass1::parse(const ByteArray &data) {
  */
 
 Err MusicXmlParserPass1::parse() {
-    m_logger->logDebugTrace(u"MusicXmlParserPass1::parse");
+    logger_->logDebugTrace(u"MusicXmlParserPass1::parse");
 
     bool found = false;
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "score-partwise") {
+    while (e_.readNextStartElement()) {
+        if (e_.name() == "score-partwise") {
             found = true;
             scorePartwise();
         } else {
-            m_logger->logError(
-                String(u"this is not a MusicXML score-partwise file (top-level node '%1')").arg(String::fromAscii(m_e.name().ascii())),
-                &m_e);
-            m_e.skipCurrentElement();
+            logger_->logError(
+                String(u"this is not a MusicXML score-partwise file (top-level node '%1')").arg(String::fromAscii(e_.name().ascii())), &e_);
+            e_.skipCurrentElement();
             return Err::FileBadFormat;
         }
     }
 
     if (!found) {
-        m_logger->logError(u"this is not a MusicXML score-partwise file, node <score-partwise> not found", &m_e);
-        if (!m_e.errorString().isEmpty()) {
-            m_errors += errorStringWithLocation(m_e.byteOffset(), m_e.errorString()) + '\n';
+        logger_->logError(u"this is not a MusicXML score-partwise file, node <score-partwise> not found", &e_);
+        if (!e_.errorString().isEmpty()) {
+            errors_ += errorStringWithLocation(e_.byteOffset(), e_.errorString()) + '\n';
         }
         return Err::FileBadFormat;
     }
@@ -1290,35 +1288,35 @@ static bool isRedundantBracket(Staff const *const staff, const BracketType brack
  */
 
 void MusicXmlParserPass1::scorePartwise() {
-    m_logger->logDebugTrace(u"MusicXmlParserPass1::scorePartwise", &m_e);
+    logger_->logDebugTrace(u"MusicXmlParserPass1::scorePartwise", &e_);
 
     MusicXmlPartGroupList partGroupList;
 
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "part") {
+    while (e_.readNextStartElement()) {
+        if (e_.name() == "part") {
             part();
-        } else if (m_e.name() == "part-list") {
+        } else if (e_.name() == "part-list") {
             partList(partGroupList);
-        } else if (m_e.name() == "work") {
-            while (m_e.readNextStartElement()) {
-                if (m_e.name() == "work-number") {
-                    m_score->setMetaTag(u"workNumber", m_e.readText());
-                } else if (m_e.name() == "work-title") {
-                    m_score->setMetaTag(u"workTitle", m_e.readText());
+        } else if (e_.name() == "work") {
+            while (e_.readNextStartElement()) {
+                if (e_.name() == "work-number") {
+                    score_->setMetaTag(u"workNumber", e_.readText());
+                } else if (e_.name() == "work-title") {
+                    score_->setMetaTag(u"workTitle", e_.readText());
                 } else {
                     skipLogCurrElem();
                 }
             }
-        } else if (m_e.name() == "identification") {
+        } else if (e_.name() == "identification") {
             identification();
-        } else if (m_e.name() == "defaults") {
+        } else if (e_.name() == "defaults") {
             defaults();
-        } else if (m_e.name() == "movement-number") {
-            m_score->setMetaTag(u"movementNumber", m_e.readText());
-        } else if (m_e.name() == "movement-title") {
-            m_score->setMetaTag(u"movementTitle", m_e.readText());
-        } else if (m_e.name() == "credit") {
-            credit(m_credits);
+        } else if (e_.name() == "movement-number") {
+            score_->setMetaTag(u"movementNumber", e_.readText());
+        } else if (e_.name() == "movement-title") {
+            score_->setMetaTag(u"movementTitle", e_.readText());
+        } else if (e_.name() == "credit") {
+            credit(credits_);
         } else {
             skipLogCurrElem();
         }
@@ -1341,7 +1339,7 @@ void MusicXmlParserPass1::scorePartwise() {
     std::set<const Part *> partSet;
 
     // handle the explicit brackets
-    const std::vector<Part *> &il = m_score->parts();
+    const std::vector<Part *> &il = score_->parts();
     for (size_t i = 0; i < partGroupList.size(); i++) {
         MusicXmlPartGroup *pg = partGroupList[i];
         // determine span in staves
@@ -1368,10 +1366,10 @@ void MusicXmlParserPass1::scorePartwise() {
         // TODO: use group-symbol default-x to determine horizontal order of brackets
         Staff *staff = il.at(pg->start)->staff(0);
         if (pg->type != BracketType::NO_BRACKET && !isRedundantBracket(staff, pg->type, stavesSpan)) {
-            EditStaffBrackets::setBracketType(m_score, staff->idx(), pg->column, pg->type);
-            EditStaffBrackets::setBracketSpan(m_score, staff->idx(), pg->column, stavesSpan);
-            if ((m_score->brackets(staff->idx()).size() > pg->column) && pg->color.isValid()) {
-                BracketItem *bracketItem = m_score->brackets(staff->idx()).at(pg->column);
+            EditStaffBrackets::setBracketType(score_, staff->idx(), pg->column, pg->type);
+            EditStaffBrackets::setBracketSpan(score_, staff->idx(), pg->column, stavesSpan);
+            if ((score_->brackets(staff->idx()).size() > pg->column) && pg->color.isValid()) {
+                BracketItem *bracketItem = score_->brackets(staff->idx()).at(pg->column);
                 bracketItem->setColor(pg->color);
             }
             // add part to set (skip implicit bracket later)
@@ -1381,7 +1379,7 @@ void MusicXmlParserPass1::scorePartwise() {
         }
 
         if (!staff->isSystemObjectStaff() && exporterSoftware() == MusicXmlExporterSoftware::FINALE && configuration()->inferTextType()) {
-            m_score->addSystemObjectStaff(staff);
+            score_->addSystemObjectStaff(staff);
         }
     }
 
@@ -1390,9 +1388,9 @@ void MusicXmlParserPass1::scorePartwise() {
     for (const Part *p : il) {
         if (p->nstaves() > 1 && !muse::contains(partSet, p)) {
             Staff *staff = p->staff(0);
-            const size_t column = m_score->bracketLevels(staff->idx()) + 1;
-            EditStaffBrackets::setBracketType(m_score, staff->idx(), column, BracketType::BRACE);
-            EditStaffBrackets::setBracketSpan(m_score, staff->idx(), column, p->nstaves());
+            const size_t column = score_->bracketLevels(staff->idx()) + 1;
+            EditStaffBrackets::setBracketType(score_, staff->idx(), column, BracketType::BRACE);
+            EditStaffBrackets::setBracketSpan(score_, staff->idx(), column, p->nstaves());
             if (allStaffGroupsIdentical(p)) {
                 // span only if the same types
                 for (Staff *spannedStaff : p->staves()) {
@@ -1403,7 +1401,7 @@ void MusicXmlParserPass1::scorePartwise() {
             }
         }
     }
-    addError(checkAtEndElement(m_e, u"score-partwise"));
+    addError(checkAtEndElement(e_, u"score-partwise"));
 }
 
 //---------------------------------------------------------
@@ -1416,46 +1414,46 @@ void MusicXmlParserPass1::scorePartwise() {
  */
 
 void MusicXmlParserPass1::identification() {
-    m_logger->logDebugTrace(u"MusicXmlParserPass1::identification", &m_e);
+    logger_->logDebugTrace(u"MusicXmlParserPass1::identification", &e_);
 
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "creator") {
+    while (e_.readNextStartElement()) {
+        if (e_.name() == "creator") {
             // type is an arbitrary label
-            String strType = m_e.attribute("type");
-            m_score->setMetaTag(strType, m_e.readText());
-        } else if (m_e.name() == "rights") {
-            m_score->setMetaTag(u"copyright", m_e.readText());
-        } else if (m_e.name() == "encoding") {
+            String strType = e_.attribute("type");
+            score_->setMetaTag(strType, e_.readText());
+        } else if (e_.name() == "rights") {
+            score_->setMetaTag(u"copyright", e_.readText());
+        } else if (e_.name() == "encoding") {
             // TODO
-            while (m_e.readNextStartElement()) {
-                if (m_e.name() == "encoder") {
-                    m_score->setMetaTag(u"encoder", m_e.readText());
-                } else if (m_e.name() == "software") {
-                    String exporterString = m_e.readText().toLower();
+            while (e_.readNextStartElement()) {
+                if (e_.name() == "encoder") {
+                    score_->setMetaTag(u"encoder", e_.readText());
+                } else if (e_.name() == "software") {
+                    String exporterString = e_.readText().toLower();
                     setExporterSoftware(exporterString);
                     setExporterStyles();
-                } else if (m_e.name() == "supports" && m_e.asciiAttribute("element") == "beam" && m_e.asciiAttribute("type") == "yes") {
-                    m_hasBeamingInfo = true;
-                    m_e.skipCurrentElement();
+                } else if (e_.name() == "supports" && e_.asciiAttribute("element") == "beam" && e_.asciiAttribute("type") == "yes") {
+                    hasBeamingInfo_ = true;
+                    e_.skipCurrentElement();
                 } else {
-                    m_e.skipCurrentElement();
+                    e_.skipCurrentElement();
                 }
             }
             // _score->setMetaTag("encoding", _e.readText()); works with DOM but not with pull parser
             // temporarily fake the encoding tag (compliant with DOM parser) to help the autotester
             if (MScore::debugMode) {
-                m_score->setMetaTag(u"encoding", u"MuseScore 0.7.02007-09-10");
+                score_->setMetaTag(u"encoding", u"MuseScore 0.7.02007-09-10");
             }
-        } else if (m_e.name() == "source") {
-            m_score->setMetaTag(u"source", m_e.readText());
-        } else if (m_e.name() == "miscellaneous") {
+        } else if (e_.name() == "source") {
+            score_->setMetaTag(u"source", e_.readText());
+        } else if (e_.name() == "miscellaneous") {
             // store all miscellaneous information
-            while (m_e.readNextStartElement()) {
-                if (m_e.name() == "miscellaneous-field") {
-                    const String name = m_e.attribute("name");
-                    m_score->setMetaTag(name, m_e.readText());
+            while (e_.readNextStartElement()) {
+                if (e_.name() == "miscellaneous-field") {
+                    const String name = e_.attribute("name");
+                    score_->setMetaTag(name, e_.readText());
                 } else {
-                    m_e.skipCurrentElement();
+                    e_.skipCurrentElement();
                 }
             }
         } else {
@@ -1632,9 +1630,9 @@ static String nextPartOfFormattedString(XmlStreamReader &e, const IMusicXmlConfi
  */
 
 void MusicXmlParserPass1::credit(CreditWordsList &credits) {
-    m_logger->logDebugTrace(u"MusicXmlParserPass1::credit", &m_e);
+    logger_->logDebugTrace(u"MusicXmlParserPass1::credit", &e_);
 
-    const int page = m_e.intAttribute("page"); // ignoring errors implies incorrect conversion defaults to the first page
+    const int page = e_.intAttribute("page"); // ignoring errors implies incorrect conversion defaults to the first page
     // multiple credit-words elements may be present,
     // which are appended
     // use the position info from the first one
@@ -1649,23 +1647,23 @@ void MusicXmlParserPass1::credit(CreditWordsList &credits) {
     StringList crtypes;
     String crwords;
     bool hasRights = false;
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "credit-words") {
+    while (e_.readNextStartElement()) {
+        if (e_.name() == "credit-words") {
             // IMPORT_LAYOUT
             if (!creditWordsRead) {
-                defaultx = m_e.doubleAttribute("default-x");
-                defaulty = m_e.doubleAttribute("default-y");
-                fontSize = m_e.doubleAttribute("font-size");
-                justify = m_e.attribute("justify");
-                halign = m_e.attribute("halign");
-                valign = m_e.attribute("valign");
+                defaultx = e_.doubleAttribute("default-x");
+                defaulty = e_.doubleAttribute("default-y");
+                fontSize = e_.doubleAttribute("font-size");
+                justify = e_.attribute("justify");
+                halign = e_.attribute("halign");
+                valign = e_.attribute("valign");
                 creditWordsRead = true;
             }
-            crwords += nextPartOfFormattedString(m_e, *configuration(), *m_score->engravingFonts());
-        } else if (m_e.name() == "credit-type") {
+            crwords += nextPartOfFormattedString(e_, *configuration(), *score_->engravingFonts());
+        } else if (e_.name() == "credit-type") {
             // multiple credit-type elements may be present, supported by
             // e.g. Finale v26.3 for Mac.
-            String type = m_e.readText();
+            String type = e_.readText();
             crtypes.push_back(type);
             hasRights = hasRights || type == u"rights";
         } else {
@@ -1853,7 +1851,7 @@ static void scaleTitle(Score *score, Text *t) {
 void MusicXmlParserPass1::defaults() {
     //_logger->logDebugTrace("MusicXmlParserPass1::defaults", &_e);
 
-    double millimeter = m_score->style().spatium() / 10.0;
+    double millimeter = score_->style().spatium() / 10.0;
     double tenths = 1.0;
     String lyricFontFamily;
     String lyricFontSize;
@@ -1862,58 +1860,58 @@ void MusicXmlParserPass1::defaults() {
 
     bool isImportLayout = configuration()->importLayout();
 
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "scaling") {
-            while (m_e.readNextStartElement()) {
-                if (m_e.name() == "millimeters") {
-                    millimeter = m_e.readDouble();
-                } else if (m_e.name() == "tenths") {
-                    tenths = m_e.readDouble();
+    while (e_.readNextStartElement()) {
+        if (e_.name() == "scaling") {
+            while (e_.readNextStartElement()) {
+                if (e_.name() == "millimeters") {
+                    millimeter = e_.readDouble();
+                } else if (e_.name() == "tenths") {
+                    tenths = e_.readDouble();
                 } else {
                     skipLogCurrElem();
                 }
             }
             double _spatium = DPMM * (millimeter * 10.0 / tenths);
             if (isImportLayout) {
-                m_score->style().setSpatium(_spatium);
+                score_->style().setSpatium(_spatium);
             }
-        } else if (m_e.name() == "concert-score") {
-            m_score->style().set(Sid::concertPitch, true);
-            m_e.skipCurrentElement(); // skip but don't log
-        } else if (m_e.name() == "page-layout") {
+        } else if (e_.name() == "concert-score") {
+            score_->style().set(Sid::concertPitch, true);
+            e_.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "page-layout") {
             PageFormat pf;
             pageLayout(pf, millimeter / (tenths * INCH));
             if (isImportLayout) {
-                setPageFormat(m_score, pf);
+                setPageFormat(score_, pf);
             }
-        } else if (m_e.name() == "system-layout") {
-            while (m_e.readNextStartElement()) {
-                if (m_e.name() == "system-margins") {
-                    m_e.skipCurrentElement(); // skip but don't log
-                } else if (m_e.name() == "system-distance") {
-                    const Spatium val(m_e.readDouble() / 10.0);
+        } else if (e_.name() == "system-layout") {
+            while (e_.readNextStartElement()) {
+                if (e_.name() == "system-margins") {
+                    e_.skipCurrentElement(); // skip but don't log
+                } else if (e_.name() == "system-distance") {
+                    const Spatium val(e_.readDouble() / 10.0);
                     if (isImportLayout) {
-                        m_score->style().set(Sid::minSystemDistance, val);
+                        score_->style().set(Sid::minSystemDistance, val);
                         //LOGD("system distance %f", val.val());
                     }
-                } else if (m_e.name() == "top-system-distance") {
-                    m_e.skipCurrentElement(); // skip but don't log
-                } else if (m_e.name() == "system-dividers") {
-                    while (m_e.readNextStartElement()) {
-                        if (m_e.name() == "left-divider") {
-                            m_score->style().set(Sid::dividerLeft, (m_e.asciiAttribute("print-object") != "no"));
+                } else if (e_.name() == "top-system-distance") {
+                    e_.skipCurrentElement(); // skip but don't log
+                } else if (e_.name() == "system-dividers") {
+                    while (e_.readNextStartElement()) {
+                        if (e_.name() == "left-divider") {
+                            score_->style().set(Sid::dividerLeft, (e_.asciiAttribute("print-object") != "no"));
                             if (isImportLayout) {
-                                m_score->style().set(Sid::dividerLeftX, m_e.doubleAttribute("relative-x") / 10.0);
-                                m_score->style().set(Sid::dividerLeftY, m_e.doubleAttribute("relative-y") / 10.0);
+                                score_->style().set(Sid::dividerLeftX, e_.doubleAttribute("relative-x") / 10.0);
+                                score_->style().set(Sid::dividerLeftY, e_.doubleAttribute("relative-y") / 10.0);
                             }
-                            m_e.skipCurrentElement();
-                        } else if (m_e.name() == "right-divider") {
-                            m_score->style().set(Sid::dividerRight, (m_e.asciiAttribute("print-object") != "no"));
+                            e_.skipCurrentElement();
+                        } else if (e_.name() == "right-divider") {
+                            score_->style().set(Sid::dividerRight, (e_.asciiAttribute("print-object") != "no"));
                             if (isImportLayout) {
-                                m_score->style().set(Sid::dividerRightX, m_e.doubleAttribute("relative-x") / 10.0);
-                                m_score->style().set(Sid::dividerRightY, m_e.doubleAttribute("relative-y") / 10.0);
+                                score_->style().set(Sid::dividerRightX, e_.doubleAttribute("relative-x") / 10.0);
+                                score_->style().set(Sid::dividerRightY, e_.doubleAttribute("relative-y") / 10.0);
                             }
-                            m_e.skipCurrentElement();
+                            e_.skipCurrentElement();
                         } else {
                             skipLogCurrElem();
                         }
@@ -1922,52 +1920,52 @@ void MusicXmlParserPass1::defaults() {
                     skipLogCurrElem();
                 }
             }
-        } else if (m_e.name() == "staff-layout") {
-            while (m_e.readNextStartElement()) {
-                if (m_e.name() == "staff-distance") {
-                    const Spatium val(m_e.readDouble() / 10.0);
+        } else if (e_.name() == "staff-layout") {
+            while (e_.readNextStartElement()) {
+                if (e_.name() == "staff-distance") {
+                    const Spatium val(e_.readDouble() / 10.0);
                     if (isImportLayout) {
-                        m_score->style().set(Sid::staffDistance, val);
+                        score_->style().set(Sid::staffDistance, val);
                     }
                 } else {
                     skipLogCurrElem();
                 }
             }
-        } else if (m_e.name() == "appearance") {
-            while (m_e.readNextStartElement()) {
-                const String type = m_e.attribute("type");
-                if (m_e.name() == "line-width") {
-                    const double val = m_e.readDouble();
+        } else if (e_.name() == "appearance") {
+            while (e_.readNextStartElement()) {
+                const String type = e_.attribute("type");
+                if (e_.name() == "line-width") {
+                    const double val = e_.readDouble();
                     if (isImportLayout) {
                         setStyle(type, val);
                     }
-                } else if (m_e.name() == "note-size") {
-                    const double val = m_e.readDouble();
+                } else if (e_.name() == "note-size") {
+                    const double val = e_.readDouble();
                     if (isImportLayout) {
                         setStyle(type, val);
                     }
-                } else if (m_e.name() == "distance") {
-                    m_e.skipCurrentElement(); // skip but don't log
-                } else if (m_e.name() == "glyph") {
-                    m_e.skipCurrentElement(); // skip but don't log
-                } else if (m_e.name() == "other-appearance") {
-                    m_e.skipCurrentElement(); // skip but don't log
+                } else if (e_.name() == "distance") {
+                    e_.skipCurrentElement(); // skip but don't log
+                } else if (e_.name() == "glyph") {
+                    e_.skipCurrentElement(); // skip but don't log
+                } else if (e_.name() == "other-appearance") {
+                    e_.skipCurrentElement(); // skip but don't log
                 } else {
                     skipLogCurrElem();
                 }
             }
-        } else if (m_e.name() == "music-font") {
-            m_e.skipCurrentElement(); // skip but don't log
-        } else if (m_e.name() == "word-font") {
-            wordFontFamily = m_e.attribute("font-family");
-            wordFontSize = m_e.attribute("font-size");
-            m_e.skipCurrentElement();
-        } else if (m_e.name() == "lyric-font") {
-            lyricFontFamily = m_e.attribute("font-family");
-            lyricFontSize = m_e.attribute("font-size");
-            m_e.skipCurrentElement();
-        } else if (m_e.name() == "lyric-language") {
-            m_e.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "music-font") {
+            e_.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "word-font") {
+            wordFontFamily = e_.attribute("font-family");
+            wordFontSize = e_.attribute("font-size");
+            e_.skipCurrentElement();
+        } else if (e_.name() == "lyric-font") {
+            lyricFontFamily = e_.attribute("font-family");
+            lyricFontSize = e_.attribute("font-size");
+            e_.skipCurrentElement();
+        } else if (e_.name() == "lyric-language") {
+            e_.skipCurrentElement(); // skip but don't log
         } else {
             skipLogCurrElem();
         }
@@ -1979,9 +1977,9 @@ void MusicXmlParserPass1::defaults() {
            muPrintable(lyricFontFamily), muPrintable(lyricFontSize));
     */
     lyricFontFamily = lyricFontFamily.empty() ? wordFontFamily : lyricFontFamily;
-    updateStyles(m_score, wordFontFamily, wordFontSize, lyricFontFamily, lyricFontSize, *configuration());
+    updateStyles(score_, wordFontFamily, wordFontSize, lyricFontFamily, lyricFontSize, *configuration());
 
-    scaleCopyrightText(m_score);
+    scaleCopyrightText(score_);
 }
 
 //---------------------------------------------------------
@@ -1990,47 +1988,47 @@ void MusicXmlParserPass1::defaults() {
 
 void MusicXmlParserPass1::setStyle(const String &type, const double val) {
     if (type == u"light barline") {
-        m_score->style().set(Sid::barWidth, Spatium(val / 10));
+        score_->style().set(Sid::barWidth, Spatium(val / 10));
     } else if (type == u"heavy barline") {
-        m_score->style().set(Sid::endBarWidth, Spatium(val / 10));
+        score_->style().set(Sid::endBarWidth, Spatium(val / 10));
     } else if (type == u"beam") {
-        m_score->style().set(Sid::beamWidth, Spatium(val / 10));
+        score_->style().set(Sid::beamWidth, Spatium(val / 10));
     } else if (type == u"bracket") {
-        m_score->style().set(Sid::bracketWidth, Spatium(val / 10));
+        score_->style().set(Sid::bracketWidth, Spatium(val / 10));
     } else if (type == u"dashes") {
-        m_score->style().set(Sid::lyricsDashLineThickness, Spatium(val / 10));
+        score_->style().set(Sid::lyricsDashLineThickness, Spatium(val / 10));
     } else if (type == u"enclosure") {
-        m_score->style().set(Sid::staffTextFrameWidth, Spatium(val / 10));
+        score_->style().set(Sid::staffTextFrameWidth, Spatium(val / 10));
     } else if (type == u"ending") {
-        m_score->style().set(Sid::voltaLineWidth, Spatium(val / 10));
+        score_->style().set(Sid::voltaLineWidth, Spatium(val / 10));
     } else if (type == u"extend") {
-        m_score->style().set(Sid::lyricsLineThickness, Spatium(val / 10));
+        score_->style().set(Sid::lyricsLineThickness, Spatium(val / 10));
     } else if (type == u"leger") {
-        m_score->style().set(Sid::ledgerLineWidth, Spatium(val / 10));
+        score_->style().set(Sid::ledgerLineWidth, Spatium(val / 10));
     } else if (type == u"pedal") {
-        m_score->style().set(Sid::pedalLineWidth, Spatium(val / 10));
+        score_->style().set(Sid::pedalLineWidth, Spatium(val / 10));
     } else if (type == "octave shift") {
-        m_score->style().set(Sid::ottavaLineWidth, Spatium(val / 10));
+        score_->style().set(Sid::ottavaLineWidth, Spatium(val / 10));
     } else if (type == u"staff") {
-        m_score->style().set(Sid::staffLineWidth, Spatium(val / 10));
+        score_->style().set(Sid::staffLineWidth, Spatium(val / 10));
     } else if (type == u"stem") {
-        m_score->style().set(Sid::stemWidth, Spatium(val / 10));
+        score_->style().set(Sid::stemWidth, Spatium(val / 10));
     } else if (type == u"tuplet bracket") {
-        m_score->style().set(Sid::tupletBracketWidth, Spatium(val / 10));
+        score_->style().set(Sid::tupletBracketWidth, Spatium(val / 10));
     } else if (type == u"wedge") {
-        m_score->style().set(Sid::hairpinLineWidth, Spatium(val / 10));
+        score_->style().set(Sid::hairpinLineWidth, Spatium(val / 10));
     } else if (type == u"slur middle") {
-        m_score->style().set(Sid::slurMidWidth, Spatium(val / 10));
+        score_->style().set(Sid::slurMidWidth, Spatium(val / 10));
     } else if (type == u"slur tip") {
-        m_score->style().set(Sid::slurEndWidth, Spatium(val / 10));
+        score_->style().set(Sid::slurEndWidth, Spatium(val / 10));
     } else if (type == u"tie middle") {
-        m_score->style().set(Sid::tieMidWidth, Spatium(val / 10));
+        score_->style().set(Sid::tieMidWidth, Spatium(val / 10));
     } else if (type == u"tie tip") {
-        m_score->style().set(Sid::tieEndWidth, Spatium(val / 10));
+        score_->style().set(Sid::tieEndWidth, Spatium(val / 10));
     } else if ((type == u"cue")) {
-        m_score->style().set(Sid::smallNoteMag, val / 100);
+        score_->style().set(Sid::smallNoteMag, val / 100);
     } else if ((type == u"grace")) {
-        m_score->style().set(Sid::graceNoteMag, val / 100);
+        score_->style().set(Sid::graceNoteMag, val / 100);
     } else if ((type == u"grace-cue")) {
         // not supported
     }
@@ -2049,28 +2047,28 @@ void MusicXmlParserPass1::setStyle(const String &type, const double val) {
  */
 
 void MusicXmlParserPass1::pageLayout(PageFormat &pf, const double conversion) {
-    m_logger->logDebugTrace(u"MusicXmlParserPass1::pageLayout", &m_e);
+    logger_->logDebugTrace(u"MusicXmlParserPass1::pageLayout", &e_);
 
     double _oddRightMargin = 0.0;
     double _evenRightMargin = 0.0;
     SizeF size;
 
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "page-margins") {
-            String type = m_e.attribute("type");
+    while (e_.readNextStartElement()) {
+        if (e_.name() == "page-margins") {
+            String type = e_.attribute("type");
             if (type.empty()) {
                 type = u"both";
             }
             double lm = 0.0, rm = 0.0, tm = 0.0, bm = 0.0;
-            while (m_e.readNextStartElement()) {
-                if (m_e.name() == "left-margin") {
-                    lm = m_e.readDouble() * conversion;
-                } else if (m_e.name() == "right-margin") {
-                    rm = m_e.readDouble() * conversion;
-                } else if (m_e.name() == "top-margin") {
-                    tm = m_e.readDouble() * conversion;
-                } else if (m_e.name() == "bottom-margin") {
-                    bm = m_e.readDouble() * conversion;
+            while (e_.readNextStartElement()) {
+                if (e_.name() == "left-margin") {
+                    lm = e_.readDouble() * conversion;
+                } else if (e_.name() == "right-margin") {
+                    rm = e_.readDouble() * conversion;
+                } else if (e_.name() == "top-margin") {
+                    tm = e_.readDouble() * conversion;
+                } else if (e_.name() == "bottom-margin") {
+                    bm = e_.readDouble() * conversion;
                 } else {
                     skipLogCurrElem();
                 }
@@ -2088,16 +2086,16 @@ void MusicXmlParserPass1::pageLayout(PageFormat &pf, const double conversion) {
                 pf.evenTopMargin = tm;
                 pf.evenBottomMargin = bm;
             }
-        } else if (m_e.name() == "page-height") {
-            const double val = m_e.readDouble();
+        } else if (e_.name() == "page-height") {
+            const double val = e_.readDouble();
             size.setHeight(val * conversion);
             // set pageHeight and pageWidth for use by doCredits()
-            m_pageSize.setHeight(static_cast<int>(val + 0.5));
-        } else if (m_e.name() == "page-width") {
-            const double val = m_e.readDouble();
+            pageSize_.setHeight(static_cast<int>(val + 0.5));
+        } else if (e_.name() == "page-width") {
+            const double val = e_.readDouble();
             size.setWidth(val * conversion);
             // set pageHeight and pageWidth for use by doCredits()
-            m_pageSize.setWidth(static_cast<int>(val + 0.5));
+            pageSize_.setWidth(static_cast<int>(val + 0.5));
         } else {
             skipLogCurrElem();
         }
@@ -2119,16 +2117,16 @@ void MusicXmlParserPass1::pageLayout(PageFormat &pf, const double conversion) {
  */
 
 void MusicXmlParserPass1::partList(MusicXmlPartGroupList &partGroupList) {
-    m_logger->logDebugTrace(u"MusicXmlParserPass1::partList", &m_e);
+    logger_->logDebugTrace(u"MusicXmlParserPass1::partList", &e_);
 
     int scoreParts = 0; // number of score-parts read sofar
     MusicXmlPartGroupMap partGroups;
     String curPartGroupName;
 
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "part-group") {
+    while (e_.readNextStartElement()) {
+        if (e_.name() == "part-group") {
             partGroup(scoreParts, partGroupList, partGroups, curPartGroupName);
-        } else if (m_e.name() == "score-part") {
+        } else if (e_.name() == "score-part") {
             scorePart(curPartGroupName);
             scoreParts++;
         } else {
@@ -2237,31 +2235,31 @@ static void partGroupStop(MusicXmlPartGroupMap &pgs, int n, int p, MusicXmlPartG
 
 void MusicXmlParserPass1::partGroup(const int scoreParts, MusicXmlPartGroupList &partGroupList, MusicXmlPartGroupMap &partGroups,
                                     String &curPartGroupName) {
-    m_logger->logDebugTrace(u"MusicXmlParserPass1::partGroup", &m_e);
+    logger_->logDebugTrace(u"MusicXmlParserPass1::partGroup", &e_);
     bool barlineSpan = true;
-    int number = m_e.intAttribute("number");
+    int number = e_.intAttribute("number");
     if (number > 0) {
         number--;
     }
     String symbol;
-    String type = m_e.attribute("type");
+    String type = e_.attribute("type");
     Color symbolColor;
 
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "group-name") {
-            curPartGroupName = m_e.readText();
-        } else if (m_e.name() == "group-abbreviation") {
-            symbol = m_e.readText();
-        } else if (m_e.name() == "group-symbol") {
-            symbolColor = Color::fromString(m_e.attribute("color"));
-            symbol = m_e.readText();
-        } else if (m_e.name() == "group-barline") {
-            if (m_e.readText() == "no") {
+    while (e_.readNextStartElement()) {
+        if (e_.name() == "group-name") {
+            curPartGroupName = e_.readText();
+        } else if (e_.name() == "group-abbreviation") {
+            symbol = e_.readText();
+        } else if (e_.name() == "group-symbol") {
+            symbolColor = Color::fromString(e_.attribute("color"));
+            symbol = e_.readText();
+        } else if (e_.name() == "group-barline") {
+            if (e_.readText() == "no") {
                 barlineSpan = false;
             }
-        } else if (m_e.name() == "group-time") {
-            m_score->style().set(Sid::timeSigPlacement, TimeSigPlacement::ACROSS_STAVES);
-            m_e.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "group-time") {
+            score_->style().set(Sid::timeSigPlacement, TimeSigPlacement::ACROSS_STAVES);
+            e_.skipCurrentElement(); // skip but don't log
         } else {
             skipLogCurrElem();
         }
@@ -2272,7 +2270,7 @@ void MusicXmlParserPass1::partGroup(const int scoreParts, MusicXmlPartGroupList 
     } else if (type == "stop") {
         partGroupStop(partGroups, number, scoreParts, partGroupList);
     } else {
-        m_logger->logError(String(u"part-group type '%1' not supported").arg(type), &m_e);
+        logger_->logError(String(u"part-group type '%1' not supported").arg(type), &e_);
     }
 }
 
@@ -2288,93 +2286,93 @@ void MusicXmlParserPass1::partGroup(const int scoreParts, MusicXmlPartGroupList 
  */
 
 void MusicXmlParserPass1::scorePart(const String &curPartGroupName) {
-    m_logger->logDebugTrace(u"MusicXmlParserPass1::scorePart", &m_e);
-    String id = m_e.attribute("id").trimmed();
+    logger_->logDebugTrace(u"MusicXmlParserPass1::scorePart", &e_);
+    String id = e_.attribute("id").trimmed();
 
-    if (muse::contains(m_parts, id)) {
-        m_logger->logError(String(u"duplicate part id '%1'").arg(id), &m_e);
+    if (muse::contains(parts_, id)) {
+        logger_->logError(String(u"duplicate part id '%1'").arg(id), &e_);
         skipLogCurrElem();
         return;
     } else {
-        m_parts.insert({id, MusicXmlPart(id)});
-        m_instruments.insert({id, MusicXmlInstruments()});
-        createPart(m_score, id, m_partMap);
+        parts_.insert({id, MusicXmlPart(id)});
+        instruments_.insert({id, MusicXmlInstruments()});
+        createPart(score_, id, partMap_);
     }
 
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "part-name") {
+    while (e_.readNextStartElement()) {
+        if (e_.name() == "part-name") {
             // EngravingItem part-name contains the displayed (full) part name
             // It is displayed by default, but can be suppressed (print-object=”no”)
             // As of MusicXML 3.0, formatting is deprecated, with part-name in plain text
             // and the formatted version in the part-name-display element
-            m_parts[id].setPrintName(m_e.asciiAttribute("print-object") != "no");
-            String name = m_e.readText();
-            m_parts[id].setName(name);
-        } else if (m_e.name() == "part-name-display") {
-            m_parts[id].setPrintName(m_e.asciiAttribute("print-object") != "no");
+            parts_[id].setPrintName(e_.asciiAttribute("print-object") != "no");
+            String name = e_.readText();
+            parts_[id].setName(name);
+        } else if (e_.name() == "part-name-display") {
+            parts_[id].setPrintName(e_.asciiAttribute("print-object") != "no");
             String name;
-            while (m_e.readNextStartElement()) {
-                if (m_e.name() == "display-text") {
-                    name += m_e.readText();
-                } else if (m_e.name() == "accidental-text") {
-                    name += musicXmlAccidentalTextToChar(m_e.readText());
+            while (e_.readNextStartElement()) {
+                if (e_.name() == "display-text") {
+                    name += e_.readText();
+                } else if (e_.name() == "accidental-text") {
+                    name += musicXmlAccidentalTextToChar(e_.readText());
                 } else {
                     skipLogCurrElem();
                 }
             }
             if (!name.empty()) {
-                m_parts[id].setName(name);
+                parts_[id].setName(name);
             }
-        } else if (m_e.name() == "part-abbreviation") {
+        } else if (e_.name() == "part-abbreviation") {
             // EngravingItem part-name contains the displayed (abbreviated) part name
             // It is displayed by default, but can be suppressed (print-object=”no”)
             // As of MusicXML 3.0, formatting is deprecated, with part-name in plain text
             // and the formatted version in the part-abbreviation-display element
-            m_parts[id].setPrintAbbr(m_e.asciiAttribute("print-object") != "no");
-            String name = m_e.readText();
-            m_parts[id].setAbbr(name);
-        } else if (m_e.name() == "part-abbreviation-display") {
-            m_parts[id].setPrintAbbr(m_e.asciiAttribute("print-object") != "no");
+            parts_[id].setPrintAbbr(e_.asciiAttribute("print-object") != "no");
+            String name = e_.readText();
+            parts_[id].setAbbr(name);
+        } else if (e_.name() == "part-abbreviation-display") {
+            parts_[id].setPrintAbbr(e_.asciiAttribute("print-object") != "no");
             String name;
-            while (m_e.readNextStartElement()) {
-                if (m_e.name() == "display-text") {
-                    name += m_e.readText();
-                } else if (m_e.name() == "accidental-text") {
-                    name += musicXmlAccidentalTextToChar(m_e.readText());
+            while (e_.readNextStartElement()) {
+                if (e_.name() == "display-text") {
+                    name += e_.readText();
+                } else if (e_.name() == "accidental-text") {
+                    name += musicXmlAccidentalTextToChar(e_.readText());
                 } else {
                     skipLogCurrElem();
                 }
             }
             if (!name.empty()) {
-                m_parts[id].setAbbr(name);
+                parts_[id].setAbbr(name);
             }
-        } else if (m_e.name() == "group") {
+        } else if (e_.name() == "group") {
             // TODO
-            m_e.skipCurrentElement(); // skip but don't log
-        } else if (m_e.name() == "score-instrument") {
+            e_.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "score-instrument") {
             scoreInstrument(id, curPartGroupName);
-        } else if (m_e.name() == "player") {
+        } else if (e_.name() == "player") {
             // unsupported
-            m_e.skipCurrentElement(); // skip but don't log
-        } else if (m_e.name() == "midi-device") {
-            if (!m_e.hasAttribute("port")) {
-                m_e.readText(); // empty string
+            e_.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "midi-device") {
+            if (!e_.hasAttribute("port")) {
+                e_.readText(); // empty string
                 continue;
             }
-            String instrId = m_e.attribute("id");
-            String port = m_e.attribute("port");
+            String instrId = e_.attribute("id");
+            String port = e_.attribute("port");
             // If instrId is missing, the device assignment affects all
             // score-instrument elements in the score-part
             if (instrId.isEmpty()) {
-                for (auto it = m_instruments[id].cbegin(); it != m_instruments[id].cend(); ++it) {
-                    m_instruments[id][it->first].midiPort = port.toInt() - 1;
+                for (auto it = instruments_[id].cbegin(); it != instruments_[id].cend(); ++it) {
+                    instruments_[id][it->first].midiPort = port.toInt() - 1;
                 }
-            } else if (muse::contains(m_instruments.at(id), instrId)) {
-                m_instruments[id][instrId].midiPort = port.toInt() - 1;
+            } else if (muse::contains(instruments_.at(id), instrId)) {
+                instruments_[id][instrId].midiPort = port.toInt() - 1;
             }
 
-            m_e.readText(); // empty string
-        } else if (m_e.name() == "midi-instrument") {
+            e_.readText(); // empty string
+        } else if (e_.name() == "midi-instrument") {
             midiInstrument(id);
         } else {
             skipLogCurrElem();
@@ -2391,14 +2389,14 @@ void MusicXmlParserPass1::scorePart(const String &curPartGroupName) {
  */
 
 void MusicXmlParserPass1::scoreInstrument(const String &partId, const String &curPartGroupName) {
-    m_logger->logDebugTrace(u"MusicXmlParserPass1::scoreInstrument", &m_e);
-    String instrId = m_e.attribute("id");
+    logger_->logDebugTrace(u"MusicXmlParserPass1::scoreInstrument", &e_);
+    String instrId = e_.attribute("id");
 
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "ensemble") {
+    while (e_.readNextStartElement()) {
+        if (e_.name() == "ensemble") {
             skipLogCurrElem();
-        } else if (m_e.name() == "instrument-name") {
-            String instrName = m_e.readText();
+        } else if (e_.name() == "instrument-name") {
+            String instrName = e_.readText();
             /*
             LOGD("partId '%s' instrId '%s' instrName '%s'",
                    muPrintable(partId),
@@ -2409,33 +2407,33 @@ void MusicXmlParserPass1::scoreInstrument(const String &partId, const String &cu
 
             // Finale exports all instrument names as 'Grand Piano' - use part name
             if (exporterSoftware() == MusicXmlExporterSoftware::FINALE) {
-                instrName = m_parts[partId].getName();
+                instrName = parts_[partId].getName();
                 if (instrName.size() <= 1) {
                     instrName = curPartGroupName;
                 }
             }
-            m_instruments[partId].insert({instrId, MusicXmlInstrument(instrName)});
+            instruments_[partId].insert({instrId, MusicXmlInstrument(instrName)});
             // EngravingItem instrument-name is typically not displayed in the score,
             // but used only internally
-            if (muse::contains(m_instruments.at(partId), instrId)) {
-                m_instruments[partId][instrId].name = instrName;
+            if (muse::contains(instruments_.at(partId), instrId)) {
+                instruments_[partId][instrId].name = instrName;
             }
-        } else if (m_e.name() == "instrument-sound") {
-            String instrSound = m_e.readText();
-            if (muse::contains(m_instruments.at(partId), instrId)) {
-                m_instruments[partId][instrId].sound = instrSound;
+        } else if (e_.name() == "instrument-sound") {
+            String instrSound = e_.readText();
+            if (muse::contains(instruments_.at(partId), instrId)) {
+                instruments_[partId][instrId].sound = instrSound;
             }
-        } else if (m_e.name() == "virtual-instrument") {
-            while (m_e.readNextStartElement()) {
-                if (m_e.name() == "virtual-library") {
-                    String virtualLibrary = m_e.readText();
-                    if (muse::contains(m_instruments.at(partId), instrId)) {
-                        m_instruments[partId][instrId].virtLib = virtualLibrary;
+        } else if (e_.name() == "virtual-instrument") {
+            while (e_.readNextStartElement()) {
+                if (e_.name() == "virtual-library") {
+                    String virtualLibrary = e_.readText();
+                    if (muse::contains(instruments_.at(partId), instrId)) {
+                        instruments_[partId][instrId].virtLib = virtualLibrary;
                     }
-                } else if (m_e.name() == "virtual-name") {
-                    String virtualName = m_e.readText();
-                    if (muse::contains(m_instruments.at(partId), instrId)) {
-                        m_instruments[partId][instrId].virtName = virtualName;
+                } else if (e_.name() == "virtual-name") {
+                    String virtualName = e_.readText();
+                    if (muse::contains(instruments_.at(partId), instrId)) {
+                        instruments_[partId][instrId].virtName = virtualName;
                     }
                 } else {
                     skipLogCurrElem();
@@ -2456,59 +2454,59 @@ void MusicXmlParserPass1::scoreInstrument(const String &partId, const String &cu
  */
 
 void MusicXmlParserPass1::midiInstrument(const String &partId) {
-    m_logger->logDebugTrace(u"MusicXmlParserPass1::midiInstrument", &m_e);
-    String instrId = m_e.attribute("id");
+    logger_->logDebugTrace(u"MusicXmlParserPass1::midiInstrument", &e_);
+    String instrId = e_.attribute("id");
 
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "midi-bank") {
+    while (e_.readNextStartElement()) {
+        if (e_.name() == "midi-bank") {
             skipLogCurrElem();
-        } else if (m_e.name() == "midi-channel") {
-            int channel = m_e.readInt();
+        } else if (e_.name() == "midi-channel") {
+            int channel = e_.readInt();
             if (channel < 1) {
-                m_logger->logError(String(u"incorrect midi-channel: %1").arg(channel), &m_e);
+                logger_->logError(String(u"incorrect midi-channel: %1").arg(channel), &e_);
                 channel = 1;
             } else if (channel > 16) {
-                m_logger->logError(String(u"incorrect midi-channel: %1").arg(channel), &m_e);
+                logger_->logError(String(u"incorrect midi-channel: %1").arg(channel), &e_);
                 channel = 16;
             }
-            if (muse::contains(m_instruments.at(partId), instrId)) {
-                m_instruments[partId][instrId].midiChannel = channel - 1;
+            if (muse::contains(instruments_.at(partId), instrId)) {
+                instruments_[partId][instrId].midiChannel = channel - 1;
             }
-        } else if (m_e.name() == "midi-program") {
-            int program = m_e.readInt();
+        } else if (e_.name() == "midi-program") {
+            int program = e_.readInt();
             // Bug fix for Cubase 6.5.5 which generates <midi-program>0</midi-program>
             // Check program number range
             if (program < 1) {
-                m_logger->logError(String(u"incorrect midi-program: %1").arg(program), &m_e);
+                logger_->logError(String(u"incorrect midi-program: %1").arg(program), &e_);
                 program = 1;
             } else if (program > 128) {
-                m_logger->logError(String(u"incorrect midi-program: %1").arg(program), &m_e);
+                logger_->logError(String(u"incorrect midi-program: %1").arg(program), &e_);
                 program = 128;
             }
-            if (muse::contains(m_instruments.at(partId), instrId)) {
-                m_instruments[partId][instrId].midiProgram = program - 1;
+            if (muse::contains(instruments_.at(partId), instrId)) {
+                instruments_[partId][instrId].midiProgram = program - 1;
             }
-        } else if (m_e.name() == "midi-unpitched") {
-            if (muse::contains(m_instruments.at(partId), instrId)) {
-                m_instruments[partId][instrId].unpitched = m_e.readInt() - 1;
+        } else if (e_.name() == "midi-unpitched") {
+            if (muse::contains(instruments_.at(partId), instrId)) {
+                instruments_[partId][instrId].unpitched = e_.readInt() - 1;
             }
-        } else if (m_e.name() == "volume") {
-            double vol = m_e.readDouble();
+        } else if (e_.name() == "volume") {
+            double vol = e_.readDouble();
             if (vol >= 0 && vol <= 100) {
-                if (muse::contains(m_instruments.at(partId), instrId)) {
-                    m_instruments[partId][instrId].midiVolume = static_cast<int>((vol / 100) * 127);
+                if (muse::contains(instruments_.at(partId), instrId)) {
+                    instruments_[partId][instrId].midiVolume = static_cast<int>((vol / 100) * 127);
                 }
             } else {
-                m_logger->logError(String(u"incorrect midi-volume: %1").arg(vol), &m_e);
+                logger_->logError(String(u"incorrect midi-volume: %1").arg(vol), &e_);
             }
-        } else if (m_e.name() == "pan") {
-            double pan = m_e.readDouble();
+        } else if (e_.name() == "pan") {
+            double pan = e_.readDouble();
             if (pan >= -90 && pan <= 90) {
-                if (muse::contains(m_instruments.at(partId), instrId)) {
-                    m_instruments[partId][instrId].midiPan = static_cast<int>(((pan + 90) / 180) * 127);
+                if (muse::contains(instruments_.at(partId), instrId)) {
+                    instruments_[partId][instrId].midiPan = static_cast<int>(((pan + 90) / 180) * 127);
                 }
             } else {
-                m_logger->logError(String(u"incorrect midi-volume: %g1").arg(pan), &m_e);
+                logger_->logError(String(u"incorrect midi-volume: %g1").arg(pan), &e_);
             }
         } else {
             skipLogCurrElem();
@@ -2552,11 +2550,11 @@ static void setNumberOfStavesForPart(Part *const part, const size_t staves) {
  */
 
 void MusicXmlParserPass1::part() {
-    m_logger->logDebugTrace(u"MusicXmlParserPass1::part", &m_e);
-    const String id = m_e.attribute("id").trimmed();
+    logger_->logDebugTrace(u"MusicXmlParserPass1::part", &e_);
+    const String id = e_.attribute("id").trimmed();
 
-    if (!muse::contains(m_parts, id)) {
-        m_logger->logError(String(u"cannot find part '%1'").arg(id), &m_e);
+    if (!muse::contains(parts_, id)) {
+        logger_->logError(String(u"cannot find part '%1'").arg(id), &e_);
         skipLogCurrElem();
         return;
     }
@@ -2568,8 +2566,8 @@ void MusicXmlParserPass1::part() {
     Fraction mdur; // measure duration
 
     int measureNr = 0;
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "measure") {
+    while (e_.readNextStartElement()) {
+        if (e_.name() == "measure") {
             measure(id, time, mdur, vod, measureNr);
             time += mdur;
             ++measureNr;
@@ -2579,15 +2577,15 @@ void MusicXmlParserPass1::part() {
     }
 
     // Bug fix for Cubase 6.5.5..9.5.10 which generate <staff>2</staff> in a single staff part
-    setNumberOfStavesForPart(muse::value(m_partMap, id), m_parts[id].maxStaff() + 1);
+    setNumberOfStavesForPart(muse::value(partMap_, id), parts_[id].maxStaff() + 1);
     // allocate MuseScore staff to MusicXML voices
-    allocateStaves(m_parts[id].voicelist);
+    allocateStaves(parts_[id].voicelist);
     // allocate MuseScore voice to MusicXML voices
-    allocateVoices(m_parts[id].voicelist);
+    allocateVoices(parts_[id].voicelist);
     // calculate the octave shifts
-    m_parts[id].calcOctaveShifts();
+    parts_[id].calcOctaveShifts();
     // determine the lyric numbers for this part
-    m_parts[id].lyricNumberHandler().determineLyricNos();
+    parts_[id].lyricNumberHandler().determineLyricNos();
 }
 
 //---------------------------------------------------------
@@ -2626,20 +2624,20 @@ static Fraction measureDurationAsFraction(const Fraction length, const int tsigt
 
 void MusicXmlParserPass1::measure(const String &partId, const Fraction cTime, Fraction &mdur, VoiceOverlapDetector &vod,
                                   const int measureNr) {
-    m_logger->logDebugTrace(u"MusicXmlParserPass1::measure", &m_e);
-    String number = m_e.attribute("number");
+    logger_->logDebugTrace(u"MusicXmlParserPass1::measure", &e_);
+    String number = e_.attribute("number");
 
     Fraction mTime; // current time stamp within measure
     Fraction mDura; // current total measure duration
     vod.newMeasure();
     MusicXmlTupletStates tupletStates;
 
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "attributes") {
+    while (e_.readNextStartElement()) {
+        if (e_.name() == "attributes") {
             attributes(partId, cTime + mTime);
-        } else if (m_e.name() == "barline") {
-            m_e.skipCurrentElement(); // skip but don't log
-        } else if (m_e.name() == "note") {
+        } else if (e_.name() == "barline") {
+            e_.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "note") {
             Fraction missingPrev;
             Fraction dura;
             Fraction missingCurr;
@@ -2657,7 +2655,7 @@ void MusicXmlParserPass1::measure(const String &partId, const Fraction cTime, Fr
             if (mTime > mDura) {
                 mDura = mTime;
             }
-        } else if (m_e.name() == "forward") {
+        } else if (e_.name() == "forward") {
             Fraction dura;
             forward(dura);
             if (dura.isValid()) {
@@ -2666,25 +2664,25 @@ void MusicXmlParserPass1::measure(const String &partId, const Fraction cTime, Fr
                     mDura = mTime;
                 }
             }
-        } else if (m_e.name() == "backup") {
+        } else if (e_.name() == "backup") {
             Fraction dura;
             backup(dura);
             if (dura.isValid()) {
                 if (dura <= mTime) {
                     mTime -= dura;
                 } else {
-                    m_logger->logError(u"backup beyond measure start", &m_e);
+                    logger_->logError(u"backup beyond measure start", &e_);
                     mTime.set(0, 1);
                 }
             }
-        } else if (m_e.name() == "direction") {
+        } else if (e_.name() == "direction") {
             direction(partId, cTime + mTime);
-        } else if (m_e.name() == "harmony") {
-            m_e.skipCurrentElement(); // skip but don't log
-        } else if (m_e.name() == "print") {
+        } else if (e_.name() == "harmony") {
+            e_.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "print") {
             print(measureNr);
-        } else if (m_e.name() == "sound") {
-            m_e.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "sound") {
+            e_.skipCurrentElement(); // skip but don't log
         } else {
             skipLogCurrElem();
         }
@@ -2701,7 +2699,7 @@ void MusicXmlParserPass1::measure(const String &partId, const Fraction cTime, Fr
     // debug vod
     // vod.dump();
     // copy overlap data from vod to voicelist
-    copyOverlapData(vod, m_parts[partId].voicelist);
+    copyOverlapData(vod, parts_[partId].voicelist);
 
     // measure duration fixups
     mDura.reduce();
@@ -2710,11 +2708,11 @@ void MusicXmlParserPass1::measure(const String &partId, const Fraction cTime, Fr
     // which sometimes generate empty measures
     // if no valid length found and length according to time signature is known,
     // use length according to time signature
-    if (mDura.isZero() && m_timeSigDura.isValid() && m_timeSigDura > Fraction(0, 1)) {
-        mDura = m_timeSigDura;
+    if (mDura.isZero() && timeSigDura_.isValid() && timeSigDura_ > Fraction(0, 1)) {
+        mDura = timeSigDura_;
     }
     // if no valid length found and time signature is unknown, use default
-    if (mDura.isZero() && !m_timeSigDura.isValid()) {
+    if (mDura.isZero() && !timeSigDura_.isValid()) {
         mDura = Fraction(4, 4);
     }
 
@@ -2731,19 +2729,19 @@ void MusicXmlParserPass1::measure(const String &partId, const Fraction cTime, Fr
         // by an amount smaller than the minimum division resolution
         // in that case, round down (rounding errors have possibly occurred),
         // otherwise, round up
-        if ((m_divs > 0) && ((mDura - roundDown) < Fraction(1, 4 * m_divs))) {
-            m_logger->logError(String(u"rounding down measure duration %1 to %2").arg(mDura.toString(), roundDown.toString()), &m_e);
+        if ((divs_ > 0) && ((mDura - roundDown) < Fraction(1, 4 * divs_))) {
+            logger_->logError(String(u"rounding down measure duration %1 to %2").arg(mDura.toString(), roundDown.toString()), &e_);
             correctedLength = roundDown;
         } else {
-            m_logger->logError(String(u"rounding up measure duration %1 to %2").arg(mDura.toString(), roundUp.toString()), &m_e);
+            logger_->logError(String(u"rounding up measure duration %1 to %2").arg(mDura.toString(), roundUp.toString()), &e_);
             correctedLength = roundUp;
         }
         mDura = correctedLength;
     }
 
     // set measure duration to a suitable value given the time signature
-    if (m_timeSigDura.isValid() && m_timeSigDura > Fraction(0, 1)) {
-        int btp = m_timeSigDura.denominator();
+    if (timeSigDura_.isValid() && timeSigDura_ > Fraction(0, 1)) {
+        int btp = timeSigDura_.denominator();
         if (btp > 0) {
             mDura = measureDurationAsFraction(mDura, btp);
         }
@@ -2757,9 +2755,9 @@ void MusicXmlParserPass1::measure(const String &partId, const Fraction cTime, Fr
     LOGD("part %s measure %s dura %s (%d)",
            muPrintable(partId), muPrintable(number), muPrintable(mdur.print()), mdur.ticks());
      */
-    m_parts[partId].addMeasureNumberAndDuration(number, mdur);
+    parts_[partId].addMeasureNumberAndDuration(number, mdur);
 
-    addError(checkAtEndElement(m_e, u"measure"));
+    addError(checkAtEndElement(e_, u"measure"));
 }
 
 //---------------------------------------------------------
@@ -2767,18 +2765,18 @@ void MusicXmlParserPass1::measure(const String &partId, const Fraction cTime, Fr
 //---------------------------------------------------------
 
 void MusicXmlParserPass1::print(const int measureNr) {
-    m_logger->logDebugTrace(u"MusicXmlParserPass1::print", &m_e);
+    logger_->logDebugTrace(u"MusicXmlParserPass1::print", &e_);
 
-    const String newPage = m_e.attribute("new-page");
-    const String newSystem = m_e.attribute("new-system");
+    const String newPage = e_.attribute("new-page");
+    const String newSystem = e_.attribute("new-system");
     if (newPage == u"yes") {
-        m_pageStartMeasureNrs.insert(measureNr);
+        pageStartMeasureNrs_.insert(measureNr);
     }
     if (newSystem == u"yes") {
-        m_systemStartMeasureNrs.insert(measureNr);
+        systemStartMeasureNrs_.insert(measureNr);
     }
 
-    m_e.skipCurrentElement(); // skip but don't log
+    e_.skipCurrentElement(); // skip but don't log
 }
 
 //---------------------------------------------------------
@@ -2790,30 +2788,30 @@ void MusicXmlParserPass1::print(const int measureNr) {
  */
 
 void MusicXmlParserPass1::attributes(const String &partId, const Fraction cTime) {
-    m_logger->logDebugTrace(u"MusicXmlParserPass1::attributes", &m_e);
+    logger_->logDebugTrace(u"MusicXmlParserPass1::attributes", &e_);
 
     int staves = 0;
     std::set<int> hiddenStaves = {};
 
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "clef") {
+    while (e_.readNextStartElement()) {
+        if (e_.name() == "clef") {
             clef(partId);
-        } else if (m_e.name() == "divisions") {
+        } else if (e_.name() == "divisions") {
             divisions();
-        } else if (m_e.name() == "key") {
-            m_e.skipCurrentElement(); // skip but don't log
-        } else if (m_e.name() == "instruments") {
-            m_e.skipCurrentElement(); // skip but don't log
-        } else if (m_e.name() == "staff-details") {
-            if (m_e.asciiAttribute("print-object") == "no") {
-                hiddenStaves.emplace(m_e.intAttribute("number"));
+        } else if (e_.name() == "key") {
+            e_.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "instruments") {
+            e_.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "staff-details") {
+            if (e_.asciiAttribute("print-object") == "no") {
+                hiddenStaves.emplace(e_.intAttribute("number"));
             }
-            m_e.skipCurrentElement();
-        } else if (m_e.name() == "staves") {
-            staves = m_e.readInt();
-        } else if (m_e.name() == "time") {
+            e_.skipCurrentElement();
+        } else if (e_.name() == "staves") {
+            staves = e_.readInt();
+        } else if (e_.name() == "time") {
             time(cTime);
-        } else if (m_e.name() == "transpose") {
+        } else if (e_.name() == "transpose") {
             transpose(partId, cTime);
         } else {
             skipLogCurrElem();
@@ -2821,10 +2819,10 @@ void MusicXmlParserPass1::attributes(const String &partId, const Fraction cTime)
     }
 
     if (staves - static_cast<int>(hiddenStaves.size()) > MAX_STAVES) {
-        m_logger->logError(u"staves exceed MAX_STAVES, even when discarding hidden staves", &m_e);
+        logger_->logError(u"staves exceed MAX_STAVES, even when discarding hidden staves", &e_);
         return;
-    } else if (staves > MAX_STAVES && static_cast<int>(hiddenStaves.size()) > 0 && m_parts[partId].staffNumberToIndex().size() == 0) {
-        m_logger->logError(u"staves exceed MAX_STAVES, but hidden staves can be discarded", &m_e);
+    } else if (staves > MAX_STAVES && static_cast<int>(hiddenStaves.size()) > 0 && parts_[partId].staffNumberToIndex().size() == 0) {
+        logger_->logError(u"staves exceed MAX_STAVES, but hidden staves can be discarded", &e_);
         // Some scores have parts with many staves (~10), but most are hidden
         // When this occurs, we can discard hidden staves
         // and store a std::map between staffNumber and staffIndex.
@@ -2832,26 +2830,26 @@ void MusicXmlParserPass1::attributes(const String &partId, const Fraction cTime)
         size_t staffIndex = 0;
         for (; staffNumber <= staves; ++staffNumber) {
             if (hiddenStaves.find(staffNumber) != hiddenStaves.end()) {
-                m_logger->logError(String(u"removing hidden staff %1").arg(staffNumber), &m_e);
+                logger_->logError(String(u"removing hidden staff %1").arg(staffNumber), &e_);
                 continue;
             }
-            m_parts[partId].insertStaffNumberToIndex(staffNumber, static_cast<int>(staffIndex));
+            parts_[partId].insertStaffNumberToIndex(staffNumber, static_cast<int>(staffIndex));
             ++staffIndex;
         }
-        DO_ASSERT(staffIndex == m_parts[partId].staffNumberToIndex().size());
+        DO_ASSERT(staffIndex == parts_[partId].staffNumberToIndex().size());
 
-        setNumberOfStavesForPart(muse::value(m_partMap, partId), staves - static_cast<int>(hiddenStaves.size()));
+        setNumberOfStavesForPart(muse::value(partMap_, partId), staves - static_cast<int>(hiddenStaves.size()));
     } else {
         // Otherwise, don't discard any staves
         // And set hidden staves to hide when empty
         // (MuseScore doesn't currently have a mechanism
         // for hiding non-empty staves, so this is an approximation
         // of the correct implementation)
-        setNumberOfStavesForPart(muse::value(m_partMap, partId), staves);
+        setNumberOfStavesForPart(muse::value(partMap_, partId), staves);
         for (int hiddenStaff : hiddenStaves) {
-            int hiddenStaffIndex = muse::value(m_parts, partId).staffNumberToIndex(hiddenStaff);
+            int hiddenStaffIndex = muse::value(parts_, partId).staffNumberToIndex(hiddenStaff);
             if (hiddenStaffIndex >= 0) {
-                muse::value(m_partMap, partId)->staff(hiddenStaffIndex)->setHideWhenEmpty(engraving::AutoOnOff::ON);
+                muse::value(partMap_, partId)->staff(hiddenStaffIndex)->setHideWhenEmpty(engraving::AutoOnOff::ON);
             }
         }
     }
@@ -2867,13 +2865,13 @@ void MusicXmlParserPass1::attributes(const String &partId, const Fraction cTime)
  */
 
 void MusicXmlParserPass1::clef(const String & /* partId */) {
-    m_logger->logDebugTrace(u"MusicXmlParserPass1::clef", &m_e);
+    logger_->logDebugTrace(u"MusicXmlParserPass1::clef", &e_);
 
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "line") {
-            m_e.skipCurrentElement(); // skip but don't log
-        } else if (m_e.name() == "sign") {
-            String sign = m_e.readText();
+    while (e_.readNextStartElement()) {
+        if (e_.name() == "line") {
+            e_.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "sign") {
+            String sign = e_.readText();
         } else {
             skipLogCurrElem();
         }
@@ -2934,13 +2932,13 @@ static bool determineTimeSig(MusicXmlLogger *logger, const XmlStreamReader *cons
 void MusicXmlParserPass1::time(const Fraction cTime) {
     String beats;
     String beatType;
-    String timeSymbol = m_e.attribute("symbol");
+    String timeSymbol = e_.attribute("symbol");
 
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "beats") {
-            beats = m_e.readText();
-        } else if (m_e.name() == "beat-type") {
-            beatType = m_e.readText();
+    while (e_.readNextStartElement()) {
+        if (e_.name() == "beats") {
+            beats = e_.readText();
+        } else if (e_.name() == "beat-type") {
+            beatType = e_.readText();
         } else {
             skipLogCurrElem();
         }
@@ -2951,9 +2949,9 @@ void MusicXmlParserPass1::time(const Fraction cTime) {
         TimeSigType st = TimeSigType::NORMAL;
         int bts = 0; // total beats as integer (beats may contain multiple numbers, separated by "+")
         int btp = 0; // beat-type as integer
-        if (determineTimeSig(m_logger, &m_e, beats, beatType, timeSymbol, st, bts, btp)) {
-            m_timeSigDura = Fraction(bts, btp);
-            m_score->sigmap()->add(cTime.ticks(), m_timeSigDura);
+        if (determineTimeSig(logger_, &e_, beats, beatType, timeSymbol, st, bts, btp)) {
+            timeSigDura_ = Fraction(bts, btp);
+            score_->sigmap()->add(cTime.ticks(), timeSigDura_);
         }
     }
 }
@@ -2968,13 +2966,13 @@ void MusicXmlParserPass1::time(const Fraction cTime) {
 
 void MusicXmlParserPass1::transpose(const String &partId, const Fraction &tick) {
     Interval interval;
-    while (m_e.readNextStartElement()) {
-        int i = m_e.readInt();
-        if (m_e.name() == "diatonic") {
+    while (e_.readNextStartElement()) {
+        int i = e_.readInt();
+        if (e_.name() == "diatonic") {
             interval.diatonic = i;
-        } else if (m_e.name() == "chromatic") {
+        } else if (e_.name() == "chromatic") {
             interval.chromatic = i;
-        } else if (m_e.name() == "octave-change") {
+        } else if (e_.name() == "octave-change") {
             interval.diatonic += i * 7;
             interval.chromatic += i * 12;
         } else {
@@ -2982,11 +2980,11 @@ void MusicXmlParserPass1::transpose(const String &partId, const Fraction &tick) 
         }
     }
 
-    if (m_parts[partId]._intervals.count(tick) == 0) {
+    if (parts_[partId]._intervals.count(tick) == 0) {
         if (!interval.diatonic && interval.chromatic) {
             interval.diatonic = Interval::chromatic2diatonic(interval.chromatic);
         }
-        m_parts[partId]._intervals[tick] = interval;
+        parts_[partId]._intervals[tick] = interval;
     } else {
         LOGD("duplicate transpose at tick %s", muPrintable(tick.toString()));
     }
@@ -3001,9 +2999,9 @@ void MusicXmlParserPass1::transpose(const String &partId, const Fraction &tick) 
  */
 
 void MusicXmlParserPass1::divisions() {
-    m_divs = m_e.readInt();
-    if (!(m_divs > 0)) {
-        m_logger->logError(u"illegal divisions", &m_e);
+    divs_ = e_.readInt();
+    if (!(divs_ > 0)) {
+        logger_->logError(u"illegal divisions", &e_);
     }
 }
 
@@ -3025,55 +3023,55 @@ void MusicXmlParserPass1::direction(const String &partId, const Fraction &cTime)
     std::vector<MusicXmlOctaveShiftDesc> stops;
     int staff = 0;
 
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "direction-type") {
+    while (e_.readNextStartElement()) {
+        if (e_.name() == "direction-type") {
             directionType(cTime, starts, stops);
-        } else if (m_e.name() == "staff") {
+        } else if (e_.name() == "staff") {
             int nstaves = static_cast<int>(getPart(partId)->nstaves());
-            String strStaff = m_e.readText();
-            staff = m_parts[partId].staffNumberToIndex(strStaff.toInt());
+            String strStaff = e_.readText();
+            staff = parts_[partId].staffNumberToIndex(strStaff.toInt());
             if (0 <= staff && staff < nstaves) {
                 //LOGD("direction staff %d", staff + 1);
             } else {
-                m_logger->logError(String(u"invalid staff %1").arg(strStaff), &m_e);
+                logger_->logError(String(u"invalid staff %1").arg(strStaff), &e_);
                 staff = 0;
             }
         } else {
-            m_e.skipCurrentElement();
+            e_.skipCurrentElement();
         }
     }
 
     // handle the stops first
     for (const MusicXmlOctaveShiftDesc &desc : stops) {
-        if (muse::contains(m_octaveShifts, static_cast<int>(desc.num))) {
-            MusicXmlOctaveShiftDesc prevDesc = m_octaveShifts.at(desc.num);
+        if (muse::contains(octaveShifts_, static_cast<int>(desc.num))) {
+            MusicXmlOctaveShiftDesc prevDesc = octaveShifts_.at(desc.num);
             if (prevDesc.tp == MusicXmlOctaveShiftDesc::Type::UP || prevDesc.tp == MusicXmlOctaveShiftDesc::Type::DOWN) {
                 // a complete pair
-                m_parts[partId].addOctaveShift(staff, prevDesc.size, prevDesc.time);
-                m_parts[partId].addOctaveShift(staff, -prevDesc.size, desc.time);
+                parts_[partId].addOctaveShift(staff, prevDesc.size, prevDesc.time);
+                parts_[partId].addOctaveShift(staff, -prevDesc.size, desc.time);
             } else {
-                m_logger->logError(u"double octave-shift stop", &m_e);
+                logger_->logError(u"double octave-shift stop", &e_);
             }
-            muse::remove(m_octaveShifts, desc.num);
+            muse::remove(octaveShifts_, desc.num);
         } else {
-            m_octaveShifts.insert({desc.num, desc});
+            octaveShifts_.insert({desc.num, desc});
         }
     }
 
     // then handle the starts
     for (const MusicXmlOctaveShiftDesc &desc : starts) {
-        if (muse::contains(m_octaveShifts, static_cast<int>(desc.num))) {
-            MusicXmlOctaveShiftDesc prevDesc = m_octaveShifts.at(desc.num);
+        if (muse::contains(octaveShifts_, static_cast<int>(desc.num))) {
+            MusicXmlOctaveShiftDesc prevDesc = octaveShifts_.at(desc.num);
             if (prevDesc.tp == MusicXmlOctaveShiftDesc::Type::STOP) {
                 // a complete pair
-                m_parts[partId].addOctaveShift(staff, desc.size, desc.time);
-                m_parts[partId].addOctaveShift(staff, -desc.size, prevDesc.time);
+                parts_[partId].addOctaveShift(staff, desc.size, desc.time);
+                parts_[partId].addOctaveShift(staff, -desc.size, prevDesc.time);
             } else {
-                m_logger->logError(u"double octave-shift start", &m_e);
+                logger_->logError(u"double octave-shift start", &e_);
             }
-            muse::remove(m_octaveShifts, desc.num);
+            muse::remove(octaveShifts_, desc.num);
         } else {
-            m_octaveShifts.insert({desc.num, desc});
+            octaveShifts_.insert({desc.num, desc});
         }
     }
 }
@@ -3088,22 +3086,22 @@ void MusicXmlParserPass1::direction(const String &partId, const Fraction &cTime)
 
 void MusicXmlParserPass1::directionType(const Fraction cTime, std::vector<MusicXmlOctaveShiftDesc> &starts,
                                         std::vector<MusicXmlOctaveShiftDesc> &stops) {
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "octave-shift") {
-            String number = m_e.attribute("number");
+    while (e_.readNextStartElement()) {
+        if (e_.name() == "octave-shift") {
+            String number = e_.attribute("number");
             int n = 0;
             if (!number.empty()) {
                 n = number.toInt();
                 if (n <= 0) {
-                    m_logger->logError(String(u"invalid number %1").arg(number), &m_e);
+                    logger_->logError(String(u"invalid number %1").arg(number), &e_);
                 } else {
                     n--; // make zero-based
                 }
             }
 
             if (0 <= n && n < MAX_NUMBER_LEVEL) {
-                short size = static_cast<short>(m_e.intAttribute("size"));
-                String type = m_e.attribute("type");
+                short size = static_cast<short>(e_.intAttribute("size"));
+                String type = e_.attribute("type");
                 //LOGD("octave-shift type '%s' size %d number %d", muPrintable(type), size, n);
                 MusicXmlOctaveShiftDesc osDesc;
                 handleOctaveShift(cTime, type, size, osDesc);
@@ -3114,11 +3112,11 @@ void MusicXmlParserPass1::directionType(const Fraction cTime, std::vector<MusicX
                     stops.push_back(osDesc);
                 }
             } else {
-                m_logger->logError(String(u"invalid octave-shift number %1").arg(number), &m_e);
+                logger_->logError(String(u"invalid octave-shift number %1").arg(number), &e_);
             }
-            m_e.skipCurrentElement();
+            e_.skipCurrentElement();
         } else {
-            m_e.skipCurrentElement();
+            e_.skipCurrentElement();
         }
     }
 }
@@ -3139,7 +3137,7 @@ void MusicXmlParserPass1::handleOctaveShift(const Fraction &cTime, const String 
     }
 
     if (!cTime.isValid() || cTime < Fraction(0, 1)) {
-        m_logger->logError(u"invalid current time", &m_e);
+        logger_->logError(u"invalid current time", &e_);
     }
 
     if (type == u"up") {
@@ -3150,7 +3148,7 @@ void MusicXmlParserPass1::handleOctaveShift(const Fraction &cTime, const String 
     } else if (type == u"stop") {
         tp = MusicXmlOctaveShiftDesc::Type::STOP;
     } else {
-        m_logger->logError(String(u"invalid octave-shift type '%1'").arg(type), &m_e);
+        logger_->logError(String(u"invalid octave-shift type '%1'").arg(type), &e_);
         return;
     }
 
@@ -3168,22 +3166,22 @@ void MusicXmlParserPass1::handleOctaveShift(const Fraction &cTime, const String 
 void MusicXmlParserPass1::notations(MusicXmlStartStop &tupletStartStop) {
     //_logger->logDebugTrace("MusicXmlParserPass1::note", &_e);
 
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "tuplet") {
-            String tupletType = m_e.attribute("type");
+    while (e_.readNextStartElement()) {
+        if (e_.name() == "tuplet") {
+            String tupletType = e_.attribute("type");
 
             // ignore possible children (currently not supported)
-            m_e.skipCurrentElement();
+            e_.skipCurrentElement();
 
             if (tupletType == u"start") {
                 tupletStartStop = MusicXmlStartStop::START;
             } else if (tupletType == u"stop") {
                 tupletStartStop = MusicXmlStartStop::STOP;
             } else if (!tupletType.empty() && tupletType != u"start" && tupletType != u"stop") {
-                m_logger->logError(String(u"unknown tuplet type '%1'").arg(tupletType), &m_e);
+                logger_->logError(String(u"unknown tuplet type '%1'").arg(tupletType), &e_);
             }
         } else {
-            m_e.skipCurrentElement(); // skip but don't log
+            e_.skipCurrentElement(); // skip but don't log
         }
     }
 }
@@ -3221,7 +3219,7 @@ void MusicXmlParserPass1::note(const String &partId, const Fraction &sTime, Frac
                                VoiceOverlapDetector &vod, MusicXmlTupletStates &tupletStates) {
     //_logger->logDebugTrace("MusicXmlParserPass1::note", &_e);
 
-    if (m_e.asciiAttribute("print-spacing") == "no") {
+    if (e_.asciiAttribute("print-spacing") == "no") {
         notePrintSpacingNo(dura);
         return;
     }
@@ -3238,68 +3236,68 @@ void MusicXmlParserPass1::note(const String &partId, const Fraction &sTime, Frac
     String instrId;
     MusicXmlStartStop tupletStartStop{MusicXmlStartStop::NONE};
 
-    MusicXmlNoteDuration mnd(m_divs, m_logger, this);
+    MusicXmlNoteDuration mnd(divs_, logger_, this);
 
-    while (m_e.readNextStartElement()) {
-        if (mnd.readProperties(m_e)) {
+    while (e_.readNextStartElement()) {
+        if (mnd.readProperties(e_)) {
             // element handled
-        } else if (m_e.name() == "accidental") {
-            m_e.skipCurrentElement(); // skip but don't log
-        } else if (m_e.name() == "beam") {
-            m_hasBeamingInfo = true;
-            m_e.skipCurrentElement(); // skip but don't log
-        } else if (m_e.name() == "chord") {
+        } else if (e_.name() == "accidental") {
+            e_.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "beam") {
+            hasBeamingInfo_ = true;
+            e_.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "chord") {
             chord = true;
-            m_e.skipCurrentElement(); // skip but don't log
-        } else if (m_e.name() == "cue") {
-            m_e.skipCurrentElement(); // skip but don't log
-        } else if (m_e.name() == "grace") {
+            e_.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "cue") {
+            e_.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "grace") {
             grace = true;
-            m_e.skipCurrentElement(); // skip but don't log
-        } else if (m_e.name() == "instrument") {
-            instrId = m_e.attribute("id");
-            m_e.skipCurrentElement(); // skip but don't log
-        } else if (m_e.name() == "lyric") {
-            const String number = m_e.attribute("number");
-            m_parts[partId].lyricNumberHandler().addNumber(number);
-            m_parts[partId].hasLyrics(true);
-            m_e.skipCurrentElement();
-        } else if (m_e.name() == "notations") {
+            e_.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "instrument") {
+            instrId = e_.attribute("id");
+            e_.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "lyric") {
+            const String number = e_.attribute("number");
+            parts_[partId].lyricNumberHandler().addNumber(number);
+            parts_[partId].hasLyrics(true);
+            e_.skipCurrentElement();
+        } else if (e_.name() == "notations") {
             notations(tupletStartStop);
-        } else if (m_e.name() == "notehead") {
-            m_e.skipCurrentElement(); // skip but don't log
-        } else if (m_e.name() == "pitch") {
-            m_e.skipCurrentElement(); // skip but don't log
-        } else if (m_e.name() == "rest") {
+        } else if (e_.name() == "notehead") {
+            e_.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "pitch") {
+            e_.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "rest") {
             bRest = true;
             rest();
-        } else if (m_e.name() == "staff") {
+        } else if (e_.name() == "staff") {
             bool ok = false;
-            String strStaff = m_e.readText();
-            staff = m_parts[partId].staffNumberToIndex(strStaff.toInt(&ok));
-            m_parts[partId].setMaxStaff(staff);
-            Part *part = muse::value(m_partMap, partId);
+            String strStaff = e_.readText();
+            staff = parts_[partId].staffNumberToIndex(strStaff.toInt(&ok));
+            parts_[partId].setMaxStaff(staff);
+            Part *part = muse::value(partMap_, partId);
             IF_ASSERT_FAILED(part) { continue; }
             if (!ok || staff < 0 || staff >= int(part->nstaves())) {
-                m_logger->logError(String(u"illegal or hidden staff '%1'").arg(strStaff), &m_e);
+                logger_->logError(String(u"illegal or hidden staff '%1'").arg(strStaff), &e_);
             }
-        } else if (m_e.name() == "stem") {
-            m_e.skipCurrentElement(); // skip but don't log
-        } else if (m_e.name() == "tie") {
-            m_e.skipCurrentElement(); // skip but don't log
-        } else if (m_e.name() == "type") {
-            type = m_e.readText();
-        } else if (m_e.name() == "unpitched") {
-            m_e.skipCurrentElement(); // skip but don't log
-        } else if (m_e.name() == "voice") {
-            voice = m_e.readText();
+        } else if (e_.name() == "stem") {
+            e_.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "tie") {
+            e_.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "type") {
+            type = e_.readText();
+        } else if (e_.name() == "unpitched") {
+            e_.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "voice") {
+            voice = e_.readText();
         } else {
             skipLogCurrElem();
         }
     }
 
     // multi-instrument handling
-    String prevInstrId = m_parts[partId]._instrList.instrument(sTime);
+    String prevInstrId = parts_[partId]._instrList.instrument(sTime);
     bool mustInsert = instrId != prevInstrId;
     /*
     LOGD("tick %s (%d) staff %d voice '%s' previnst='%s' instrument '%s' mustInsert %d",
@@ -3313,7 +3311,7 @@ void MusicXmlParserPass1::note(const String &partId, const Fraction &sTime, Frac
            );
     */
     if (mustInsert) {
-        m_parts[partId]._instrList.setInstrument(instrId, sTime);
+        parts_[partId]._instrList.setInstrument(instrId, sTime);
     }
 
     // check for timing error(s) and set dura
@@ -3321,7 +3319,7 @@ void MusicXmlParserPass1::note(const String &partId, const Fraction &sTime, Frac
     String errorStr = mnd.checkTiming(type, bRest, grace);
     dura = mnd.duration();
     if (!errorStr.empty()) {
-        m_logger->logError(errorStr, &m_e);
+        logger_->logError(errorStr, &e_);
     }
 
     // don't count chord or grace note duration
@@ -3343,16 +3341,16 @@ void MusicXmlParserPass1::note(const String &partId, const Fraction &sTime, Frac
     if (dura.isValid() && dura > Fraction(0, 1)) {
         // count the chords
         int voiceInt = voiceToInt(voice);
-        if (!muse::contains(muse::value(m_parts, partId).voicelist, voiceInt)) {
+        if (!muse::contains(muse::value(parts_, partId).voicelist, voiceInt)) {
             VoiceDesc vs;
-            m_parts[partId].voicelist.insert({voiceInt, vs});
+            parts_[partId].voicelist.insert({voiceInt, vs});
         }
-        m_parts[partId].voicelist[voiceInt].incrChordRests(staff);
+        parts_[partId].voicelist[voiceInt].incrChordRests(staff);
         // determine note length for voiceInt overlap detection
         vod.addNote((sTime + missingPrev).ticks(), (sTime + missingPrev + dura).ticks(), voiceInt, staff);
     }
 
-    addError(checkAtEndElement(m_e, u"note"));
+    addError(checkAtEndElement(e_, u"note"));
 }
 
 //---------------------------------------------------------
@@ -3370,17 +3368,17 @@ void MusicXmlParserPass1::notePrintSpacingNo(Fraction &dura) {
     bool chord = false;
     bool grace = false;
 
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "chord") {
+    while (e_.readNextStartElement()) {
+        if (e_.name() == "chord") {
             chord = true;
-            m_e.skipCurrentElement(); // skip but don't log
-        } else if (m_e.name() == "duration") {
+            e_.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "duration") {
             duration(dura);
-        } else if (m_e.name() == "grace") {
+        } else if (e_.name() == "grace") {
             grace = true;
-            m_e.skipCurrentElement(); // skip but don't log
+            e_.skipCurrentElement(); // skip but don't log
         } else {
-            m_e.skipCurrentElement(); // skip but don't log
+            e_.skipCurrentElement(); // skip but don't log
         }
     }
 
@@ -3409,16 +3407,16 @@ Fraction MusicXmlParserPass1::calcTicks(const int &intTicks, const int &_divisio
         // There are two strategies:
         // 1. Use a lookup table of previous adjustments
         // 2. Check if within maxDiff of a seenDenominator
-        if (muse::contains(m_adjustedDurations, dura)) {
-            dura = m_adjustedDurations.at(dura);
+        if (muse::contains(adjustedDurations_, dura)) {
+            dura = adjustedDurations_.at(dura);
         } else if (dura.reduced().denominator() > 64) {
-            for (int seenDenominator : m_seenDenominators) {
+            for (int seenDenominator : seenDenominators_) {
                 int seenDenominatorTicks = Fraction(1, seenDenominator).ticks();
-                if (std::abs(dura.ticks() % seenDenominatorTicks) <= m_maxDiff) {
+                if (std::abs(dura.ticks() % seenDenominatorTicks) <= maxDiff_) {
                     Fraction roundedDura = Fraction(std::round(dura.ticks() / double(seenDenominatorTicks)), seenDenominator);
                     roundedDura.reduce();
-                    m_logger->logError(String(u"calculated duration (%1) assumed to be a rounding error by proximity to (%2)")
-                                           .arg(dura.toString(), roundedDura.toString()));
+                    logger_->logError(String(u"calculated duration (%1) assumed to be a rounding error by proximity to (%2)")
+                                          .arg(dura.toString(), roundedDura.toString()));
                     insertAdjustedDuration(dura, roundedDura);
                     dura = roundedDura;
                     break;
@@ -3426,7 +3424,7 @@ Fraction MusicXmlParserPass1::calcTicks(const int &intTicks, const int &_divisio
             }
         }
     } else {
-        m_logger->logError(u"illegal or uninitialized divisions", xmlReader);
+        logger_->logError(u"illegal or uninitialized divisions", xmlReader);
     }
     //qDebug("duration %s valid %d", muPrintable(dura.print()), dura.isValid());
 
@@ -3443,7 +3441,7 @@ Fraction MusicXmlParserPass1::calcTicks(const int &intTicks, const int &_divisio
 
 void MusicXmlParserPass1::duration(Fraction &dura, muse::XmlStreamReader &e) {
     DO_ASSERT(e.isStartElement() && e.name() == "duration");
-    m_logger->logDebugTrace(u"MusicXmlParserPass1::duration", &e);
+    logger_->logDebugTrace(u"MusicXmlParserPass1::duration", &e);
 
     dura.set(0, 0); // invalid unless set correctly
     int intDura = e.readInt();
@@ -3461,13 +3459,13 @@ void MusicXmlParserPass1::duration(Fraction &dura, muse::XmlStreamReader &e) {
 void MusicXmlParserPass1::forward(Fraction &dura) {
     //_logger->logDebugTrace("MusicXmlParserPass1::forward", &_e);
 
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "duration") {
+    while (e_.readNextStartElement()) {
+        if (e_.name() == "duration") {
             duration(dura);
-        } else if (m_e.name() == "staff") {
-            m_e.skipCurrentElement(); // skip but don't log
-        } else if (m_e.name() == "voice") {
-            m_e.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "staff") {
+            e_.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "voice") {
+            e_.skipCurrentElement(); // skip but don't log
         } else {
             skipLogCurrElem();
         }
@@ -3485,8 +3483,8 @@ void MusicXmlParserPass1::forward(Fraction &dura) {
 void MusicXmlParserPass1::backup(Fraction &dura) {
     //_logger->logDebugTrace("MusicXmlParserPass1::backup", &_e);
 
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "duration") {
+    while (e_.readNextStartElement()) {
+        if (e_.name() == "duration") {
             duration(dura);
         } else {
             skipLogCurrElem();
@@ -3510,11 +3508,11 @@ void MusicXmlParserPass1::timeModification(Fraction &timeMod) {
     String strActual;
     String strNormal;
 
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "actual-notes") {
-            strActual = m_e.readText();
-        } else if (m_e.name() == "normal-notes") {
-            strNormal = m_e.readText();
+    while (e_.readNextStartElement()) {
+        if (e_.name() == "actual-notes") {
+            strActual = e_.readText();
+        } else if (e_.name() == "normal-notes") {
+            strNormal = e_.readText();
         } else {
             skipLogCurrElem();
         }
@@ -3526,7 +3524,7 @@ void MusicXmlParserPass1::timeModification(Fraction &timeMod) {
         timeMod.set(intNormal, intActual);
     } else {
         timeMod.set(1, 1);
-        m_logger->logError(String(u"illegal time-modification: actual-notes %1 normal-notes %2").arg(strActual, strNormal), &m_e);
+        logger_->logError(String(u"illegal time-modification: actual-notes %1 normal-notes %2").arg(strActual, strNormal), &e_);
     }
 }
 
@@ -3541,11 +3539,11 @@ void MusicXmlParserPass1::timeModification(Fraction &timeMod) {
 void MusicXmlParserPass1::rest() {
     //_logger->logDebugTrace("MusicXmlParserPass1::rest", &_e);
 
-    while (m_e.readNextStartElement()) {
-        if (m_e.name() == "display-octave") {
-            m_e.skipCurrentElement(); // skip but don't log
-        } else if (m_e.name() == "display-step") {
-            m_e.skipCurrentElement(); // skip but don't log
+    while (e_.readNextStartElement()) {
+        if (e_.name() == "display-octave") {
+            e_.skipCurrentElement(); // skip but don't log
+        } else if (e_.name() == "display-step") {
+            e_.skipCurrentElement(); // skip but don't log
         } else {
             skipLogCurrElem();
         }

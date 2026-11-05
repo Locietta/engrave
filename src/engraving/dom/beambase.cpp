@@ -26,15 +26,15 @@ using namespace mu::engraving;
 BeamBase::BeamBase(const ElementType &type, EngravingObject *parent, ElementFlags flags) : EngravingItem(type, parent, flags) {}
 
 BeamBase::BeamBase(const BeamBase &b) : EngravingItem(b) {
-    m_beamSegments.reserve(b.m_beamSegments.size());
-    for (const BeamSegment *bs : b.m_beamSegments) {
-        m_beamSegments.push_back(new BeamSegment(*bs));
+    beamSegments_.reserve(b.beamSegments_.size());
+    for (const BeamSegment *bs : b.beamSegments_) {
+        beamSegments_.push_back(new BeamSegment(*bs));
     }
     _crossStaffMove = b._crossStaffMove;
-    m_direction = b.m_direction;
-    m_up = b.m_up;
-    m_userModified[0] = b.m_userModified[0];
-    m_userModified[1] = b.m_userModified[1];
+    direction_ = b.direction_;
+    up_ = b.up_;
+    userModified_[0] = b.userModified_[0];
+    userModified_[1] = b.userModified_[1];
 }
 
 void BeamBase::undoChangeProperty(Pid id, const PropertyValue &v, PropertyFlags ps) {
@@ -97,15 +97,15 @@ bool BeamBase::acceptCrossStaffMove(int move) const {
 
 bool BeamBase::userModified() const {
     int idx = directionIdx();
-    return m_userModified[idx];
+    return userModified_[idx];
 }
 
 void BeamBase::setUserModified(bool val) {
     int idx = directionIdx();
-    m_userModified[idx] = val;
+    userModified_[idx] = val;
 }
 
 void BeamBase::clearBeamSegments() {
-    muse::DeleteAll(m_beamSegments);
-    m_beamSegments.clear();
+    muse::DeleteAll(beamSegments_);
+    beamSegments_.clear();
 }

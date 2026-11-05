@@ -36,8 +36,8 @@ public:
 
 
 protected:
-    ProcessMode m_mode = ProcessMode::Undefined;
-    OutputSpec m_outputSpec;
+    ProcessMode mode_ = ProcessMode::Undefined;
+    OutputSpec outputSpec_;
 };
 } // namespace muse::audio::engine
 

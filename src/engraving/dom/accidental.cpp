@@ -353,7 +353,7 @@ AccidentalType Accidental::name2subtype(const AsciiStringView &tag) {
 void Accidental::setSubtype(const AsciiStringView &tag) { setAccidentalType(name2subtype(tag)); }
 
 void Accidental::setAccidentalType(AccidentalType t) {
-    m_accidentalType = t;
+    accidentalType_ = t;
     if (note()) {
         note()->setCentOffset(Accidental::subtype2centOffset(t));
     }
@@ -435,8 +435,8 @@ EngravingItem *Accidental::drop(Transaction &, EditData &data) {
 
 PropertyValue Accidental::getProperty(Pid propertyId) const {
     switch (propertyId) {
-        case Pid::ACCIDENTAL_TYPE: return int(m_accidentalType);
-        case Pid::SMALL: return m_isSmall;
+        case Pid::ACCIDENTAL_TYPE: return int(accidentalType_);
+        case Pid::SMALL: return isSmall_;
         case Pid::ACCIDENTAL_BRACKET: return int(bracket());
         case Pid::ACCIDENTAL_ROLE: return role();
         case Pid::ACCIDENTAL_STACKING_ORDER_OFFSET: return stackingOrderOffset();
@@ -466,9 +466,9 @@ PropertyValue Accidental::propertyDefault(Pid propertyId) const {
 bool Accidental::setProperty(Pid propertyId, const PropertyValue &v) {
     switch (propertyId) {
         case Pid::ACCIDENTAL_TYPE: setAccidentalType(AccidentalType(v.toInt())); break;
-        case Pid::SMALL: m_isSmall = v.toBool(); break;
-        case Pid::ACCIDENTAL_BRACKET: m_bracket = AccidentalBracket(v.toInt()); break;
-        case Pid::ACCIDENTAL_ROLE: m_role = v.value<AccidentalRole>(); break;
+        case Pid::SMALL: isSmall_ = v.toBool(); break;
+        case Pid::ACCIDENTAL_BRACKET: bracket_ = AccidentalBracket(v.toInt()); break;
+        case Pid::ACCIDENTAL_ROLE: role_ = v.value<AccidentalRole>(); break;
         case Pid::ACCIDENTAL_STACKING_ORDER_OFFSET: setStackingOrderOffset(v.toInt()); break;
         default: return EngravingItem::setProperty(propertyId, v);
     }

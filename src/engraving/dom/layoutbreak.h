@@ -43,46 +43,46 @@ public:
 
     LayoutBreak *clone() const override { return new LayoutBreak(*this); }
 
-    int subtype() const override { return static_cast<int>(m_layoutBreakType); }
+    int subtype() const override { return static_cast<int>(layoutBreakType_); }
 
     TranslatableString subtypeUserName() const override;
 
     void setLayoutBreakType(LayoutBreakType);
 
-    LayoutBreakType layoutBreakType() const { return m_layoutBreakType; }
+    LayoutBreakType layoutBreakType() const { return layoutBreakType_; }
 
     bool acceptDrop(EditData &) const override;
     EngravingItem *drop(Transaction &tx, EditData &) override;
 
     MeasureBase *measure() const { return (MeasureBase *) ownershipParent(); }
 
-    double pause() const { return m_pause; }
+    double pause() const { return pause_; }
 
-    void setPause(double v) { m_pause = v; }
+    void setPause(double v) { pause_ = v; }
 
-    bool startWithLongNames() const { return m_startWithLongNames; }
+    bool startWithLongNames() const { return startWithLongNames_; }
 
-    void setStartWithLongNames(bool v) { m_startWithLongNames = v; }
+    void setStartWithLongNames(bool v) { startWithLongNames_ = v; }
 
-    bool startWithMeasureOne() const { return m_startWithMeasureOne; }
+    bool startWithMeasureOne() const { return startWithMeasureOne_; }
 
-    void setStartWithMeasureOne(bool v) { m_startWithMeasureOne = v; }
+    void setStartWithMeasureOne(bool v) { startWithMeasureOne_ = v; }
 
-    bool firstSystemIndentation() const { return m_firstSystemIndentation; }
+    bool firstSystemIndentation() const { return firstSystemIndentation_; }
 
-    void setFirstSystemIndentation(bool v) { m_firstSystemIndentation = v; }
+    void setFirstSystemIndentation(bool v) { firstSystemIndentation_ = v; }
 
-    bool showCourtesy() const { return m_showCourtesy; }
+    bool showCourtesy() const { return showCourtesy_; }
 
-    void setShowCourtesy(bool v) { m_showCourtesy = v; }
+    void setShowCourtesy(bool v) { showCourtesy_ = v; }
 
-    bool isPageBreak() const { return m_layoutBreakType == LayoutBreakType::PAGE; }
+    bool isPageBreak() const { return layoutBreakType_ == LayoutBreakType::PAGE; }
 
-    bool isLineBreak() const { return m_layoutBreakType == LayoutBreakType::LINE; }
+    bool isLineBreak() const { return layoutBreakType_ == LayoutBreakType::LINE; }
 
-    bool isSectionBreak() const { return m_layoutBreakType == LayoutBreakType::SECTION; }
+    bool isSectionBreak() const { return layoutBreakType_ == LayoutBreakType::SECTION; }
 
-    bool isNoBreak() const { return m_layoutBreakType == LayoutBreakType::NOBREAK; }
+    bool isNoBreak() const { return layoutBreakType_ == LayoutBreakType::NOBREAK; }
 
     PropertyValue getProperty(Pid propertyId) const override;
     bool setProperty(Pid propertyId, const PropertyValue &) override;
@@ -98,11 +98,11 @@ private:
     LayoutBreak(DummyParentOr<MeasureBase> parent);
     LayoutBreak(const LayoutBreak &);
 
-    double m_pause = 0.0;
-    bool m_startWithLongNames = false;
-    bool m_startWithMeasureOne = false;
-    bool m_firstSystemIndentation = false;
-    bool m_showCourtesy = false;
-    LayoutBreakType m_layoutBreakType = LayoutBreakType::NOBREAK;
+    double pause_ = 0.0;
+    bool startWithLongNames_ = false;
+    bool startWithMeasureOne_ = false;
+    bool firstSystemIndentation_ = false;
+    bool showCourtesy_ = false;
+    LayoutBreakType layoutBreakType_ = LayoutBreakType::NOBREAK;
 };
 } // namespace mu::engraving

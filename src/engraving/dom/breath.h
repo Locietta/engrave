@@ -53,13 +53,13 @@ public:
 
     double mag() const override;
 
-    void setSymId(SymId id) { m_symId = id; }
+    void setSymId(SymId id) { symId_ = id; }
 
-    SymId symId() const { return m_symId; }
+    SymId symId() const { return symId_; }
 
-    double pause() const { return m_pause; }
+    double pause() const { return pause_; }
 
-    void setPause(double v) { m_pause = v; }
+    void setPause(double v) { pause_ = v; }
 
     Segment *segment() const { return (Segment *) ownershipParent(); }
 
@@ -70,7 +70,7 @@ public:
     EngravingItem *nextSegmentElement() override;
     EngravingItem *prevSegmentElement() override;
 
-    int subtype() const override { return int(m_symId); }
+    int subtype() const override { return int(symId_); }
 
     TranslatableString subtypeUserName() const override;
 
@@ -83,8 +83,8 @@ private:
     friend class Factory;
     Breath(DummyParentOr<Segment> parent);
 
-    double m_pause = 0.0;
-    SymId m_symId = SymId::breathMarkComma;
+    double pause_ = 0.0;
+    SymId symId_ = SymId::breathMarkComma;
 };
 } // namespace mu::engraving
 #endif

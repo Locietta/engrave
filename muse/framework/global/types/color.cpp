@@ -11,25 +11,25 @@ static std::string rgb2hex(int r, int g, int b, int a = Color::DEFAULT_ALPHA);
 static std::string rgb2hex(Rgba rgba);
 static void insertHexComponent(int num, std::stringstream &ss);
 
-Color::Color() { m_isValid = false; }
+Color::Color() { isValid_ = false; }
 
-Color::Color(const Color &other) : m_rgba(other.m_rgba), m_isValid(other.m_isValid) {}
+Color::Color(const Color &other) : rgba_(other.rgba_), isValid_(other.isValid_) {}
 
 Color::Color(const char *color) { setNamedColor(color); }
 
 Color &Color::operator=(const Color &other) {
-    m_rgba = other.m_rgba;
-    m_isValid = other.m_isValid;
+    rgba_ = other.rgba_;
+    isValid_ = other.isValid_;
     return *this;
 }
 
-bool Color::operator==(const Color &other) const { return m_rgba == other.m_rgba && m_isValid == other.m_isValid; }
+bool Color::operator==(const Color &other) const { return rgba_ == other.rgba_ && isValid_ == other.isValid_; }
 
 bool Color::operator!=(const Color &other) const { return !operator==(other); }
 
-bool Color::operator<(const Color &other) const { return m_rgba < other.m_rgba; }
+bool Color::operator<(const Color &other) const { return rgba_ < other.rgba_; }
 
-std::string Color::toString() const { return rgb2hex(m_rgba); }
+std::string Color::toString() const { return rgb2hex(rgba_); }
 
 Color Color::fromString(const std::string &str) {
     Color c;
@@ -45,19 +45,19 @@ Color Color::fromString(const char *str) {
 
 Color Color::fromString(const String &str) { return fromString(str.toStdString()); }
 
-bool Color::isValid() const { return m_isValid; }
+bool Color::isValid() const { return isValid_; }
 
-int Color::red() const { return getRed(m_rgba); }
+int Color::red() const { return getRed(rgba_); }
 
-int Color::green() const { return getGreen(m_rgba); }
+int Color::green() const { return getGreen(rgba_); }
 
-int Color::blue() const { return getBlue(m_rgba); }
+int Color::blue() const { return getBlue(rgba_); }
 
-int Color::alpha() const { return getAlpha(m_rgba); }
+int Color::alpha() const { return getAlpha(rgba_); }
 
 void Color::setNamedColor(const std::string &color) {
     if (color.empty()) {
-        m_isValid = false;
+        isValid_ = false;
         return;
     }
 
@@ -65,12 +65,12 @@ void Color::setNamedColor(const std::string &color) {
     if (color[0] == '#') {
         if (getHexRgb(color.data(), color.size(), &rgba)) {
             setRgba(rgba);
-            m_isValid = true;
+            isValid_ = true;
             return;
         }
     }
 
-    m_isValid = false;
+    isValid_ = false;
 }
 
 void Color::setNamedColor(const char *color) {
@@ -94,22 +94,22 @@ void Color::applyTint(double tint) {
 
 void Color::setRgba(int r, int g, int b, int a) {
     if (!isRgbaValid(r, g, b, a)) {
-        m_isValid = false;
+        isValid_ = false;
         return;
     }
 
-    m_rgba = rgba(r, g, b, a);
-    m_isValid = true;
+    rgba_ = rgba(r, g, b, a);
+    isValid_ = true;
 }
 
 void Color::setRgba(Rgba rgba) {
     if (!isRgbaValid(getRed(rgba), getGreen(rgba), getBlue(rgba), getAlpha(rgba))) {
-        m_isValid = false;
+        isValid_ = false;
         return;
     }
 
-    m_rgba = rgba;
-    m_isValid = true;
+    rgba_ = rgba;
+    isValid_ = true;
 }
 
 Color Color::inverted() const {

@@ -55,16 +55,16 @@ class SynthesizerGroup : public std::list<IdValue> {
     OBJECT_ALLOCATOR(engraving, SynthesizerGroup)
 
 public:
-    const muse::String &name() const { return m_name; }
+    const muse::String &name() const { return name_; }
 
-    void setName(const muse::String &s) { m_name = s; }
+    void setName(const muse::String &s) { name_ = s; }
 
     SynthesizerGroup() : std::list<IdValue>() {}
 
-    SynthesizerGroup(const char *n, std::list<IdValue> l) : std::list<IdValue>(l), m_name(muse::String::fromUtf8(n)) {}
+    SynthesizerGroup(const char *n, std::list<IdValue> l) : std::list<IdValue>(l), name_(muse::String::fromUtf8(n)) {}
 
 private:
-    muse::String m_name;
+    muse::String name_;
 };
 
 //---------------------------------------------------------
@@ -86,13 +86,13 @@ public:
     int ccToUse() const;
     int method() const;
 
-    bool isDefault() const { return m_isDefault; }
+    bool isDefault() const { return isDefault_; }
 
-    void setIsDefault(bool val) { m_isDefault = val; }
+    void setIsDefault(bool val) { isDefault_ = val; }
 
 private:
 
-    bool m_isDefault = true;
+    bool isDefault_ = true;
 };
 } // namespace mu::engraving
 #endif

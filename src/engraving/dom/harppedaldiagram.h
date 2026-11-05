@@ -61,9 +61,9 @@ public:
 
     void setIsDiagram(bool diagram);
 
-    bool isDiagram() const { return m_isDiagram; }
+    bool isDiagram() const { return isDiagram_; }
 
-    std::array<PedalPosition, HARP_STRING_NO> getPedalState() const { return m_pedalState; }
+    std::array<PedalPosition, HARP_STRING_NO> getPedalState() const { return pedalState_; }
 
     void setPedalState(std::array<PedalPosition, HARP_STRING_NO> state);
 
@@ -78,16 +78,16 @@ public:
 
     bool isTpcPlayable(int tpc);
 
-    const std::set<int> &playableTpcs() const { return m_playableTpcs; }
+    const std::set<int> &playableTpcs() const { return playableTpcs_; }
 
     bool positionRelativeToNoteheadRest() const override { return true; }
 
 private:
 
-    std::array<PedalPosition, HARP_STRING_NO> m_pedalState;
+    std::array<PedalPosition, HARP_STRING_NO> pedalState_;
 
-    std::set<int> m_playableTpcs;
+    std::set<int> playableTpcs_;
 
-    bool m_isDiagram = true;
+    bool isDiagram_ = true;
 };
 } // namespace mu::engraving

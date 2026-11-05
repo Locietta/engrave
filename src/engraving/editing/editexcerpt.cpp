@@ -116,35 +116,35 @@ void ChangeExcerptTitle::flip() {
 //   AddPartToExcerpt
 //---------------------------------------------------------
 
-AddPartToExcerpt::AddPartToExcerpt(Excerpt *e, Part *p, size_t targetPartIdx) : m_excerpt(e), m_part(p), m_targetPartIdx(targetPartIdx) {
-    assert(m_excerpt);
-    assert(m_part);
+AddPartToExcerpt::AddPartToExcerpt(Excerpt *e, Part *p, size_t targetPartIdx) : excerpt_(e), part_(p), targetPartIdx_(targetPartIdx) {
+    assert(excerpt_);
+    assert(part_);
 }
 
 void AddPartToExcerpt::undo() {
-    muse::remove(m_excerpt->parts(), m_part);
+    muse::remove(excerpt_->parts(), part_);
 
-    if (Score *score = m_excerpt->excerptScore()) {
-        score->removePart(m_part);
+    if (Score *score = excerpt_->excerptScore()) {
+        score->removePart(part_);
     }
 }
 
 void AddPartToExcerpt::redo() {
-    std::vector<Part *> &excerptParts = m_excerpt->parts();
-    if (m_targetPartIdx < excerptParts.size()) {
-        excerptParts.insert(excerptParts.begin() + m_targetPartIdx, m_part);
+    std::vector<Part *> &excerptParts = excerpt_->parts();
+    if (targetPartIdx_ < excerptParts.size()) {
+        excerptParts.insert(excerptParts.begin() + targetPartIdx_, part_);
     } else {
-        excerptParts.push_back(m_part);
+        excerptParts.push_back(part_);
     }
 
-    if (Score *score = m_excerpt->excerptScore()) {
-        score->insertPart(m_part, m_targetPartIdx);
+    if (Score *score = excerpt_->excerptScore()) {
+        score->insertPart(part_, targetPartIdx_);
     }
 }
 
 void AddPartToExcerpt::cleanup(bool wasDone) {
     if (!wasDone) {
-        delete m_part;
-        m_part = nullptr;
+        delete part_;
+        part_ = nullptr;
     }
 }

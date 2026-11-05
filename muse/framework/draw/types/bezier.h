@@ -35,13 +35,13 @@ public:
     static void coefficients(double t, double &a, double &b, double &c, double &d);
     Bezier bezierOnInterval(double t0, double t1) const;
 
-    PointF pt1() const { return PointF(m_x1, m_y1); }
+    PointF pt1() const { return PointF(x1_, y1_); }
 
-    PointF pt2() const { return PointF(m_x2, m_y2); }
+    PointF pt2() const { return PointF(x2_, y2_); }
 
-    PointF pt3() const { return PointF(m_x3, m_y3); }
+    PointF pt3() const { return PointF(x3_, y3_); }
 
-    PointF pt4() const { return PointF(m_x4, m_y4); }
+    PointF pt4() const { return PointF(x4_, y4_); }
 
     PointF pointAt(double t) const;
 
@@ -50,7 +50,7 @@ private:
 
     friend class PainterPath;
 
-    double m_x1, m_y1, m_x2, m_y2, m_x3, m_y3, m_x4, m_y4;
+    double x1_, y1_, x2_, y2_, x3_, y3_, x4_, y4_;
 };
 } // namespace muse::draw
 

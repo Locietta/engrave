@@ -51,8 +51,8 @@ protected:
 
     void doSelfProcess(float *buffer, samples_t samplesPerChannel) override;
 
-    IFxProcessorPtr m_fxProcessor;
-    PlayheadPositionPtr m_playheadPosition;
+    IFxProcessorPtr fxProcessor_;
+    PlayheadPositionPtr playheadPosition_;
 };
 
 using FxNodePtr = std::shared_ptr<FxNode>;

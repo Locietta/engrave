@@ -40,7 +40,7 @@ AudioResourceMetaList AudioFactory::availableOutputResources() const { return fx
 
 RetVal<synth::ISynthesizerPtr> AudioFactory::makeSynth(const TrackId trackId, const AudioInputParams &params,
                                                        const PlaybackSetupData &setupData) const {
-    auto synth = synthResolver()->resolveSynth(trackId, params, m_spec, setupData);
+    auto synth = synthResolver()->resolveSynth(trackId, params, spec_, setupData);
     if (!synth) {
         return RetVal<synth::ISynthesizerPtr>::make_ret(Err::InvalidSynth);
     }
@@ -60,13 +60,13 @@ void AudioFactory::clearSynthSources() { synthResolver()->clearSources(); }
 RetVal<AudioSourceNodePtr> AudioFactory::makeEventSource(const TrackId trackId, const mpe::PlaybackData &playbackData,
                                                          const AudioInputParams &params) const {
     EventAudioNodePtr source = std::make_shared<EventAudioNode>(*this, trackId, playbackData);
-    source->setOutputSpec(m_spec);
+    source->setOutputSpec(spec_);
     source->applyInputParams(params);
     return RetVal<AudioSourceNodePtr>::make_ok(source);
 }
 
 FxChainPtr AudioFactory::makeMasterFxChain(const AudioFxChain &fxChain) const {
-    std::vector<IFxProcessorPtr> fxlist = fxResolver()->resolveMasterFxList(fxChain, m_spec);
+    std::vector<IFxProcessorPtr> fxlist = fxResolver()->resolveMasterFxList(fxChain, spec_);
 
     FxChainPtr chain = std::make_shared<FxChain>();
     chain->setName("FxChain [master]");
@@ -77,7 +77,7 @@ FxChainPtr AudioFactory::makeMasterFxChain(const AudioFxChain &fxChain) const {
 }
 
 FxChainPtr AudioFactory::makeTrackFxChain(const TrackId trackId, const AudioFxChain &fxChain) const {
-    std::vector<IFxProcessorPtr> fxlist = fxResolver()->resolveFxList(trackId, fxChain, m_spec);
+    std::vector<IFxProcessorPtr> fxlist = fxResolver()->resolveFxList(trackId, fxChain, spec_);
 
     FxChainPtr chain = std::make_shared<FxChain>();
     if (trackId == MASTER_TRACK_ID) {

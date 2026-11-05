@@ -59,9 +59,9 @@ public:
     PropertyValue propertyDefault(Pid propertyId) const override;
     bool setProperty(Pid propertyId, const PropertyValue &v) override;
 
-    Spatium minLength() const { return m_minLength; }
+    Spatium minLength() const { return minLength_; }
 
-    void setMinLength(Spatium val) { m_minLength = val; }
+    void setMinLength(Spatium val) { minLength_ = val; }
 
     SymId symId() const;
 
@@ -82,6 +82,6 @@ public:
 
     const LaissezVibSegment *segmentAt(int n) const { return toLaissezVibSegment(Spanner::segmentAt(n)); }
 private:
-    Spatium m_minLength = 2.0_sp;
+    Spatium minLength_ = 2.0_sp;
 };
 } // namespace mu::engraving

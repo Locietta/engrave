@@ -1736,7 +1736,7 @@ void Score::deleteMeasures(MeasureBase *mbStart, MeasureBase *mbEnd, bool preser
     }
 
     undoInsertTime(mbStart->tick(), -(mbEnd->endTick() - mbStart->tick()));
-    m_is.setSegment(0); // invalidate position
+    is_.setSegment(0); // invalidate position
 }
 
 void Score::reconnectSlurs(MeasureBase *mbStart, MeasureBase *mbEnd) {
@@ -1880,7 +1880,7 @@ void Score::deleteOrShortenOutSpannersFromRange(const Fraction &t1, const Fracti
     // group are found in the range, for example in the case of linked staves.
     std::unordered_set<EngravingObject *> handledMainElements;
 
-    auto spanners = m_spanner.findOverlapping(t1.ticks(), t2.ticks() - 1);
+    auto spanners = spanner_.findOverlapping(t1.ticks(), t2.ticks() - 1);
     for (auto i : spanners) {
         Spanner *sp = i.value;
         Fraction spStartTick = sp->tick();
@@ -1931,7 +1931,7 @@ void Score::deleteOrShortenOutSpannersFromRange(const Fraction &t1, const Fracti
 
 void Score::deleteSlursFromRange(const Fraction &t1, const Fraction &t2, track_idx_t trackStart, track_idx_t trackEnd,
                                  const SelectionFilter &filter) {
-    auto spanners = m_spanner.findOverlapping(t1.ticks(), t2.ticks() - 1);
+    auto spanners = spanner_.findOverlapping(t1.ticks(), t2.ticks() - 1);
     for (auto i : spanners) {
         Spanner *sp = i.value;
         Fraction spStartTick = sp->tick();
@@ -2350,9 +2350,9 @@ void Score::cmdDeleteSelection() {
     // make new selection if appropriate
     if (noteEntryMode()) {
         if (!crsSelectedAfterDeletion.empty()) {
-            m_is.setSegment(crsSelectedAfterDeletion.front()->segment());
+            is_.setSegment(crsSelectedAfterDeletion.front()->segment());
         } else {
-            crsSelectedAfterDeletion.push_back(m_is.cr());
+            crsSelectedAfterDeletion.push_back(is_.cr());
         }
     }
     if (elSelectedAfterDeletion) {
@@ -2481,9 +2481,9 @@ void Score::cmdFullMeasureRest() {
     s1 = tick2segmentMM(stick1);
     s2 = tick2segmentMM(stick2, true);
     if (selection().isRange() && s1 && s2) {
-        m_selection.setStartSegment(s1);
-        m_selection.setEndSegment(s2);
-        m_selection.updateSelectedElements();
+        selection_.setStartSegment(s1);
+        selection_.setEndSegment(s2);
+        selection_.updateSelectedElements();
     } else if (r) {
         // note entry mode
         select(r, SelectType::SINGLE);
@@ -2559,7 +2559,7 @@ void Score::cmdCreateTuplet(ChordRest *ocr, Tuplet *tuplet) {
 //---------------------------------------------------------
 
 void Score::cmdEnterRest(const TDuration &d) {
-    if (m_is.track() == muse::nidx) {
+    if (is_.track() == muse::nidx) {
         LOGD("cmdEnterRest: track invalid");
         return;
     }
@@ -2573,7 +2573,7 @@ void Score::cmdEnterRest(const TDuration &d) {
 //---------------------------------------------------------
 
 void Score::enterRest(const TDuration &d, InputState *externalInputState) {
-    InputState &is = externalInputState ? (*externalInputState) : m_is;
+    InputState &is = externalInputState ? (*externalInputState) : is_;
 
     if (is.beyondScore()) {
         appendMeasures(1);
@@ -2762,7 +2762,7 @@ void Score::restoreInitialKeySigAndTimeSig() {
     static constexpr Fraction startTick = Fraction(0, 1);
 
     Measure *firstMeas = firstMeasure();
-    for (Staff *staff : m_staves) {
+    for (Staff *staff : staves_) {
         Key concertKey = Key::C;
         Key transposedKey = concertKey;
         const Part *part = staff->part();
@@ -2814,14 +2814,14 @@ void Score::restoreInitialKeySigAndTimeSig() {
 void Score::checkSpanner(const Fraction &startTick, const Fraction &endTick, bool removeOrphans) {
     std::vector<Spanner *> spannersToRemove;
     std::vector<Spanner *> spannersToShorten;
-    auto spanners = m_spanner.findOverlapping(startTick.ticks(), endTick.ticks());
+    auto spanners = spanner_.findOverlapping(startTick.ticks(), endTick.ticks());
 
     // DEBUG: check all spanner
     //        there may be spanners outside of score bc. some measures were deleted
 
     Fraction lastTick = lastMeasure()->endTick();
 
-    for (const auto &i : m_spanner.map()) {
+    for (const auto &i : spanner_.map()) {
         Spanner *s = i.second;
 
         if (s->isSlur()) {
@@ -2892,7 +2892,7 @@ bool Score::checkTimeDelete(Segment *startSegment, Segment *endSegment) {
 
     bool canDeleteTime = true;
     while (canDeleteTime) {
-        for (size_t track = 0; canDeleteTime && track < m_staves.size() * VOICES; ++track) {
+        for (size_t track = 0; canDeleteTime && track < staves_.size() * VOICES; ++track) {
             if (startMeasure->hasVoice(track)) {
                 Segment *fs = startMeasure->first(SegmentType::ChordRest);
                 for (Segment *s = fs; s; s = s->next(SegmentType::ChordRest)) {
@@ -2944,7 +2944,7 @@ void Score::cmdTimeDelete() {
         const Measure *m = toBarLine(e)->segment()->measure();
         const Measure *next = m->nextMeasure();
         if (next) {
-            SplitJoinMeasure::joinMeasures(tx, m_masterScore, m->tick(), next->tick());
+            SplitJoinMeasure::joinMeasures(tx, masterScore_, m->tick(), next->tick());
         }
         return;
     }
@@ -3002,7 +3002,7 @@ void Score::cmdTimeDelete() {
             // deleted to end of score - get last cr on current track
             currentSegment = lastMeasureMM()->last();
             if (currentSegment) {
-                cr = currentSegment->nextChordRest(m_is.track(), true);
+                cr = currentSegment->nextChordRest(is_.track(), true);
                 if (cr) {
                     currentSegment = cr->segment();
                 }
@@ -3013,8 +3013,8 @@ void Score::cmdTimeDelete() {
             appendMeasures(1);
             currentSegment = lastMeasureMM()->first(SegmentType::ChordRest);
         }
-        m_is.setSegment(currentSegment);
-        cr = m_is.cr();
+        is_.setSegment(currentSegment);
+        cr = is_.cr();
         if (cr) {
             if (cr->isChord()) {
                 select(toChord(cr)->upNote(), SelectType::SINGLE);
@@ -3090,7 +3090,7 @@ void Score::doTimeDeleteForMeasure(Measure *m, Segment *startSegment, const Frac
 
     Segment *fs = m->first(SegmentType::ChordRest);
 
-    for (size_t track = 0; track < m_staves.size() * VOICES; ++track) {
+    for (size_t track = 0; track < staves_.size() * VOICES; ++track) {
         if (m->hasVoice(track)) {
             for (Segment *s = fs; s; s = s->next(SegmentType::ChordRest)) {
                 if (s->element(track)) {
@@ -3785,7 +3785,7 @@ void Score::undoRemoveStaff(Staff *staff) {
 
     std::vector<Spanner *> spannersToRemove;
 
-    for (auto it = m_spanner.cbegin(); it != m_spanner.cend(); ++it) {
+    for (auto it = spanner_.cbegin(); it != spanner_.cend(); ++it) {
         Spanner *spanner = it->second;
 
         if (allowRemoveWhenRemovingStaves(spanner, staffIndex)) {
@@ -3793,7 +3793,7 @@ void Score::undoRemoveStaff(Staff *staff) {
         }
     }
 
-    for (Spanner *spanner : m_unmanagedSpanner) {
+    for (Spanner *spanner : unmanagedSpanner_) {
         if (allowRemoveWhenRemovingStaves(spanner, staffIndex)) {
             spannersToRemove.push_back(spanner);
         }
@@ -4746,7 +4746,7 @@ void Score::undoInsertTime(const Fraction &tick, const Fraction &len) {
     }
 
     std::vector<Spanner *> spannersToAdjust;
-    for (const auto &i : m_spanner.map()) {
+    for (const auto &i : spanner_.map()) {
         Spanner *s = i.second;
         if (s->tick2() < tick) {
             continue;

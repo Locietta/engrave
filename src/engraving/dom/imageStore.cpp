@@ -40,21 +40,21 @@ ImageStore imageStore; // the global image store
 //   ImageStoreItem
 //---------------------------------------------------------
 
-ImageStoreItem::ImageStoreItem(const std::string &type) : m_type(type) {}
+ImageStoreItem::ImageStoreItem(const std::string &type) : type_(type) {}
 
 //---------------------------------------------------------
 //   dereference
 //    decrement usage count of image in score
 //---------------------------------------------------------
 
-void ImageStoreItem::dereference(Image *image) { m_references.remove(image); }
+void ImageStoreItem::dereference(Image *image) { references_.remove(image); }
 
 //---------------------------------------------------------
 //   reference
 //    increment usage count of image in score
 //---------------------------------------------------------
 
-void ImageStoreItem::reference(Image *image) { m_references.push_back(image); }
+void ImageStoreItem::reference(Image *image) { references_.push_back(image); }
 
 //---------------------------------------------------------
 //   isUsed
@@ -62,7 +62,7 @@ void ImageStoreItem::reference(Image *image) { m_references.push_back(image); }
 //---------------------------------------------------------
 
 bool ImageStoreItem::isUsed(Score *score) const {
-    for (Image *image : m_references) {
+    for (Image *image : references_) {
         if (image->score() == score && image->ownershipParent()) {
             return true;
         }
@@ -78,11 +78,11 @@ std::string ImageStoreItem::hashName() const {
     const char hex[17] = "0123456789abcdef";
     char p[33];
     for (int i = 0; i < 16; ++i) {
-        p[i * 2] = hex[(m_hash[i] >> 4) & 0xf];
-        p[i * 2 + 1] = hex[m_hash[i] & 0xf];
+        p[i * 2] = hex[(hash_[i] >> 4) & 0xf];
+        p[i * 2 + 1] = hex[hash_[i] & 0xf];
     }
     p[32] = 0;
-    return std::string(p) + "." + m_type;
+    return std::string(p) + "." + type_;
 }
 
 //---------------------------------------------------------
@@ -100,7 +100,7 @@ inline static int toInt(char c) {
 //   ~ImageStore
 //---------------------------------------------------------
 
-ImageStore::~ImageStore() { muse::DeleteAll(m_items); }
+ImageStore::~ImageStore() { muse::DeleteAll(items_); }
 
 //---------------------------------------------------------
 //   getImage
@@ -115,7 +115,7 @@ ImageStoreItem *ImageStore::getImage(std::string name) const {
     for (int i = 0; i < 16; ++i) {
         hash[i] = toInt(name.at(i * 2)) * 16 + toInt(name.at(i * 2 + 1));
     }
-    for (ImageStoreItem *item : m_items) {
+    for (ImageStoreItem *item : items_) {
         if (item->hash() == hash) {
             return item;
         }
@@ -148,14 +148,14 @@ static ByteArray contentKey(const ByteArray &ba) {
 
 ImageStoreItem *ImageStore::add(const std::string &name, const ByteArray &ba) {
     ByteArray hash = contentKey(ba);
-    for (ImageStoreItem *item : m_items) {
+    for (ImageStoreItem *item : items_) {
         if (item->hash() == hash) {
             return item;
         }
     }
     ImageStoreItem *item = new ImageStoreItem(muse::io::suffix(name));
     item->set(ba, hash);
-    m_items.push_back(item);
+    items_.push_back(item);
     return item;
 }
 
@@ -164,14 +164,14 @@ ImageStoreItem *ImageStore::add(const std::string &name, const ByteArray &ba) {
 //---------------------------------------------------------
 
 void ImageStore::clearUnused() {
-    m_items.erase(std::remove_if(m_items.begin(), m_items.end(),
-                                 [](ImageStoreItem *i) {
-                                     const bool remove = !i->isUsed();
-                                     if (remove) {
-                                         delete i;
-                                     }
-                                     return remove;
-                                 }),
-                  m_items.end());
+    items_.erase(std::remove_if(items_.begin(), items_.end(),
+                                [](ImageStoreItem *i) {
+                                    const bool remove = !i->isUsed();
+                                    if (remove) {
+                                        delete i;
+                                    }
+                                    return remove;
+                                }),
+                 items_.end());
 }
 } // namespace mu::engraving

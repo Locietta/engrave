@@ -45,9 +45,9 @@ private:
 
     static bool doLoadStyle(MStyle *style, const muse::io::path_t &filePath);
 
-    MStyle m_baseStyle;    // builtin initial style
-    MStyle m_defaultStyle; // builtin modified by preferences
-    MStyle *m_defaultStyleForParts = nullptr;
+    MStyle baseStyle_;    // builtin initial style
+    MStyle defaultStyle_; // builtin modified by preferences
+    MStyle *defaultStyleForParts_ = nullptr;
 };
 } // namespace mu::engraving
 

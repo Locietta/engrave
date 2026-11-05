@@ -177,43 +177,43 @@ bool has_dirty_version_chrome(const MasterScore *score) {
 
 class ScoreCommandGuard {
 public:
-    explicit ScoreCommandGuard(MasterScore *score) : m_score(score) {}
+    explicit ScoreCommandGuard(MasterScore *score) : score_(score) {}
 
     ~ScoreCommandGuard() {
-        if (m_active) {
+        if (active_) {
             try {
-                m_score->endCmd(true, true);
+                score_->endCmd(true, true);
             } catch (...) {}
         }
     }
 
     void begin() {
         MScore::setError(MsError::MS_NO_ERROR);
-        m_score->startCmd(TranslatableString::untranslatable("MCP pitch edit"));
-        m_active = m_score->undoStack()->hasActiveTransaction();
-        if (!m_active) throw std::runtime_error("Failed to begin pitch edit");
+        score_->startCmd(TranslatableString::untranslatable("MCP pitch edit"));
+        active_ = score_->undoStack()->hasActiveTransaction();
+        if (!active_) throw std::runtime_error("Failed to begin pitch edit");
     }
 
     void finish(bool rollback) {
-        const bool wasDirty = m_score->dirty();
-        m_score->endCmd(rollback, true); // Headless excerpts are not marked open.
-        m_active = false;
+        const bool wasDirty = score_->dirty();
+        score_->endCmd(rollback, true); // Headless excerpts are not marked open.
+        active_ = false;
         // endCmd lays out the edited range before the undo macro marks the score
         // dirty, so $v page chrome would stay stale until the next layout.
         // Relayout once, on the clean -> dirty edge, and only when a header or
         // footer actually prints $v. Excerpts already on screen keep their pages
         // current too; a never-laid-out excerpt has no stale chrome to fix.
-        if (!rollback && !wasDirty && m_score->dirty() && has_dirty_version_chrome(m_score)) {
-            m_score->doLayout();
-            for (Excerpt *excerpt : m_score->excerpts()) {
+        if (!rollback && !wasDirty && score_->dirty() && has_dirty_version_chrome(score_)) {
+            score_->doLayout();
+            for (Excerpt *excerpt : score_->excerpts()) {
                 Score *part = excerpt->excerptScore();
                 if (part && part->npages() > 0) part->doLayout();
             }
         }
     }
 private:
-    MasterScore *m_score;
-    bool m_active = false;
+    MasterScore *score_;
+    bool active_ = false;
 };
 
 std::string engine_error_message() {

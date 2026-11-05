@@ -27,50 +27,50 @@
 
 using namespace mu::engraving;
 
-bool PropertyValue::isValid() const { return m_type != P_TYPE::UNDEFINED; }
+bool PropertyValue::isValid() const { return type_ != P_TYPE::UNDEFINED; }
 
-P_TYPE PropertyValue::type() const { return m_type; }
+P_TYPE PropertyValue::type() const { return type_; }
 
 bool PropertyValue::operator==(const PropertyValue &v) const {
-    if (v.m_type == P_TYPE::UNDEFINED || m_type == P_TYPE::UNDEFINED) {
-        return v.m_type == m_type;
+    if (v.type_ == P_TYPE::UNDEFINED || type_ == P_TYPE::UNDEFINED) {
+        return v.type_ == type_;
     }
 
     //! HACK Temporary hack for bool comparisons (maybe one type is bool and another type is int)
-    if (v.m_type == P_TYPE::BOOL || m_type == P_TYPE::BOOL) {
+    if (v.type_ == P_TYPE::BOOL || type_ == P_TYPE::BOOL) {
         return v.value<bool>() == value<bool>();
     }
 
     //! HACK Temporary hack for int comparisons (maybe one type is int and another type is enum)
-    if (v.m_type == P_TYPE::INT || m_type == P_TYPE::INT) {
+    if (v.type_ == P_TYPE::INT || type_ == P_TYPE::INT) {
         return v.value<int>() == value<int>();
     }
 
     //! HACK Temporary hack for Spatium comparisons (maybe one type is Spatium and another type is real)
-    if (v.m_type == P_TYPE::SPATIUM || m_type == P_TYPE::SPATIUM) {
+    if (v.type_ == P_TYPE::SPATIUM || type_ == P_TYPE::SPATIUM) {
         return muse::RealIsEqual(v.value<double>(), value<double>());
     }
 
     //! HACK Temporary hack for Fraction comparisons
-    if (v.m_type == P_TYPE::FRACTION) {
-        assert(m_type == P_TYPE::FRACTION);
+    if (v.type_ == P_TYPE::FRACTION) {
+        assert(type_ == P_TYPE::FRACTION);
         return v.value<Fraction>().identical(value<Fraction>());
     }
 
-    if (v.m_type == P_TYPE::REAL) {
-        assert(m_type == P_TYPE::REAL);
+    if (v.type_ == P_TYPE::REAL) {
+        assert(type_ == P_TYPE::REAL);
         return muse::RealIsEqual(v.value<double>(), value<double>());
     }
 
-    assert(m_data);
-    if (!m_data) {
+    assert(data_);
+    if (!data_) {
         return false;
     }
 
-    assert(v.m_data);
-    if (!v.m_data) {
+    assert(v.data_);
+    if (!v.data_) {
         return false;
     }
 
-    return v.m_type == m_type && v.m_data->equal(m_data.get());
+    return v.type_ == type_ && v.data_->equal(data_.get());
 }

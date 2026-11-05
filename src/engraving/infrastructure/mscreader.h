@@ -98,9 +98,9 @@ private:
         bool fileExists(const muse::String &fileName) const override;
         muse::ByteArray fileData(const muse::String &fileName) const override;
     private:
-        muse::io::IODevice *m_device = nullptr;
-        bool m_selfDeviceOwner = false;
-        muse::ZipReader *m_zip = nullptr;
+        muse::io::IODevice *device_ = nullptr;
+        bool selfDeviceOwner_ = false;
+        muse::ZipReader *zip_ = nullptr;
     };
 
     struct DirReader : public IReader {
@@ -112,7 +112,7 @@ private:
         bool fileExists(const muse::String &fileName) const override;
         muse::ByteArray fileData(const muse::String &fileName) const override;
     private:
-        muse::io::path_t m_rootPath;
+        muse::io::path_t rootPath_;
     };
 
     struct XmlFileReader : public IReader {
@@ -124,8 +124,8 @@ private:
         bool fileExists(const muse::String &fileName) const override;
         muse::ByteArray fileData(const muse::String &fileName) const override;
     private:
-        muse::io::IODevice *m_device = nullptr;
-        bool m_selfDeviceOwner = false;
+        muse::io::IODevice *device_ = nullptr;
+        bool selfDeviceOwner_ = false;
     };
 
     IReader *reader() const;
@@ -134,7 +134,7 @@ private:
 
     muse::String mainFileName() const;
 
-    Params m_params;
-    mutable IReader *m_reader = nullptr;
+    Params params_;
+    mutable IReader *reader_ = nullptr;
 };
 } // namespace mu::engraving

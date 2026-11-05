@@ -640,28 +640,28 @@ void expect_code(const engrave::Result<T> &result, ErrorCode expected, std::stri
 /// S6's; a read test drives the primitive the same way the handle tests do).
 class Command {
 public:
-    explicit Command(MasterScore &score) : m_score(score) {
+    explicit Command(MasterScore &score) : score_(score) {
         mu::engraving::MScore::setError(mu::engraving::MsError::MS_NO_ERROR);
-        m_score.startCmd(muse::TranslatableString::untranslatable("engrave read test"));
+        score_.startCmd(muse::TranslatableString::untranslatable("engrave read test"));
     }
 
     ~Command() {
-        if (m_open) m_score.endCmd(false, true);
+        if (open_) score_.endCmd(false, true);
     }
 
     Command(const Command &) = delete;
     Command &operator=(const Command &) = delete;
 
     void commit() {
-        m_score.endCmd(false, true);
-        m_open = false;
-        engrave::assign_missing_ids(m_score);
-        m_score.undoStack()->clearHistory();
+        score_.endCmd(false, true);
+        open_ = false;
+        engrave::assign_missing_ids(score_);
+        score_.undoStack()->clearHistory();
     }
 
 private:
-    MasterScore &m_score;
-    bool m_open = true;
+    MasterScore &score_;
+    bool open_ = true;
 };
 
 // --- rows of the oracle comparison ---------------------------------------

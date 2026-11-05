@@ -43,25 +43,25 @@ using namespace muse::draw;
 //---------------------------------------------------------
 
 Bracket::Bracket(DummyParentOr<EngravingItem> parent) : EngravingItem(ElementType::BRACKET, parent) {
-    m_ay1 = 0;
-    m_firstStaff = 0;
-    m_lastStaff = 0;
-    m_labelType = InstrumentNameType::LONG;
-    m_bi = 0;
-    m_braceSymbol = SymId::noSym;
-    m_magx = 1.;
+    ay1_ = 0;
+    firstStaff_ = 0;
+    lastStaff_ = 0;
+    labelType_ = InstrumentNameType::LONG;
+    bi_ = 0;
+    braceSymbol_ = SymId::noSym;
+    magx_ = 1.;
     setGenerated(true); // brackets are not saved
 }
 
 Bracket::~Bracket() {
-    if (m_text) {
-        delete m_text;
+    if (text_) {
+        delete text_;
     }
 }
 
 void Bracket::scanElements(std::function<void(EngravingItem *)> func) {
-    if (m_text) {
-        m_text->scanElements(func);
+    if (text_) {
+        text_->scanElements(func);
     }
 
     EngravingItem::scanElements(func);
@@ -72,15 +72,15 @@ void Bracket::scanElements(std::function<void(EngravingItem *)> func) {
 //---------------------------------------------------------
 
 void Bracket::setStaffSpan(size_t a, size_t b) {
-    m_firstStaff = a;
-    m_lastStaff = b;
+    firstStaff_ = a;
+    lastStaff_ = b;
 
     if (bracketType() == BracketType::BRACE && style().styleSt(Sid::musicalSymbolFont) != "Emmentaler" &&
         style().styleSt(Sid::musicalSymbolFont) != "Gonville") {
-        int v = static_cast<int>(m_lastStaff - m_firstStaff + 1);
+        int v = static_cast<int>(lastStaff_ - firstStaff_ + 1);
 
         // if staves inner staves are hidden, decrease span
-        for (size_t staffIndex = m_firstStaff; staffIndex <= m_lastStaff; ++staffIndex) {
+        for (size_t staffIndex = firstStaff_; staffIndex <= lastStaff_; ++staffIndex) {
             if (system() && !system()->staff(staffIndex)->show()) {
                 --v;
             }
@@ -91,16 +91,16 @@ void Bracket::setStaffSpan(size_t a, size_t b) {
         }
 
         // 1.625 is a "magic" number based on akkoladeDistance/4.0 (default value 6.5).
-        m_magx = v + ((v - 1) * 1.625);
+        magx_ = v + ((v - 1) * 1.625);
 
         if (v == 1) {
-            m_braceSymbol = SymId::braceSmall;
+            braceSymbol_ = SymId::braceSmall;
         } else if (v <= 2) {
-            m_braceSymbol = SymId::brace;
+            braceSymbol_ = SymId::brace;
         } else if (v <= 3) {
-            m_braceSymbol = SymId::braceLarge;
+            braceSymbol_ = SymId::braceLarge;
         } else {
-            m_braceSymbol = SymId::braceLarger;
+            braceSymbol_ = SymId::braceLarger;
         }
     }
 }
@@ -133,7 +133,7 @@ EngravingItem *Bracket::drop(Transaction &, EditData &data) {
 PropertyValue Bracket::getProperty(Pid id) const {
     PropertyValue v = EngravingItem::getProperty(id);
     if (!v.isValid()) {
-        v = m_bi->getProperty(id);
+        v = bi_->getProperty(id);
     }
     return v;
 }
@@ -142,7 +142,7 @@ PropertyValue Bracket::getProperty(Pid id) const {
 //   setProperty
 //---------------------------------------------------------
 
-bool Bracket::setProperty(Pid id, const PropertyValue &v) { return m_bi->setProperty(id, v); }
+bool Bracket::setProperty(Pid id, const PropertyValue &v) { return bi_->setProperty(id, v); }
 
 //---------------------------------------------------------
 //   propertyDefault
@@ -154,7 +154,7 @@ PropertyValue Bracket::propertyDefault(Pid id) const {
     }
     PropertyValue v = EngravingItem::propertyDefault(id);
     if (!v.isValid()) {
-        v = m_bi->propertyDefault(id);
+        v = bi_->propertyDefault(id);
     }
     return v;
 }
@@ -192,14 +192,14 @@ Fraction Bracket::tick() const {
 //---------------------------------------------------------
 
 void Bracket::setSelected(bool f) {
-    m_bi->setSelected(f);
-    if (m_text) {
-        m_text->setSelected(f);
+    bi_->setSelected(f);
+    if (text_) {
+        text_->setSelected(f);
     }
 
     EngravingItem::setSelected(f);
 }
 
-bool Bracket::intersects(const Bracket *other) const { return m_firstStaff <= other->m_lastStaff && m_lastStaff >= other->m_firstStaff; }
+bool Bracket::intersects(const Bracket *other) const { return firstStaff_ <= other->lastStaff_ && lastStaff_ >= other->firstStaff_; }
 
-bool Bracket::contains(staff_idx_t staffIdx) const { return staffIdx >= m_firstStaff && staffIdx <= m_lastStaff; }
+bool Bracket::contains(staff_idx_t staffIdx) const { return staffIdx >= firstStaff_ && staffIdx <= lastStaff_; }

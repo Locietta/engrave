@@ -90,31 +90,31 @@ class Drumset {
 public:
     bool isValid(int pitch) const;
 
-    NoteHeadGroup noteHead(int pitch) const { return m_drums[pitch].notehead; }
+    NoteHeadGroup noteHead(int pitch) const { return drums_[pitch].notehead; }
 
-    SymId noteHeads(int pitch, NoteHeadType t) const { return m_drums[pitch].noteheads[int(t)]; }
+    SymId noteHeads(int pitch, NoteHeadType t) const { return drums_[pitch].noteheads[int(t)]; }
 
-    int line(int pitch) const { return m_drums[pitch].line; }
+    int line(int pitch) const { return drums_[pitch].line; }
 
-    int voice(int pitch) const { return m_drums[pitch].voice; }
+    int voice(int pitch) const { return drums_[pitch].voice; }
 
-    DirectionV stemDirection(int pitch) const { return m_drums[pitch].stemDirection; }
+    DirectionV stemDirection(int pitch) const { return drums_[pitch].stemDirection; }
 
-    const String &name(int pitch) const { return m_drums[pitch].name; }
+    const String &name(int pitch) const { return drums_[pitch].name; }
 
     String translatedName(int pitch) const;
 
-    String shortcut(int pitch) const { return m_drums[pitch].shortcut; }
+    String shortcut(int pitch) const { return drums_[pitch].shortcut; }
 
-    const std::vector<DrumInstrumentVariant> &variants(int pitch) const { return m_drums[pitch].variants; }
+    const std::vector<DrumInstrumentVariant> &variants(int pitch) const { return drums_[pitch].variants; }
 
-    int panelRow(int pitch) const { return m_drums[pitch].panelRow; }
+    int panelRow(int pitch) const { return drums_[pitch].panelRow; }
 
-    int panelColumn(int pitch) const { return m_drums[pitch].panelColumn; }
+    int panelColumn(int pitch) const { return drums_[pitch].panelColumn; }
 
-    size_t percussionPanelColumns() const { return m_percussionPanelColumns; }
+    size_t percussionPanelColumns() const { return percussionPanelColumns_; }
 
-    void setPercussionPanelColumns(size_t columns) { m_percussionPanelColumns = columns; }
+    void setPercussionPanelColumns(size_t columns) { percussionPanelColumns_ = columns; }
 
     int pitchForShortcut(const String &shortcut) const;
 
@@ -129,11 +129,11 @@ public:
     int nextPitch(int) const;
     int prevPitch(int) const;
 
-    DrumInstrument &drum(int i) { return m_drums[i]; }
+    DrumInstrument &drum(int i) { return drums_[i]; }
 
-    const DrumInstrument &drum(int i) const { return m_drums[i]; }
+    const DrumInstrument &drum(int i) const { return drums_[i]; }
 
-    void setDrum(int pitch, const DrumInstrument &di) { m_drums[pitch] = di; }
+    void setDrum(int pitch, const DrumInstrument &di) { drums_[pitch] = di; }
 
     DrumInstrumentVariant findVariant(int pitch, const std::vector<Articulation *> &articulations, TremoloType tremType) const;
 
@@ -141,19 +141,19 @@ public:
 
     bool operator==(const Drumset &other) const {
         for (int pitch = 0; pitch < DRUM_INSTRUMENTS; ++pitch) {
-            if (m_drums[pitch] == other.m_drums[pitch]) {
+            if (drums_[pitch] == other.drums_[pitch]) {
                 continue;
             }
             return false;
         }
-        return m_percussionPanelColumns == other.m_percussionPanelColumns;
+        return percussionPanelColumns_ == other.percussionPanelColumns_;
     }
 
     bool operator!=(const Drumset &other) const { return !(*this == other); }
 
 private:
-    DrumInstrument m_drums[DRUM_INSTRUMENTS];
-    size_t m_percussionPanelColumns = 8;
+    DrumInstrument drums_[DRUM_INSTRUMENTS];
+    size_t percussionPanelColumns_ = 8;
 };
 
 extern Drumset *smDrumset;

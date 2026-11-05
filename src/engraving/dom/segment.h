@@ -128,23 +128,23 @@ public:
 
     inline bool isActive() const { return !isTimeTickType() && enabled() && visible(); }
 
-    Segment *next() const { return m_next; }
+    Segment *next() const { return next_; }
 
     Segment *next(SegmentType) const;
     Segment *nextActive() const;
     Segment *nextEnabled() const;
     Segment *nextInStaff(staff_idx_t staffIdx, SegmentType t = SegmentType::ChordRest) const;
 
-    void setNext(Segment *e) { m_next = e; }
+    void setNext(Segment *e) { next_ = e; }
 
-    Segment *prev() const { return m_prev; }
+    Segment *prev() const { return prev_; }
 
     Segment *prev(SegmentType) const;
     Segment *prevWithElementsOnTrack(track_idx_t trackIdx, SegmentType segType = SegmentType::ChordRest) const;
     Segment *prevActive() const;
     Segment *prevEnabled() const;
 
-    void setPrev(Segment *e) { m_prev = e; }
+    void setPrev(Segment *e) { prev_ = e; }
 
     // don’t stop at measure boundary:
     Segment *next1() const;
@@ -171,9 +171,9 @@ public:
 
     EngravingItem *element(track_idx_t track) const;
 
-    const std::vector<EngravingItem *> &elist() const { return m_elist; }
+    const std::vector<EngravingItem *> &elist() const { return elist_; }
 
-    std::vector<EngravingItem *> &elist() { return m_elist; }
+    std::vector<EngravingItem *> &elist() { return elist_; }
 
     void removeElement(track_idx_t track);
     void setElement(track_idx_t track, EngravingItem *el);
@@ -198,7 +198,7 @@ public:
     static const char *subTypeName(SegmentType);
     static SegmentType segmentType(ElementType type);
 
-    SegmentType segmentType() const { return m_segmentType; }
+    SegmentType segmentType() const { return segmentType_; }
 
     void setSegmentType(SegmentType t);
 
@@ -216,29 +216,29 @@ public:
 
     void fixStaffIdx();
 
-    double stretch() const { return m_stretch; }
+    double stretch() const { return stretch_; }
 
-    void setStretch(double v) { m_stretch = v; }
+    void setStretch(double v) { stretch_ = v; }
 
-    Fraction rtick() const override { return m_tick; }
+    Fraction rtick() const override { return tick_; }
 
     void setRtick(const Fraction &v) {
         assert(v >= Fraction(0, 1));
-        m_tick = v;
+        tick_ = v;
     }
 
     Fraction tick() const override;
 
-    Fraction ticks() const { return m_ticks; }
+    Fraction ticks() const { return ticks_; }
 
-    void setTicks(const Fraction &v) { m_ticks = v; }
+    void setTicks(const Fraction &v) { ticks_ = v; }
 
     double widthInStaff(staff_idx_t staffIdx, SegmentType nextSegType = SegmentType::ChordRest) const;
     Fraction ticksInStaff(staff_idx_t staffIdx) const;
 
     bool splitsTuplet() const;
 
-    const std::vector<EngravingItem *> &annotations() const { return m_annotations; }
+    const std::vector<EngravingItem *> &annotations() const { return annotations_; }
 
     void clearAnnotations();
     void removeAnnotation(EngravingItem *e);
@@ -251,9 +251,9 @@ public:
     bool hasElements(staff_idx_t staffIdx) const;
     bool allElementsInvisible() const;
 
-    Spatium extraLeadingSpace() const { return m_extraLeadingSpace; }
+    Spatium extraLeadingSpace() const { return extraLeadingSpace_; }
 
-    void setExtraLeadingSpace(Spatium v) { m_extraLeadingSpace = v; }
+    void setExtraLeadingSpace(Spatium v) { extraLeadingSpace_ = v; }
 
     PropertyValue getProperty(Pid propertyId) const override;
     bool setProperty(Pid propertyId, const PropertyValue &) override;
@@ -284,26 +284,26 @@ public:
 
     EngravingItem *firstElement(staff_idx_t staffIdx) const;
 
-    std::vector<Shape> shapes() { return m_shapes; }
+    std::vector<Shape> shapes() { return shapes_; }
 
-    const std::vector<Shape> &shapes() const { return m_shapes; }
+    const std::vector<Shape> &shapes() const { return shapes_; }
 
-    const Shape &staffShape(staff_idx_t staffIdx) const { return m_shapes[staffIdx]; }
+    const Shape &staffShape(staff_idx_t staffIdx) const { return shapes_[staffIdx]; }
 
-    Shape &staffShape(staff_idx_t staffIdx) { return m_shapes[staffIdx]; }
+    Shape &staffShape(staff_idx_t staffIdx) { return shapes_[staffIdx]; }
 
     void createShapes();
     void createShape(staff_idx_t staffIdx);
     double minRight() const;
     double minLeft() const;
 
-    double widthOffset() const { return m_widthOffset; }
+    double widthOffset() const { return widthOffset_; }
 
-    void clearWidthOffset() { m_widthOffset = 0.0; }
+    void clearWidthOffset() { widthOffset_ = 0.0; }
 
-    void addWidthOffset(double w) { m_widthOffset += w; }
+    void addWidthOffset(double w) { widthOffset_ += w; }
 
-    void setWidthOffset(double w) { m_widthOffset = w; }
+    void setWidthOffset(double w) { widthOffset_ = w; }
 
     double elementsTopOffsetFromSkyline(staff_idx_t staffIndex) const;
     double elementsBottomOffsetFromSkyline(staff_idx_t staffIndex) const;
@@ -313,57 +313,57 @@ public:
     double spacing() const;
 
     // some helper function
-    ChordRest *cr(track_idx_t track) const { return toChordRest(m_elist[track]); }
+    ChordRest *cr(track_idx_t track) const { return toChordRest(elist_[track]); }
 
-    bool isType(const SegmentType t) const { return int(m_segmentType) & int(t); }
+    bool isType(const SegmentType t) const { return int(segmentType_) & int(t); }
 
-    bool isJustType(const SegmentType t) const { return m_segmentType == t; }
+    bool isJustType(const SegmentType t) const { return segmentType_ == t; }
 
-    bool isBeginBarLineType() const { return m_segmentType == SegmentType::BeginBarLine; }
+    bool isBeginBarLineType() const { return segmentType_ == SegmentType::BeginBarLine; }
 
-    bool isClefType() const { return m_segmentType == SegmentType::Clef; }
+    bool isClefType() const { return segmentType_ == SegmentType::Clef; }
 
-    bool isHeaderClefType() const { return m_segmentType == SegmentType::HeaderClef; }
+    bool isHeaderClefType() const { return segmentType_ == SegmentType::HeaderClef; }
 
-    bool isKeySigType() const { return m_segmentType == SegmentType::KeySig; }
+    bool isKeySigType() const { return segmentType_ == SegmentType::KeySig; }
 
-    bool isAmbitusType() const { return m_segmentType == SegmentType::Ambitus; }
+    bool isAmbitusType() const { return segmentType_ == SegmentType::Ambitus; }
 
-    bool isTimeSigType() const { return m_segmentType == SegmentType::TimeSig; }
+    bool isTimeSigType() const { return segmentType_ == SegmentType::TimeSig; }
 
     bool hasTimeSigAboveStaves() const;
     bool makeSpaceForTimeSigAboveStaves() const;
     bool hasTimeSigAcrossStaves() const;
 
-    bool isStartRepeatBarLineType() const { return m_segmentType == SegmentType::StartRepeatBarLine; }
+    bool isStartRepeatBarLineType() const { return segmentType_ == SegmentType::StartRepeatBarLine; }
 
-    bool isBarLineType() const { return m_segmentType == SegmentType::BarLine; }
+    bool isBarLineType() const { return segmentType_ == SegmentType::BarLine; }
 
-    bool isBreathType() const { return m_segmentType == SegmentType::Breath; }
+    bool isBreathType() const { return segmentType_ == SegmentType::Breath; }
 
-    bool isChordRestType() const { return m_segmentType == SegmentType::ChordRest; }
+    bool isChordRestType() const { return segmentType_ == SegmentType::ChordRest; }
 
-    bool isClefRepeatAnnounceType() const { return m_segmentType == SegmentType::ClefRepeatAnnounce; }
+    bool isClefRepeatAnnounceType() const { return segmentType_ == SegmentType::ClefRepeatAnnounce; }
 
-    bool isKeySigRepeatAnnounceType() const { return m_segmentType == SegmentType::KeySigRepeatAnnounce; }
+    bool isKeySigRepeatAnnounceType() const { return segmentType_ == SegmentType::KeySigRepeatAnnounce; }
 
-    bool isTimeSigRepeatAnnounceType() const { return m_segmentType == SegmentType::TimeSigRepeatAnnounce; }
+    bool isTimeSigRepeatAnnounceType() const { return segmentType_ == SegmentType::TimeSigRepeatAnnounce; }
 
-    bool isEndBarLineType() const { return m_segmentType == SegmentType::EndBarLine; }
+    bool isEndBarLineType() const { return segmentType_ == SegmentType::EndBarLine; }
 
-    bool isKeySigAnnounceType() const { return m_segmentType == SegmentType::KeySigAnnounce; }
+    bool isKeySigAnnounceType() const { return segmentType_ == SegmentType::KeySigAnnounce; }
 
-    bool isTimeSigAnnounceType() const { return m_segmentType == SegmentType::TimeSigAnnounce; }
+    bool isTimeSigAnnounceType() const { return segmentType_ == SegmentType::TimeSigAnnounce; }
 
     bool isCourtesySegment() const {
-        return m_segmentType & (SegmentType::CourtesyTimeSigTypes | SegmentType::CourtesyKeySigTypes | SegmentType::CourtesyClefTypes);
+        return segmentType_ & (SegmentType::CourtesyTimeSigTypes | SegmentType::CourtesyKeySigTypes | SegmentType::CourtesyClefTypes);
     }
 
-    bool isTimeTickType() const { return m_segmentType == SegmentType::TimeTick; }
+    bool isTimeTickType() const { return segmentType_ == SegmentType::TimeTick; }
 
     bool isRightAligned() const { return isClefType() || isBreathType(); }
 
-    bool isMMRestSegment() const { return isChordRestType() && m_elist.front() && m_elist.front()->isMMRest(); }
+    bool isMMRestSegment() const { return isChordRestType() && elist_.front() && elist_.front()->isMMRest(); }
 
     bool canWriteSpannerStartEnd(track_idx_t track, const Spanner *spanner) const;
 
@@ -371,11 +371,11 @@ public:
 
     bool hasAccidentals() const;
 
-    EngravingItem *preAppendedItem(track_idx_t track) { return m_preAppendedItems[track]; }
+    EngravingItem *preAppendedItem(track_idx_t track) { return preAppendedItems_[track]; }
 
-    void preAppend(EngravingItem *item, track_idx_t track) { m_preAppendedItems[track] = item; }
+    void preAppend(EngravingItem *item, track_idx_t track) { preAppendedItems_[track] = item; }
 
-    void clearPreAppended(track_idx_t track) { m_preAppendedItems[track] = nullptr; }
+    void clearPreAppended(track_idx_t track) { preAppendedItems_[track] = nullptr; }
 
     bool goesBefore(const Segment *nextSegment) const;
 
@@ -401,21 +401,21 @@ private:
 
     void setEmpty(bool val) const { setFlag(ElementFlag::EMPTY, val); }
 
-    SegmentType m_segmentType = SegmentType::Invalid;
-    Fraction m_tick;  // { Fraction(0, 1) };
-    Fraction m_ticks; // { Fraction(0, 1) };
-    Spatium m_extraLeadingSpace;
-    double m_stretch = 1.0;
-    double m_widthOffset = 0.0; // part of the segment width that will not be stretched during system justification
+    SegmentType segmentType_ = SegmentType::Invalid;
+    Fraction tick_;  // { Fraction(0, 1) };
+    Fraction ticks_; // { Fraction(0, 1) };
+    Spatium extraLeadingSpace_;
+    double stretch_ = 1.0;
+    double widthOffset_ = 0.0; // part of the segment width that will not be stretched during system justification
 
-    Segment *m_next = nullptr; // linked list of segments inside a measure
-    Segment *m_prev = nullptr;
+    Segment *next_ = nullptr; // linked list of segments inside a measure
+    Segment *prev_ = nullptr;
 
-    std::vector<EngravingItem *> m_annotations;
-    std::vector<EngravingItem *> m_elist; // EngravingItem storage, size = staves * VOICES.
+    std::vector<EngravingItem *> annotations_;
+    std::vector<EngravingItem *> elist_; // EngravingItem storage, size = staves * VOICES.
     std::vector<EngravingItem *>
-        m_preAppendedItems;      // Container for items appended to the left of this segment (example: grace notes), size = staves * VOICES.
-    std::vector<Shape> m_shapes; // size = staves
-    double m_spacing = 0;
+        preAppendedItems_;      // Container for items appended to the left of this segment (example: grace notes), size = staves * VOICES.
+    std::vector<Shape> shapes_; // size = staves
+    double spacing_ = 0;
 };
 } // namespace mu::engraving

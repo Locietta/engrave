@@ -434,27 +434,27 @@ NativeFileSystem::NativeFileSystem(fs::path resourceRoot) {
     if (!ec) {
         absolute = canonical;
     }
-    m_resourceRoot = absolute.lexically_normal();
+    resourceRoot_ = absolute.lexically_normal();
     // A trailing separator would survive lexically_normal and break component-wise containment.
-    while (m_resourceRoot.has_relative_path() && m_resourceRoot.filename().empty()) {
-        m_resourceRoot = m_resourceRoot.parent_path();
+    while (resourceRoot_.has_relative_path() && resourceRoot_.filename().empty()) {
+        resourceRoot_ = resourceRoot_.parent_path();
     }
-    if (!m_resourceRoot.is_absolute()) {
-        m_resourceRoot.clear();
+    if (!resourceRoot_.is_absolute()) {
+        resourceRoot_.clear();
         return;
     }
-    m_hasResourceRoot = true;
+    hasResourceRoot_ = true;
 }
 
 NativeFileSystem::~NativeFileSystem() {
-    std::lock_guard<std::mutex> lock(m_streamsMutex);
-    for (auto &item : m_streams) {
+    std::lock_guard<std::mutex> lock(streamsMutex_);
+    for (auto &item : streams_) {
         if (item.second && item.second->file.is_open()) {
             item.second->file.flush();
             item.second->file.close();
         }
     }
-    m_streams.clear();
+    streams_.clear();
 }
 
 NativeFileSystem::Target NativeFileSystem::resolve(const io::path_t &path) const {
@@ -466,7 +466,7 @@ NativeFileSystem::Target NativeFileSystem::resolve(const io::path_t &path) const
         }
 
         if (raw.size() >= 2 && raw[0] == ':' && raw[1] == '/') {
-            if (!m_hasResourceRoot) {
+            if (!hasResourceRoot_) {
                 return target;
             }
 
@@ -487,8 +487,8 @@ NativeFileSystem::Target NativeFileSystem::resolve(const io::path_t &path) const
                 relative.clear();
             }
             // Lexical containment: every component is below resourceRoot and ".." is rejected above.
-            target.path = (m_resourceRoot / relative).lexically_normal();
-            if (!isPathPrefix(m_resourceRoot, target.path)) {
+            target.path = (resourceRoot_ / relative).lexically_normal();
+            if (!isPathPrefix(resourceRoot_, target.path)) {
                 return target;
             }
             target.virtualRel = pathToUtf8(relative);
@@ -508,17 +508,17 @@ NativeFileSystem::Target NativeFileSystem::resolve(const io::path_t &path) const
 }
 
 bool NativeFileSystem::isInsideResourceRoot(const fs::path &path) const {
-    if (!m_hasResourceRoot) {
+    if (!hasResourceRoot_) {
         return false;
     }
 
-    if (isPathPrefix(m_resourceRoot, absoluteNormalized(path))) {
+    if (isPathPrefix(resourceRoot_, absoluteNormalized(path))) {
         return true;
     }
 
     std::error_code ec;
     const fs::path canonical = fs::weakly_canonical(path, ec);
-    return !ec && isPathPrefix(m_resourceRoot, canonical.lexically_normal());
+    return !ec && isPathPrefix(resourceRoot_, canonical.lexically_normal());
 }
 
 bool NativeFileSystem::isProtectedPath(const fs::path &path) const {
@@ -550,17 +550,17 @@ bool NativeFileSystem::isProtectedPath(const fs::path &path) const {
 }
 
 bool NativeFileSystem::isResourceAncestor(const fs::path &path) const {
-    if (!m_hasResourceRoot) {
+    if (!hasResourceRoot_) {
         return false;
     }
 
-    if (isStrictPathPrefix(absoluteNormalized(path), m_resourceRoot)) {
+    if (isStrictPathPrefix(absoluteNormalized(path), resourceRoot_)) {
         return true;
     }
 
     std::error_code ec;
     const fs::path canonical = fs::weakly_canonical(path, ec);
-    return !ec && isStrictPathPrefix(canonical.lexically_normal(), m_resourceRoot);
+    return !ec && isStrictPathPrefix(canonical.lexically_normal(), resourceRoot_);
 }
 
 Ret NativeFileSystem::exists(const io::path_t &path) const {
@@ -1062,22 +1062,22 @@ RetVal<StreamId> NativeFileSystem::openStream(const io::path_t &filePath, OpenMo
         return result;
     }
 
-    std::lock_guard<std::mutex> lock(m_streamsMutex);
-    while (m_streams.find(m_nextStreamId) != m_streams.end()) {
-        if (m_nextStreamId == std::numeric_limits<StreamId>::max()) {
-            m_nextStreamId = 0;
+    std::lock_guard<std::mutex> lock(streamsMutex_);
+    while (streams_.find(nextStreamId_) != streams_.end()) {
+        if (nextStreamId_ == std::numeric_limits<StreamId>::max()) {
+            nextStreamId_ = 0;
         } else {
-            ++m_nextStreamId;
+            ++nextStreamId_;
         }
     }
 
-    const StreamId id = m_nextStreamId;
-    if (m_nextStreamId == std::numeric_limits<StreamId>::max()) {
-        m_nextStreamId = 0;
+    const StreamId id = nextStreamId_;
+    if (nextStreamId_ == std::numeric_limits<StreamId>::max()) {
+        nextStreamId_ = 0;
     } else {
-        ++m_nextStreamId;
+        ++nextStreamId_;
     }
-    m_streams.emplace(id, std::move(stream));
+    streams_.emplace(id, std::move(stream));
 
     result.ret = make_ok();
     result.val = id;
@@ -1085,9 +1085,9 @@ RetVal<StreamId> NativeFileSystem::openStream(const io::path_t &filePath, OpenMo
 }
 
 Ret NativeFileSystem::writeToStream(StreamId fileId, const ByteArray &data, uint64_t offset) {
-    std::lock_guard<std::mutex> lock(m_streamsMutex);
-    auto it = m_streams.find(fileId);
-    if (it == m_streams.end() || !it->second) {
+    std::lock_guard<std::mutex> lock(streamsMutex_);
+    auto it = streams_.find(fileId);
+    if (it == streams_.end() || !it->second) {
         return failure(io::Err::FSWriteError, "Invalid stream id");
     }
 
@@ -1117,13 +1117,13 @@ Ret NativeFileSystem::writeToStream(StreamId fileId, const ByteArray &data, uint
 Ret NativeFileSystem::closeStream(StreamId fileId) {
     std::unique_ptr<Stream> stream;
     {
-        std::lock_guard<std::mutex> lock(m_streamsMutex);
-        auto it = m_streams.find(fileId);
-        if (it == m_streams.end() || !it->second) {
+        std::lock_guard<std::mutex> lock(streamsMutex_);
+        auto it = streams_.find(fileId);
+        if (it == streams_.end() || !it->second) {
             return failure(io::Err::FSWriteError, "Invalid stream id");
         }
         stream = std::move(it->second);
-        m_streams.erase(it);
+        streams_.erase(it);
     }
 
     if (!stream) {

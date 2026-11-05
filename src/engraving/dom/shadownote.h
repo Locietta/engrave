@@ -49,17 +49,17 @@ public:
 
     bool isValid() const;
 
-    Fraction tick() const override { return m_tick; }
+    Fraction tick() const override { return tick_; }
 
-    void setTick(Fraction t) { m_tick = t; }
+    void setTick(Fraction t) { tick_ = t; }
 
-    int lineIndex() const { return m_lineIndex; }
+    int lineIndex() const { return lineIndex_; }
 
-    void setLineIndex(int n) { m_lineIndex = n; }
+    void setLineIndex(int n) { lineIndex_ = n; }
 
-    bool isRest() const { return m_isRest; }
+    bool isRest() const { return isRest_; }
 
-    const TDuration &duration() const { return m_duration; }
+    const TDuration &duration() const { return duration_; }
 
     void setState(SymId noteSymbol, TDuration duration, bool isRest, bool beyondScore, AccidentalType accidentalType = AccidentalType::NONE,
                   const std::set<SymId> &articulationIds = {});
@@ -72,7 +72,7 @@ public:
 
     bool computeUp() const;
 
-    SymId noteheadSymbol() const { return m_noteheadSymbol; }
+    SymId noteheadSymbol() const { return noteheadSymbol_; }
 
     bool hasStem() const;
     bool hasFlag() const;
@@ -82,17 +82,17 @@ public:
 
     bool ledgerLinesVisible() const;
 
-    bool isBeyondScore() const { return m_beyondScore; }
+    bool isBeyondScore() const { return beyondScore_; }
 
 private:
 
-    Fraction m_tick;
-    int m_lineIndex = -1;
-    SymId m_noteheadSymbol = SymId::noSym;
-    TDuration m_duration;
-    bool m_isRest = false;
-    AccidentalType m_accidentalType = AccidentalType::NONE;
-    std::set<SymId> m_articulationIds;
-    bool m_beyondScore = false;
+    Fraction tick_;
+    int lineIndex_ = -1;
+    SymId noteheadSymbol_ = SymId::noSym;
+    TDuration duration_;
+    bool isRest_ = false;
+    AccidentalType accidentalType_ = AccidentalType::NONE;
+    std::set<SymId> articulationIds_;
+    bool beyondScore_ = false;
 };
 } // namespace mu::engraving

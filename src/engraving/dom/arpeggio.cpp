@@ -41,12 +41,12 @@ using namespace mu;
 using namespace mu::engraving;
 
 Arpeggio::Arpeggio(DummyParentOr<Chord> parent, ElementType type) : EngravingItem(type, parent, ElementFlag::MOVABLE) {
-    m_arpeggioType = ArpeggioType::NORMAL;
-    m_span = 1;
-    m_userLen1 = 0.0;
-    m_userLen2 = 0.0;
-    m_playArpeggio = true;
-    m_stretch = 1.0;
+    arpeggioType_ = ArpeggioType::NORMAL;
+    span_ = 1;
+    userLen1_ = 0.0;
+    userLen2_ = 0.0;
+    playArpeggio_ = true;
+    stretch_ = 1.0;
 
     EngravingObject *p = parent;
     if (type == ElementType::ARPEGGIO && p->isChord()) {
@@ -60,7 +60,7 @@ Arpeggio::~Arpeggio() {
     if (!_chord || !_chord->segment()) {
         return;
     }
-    for (track_idx_t _track = track(); _track <= track() + m_span; _track++) {
+    for (track_idx_t _track = track(); _track <= track() + span_; _track++) {
         EngravingItem *e = _chord->segment()->element(_track);
         if (e && e->isChord() && toChord(e)->spanArpeggio() == this) {
             toChord(e)->setSpanArpeggio(nullptr);
@@ -68,7 +68,7 @@ Arpeggio::~Arpeggio() {
     }
 }
 
-const muse::TranslatableString &Arpeggio::arpeggioTypeName() const { return TConv::userName(m_arpeggioType); }
+const muse::TranslatableString &Arpeggio::arpeggioTypeName() const { return TConv::userName(arpeggioType_); }
 
 void Arpeggio::findAndAttachToChords() {
     const track_idx_t strack = track();
@@ -76,11 +76,11 @@ void Arpeggio::findAndAttachToChords() {
     const Part *part = _chord->part();
     const track_idx_t btrack = part->trackRange().endTrack;
 
-    if (strack + m_span > btrack) {
+    if (strack + span_ > btrack) {
         rebaseEndAnchor(AnchorRebaseDirection::UP);
     }
 
-    const track_idx_t etrack = strack + (m_span - 1);
+    const track_idx_t etrack = strack + (span_ - 1);
     track_idx_t lastTrack = strack;
     for (track_idx_t track = strack; track <= etrack; track++) {
         EngravingItem *e = _chord->segment()->element(track);
@@ -120,7 +120,7 @@ void Arpeggio::rebaseStartAnchor(AnchorRebaseDirection direction) {
             for (int curTrack = static_cast<int>(track()) - 1; curTrack >= static_cast<int>(topTrack); curTrack--) {
                 EngravingItem *e = chord()->segment()->element(curTrack);
                 if (e && e->isChord()) {
-                    track_idx_t newSpan = m_span + track() - curTrack;
+                    track_idx_t newSpan = span_ + track() - curTrack;
                     if (newSpan != 0) {
                         undoChangeProperty(Pid::ARPEGGIO_SPAN, newSpan);
                         score()->undoChangeParent(this, e, e->staffIdx());
@@ -131,10 +131,10 @@ void Arpeggio::rebaseStartAnchor(AnchorRebaseDirection direction) {
         }
     } else if (direction == AnchorRebaseDirection::DOWN) {
         // Move arpeggio to chord below
-        for (track_idx_t curTrack = track() + 1; curTrack <= track() + m_span - 1; curTrack++) {
+        for (track_idx_t curTrack = track() + 1; curTrack <= track() + span_ - 1; curTrack++) {
             EngravingItem *e = chord()->segment()->element(curTrack);
             if (e && e->isChord()) {
-                track_idx_t newSpan = m_span + track() - curTrack;
+                track_idx_t newSpan = span_ + track() - curTrack;
                 if (newSpan != 0) {
                     chord()->undoChangeSpanArpeggio(nullptr);
                     undoChangeProperty(Pid::ARPEGGIO_SPAN, newSpan);
@@ -149,7 +149,7 @@ void Arpeggio::rebaseStartAnchor(AnchorRebaseDirection direction) {
 void Arpeggio::rebaseEndAnchor(AnchorRebaseDirection direction) {
     if (direction == AnchorRebaseDirection::UP) {
         // Move end to chord above
-        for (int curTrack = static_cast<int>(track()) + m_span - 2; curTrack >= static_cast<int>(track()); curTrack--) {
+        for (int curTrack = static_cast<int>(track()) + span_ - 2; curTrack >= static_cast<int>(track()); curTrack--) {
             EngravingItem *e = chord()->segment()->element(curTrack);
             if (e && e->isChord()) {
                 track_idx_t newSpan = curTrack - track() + 1;
@@ -168,9 +168,9 @@ void Arpeggio::rebaseEndAnchor(AnchorRebaseDirection direction) {
         Staff *s = staff();
         Part *part = s->part();
         track_idx_t btrack = part->trackRange().endTrack;
-        if (track() + m_span < btrack) {
+        if (track() + span_ < btrack) {
             // Loop through voices til we find a chord
-            for (track_idx_t curTrack = track() + m_span; curTrack < btrack; curTrack++) {
+            for (track_idx_t curTrack = track() + span_; curTrack < btrack; curTrack++) {
                 EngravingItem *e = chord()->segment()->element(curTrack);
                 if (e && e->isChord()) {
                     track_idx_t newSpan = curTrack - track() + 1;
@@ -188,8 +188,8 @@ void Arpeggio::rebaseEndAnchor(AnchorRebaseDirection direction) {
 //---------------------------------------------------------
 
 void Arpeggio::spatiumChanged(double oldValue, double newValue) {
-    m_userLen1 *= (newValue / oldValue);
-    m_userLen2 *= (newValue / oldValue);
+    userLen1_ *= (newValue / oldValue);
+    userLen2_ *= (newValue / oldValue);
 }
 
 //---------------------------------------------------------
@@ -243,12 +243,12 @@ staff_idx_t Arpeggio::vStaffIdx() const { return chord() ? chord()->vStaffIdx() 
 
 engraving::PropertyValue Arpeggio::getProperty(Pid propertyId) const {
     switch (propertyId) {
-        case Pid::ARPEGGIO_TYPE: return int(m_arpeggioType);
+        case Pid::ARPEGGIO_TYPE: return int(arpeggioType_);
         case Pid::TIME_STRETCH: return Stretch();
         case Pid::ARP_USER_LEN1: return userLen1();
         case Pid::ARP_USER_LEN2: return userLen2();
-        case Pid::PLAY: return m_playArpeggio;
-        case Pid::ARPEGGIO_SPAN: return m_span;
+        case Pid::PLAY: return playArpeggio_;
+        case Pid::ARPEGGIO_SPAN: return span_;
         default: break;
     }
     return EngravingItem::getProperty(propertyId);

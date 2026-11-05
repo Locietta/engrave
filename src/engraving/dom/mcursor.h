@@ -50,20 +50,20 @@ public:
 
     void move(int track, const Fraction &tick);
 
-    MasterScore *score() const { return m_score; }
+    MasterScore *score() const { return score_; }
 
-    void setScore(MasterScore *s) { m_score = s; }
+    void setScore(MasterScore *s) { score_ = s; }
 
-    void setTimeSig(Fraction f) { m_sig = f; }
+    void setTimeSig(Fraction f) { sig_ = f; }
 
 private:
 
     void createMeasures();
 
-    MasterScore *m_score = nullptr;
-    Fraction m_tick;
-    int m_track = 0;
-    Fraction m_sig;
+    MasterScore *score_ = nullptr;
+    Fraction tick_;
+    int track_ = 0;
+    Fraction sig_;
 };
 } // namespace mu::engraving
 #endif

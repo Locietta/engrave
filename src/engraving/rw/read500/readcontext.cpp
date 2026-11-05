@@ -32,43 +32,43 @@
 using namespace mu::engraving;
 using namespace mu::engraving::read500;
 
-ReadContext::ReadContext(Score *score, bool pasteMode) : m_score(score), _pasteMode(pasteMode) {}
+ReadContext::ReadContext(Score *score, bool pasteMode) : score_(score), _pasteMode(pasteMode) {}
 
 ReadContext::~ReadContext() {
-    IF_ASSERT_FAILED(m_incompleteNoteAnchoredSpanners.empty()) {
-        for (auto &[spanner, startEndEIDs] : m_incompleteNoteAnchoredSpanners) {
+    IF_ASSERT_FAILED(incompleteNoteAnchoredSpanners_.empty()) {
+        for (auto &[spanner, startEndEIDs] : incompleteNoteAnchoredSpanners_) {
             delete spanner;
         }
 
-        m_incompleteNoteAnchoredSpanners.clear();
+        incompleteNoteAnchoredSpanners_.clear();
     }
 }
 
-Score *ReadContext::score() const { return m_score; }
+Score *ReadContext::score() const { return score_; }
 
-void ReadContext::setScore(Score *score) { m_score = score; }
+void ReadContext::setScore(Score *score) { score_ = score; }
 
 const MStyle &ReadContext::style() const { return score()->style(); }
 
 std::shared_ptr<IEngravingFontsProvider> ReadContext::engravingFonts() const { return score()->engravingFonts(); }
 
-String ReadContext::mscoreVersion() const { return m_score->mscoreVersion(); }
+String ReadContext::mscoreVersion() const { return score_->mscoreVersion(); }
 
-int ReadContext::mscVersion() const { return m_score->mscVersion(); }
+int ReadContext::mscVersion() const { return score_->mscVersion(); }
 
-int ReadContext::fileDivision() const { return m_score->fileDivision(); }
+int ReadContext::fileDivision() const { return score_->fileDivision(); }
 
-int ReadContext::fileDivision(int t) const { return m_score->fileDivision(t); }
+int ReadContext::fileDivision(int t) const { return score_->fileDivision(t); }
 
-double ReadContext::spatium() const { return m_score->style().spatium(); }
+double ReadContext::spatium() const { return score_->style().spatium(); }
 
-void ReadContext::setSpatium(double v) { m_score->style().set(Sid::spatium, v); }
+void ReadContext::setSpatium(double v) { score_->style().set(Sid::spatium, v); }
 
-DummyParent *ReadContext::dummy() const { return m_score->dummy(); }
+DummyParent *ReadContext::dummy() const { return score_->dummy(); }
 
-Staff *ReadContext::staff(staff_idx_t n) { return m_score->staff(n); }
+Staff *ReadContext::staff(staff_idx_t n) { return score_->staff(n); }
 
-bool ReadContext::isSameScore(const EngravingObject *obj) const { return obj->score() == m_score; }
+bool ReadContext::isSameScore(const EngravingObject *obj) const { return obj->score() == score_; }
 
 Fraction ReadContext::rtick() const { return _curMeasure ? _tick - _curMeasure->tick() : _tick; }
 
@@ -147,12 +147,12 @@ void ReadContext::addPartAudioSettingCompat(PartAudioSettingsCompat partAudioSet
 
 void ReadContext::addMMRestEndMeasureEID(Measure *mmrest, EID lastMeasureEID) {
     DO_ASSERT(lastMeasureEID.isValid());
-    m_mmRestEndMeasures.emplace(mmrest, lastMeasureEID);
+    mmRestEndMeasures_.emplace(mmrest, lastMeasureEID);
 }
 
 void ReadContext::setMMRestEndMeasures() {
     EIDRegister *eidRegister = score()->masterScore()->eidRegister();
-    for (auto &[mmrest, lastMeasureEID] : m_mmRestEndMeasures) {
+    for (auto &[mmrest, lastMeasureEID] : mmRestEndMeasures_) {
         EngravingObject *linkedElement = eidRegister->itemFromEID(lastMeasureEID);
         IF_ASSERT_FAILED(linkedElement && linkedElement->isMeasure()) {
             LOGE() << "No valid end measure found for MMRest at " << mmrest->tick().toString();
@@ -165,40 +165,40 @@ void ReadContext::setMMRestEndMeasures() {
     }
 }
 
-void ReadContext::registerPastedEID(const EID &clipboardEid, const EID &fileEid) { m_pastedEIDs.emplace(clipboardEid, fileEid); }
+void ReadContext::registerPastedEID(const EID &clipboardEid, const EID &fileEid) { pastedEIDs_.emplace(clipboardEid, fileEid); }
 
 EID ReadContext::resolvePastedEID(const EID &clipboardEid) const {
     if (!_pasteMode) {
         return clipboardEid;
     }
 
-    auto it = m_pastedEIDs.find(clipboardEid);
-    IF_ASSERT_FAILED(it != m_pastedEIDs.end()) { return clipboardEid; }
+    auto it = pastedEIDs_.find(clipboardEid);
+    IF_ASSERT_FAILED(it != pastedEIDs_.end()) { return clipboardEid; }
 
     return it->second;
 }
 
 void ReadContext::addNoteAnchoredSpannerStartEl(Spanner *spanner, EID startElementEID) {
-    auto it = m_incompleteNoteAnchoredSpanners.find(spanner);
-    if (it != m_incompleteNoteAnchoredSpanners.end()) {
+    auto it = incompleteNoteAnchoredSpanners_.find(spanner);
+    if (it != incompleteNoteAnchoredSpanners_.end()) {
         it->second.first = startElementEID;
     } else {
-        m_incompleteNoteAnchoredSpanners.emplace(spanner, std::make_pair(startElementEID, EID::invalid()));
+        incompleteNoteAnchoredSpanners_.emplace(spanner, std::make_pair(startElementEID, EID::invalid()));
     }
 }
 
 void ReadContext::addNoteAnchoredSpannerEndEl(Spanner *spanner, EID endElementEID) {
-    auto it = m_incompleteNoteAnchoredSpanners.find(spanner);
-    if (it != m_incompleteNoteAnchoredSpanners.end()) {
+    auto it = incompleteNoteAnchoredSpanners_.find(spanner);
+    if (it != incompleteNoteAnchoredSpanners_.end()) {
         it->second.second = endElementEID;
     } else {
-        m_incompleteNoteAnchoredSpanners.emplace(spanner, std::make_pair(EID::invalid(), endElementEID));
+        incompleteNoteAnchoredSpanners_.emplace(spanner, std::make_pair(EID::invalid(), endElementEID));
     }
 }
 
 void ReadContext::connectNoteAnchoredSpanners() {
     EIDRegister *eidRegister = score()->masterScore()->eidRegister();
-    for (auto &[spanner, startEndEIDs] : m_incompleteNoteAnchoredSpanners) {
+    for (auto &[spanner, startEndEIDs] : incompleteNoteAnchoredSpanners_) {
         EID startElementEID = startEndEIDs.first;
         EID endElementEID = startEndEIDs.second;
         EngravingItem *startElement = toEngravingItem(eidRegister->itemFromEID(startElementEID));
@@ -226,5 +226,5 @@ void ReadContext::connectNoteAnchoredSpanners() {
             score()->addElement(spanner);
         }
     }
-    m_incompleteNoteAnchoredSpanners.clear();
+    incompleteNoteAnchoredSpanners_.clear();
 }

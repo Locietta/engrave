@@ -83,47 +83,47 @@ public:
 
     CharFormat &operator=(const CharFormat &cf);
 
-    FontStyle style() const { return m_style; }
+    FontStyle style() const { return style_; }
 
-    void setStyle(FontStyle s) { m_style = s; }
+    void setStyle(FontStyle s) { style_ = s; }
 
-    bool bold() const { return m_style & FontStyle::Bold; }
+    bool bold() const { return style_ & FontStyle::Bold; }
 
-    bool italic() const { return m_style & FontStyle::Italic; }
+    bool italic() const { return style_ & FontStyle::Italic; }
 
-    bool underline() const { return m_style & FontStyle::Underline; }
+    bool underline() const { return style_ & FontStyle::Underline; }
 
-    bool strike() const { return m_style & FontStyle::Strike; }
+    bool strike() const { return style_ & FontStyle::Strike; }
 
-    void setBold(bool val) { m_style = val ? m_style + FontStyle::Bold : m_style - FontStyle::Bold; }
+    void setBold(bool val) { style_ = val ? style_ + FontStyle::Bold : style_ - FontStyle::Bold; }
 
-    void setItalic(bool val) { m_style = val ? m_style + FontStyle::Italic : m_style - FontStyle::Italic; }
+    void setItalic(bool val) { style_ = val ? style_ + FontStyle::Italic : style_ - FontStyle::Italic; }
 
-    void setUnderline(bool val) { m_style = val ? m_style + FontStyle::Underline : m_style - FontStyle::Underline; }
+    void setUnderline(bool val) { style_ = val ? style_ + FontStyle::Underline : style_ - FontStyle::Underline; }
 
-    void setStrike(bool val) { m_style = val ? m_style + FontStyle::Strike : m_style - FontStyle::Strike; }
+    void setStrike(bool val) { style_ = val ? style_ + FontStyle::Strike : style_ - FontStyle::Strike; }
 
-    VerticalAlignment valign() const { return m_valign; }
+    VerticalAlignment valign() const { return valign_; }
 
-    double fontSize() const { return m_fontSize; }
+    double fontSize() const { return fontSize_; }
 
-    String fontFamily() const { return m_fontFamily; }
+    String fontFamily() const { return fontFamily_; }
 
-    void setValign(VerticalAlignment val) { m_valign = val; }
+    void setValign(VerticalAlignment val) { valign_ = val; }
 
-    void setFontSize(double val) { m_fontSize = val; }
+    void setFontSize(double val) { fontSize_ = val; }
 
-    void setFontFamily(const String &val) { m_fontFamily = val; }
+    void setFontFamily(const String &val) { fontFamily_ = val; }
 
     FormatValue formatValue(FormatId) const;
     void setFormatValue(FormatId, const FormatValue &val);
 
 private:
 
-    FontStyle m_style = FontStyle::Normal;
-    VerticalAlignment m_valign = VerticalAlignment::AlignNormal;
-    double m_fontSize = 12.0;
-    String m_fontFamily;
+    FontStyle style_ = FontStyle::Normal;
+    VerticalAlignment valign_ = VerticalAlignment::AlignNormal;
+    double fontSize_ = 12.0;
+    String fontFamily_;
 };
 
 //---------------------------------------------------------
@@ -138,45 +138,45 @@ public:
 
     enum class MoveMode : unsigned char { MoveAnchor, KeepAnchor };
 
-    TextCursor(TextBase *t) : m_text(t) {}
+    TextCursor(TextBase *t) : text_(t) {}
 
-    TextBase *text() const { return m_text; }
+    TextBase *text() const { return text_; }
 
-    bool hasSelection() const { return (m_selectLine != m_row) || (m_selectColumn != m_column); }
+    bool hasSelection() const { return (selectLine_ != row_) || (selectColumn_ != column_); }
 
     void clearSelection();
     void endEdit();
     void startEdit();
 
-    bool editing() const { return m_editing; }
+    bool editing() const { return editing_; }
 
-    bool visible() const { return m_visible; }
+    bool visible() const { return visible_; }
 
-    void setVisible(bool val) { m_visible = val; }
+    void setVisible(bool val) { visible_ = val; }
 
-    void toggleVisible() { setVisible(!m_visible); }
+    void toggleVisible() { setVisible(!visible_); }
 
-    CharFormat *format() { return &m_format; }
+    CharFormat *format() { return &format_; }
 
-    const CharFormat *format() const { return &m_format; }
+    const CharFormat *format() const { return &format_; }
 
-    void setFormat(const CharFormat &f) { m_format = f; }
+    void setFormat(const CharFormat &f) { format_ = f; }
 
-    size_t row() const { return m_row; }
+    size_t row() const { return row_; }
 
-    size_t column() const { return m_column; }
+    size_t column() const { return column_; }
 
-    size_t selectLine() const { return m_selectLine; }
+    size_t selectLine() const { return selectLine_; }
 
-    size_t selectColumn() const { return m_selectColumn; }
+    size_t selectColumn() const { return selectColumn_; }
 
-    void setRow(size_t val) { m_row = val; }
+    void setRow(size_t val) { row_ = val; }
 
-    void setColumn(size_t val) { m_column = val; }
+    void setColumn(size_t val) { column_ = val; }
 
-    void setSelectLine(size_t val) { m_selectLine = val; }
+    void setSelectLine(size_t val) { selectLine_ = val; }
 
-    void setSelectColumn(size_t val) { m_selectColumn = val; }
+    void setSelectColumn(size_t val) { selectColumn_ = val; }
 
     size_t columns() const;
     void init();
@@ -217,14 +217,14 @@ private:
     Range range(int start, int end) const;
     int position(int row, int column) const;
 
-    TextBase *m_text = nullptr;
-    CharFormat m_format;
-    size_t m_row = 0;
-    size_t m_column = 0;
-    size_t m_selectLine = 0; // start of selection
-    size_t m_selectColumn = 0;
-    bool m_editing = false;
-    bool m_visible = false;
+    TextBase *text_ = nullptr;
+    CharFormat format_;
+    size_t row_ = 0;
+    size_t column_ = 0;
+    size_t selectLine_ = 0; // start of selection
+    size_t selectColumn_ = 0;
+    bool editing_ = false;
+    bool visible_ = false;
 };
 
 //---------------------------------------------------------
@@ -268,21 +268,21 @@ class TextBlock {
 public:
     TextBlock() = default;
 
-    bool operator==(const TextBlock &x) const { return m_fragments == x.m_fragments; }
+    bool operator==(const TextBlock &x) const { return fragments_ == x.fragments_; }
 
-    bool operator!=(const TextBlock &x) const { return m_fragments != x.m_fragments; }
+    bool operator!=(const TextBlock &x) const { return fragments_ != x.fragments_; }
 
-    const std::list<TextFragment> &fragments() const { return m_fragments; }
+    const std::list<TextFragment> &fragments() const { return fragments_; }
 
-    std::list<TextFragment> &fragments() { return m_fragments; }
+    std::list<TextFragment> &fragments() { return fragments_; }
 
     std::list<TextFragment> fragmentsWithoutEmpty();
 
-    const Shape &shape() const { return m_shape; }
+    const Shape &shape() const { return shape_; }
 
-    Shape &shape() { return m_shape; }
+    Shape &shape() { return shape_; }
 
-    const RectF &boundingRect() const { return m_shape.bbox(); }
+    const RectF &boundingRect() const { return shape_.bbox(); }
 
     RectF boundingRect(int col1, int col2, const TextBase *) const;
     size_t columns() const;
@@ -298,30 +298,30 @@ public:
     const TextFragment *fragment(int col) const;
     std::list<TextFragment>::iterator fragment(int column, int *rcol, int *ridx);
 
-    double y() const { return m_y; }
+    double y() const { return y_; }
 
-    void setY(double val) { m_y = val; }
+    void setY(double val) { y_ = val; }
 
-    double lineSpacing() const { return m_lineSpacing; }
+    double lineSpacing() const { return lineSpacing_; }
 
-    void setLineSpacing(double val) { m_lineSpacing = val; }
+    void setLineSpacing(double val) { lineSpacing_ = val; }
 
     String text(int, int, const TextBase *, bool = false) const;
 
-    bool eol() const { return m_eol; }
+    bool eol() const { return eol_; }
 
-    void setEol(bool val) { m_eol = val; }
+    void setEol(bool val) { eol_ = val; }
 
     void changeFormat(FormatId, const FormatValue &val, int start, int n);
 
 private:
     void simplify();
 
-    std::list<TextFragment> m_fragments;
-    double m_y = 0.0;
-    double m_lineSpacing = 0.0;
-    Shape m_shape;
-    bool m_eol = false;
+    std::list<TextFragment> fragments_;
+    double y_ = 0.0;
+    double lineSpacing_ = 0.0;
+    Shape shape_;
+    bool eol_ = false;
 };
 
 //---------------------------------------------------------
@@ -339,13 +339,13 @@ public:
 
     Text &operator=(const Text &) = delete;
 
-    Align align() const { return m_align; }
+    Align align() const { return align_; }
 
-    void setAlign(Align a) { m_align = a; }
+    void setAlign(Align a) { align_ = a; }
 
-    AlignH position() const { return m_position; }
+    AlignH position() const { return position_; }
 
-    void setPosition(AlignH val) { m_position = val; }
+    void setPosition(AlignH val) { position_ = val; }
 
     static String plainToXmlText(const String &s) { return s.toXmlEscaped(); }
 
@@ -378,9 +378,9 @@ public:
     virtual void setFamily(const String &val);
     virtual void setSize(const double &val);
 
-    bool anchorToEndOfPrevious() const { return m_anchorToEndOfPrevious; }
+    bool anchorToEndOfPrevious() const { return anchorToEndOfPrevious_; }
 
-    void setAnchorToEndOfPrevious(bool v) { m_anchorToEndOfPrevious = v; }
+    void setAnchorToEndOfPrevious(bool v) { anchorToEndOfPrevious_ = v; }
 
     bool hasParentSegment() const { return ownershipParent() && parent()->isSegment(); }
 
@@ -393,9 +393,9 @@ public:
     void selectAll();
     void select(SelectTextType);
 
-    bool isPrimed() const { return m_primed; }
+    bool isPrimed() const { return primed_; }
 
-    void setPrimed(bool primed) { m_primed = primed; }
+    void setPrimed(bool primed) { primed_ = primed; }
 
     virtual void paste(const String &txt);
 
@@ -419,7 +419,7 @@ public:
 
     static bool validateText(String &s);
 
-    bool inHexState() const { return m_hexState >= 0; }
+    bool inHexState() const { return hexState_ >= 0; }
 
     void endHexState();
 
@@ -436,22 +436,22 @@ public:
     void styleChanged() override;
     void editInsertText(TextCursor *, const String &);
 
-    TextCursor *cursor() const { return m_cursor; }
+    TextCursor *cursor() const { return cursor_; }
 
-    void setTextInvalid() { m_textInvalid = true; }
+    void setTextInvalid() { textInvalid_ = true; }
 
-    bool isTextInvalid() const { return m_textInvalid; }
+    bool isTextInvalid() const { return textInvalid_; }
 
     // helper functions
-    bool hasFrame() const { return m_frameType != FrameType::NO_FRAME; }
+    bool hasFrame() const { return frameType_ != FrameType::NO_FRAME; }
 
-    bool circle() const { return m_frameType == FrameType::CIRCLE; }
+    bool circle() const { return frameType_ == FrameType::CIRCLE; }
 
-    bool rectangle() const { return m_frameType == FrameType::RECTANGLE; }
+    bool rectangle() const { return frameType_ == FrameType::RECTANGLE; }
 
-    TextStyleType textStyleType() const { return m_textStyleType; }
+    TextStyleType textStyleType() const { return textStyleType_; }
 
-    void setTextStyleType(TextStyleType id) { m_textStyleType = id; }
+    void setTextStyleType(TextStyleType id) { textStyleType_ = id; }
 
     void initTextStyleType(TextStyleType id);
     void initTextStyleType(TextStyleType id, bool preserveDifferent);
@@ -486,33 +486,33 @@ public:
 
     Color textColor(const rendering::PaintOptions &opt) const;
 
-    FrameType frameType() const { return m_frameType; }
+    FrameType frameType() const { return frameType_; }
 
-    void setFrameType(FrameType val) { m_frameType = val; }
+    void setFrameType(FrameType val) { frameType_ = val; }
 
-    double textLineSpacing() const { return m_textLineSpacing; }
+    double textLineSpacing() const { return textLineSpacing_; }
 
-    void setTextLineSpacing(double val) { m_textLineSpacing = val; }
+    void setTextLineSpacing(double val) { textLineSpacing_ = val; }
 
-    Color bgColor() const { return m_bgColor; }
+    Color bgColor() const { return bgColor_; }
 
-    void setBgColor(const Color &val) { m_bgColor = val; }
+    void setBgColor(const Color &val) { bgColor_ = val; }
 
-    Color frameColor() const { return m_frameColor; }
+    Color frameColor() const { return frameColor_; }
 
-    void setFrameColor(const Color &val) { m_frameColor = val; }
+    void setFrameColor(const Color &val) { frameColor_ = val; }
 
-    Spatium frameWidth() const { return m_frameWidth; }
+    Spatium frameWidth() const { return frameWidth_; }
 
-    void setFrameWidth(Spatium val) { m_frameWidth = val; }
+    void setFrameWidth(Spatium val) { frameWidth_ = val; }
 
-    Spatium paddingWidth() const { return m_paddingWidth; }
+    Spatium paddingWidth() const { return paddingWidth_; }
 
-    void setPaddingWidth(Spatium val) { m_paddingWidth = val; }
+    void setPaddingWidth(Spatium val) { paddingWidth_ = val; }
 
-    Spatium frameRound() const { return m_frameRound; }
+    Spatium frameRound() const { return frameRound_; }
 
-    void setFrameRound(Spatium val) { m_frameRound = val; }
+    void setFrameRound(Spatium val) { frameRound_ = val; }
 
     struct LayoutData : public EngravingItem::LayoutData {
         std::vector<TextBlock> blocks;
@@ -537,31 +537,31 @@ public:
 
     //! NOTE It can only be set for some types of text, see who has the setter.
     //! At the moment it's: Text, Jump, Marker
-    bool layoutToParentWidth() const { return m_layoutToParentWidth; }
+    bool layoutToParentWidth() const { return layoutToParentWidth_; }
 
     virtual bool positionRelativeToNoteheadRest() const = 0;
 
-    void setVoiceAssignment(VoiceAssignment v) { m_voiceAssignment = v; }
+    void setVoiceAssignment(VoiceAssignment v) { voiceAssignment_ = v; }
 
-    VoiceAssignment voiceAssignment() const { return m_voiceAssignment; }
+    VoiceAssignment voiceAssignment() const { return voiceAssignment_; }
 
-    void setDirection(DirectionV v) { m_direction = v; }
+    void setDirection(DirectionV v) { direction_ = v; }
 
-    DirectionV direction() const { return m_direction; }
+    DirectionV direction() const { return direction_; }
 
-    void setCenterBetweenStaves(AutoOnOff v) { m_centerBetweenStaves = v; }
+    void setCenterBetweenStaves(AutoOnOff v) { centerBetweenStaves_ = v; }
 
-    AutoOnOff centerBetweenStaves() const { return m_centerBetweenStaves; }
+    AutoOnOff centerBetweenStaves() const { return centerBetweenStaves_; }
 
     void genText();
 
-    double symbolSize() const { return m_symbolSize; }
+    double symbolSize() const { return symbolSize_; }
 
-    void setSymbolSize(double v) { m_symbolSize = v; }
+    void setSymbolSize(double v) { symbolSize_ = v; }
 
-    double symbolScale() const { return m_symbolScale; }
+    double symbolScale() const { return symbolScale_; }
 
-    void setSymbolScale(double v) { m_symbolScale = v; }
+    void setSymbolScale(double v) { symbolScale_ = v; }
 
     bool hasSymbolScale() const;
 
@@ -569,9 +569,9 @@ public:
 
     double spatiumScaling() const;
 
-    double textAngle() const { return m_textAngle; }
+    double textAngle() const { return textAngle_; }
 
-    void setTextAngle(double v) { m_textAngle = v; }
+    void setTextAngle(double v) { textAngle_ = v; }
 
     PointF defaultPos() const override;
 
@@ -587,7 +587,7 @@ protected:
 
     virtual void commitText();
 
-    bool m_layoutToParentWidth = false;
+    bool layoutToParentWidth_ = false;
 
 private:
     void insert(TextCursor *, char32_t code, LayoutData *ldata) const;
@@ -607,40 +607,40 @@ private:
     void notifyAboutTextInserted(int startPosition, int endPosition, const String &text);
     void notifyAboutTextRemoved(int startPosition, int endPosition, const String &text);
 
-    Align m_align;
+    Align align_;
 
-    AlignH m_position = AlignH::LEFT;
+    AlignH position_ = AlignH::LEFT;
 
-    FrameType m_frameType = FrameType::NO_FRAME;
-    double m_textLineSpacing = 1.0;
-    Color m_bgColor;
-    Color m_frameColor;
-    Spatium m_frameWidth;
-    Spatium m_paddingWidth;
-    Spatium m_frameRound;
+    FrameType frameType_ = FrameType::NO_FRAME;
+    double textLineSpacing_ = 1.0;
+    Color bgColor_;
+    Color frameColor_;
+    Spatium frameWidth_;
+    Spatium paddingWidth_;
+    Spatium frameRound_;
 
     // there are two representations of text; only one
     // might be valid and the other can be constructed from it
 
-    String m_text; // cached
-    bool m_textInvalid = true;
+    String text_; // cached
+    bool textInvalid_ = true;
 
-    TextStyleType m_textStyleType = TextStyleType::DEFAULT; // text style id
+    TextStyleType textStyleType_ = TextStyleType::DEFAULT; // text style id
 
-    int m_hexState = -1;
-    bool m_primed = 0;
+    int hexState_ = -1;
+    bool primed_ = 0;
 
-    double m_symbolSize = 18.0;
-    double m_symbolScale = 1.0;
+    double symbolSize_ = 18.0;
+    double symbolScale_ = 1.0;
 
-    TextCursor *m_cursor = nullptr;
+    TextCursor *cursor_ = nullptr;
 
-    VoiceAssignment m_voiceAssignment = VoiceAssignment::ALL_VOICE_IN_INSTRUMENT;
-    DirectionV m_direction = DirectionV::AUTO;
-    AutoOnOff m_centerBetweenStaves = AutoOnOff::AUTO;
-    bool m_anchorToEndOfPrevious = false;
+    VoiceAssignment voiceAssignment_ = VoiceAssignment::ALL_VOICE_IN_INSTRUMENT;
+    DirectionV direction_ = DirectionV::AUTO;
+    AutoOnOff centerBetweenStaves_ = AutoOnOff::AUTO;
+    bool anchorToEndOfPrevious_ = false;
 
-    double m_textAngle = 0.0;
+    double textAngle_ = 0.0;
 };
 
 } // namespace mu::engraving

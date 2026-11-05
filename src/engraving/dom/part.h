@@ -123,11 +123,11 @@ public:
     void removeStaff(Staff *);
     virtual bool show() const;
 
-    void setShow(bool val) { m_show = val; }
+    void setShow(bool val) { show_ = val; }
 
-    bool soloist() const { return m_soloist; }
+    bool soloist() const { return soloist_; }
 
-    void setSoloist(bool val) { m_soloist = val; }
+    void setSoloist(bool val) { soloist_ = val; }
 
     Instrument *instrument(Fraction = {-1, 1});
     const Instrument *instrument(Fraction = {-1, 1}) const;
@@ -141,7 +141,7 @@ public:
     void removeNonPrimaryInstruments();
     const InstrumentList &instruments() const;
 
-    const std::map<int, StringTunings *> &stringTunings() const { return m_stringTunings; }
+    const std::map<int, StringTunings *> &stringTunings() const { return stringTunings_; }
 
     const StringData *stringData(const Fraction &tick, staff_idx_t staffIdx) const;
     void addStringTunings(StringTunings *stringTunings);
@@ -150,7 +150,7 @@ public:
 
     void insertTime(const Fraction &tick, const Fraction &len);
 
-    const std::map<int, HarpPedalDiagram *> &harpDiagrams() const { return m_harpDiagrams; }
+    const std::map<int, HarpPedalDiagram *> &harpDiagrams() const { return harpDiagrams_; }
 
     void addHarpDiagram(HarpPedalDiagram *);
     void removeHarpDiagram(HarpPedalDiagram *);
@@ -180,47 +180,47 @@ public:
     const Part *masterPart() const;
     Part *masterPart();
 
-    AutoOnOff hideWhenEmpty() const { return m_hideWhenEmpty; }
+    AutoOnOff hideWhenEmpty() const { return hideWhenEmpty_; }
 
-    void setHideWhenEmpty(AutoOnOff v) { m_hideWhenEmpty = v; }
+    void setHideWhenEmpty(AutoOnOff v) { hideWhenEmpty_ = v; }
 
-    bool hideStavesWhenIndividuallyEmpty() const { return m_hideStavesWhenIndividuallyEmpty; }
+    bool hideStavesWhenIndividuallyEmpty() const { return hideStavesWhenIndividuallyEmpty_; }
 
-    void setHideStavesWhenIndividuallyEmpty(bool v) { m_hideStavesWhenIndividuallyEmpty = v; }
+    void setHideStavesWhenIndividuallyEmpty(bool v) { hideStavesWhenIndividuallyEmpty_ = v; }
 
-    PreferSharpFlat preferSharpFlat() const { return m_preferSharpFlat; }
+    PreferSharpFlat preferSharpFlat() const { return preferSharpFlat_; }
 
-    void setPreferSharpFlat(PreferSharpFlat v) { m_preferSharpFlat = v; }
+    void setPreferSharpFlat(PreferSharpFlat v) { preferSharpFlat_ = v; }
 
     virtual const Part *originPart(track_idx_t track, const Fraction &tick) const;
     Part *originPart(track_idx_t track, const Fraction &tick);
 
-    SharedPart *sharedPart() const { return m_sharedPart; }
+    SharedPart *sharedPart() const { return sharedPart_; }
 
-    void setSharedPart(SharedPart *p) { m_sharedPart = p; }
+    void setSharedPart(SharedPart *p) { sharedPart_ = p; }
 
 private:
     friend class SharedPart;
 
     static String plainPartName(const Instrument *instrument);
 
-    InstrumentList m_instruments;
-    std::vector<Staff *> m_staves;
-    muse::ID m_id = INVALID_ID; ///< used for MusicXML import
-    bool m_show = false;        ///< show part in partitur if true
-    bool m_soloist = false;     ///< used in score ordering
+    InstrumentList instruments_;
+    std::vector<Staff *> staves_;
+    muse::ID id_ = INVALID_ID; ///< used for MusicXML import
+    bool show_ = false;        ///< show part in partitur if true
+    bool soloist_ = false;     ///< used in score ordering
 
     /// Hide staves in this part when empty
-    AutoOnOff m_hideWhenEmpty = AutoOnOff::AUTO;
+    AutoOnOff hideWhenEmpty_ = AutoOnOff::AUTO;
 
     /// Hide staves when they are individually empty, rather than only if all this part's staves are empty
-    bool m_hideStavesWhenIndividuallyEmpty = false;
+    bool hideStavesWhenIndividuallyEmpty_ = false;
 
-    PreferSharpFlat m_preferSharpFlat = PreferSharpFlat::AUTO;
+    PreferSharpFlat preferSharpFlat_ = PreferSharpFlat::AUTO;
 
-    std::map<int, HarpPedalDiagram *> m_harpDiagrams;
-    std::map<int, StringTunings *> m_stringTunings;
+    std::map<int, HarpPedalDiagram *> harpDiagrams_;
+    std::map<int, StringTunings *> stringTunings_;
 
-    SharedPart *m_sharedPart = nullptr;
+    SharedPart *sharedPart_ = nullptr;
 };
 } // namespace mu::engraving

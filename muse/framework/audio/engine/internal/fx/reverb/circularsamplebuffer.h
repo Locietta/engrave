@@ -41,14 +41,14 @@ public:
     CircularSampleBuffer() {}
 
     ~CircularSampleBuffer() {
-        if (m_buffer) {
-            free(m_buffer);
+        if (buffer_) {
+            free(buffer_);
         }
     }
 
     void setSize(int n) {
-        if (n > m_allocatedSize) {
-            auto oldSize = m_allocatedSize;
+        if (n > allocatedSize_) {
+            auto oldSize = allocatedSize_;
 
             auto findLargerPowerOfTwo = [](int32_t number) {
                 int32_t powerOf2 = 1;
@@ -58,43 +58,43 @@ public:
                 return powerOf2;
             };
 
-            m_allocatedSize = findLargerPowerOfTwo(n);
-            m_bufferSizeMask = m_allocatedSize - 1;
-            m_buffer = (SampleT *) std::realloc(m_buffer, m_allocatedSize * sizeof(SampleT));
+            allocatedSize_ = findLargerPowerOfTwo(n);
+            bufferSizeMask_ = allocatedSize_ - 1;
+            buffer_ = (SampleT *) std::realloc(buffer_, allocatedSize_ * sizeof(SampleT));
 
             // Reset the new memory region
-            assert(m_buffer);
-            std::fill(m_buffer + oldSize, m_buffer + m_allocatedSize, 0.f);
+            assert(buffer_);
+            std::fill(buffer_ + oldSize, buffer_ + allocatedSize_, 0.f);
         }
     }
 
-    int getAllocatedSize() const { return m_allocatedSize; }
+    int getAllocatedSize() const { return allocatedSize_; }
 
     void reset() {
-        if (m_buffer && m_allocatedSize > 0) {
-            std::memset(m_buffer, 0, sizeof(SampleT) * m_allocatedSize);
+        if (buffer_ && allocatedSize_ > 0) {
+            std::memset(buffer_, 0, sizeof(SampleT) * allocatedSize_);
         }
-        m_positionIndex = 0;
+        positionIndex_ = 0;
     }
 
-    void write(int offset, const SampleT &sample) { m_buffer[(m_positionIndex + offset) & m_bufferSizeMask] = sample; }
+    void write(int offset, const SampleT &sample) { buffer_[(positionIndex_ + offset) & bufferSizeMask_] = sample; }
 
-    void writeOffset0(const SampleT &sample) { m_buffer[m_positionIndex] = sample; }
+    void writeOffset0(const SampleT &sample) { buffer_[positionIndex_] = sample; }
 
-    const SampleT &read(int offset) const { return m_buffer[(m_positionIndex + offset) & m_bufferSizeMask]; }
+    const SampleT &read(int offset) const { return buffer_[(positionIndex_ + offset) & bufferSizeMask_]; }
 
     /// change the 0 position by n
     void advance(int n) {
-        m_positionIndex += n;
-        m_positionIndex &= m_bufferSizeMask;
+        positionIndex_ += n;
+        positionIndex_ &= bufferSizeMask_;
     }
 
 private:
     template <typename fnc>
     void splitBlockOffsetFunction(int startOffset, int n, fnc f) const {
-        assert(n <= m_allocatedSize);
-        int firstIndex = (m_positionIndex + startOffset) & m_bufferSizeMask;
-        int n_to_end = m_allocatedSize - firstIndex;
+        assert(n <= allocatedSize_);
+        int firstIndex = (positionIndex_ + startOffset) & bufferSizeMask_;
+        int n_to_end = allocatedSize_ - firstIndex;
         if (n_to_end > n) {
             f(firstIndex, 0, n);
         } else {
@@ -106,27 +106,27 @@ private:
 public:
     void writeBlock(int startOffset, int n, const SampleT *sourceBlock) {
         splitBlockOffsetFunction(startOffset, n, [this, sourceBlock](int bufferOff, int sampleOff, int n) {
-            vo::copy(&sourceBlock[sampleOff], &m_buffer[bufferOff], n);
+            vo::copy(&sourceBlock[sampleOff], &buffer_[bufferOff], n);
         });
     }
 
     void readBlockWithGain(int startOffset, int n, SampleT *targetBlock, float gainFactor) const {
         splitBlockOffsetFunction(startOffset, n, [this, targetBlock, gainFactor](int bufferOff, int sampleOff, int n) {
-            vo::constantMultiply(&m_buffer[bufferOff], gainFactor, &targetBlock[sampleOff], n);
+            vo::constantMultiply(&buffer_[bufferOff], gainFactor, &targetBlock[sampleOff], n);
         });
     }
 
     void readAddBlockWithGain(int startOffset, int n, SampleT *targetBlock, float gainFactor) const {
         splitBlockOffsetFunction(startOffset, n, [this, targetBlock, gainFactor](int bufferOff, int sampleOff, int n) {
-            vo::constantMultiplyAndAdd(&m_buffer[bufferOff], gainFactor, &targetBlock[sampleOff], n);
+            vo::constantMultiplyAndAdd(&buffer_[bufferOff], gainFactor, &targetBlock[sampleOff], n);
         });
     }
 
 private:
-    SampleT *m_buffer = nullptr;
+    SampleT *buffer_ = nullptr;
 
-    int m_positionIndex = 0;  // position of sample index 0 inside _buffer. This is where the next sample will be written to
-    int m_allocatedSize = 0;  // 2^n buffer size
-    int m_bufferSizeMask = 0; // 2^n-1 buffer mask
+    int positionIndex_ = 0;  // position of sample index 0 inside _buffer. This is where the next sample will be written to
+    int allocatedSize_ = 0;  // 2^n buffer size
+    int bufferSizeMask_ = 0; // 2^n-1 buffer mask
 };
 } // namespace muse::audio::fx

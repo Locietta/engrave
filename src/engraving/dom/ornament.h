@@ -58,31 +58,31 @@ public:
 
     void remove(EngravingItem *e) override;
 
-    Chord *cueNoteChord() const { return m_cueNoteChord; }
+    Chord *cueNoteChord() const { return cueNoteChord_; }
 
-    void setCueNoteChord(Chord *c) { m_cueNoteChord = c; }
+    void setCueNoteChord(Chord *c) { cueNoteChord_ = c; }
 
-    void setNoteAbove(Note *n) { m_notesAboveAndBelow[0] = n; }
+    void setNoteAbove(Note *n) { notesAboveAndBelow_[0] = n; }
 
-    const auto &accidentalsAboveAndBelow() const { return m_accidentalsAboveAndBelow; }
+    const auto &accidentalsAboveAndBelow() const { return accidentalsAboveAndBelow_; }
 
-    Accidental *accidentalAbove() const { return m_accidentalsAboveAndBelow[0]; }
+    Accidental *accidentalAbove() const { return accidentalsAboveAndBelow_[0]; }
 
-    Accidental *accidentalBelow() const { return m_accidentalsAboveAndBelow[1]; }
+    Accidental *accidentalBelow() const { return accidentalsAboveAndBelow_[1]; }
 
-    void setAccidentalAbove(Accidental *a) { m_accidentalsAboveAndBelow[0] = a; }
+    void setAccidentalAbove(Accidental *a) { accidentalsAboveAndBelow_[0] = a; }
 
-    void setAccidentalBelow(Accidental *a) { m_accidentalsAboveAndBelow[1] = a; }
+    void setAccidentalBelow(Accidental *a) { accidentalsAboveAndBelow_[1] = a; }
 
-    void setTrillOldCompatAccidental(Accidental *a) { m_trillOldCompatAccidental = a; }
+    void setTrillOldCompatAccidental(Accidental *a) { trillOldCompatAccidental_ = a; }
 
-    Note *noteAbove() const { return m_notesAboveAndBelow[0]; }
+    Note *noteAbove() const { return notesAboveAndBelow_[0]; }
 
-    Note *noteBelow() const { return m_notesAboveAndBelow[1]; }
+    Note *noteBelow() const { return notesAboveAndBelow_[1]; }
 
     void setTrack(track_idx_t val) override;
 
-    void setShowCueNote(AutoOnOff show) { m_showCueNote = show; }
+    void setShowCueNote(AutoOnOff show) { showCueNote_ = show; }
 
 private:
     void updateAccidentalsAboveAndBelow();
@@ -96,13 +96,13 @@ private:
     M_PROPERTY(OrnamentShowAccidental, showAccidental, setShowAccidental)
     M_PROPERTY(bool, startOnUpperNote, setStartOnUpperNote)
 
-    std::array<Note *, 2> m_notesAboveAndBelow{nullptr, nullptr}; // [0] = above, [1] = below
+    std::array<Note *, 2> notesAboveAndBelow_{nullptr, nullptr}; // [0] = above, [1] = below
 
-    std::array<Accidental *, 2> m_accidentalsAboveAndBelow{nullptr, nullptr}; // [0] = above, [1] = below
+    std::array<Accidental *, 2> accidentalsAboveAndBelow_{nullptr, nullptr}; // [0] = above, [1] = below
 
-    Chord *m_cueNoteChord = nullptr;
-    AutoOnOff m_showCueNote = AutoOnOff::AUTO;
+    Chord *cueNoteChord_ = nullptr;
+    AutoOnOff showCueNote_ = AutoOnOff::AUTO;
 
-    Accidental *m_trillOldCompatAccidental = nullptr; // used temporarily to map old (i.e. pre-4.1) trill accidentals
+    Accidental *trillOldCompatAccidental_ = nullptr; // used temporarily to map old (i.e. pre-4.1) trill accidentals
 };
 } // namespace mu::engraving

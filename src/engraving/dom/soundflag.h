@@ -70,13 +70,13 @@ public:
     Color iconBackgroundColor() const;
 
 private:
-    PresetCodes m_soundPresets;
-    PlayingTechniqueCode m_playingTechnique;
+    PresetCodes soundPresets_;
+    PlayingTechniqueCode playingTechnique_;
 
-    muse::draw::Font m_iconFont;
-    bool m_iconFontValid = false;
+    muse::draw::Font iconFont_;
+    bool iconFontValid_ = false;
 
-    bool m_play = true;
-    bool m_applyToAllStaves = true;
+    bool play_ = true;
+    bool applyToAllStaves_ = true;
 };
 } // namespace mu::engraving

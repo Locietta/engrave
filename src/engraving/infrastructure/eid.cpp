@@ -137,9 +137,9 @@ static bool base64StrToInt64(const std::string_view s, uint64_t &result) {
 char *EID::toChars(char *const first, char *const last) const {
     IF_ASSERT_FAILED(static_cast<size_t>(last - first) >= MAX_STR_SIZE) { return first; }
 
-    char *it = toBase64Chars(first, last, m_first);
+    char *it = toBase64Chars(first, last, first_);
     *it++ = SEPARATOR;
-    it = toBase64Chars(it, last, m_second);
+    it = toBase64Chars(it, last, second_);
 
     return it;
 }
@@ -186,6 +186,6 @@ EID EID::newUniqueTestMode(uint64_t &maxVal) {
 }
 
 void EID::updateMaxValTestMode(const EID &curEID, uint64_t &maxVal) {
-    maxVal = std::max(maxVal, curEID.m_first);
-    maxVal = std::max(maxVal, curEID.m_second);
+    maxVal = std::max(maxVal, curEID.first_);
+    maxVal = std::max(maxVal, curEID.second_);
 }

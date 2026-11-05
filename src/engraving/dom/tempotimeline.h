@@ -49,21 +49,21 @@ public:
     int utime2utick(double time) const;
     BeatsPerSecond tempo(int utick) const;
 
-    const PausesMap &pauses() const { return m_pauses; }
+    const PausesMap &pauses() const { return pauses_; }
 
-    const std::vector<TempoTimePoint> &points() const { return m_points; }
+    const std::vector<TempoTimePoint> &points() const { return points_; }
 
-    const BeatsPerSecond &tempoMultiplier() const { return m_tempoMultiplier; }
+    const BeatsPerSecond &tempoMultiplier() const { return tempoMultiplier_; }
 
     void setTempoMultiplier(const BeatsPerSecond &bps);
 
 private:
-    std::vector<TempoTimePoint> m_points; // sorted by utick for O(logN) lookup
-    PausesMap m_pauses;
-    BeatsPerSecond m_tempoMultiplier = 1.0;
+    std::vector<TempoTimePoint> points_; // sorted by utick for O(logN) lookup
+    PausesMap pauses_;
+    BeatsPerSecond tempoMultiplier_ = 1.0;
 
-    mutable size_t m_utick2utimeHint = 0; // cached m_points index for utick2utime()
-    mutable size_t m_utime2utickHint = 0; // cached m_points index for utime2utick()
-    mutable size_t m_tempoHint = 0;       // cached m_points index for tempo()
+    mutable size_t utick2utimeHint_ = 0; // cached points_ index for utick2utime()
+    mutable size_t utime2utickHint_ = 0; // cached points_ index for utime2utick()
+    mutable size_t tempoHint_ = 0;       // cached points_ index for tempo()
 };
 } // namespace mu::engraving

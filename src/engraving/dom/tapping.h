@@ -43,23 +43,23 @@ public:
     struct LayoutData : public Articulation::LayoutData {};
     DECLARE_LAYOUTDATA_METHODS(Tapping)
 
-    TappingHand hand() const { return m_hand; }
+    TappingHand hand() const { return hand_; }
 
-    void setHand(TappingHand h) { m_hand = h; }
+    void setHand(TappingHand h) { hand_ = h; }
 
-    TappingText *text() const { return m_text; }
+    TappingText *text() const { return text_; }
 
-    void setText(TappingText *text) { m_text = text; }
+    void setText(TappingText *text) { text_ = text; }
 
     void setSelected(bool f) override;
 
-    TappingHalfSlur *halfSlurAbove() const { return m_halfSlurAbove; }
+    TappingHalfSlur *halfSlurAbove() const { return halfSlurAbove_; }
 
-    void setHalfSlurAbove(TappingHalfSlur *s) { m_halfSlurAbove = s; }
+    void setHalfSlurAbove(TappingHalfSlur *s) { halfSlurAbove_ = s; }
 
-    TappingHalfSlur *halfSlurBelow() const { return m_halfSlurBelow; }
+    TappingHalfSlur *halfSlurBelow() const { return halfSlurBelow_; }
 
-    void setHalfSlurBelow(TappingHalfSlur *s) { m_halfSlurBelow = s; }
+    void setHalfSlurBelow(TappingHalfSlur *s) { halfSlurBelow_ = s; }
 
     LHTappingShowItems lhShowItems() const;
 
@@ -77,10 +77,10 @@ protected:
     Tapping(DummyParentOr<ChordRest> parent);
 
 private:
-    TappingHand m_hand = TappingHand::INVALID;
-    TappingText *m_text = nullptr;
-    TappingHalfSlur *m_halfSlurAbove = nullptr;
-    TappingHalfSlur *m_halfSlurBelow = nullptr;
+    TappingHand hand_ = TappingHand::INVALID;
+    TappingText *text_ = nullptr;
+    TappingHalfSlur *halfSlurAbove_ = nullptr;
+    TappingHalfSlur *halfSlurBelow_ = nullptr;
 };
 
 class TappingHalfSlurSegment : public SlurSegment {
@@ -100,9 +100,9 @@ class TappingHalfSlur : public Slur {
     OBJECT_ALLOCATOR(engraving, TappingHalfSlur)
     DECLARE_CLASSOF(ElementType::TAPPING_HALF_SLUR)
 
-    bool isHalfSlurAbove() const { return m_isHalfSlurAbove; }
+    bool isHalfSlurAbove() const { return isHalfSlurAbove_; }
 
-    void setIsHalfSlurAbove(bool v) { m_isHalfSlurAbove = v; }
+    void setIsHalfSlurAbove(bool v) { isHalfSlurAbove_ = v; }
 
 public:
     TappingHalfSlur(EngravingItem *parent);
@@ -118,7 +118,7 @@ protected:
     bool isInSpannerMap() const override { return false; }
 
 private:
-    bool m_isHalfSlurAbove = true;
+    bool isHalfSlurAbove_ = true;
 };
 
 class TappingText final : public TextBase {

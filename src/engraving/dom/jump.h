@@ -59,21 +59,21 @@ public:
 
     Measure *measure() const { return toMeasure(ownershipParent()); }
 
-    String jumpTo() const { return m_jumpTo; }
+    String jumpTo() const { return jumpTo_; }
 
-    String playUntil() const { return m_playUntil; }
+    String playUntil() const { return playUntil_; }
 
-    String continueAt() const { return m_continueAt; }
+    String continueAt() const { return continueAt_; }
 
-    void setJumpTo(const String &s) { m_jumpTo = s; }
+    void setJumpTo(const String &s) { jumpTo_ = s; }
 
-    void setPlayUntil(const String &s) { m_playUntil = s; }
+    void setPlayUntil(const String &s) { playUntil_ = s; }
 
-    void setContinueAt(const String &s) { m_continueAt = s; }
+    void setContinueAt(const String &s) { continueAt_ = s; }
 
-    bool playRepeats() const { return m_playRepeats; }
+    bool playRepeats() const { return playRepeats_; }
 
-    void setPlayRepeats(bool val) { m_playRepeats = val; }
+    void setPlayRepeats(bool val) { playRepeats_ = val; }
 
     PropertyValue getProperty(Pid propertyId) const override;
     bool setProperty(Pid propertyId, const PropertyValue &) override;
@@ -85,10 +85,10 @@ public:
     bool positionRelativeToNoteheadRest() const override { return false; }
 
 private:
-    String m_jumpTo;
-    String m_playUntil;
-    String m_continueAt;
-    bool m_playRepeats = false;
+    String jumpTo_;
+    String playUntil_;
+    String continueAt_;
+    bool playRepeats_ = false;
 };
 
 struct JumpTypeTableItem {

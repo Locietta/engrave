@@ -49,15 +49,15 @@ public:
     void addPath(const std::string &path);
     std::vector<std::string> pathSegments() const;
 
-    inline bool operator==(const Uri &uri) const { return m_path == uri.m_path && m_scheme == uri.m_scheme; }
+    inline bool operator==(const Uri &uri) const { return path_ == uri.path_ && scheme_ == uri.scheme_; }
 
     inline bool operator!=(const Uri &uri) const { return !(*this == uri); }
 
     inline bool operator<(const Uri &uri) const {
-        if (m_scheme != uri.m_scheme) {
-            return m_scheme < uri.m_scheme;
+        if (scheme_ != uri.scheme_) {
+            return scheme_ < uri.scheme_;
         }
-        return m_path < uri.m_path;
+        return path_ < uri.path_;
     }
 
     std::string toString() const;
@@ -67,8 +67,8 @@ public:
 
 private:
 
-    Scheme m_scheme;
-    std::string m_path;
+    Scheme scheme_;
+    std::string path_;
 };
 
 class UriQuery {
@@ -130,8 +130,8 @@ private:
     void parseParams(const std::string &str, Params &out) const;
     void extractQuotedStrings(const std::string &str, std::vector<std::string> &out) const;
 
-    Uri m_uri;
-    Params m_params;
+    Uri uri_;
+    Params params_;
 };
 } // namespace muse
 

@@ -35,8 +35,8 @@ public:
     samples_t process(float *buffer, samples_t samplesPerChannel) override;
 
 private:
-    float m_frequency = 1000.f;
-    float m_phase = 0;
+    float frequency_ = 1000.f;
+    float phase_ = 0;
 };
 } // namespace muse::audio::engine
 

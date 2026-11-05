@@ -80,38 +80,38 @@ public:
     int defaultCrossStaffIdx() const;
     bool acceptCrossStaffMove(int move) const;
 
-    bool up() const { return m_up; }
+    bool up() const { return up_; }
 
-    void setUp(bool v) { m_up = v; }
+    void setUp(bool v) { up_ = v; }
 
     bool userModified() const;
     void setUserModified(bool val);
 
-    DirectionV direction() const { return m_direction; }
+    DirectionV direction() const { return direction_; }
 
-    void doSetDirection(DirectionV val) { m_direction = val; }
+    void doSetDirection(DirectionV val) { direction_ = val; }
 
     virtual void setDirection(DirectionV v) = 0;
 
-    inline int directionIdx() const { return (m_direction == DirectionV::AUTO || m_direction == DirectionV::DOWN) ? 0 : 1; }
+    inline int directionIdx() const { return (direction_ == DirectionV::AUTO || direction_ == DirectionV::DOWN) ? 0 : 1; }
 
-    const std::vector<BeamSegment *> &beamSegments() const { return m_beamSegments; }
+    const std::vector<BeamSegment *> &beamSegments() const { return beamSegments_; }
 
-    std::vector<BeamSegment *> &beamSegments() { return m_beamSegments; }
+    std::vector<BeamSegment *> &beamSegments() { return beamSegments_; }
 
     virtual void clearBeamSegments();
 
-    const PointF &startAnchor() const { return m_startAnchor; }
+    const PointF &startAnchor() const { return startAnchor_; }
 
-    PointF &startAnchor() { return m_startAnchor; }
+    PointF &startAnchor() { return startAnchor_; }
 
-    void setStartAnchor(const PointF &p) { m_startAnchor = p; }
+    void setStartAnchor(const PointF &p) { startAnchor_ = p; }
 
-    const PointF &endAnchor() const { return m_endAnchor; }
+    const PointF &endAnchor() const { return endAnchor_; }
 
-    PointF &endAnchor() { return m_endAnchor; }
+    PointF &endAnchor() { return endAnchor_; }
 
-    void setEndAnchor(const PointF &p) { m_endAnchor = p; }
+    void setEndAnchor(const PointF &p) { endAnchor_ = p; }
 
     void undoChangeProperty(Pid id, const PropertyValue &v, PropertyFlags ps = PropertyFlags::NOSTYLE) override;
 
@@ -174,14 +174,14 @@ public:
 protected:
     BeamBase(const ElementType &type, EngravingObject *parent, ElementFlags flags = ElementFlag::ON_STAFF);
     BeamBase(const BeamBase &);
-    std::vector<BeamSegment *> m_beamSegments;
-    PointF m_startAnchor;
-    PointF m_endAnchor;
+    std::vector<BeamSegment *> beamSegments_;
+    PointF startAnchor_;
+    PointF endAnchor_;
 
 private:
-    bool m_up = true;
-    bool m_userModified[2]{false}; // 0: auto/down  1: up
-    DirectionV m_direction = DirectionV::AUTO;
+    bool up_ = true;
+    bool userModified_[2]{false}; // 0: auto/down  1: up
+    DirectionV direction_ = DirectionV::AUTO;
 };
 } // namespace mu::engraving
 

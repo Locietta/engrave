@@ -39,11 +39,11 @@ static void createSplitDurationBends(const BendDataContextSplitChord &bendDataCt
 static void createSplitDurationBendsForChord(const BendDataContextSplitChord &bendDataCtx, mu::engraving::Chord *chord);
 static void removeReduntantChords(const BendDataContextSplitChord &bendDataCtx, const mu::engraving::Score *score);
 
-BendDataProcessorSplitChord::BendDataProcessorSplitChord(mu::engraving::Score *score) : m_score(score) {}
+BendDataProcessorSplitChord::BendDataProcessorSplitChord(mu::engraving::Score *score) : score_(score) {}
 
 void BendDataProcessorSplitChord::processBends(const BendDataContextSplitChord &bendDataCtx) {
-    createSplitDurationBends(bendDataCtx, m_score);
-    removeReduntantChords(bendDataCtx, m_score);
+    createSplitDurationBends(bendDataCtx, score_);
+    removeReduntantChords(bendDataCtx, score_);
 }
 
 static void createSplitDurationBends(const BendDataContextSplitChord &bendDataCtx, mu::engraving::Score *score) {

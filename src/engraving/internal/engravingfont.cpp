@@ -50,79 +50,79 @@ EngravingFont::EngravingFont(IFontProvider &fontProvider, const IEngravingFontsP
 
 EngravingFont::EngravingFont(IFontProvider &fontProvider, const IEngravingFontsProvider &engravingFonts, const std::string &name,
                              const std::string &family, std::shared_ptr<IODevice> font, std::shared_ptr<IODevice> metadata)
-    : m_fontProvider(&fontProvider), m_engravingFonts(&engravingFonts), m_symbols(static_cast<size_t>(SymId::lastSym) + 1), m_name(name),
-      m_family(family), m_fontDevice(std::move(font)), m_metadataDevice(std::move(metadata)) {}
+    : fontProvider_(&fontProvider), engravingFonts_(&engravingFonts), symbols_(static_cast<size_t>(SymId::lastSym) + 1), name_(name),
+      family_(family), fontDevice_(std::move(font)), metadataDevice_(std::move(metadata)) {}
 
-EngravingFont::EngravingFont(const EngravingFont &other) : m_fontProvider(other.m_fontProvider), m_engravingFonts(other.m_engravingFonts) {
-    m_loaded = false;
-    m_symbols = other.m_symbols;
-    m_name = other.m_name;
-    m_family = other.m_family;
-    m_fontDevice = other.m_fontDevice;
-    m_metadataDevice = other.m_metadataDevice;
+EngravingFont::EngravingFont(const EngravingFont &other) : fontProvider_(other.fontProvider_), engravingFonts_(other.engravingFonts_) {
+    loaded_ = false;
+    symbols_ = other.symbols_;
+    name_ = other.name_;
+    family_ = other.family_;
+    fontDevice_ = other.fontDevice_;
+    metadataDevice_ = other.metadataDevice_;
 }
 
 // =============================================
 // Properties
 // =============================================
 
-const std::string &EngravingFont::name() const { return m_name; }
+const std::string &EngravingFont::name() const { return name_; }
 
-const std::string &EngravingFont::family() const { return m_family; }
+const std::string &EngravingFont::family() const { return family_; }
 
-std::unordered_map<Sid, PropertyValue> EngravingFont::engravingDefaults() const { return m_engravingDefaults; }
+std::unordered_map<Sid, PropertyValue> EngravingFont::engravingDefaults() const { return engravingDefaults_; }
 
-double EngravingFont::textEnclosureThickness() { return m_textEnclosureThickness; }
+double EngravingFont::textEnclosureThickness() { return textEnclosureThickness_; }
 
 // =============================================
 // Load
 // =============================================
 
 void EngravingFont::ensureLoad() {
-    if (m_loaded) {
+    if (loaded_) {
         return;
     }
 
-    const String family = String::fromStdString(m_family);
-    if (!m_fontDevice || -1 == fontProvider()->addSymbolFont(family, m_fontDevice)) {
-        LOGE() << "fatal error: cannot load font: " << m_name;
+    const String family = String::fromStdString(family_);
+    if (!fontDevice_ || -1 == fontProvider()->addSymbolFont(family, fontDevice_)) {
+        LOGE() << "fatal error: cannot load font: " << name_;
         return;
     }
 
-    m_font.setWeight(Font::Normal);
-    m_font.setItalic(false);
-    m_font.setFamily(String::fromStdString(m_family), Font::Type::MusicSymbol);
-    m_font.setNoFontMerging(true);
-    m_font.setHinting(Font::Hinting::PreferVerticalHinting);
+    font_.setWeight(Font::Normal);
+    font_.setItalic(false);
+    font_.setFamily(String::fromStdString(family_), Font::Type::MusicSymbol);
+    font_.setNoFontMerging(true);
+    font_.setHinting(Font::Hinting::PreferVerticalHinting);
 
-    m_font.setPointSizeF(StyleDef::DEFAULT_SMUFL_POINT_SIZE());
+    font_.setPointSizeF(StyleDef::DEFAULT_SMUFL_POINT_SIZE());
 
-    for (size_t id = 0; id < m_symbols.size(); ++id) {
+    for (size_t id = 0; id < symbols_.size(); ++id) {
         Smufl::Code code = Smufl::code(static_cast<SymId>(id));
         if (!code.isValid()) {
             continue;
         }
-        Sym &sym = m_symbols[id];
+        Sym &sym = symbols_[id];
         computeMetrics(sym, code);
     }
 
-    if (!m_metadataDevice || !m_metadataDevice->open(IODevice::ReadOnly)) {
-        LOGE() << "Failed to open glyph metadata of " << m_name;
+    if (!metadataDevice_ || !metadataDevice_->open(IODevice::ReadOnly)) {
+        LOGE() << "Failed to open glyph metadata of " << name_;
         return;
     }
 
-    m_metadataDevice->seek(0);
-    const ByteArray metadata = m_metadataDevice->readAll();
-    m_metadataDevice->close();
+    metadataDevice_->seek(0);
+    const ByteArray metadata = metadataDevice_->readAll();
+    metadataDevice_->close();
 
     std::string error;
     const JsonObject metadataJson = JsonDocument::fromJson(metadata, &error).rootObject();
     if (!error.empty()) {
-        LOGE() << "Json parse error in glyph metadata of " << m_name << ", error: " << error;
+        LOGE() << "Json parse error in glyph metadata of " << name_ << ", error: " << error;
         return;
     }
     if (!metadataJson.isValid()) {
-        LOGE() << "No valid JSON object in glyph metadata of " << m_name;
+        LOGE() << "No valid JSON object in glyph metadata of " << name_;
         return;
     }
 
@@ -131,7 +131,7 @@ void EngravingFont::ensureLoad() {
     loadStylisticAlternates(metadataJson.value("glyphsWithAlternates").toObject());
     loadEngravingDefaults(metadataJson.value("engravingDefaults").toObject());
 
-    m_loaded = true;
+    loaded_ = true;
 }
 
 void EngravingFont::loadComposedGlyphs() {
@@ -450,7 +450,7 @@ void EngravingFont::loadEngravingDefaults(const JsonObject &engravingDefaultsObj
         auto search = engravingDefaultsMapping.find(key);
         if (search != engravingDefaultsMapping.cend()) {
             for (Sid sid : search->second.sids) {
-                m_engravingDefaults.insert({sid, value});
+                engravingDefaults_.insert({sid, value});
             }
 
             for (const std::string &childKey : search->second.childKeys) {
@@ -463,32 +463,32 @@ void EngravingFont::loadEngravingDefaults(const JsonObject &engravingDefaultsObj
 
     for (const std::string &key : engravingDefaultsObject.keys()) {
         if (key == "textEnclosureThickness") {
-            m_textEnclosureThickness = engravingDefaultsObject.value(key).toDouble();
+            textEnclosureThickness_ = engravingDefaultsObject.value(key).toDouble();
             continue;
         }
 
         if (key == "beamSpacing") {
             bool value = engravingDefaultsObject.value(key).toDouble() > 0.75;
-            m_engravingDefaults.insert({Sid::useWideBeams, value});
+            engravingDefaults_.insert({Sid::useWideBeams, value});
             continue;
         }
 
         applyEngravingDefault(key, engravingDefaultsObject.value(key).toDouble());
     }
 
-    m_engravingDefaults.insert({Sid::musicalTextFont, String(u"%1 Text").arg(String::fromStdString(m_family))});
+    engravingDefaults_.insert({Sid::musicalTextFont, String(u"%1 Text").arg(String::fromStdString(family_))});
 }
 
 void EngravingFont::computeMetrics(EngravingFont::Sym &sym, const Smufl::Code &code) {
-    if (fontProvider()->inFont(m_font, code.smuflCode)) {
+    if (fontProvider()->inFont(font_, code.smuflCode)) {
         sym.code = code.smuflCode;
-    } else if (fontProvider()->inFont(m_font, code.musicSymBlockCode)) {
+    } else if (fontProvider()->inFont(font_, code.musicSymBlockCode)) {
         sym.code = code.musicSymBlockCode;
     }
 
     if (sym.code > 0) {
-        sym.bbox = fontProvider()->boundingRect(m_font, sym.code);
-        sym.advance = fontProvider()->horizontalAdvance(m_font, sym.code);
+        sym.bbox = fontProvider()->boundingRect(font_, sym.code);
+        sym.advance = fontProvider()->horizontalAdvance(font_, sym.code);
     }
 }
 
@@ -496,9 +496,9 @@ void EngravingFont::computeMetrics(EngravingFont::Sym &sym, const Smufl::Code &c
 // Symbol properties
 // =============================================
 
-EngravingFont::Sym &EngravingFont::sym(SymId id) { return m_symbols[static_cast<size_t>(id)]; }
+EngravingFont::Sym &EngravingFont::sym(SymId id) { return symbols_[static_cast<size_t>(id)]; }
 
-const EngravingFont::Sym &EngravingFont::sym(SymId id) const { return m_symbols.at(static_cast<size_t>(id)); }
+const EngravingFont::Sym &EngravingFont::sym(SymId id) const { return symbols_.at(static_cast<size_t>(id)); }
 
 char32_t EngravingFont::symCode(SymId id) const {
     const Sym &s = sym(id);
@@ -511,8 +511,8 @@ char32_t EngravingFont::symCode(SymId id) const {
 }
 
 SymId EngravingFont::fromCode(char32_t code) const {
-    auto it = std::find_if(m_symbols.begin(), m_symbols.end(), [code](const Sym &s) { return s.code == code; });
-    return static_cast<SymId>(it == m_symbols.end() ? 0 : it - m_symbols.begin());
+    auto it = std::find_if(symbols_.begin(), symbols_.end(), [code](const Sym &s) { return s.code == code; });
+    return static_cast<SymId>(it == symbols_.end() ? 0 : it - symbols_.begin());
 }
 
 String EngravingFont::toString(SymId id) const { return String::fromUcs4(symCode(id)); }
@@ -701,9 +701,9 @@ void EngravingFont::draw(SymId id, Painter *painter, const SizeF &mag, const Poi
     }
 
     painter->save();
-    m_font.setPointSizeF(StyleDef::DEFAULT_SMUFL_POINT_SIZE());
+    font_.setPointSizeF(StyleDef::DEFAULT_SMUFL_POINT_SIZE());
     painter->scale(mag.width(), mag.height());
-    painter->setFont(m_font);
+    painter->setFont(font_);
     if (angle != 0) {
         const double _width = sym.bbox.width() / 2;
         const double _height = sym.bbox.height() / 2;

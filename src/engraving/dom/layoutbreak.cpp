@@ -46,12 +46,12 @@ static const ElementStyle sectionBreakStyle{{Sid::sectionPause, Pid::PAUSE}};
 //---------------------------------------------------------
 
 LayoutBreak::LayoutBreak(DummyParentOr<MeasureBase> parent) : EngravingItem(ElementType::LAYOUT_BREAK, parent, ElementFlag::SYSTEM) {
-    m_pause = 0.;
-    m_startWithLongNames = false;
-    m_startWithMeasureOne = false;
-    m_firstSystemIndentation = false;
-    m_showCourtesy = false;
-    m_layoutBreakType = LayoutBreakType::PAGE;
+    pause_ = 0.;
+    startWithLongNames_ = false;
+    startWithMeasureOne_ = false;
+    firstSystemIndentation_ = false;
+    showCourtesy_ = false;
+    layoutBreakType_ = LayoutBreakType::PAGE;
 
     initElementStyle(&sectionBreakStyle);
 
@@ -63,18 +63,18 @@ LayoutBreak::LayoutBreak(DummyParentOr<MeasureBase> parent) : EngravingItem(Elem
 }
 
 LayoutBreak::LayoutBreak(const LayoutBreak &lb) : EngravingItem(lb) {
-    m_layoutBreakType = lb.m_layoutBreakType;
-    m_pause = lb.m_pause;
-    m_startWithLongNames = lb.m_startWithLongNames;
-    m_startWithMeasureOne = lb.m_startWithMeasureOne;
-    m_firstSystemIndentation = lb.m_firstSystemIndentation;
-    m_showCourtesy = lb.m_showCourtesy;
+    layoutBreakType_ = lb.layoutBreakType_;
+    pause_ = lb.pause_;
+    startWithLongNames_ = lb.startWithLongNames_;
+    startWithMeasureOne_ = lb.startWithMeasureOne_;
+    firstSystemIndentation_ = lb.firstSystemIndentation_;
+    showCourtesy_ = lb.showCourtesy_;
 }
 
 void LayoutBreak::setOwnershipParent(DummyParentOr<MeasureBase> parent) { EngravingItem::setOwnershipParent(parent); }
 
 char16_t LayoutBreak::iconCode() const {
-    switch (m_layoutBreakType) {
+    switch (layoutBreakType_) {
         case LayoutBreakType::LINE: return 0xF483;
         case LayoutBreakType::PAGE: return 0xF484;
         case LayoutBreakType::SECTION: return 0xF485;
@@ -87,7 +87,7 @@ char16_t LayoutBreak::iconCode() const {
 //   setLayoutBreakType
 //---------------------------------------------------------
 
-void LayoutBreak::setLayoutBreakType(LayoutBreakType val) { m_layoutBreakType = val; }
+void LayoutBreak::setLayoutBreakType(LayoutBreakType val) { layoutBreakType_ = val; }
 
 //---------------------------------------------------------
 //   acceptDrop
@@ -113,12 +113,12 @@ EngravingItem *LayoutBreak::drop(Transaction &, EditData &data) {
 
 PropertyValue LayoutBreak::getProperty(Pid propertyId) const {
     switch (propertyId) {
-        case Pid::LAYOUT_BREAK: return m_layoutBreakType;
-        case Pid::PAUSE: return m_pause;
-        case Pid::START_WITH_LONG_NAMES: return m_startWithLongNames;
-        case Pid::START_WITH_MEASURE_ONE: return m_startWithMeasureOne;
-        case Pid::FIRST_SYSTEM_INDENTATION: return m_firstSystemIndentation;
-        case Pid::SHOW_COURTESY: return m_showCourtesy;
+        case Pid::LAYOUT_BREAK: return layoutBreakType_;
+        case Pid::PAUSE: return pause_;
+        case Pid::START_WITH_LONG_NAMES: return startWithLongNames_;
+        case Pid::START_WITH_MEASURE_ONE: return startWithMeasureOne_;
+        case Pid::FIRST_SYSTEM_INDENTATION: return firstSystemIndentation_;
+        case Pid::SHOW_COURTESY: return showCourtesy_;
         default: return EngravingItem::getProperty(propertyId);
     }
 }

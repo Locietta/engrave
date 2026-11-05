@@ -70,33 +70,33 @@ using namespace mu;
 using namespace mu::engraving;
 
 Excerpt::Excerpt(const Excerpt &ex, bool copyContents)
-    : m_masterScore(ex.m_masterScore), m_name(ex.m_name), m_parts(ex.m_parts), m_initialPartId(ex.m_initialPartId) {
+    : masterScore_(ex.masterScore_), name_(ex.name_), parts_(ex.parts_), initialPartId_(ex.initialPartId_) {
     if (copyContents) {
-        m_tracksMapping = ex.m_tracksMapping;
-        m_excerptScore = ex.m_excerptScore ? ex.m_excerptScore->clone() : nullptr;
+        tracksMapping_ = ex.tracksMapping_;
+        excerptScore_ = ex.excerptScore_ ? ex.excerptScore_->clone() : nullptr;
 
-        if (m_excerptScore) {
-            m_excerptScore->setExcerpt(this);
+        if (excerptScore_) {
+            excerptScore_->setExcerpt(this);
         }
     }
 }
 
-Excerpt::~Excerpt() { delete m_excerptScore; }
+Excerpt::~Excerpt() { delete excerptScore_; }
 
-bool Excerpt::inited() const { return m_inited; }
+bool Excerpt::inited() const { return inited_; }
 
-void Excerpt::setInited(bool inited) { m_inited = inited; }
+void Excerpt::setInited(bool inited) { inited_ = inited; }
 
-bool Excerpt::custom() const { return !m_initialPartId.isValid(); }
+bool Excerpt::custom() const { return !initialPartId_.isValid(); }
 
 void Excerpt::markAsCustom() { setInitialPartId(ID()); }
 
-const ID &Excerpt::initialPartId() const { return m_initialPartId; }
+const ID &Excerpt::initialPartId() const { return initialPartId_; }
 
-void Excerpt::setInitialPartId(const ID &id) { m_initialPartId = id; }
+void Excerpt::setInitialPartId(const ID &id) { initialPartId_ = id; }
 
 void Excerpt::setExcerptScore(Score *s) {
-    m_excerptScore = s;
+    excerptScore_ = s;
 
     if (s) {
         s->setExcerpt(this);
@@ -104,14 +104,14 @@ void Excerpt::setExcerptScore(Score *s) {
     }
 }
 
-const String &Excerpt::name() const { return m_name; }
+const String &Excerpt::name() const { return name_; }
 
 void Excerpt::setName(const String &name, bool saveAndNotify) {
-    if (m_name == name) {
+    if (name_ == name) {
         return;
     }
 
-    m_name = name;
+    name_ = name;
 
     if (saveAndNotify) {
         writeNameToMetaTags();
@@ -121,38 +121,38 @@ void Excerpt::setName(const String &name, bool saveAndNotify) {
 void Excerpt::writeNameToMetaTags() {
     if (Score *score = excerptScore()) {
         if (Text *nameItem = score->getText(mu::engraving::TextStyleType::INSTRUMENT_EXCERPT)) {
-            nameItem->setPlainText(m_name);
-            score->setMetaTag(u"partName", m_name);
+            nameItem->setPlainText(name_);
+            score->setMetaTag(u"partName", name_);
         }
     }
 }
 
-bool Excerpt::hasFileName() const { return !m_fileName.empty(); }
+bool Excerpt::hasFileName() const { return !fileName_.empty(); }
 
 const String &Excerpt::fileName() const {
-    IF_ASSERT_FAILED(!m_fileName.empty()) { const_cast<Excerpt *>(this)->updateFileName(); }
+    IF_ASSERT_FAILED(!fileName_.empty()) { const_cast<Excerpt *>(this)->updateFileName(); }
 
-    return m_fileName;
+    return fileName_;
 }
 
-void Excerpt::setFileName(const String &fileName) { m_fileName = fileName; }
+void Excerpt::setFileName(const String &fileName) { fileName_ = fileName; }
 
 void Excerpt::updateFileName(size_t index) {
-    if (index == muse::nidx && m_masterScore) {
-        index = muse::indexOf(m_masterScore->excerpts(), this);
+    if (index == muse::nidx && masterScore_) {
+        index = muse::indexOf(masterScore_->excerpts(), this);
     }
 
-    const String escapedName = muse::io::escapeFileName(m_name).toString();
+    const String escapedName = muse::io::escapeFileName(name_).toString();
 
     if (index == muse::nidx) {
-        m_fileName = escapedName;
+        fileName_ = escapedName;
     } else {
-        m_fileName = String(u"%1_%2").arg(String::number(index), escapedName);
+        fileName_ = String(u"%1_%2").arg(String::number(index), escapedName);
     }
 }
 
 bool Excerpt::containsPart(const Part *part) const {
-    for (Part *_part : m_parts) {
+    for (Part *_part : parts_) {
         if (_part == part) {
             return true;
         }
@@ -169,7 +169,7 @@ void Excerpt::removePart(const ID &id) {
         }
         ++index;
     }
-    if (index >= m_parts.size()) {
+    if (index >= parts_.size()) {
         return;
     }
 
@@ -178,7 +178,7 @@ void Excerpt::removePart(const ID &id) {
 
 size_t Excerpt::nstaves() const {
     size_t n = 0;
-    for (Part *p : m_parts) {
+    for (Part *p : parts_) {
         n += p->nstaves();
     }
     return n;
@@ -189,15 +189,15 @@ bool Excerpt::isEmpty() const { return excerptScore() ? excerptScore()->parts().
 const TracksMap &Excerpt::tracksMapping() {
     updateTracksMapping();
 
-    return m_tracksMapping;
+    return tracksMapping_;
 }
 
 void Excerpt::setTracksMapping(const TracksMap &tracksMapping) {
-    if (m_tracksMapping == tracksMapping) {
+    if (tracksMapping_ == tracksMapping) {
         return;
     }
 
-    m_tracksMapping = tracksMapping;
+    tracksMapping_ = tracksMapping;
 
     const Score *score = excerptScore();
     if (!score) {
@@ -205,12 +205,12 @@ void Excerpt::setTracksMapping(const TracksMap &tracksMapping) {
     }
 
     for (Staff *staff : score->staves()) {
-        const Staff *masterStaff = m_masterScore->staffById(staff->id());
+        const Staff *masterStaff = masterScore_->staffById(staff->id());
         if (!masterStaff) {
             continue;
         }
 
-        staff->updateVisibilityVoices(masterStaff, m_tracksMapping);
+        staff->updateVisibilityVoices(masterStaff, tracksMapping_);
     }
 }
 
@@ -1742,7 +1742,7 @@ std::vector<Excerpt *> Excerpt::createExcerptsFromParts(const std::vector<Part *
         const TrackRange range = part->trackRange();
 
         for (track_idx_t i = range.startTrack, j = 0; i < range.endTrack; ++i, ++j) {
-            excerpt->m_tracksMapping.insert({i, j});
+            excerpt->tracksMapping_.insert({i, j});
         }
 
         String name = formatUniqueExcerptName(part->partName(), allExcerptLowerNames);

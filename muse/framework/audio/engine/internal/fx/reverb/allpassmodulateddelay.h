@@ -30,38 +30,38 @@ class AllPassModulatedDelay {
 public:
     AllPassModulatedDelay() {}
 
-    void allocateForMaxDelaySamples(int maxDelaySamples) { m_buffer.setSize(maxDelaySamples); }
+    void allocateForMaxDelaySamples(int maxDelaySamples) { buffer_.setSize(maxDelaySamples); }
 
     void setBaseDelay(float samples, float maxModulationOffset) {
         int allocSize = int(samples + maxModulationOffset + 16.f); // some extra space for interpolation
-        if (samples != m_baseDelay || allocSize > m_buffer.getAllocatedSize()) {
+        if (samples != baseDelay_ || allocSize > buffer_.getAllocatedSize()) {
             allocateForMaxDelaySamples(allocSize);
-            m_baseDelay = samples;
+            baseDelay_ = samples;
             setModOffset(0.f);
             reset();
         }
     }
 
-    float getBaseDelay() const { return m_baseDelay; }
+    float getBaseDelay() const { return baseDelay_; }
 
     void setModOffset(float smpOffset) {
-        float total = -m_baseDelay + smpOffset; // negative!
+        float total = -baseDelay_ + smpOffset; // negative!
         float flr = std::floor(total);
-        m_modFraction = total - flr;
-        m_readOffset = int(flr);
+        modFraction_ = total - flr;
+        readOffset_ = int(flr);
     }
 
     void writeSampleAndAdvance(float sample) {
-        m_buffer.writeOffset0(sample);
-        m_buffer.advance(1);
+        buffer_.writeOffset0(sample);
+        buffer_.advance(1);
     }
 
     float readSample() {
-        auto res = m_buffer.read(m_readOffset);
-        auto x1 = m_buffer.read(m_readOffset + 1);
+        auto res = buffer_.read(readOffset_);
+        auto x1 = buffer_.read(readOffset_ + 1);
 
-        res += m_modFraction * (x1 - m_y1);
-        m_y1 = res;
+        res += modFraction_ * (x1 - y1_);
+        y1_ = res;
         return res;
     }
 
@@ -71,17 +71,17 @@ public:
     }
 
     void reset() {
-        m_buffer.reset();
-        m_y1 = 0.f;
+        buffer_.reset();
+        y1_ = 0.f;
     }
 
 private:
-    int m_readOffset = 0;
-    float m_modFraction = 0.f;
-    float m_baseDelay = 0.f;
+    int readOffset_ = 0;
+    float modFraction_ = 0.f;
+    float baseDelay_ = 0.f;
 
-    CircularSampleBuffer<float> m_buffer;
-    float m_y1 = 0.f;
+    CircularSampleBuffer<float> buffer_;
+    float y1_ = 0.f;
 };
 } // namespace muse::audio::fx
 

@@ -38,9 +38,9 @@ public:
     PlayingTechniqueType techniqueType() const;
     void setTechniqueType(const PlayingTechniqueType techniqueType);
 
-    bool playPlayTechAnnotation() const { return m_playPlayTechAnnotation; }
+    bool playPlayTechAnnotation() const { return playPlayTechAnnotation_; }
 
-    void setPlayPlayTechAnnotation(bool play) { m_playPlayTechAnnotation = play; }
+    void setPlayPlayTechAnnotation(bool play) { playPlayTechAnnotation_ = play; }
 
     PlayTechAnnotation *clone() const override;
     TranslatableString subtypeUserName() const override;
@@ -52,8 +52,8 @@ public:
     PropertyValue propertyDefault(Pid id) const override;
 
 private:
-    PlayingTechniqueType m_techniqueType = PlayingTechniqueType::Undefined;
-    bool m_playPlayTechAnnotation = true;
+    PlayingTechniqueType techniqueType_ = PlayingTechniqueType::Undefined;
+    bool playPlayTechAnnotation_ = true;
 };
 } // namespace mu::engraving
 

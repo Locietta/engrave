@@ -55,7 +55,7 @@ EID MnxExporter::getOrAssignEID(EngravingObject *item) {
 //---------------------------------------------------------
 
 std::optional<mnx::sequence::Event> MnxExporter::mnxEventFromCR(const engraving::ChordRest *cr) {
-    auto pointer = muse::value(m_crToMnxEvent, cr);
+    auto pointer = muse::value(crToMnxEvent_, cr);
     if (!pointer.empty()) {
         return mnx::sequence::Event(mnxDocument().root(), pointer);
     }
@@ -68,7 +68,7 @@ std::optional<mnx::sequence::Event> MnxExporter::mnxEventFromCR(const engraving:
 
 size_t MnxExporter::mnxMeasureIndexFromMeasure(const engraving::Measure *measure) const {
     IF_ASSERT_FAILED(measure) { throw std::logic_error("Measure is null while resolving MNX measure index."); }
-    const size_t result = muse::value(m_measToMnxMeas, measure, muse::nidx);
+    const size_t result = muse::value(measToMnxMeas_, measure, muse::nidx);
     IF_ASSERT_FAILED(result != muse::nidx) { throw std::logic_error("Measure is not mapped to an MNX measure index."); }
     return result;
 }
@@ -78,8 +78,8 @@ size_t MnxExporter::mnxMeasureIndexFromMeasure(const engraving::Measure *measure
 //---------------------------------------------------------
 
 std::pair<size_t, int> MnxExporter::mnxPartStaffFromStaffIdx(engraving::staff_idx_t staffIdx) const {
-    const auto it = m_staffToPartStaff.find(staffIdx);
-    IF_ASSERT_FAILED(it != m_staffToPartStaff.end()) { throw std::logic_error("Staff index is not mapped to an MNX part/staff."); }
+    const auto it = staffToPartStaff_.find(staffIdx);
+    IF_ASSERT_FAILED(it != staffToPartStaff_.end()) { throw std::logic_error("Staff index is not mapped to an MNX part/staff."); }
     return it->second;
 }
 
@@ -141,9 +141,9 @@ std::optional<MnxChordTargetPosition> MnxExporter::mnxChordTargetPosition(const 
 //---------------------------------------------------------
 
 muse::Ret MnxExporter::exportMnx() {
-    LOGI() << "MNX export started: schema version=" << m_mnxDocument.mnx().version();
+    LOGI() << "MNX export started: schema version=" << mnxDocument_.mnx().version();
     // Header
-    auto client = m_mnxDocument.mnx().ensure_mnxdom().ensure_client();
+    auto client = mnxDocument_.mnx().ensure_mnxdom().ensure_client();
     muse::String version = muse::appinfo::version().toString();
     const muse::String revision = muse::appinfo::revision();
     if (!revision.isEmpty()) {
@@ -151,13 +151,13 @@ muse::Ret MnxExporter::exportMnx() {
     }
     client.set_name("engrave");
     client.set_version(version.toStdString());
-    if (m_score && m_score->masterScore()) {
-        IFileInfoProviderPtr fileInfo = m_score->masterScore()->fileInfo();
+    if (score_ && score_->masterScore()) {
+        IFileInfoProviderPtr fileInfo = score_->masterScore()->fileInfo();
         if (fileInfo) {
             const muse::io::path_t fileName = fileInfo->fileName();
             const std::string format = muse::io::suffix(fileName);
             if (!format.empty() || !fileName.empty()) {
-                auto source = m_mnxDocument.mnx().ensure_mnxdom().ensure_source();
+                auto source = mnxDocument_.mnx().ensure_mnxdom().ensure_source();
                 if (!format.empty()) {
                     source.set_format(format);
                 }
@@ -168,8 +168,8 @@ muse::Ret MnxExporter::exportMnx() {
         }
     }
 
-    if (m_exportBeams) {
-        mnx::MnxMetaData::Support support = m_mnxDocument.mnx().ensure_support();
+    if (exportBeams_) {
+        mnx::MnxMetaData::Support support = mnxDocument_.mnx().ensure_support();
         support.set_useBeams(true);
     }
 
@@ -181,7 +181,7 @@ muse::Ret MnxExporter::exportMnx() {
                 .str;
         return muse::make_ret(muse::Ret::Code::NotSupported, msg);
     }
-    createLayout(m_exportedStaves, "full-score");
+    createLayout(exportedStaves_, "full-score");
     /// @todo Creation of all layouts and scores, including excerpts. (Deferred to a future dev cycle.)
     return muse::make_ok();
 }

@@ -242,25 +242,25 @@ public:
     TranslatableString subtypeUserName() const override;
     void setSubtype(const AsciiStringView &s);
 
-    int subtype() const override { return (int) m_accidentalType; }
+    int subtype() const override { return (int) accidentalType_; }
 
     void setAccidentalType(AccidentalType t);
 
-    AccidentalType accidentalType() const { return m_accidentalType; }
+    AccidentalType accidentalType() const { return accidentalType_; }
 
-    void setRole(AccidentalRole r) { m_role = r; }
+    void setRole(AccidentalRole r) { role_ = r; }
 
-    AccidentalRole role() const { return m_role; }
+    AccidentalRole role() const { return role_; }
 
-    AccidentalBracket bracket() const { return m_bracket; }
+    AccidentalBracket bracket() const { return bracket_; }
 
-    void setBracket(AccidentalBracket val) { m_bracket = val; }
+    void setBracket(AccidentalBracket val) { bracket_ = val; }
 
     bool parentNoteHasParentheses() const;
 
-    bool isSmall() const { return m_isSmall; }
+    bool isSmall() const { return isSmall_; }
 
-    void setSmall(bool val) { m_isSmall = val; }
+    void setSmall(bool val) { isSmall_ = val; }
 
     SymId symId() const;
 
@@ -283,7 +283,7 @@ public:
     static double subtype2centOffset(AccidentalType);
     static AccidentalType centOffset2Subtype(double centOffset);
 
-    int stackingOrder() const { return ldata()->stackingNumber + m_stackingOrderOffset; }
+    int stackingOrder() const { return ldata()->stackingNumber + stackingOrderOffset_; }
 
     int line() const;
 
@@ -310,9 +310,9 @@ public:
     };
     DECLARE_LAYOUTDATA_METHODS(Accidental)
 
-    int stackingOrderOffset() const { return m_stackingOrderOffset; }
+    int stackingOrderOffset() const { return stackingOrderOffset_; }
 
-    void setStackingOrderOffset(int v) { m_stackingOrderOffset = v; }
+    void setStackingOrderOffset(int v) { stackingOrderOffset_ = v; }
 
 private:
 
@@ -320,11 +320,11 @@ private:
 
     Accidental(DummyParentOr<EngravingItem> parent);
 
-    AccidentalType m_accidentalType = AccidentalType::NONE;
-    AccidentalBracket m_bracket = AccidentalBracket::NONE;
-    AccidentalRole m_role = AccidentalRole::AUTO;
-    bool m_isSmall = false;
-    int m_stackingOrderOffset = 0;
+    AccidentalType accidentalType_ = AccidentalType::NONE;
+    AccidentalBracket bracket_ = AccidentalBracket::NONE;
+    AccidentalRole role_ = AccidentalRole::AUTO;
+    bool isSmall_ = false;
+    int stackingOrderOffset_ = 0;
 };
 
 extern AccidentalVal sym2accidentalVal(SymId id);

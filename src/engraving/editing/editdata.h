@@ -101,6 +101,6 @@ public:
     bool shift() const { return modifiers & ShiftModifier; }
 
 private:
-    std::vector<std::shared_ptr<ElementEditData>> m_data;
+    std::vector<std::shared_ptr<ElementEditData>> data_;
 };
 } // namespace mu::engraving

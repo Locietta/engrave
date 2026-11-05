@@ -83,8 +83,8 @@ static const ElementStyle ottavaStyle{
 
 OttavaSegment::OttavaSegment(Ottava *sp)
     : TextLineBaseSegment(ElementType::OTTAVA_SEGMENT, sp, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
-    m_text->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
-    m_endText->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
+    text_->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
+    endText_->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
 }
 
 //---------------------------------------------------------
@@ -103,10 +103,10 @@ EngravingObject *OttavaSegment::propertyDelegate(Pid pid) const {
 //---------------------------------------------------------
 
 void Ottava::setOttavaType(OttavaType val) {
-    if (m_ottavaType == val) {
+    if (ottavaType_ == val) {
         return;
     }
-    m_ottavaType = val;
+    ottavaType_ = val;
     styleChanged();
 }
 
@@ -114,7 +114,7 @@ void Ottava::setOttavaType(OttavaType val) {
 //   setNumbersOnly
 //---------------------------------------------------------
 
-void Ottava::setNumbersOnly(bool val) { m_numbersOnly = val; }
+void Ottava::setNumbersOnly(bool val) { numbersOnly_ = val; }
 
 //---------------------------------------------------------
 //   setPlacement
@@ -162,7 +162,7 @@ Sid Ottava::getPropertyStyle(Pid pid) const {
         Sid::ottava22MBPlacement, Sid::ottava22MBText,   Sid::ottava22MBContinueText,
     };
 
-    size_t idx = size_t(m_ottavaType) * 3 + (m_numbersOnly ? 0 : ss.size() / 2);
+    size_t idx = size_t(ottavaType_) * 3 + (numbersOnly_ ? 0 : ss.size() / 2);
     switch (pid) {
         case Pid::PLACEMENT: return ss[idx];
         case Pid::BEGIN_TEXT: return ss[idx + 1];    // BEGIN_TEXT
@@ -186,8 +186,8 @@ Sid Ottava::getPropertyStyle(Pid pid) const {
 
 Ottava::Ottava(DummyParentOr<EngravingItem> parent)
     : TextLineBase(ElementType::OTTAVA, parent, ElementFlag::ON_STAFF | ElementFlag::MOVABLE) {
-    m_ottavaType = OttavaType::OTTAVA_8VA;
-    m_numbersOnly = false;
+    ottavaType_ = OttavaType::OTTAVA_8VA;
+    numbersOnly_ = false;
     setBeginTextPlace(TextPlace::LEFT);
     setContinueTextPlace(TextPlace::LEFT);
     setEndHookType(HookType::HOOK_90);
@@ -199,15 +199,15 @@ Ottava::Ottava(DummyParentOr<EngravingItem> parent)
 }
 
 Ottava::Ottava(const Ottava &o) : TextLineBase(o) {
-    setOttavaType(o.m_ottavaType);
-    m_numbersOnly = o.m_numbersOnly;
+    setOttavaType(o.ottavaType_);
+    numbersOnly_ = o.numbersOnly_;
 }
 
 //---------------------------------------------------------
 //   pitchShift
 //---------------------------------------------------------
 
-int Ottava::pitchShift() const { return ottavaDefault[int(m_ottavaType)].shift; }
+int Ottava::pitchShift() const { return ottavaDefault[int(ottavaType_)].shift; }
 
 //---------------------------------------------------------
 //   createLineSegment
@@ -232,7 +232,7 @@ PropertyValue Ottava::getProperty(Pid propertyId) const {
     switch (propertyId) {
         case Pid::OTTAVA_TYPE: return int(ottavaType());
 
-        case Pid::NUMBERS_ONLY: return m_numbersOnly;
+        case Pid::NUMBERS_ONLY: return numbersOnly_;
 
         case Pid::END_TEXT_PLACE: // HACK
             return TextPlace::LEFT;
@@ -255,7 +255,7 @@ bool Ottava::setProperty(Pid propertyId, const PropertyValue &val) {
 
         case Pid::OTTAVA_TYPE: setOttavaType(OttavaType(val.toInt())); break;
 
-        case Pid::NUMBERS_ONLY: m_numbersOnly = val.toBool(); break;
+        case Pid::NUMBERS_ONLY: numbersOnly_ = val.toBool(); break;
 
         case Pid::SPANNER_TICKS:
             setTicks(val.value<Fraction>());

@@ -41,8 +41,8 @@ private:
     bool writePlaceholderHeader();
     bool patchHeaderSizes();
 
-    muse::io::IODevice *m_dstDevice = nullptr;
-    bool m_headerWritten = false;
-    size_t m_pcmStartPos = 0;
+    muse::io::IODevice *dstDevice_ = nullptr;
+    bool headerWritten_ = false;
+    size_t pcmStartPos_ = 0;
 };
 } // namespace muse::audio::encode

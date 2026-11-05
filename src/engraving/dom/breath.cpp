@@ -48,8 +48,8 @@ const std::vector<BreathType> Breath::BREATH_LIST{
 //---------------------------------------------------------
 
 Breath::Breath(DummyParentOr<Segment> parent) : EngravingItem(ElementType::BREATH, parent, ElementFlag::MOVABLE | ElementFlag::ON_STAFF) {
-    m_symId = SymId::breathMarkComma;
-    m_pause = 0.0;
+    symId_ = SymId::breathMarkComma;
+    pause_ = 0.0;
 }
 
 //---------------------------------------------------------
@@ -58,7 +58,7 @@ Breath::Breath(DummyParentOr<Segment> parent) : EngravingItem(ElementType::BREAT
 
 bool Breath::isCaesura() const {
     for (const BreathType &bt : BREATH_LIST) {
-        if (bt.id == m_symId) {
+        if (bt.id == symId_) {
             return bt.isCaesura;
         }
     }
@@ -77,8 +77,8 @@ double Breath::mag() const { return staff() ? staff()->staffMag(tick()) : 1.0; }
 
 PropertyValue Breath::getProperty(Pid propertyId) const {
     switch (propertyId) {
-        case Pid::SYMBOL: return PropertyValue::fromValue(m_symId);
-        case Pid::PAUSE: return m_pause;
+        case Pid::SYMBOL: return PropertyValue::fromValue(symId_);
+        case Pid::PAUSE: return pause_;
         default: return EngravingItem::getProperty(propertyId);
     }
 }

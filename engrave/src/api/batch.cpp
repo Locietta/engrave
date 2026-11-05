@@ -98,43 +98,43 @@ Policy policy_of(const Op &op) {
 
 Result<Target> EditContext::target(const Ref &ref) const {
     if (const auto *made = std::get_if<OpRef>(&ref)) {
-        if (made->op >= m_op) {
+        if (made->op >= op_) {
             return fail(ErrorCode::InvalidArgument,
                         std::format("an OpRef names operation {}, which does not run before this one", made->op));
         }
-        return Target{ref, nullptr, m_epoch};
+        return Target{ref, nullptr, epoch_};
     }
     const Result<Resolved> found =
-        std::holds_alternative<ElementId>(ref) ? resolve(m_master, std::get<ElementId>(ref)) : resolve(m_master, std::get<Address>(ref));
+        std::holds_alternative<ElementId>(ref) ? resolve(master_, std::get<ElementId>(ref)) : resolve(master_, std::get<Address>(ref));
     if (!found) return std::unexpected(found.error());
     if (!found->writable) return fail(ErrorCode::InvalidArgument, "layout builds this element; it cannot be edited");
-    return Target{ref, found->object, m_epoch};
+    return Target{ref, found->object, epoch_};
 }
 
 Result<EngravingObject *> EditContext::object(const Target &target) const {
     if (const auto *made = std::get_if<OpRef>(&target.ref)) {
-        const auto &list = m_created[made->op];
+        const auto &list = created_[made->op];
         if (made->item >= list.size()) {
             return fail(ErrorCode::InvalidArgument,
                         std::format("operation {} created {} element(s), not {}", made->op, list.size(), made->item + 1));
         }
         EngravingObject *object = list[made->item];
-        const auto objects = document_objects(m_master);
+        const auto objects = document_objects(master_);
         if (std::ranges::find(objects, object) == objects.end()) {
             return fail(ErrorCode::StaleHandle,
                         std::format("element {} of operation {} is no longer part of the score", made->item, made->op));
         }
         return object;
     }
-    if (target.epoch == m_epoch) return target.object;
+    if (target.epoch == epoch_) return target.object;
     const Result<Target> again = this->target(target.ref);
     if (!again) return std::unexpected(again.error());
     return again->object;
 }
 
 Result<mu::engraving::Score *> EditContext::score(const ScoreSel &selection) const {
-    if (!selection.excerpt) return &m_master;
-    const Result<Resolved> found = resolve(m_master, *selection.excerpt);
+    if (!selection.excerpt) return &master_;
+    const Result<Resolved> found = resolve(master_, *selection.excerpt);
     if (!found) return std::unexpected(found.error());
     if (!found->object->isScore()) {
         return fail(ErrorCode::InvalidArgument, std::format("{} is not a score", to_string(*selection.excerpt)));
@@ -142,7 +142,7 @@ Result<mu::engraving::Score *> EditContext::score(const ScoreSel &selection) con
     return mu::engraving::toScore(found->object);
 }
 
-void EditContext::created(EngravingObject *object) { m_created[m_op].push_back(object); }
+void EditContext::created(EngravingObject *object) { created_[op_].push_back(object); }
 
 // --- BatchGuard -------------------------------------------------------------
 
@@ -163,16 +163,16 @@ struct BatchGuard::Snapshot {
     std::vector<Versions> versions;
 };
 
-BatchGuard::BatchGuard(Document &document) : m_document(document), m_context(*DocumentAccess::impl(document).project->masterScore()) {}
+BatchGuard::BatchGuard(Document &document) : document_(document), context_(*DocumentAccess::impl(document).project->masterScore()) {}
 
 Result<void> BatchGuard::admit(std::optional<std::uint64_t> expected_revision) const {
-    const auto &document = DocumentAccess::impl(m_document);
+    const auto &document = DocumentAccess::impl(document_);
     if (document.poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
     if (expected_revision && *expected_revision != document.revision) {
         return fail(ErrorCode::RevisionConflict,
                     std::format("the document is at revision {}, not {}", document.revision, *expected_revision));
     }
-    const MasterScore &master = m_context.master();
+    const MasterScore &master = context_.master();
     const UndoStack *stack = master.undoStack();
     if (master.readOnly() || stack->isLocked() || stack->hasActiveTransaction())
         return fail(ErrorCode::EditRejected, "the score cannot be edited now");
@@ -181,7 +181,7 @@ Result<void> BatchGuard::admit(std::optional<std::uint64_t> expected_revision) c
 
 Result<EditResult> BatchGuard::edit(const Batch &batch, std::optional<std::uint64_t> expected_revision) {
     if (const auto admitted = admit(expected_revision); !admitted) return std::unexpected(admitted.error());
-    m_context.m_created.assign(batch.ops.size(), {});
+    context_.created_.assign(batch.ops.size(), {});
     Policy policy = Policy::Transaction;
     std::vector<Step> steps;
     std::vector<bool> snapshot_step;
@@ -189,12 +189,12 @@ Result<EditResult> BatchGuard::edit(const Batch &batch, std::optional<std::uint6
     snapshot_step.reserve(batch.ops.size());
     for (std::size_t i = 0; i < batch.ops.size(); ++i) {
         const Op &op = batch.ops[i];
-        m_context.m_op = i;
+        context_.op_ = i;
         const Policy own = policy_of(op);
         if (own == Policy::Unexposed) return fail(ErrorCode::Unsupported, std::format("{} is not available", op_name(op)), i);
         if (own == Policy::Snapshot) policy = Policy::Snapshot;
         snapshot_step.push_back(own == Policy::Snapshot);
-        auto step = std::visit([this](const auto &value) { return prepare(m_context, value); }, op);
+        auto step = std::visit([this](const auto &value) { return prepare(context_, value); }, op);
         if (!step) {
             Error error = std::move(step.error());
             error.op_index = i;
@@ -207,12 +207,12 @@ Result<EditResult> BatchGuard::edit(const Batch &batch, std::optional<std::uint6
 
 Result<EditResult> BatchGuard::run(std::vector<Step> steps, Policy policy, std::optional<std::uint64_t> expected_revision) {
     if (const auto admitted = admit(expected_revision); !admitted) return std::unexpected(admitted.error());
-    m_context.m_created.assign(steps.size(), {});
+    context_.created_.assign(steps.size(), {});
     return execute(std::move(steps), policy, {});
 }
 
 Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, std::vector<bool> snapshot_step) {
-    auto &document = DocumentAccess::impl(m_document);
+    auto &document = DocumentAccess::impl(document_);
     EditResult result{.revision = document.revision};
     if (steps.empty()) return result;
     const EditHooks &hooks = document.edit_hooks;
@@ -226,7 +226,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
     // policy says nothing about which step is safe to unwind.
     bool snapshot_ran = snapshot_step.empty() && policy == Policy::Snapshot;
 
-    MasterScore &master = m_context.master();
+    MasterScore &master = context_.master();
     UndoStack *stack = master.undoStack();
     std::optional<Snapshot> snapshot;
     if (policy == Policy::Snapshot) {
@@ -258,26 +258,26 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
         master.startCmd(muse::TranslatableString::untranslatable("engrave edit"));
         if (!stack->hasActiveTransaction()) return fail(ErrorCode::EditRejected, "the engine did not start a transaction");
         for (std::size_t i = 0; i <= steps.size(); ++i) {
-            m_context.m_op = i;
+            context_.op_ = i;
             if (hooks.before_step) hooks.before_step(i);
             if (!check_engine(i) || i == steps.size()) break;
             if (i < snapshot_step.size() && snapshot_step[i]) snapshot_ran = true;
             const std::size_t mark = stack->activeTransaction()->commands().size();
-            if (auto applied = steps[i](m_context); !applied) {
+            if (auto applied = steps[i](context_); !applied) {
                 failure = std::move(applied.error());
                 failure->op_index = i;
                 break;
             }
             if (!check_engine(i)) break;
             const auto &commands = stack->activeTransaction()->commands();
-            if (std::any_of(commands.begin() + mark, commands.end(), structural)) ++m_context.m_epoch;
+            if (std::any_of(commands.begin() + mark, commands.end(), structural)) ++context_.epoch_;
         }
         if (!failure) master.endCmd(false, true);
     } catch (const std::bad_alloc &) {
         roll_back(snapshot ? &*snapshot : nullptr, history, true);
         throw;
     } catch (const std::exception &error) {
-        const std::size_t op = m_context.m_op;
+        const std::size_t op = context_.op_;
         engine_threw = true;
         failure = Error{ErrorCode::EditRejected, std::format("the engine failed: {}", error.what()),
                         op < steps.size() ? std::optional(op) : std::nullopt};
@@ -294,7 +294,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
     // destroyed anything: the history cleanup below deletes what the batch removed.
     std::unordered_set<const EngravingObject *> objects;
     for (EngravingObject *object : document_objects(master)) objects.insert(object);
-    for (auto &list : m_context.m_created) {
+    for (auto &list : context_.created_) {
         for (EngravingObject *&object : list) {
             if (!objects.contains(object)) object = nullptr;
         }
@@ -311,7 +311,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
     result.replaced = std::move(diff.replaced);
     result.ops.resize(steps.size());
     for (std::size_t i = 0; i < steps.size(); ++i) {
-        for (const EngravingObject *object : m_context.m_created[i]) {
+        for (const EngravingObject *object : context_.created_[i]) {
             const bool named = object && takes_id(*object) && object->eid().isValid();
             result.ops[i].created.push_back(named ? std::optional(from_engine(object->eid())) : std::nullopt);
         }
@@ -322,8 +322,8 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
 // Brings the score back to where it was before the batch. A failure here leaves the
 // document poisoned and is thrown.
 void BatchGuard::roll_back(const Snapshot *snapshot, std::size_t history, bool unwind_unsafe) {
-    auto &document = DocumentAccess::impl(m_document);
-    MasterScore &master = m_context.master();
+    auto &document = DocumentAccess::impl(document_);
+    MasterScore &master = context_.master();
     UndoStack *stack = master.undoStack();
     try {
         if (snapshot) {
@@ -369,7 +369,7 @@ void BatchGuard::roll_back(const Snapshot *snapshot, std::size_t history, bool u
 }
 
 void BatchGuard::restore(const Snapshot &snapshot) {
-    auto &document = DocumentAccess::impl(m_document);
+    auto &document = DocumentAccess::impl(document_);
     if (document.edit_hooks.fail_restore) throw std::runtime_error("the snapshot restore failed (test hook)");
     music::ScoreProject project = music::load_native_score(*document.engine->context, snapshot.mscz, "mscz");
     // The reload reads the version the writer stamped; the scores keep their own, and
@@ -394,7 +394,7 @@ void BatchGuard::restore(const Snapshot &snapshot) {
 // can promise (the writer orders spanners and excerpts its own way), and a restore is
 // what a difference costs, so the harness's own notion of the score's content is used.
 bool BatchGuard::same_score(const Snapshot &snapshot) {
-    MasterScore &master = m_context.master();
+    MasterScore &master = context_.master();
     return music::semantic_dump(&master).dump(1) == snapshot.semantic && id_list(master) == snapshot.ids;
 }
 

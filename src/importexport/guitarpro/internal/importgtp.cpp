@@ -317,8 +317,8 @@ int GuitarPro::readInt() {
 //---------------------------------------------------------
 
 void GuitarPro::addPalmMute(ChordRest *cr, bool hasPalmMute) {
-    m_continiousElementsBuilder->buildContiniousElement(cr, ElementType::PALM_MUTE, ContiniousElementsBuilder::ImportType::PALM_MUTE,
-                                                        hasPalmMute);
+    continiousElementsBuilder_->buildContiniousElement(cr, ElementType::PALM_MUTE, ContiniousElementsBuilder::ImportType::PALM_MUTE,
+                                                       hasPalmMute);
 }
 
 //---------------------------------------------------------
@@ -326,8 +326,8 @@ void GuitarPro::addPalmMute(ChordRest *cr, bool hasPalmMute) {
 //---------------------------------------------------------
 
 void GuitarPro::addLetRing(ChordRest *cr, bool hasLetRing) {
-    m_continiousElementsBuilder->buildContiniousElement(cr, ElementType::LET_RING, ContiniousElementsBuilder::ImportType::LET_RING,
-                                                        hasLetRing);
+    continiousElementsBuilder_->buildContiniousElement(cr, ElementType::LET_RING, ContiniousElementsBuilder::ImportType::LET_RING,
+                                                       hasLetRing);
 }
 
 //---------------------------------------------------------
@@ -335,7 +335,7 @@ void GuitarPro::addLetRing(ChordRest *cr, bool hasLetRing) {
 //---------------------------------------------------------
 
 void GuitarPro::addTrill(ChordRest *cr, bool hasTrill) {
-    m_continiousElementsBuilder->buildContiniousElement(cr, ElementType::TRILL, ContiniousElementsBuilder::ImportType::TRILL, hasTrill);
+    continiousElementsBuilder_->buildContiniousElement(cr, ElementType::TRILL, ContiniousElementsBuilder::ImportType::TRILL, hasTrill);
 }
 
 //---------------------------------------------------------
@@ -343,8 +343,8 @@ void GuitarPro::addTrill(ChordRest *cr, bool hasTrill) {
 //---------------------------------------------------------
 
 void GuitarPro::addHammerOnPullOff(ChordRest *cr, bool hasHammerOnPullOff) {
-    m_continiousElementsBuilder->buildContiniousElement(cr, ElementType::HAMMER_ON_PULL_OFF,
-                                                        ContiniousElementsBuilder::ImportType::HAMMER_ON_PULL_OFF, hasHammerOnPullOff);
+    continiousElementsBuilder_->buildContiniousElement(cr, ElementType::HAMMER_ON_PULL_OFF,
+                                                       ContiniousElementsBuilder::ImportType::HAMMER_ON_PULL_OFF, hasHammerOnPullOff);
 }
 
 //---------------------------------------------------------
@@ -352,8 +352,8 @@ void GuitarPro::addHammerOnPullOff(ChordRest *cr, bool hasHammerOnPullOff) {
 //---------------------------------------------------------
 
 void GuitarPro::addRasgueado(ChordRest *cr, bool hasRasgueado) {
-    m_continiousElementsBuilder->buildContiniousElement(cr, ElementType::RASGUEADO, ContiniousElementsBuilder::ImportType::RASGUEADO,
-                                                        hasRasgueado);
+    continiousElementsBuilder_->buildContiniousElement(cr, ElementType::RASGUEADO, ContiniousElementsBuilder::ImportType::RASGUEADO,
+                                                       hasRasgueado);
 }
 
 //---------------------------------------------------------
@@ -361,9 +361,9 @@ void GuitarPro::addRasgueado(ChordRest *cr, bool hasRasgueado) {
 //---------------------------------------------------------
 
 void GuitarPro::addVibratoLeftHand(ChordRest *cr, bool hasVibratoLeftHand) {
-    m_continiousElementsBuilder->buildContiniousElement(cr, ElementType::VIBRATO,
-                                                        ContiniousElementsBuilder::ImportType::VIBRATO_LEFT_HAND_SLIGHT, hasVibratoLeftHand,
-                                                        ContiniousElementsBuilder::VibratoSubType::LEFT_HAND_SLIGHT);
+    continiousElementsBuilder_->buildContiniousElement(cr, ElementType::VIBRATO,
+                                                       ContiniousElementsBuilder::ImportType::VIBRATO_LEFT_HAND_SLIGHT, hasVibratoLeftHand,
+                                                       ContiniousElementsBuilder::VibratoSubType::LEFT_HAND_SLIGHT);
 }
 
 //---------------------------------------------------------
@@ -371,9 +371,9 @@ void GuitarPro::addVibratoLeftHand(ChordRest *cr, bool hasVibratoLeftHand) {
 //---------------------------------------------------------
 
 void GuitarPro::addVibratoWTremBar(ChordRest *cr, bool hasVibratoWTremBar) {
-    m_continiousElementsBuilder->buildContiniousElement(cr, ElementType::VIBRATO,
-                                                        ContiniousElementsBuilder::ImportType::VIBRATO_W_TREM_BAR_SLIGHT,
-                                                        hasVibratoWTremBar, ContiniousElementsBuilder::VibratoSubType::W_TREM_BAR_SLIGHT);
+    continiousElementsBuilder_->buildContiniousElement(cr, ElementType::VIBRATO,
+                                                       ContiniousElementsBuilder::ImportType::VIBRATO_W_TREM_BAR_SLIGHT, hasVibratoWTremBar,
+                                                       ContiniousElementsBuilder::VibratoSubType::W_TREM_BAR_SLIGHT);
 }
 
 //---------------------------------------------------------
@@ -382,20 +382,19 @@ void GuitarPro::addVibratoWTremBar(ChordRest *cr, bool hasVibratoWTremBar) {
 
 void GuitarPro::addHarmonicMarks(ChordRest *cr, bool hasHarmonicArtificial, bool hasHarmonicPinch, bool hasHarmonicTap,
                                  bool hasHarmonicSemi) {
-    m_continiousElementsBuilder->buildContiniousElement(cr, ElementType::HARMONIC_MARK,
-                                                        ContiniousElementsBuilder::ImportType::HARMONIC_ARTIFICIAL, hasHarmonicArtificial,
-                                                        ContiniousElementsBuilder::HarmonicMarkSubType::ARTIFICIAL);
+    continiousElementsBuilder_->buildContiniousElement(cr, ElementType::HARMONIC_MARK,
+                                                       ContiniousElementsBuilder::ImportType::HARMONIC_ARTIFICIAL, hasHarmonicArtificial,
+                                                       ContiniousElementsBuilder::HarmonicMarkSubType::ARTIFICIAL);
 
-    m_continiousElementsBuilder->buildContiniousElement(cr, ElementType::HARMONIC_MARK,
-                                                        ContiniousElementsBuilder::ImportType::HARMONIC_PINCH, hasHarmonicPinch,
-                                                        ContiniousElementsBuilder::HarmonicMarkSubType::PINCH);
+    continiousElementsBuilder_->buildContiniousElement(cr, ElementType::HARMONIC_MARK,
+                                                       ContiniousElementsBuilder::ImportType::HARMONIC_PINCH, hasHarmonicPinch,
+                                                       ContiniousElementsBuilder::HarmonicMarkSubType::PINCH);
 
-    m_continiousElementsBuilder->buildContiniousElement(cr, ElementType::HARMONIC_MARK, ContiniousElementsBuilder::ImportType::HARMONIC_TAP,
-                                                        hasHarmonicTap, ContiniousElementsBuilder::HarmonicMarkSubType::TAP);
+    continiousElementsBuilder_->buildContiniousElement(cr, ElementType::HARMONIC_MARK, ContiniousElementsBuilder::ImportType::HARMONIC_TAP,
+                                                       hasHarmonicTap, ContiniousElementsBuilder::HarmonicMarkSubType::TAP);
 
-    m_continiousElementsBuilder->buildContiniousElement(cr, ElementType::HARMONIC_MARK,
-                                                        ContiniousElementsBuilder::ImportType::HARMONIC_SEMI, hasHarmonicSemi,
-                                                        ContiniousElementsBuilder::HarmonicMarkSubType::SEMI);
+    continiousElementsBuilder_->buildContiniousElement(cr, ElementType::HARMONIC_MARK, ContiniousElementsBuilder::ImportType::HARMONIC_SEMI,
+                                                       hasHarmonicSemi, ContiniousElementsBuilder::HarmonicMarkSubType::SEMI);
 }
 
 //---------------------------------------------------------
@@ -617,7 +616,7 @@ void GuitarPro::createBend(Note *note, std::vector<PitchValue> &bendData) {
         return;
     }
 
-    m_guitarBendImporter->collectBend(note, bendData);
+    guitarBendImporter_->collectBend(note, bendData);
 }
 
 //---------------------------------------------------------
@@ -959,8 +958,8 @@ void GuitarPro::applyBeatEffects(Chord *chord, int beatEffect, bool &hasVibratoL
 //---------------------------------------------------------
 
 bool GuitarPro1::read(IODevice *io) {
-    m_continiousElementsBuilder = std::make_unique<ContiniousElementsBuilder>(score);
-    m_guitarBendImporter = std::make_unique<GuitarBendImporter>(score);
+    continiousElementsBuilder_ = std::make_unique<ContiniousElementsBuilder>(score);
+    guitarBendImporter_ = std::make_unique<GuitarBendImporter>(score);
 
     f = io;
     curPos = 30;
@@ -1173,7 +1172,7 @@ bool GuitarPro1::read(IODevice *io) {
             }
             if (measureLen < measure->ticks()) {
                 score->setRest(fraction, track, measure->ticks() - measureLen, false, nullptr, false);
-                m_continiousElementsBuilder->notifyUncompletedMeasure();
+                continiousElementsBuilder_->notifyUncompletedMeasure();
             }
         }
         if (bar == 1 && !mixChange) {
@@ -1181,7 +1180,7 @@ bool GuitarPro1::read(IODevice *io) {
         }
     }
 
-    m_continiousElementsBuilder->addElementsToScore();
+    continiousElementsBuilder_->addElementsToScore();
     addTunings();
     return true;
 }
@@ -1311,8 +1310,8 @@ void GuitarPro::createSlur(bool hasSlur, staff_idx_t staffIdx, ChordRest *cr) {
 //---------------------------------------------------------
 
 bool GuitarPro2::read(IODevice *io) {
-    m_continiousElementsBuilder = std::make_unique<ContiniousElementsBuilder>(score);
-    m_guitarBendImporter = std::make_unique<GuitarBendImporter>(score);
+    continiousElementsBuilder_ = std::make_unique<ContiniousElementsBuilder>(score);
+    guitarBendImporter_ = std::make_unique<GuitarBendImporter>(score);
 
     f = io;
     curPos = 30;
@@ -1676,7 +1675,7 @@ bool GuitarPro2::read(IODevice *io) {
             }
             if (measureLen < measure->ticks()) {
                 score->setRest(fraction, track, measure->ticks() - measureLen, false, nullptr, false);
-                m_continiousElementsBuilder->notifyUncompletedMeasure();
+                continiousElementsBuilder_->notifyUncompletedMeasure();
             }
         }
         if (bar == 1 && !mixChange) {
@@ -1684,7 +1683,7 @@ bool GuitarPro2::read(IODevice *io) {
         }
     }
 
-    m_continiousElementsBuilder->addElementsToScore();
+    continiousElementsBuilder_->addElementsToScore();
     addTunings();
     return true;
 }
@@ -2023,8 +2022,8 @@ int GuitarPro1::readBeatEffects(int, Segment *) {
 //---------------------------------------------------------
 
 bool GuitarPro3::read(IODevice *io) {
-    m_continiousElementsBuilder = std::make_unique<ContiniousElementsBuilder>(score);
-    m_guitarBendImporter = std::make_unique<GuitarBendImporter>(score);
+    continiousElementsBuilder_ = std::make_unique<ContiniousElementsBuilder>(score);
+    guitarBendImporter_ = std::make_unique<GuitarBendImporter>(score);
 
     f = io;
     curPos = 30;
@@ -2510,7 +2509,7 @@ bool GuitarPro3::read(IODevice *io) {
             }
             if (measureLen < measure->ticks()) {
                 score->setRest(fraction, track, measure->ticks() - measureLen, false, nullptr, false);
-                m_continiousElementsBuilder->notifyUncompletedMeasure();
+                continiousElementsBuilder_->notifyUncompletedMeasure();
             }
             bool removeRests = true;
             int counter = 0;
@@ -2598,8 +2597,8 @@ bool GuitarPro3::read(IODevice *io) {
         }
     }
 
-    m_continiousElementsBuilder->addElementsToScore();
-    m_guitarBendImporter->addElementsToScore();
+    continiousElementsBuilder_->addElementsToScore();
+    guitarBendImporter_->addElementsToScore();
     addTunings();
 
     return true;

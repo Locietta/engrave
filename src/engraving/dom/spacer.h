@@ -49,19 +49,19 @@ public:
 
     Measure *measure() const { return toMeasure(ownershipParent()); }
 
-    SpacerType spacerType() const { return m_spacerType; }
+    SpacerType spacerType() const { return spacerType_; }
 
-    void setSpacerType(SpacerType t) { m_spacerType = t; }
+    void setSpacerType(SpacerType t) { spacerType_ = t; }
 
-    int subtype() const override { return int(m_spacerType); }
+    int subtype() const override { return int(spacerType_); }
 
     TranslatableString subtypeUserName() const override;
 
     void setGap(Spatium sp);
 
-    Spatium gap() const { return m_gap; }
+    Spatium gap() const { return gap_; }
 
-    double absoluteGap() const { return absoluteFromSpatium(m_gap); }
+    double absoluteGap() const { return absoluteFromSpatium(gap_); }
 
     PropertyValue getProperty(Pid propertyId) const override;
     bool setProperty(Pid propertyId, const PropertyValue &) override;
@@ -79,7 +79,7 @@ private:
     Spacer(DummyParentOr<Measure> parent);
     Spacer(const Spacer &);
 
-    SpacerType m_spacerType = SpacerType::UP;
-    Spatium m_gap;
+    SpacerType spacerType_ = SpacerType::UP;
+    Spatium gap_;
 };
 } // namespace mu::engraving

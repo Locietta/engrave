@@ -54,78 +54,78 @@ bool MidiArticulation::operator==(const MidiArticulation &i) const {
 //---------------------------------------------------------
 
 Instrument::Instrument(String id) {
-    m_id = id;
+    id_ = id;
     InstrChannel *a = new InstrChannel;
     a->setName(String::fromUtf8(InstrChannel::DEFAULT_NAME));
-    m_channel.push_back(a);
+    channel_.push_back(a);
 
-    m_minPitchA = MIN_PITCH;
-    m_maxPitchA = MAX_PITCH;
-    m_minPitchP = MIN_PITCH;
-    m_maxPitchP = MAX_PITCH;
-    m_useDrumset = false;
-    m_drumset = 0;
-    m_singleNoteDynamics = true;
+    minPitchA_ = MIN_PITCH;
+    maxPitchA_ = MAX_PITCH;
+    minPitchP_ = MIN_PITCH;
+    maxPitchP_ = MAX_PITCH;
+    useDrumset_ = false;
+    drumset_ = 0;
+    singleNoteDynamics_ = true;
 }
 
 Instrument::Instrument(const Instrument &i) {
-    m_id = i.m_id;
-    m_soundId = i.m_soundId;
-    m_instrumentLabel = i.m_instrumentLabel;
-    m_trackName = i.m_trackName;
-    m_minPitchA = i.m_minPitchA;
-    m_maxPitchA = i.m_maxPitchA;
-    m_minPitchP = i.m_minPitchP;
-    m_maxPitchP = i.m_maxPitchP;
-    m_transpose = i.m_transpose;
-    m_musicXmlId = i.m_musicXmlId;
-    m_stringData = i.m_stringData;
-    m_drumset = 0;
-    setDrumset(i.m_drumset);
-    m_useDrumset = i.m_useDrumset;
-    m_stringData = i.m_stringData;
-    m_midiActions = i.m_midiActions;
-    m_articulation = i.m_articulation;
-    m_singleNoteDynamics = i.m_singleNoteDynamics;
-    m_channel.reserve(i.m_channel.size());
-    for (InstrChannel *c : i.m_channel) {
-        m_channel.push_back(new InstrChannel(*c));
+    id_ = i.id_;
+    soundId_ = i.soundId_;
+    instrumentLabel_ = i.instrumentLabel_;
+    trackName_ = i.trackName_;
+    minPitchA_ = i.minPitchA_;
+    maxPitchA_ = i.maxPitchA_;
+    minPitchP_ = i.minPitchP_;
+    maxPitchP_ = i.maxPitchP_;
+    transpose_ = i.transpose_;
+    musicXmlId_ = i.musicXmlId_;
+    stringData_ = i.stringData_;
+    drumset_ = 0;
+    setDrumset(i.drumset_);
+    useDrumset_ = i.useDrumset_;
+    stringData_ = i.stringData_;
+    midiActions_ = i.midiActions_;
+    articulation_ = i.articulation_;
+    singleNoteDynamics_ = i.singleNoteDynamics_;
+    channel_.reserve(i.channel_.size());
+    for (InstrChannel *c : i.channel_) {
+        channel_.push_back(new InstrChannel(*c));
     }
-    m_clefType = i.m_clefType;
-    m_trait = i.m_trait;
-    m_glissandoStyle = i.m_glissandoStyle;
+    clefType_ = i.clefType_;
+    trait_ = i.trait_;
+    glissandoStyle_ = i.glissandoStyle_;
 }
 
 void Instrument::operator=(const Instrument &i) {
-    muse::DeleteAll(m_channel);
-    m_channel.clear();
-    delete m_drumset;
+    muse::DeleteAll(channel_);
+    channel_.clear();
+    delete drumset_;
 
-    m_id = i.m_id;
-    m_soundId = i.m_soundId;
-    m_instrumentLabel = i.m_instrumentLabel;
-    m_trackName = i.m_trackName;
-    m_minPitchA = i.m_minPitchA;
-    m_maxPitchA = i.m_maxPitchA;
-    m_minPitchP = i.m_minPitchP;
-    m_maxPitchP = i.m_maxPitchP;
-    m_transpose = i.m_transpose;
-    m_musicXmlId = i.m_musicXmlId;
-    m_stringData = i.m_stringData;
-    m_drumset = 0;
-    setDrumset(i.m_drumset);
-    m_useDrumset = i.m_useDrumset;
-    m_stringData = i.m_stringData;
-    m_midiActions = i.m_midiActions;
-    m_articulation = i.m_articulation;
-    m_singleNoteDynamics = i.m_singleNoteDynamics;
-    m_channel.reserve(i.m_channel.size());
-    for (InstrChannel *c : i.m_channel) {
-        m_channel.push_back(new InstrChannel(*c));
+    id_ = i.id_;
+    soundId_ = i.soundId_;
+    instrumentLabel_ = i.instrumentLabel_;
+    trackName_ = i.trackName_;
+    minPitchA_ = i.minPitchA_;
+    maxPitchA_ = i.maxPitchA_;
+    minPitchP_ = i.minPitchP_;
+    maxPitchP_ = i.maxPitchP_;
+    transpose_ = i.transpose_;
+    musicXmlId_ = i.musicXmlId_;
+    stringData_ = i.stringData_;
+    drumset_ = 0;
+    setDrumset(i.drumset_);
+    useDrumset_ = i.useDrumset_;
+    stringData_ = i.stringData_;
+    midiActions_ = i.midiActions_;
+    articulation_ = i.articulation_;
+    singleNoteDynamics_ = i.singleNoteDynamics_;
+    channel_.reserve(i.channel_.size());
+    for (InstrChannel *c : i.channel_) {
+        channel_.push_back(new InstrChannel(*c));
     }
-    m_clefType = i.m_clefType;
-    m_trait = i.m_trait;
-    m_glissandoStyle = i.m_glissandoStyle;
+    clefType_ = i.clefType_;
+    trait_ = i.trait_;
+    glissandoStyle_ = i.glissandoStyle_;
 }
 
 //---------------------------------------------------------
@@ -133,9 +133,9 @@ void Instrument::operator=(const Instrument &i) {
 //---------------------------------------------------------
 
 Instrument::~Instrument() {
-    muse::DeleteAll(m_channel);
-    delete m_drumset;
-    m_drumset = nullptr;
+    muse::DeleteAll(channel_);
+    delete drumset_;
+    drumset_ = nullptr;
 }
 
 String Instrument::recognizeMusicXmlId() const {
@@ -147,11 +147,11 @@ String Instrument::recognizeMusicXmlId() const {
     std::vector<String> nameList;
     nameList.reserve(3);
 
-    nameList.push_back(m_trackName);
-    nameList.push_back(m_instrumentLabel.longName());
-    nameList.push_back(m_instrumentLabel.shortName());
+    nameList.push_back(trackName_);
+    nameList.push_back(instrumentLabel_.longName());
+    nameList.push_back(instrumentLabel_.shortName());
 
-    const InstrumentTemplate *tmplByName = mu::engraving::searchTemplateForInstrNameList(nameList, m_useDrumset);
+    const InstrumentTemplate *tmplByName = mu::engraving::searchTemplateForInstrNameList(nameList, useDrumset_);
 
     if (tmplByName && !tmplByName->musicXmlId.isEmpty()) {
         return tmplByName->musicXmlId;
@@ -164,13 +164,13 @@ String Instrument::recognizeMusicXmlId() const {
     }
 
     const InstrumentTemplate *tmplMidiProgram =
-        mu::engraving::searchTemplateForMidiProgram(channel->bank(), channel->program(), m_useDrumset);
+        mu::engraving::searchTemplateForMidiProgram(channel->bank(), channel->program(), useDrumset_);
 
     if (tmplMidiProgram && !tmplMidiProgram->musicXmlId.isEmpty()) {
         return tmplMidiProgram->musicXmlId;
     }
 
-    return m_useDrumset ? defaultMusicXmlPercussionId : defaultMusicXmlId;
+    return useDrumset_ ? defaultMusicXmlPercussionId : defaultMusicXmlId;
 }
 
 String Instrument::recognizeId() const {
@@ -182,23 +182,23 @@ String Instrument::recognizeId() const {
 
     // In these cases, the best and/or most generic match is already known,
     // and we don't want to risk returning something else.
-    if (m_musicXmlId == u"drum.group") {
+    if (musicXmlId_ == u"drum.group") {
         return u"percussion-synthesizer"; // General MIDI Percussion (most generic kit)
-    } else if (m_musicXmlId == u"drum.group.set") {
+    } else if (musicXmlId_ == u"drum.group.set") {
         return u"drumset"; // Large Drum Kit (most generic drum kit)
-    } else if (m_musicXmlId.startsWith(u"mdl.")) {
+    } else if (musicXmlId_.startsWith(u"mdl.")) {
         // Use fixed mapping for MDL1 instruments to ensure we get the
         // marching versions (e.g. "marching-snare" and not "snare-drum").
         // See https://github.com/musescore/mdl/blob/master/resources/instruments/mdl_1_3_0.xml
-        if (m_musicXmlId == u"mdl.drum.snare-drum") {
+        if (musicXmlId_ == u"mdl.drum.snare-drum") {
             return u"marching-snare";
-        } else if (m_musicXmlId == u"mdl.drum.tenor-drum") {
+        } else if (musicXmlId_ == u"mdl.drum.tenor-drum") {
             return u"marching-tenor-drums";
-        } else if (m_musicXmlId == u"mdl.drum.bass-drum") {
+        } else if (musicXmlId_ == u"mdl.drum.bass-drum") {
             return u"marching-bass-drums";
-        } else if (m_musicXmlId == u"mdl.metal.cymbal.crash") {
+        } else if (musicXmlId_ == u"mdl.metal.cymbal.crash") {
             return u"marching-cymbals";
-        } else if (m_musicXmlId == u"mdl.drum.group.set") {
+        } else if (musicXmlId_ == u"mdl.drum.group.set") {
             return u"drumset";
         }
     }
@@ -206,7 +206,7 @@ String Instrument::recognizeId() const {
     // Several instruments have MusicXML ID "strings.group". Let's use the
     // value of controller 32 of the "arco" channel to distinguish them.
     const String arco = String(u"arco");
-    const bool groupHack = m_musicXmlId == String(u"strings.group");
+    const bool groupHack = musicXmlId_ == String(u"strings.group");
     const int idxref = channelIdx(arco);
     const int val32ref = (idxref < 0) ? -1 : channel(idxref)->bank();
 
@@ -217,7 +217,7 @@ String Instrument::recognizeId() const {
 
     for (const InstrumentGroup *g : instrumentGroups) {
         for (const InstrumentTemplate *it : g->instrumentTemplates) {
-            if (it->musicXmlId != m_musicXmlId) {
+            if (it->musicXmlId != musicXmlId_) {
                 continue;
             }
             if (groupHack) {
@@ -258,13 +258,13 @@ String Instrument::recognizeId() const {
         return fallback;
     }
 
-    return m_useDrumset ? u"percussion-synthesizer" // General MIDI Percussion (most generic kit)
-                          :
-                          u"piano";
+    return useDrumset_ ? u"percussion-synthesizer" // General MIDI Percussion (most generic kit)
+                         :
+                         u"piano";
 }
 
 int Instrument::recognizeMidiProgram() const {
-    const InstrumentTemplate *tp = searchTemplate(m_id);
+    const InstrumentTemplate *tp = searchTemplate(id_);
 
     if (tp && !tp->channel.empty() && tp->channel[0].program() >= 0) {
         return tp->channel[0].program();
@@ -280,13 +280,13 @@ int Instrument::recognizeMidiProgram() const {
 NamedEventList *Instrument::midiAction(const String &s, int channelIdx) const {
     // first look in channel list
 
-    for (const NamedEventList &a : m_channel[channelIdx]->midiActions) {
+    for (const NamedEventList &a : channel_[channelIdx]->midiActions) {
         if (s == a.name) {
             return const_cast<NamedEventList *>(&a);
         }
     }
 
-    for (const NamedEventList &a : m_midiActions) {
+    for (const NamedEventList &a : midiActions_) {
         if (s == a.name) {
             return const_cast<NamedEventList *>(&a);
         }
@@ -300,17 +300,17 @@ NamedEventList *Instrument::midiAction(const String &s, int channelIdx) const {
 
 InstrChannel::InstrChannel() {
     for (int i = 0; i < int(A::INIT_COUNT); ++i) {
-        m_init.push_back(MidiCoreEvent());
+        init_.push_back(MidiCoreEvent());
     }
-    m_synti = u"Fluid"; // default synthesizer
-    m_channel = -1;
-    m_program = -1;
-    m_bank = 0;
-    m_volume = defaultVolume;
-    m_pan = 64; // actually 63.5 for center
-    m_chorus = 0;
-    m_reverb = 0;
-    m_color = DEFAULT_COLOR;
+    synti_ = u"Fluid"; // default synthesizer
+    channel_ = -1;
+    program_ = -1;
+    bank_ = 0;
+    volume_ = defaultVolume;
+    pan_ = 64; // actually 63.5 for center
+    chorus_ = 0;
+    reverb_ = 0;
+    color_ = DEFAULT_COLOR;
 }
 
 //---------------------------------------------------------
@@ -318,11 +318,11 @@ InstrChannel::InstrChannel() {
 //---------------------------------------------------------
 
 std::vector<MidiCoreEvent> &InstrChannel::initList() const {
-    if (m_mustUpdateInit) {
+    if (mustUpdateInit_) {
         updateInitList();
-        m_mustUpdateInit = false;
+        mustUpdateInit_ = false;
     }
-    return m_init;
+    return init_;
 }
 
 //---------------------------------------------------------
@@ -330,11 +330,11 @@ std::vector<MidiCoreEvent> &InstrChannel::initList() const {
 //---------------------------------------------------------
 
 void InstrChannel::setVolume(char value) {
-    if (m_volume != value) {
-        m_volume = value;
+    if (volume_ != value) {
+        volume_ = value;
         firePropertyChanged(Prop::VOLUME);
     }
-    m_mustUpdateInit = true;
+    mustUpdateInit_ = true;
 }
 
 //---------------------------------------------------------
@@ -342,11 +342,11 @@ void InstrChannel::setVolume(char value) {
 //---------------------------------------------------------
 
 void InstrChannel::setPan(char value) {
-    if (m_pan != value) {
-        m_pan = value;
+    if (pan_ != value) {
+        pan_ = value;
         firePropertyChanged(Prop::PAN);
     }
-    m_mustUpdateInit = true;
+    mustUpdateInit_ = true;
 }
 
 //---------------------------------------------------------
@@ -354,11 +354,11 @@ void InstrChannel::setPan(char value) {
 //---------------------------------------------------------
 
 void InstrChannel::setChorus(char value) {
-    if (m_chorus != value) {
-        m_chorus = value;
+    if (chorus_ != value) {
+        chorus_ = value;
         firePropertyChanged(Prop::CHORUS);
     }
-    m_mustUpdateInit = true;
+    mustUpdateInit_ = true;
 }
 
 //---------------------------------------------------------
@@ -366,11 +366,11 @@ void InstrChannel::setChorus(char value) {
 //---------------------------------------------------------
 
 void InstrChannel::setReverb(char value) {
-    if (m_reverb != value) {
-        m_reverb = value;
+    if (reverb_ != value) {
+        reverb_ = value;
         firePropertyChanged(Prop::REVERB);
     }
-    m_mustUpdateInit = true;
+    mustUpdateInit_ = true;
 }
 
 //---------------------------------------------------------
@@ -378,8 +378,8 @@ void InstrChannel::setReverb(char value) {
 //---------------------------------------------------------
 
 void InstrChannel::setName(const String &value) {
-    if (m_name != value) {
-        m_name = value;
+    if (name_ != value) {
+        name_ = value;
         firePropertyChanged(Prop::NAME);
     }
 }
@@ -389,8 +389,8 @@ void InstrChannel::setName(const String &value) {
 //---------------------------------------------------------
 
 void InstrChannel::setSynti(const String &value) {
-    if (m_synti != value) {
-        m_synti = value;
+    if (synti_ != value) {
+        synti_ = value;
         firePropertyChanged(Prop::SYNTI);
     }
 }
@@ -400,8 +400,8 @@ void InstrChannel::setSynti(const String &value) {
 //---------------------------------------------------------
 
 void InstrChannel::setColor(int value) {
-    if (m_color != value) {
-        m_color = value;
+    if (color_ != value) {
+        color_ = value;
         firePropertyChanged(Prop::COLOR);
     }
 }
@@ -411,11 +411,11 @@ void InstrChannel::setColor(int value) {
 //---------------------------------------------------------
 
 void InstrChannel::setProgram(int value) {
-    if (m_program != value) {
-        m_program = value;
+    if (program_ != value) {
+        program_ = value;
         firePropertyChanged(Prop::PROGRAM);
     }
-    m_mustUpdateInit = true;
+    mustUpdateInit_ = true;
 }
 
 //---------------------------------------------------------
@@ -423,11 +423,11 @@ void InstrChannel::setProgram(int value) {
 //---------------------------------------------------------
 
 void InstrChannel::setBank(int value) {
-    if (m_bank != value) {
-        m_bank = value;
+    if (bank_ != value) {
+        bank_ = value;
         firePropertyChanged(Prop::BANK);
     }
-    m_mustUpdateInit = true;
+    mustUpdateInit_ = true;
 }
 
 //---------------------------------------------------------
@@ -435,8 +435,8 @@ void InstrChannel::setBank(int value) {
 //---------------------------------------------------------
 
 void InstrChannel::setChannel(int value) {
-    if (m_channel != value) {
-        m_channel = value;
+    if (channel_ != value) {
+        channel_ = value;
         firePropertyChanged(Prop::CHANNEL);
     }
 }
@@ -446,8 +446,8 @@ void InstrChannel::setChannel(int value) {
 //---------------------------------------------------------
 
 void InstrChannel::setUserBankController(bool val) {
-    if (m_userBankController != val) {
-        m_userBankController = val;
+    if (userBankController_ != val) {
+        userBankController_ = val;
         firePropertyChanged(Prop::USER_BANK_CONTROL);
     }
 }
@@ -532,50 +532,50 @@ void InstrChannel::switchExpressive(Synthesizer *synth, bool expressive, bool fo
 
 void InstrChannel::updateInitList() const {
     MidiCoreEvent e;
-    if (m_program != -1) {
+    if (program_ != -1) {
         e.setType(ME_CONTROLLER);
         e.setDataA(CTRL_PROGRAM);
-        e.setDataB(m_program);
-        m_init[int(A::PROGRAM)] = e;
+        e.setDataB(program_);
+        init_[int(A::PROGRAM)] = e;
     }
 
-    e.setData(ME_CONTROLLER, CTRL_HBANK, (m_bank >> 7) & 0x7f);
-    m_init[int(A::HBANK)] = e;
+    e.setData(ME_CONTROLLER, CTRL_HBANK, (bank_ >> 7) & 0x7f);
+    init_[int(A::HBANK)] = e;
 
-    e.setData(ME_CONTROLLER, CTRL_LBANK, m_bank & 0x7f);
-    m_init[int(A::LBANK)] = e;
+    e.setData(ME_CONTROLLER, CTRL_LBANK, bank_ & 0x7f);
+    init_[int(A::LBANK)] = e;
 
     e.setData(ME_CONTROLLER, CTRL_VOLUME, volume());
-    m_init[int(A::VOLUME)] = e;
+    init_[int(A::VOLUME)] = e;
 
     e.setData(ME_CONTROLLER, CTRL_PANPOT, pan());
-    m_init[int(A::PAN)] = e;
+    init_[int(A::PAN)] = e;
 
     e.setData(ME_CONTROLLER, CTRL_CHORUS_SEND, chorus());
-    m_init[int(A::CHORUS)] = e;
+    init_[int(A::CHORUS)] = e;
 
     e.setData(ME_CONTROLLER, CTRL_REVERB_SEND, reverb());
-    m_init[int(A::REVERB)] = e;
+    init_[int(A::REVERB)] = e;
 }
 
 //---------------------------------------------------------
 //   addListener
 //---------------------------------------------------------
 
-void InstrChannel::addListener(ChannelListener *l) { m_notifier.addListener(l); }
+void InstrChannel::addListener(ChannelListener *l) { notifier_.addListener(l); }
 
 //---------------------------------------------------------
 //   removeListener
 //---------------------------------------------------------
 
-void InstrChannel::removeListener(ChannelListener *l) { m_notifier.removeListener(l); }
+void InstrChannel::removeListener(ChannelListener *l) { notifier_.removeListener(l); }
 
 //---------------------------------------------------------
 //   PartChannelSettingsLink
 //---------------------------------------------------------
 
 PartChannelSettingsLink::PartChannelSettingsLink(InstrChannel *main, InstrChannel *bound, bool excerpt)
-    : m_main(main), m_bound(bound), m_excerpt(excerpt) {
+    : main_(main), bound_(bound), excerpt_(excerpt) {
     // Maybe it would be good to assign common properties if the link
     // is constructed in non-excerpt mode. But it is not currently
     // necessary as playback channels are currently recreated on each
@@ -590,7 +590,7 @@ PartChannelSettingsLink::PartChannelSettingsLink(InstrChannel *main, InstrChanne
 
 PartChannelSettingsLink::PartChannelSettingsLink(PartChannelSettingsLink &&other)
     : ChannelListener(), // swap() will set the notifier instead
-      m_main(nullptr), m_bound(nullptr), m_excerpt(false) {
+      main_(nullptr), bound_(nullptr), excerpt_(false) {
     swap(*this, other);
 }
 
@@ -612,9 +612,9 @@ PartChannelSettingsLink &PartChannelSettingsLink::operator=(PartChannelSettingsL
 void swap(PartChannelSettingsLink &l1, PartChannelSettingsLink &l2) {
     mu::engraving::swap(static_cast<ChannelListener &>(l1), static_cast<ChannelListener &>(l2));
     using std::swap;
-    swap(l1.m_main, l2.m_main);
-    swap(l1.m_bound, l2.m_bound);
-    swap(l1.m_excerpt, l2.m_excerpt);
+    swap(l1.main_, l2.main_);
+    swap(l1.bound_, l2.bound_);
+    swap(l1.excerpt_, l2.excerpt_);
 }
 
 //---------------------------------------------------------
@@ -641,7 +641,7 @@ void PartChannelSettingsLink::applyProperty(InstrChannel::Prop p, const InstrCha
 //   PartChannelSettingsLink::propertyChanged
 //---------------------------------------------------------
 
-void PartChannelSettingsLink::propertyChanged(InstrChannel::Prop p) { applyProperty(p, m_main, m_bound); }
+void PartChannelSettingsLink::propertyChanged(InstrChannel::Prop p) { applyProperty(p, main_, bound_); }
 
 //---------------------------------------------------------
 //   channelIdx
@@ -649,7 +649,7 @@ void PartChannelSettingsLink::propertyChanged(InstrChannel::Prop p) { applyPrope
 
 int Instrument::channelIdx(const String &s) const {
     int idx = 0;
-    for (const InstrChannel *a : m_channel) {
+    for (const InstrChannel *a : channel_) {
         if (a->name().isEmpty() && s == InstrChannel::DEFAULT_NAME) {
             return idx;
         }
@@ -666,7 +666,7 @@ int Instrument::channelIdx(const String &s) const {
 //---------------------------------------------------------
 
 double Instrument::getVelocityMultiplier(const String &name) const {
-    for (const MidiArticulation &a : m_articulation) {
+    for (const MidiArticulation &a : articulation_) {
         if (a.name == name) {
             return double(a.velocity) / 100;
         }
@@ -679,7 +679,7 @@ double Instrument::getVelocityMultiplier(const String &name) const {
 //---------------------------------------------------------
 
 void Instrument::updateGateTime(int *gateTime, const String &name) const {
-    for (const MidiArticulation &a : m_articulation) {
+    for (const MidiArticulation &a : articulation_) {
         if (a.name == name) {
             // Imagine ["staccato", "accent"] articulations
             // accent will override the gate time,
@@ -719,42 +719,42 @@ bool Instrument::isNormallyMultiStaveInstrument() const {
            instrumentFamily == u"harps" || instrumentFamily == u"accordions";
 }
 
-GlissandoStyle Instrument::glissandoStyle() const { return m_glissandoStyle; }
+GlissandoStyle Instrument::glissandoStyle() const { return glissandoStyle_; }
 
-void Instrument::setGlissandoStyle(GlissandoStyle style) { m_glissandoStyle = style; }
+void Instrument::setGlissandoStyle(GlissandoStyle style) { glissandoStyle_ = style; }
 
 //---------------------------------------------------------
 //   operator==
 //---------------------------------------------------------
 
 bool Instrument::operator==(const Instrument &i) const {
-    bool equal = i.m_instrumentLabel == m_instrumentLabel;
-    equal &= i.m_trackName == m_trackName;
-    equal &= i.m_id == m_id;
-    equal &= i.m_soundId == m_soundId;
-    equal &= i.m_musicXmlId == m_musicXmlId;
+    bool equal = i.instrumentLabel_ == instrumentLabel_;
+    equal &= i.trackName_ == trackName_;
+    equal &= i.id_ == id_;
+    equal &= i.soundId_ == soundId_;
+    equal &= i.musicXmlId_ == musicXmlId_;
 
-    equal &= i.m_minPitchA == m_minPitchA;
-    equal &= i.m_maxPitchA == m_maxPitchA;
-    equal &= i.m_minPitchP == m_minPitchP;
-    equal &= i.m_maxPitchP == m_maxPitchP;
-    equal &= i.m_transpose.diatonic == m_transpose.diatonic;
-    equal &= i.m_transpose.chromatic == m_transpose.chromatic;
+    equal &= i.minPitchA_ == minPitchA_;
+    equal &= i.maxPitchA_ == maxPitchA_;
+    equal &= i.minPitchP_ == minPitchP_;
+    equal &= i.maxPitchP_ == maxPitchP_;
+    equal &= i.transpose_.diatonic == transpose_.diatonic;
+    equal &= i.transpose_.chromatic == transpose_.chromatic;
 
-    equal &= i.m_useDrumset == m_useDrumset;
-    if (i.m_drumset && m_drumset) {
-        equal &= *i.m_drumset == *m_drumset;
+    equal &= i.useDrumset_ == useDrumset_;
+    if (i.drumset_ && drumset_) {
+        equal &= *i.drumset_ == *drumset_;
     } else {
-        equal &= i.m_drumset == m_drumset;
+        equal &= i.drumset_ == drumset_;
     }
     equal &= *i.stringData() == *stringData();
 
-    equal &= i.m_midiActions == m_midiActions;
-    equal &= i.m_articulation == m_articulation;
+    equal &= i.midiActions_ == midiActions_;
+    equal &= i.articulation_ == articulation_;
 
-    if (i.m_channel.size() == m_channel.size()) {
-        for (size_t cur = 0; cur < m_channel.size(); cur++) {
-            if (*i.m_channel[cur] != *m_channel[cur]) {
+    if (i.channel_.size() == channel_.size()) {
+        for (size_t cur = 0; cur < channel_.size(); cur++) {
+            if (*i.channel_[cur] != *channel_[cur]) {
                 return false;
             }
         }
@@ -762,9 +762,9 @@ bool Instrument::operator==(const Instrument &i) const {
         return false;
     }
 
-    equal &= i.m_clefType == m_clefType;
+    equal &= i.clefType_ == clefType_;
 
-    equal &= i.m_singleNoteDynamics == m_singleNoteDynamics;
+    equal &= i.singleNoteDynamics_ == singleNoteDynamics_;
 
     return equal;
 }
@@ -782,33 +782,33 @@ bool Instrument::isDifferentInstrument(const Instrument &i) const { return this-
 String Instrument::family() const {
     static const String NO_FAMILY = u"-";
 
-    if (m_familyCache.empty()) {
-        auto search = searchTemplateIndexForId(m_id);
+    if (familyCache_.empty()) {
+        auto search = searchTemplateIndexForId(id_);
 
         if (search.instrTemplate) {
-            m_familyCache = search.instrTemplate->familyId();
+            familyCache_ = search.instrTemplate->familyId();
         } else {
-            m_familyCache = NO_FAMILY;
+            familyCache_ = NO_FAMILY;
         }
     }
 
-    return m_familyCache == NO_FAMILY ? String() : m_familyCache;
+    return familyCache_ == NO_FAMILY ? String() : familyCache_;
 }
 
 String Instrument::group() const {
     static const String NO_GROUP = u"-";
 
-    if (m_groupCache.empty()) {
-        auto search = searchTemplateIndexForId(m_id);
+    if (groupCache_.empty()) {
+        auto search = searchTemplateIndexForId(id_);
 
         if (search.instrTemplate) {
-            m_groupCache = search.instrTemplate->groupId;
+            groupCache_ = search.instrTemplate->groupId;
         } else {
-            m_groupCache = NO_GROUP;
+            groupCache_ = NO_GROUP;
         }
     }
 
-    return m_groupCache == NO_GROUP ? String() : m_groupCache;
+    return groupCache_ == NO_GROUP ? String() : groupCache_;
 }
 
 //---------------------------------------------------------
@@ -816,9 +816,9 @@ String Instrument::group() const {
 //---------------------------------------------------------
 
 void Instrument::setUseDrumset(bool val) {
-    m_useDrumset = val;
-    if (val && !m_drumset) {
-        m_drumset = new Drumset(*smDrumset);
+    useDrumset_ = val;
+    if (val && !drumset_) {
+        drumset_ = new Drumset(*smDrumset);
     }
 }
 
@@ -827,30 +827,30 @@ void Instrument::setUseDrumset(bool val) {
 //---------------------------------------------------------
 
 void Instrument::setDrumset(const Drumset *ds) {
-    delete m_drumset;
+    delete drumset_;
     if (ds) {
-        m_useDrumset = true;
-        m_drumset = new Drumset(*ds);
+        useDrumset_ = true;
+        drumset_ = new Drumset(*ds);
     } else {
-        m_useDrumset = false;
-        m_drumset = 0;
+        useDrumset_ = false;
+        drumset_ = 0;
     }
 }
 
-size_t Instrument::cleffTypeCount() const { return m_clefType.size(); }
+size_t Instrument::cleffTypeCount() const { return clefType_.size(); }
 
 //---------------------------------------------------------
 //   clefType
 //---------------------------------------------------------
 
 ClefTypeList Instrument::clefType(size_t staffIdx) const {
-    if (staffIdx >= m_clefType.size()) {
-        if (m_clefType.empty()) {
+    if (staffIdx >= clefType_.size()) {
+        if (clefType_.empty()) {
             return ClefTypeList();
         }
-        return m_clefType[0];
+        return clefType_[0];
     }
-    return m_clefType[staffIdx];
+    return clefType_[staffIdx];
 }
 
 //---------------------------------------------------------
@@ -858,41 +858,41 @@ ClefTypeList Instrument::clefType(size_t staffIdx) const {
 //---------------------------------------------------------
 
 void Instrument::setClefType(size_t staffIdx, const ClefTypeList &c) {
-    while (m_clefType.size() <= staffIdx) {
-        m_clefType.push_back(ClefTypeList());
+    while (clefType_.size() <= staffIdx) {
+        clefType_.push_back(ClefTypeList());
     }
-    m_clefType[staffIdx] = c;
+    clefType_[staffIdx] = c;
 }
 
 //---------------------------------------------------------
 //   minPitchP
 //---------------------------------------------------------
 
-int Instrument::minPitchP() const { return m_minPitchP; }
+int Instrument::minPitchP() const { return minPitchP_; }
 
 //---------------------------------------------------------
 //   maxPitchP
 //---------------------------------------------------------
 
-int Instrument::maxPitchP() const { return m_maxPitchP; }
+int Instrument::maxPitchP() const { return maxPitchP_; }
 
 //---------------------------------------------------------
 //   minPitchA
 //---------------------------------------------------------
 
-int Instrument::minPitchA() const { return m_minPitchA; }
+int Instrument::minPitchA() const { return minPitchA_; }
 
 //---------------------------------------------------------
 //   maxPitchA
 //---------------------------------------------------------
 
-int Instrument::maxPitchA() const { return m_maxPitchA; }
+int Instrument::maxPitchA() const { return maxPitchA_; }
 
 //---------------------------------------------------------
 //   musicXmlId
 //---------------------------------------------------------
 
-String Instrument::musicXmlId() const { return m_musicXmlId; }
+String Instrument::musicXmlId() const { return musicXmlId_; }
 
 //---------------------------------------------------------
 //   instrument
@@ -950,17 +950,17 @@ bool InstrumentList::contains(const String &instrumentId) const {
 //   trackName
 //---------------------------------------------------------
 
-String Instrument::trackName() const { return m_trackName; }
+String Instrument::trackName() const { return trackName_; }
 
-void Instrument::setTrackName(const String &s) { m_trackName = s; }
+void Instrument::setTrackName(const String &s) { trackName_ = s; }
 
-String Instrument::nameAsXmlText() const { return m_instrumentLabel.longName(); }
+String Instrument::nameAsXmlText() const { return instrumentLabel_.longName(); }
 
-String Instrument::nameAsPlainText() const { return TextBase::unEscape(m_instrumentLabel.longName()); }
+String Instrument::nameAsPlainText() const { return TextBase::unEscape(instrumentLabel_.longName()); }
 
-String Instrument::abbreviatureAsXmlText() const { return m_instrumentLabel.shortName(); }
+String Instrument::abbreviatureAsXmlText() const { return instrumentLabel_.shortName(); }
 
-String Instrument::abbreviatureAsPlainText() const { return TextBase::unEscape(m_instrumentLabel.shortName()); }
+String Instrument::abbreviatureAsPlainText() const { return TextBase::unEscape(instrumentLabel_.shortName()); }
 
 Instrument Instrument::fromTemplate(const InstrumentTemplate *templ) {
     Instrument instrument(templ->id);
@@ -972,7 +972,7 @@ Instrument Instrument::fromTemplate(const InstrumentTemplate *templ) {
     instrument.setTrackName(templ->trackName);
     instrument.setTranspose(templ->transpose);
     instrument.setMusicXmlId(templ->musicXmlId);
-    instrument.m_useDrumset = templ->useDrumset;
+    instrument.useDrumset_ = templ->useDrumset;
 
     if (templ->useDrumset) {
         instrument.setDrumset(templ->drumset ? templ->drumset : smDrumset);
@@ -984,42 +984,42 @@ Instrument Instrument::fromTemplate(const InstrumentTemplate *templ) {
 
     instrument.setMidiActions(templ->midiActions);
     instrument.setArticulation(templ->midiArticulations);
-    instrument.m_channel.clear();
+    instrument.channel_.clear();
 
     for (const InstrChannel &c : templ->channel) {
-        instrument.m_channel.push_back(new InstrChannel(c));
+        instrument.channel_.push_back(new InstrChannel(c));
     }
 
-    if (instrument.m_channel.empty()) {
+    if (instrument.channel_.empty()) {
         InstrChannel *fallbackChannel = new InstrChannel;
         fallbackChannel->setName(String::fromUtf8(InstrChannel::DEFAULT_NAME));
         fallbackChannel->setProgram(instrument.recognizeMidiProgram());
-        instrument.m_channel.push_back(fallbackChannel);
+        instrument.channel_.push_back(fallbackChannel);
     }
 
     instrument.setStringData(templ->stringData);
     instrument.setSingleNoteDynamics(templ->singleNoteDynamics);
     instrument.setTrait(templ->trait);
-    instrument.m_glissandoStyle = templ->glissandoStyle;
+    instrument.glissandoStyle_ = templ->glissandoStyle;
 
     return instrument;
 }
 
-Trait Instrument::trait() const { return m_trait; }
+Trait Instrument::trait() const { return trait_; }
 
-void Instrument::setTrait(const Trait &trait) { m_trait = trait; }
+void Instrument::setTrait(const Trait &trait) { trait_ = trait; }
 
-bool Instrument::isPrimary() const { return m_isPrimary; }
+bool Instrument::isPrimary() const { return isPrimary_; }
 
-void Instrument::setIsPrimary(bool isPrimary) { m_isPrimary = isPrimary; }
+void Instrument::setIsPrimary(bool isPrimary) { isPrimary_ = isPrimary; }
 
 void Instrument::updateInstrumentId() {
-    if (m_musicXmlId.isEmpty()) {
-        m_musicXmlId = recognizeMusicXmlId();
+    if (musicXmlId_.isEmpty()) {
+        musicXmlId_ = recognizeMusicXmlId();
     }
 
-    if (m_id.isEmpty()) {
-        m_id = recognizeId();
+    if (id_.isEmpty()) {
+        id_ = recognizeId();
     }
 }
 

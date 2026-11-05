@@ -46,8 +46,8 @@ public:
     Ret end() override;
 
 private:
-    std::vector<std::uint8_t> m_outputBuffer;
-    std::unique_ptr<LameHandler> m_handler;
-    io::IODevice *m_dstDevice = nullptr;
+    std::vector<std::uint8_t> outputBuffer_;
+    std::unique_ptr<LameHandler> handler_;
+    io::IODevice *dstDevice_ = nullptr;
 };
 } // namespace muse::audio::encode

@@ -98,27 +98,27 @@ namespace mu::engraving {
 //---------------------------------------------------------
 
 MStaff::~MStaff() {
-    delete m_measureNumber;
-    delete m_mmRangeText;
-    delete m_lines;
-    delete m_vspacerUp;
-    delete m_vspacerDown;
+    delete measureNumber_;
+    delete mmRangeText_;
+    delete lines_;
+    delete vspacerUp_;
+    delete vspacerDown_;
 }
 
 MStaff::MStaff(const MStaff &m) {
-    m_measureNumber = 0;
-    m_mmRangeText = 0;
-    m_lines = Factory::copyStaffLines(*m.m_lines);
-    m_hasVoices = m.m_hasVoices;
-    m_vspacerUp = 0;
-    m_vspacerDown = 0;
-    m_hideIfEmpty = m.m_hideIfEmpty;
-    m_visible = m.m_visible;
-    m_stemless = m.m_stemless;
+    measureNumber_ = 0;
+    mmRangeText_ = 0;
+    lines_ = Factory::copyStaffLines(*m.lines_);
+    hasVoices_ = m.hasVoices_;
+    vspacerUp_ = 0;
+    vspacerDown_ = 0;
+    hideIfEmpty_ = m.hideIfEmpty_;
+    visible_ = m.visible_;
+    stemless_ = m.stemless_;
 #ifndef NDEBUG
-    m_corrupted = m.m_corrupted;
+    corrupted_ = m.corrupted_;
 #endif
-    m_measureRepeatCount = 0;
+    measureRepeatCount_ = 0;
 }
 
 //---------------------------------------------------------
@@ -126,20 +126,20 @@ MStaff::MStaff(const MStaff &m) {
 //---------------------------------------------------------
 
 void MStaff::setScore(Score *score) {
-    if (m_lines) {
-        m_lines->setScore(score);
+    if (lines_) {
+        lines_->setScore(score);
     }
-    if (m_vspacerUp) {
-        m_vspacerUp->setScore(score);
+    if (vspacerUp_) {
+        vspacerUp_->setScore(score);
     }
-    if (m_vspacerDown) {
-        m_vspacerDown->setScore(score);
+    if (vspacerDown_) {
+        vspacerDown_->setScore(score);
     }
-    if (m_measureNumber) {
-        m_measureNumber->setScore(score);
+    if (measureNumber_) {
+        measureNumber_->setScore(score);
     }
-    if (m_mmRangeText) {
-        m_mmRangeText->setScore(score);
+    if (mmRangeText_) {
+        mmRangeText_->setScore(score);
     }
 }
 
@@ -148,20 +148,20 @@ void MStaff::setScore(Score *score) {
 //---------------------------------------------------------
 
 void MStaff::setTrack(track_idx_t track) {
-    if (m_lines) {
-        m_lines->setTrack(track);
+    if (lines_) {
+        lines_->setTrack(track);
     }
-    if (m_vspacerUp) {
-        m_vspacerUp->setTrack(track);
+    if (vspacerUp_) {
+        vspacerUp_->setTrack(track);
     }
-    if (m_vspacerDown) {
-        m_vspacerDown->setTrack(track);
+    if (vspacerDown_) {
+        vspacerDown_->setTrack(track);
     }
-    if (m_measureNumber) {
-        m_measureNumber->setTrack(track);
+    if (measureNumber_) {
+        measureNumber_->setTrack(track);
     }
-    if (m_mmRangeText) {
-        m_mmRangeText->setTrack(track);
+    if (mmRangeText_) {
+        mmRangeText_->setTrack(track);
     }
 }
 
@@ -169,26 +169,26 @@ void MStaff::setTrack(track_idx_t track) {
 //   Measure
 //---------------------------------------------------------
 
-Measure::Measure(Score *parent) : MeasureBase(ElementType::MEASURE, parent), m_timesig(4, 4) {
+Measure::Measure(Score *parent) : MeasureBase(ElementType::MEASURE, parent), timesig_(4, 4) {
     setTicks(Fraction(4, 4));
-    m_repeatCount = 2;
+    repeatCount_ = 2;
 
     size_t n = score()->nstaves();
-    m_mstaves.reserve(n);
+    mstaves_.reserve(n);
     for (staff_idx_t staffIdx = 0; staffIdx < n; ++staffIdx) {
         MStaff *ms = new MStaff;
         Staff *staff = score()->staff(staffIdx);
         ms->setLines(Factory::createStaffLines(this));
         ms->lines()->setTrack(staffIdx * VOICES);
         ms->lines()->setVisible(!staff->isLinesInvisible(tick()));
-        m_mstaves.push_back(ms);
+        mstaves_.push_back(ms);
     }
     setExcludeFromNumbering(false);
-    m_measureNumberMode = MeasureNumberMode::AUTO;
-    m_userStretch = 1.0;
-    m_breakMultiMeasureRest = false;
-    m_mmRest = nullptr;
-    m_mmRestCount = 0;
+    measureNumberMode_ = MeasureNumberMode::AUTO;
+    userStretch_ = 1.0;
+    breakMultiMeasureRest_ = false;
+    mmRest_ = nullptr;
+    mmRestCount_ = 0;
     setFlag(ElementFlag::MOVABLE, false);
 }
 
@@ -197,24 +197,24 @@ Measure::Measure(Score *parent) : MeasureBase(ElementType::MEASURE, parent), m_t
 //---------------------------------------------------------
 
 Measure::Measure(const Measure &m) : MeasureBase(m) {
-    m_segments = m.m_segments.clone();
-    m_timesig = m.m_timesig;
-    m_len = m.m_len;
-    m_repeatCount = m.m_repeatCount;
-    m_measureNumber = m.m_measureNumber;
-    m_measureNumberOffset = m.m_measureNumberOffset;
-    m_measureNumberMode = m.m_measureNumberMode;
-    m_userStretch = m.m_userStretch;
+    segments_ = m.segments_.clone();
+    timesig_ = m.timesig_;
+    len_ = m.len_;
+    repeatCount_ = m.repeatCount_;
+    measureNumber_ = m.measureNumber_;
+    measureNumberOffset_ = m.measureNumberOffset_;
+    measureNumberMode_ = m.measureNumberMode_;
+    userStretch_ = m.userStretch_;
 
-    m_mstaves.reserve(m.m_mstaves.size());
-    for (MStaff *ms : m.m_mstaves) {
-        m_mstaves.push_back(new MStaff(*ms));
+    mstaves_.reserve(m.mstaves_.size());
+    for (MStaff *ms : m.mstaves_) {
+        mstaves_.push_back(new MStaff(*ms));
     }
 
-    m_breakMultiMeasureRest = m.m_breakMultiMeasureRest;
-    m_mmRest = m.m_mmRest;
-    m_mmRestCount = m.m_mmRestCount;
-    m_playbackCount = m.m_playbackCount;
+    breakMultiMeasureRest_ = m.breakMultiMeasureRest_;
+    mmRest_ = m.mmRest_;
+    mmRestCount_ = m.mmRestCount_;
+    playbackCount_ = m.playbackCount_;
 }
 
 //---------------------------------------------------------
@@ -222,13 +222,13 @@ Measure::Measure(const Measure &m) : MeasureBase(m) {
 //---------------------------------------------------------
 
 void Measure::createStaves(staff_idx_t staffIdx) {
-    for (staff_idx_t n = m_mstaves.size(); n <= staffIdx; ++n) {
+    for (staff_idx_t n = mstaves_.size(); n <= staffIdx; ++n) {
         Staff *staff = score()->staff(n);
         MStaff *s = new MStaff;
         s->setLines(Factory::createStaffLines(this));
         s->lines()->setTrack(n * VOICES);
         s->lines()->setVisible(!staff->isLinesInvisible(tick()));
-        m_mstaves.push_back(s);
+        mstaves_.push_back(s);
     }
 }
 
@@ -244,8 +244,8 @@ void Measure::setScore(Score *score) {
 }
 
 MStaff *Measure::mstaff(staff_idx_t staffIndex) const {
-    if (staffIndex < m_mstaves.size()) {
-        return m_mstaves[staffIndex];
+    if (staffIndex < mstaves_.size()) {
+        return mstaves_[staffIndex];
     }
 
     return nullptr;
@@ -311,9 +311,9 @@ void Measure::setHideStaffIfEmpty(staff_idx_t staffIdx, AutoOnOff hideIfEmpty) {
     staff->setHideIfEmpty(hideIfEmpty);
 }
 
-void Measure::setMMRangeText(staff_idx_t staffIdx, MMRestRange *t) { m_mstaves[staffIdx]->setMMRangeText(t); }
+void Measure::setMMRangeText(staff_idx_t staffIdx, MMRestRange *t) { mstaves_[staffIdx]->setMMRangeText(t); }
 
-MMRestRange *Measure::mmRangeText(staff_idx_t staffIdx) const { return m_mstaves[staffIdx]->mmRangeText(); }
+MMRestRange *Measure::mmRangeText(staff_idx_t staffIdx) const { return mstaves_[staffIdx]->mmRangeText(); }
 
 //---------------------------------------------------------
 //   Measure
@@ -325,7 +325,7 @@ Measure::~Measure() {
         delete s;
         s = ns;
     }
-    muse::DeleteAll(m_mstaves);
+    muse::DeleteAll(mstaves_);
 }
 
 //---------------------------------------------------------
@@ -554,7 +554,7 @@ bool Measure::showMeasureNumberOnStaff(staff_idx_t staffIdx) const {
 //---------------------------------------------------------
 
 bool Measure::showMeasureNumber() const {
-    switch (m_measureNumberMode) {
+    switch (measureNumberMode_) {
         case MeasureNumberMode::AUTO: return showMeasureNumberInAutoMode();
         case MeasureNumberMode::SHOW: return true;
         case MeasureNumberMode::HIDE: break;
@@ -590,7 +590,7 @@ Chord *Measure::findChord(Fraction t, track_idx_t track) const {
 
 ChordRest *Measure::findChordRest(Fraction t, track_idx_t track) const {
     t -= tick();
-    for (const Segment &seg : m_segments) {
+    for (const Segment &seg : segments_) {
         if (seg.rtick() > t) {
             return 0;
         }
@@ -610,7 +610,7 @@ ChordRest *Measure::findChordRest(Fraction t, track_idx_t track) const {
 
 Segment *Measure::tick2segment(const Fraction &_t, SegmentType st) {
     Fraction t = _t - tick();
-    for (Segment &s : m_segments) {
+    for (Segment &s : segments_) {
         if (s.rtick() == t) {
             if (s.segmentType() & st) {
                 return &s;
@@ -750,7 +750,7 @@ void Measure::add(EngravingItem *e) {
                     if (seg->isType(SegmentType::BarLineTypes)) {
                         // Barline segments are regenerated every layout
                         // We need to remove the regenerated segment when undoing to ensure the original element is added back to the score
-                        m_segments.remove(s);
+                        segments_.remove(s);
                         s = s->next();
                         continue;
                     }
@@ -764,7 +764,7 @@ void Measure::add(EngravingItem *e) {
                 s = s->next();
             }
             seg->setOwnershipParent(this);
-            m_segments.insert(seg, s);
+            segments_.insert(seg, s);
             //
             // update measure flags
             //
@@ -777,23 +777,23 @@ void Measure::add(EngravingItem *e) {
         } break;
 
         case ElementType::MEASURE_NUMBER:
-            if (e->staffIdx() < m_mstaves.size()) {
-                m_mstaves[e->staffIdx()]->setMeasureNumber(toMeasureNumber(e));
+            if (e->staffIdx() < mstaves_.size()) {
+                mstaves_[e->staffIdx()]->setMeasureNumber(toMeasureNumber(e));
             }
             break;
 
         case ElementType::MMREST_RANGE:
-            if (e->staffIdx() < m_mstaves.size()) {
-                m_mstaves[e->staffIdx()]->setMMRangeText(toMMRestRange(e));
+            if (e->staffIdx() < mstaves_.size()) {
+                mstaves_[e->staffIdx()]->setMMRangeText(toMMRestRange(e));
             }
             break;
 
         case ElementType::SPACER: {
             Spacer *sp = toSpacer(e);
             switch (sp->spacerType()) {
-                case SpacerType::UP: m_mstaves[e->staffIdx()]->setVspacerUp(sp); break;
+                case SpacerType::UP: mstaves_[e->staffIdx()]->setVspacerUp(sp); break;
                 case SpacerType::DOWN:
-                case SpacerType::FIXED: m_mstaves[e->staffIdx()]->setVspacerDown(sp); break;
+                case SpacerType::FIXED: mstaves_[e->staffIdx()]->setVspacerDown(sp); break;
             }
             sp->setGap(sp->gap()); // trigger relayout
         } break;
@@ -813,7 +813,7 @@ void Measure::add(EngravingItem *e) {
             el().push_back(e);
             break;
 
-        case ElementType::MEASURE: m_mmRest = toMeasure(e); break;
+        case ElementType::MEASURE: mmRest_ = toMeasure(e); break;
 
         case ElementType::STAFFTYPE_CHANGE: {
             StaffTypeChange *staffTypeChange = toStaffTypeChange(e);
@@ -861,7 +861,7 @@ void Measure::remove(EngravingItem *e) {
     switch (e->type()) {
         case ElementType::SEGMENT: {
             Segment *s = toSegment(e);
-            m_segments.remove(s);
+            segments_.remove(s);
             //
             // update measure flags
             //
@@ -873,15 +873,15 @@ void Measure::remove(EngravingItem *e) {
             }
         } break;
 
-        case ElementType::MEASURE_NUMBER: m_mstaves[e->staffIdx()]->setMeasureNumber(nullptr); break;
+        case ElementType::MEASURE_NUMBER: mstaves_[e->staffIdx()]->setMeasureNumber(nullptr); break;
 
-        case ElementType::MMREST_RANGE: m_mstaves[e->staffIdx()]->setMMRangeText(nullptr); break;
+        case ElementType::MMREST_RANGE: mstaves_[e->staffIdx()]->setMMRangeText(nullptr); break;
 
         case ElementType::SPACER:
             switch (toSpacer(e)->spacerType()) {
                 case SpacerType::DOWN:
-                case SpacerType::FIXED: m_mstaves[e->staffIdx()]->setVspacerDown(0); break;
-                case SpacerType::UP: m_mstaves[e->staffIdx()]->setVspacerUp(0); break;
+                case SpacerType::FIXED: mstaves_[e->staffIdx()]->setVspacerDown(0); break;
+                case SpacerType::UP: mstaves_[e->staffIdx()]->setVspacerUp(0); break;
             }
             break;
 
@@ -917,7 +917,7 @@ void Measure::remove(EngravingItem *e) {
             LOGD("Measure::remove: %s %p not found", e->typeName(), e);
             break;
 
-        case ElementType::MEASURE: m_mmRest = 0; break;
+        case ElementType::MEASURE: mmRest_ = 0; break;
 
         case ElementType::STAFFTYPE_CHANGE: {
             StaffTypeChange *stc = toStaffTypeChange(e);
@@ -1085,7 +1085,7 @@ void Measure::cmdRemoveStaves(staff_idx_t sStaff, staff_idx_t eStaff) {
     score()->undo(new RemoveStaves(this, sStaff, eStaff));
 
     for (int i = static_cast<int>(eStaff) - 1; i >= static_cast<int>(sStaff); --i) {
-        MStaff *ms = *(m_mstaves.begin() + i);
+        MStaff *ms = *(mstaves_.begin() + i);
         score()->undo(new RemoveMStaff(this, ms, i));
     }
     score()->undoUpdatePlayCountText(this);
@@ -1136,14 +1136,14 @@ void Measure::cmdAddStaves(staff_idx_t sStaff, staff_idx_t eStaff, bool createRe
 
     for (staff_idx_t staffIdx : sl) {
         if (createRest) {
-            score()->setRest(tick(), staffIdx * VOICES, ticks(), false, 0, m_timesig == ticks());
+            score()->setRest(tick(), staffIdx * VOICES, ticks(), false, 0, timesig_ == ticks());
         }
 
         // replicate time signature
         if (ts) {
             TimeSig *ots = 0;
             bool constructed = false;
-            for (track_idx_t track = 0; track < m_mstaves.size() * VOICES; ++track) {
+            for (track_idx_t track = 0; track < mstaves_.size() * VOICES; ++track) {
                 if (ts->element(track)) {
                     ots = toTimeSig(ts->element(track));
                     break;
@@ -1171,7 +1171,7 @@ void Measure::cmdAddStaves(staff_idx_t sStaff, staff_idx_t eStaff, bool createRe
         // replicate barline
         if (bs) {
             BarLine *obl = nullptr;
-            for (track_idx_t track = 0; track < m_mstaves.size() * VOICES; ++track) {
+            for (track_idx_t track = 0; track < mstaves_.size() * VOICES; ++track) {
                 EngravingItem *e = bs->element(track);
                 if (e && !e->generated()) {
                     obl = toBarLine(e);
@@ -1195,9 +1195,9 @@ void Measure::cmdAddStaves(staff_idx_t sStaff, staff_idx_t eStaff, bool createRe
 //---------------------------------------------------------
 
 void Measure::insertMStaff(MStaff *staff, staff_idx_t idx) {
-    m_mstaves.insert(m_mstaves.begin() + idx, staff);
-    for (staff_idx_t staffIdx = 0; staffIdx < m_mstaves.size(); ++staffIdx) {
-        m_mstaves[staffIdx]->setTrack(staffIdx * VOICES);
+    mstaves_.insert(mstaves_.begin() + idx, staff);
+    for (staff_idx_t staffIdx = 0; staffIdx < mstaves_.size(); ++staffIdx) {
+        mstaves_[staffIdx]->setTrack(staffIdx * VOICES);
     }
 }
 
@@ -1206,9 +1206,9 @@ void Measure::insertMStaff(MStaff *staff, staff_idx_t idx) {
 //---------------------------------------------------------
 
 void Measure::removeMStaff(MStaff * /*staff*/, staff_idx_t idx) {
-    m_mstaves.erase(m_mstaves.begin() + idx);
-    for (staff_idx_t staffIdx = 0; staffIdx < m_mstaves.size(); ++staffIdx) {
-        m_mstaves[staffIdx]->setTrack(staffIdx * VOICES);
+    mstaves_.erase(mstaves_.begin() + idx);
+    for (staff_idx_t staffIdx = 0; staffIdx < mstaves_.size(); ++staffIdx) {
+        mstaves_[staffIdx]->setTrack(staffIdx * VOICES);
     }
 }
 
@@ -1643,7 +1643,7 @@ void Measure::adjustToLen(Fraction nf, bool appendRestsIfNecessary) {
         // if just a single rest
         if (rests == 1 && chords == 0) {
             // if measure value didn't change, stick to whole measure rest
-            if (m_timesig == nf) {
+            if (timesig_ == nf) {
                 rest->undoChangeProperty(Pid::DURATION, nf * stretch);
                 rest->undoChangeProperty(Pid::DURATION_TYPE_WITH_DOTS, DurationTypeWithDots(DurationType::V_MEASURE));
             } else { // if measure value did change, represent with rests actual measure value
@@ -1772,7 +1772,7 @@ bool Measure::visible(staff_idx_t staffIdx) const {
     if (score()->staff(staffIdx)->cutaway() && isEmpty(staffIdx)) {
         return false;
     }
-    return score()->staff(staffIdx)->show() && m_mstaves[staffIdx]->visible();
+    return score()->staff(staffIdx)->show() && mstaves_[staffIdx]->visible();
 }
 
 //---------------------------------------------------------
@@ -1785,7 +1785,7 @@ bool Measure::stemless(staff_idx_t staffIdx) const {
         return false;
     }
 
-    return staff->stemless(tick()) || m_mstaves[staffIdx]->stemless() || staff->staffType(tick())->stemless();
+    return staff->stemless(tick()) || mstaves_[staffIdx]->stemless() || staff->staffType(tick())->stemless();
 }
 
 //---------------------------------------------------------
@@ -1880,7 +1880,7 @@ void Measure::scanElements(std::function<void(EngravingItem *)> func) {
     MeasureBase::scanElements(func);
 
     for (staff_idx_t staffIdx = 0; staffIdx < nstaves; ++staffIdx) {
-        MStaff *ms = m_mstaves[staffIdx];
+        MStaff *ms = mstaves_[staffIdx];
         MeasureNumber *measureNumber = ms->measureNumber();
         if (measureNumber && measureNumber->systemFlag() && showMeasureNumberOnStaff(staffIdx)) {
             func(measureNumber);
@@ -1997,14 +1997,14 @@ void Measure::sortStaves(std::vector<staff_idx_t> &dst) {
     std::vector<MStaff *> ms;
     ms.reserve(dst.size());
     for (staff_idx_t idx : dst) {
-        ms.push_back(m_mstaves[idx]);
+        ms.push_back(mstaves_[idx]);
     }
-    m_mstaves = ms;
+    mstaves_ = ms;
 
-    for (staff_idx_t staffIdx = 0; staffIdx < m_mstaves.size(); ++staffIdx) {
-        m_mstaves[staffIdx]->lines()->setTrack(staffIdx * VOICES);
+    for (staff_idx_t staffIdx = 0; staffIdx < mstaves_.size(); ++staffIdx) {
+        mstaves_[staffIdx]->lines()->setTrack(staffIdx * VOICES);
     }
-    for (Segment &s : m_segments) {
+    for (Segment &s : segments_) {
         s.sortStaves(dst);
     }
 
@@ -2029,9 +2029,9 @@ void Measure::sortStaves(std::vector<staff_idx_t> &dst) {
 
 void Measure::checkMultiVoices(staff_idx_t staffIdx) {
     if (hasVoices(staffIdx, tick(), ticks())) {
-        m_mstaves[staffIdx]->setHasVoices(true);
+        mstaves_[staffIdx]->setHasVoices(true);
     } else {
-        m_mstaves[staffIdx]->setHasVoices(false);
+        mstaves_[staffIdx]->setHasVoices(false);
     }
 }
 
@@ -2185,10 +2185,10 @@ bool Measure::isEmpty(staff_idx_t staffIdx) const {
 //---------------------------------------------------------
 
 bool Measure::isCutawayClef(staff_idx_t staffIdx) const {
-    if (!score()->staff(staffIdx) || !m_mstaves[staffIdx]) {
+    if (!score()->staff(staffIdx) || !mstaves_[staffIdx]) {
         return false;
     }
-    bool empty = (score()->staff(staffIdx)->cutaway() && isEmpty(staffIdx)) || !m_mstaves[staffIdx]->visible();
+    bool empty = (score()->staff(staffIdx)->cutaway() && isEmpty(staffIdx)) || !mstaves_[staffIdx]->visible();
     if (!empty) {
         return false;
     }
@@ -2262,7 +2262,7 @@ bool Measure::empty() const {
         return false;
     }
     int n = 0;
-    track_idx_t tracks = m_mstaves.size() * VOICES;
+    track_idx_t tracks = mstaves_.size() * VOICES;
     static const SegmentType st = SegmentType::ChordRest;
     for (const Segment *s = first(st); s; s = s->next(st)) {
         bool restFound = false;
@@ -2335,19 +2335,19 @@ Fraction Measure::stretchedLen(const Staff *staff) const { return ticks() * staf
 
 Measure *Measure::cloneMeasure(Score *sc, const Fraction &tick, TieMap *tieMap) {
     Measure *m = new Measure(sc);
-    m->m_timesig = m_timesig;
-    m->m_len = m_len;
-    m->m_repeatCount = m_repeatCount;
+    m->timesig_ = timesig_;
+    m->len_ = len_;
+    m->repeatCount_ = repeatCount_;
 
     assert(sc->staves().size() >=
-           m_mstaves.size()); // destination score we're cloning into must have at least as many staves as measure being cloned
+           mstaves_.size()); // destination score we're cloning into must have at least as many staves as measure being cloned
 
     m->setMeasureNumber(measureNumber());
     m->setMeasureNumberOffset(measureNumberOffset());
     m->setExcludeFromNumbering(excludeFromNumbering());
-    m->m_userStretch = m_userStretch;
-    m->m_breakMultiMeasureRest = m_breakMultiMeasureRest;
-    m->m_playbackCount = m_playbackCount;
+    m->userStretch_ = userStretch_;
+    m->breakMultiMeasureRest_ = breakMultiMeasureRest_;
+    m->playbackCount_ = playbackCount_;
 
     m->setTick(tick);
     m->setLineBreak(lineBreak());
@@ -2367,7 +2367,7 @@ Measure *Measure::cloneMeasure(Score *sc, const Fraction &tick, TieMap *tieMap) 
         s->setHeader(oseg->header());
         s->setTrailer(oseg->trailer());
 
-        m->m_segments.push_back(s);
+        m->segments_.push_back(s);
         for (track_idx_t track = 0; track < tracks; ++track) {
             EngravingItem *oe = oseg->element(track);
             for (EngravingItem *e : oseg->annotations()) {
@@ -2547,8 +2547,8 @@ Segment *Measure::searchSegment(double x, SegmentType st, track_idx_t strack, tr
 
 PropertyValue Measure::getProperty(Pid propertyId) const {
     switch (propertyId) {
-        case Pid::TIMESIG_NOMINAL: return PropertyValue::fromValue(m_timesig);
-        case Pid::TIMESIG_ACTUAL: return PropertyValue::fromValue(m_len);
+        case Pid::TIMESIG_NOMINAL: return PropertyValue::fromValue(timesig_);
+        case Pid::TIMESIG_ACTUAL: return PropertyValue::fromValue(len_);
         case Pid::EXCLUDE_FROM_NUMBERING: return excludeFromNumbering();
         case Pid::MEASURE_NUMBER_OFFSET: return measureNumberOffset();
         case Pid::MEASURE_NUMBER_MODE: return int(measureNumberMode());
@@ -2568,8 +2568,8 @@ PropertyValue Measure::getProperty(Pid propertyId) const {
 
 bool Measure::setProperty(Pid propertyId, const PropertyValue &value) {
     switch (propertyId) {
-        case Pid::TIMESIG_NOMINAL: m_timesig = value.value<Fraction>(); break;
-        case Pid::TIMESIG_ACTUAL: m_len = value.value<Fraction>(); break;
+        case Pid::TIMESIG_NOMINAL: timesig_ = value.value<Fraction>(); break;
+        case Pid::TIMESIG_ACTUAL: len_ = value.value<Fraction>(); break;
         case Pid::EXCLUDE_FROM_NUMBERING:
             setExcludeFromNumbering(value.toBool());
             triggerLayoutAll();
@@ -2686,8 +2686,8 @@ Measure *Measure::coveringMMRestOrThis() {
         return this;
     }
 
-    if (m_mmRest) {
-        return m_mmRest;
+    if (mmRest_) {
+        return mmRest_;
     }
 
     if (isMMRest()) {
@@ -2695,12 +2695,12 @@ Measure *Measure::coveringMMRestOrThis() {
     }
 
     const Measure *m = this;
-    while (m && !m->m_mmRest) {
+    while (m && !m->mmRest_) {
         m = m->prevMeasure();
     }
 
-    if (m && !m->m_mmRest->mmRestLast()->isBefore(this)) {
-        return m->m_mmRest;
+    if (m && !m->mmRest_->mmRestLast()->isBefore(this)) {
+        return m->mmRest_;
     }
 
     return this;
@@ -2709,11 +2709,11 @@ Measure *Measure::coveringMMRestOrThis() {
 const Measure *Measure::coveringMMRestOrThis() const { return const_cast<Measure *>(this)->coveringMMRestOrThis(); }
 
 int Measure::measureRepeatCount(staff_idx_t staffIdx) const {
-    if (staffIdx >= m_mstaves.size()) {
+    if (staffIdx >= mstaves_.size()) {
         return 0;
     }
 
-    return m_mstaves[staffIdx]->measureRepeatCount();
+    return mstaves_[staffIdx]->measureRepeatCount();
 }
 
 bool Measure::containsMeasureRepeat(const staff_idx_t staffIdxFrom, const staff_idx_t staffIdxTo) const {
@@ -2727,11 +2727,11 @@ bool Measure::containsMeasureRepeat(const staff_idx_t staffIdxFrom, const staff_
 }
 
 void Measure::setMeasureRepeatCount(int n, staff_idx_t staffIdx) {
-    if (staffIdx >= m_mstaves.size()) {
+    if (staffIdx >= mstaves_.size()) {
         return;
     }
 
-    m_mstaves[staffIdx]->setMeasureRepeatCount(n);
+    mstaves_[staffIdx]->setMeasureRepeatCount(n);
 }
 
 bool Measure::isMeasureRepeatGroup(staff_idx_t staffIdx) const { return measureRepeatCount(staffIdx) > 0; }
@@ -2882,7 +2882,7 @@ ChordRest *Measure::firstChordRest(track_idx_t track) const {
 //   userStretch
 //-------------------------------------------------------------------
 
-double Measure::userStretch() const { return score()->layoutOptions().isMode(LayoutMode::FLOAT) ? 1.0 : m_userStretch; }
+double Measure::userStretch() const { return score()->layoutOptions().isMode(LayoutMode::FLOAT) ? 1.0 : userStretch_; }
 
 //---------------------------------------------------------
 //   nextElementStaff
@@ -3244,7 +3244,7 @@ bool Measure::canAddStringTunings(staff_idx_t staffIdx) const {
 
     // already a string tunings element in this measure
     bool alreadyHasStringTunings = false;
-    for (const Segment &segment : m_segments) {
+    for (const Segment &segment : segments_) {
         for (EngravingItem *element : segment.annotations()) {
             if (element && element->isStringTunings() && element->staffIdx() == staffIdx) {
                 alreadyHasStringTunings = true;
@@ -3294,14 +3294,14 @@ Fraction Measure::maxTicks() const {
 void Measure::respaceSegments() {
     double x = 0.0;
     // Find starting x position (i.e. position of first relevant segment)
-    for (Segment &s : m_segments) {
+    for (Segment &s : segments_) {
         if (s.enabled() && s.visible() && !s.allElementsInvisible()) {
             x = s.x();
             break;
         }
     }
     // Start respacing segments
-    for (Segment &s : m_segments) {
+    for (Segment &s : segments_) {
         if (s.isTimeTickType()) {
             continue;
         }

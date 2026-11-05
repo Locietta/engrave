@@ -45,19 +45,19 @@ public:
 
     InstrumentName *clone() const override { return new InstrumentName(*this); }
 
-    InstrumentNameType instrumentNameType() const { return m_instrumentNameType; }
+    InstrumentNameType instrumentNameType() const { return instrumentNameType_; }
 
     void setInstrumentNameType(InstrumentNameType v);
 
-    InstrumentNameRole instrumentNameRole() const { return m_instrumentNameRole; }
+    InstrumentNameRole instrumentNameRole() const { return instrumentNameRole_; }
 
-    void setInstrumentNameRole(InstrumentNameRole v) { m_instrumentNameRole = v; }
+    void setInstrumentNameRole(InstrumentNameRole v) { instrumentNameRole_ = v; }
 
     System *system() const { return toSystem(ownershipParent()); }
 
-    SysStaff *sysStaff() const { return m_sysStaff; }
+    SysStaff *sysStaff() const { return sysStaff_; }
 
-    void setSysStaff(SysStaff *s) { m_sysStaff = s; }
+    void setSysStaff(SysStaff *s) { sysStaff_ = s; }
 
     double largestStaffSpatium() const;
 
@@ -69,25 +69,25 @@ public:
 
     struct LayoutData : public TextBase::LayoutData {
     public:
-        int column() const { return m_column; }
+        int column() const { return column_; }
 
-        void setColumn(int v) { m_column = v; }
+        void setColumn(int v) { column_ = v; }
 
-        staff_idx_t endIdxOfGroup() const { return m_endIdxOfGroup; }
+        staff_idx_t endIdxOfGroup() const { return endIdxOfGroup_; }
 
-        void setEndIdxOfGroup(staff_idx_t v) { m_endIdxOfGroup = v; }
+        void setEndIdxOfGroup(staff_idx_t v) { endIdxOfGroup_ = v; }
 
     private:
-        int m_column = 0;
-        staff_idx_t m_endIdxOfGroup = muse::nidx; // one-after last spanned staff (for GROUP types)
+        int column_ = 0;
+        staff_idx_t endIdxOfGroup_ = muse::nidx; // one-after last spanned staff (for GROUP types)
     };
     DECLARE_LAYOUTDATA_METHODS(InstrumentName)
 
 private:
 
-    InstrumentNameType m_instrumentNameType = InstrumentNameType::LONG;
-    InstrumentNameRole m_instrumentNameRole = InstrumentNameRole::PART;
-    SysStaff *m_sysStaff = nullptr;
+    InstrumentNameType instrumentNameType_ = InstrumentNameType::LONG;
+    InstrumentNameRole instrumentNameRole_ = InstrumentNameRole::PART;
+    SysStaff *sysStaff_ = nullptr;
 };
 } // namespace mu::engraving
 #endif

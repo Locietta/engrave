@@ -64,8 +64,8 @@ static const ElementStyle noteLineStyle{
 };
 
 NoteLineSegment::NoteLineSegment(NoteLine *sp) : TextLineBaseSegment(ElementType::NOTELINE_SEGMENT, sp, ElementFlag::MOVABLE) {
-    m_text->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
-    m_endText->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
+    text_->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
+    endText_->setTextStyleType(propertyDefault(Pid::TEXT_STYLE).value<TextStyleType>());
 }
 
 EngravingObject *NoteLineSegment::propertyDelegate(Pid pid) const {
@@ -141,7 +141,7 @@ PropertyValue NoteLine::getProperty(Pid propertyId) const {
     switch (propertyId) {
         case Pid::PLAY: return PropertyValue();
         case Pid::PLACEMENT: return PlacementV::ABOVE;
-        case Pid::NOTELINE_PLACEMENT: return m_lineEndPlacement;
+        case Pid::NOTELINE_PLACEMENT: return lineEndPlacement_;
         default: return TextLineBase::getProperty(propertyId);
     }
 }
