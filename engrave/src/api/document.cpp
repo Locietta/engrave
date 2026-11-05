@@ -24,7 +24,7 @@ Result<int> excerpt_id_of(mu::engraving::MasterScore &master, const ScoreSel &se
     for (std::size_t index = 0; index < excerpts.size(); ++index) {
         if (excerpts[index] && excerpts[index]->excerptScore() == *selected) return static_cast<int>(index);
     }
-    return std::unexpected(Error{ErrorCode::StaleHandle, "the selected excerpt is not part of the document"});
+    return std::unexpected(Error{ErrorCode::STALE_HANDLE, "the selected excerpt is not part of the document"});
 }
 
 std::unique_ptr<Document> Document::Impl::make(EngineState &engine, music::ScoreProject project,
@@ -86,7 +86,7 @@ Result<std::vector<std::byte>> Document::export_score(const ExportOptions &optio
     auto result = export_score_with_warnings(options);
     if (!result) return std::unexpected(std::move(result.error()));
     if (!result->warnings.empty()) {
-        Error error{ErrorCode::Unsupported, "this export has warnings; use export_score_with_warnings"};
+        Error error{ErrorCode::UNSUPPORTED, "this export has warnings; use export_score_with_warnings"};
         error.export_warnings = std::move(result->warnings);
         return std::unexpected(std::move(error));
     }
@@ -95,32 +95,32 @@ Result<std::vector<std::byte>> Document::export_score(const ExportOptions &optio
 
 Result<ExportOutput> Document::export_score_with_warnings(const ExportOptions &options) {
     impl_->engine->check_thread();
-    if (impl_->poisoned) return std::unexpected(Error{ErrorCode::Poisoned, "an earlier edit left the document unusable"});
+    if (impl_->poisoned) return std::unexpected(Error{ErrorCode::POISONED, "an earlier edit left the document unusable"});
     if (options.capture.cancelled && options.capture.cancelled())
-        return std::unexpected(Error{ErrorCode::Cancelled, "score capture cancelled"});
+        return std::unexpected(Error{ErrorCode::CANCELLED, "score capture cancelled"});
     impl_->refresh_fonts();
     const char *name = nullptr;
     switch (options.format) {
-        case Format::Mscz: name = "mscz"; break;
-        case Format::Mscx: name = "mscx"; break;
-        case Format::MusicXml: name = "musicxml"; break;
-        case Format::Mxl: name = "mxl"; break;
-        case Format::Midi: name = "midi"; break;
-        case Format::Mnx:
-        case Format::GuitarPro:
+        case Format::MSCZ: name = "mscz"; break;
+        case Format::MSCX: name = "mscx"; break;
+        case Format::MUSIC_XML: name = "musicxml"; break;
+        case Format::MXL: name = "mxl"; break;
+        case Format::MIDI: name = "midi"; break;
+        case Format::MNX:
+        case Format::GUITAR_PRO:
         default:
-            return std::unexpected(Error{ErrorCode::Unsupported, std::format("the engine does not write {}", to_string(options.format))});
+            return std::unexpected(Error{ErrorCode::UNSUPPORTED, std::format("the engine does not write {}", to_string(options.format))});
     }
-    const bool native = options.format == Format::Mscz || options.format == Format::Mscx;
+    const bool native = options.format == Format::MSCZ || options.format == Format::MSCX;
     if (options.native_version != "5.00" && (!native || options.native_version != "4.70")) {
-        Error error{ErrorCode::Unsupported,
+        Error error{ErrorCode::UNSUPPORTED,
                     std::format("native score version '{}' is not supported for {}", options.native_version, to_string(options.format))};
         error.export_warnings.push_back({"B470_UNSUPPORTED_TARGET", "Cannot write the requested score version.",
                                          ExportWarningObject{"request", "version:" + options.native_version}});
         return std::unexpected(std::move(error));
     }
-    if (options.format == Format::Midi && (options.capture.max_bytes || options.capture.max_working_bytes || options.capture.cancelled)) {
-        return std::unexpected(Error{ErrorCode::Unsupported, "bounded MIDI capture is not supported by the playback-event builder"});
+    if (options.format == Format::MIDI && (options.capture.max_bytes || options.capture.max_working_bytes || options.capture.cancelled)) {
+        return std::unexpected(Error{ErrorCode::UNSUPPORTED, "bounded MIDI capture is not supported by the playback-event builder"});
     }
     const auto excerpt = excerpt_id_of(*impl_->project->masterScore(), options.score);
     if (!excerpt) return std::unexpected(excerpt.error());
@@ -153,8 +153,8 @@ Result<ExportOutput> Document::export_score_with_warnings(const ExportOptions &o
     const auto stopped = [&]() -> std::unexpected<Error> {
         if (budget.callback_error) std::rethrow_exception(budget.callback_error);
         if (budget.failure == muse::io::WriteBudget::Failure::Cancelled)
-            return std::unexpected(Error{ErrorCode::Cancelled, "score capture cancelled"});
-        return std::unexpected(Error{ErrorCode::ResourceLimit, "score capture byte limit exceeded"});
+            return std::unexpected(Error{ErrorCode::CANCELLED, "score capture cancelled"});
+        return std::unexpected(Error{ErrorCode::RESOURCE_LIMIT, "score capture byte limit exceeded"});
     };
     try {
         if (options.native_version == "4.70") {

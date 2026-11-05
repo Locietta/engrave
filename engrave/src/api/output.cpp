@@ -40,9 +40,9 @@ void prepare_layout(mu::engraving::Score &score) {
 
 const char *backend_name(RenderFormat format) {
     switch (format) {
-        case RenderFormat::Pdf: return "pdf";
-        case RenderFormat::Png: return "png";
-        case RenderFormat::Svg: return "svg";
+        case RenderFormat::PDF: return "pdf";
+        case RenderFormat::PNG: return "png";
+        case RenderFormat::SVG: return "svg";
     }
     return "";
 }
@@ -51,7 +51,7 @@ const char *backend_name(RenderFormat format) {
 
 Result<std::int32_t> Document::page_count(const ScoreSel &selection) {
     impl_->engine->check_thread();
-    if (impl_->poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
+    if (impl_->poisoned) return fail(ErrorCode::POISONED, "an earlier edit left the document unusable");
     impl_->refresh_fonts();
     const Result<mu::engraving::Score *> selected = select_score(*impl_->project->masterScore(), selection);
     if (!selected) return std::unexpected(selected.error());
@@ -61,7 +61,7 @@ Result<std::int32_t> Document::page_count(const ScoreSel &selection) {
 
 Result<RenderOutput> Document::render(const RenderOptions &options) {
     impl_->engine->check_thread();
-    if (impl_->poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
+    if (impl_->poisoned) return fail(ErrorCode::POISONED, "an earlier edit left the document unusable");
     impl_->refresh_fonts();
     const Result<mu::engraving::Score *> selected = select_score(*impl_->project->masterScore(), options.score);
     if (!selected) return std::unexpected(selected.error());
@@ -69,19 +69,19 @@ Result<RenderOutput> Document::render(const RenderOptions &options) {
     prepare_layout(score);
 
     if (options.dpi < min_render_dpi || options.dpi > max_render_dpi) {
-        return fail(ErrorCode::InvalidArgument,
+        return fail(ErrorCode::INVALID_ARGUMENT,
                     std::format("the dpi must be between {} and {}, not {}", min_render_dpi, max_render_dpi, options.dpi));
     }
     // A2's other renderers draw at 72 dpi (PDF points, SVG units) and take no dpi.
-    if (options.format != RenderFormat::Png && options.dpi != RenderOptions{}.dpi) {
-        return fail(ErrorCode::InvalidArgument, std::format("dpi applies to PNG, not to {}", to_string(options.format)));
+    if (options.format != RenderFormat::PNG && options.dpi != RenderOptions{}.dpi) {
+        return fail(ErrorCode::INVALID_ARGUMENT, std::format("dpi applies to PNG, not to {}", to_string(options.format)));
     }
     const auto npages = static_cast<std::int32_t>(score.npages());
-    if (npages == 0) return fail(ErrorCode::InvalidArgument, "the score has no pages");
+    if (npages == 0) return fail(ErrorCode::INVALID_ARGUMENT, "the score has no pages");
     const std::int32_t first = options.first_page;
     const std::int32_t last = options.last_page < 0 ? npages - 1 : options.last_page;
     if (first < 0 || last < first || last >= npages) {
-        return fail(ErrorCode::InvalidArgument, std::format("the page range {}..{} is outside the score's 0..{}", first, last, npages - 1));
+        return fail(ErrorCode::INVALID_ARGUMENT, std::format("the page range {}..{} is outside the score's 0..{}", first, last, npages - 1));
     }
 
     music::ExportOptions backend;
@@ -94,7 +94,7 @@ Result<RenderOutput> Document::render(const RenderOptions &options) {
     const std::string format = backend_name(options.format);
     try {
         RenderOutput output;
-        if (options.format == RenderFormat::Pdf) {
+        if (options.format == RenderFormat::PDF) {
             output.document = bytes_of(music::render_score(*impl_->engine->context, &score, format, backend));
             return output;
         }
@@ -105,11 +105,11 @@ Result<RenderOutput> Document::render(const RenderOptions &options) {
         }
         return output;
     } catch (const music::RenderCancelled &) {
-        return fail(ErrorCode::Cancelled, "render cancelled");
+        return fail(ErrorCode::CANCELLED, "render cancelled");
     } catch (const music::RenderLimitExceeded &error) {
-        return fail(ErrorCode::ResourceLimit, error.what());
+        return fail(ErrorCode::RESOURCE_LIMIT, error.what());
     } catch (const std::invalid_argument &error) {
-        return fail(ErrorCode::InvalidArgument, error.what());
+        return fail(ErrorCode::INVALID_ARGUMENT, error.what());
     }
 }
 
@@ -117,21 +117,21 @@ Result<Positions> Document::positions(PositionKind kind, const ScoreSel &selecti
 
 Result<Positions> Document::positions(PositionKind kind, const ScoreSel &selection, const CaptureOptions &capture) {
     impl_->engine->check_thread();
-    if (impl_->poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
-    if (kind != PositionKind::Measure && kind != PositionKind::Segment) return fail(ErrorCode::InvalidArgument, "unknown position kind");
-    if (capture.cancelled && capture.cancelled()) return fail(ErrorCode::Cancelled, "position capture cancelled");
+    if (impl_->poisoned) return fail(ErrorCode::POISONED, "an earlier edit left the document unusable");
+    if (kind != PositionKind::MEASURE && kind != PositionKind::SEGMENT) return fail(ErrorCode::INVALID_ARGUMENT, "unknown position kind");
+    if (capture.cancelled && capture.cancelled()) return fail(ErrorCode::CANCELLED, "position capture cancelled");
     const auto selected = select_score(*impl_->project->masterScore(), selection);
     if (!selected) return std::unexpected(selected.error());
     impl_->refresh_fonts();
     prepare_layout(**selected);
-    if ((*selected)->npages() == 0) return fail(ErrorCode::InvalidArgument, "the score has no pages");
+    if ((*selected)->npages() == 0) return fail(ErrorCode::INVALID_ARGUMENT, "the score has no pages");
 
     struct Stop {
         ErrorCode code;
     };
 
     const auto poll = [&] {
-        if (capture.cancelled && capture.cancelled()) throw Stop{ErrorCode::Cancelled};
+        if (capture.cancelled && capture.cancelled()) throw Stop{ErrorCode::CANCELLED};
     };
     try {
         poll();
@@ -141,7 +141,7 @@ Result<Positions> Document::positions(PositionKind kind, const ScoreSel &selecti
             poll();
             if (amount > std::numeric_limits<std::uint64_t>::max() - bytes ||
                 (capture.max_bytes && (bytes > *capture.max_bytes || amount > *capture.max_bytes - bytes)))
-                throw Stop{ErrorCode::ResourceLimit};
+                throw Stop{ErrorCode::RESOURCE_LIMIT};
             bytes += amount;
         };
         const music::PositionVisitor estimate{[&](int, double, double, double, double, int) {
@@ -152,7 +152,7 @@ Result<Positions> Document::positions(PositionKind kind, const ScoreSel &selecti
                                                   count(sizeof(PositionEvent));
                                                   ++event_count;
                                               }};
-        const bool segments = kind == PositionKind::Segment;
+        const bool segments = kind == PositionKind::SEGMENT;
         const auto [width, height] = music::visit_score_positions(*selected, segments, estimate, false);
         Positions result;
         result.page_width = width;
@@ -171,7 +171,7 @@ Result<Positions> Document::positions(PositionKind kind, const ScoreSel &selecti
         poll();
         return result;
     } catch (const Stop &stop) {
-        return fail(stop.code, stop.code == ErrorCode::Cancelled ? "position capture cancelled" : "position capture byte limit exceeded");
+        return fail(stop.code, stop.code == ErrorCode::CANCELLED ? "position capture cancelled" : "position capture byte limit exceeded");
     }
 }
 

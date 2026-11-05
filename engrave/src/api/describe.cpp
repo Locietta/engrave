@@ -115,7 +115,7 @@ std::vector<TypeInfo> Engine::describe() const {
 Result<TypeInfo> Engine::describe(std::string_view type) const {
     impl_->state.check_thread();
     const auto it = std::ranges::find(type_pids, type, &TypePids::type);
-    if (it == std::end(type_pids)) return std::unexpected(Error{ErrorCode::NotFound, std::format("no element type '{}'", type)});
+    if (it == std::end(type_pids)) return std::unexpected(Error{ErrorCode::NOT_FOUND, std::format("no element type '{}'", type)});
     return type_info(*it);
 }
 

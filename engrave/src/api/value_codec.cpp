@@ -49,7 +49,7 @@ std::string_view kind_name(ValueKind kind) {
 }
 
 Result<PropertyValue> fail(ValueKind expected) {
-    return std::unexpected(Error{ErrorCode::InvalidArgument, std::format("expected a {} value", kind_name(expected))});
+    return std::unexpected(Error{ErrorCode::INVALID_ARGUMENT, std::format("expected a {} value", kind_name(expected))});
 }
 
 // A caller's integer has to fit what the engine stores: a narrowing conversion that
@@ -57,7 +57,7 @@ Result<PropertyValue> fail(ValueKind expected) {
 bool fits_int(std::int64_t value) { return value >= std::numeric_limits<int>::min() && value <= std::numeric_limits<int>::max(); }
 
 Result<PropertyValue> out_of_range(std::string_view what) {
-    return std::unexpected(Error{ErrorCode::InvalidArgument, std::format("{} is out of range", what)});
+    return std::unexpected(Error{ErrorCode::INVALID_ARGUMENT, std::format("{} is out of range", what)});
 }
 
 // A stored value of the type the pid declares, including the engine's own
@@ -66,7 +66,7 @@ template <typename T>
 Result<PropertyValue> enum_value(std::string_view token, T fallback) {
     const T parsed = TConv::fromXml(muse::AsciiStringView(token.data(), token.size()), fallback);
     if (token_of(TConv::toXml(parsed)) != token) {
-        return std::unexpected(Error{ErrorCode::InvalidArgument, std::format("unknown token '{}'", token)});
+        return std::unexpected(Error{ErrorCode::INVALID_ARGUMENT, std::format("unknown token '{}'", token)});
     }
     return PropertyValue(parsed);
 }
@@ -76,7 +76,7 @@ template <typename T>
 Result<PropertyValue> enum_value_text(std::string_view token, T fallback) {
     const T parsed = TConv::fromXml(muse::String::fromUtf8(token), fallback);
     if (token_of(TConv::toXml(parsed)) != token) {
-        return std::unexpected(Error{ErrorCode::InvalidArgument, std::format("unknown token '{}'", token)});
+        return std::unexpected(Error{ErrorCode::INVALID_ARGUMENT, std::format("unknown token '{}'", token)});
     }
     return PropertyValue(parsed);
 }
@@ -1001,9 +1001,9 @@ Result<PropertyValue> from_value(P_TYPE type, const Value &value) {
         case P_TYPE::PITCH_VALUES:
         case P_TYPE::DURATION_TYPE_WITH_DOTS:
         case P_TYPE::UNDEFINED:
-            return std::unexpected(Error{ErrorCode::Unsupported, std::format("a {} value is read-only", opaque_name(type))});
+            return std::unexpected(Error{ErrorCode::UNSUPPORTED, std::format("a {} value is read-only", opaque_name(type))});
     }
-    return std::unexpected(Error{ErrorCode::InvalidArgument, "unknown property value type"});
+    return std::unexpected(Error{ErrorCode::INVALID_ARGUMENT, "unknown property value type"});
 }
 
 } // namespace engrave::api

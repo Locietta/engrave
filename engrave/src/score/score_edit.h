@@ -43,8 +43,7 @@ struct NativePitchResult {
     bool requires_stable_structure = true;
 };
 
-class NativeEditFailure : public std::runtime_error {
-public:
+struct NativeEditFailure : std::runtime_error {
     NativeEditFailure(const std::string &message, bool poisoned) : std::runtime_error(message), poisoned_(poisoned) {}
 
     bool poisoned() const noexcept { return poisoned_; }

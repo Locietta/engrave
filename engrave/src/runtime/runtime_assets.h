@@ -37,8 +37,7 @@ struct RuntimeSoundFontInfo {
 // SoundFonts. EngineContext owns the only instance. Construction binds it to the
 // calling thread; every later call, including the draw-engine calls, must come
 // from that owner thread.
-class RuntimeAssets {
-public:
+struct RuntimeAssets {
     // cacheRoot is the parent directory of the runtime cache directory; empty
     // selects the system temporary directory.
     explicit RuntimeAssets(const std::filesystem::path &cacheRoot = {});

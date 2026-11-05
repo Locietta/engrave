@@ -10,7 +10,6 @@
  */
 
 #include "cairo_painter.h"
-#include "draw/internal/fontfaceutils.h"
 
 #include <algorithm>
 #include <array>
@@ -35,6 +34,7 @@
 #include <hb.h>
 #include <hb-ft.h>
 
+#include "draw/internal/fontfaceutils.h"
 #include "draw/internal/ifontsdatabase.h"
 
 namespace muse::draw {
@@ -347,8 +347,7 @@ struct FtFaceEntry {
     }
 };
 
-class FontCache {
-public:
+struct FontCache {
     std::shared_ptr<FtFaceEntry> get(const Font &font, const IFontsDatabase &db) {
         const FontDataKey requested = dataKeyForFont(font);
         if (!requested.valid()) {

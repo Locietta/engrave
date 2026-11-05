@@ -18,11 +18,12 @@ namespace engrave {
 // build without an encoder would report it through Capabilities and answer
 // Unsupported for it.
 enum struct AudioFormat {
-    Wav,  // 32-bit float PCM, or 16/24-bit with a bit depth
-    Flac, // 16-bit or 24-bit
-    Opus, // 128 kbps Opus in an Ogg container, which the encoder resamples to 48 kHz
-    Mp3,  // 128 kbps
-    Aac,  // 128 kbps, ADTS
+    WAV,  // 32-bit float PCM, or 16/24-bit with a bit depth
+    MP3,  // 128 kbps
+    FLAC, // 16-bit or 24-bit
+    OGG,  // 128 kbps Opus in an Ogg container, which the encoder resamples to 48 kHz
+    OPUS, // alias / format
+    AAC,  // 128 kbps, ADTS
 };
 
 std::string_view to_string(AudioFormat format) noexcept;
@@ -72,7 +73,7 @@ struct AudioTrackOptions {
 
 struct AudioOptions {
     ScoreSel score;
-    AudioFormat format = AudioFormat::Wav;
+    AudioFormat format = AudioFormat::WAV;
     // Encoder settings; 0 keeps the format's default. bitrate_kbps applies to
     // Opus, Mp3 and Aac (32..512); bit_depth to Wav (16, 24 or 32) and Flac
     // (16 or 24).

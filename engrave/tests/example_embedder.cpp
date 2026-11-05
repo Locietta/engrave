@@ -23,7 +23,7 @@ bool report(const engrave::Error &error, const std::string &what) {
 }
 
 bool exercise(engrave::Engine &engine, engrave::Document &document, const std::string &name) {
-    for (const auto format : {engrave::Format::Mscz, engrave::Format::MusicXml, engrave::Format::Mxl, engrave::Format::Midi}) {
+    for (const auto format : {engrave::Format::MSCZ, engrave::Format::MUSIC_XML, engrave::Format::MXL, engrave::Format::MIDI}) {
         const std::string what = name + " -> " + std::string(to_string(format));
         const auto bytes = document.export_score({.format = format});
         if (!bytes) return report(bytes.error(), what);

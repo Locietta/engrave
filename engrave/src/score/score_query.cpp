@@ -2,6 +2,16 @@
 // Bounded structural queries over the live engraving DOM.
 #include "score_query.h"
 
+#include <algorithm>
+#include <iterator>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
+#include <vector>
+
 #include "engraving/dom/chord.h"
 #include "engraving/dom/engravingobject.h"
 #include "engraving/dom/masterscore.h"
@@ -16,16 +26,6 @@
 #include "engraving/dom/tie.h"
 #include "engraving/infrastructure/eid.h"
 #include "engraving/infrastructure/eidregister.h"
-
-#include <algorithm>
-#include <iterator>
-#include <optional>
-#include <stdexcept>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <utility>
-#include <vector>
 
 namespace music {
 using namespace mu::engraving;

@@ -92,9 +92,9 @@ TEST(Values, FractionsCompareByValueAndKeepWrittenTerms) {
 TEST(Open, RejectsPreMuseScore4) {
     for (const std::string version : {"1.14", "2.07", "3.00", "3.02", "4.00", "4.10", "4.40", "4.50"}) {
         const auto xml = bytes_of("<museScore version=\"" + version + "\"><Score/></museScore>");
-        auto result = g_engine->open(xml, {.format = Format::Mscx});
+        auto result = g_engine->open(xml, {.format = Format::MSCX});
         ASSERT_FALSE(result) << version;
-        EXPECT_EQ(result.error().code, ErrorCode::Unsupported);
+        EXPECT_EQ(result.error().code, ErrorCode::UNSUPPORTED);
         EXPECT_NE(result.error().message.find("written by MuseScore " + version + "; scores from before MuseScore 4.6 are not supported"),
                   std::string::npos);
     }
@@ -104,7 +104,7 @@ TEST(Capabilities, ListsFormatsAndVersion) {
     const auto capabilities = g_engine->capabilities();
     EXPECT_FALSE(capabilities.engine_version.empty());
     EXPECT_EQ(capabilities.import_formats.size(), 7u);
-    EXPECT_EQ(capabilities.export_formats, (std::vector<Format>{Format::Mscx, Format::Mscz, Format::MusicXml, Format::Mxl, Format::Midi}));
+    EXPECT_EQ(capabilities.export_formats, (std::vector<Format>{Format::MSCX, Format::MSCZ, Format::MUSIC_XML, Format::MXL, Format::MIDI}));
 }
 
 TEST(Templates, ListsCategoriesJsonInOrder) {
@@ -127,7 +127,7 @@ TEST(Create, AppliesMetadataAtRevisionOne) {
     ASSERT_TRUE(document);
     EXPECT_EQ(document->revision(), 1u);
     EXPECT_TRUE(document->diagnostics().empty());
-    const std::string musicxml = exported(*document, Format::MusicXml);
+    const std::string musicxml = exported(*document, Format::MUSIC_XML);
     EXPECT_NE(musicxml.find("An engrave title"), std::string::npos);
     EXPECT_NE(musicxml.find(">Piano</part-name>"), std::string::npos);
 }
@@ -143,64 +143,64 @@ TEST(Create, FromTemplatePath) {
 TEST(Create, RejectsBadOptions) {
     auto neither = g_engine->create_document({});
     ASSERT_FALSE(neither);
-    EXPECT_EQ(neither.error().code, ErrorCode::InvalidArgument);
+    EXPECT_EQ(neither.error().code, ErrorCode::INVALID_ARGUMENT);
 
     const auto path = g_engine->templates().front().path;
     auto both = g_engine->create_document({.template_id = "Treble_Clef", .template_path = path});
     ASSERT_FALSE(both);
-    EXPECT_EQ(both.error().code, ErrorCode::InvalidArgument);
+    EXPECT_EQ(both.error().code, ErrorCode::INVALID_ARGUMENT);
 
     auto unknown = g_engine->create_document({.template_id = "No_Such_Template"});
     ASSERT_FALSE(unknown);
-    EXPECT_EQ(unknown.error().code, ErrorCode::NotFound);
+    EXPECT_EQ(unknown.error().code, ErrorCode::NOT_FOUND);
 
     auto missing = g_engine->create_document({.template_path = path.parent_path() / "missing.mscx"});
     ASSERT_FALSE(missing);
-    EXPECT_EQ(missing.error().code, ErrorCode::NotFound);
+    EXPECT_EQ(missing.error().code, ErrorCode::NOT_FOUND);
 
     auto style = g_engine->create_document({.template_path = path.parent_path() / "score_style.mss"});
     ASSERT_FALSE(style);
-    EXPECT_EQ(style.error().code, ErrorCode::InvalidArgument);
+    EXPECT_EQ(style.error().code, ErrorCode::INVALID_ARGUMENT);
 }
 
 TEST(Export, WritesEachExportFormat) {
     auto document = treble_clef();
     ASSERT_TRUE(document);
-    EXPECT_NE(exported(*document, Format::Mscx).find("<museScore"), std::string::npos);
-    EXPECT_TRUE(exported(*document, Format::Mscz).starts_with("PK\x03\x04"));
-    EXPECT_TRUE(exported(*document, Format::Mxl).starts_with("PK\x03\x04"));
-    EXPECT_TRUE(exported(*document, Format::Midi).starts_with("MThd"));
-    EXPECT_NE(exported(*document, Format::MusicXml).find("<score-partwise"), std::string::npos);
+    EXPECT_NE(exported(*document, Format::MSCX).find("<museScore"), std::string::npos);
+    EXPECT_TRUE(exported(*document, Format::MSCZ).starts_with("PK\x03\x04"));
+    EXPECT_TRUE(exported(*document, Format::MXL).starts_with("PK\x03\x04"));
+    EXPECT_TRUE(exported(*document, Format::MIDI).starts_with("MThd"));
+    EXPECT_NE(exported(*document, Format::MUSIC_XML).find("<score-partwise"), std::string::npos);
     EXPECT_EQ(document->revision(), 1u);
 }
 
 TEST(Export, RejectsFormatsTheEngineDoesNotWrite) {
     auto document = treble_clef();
     ASSERT_TRUE(document);
-    for (const auto format : {Format::GuitarPro, Format::Mnx}) {
+    for (const auto format : {Format::GUITAR_PRO, Format::MNX}) {
         const auto bytes = document->export_score({.format = format});
         ASSERT_FALSE(bytes);
-        EXPECT_EQ(bytes.error().code, ErrorCode::Unsupported);
+        EXPECT_EQ(bytes.error().code, ErrorCode::UNSUPPORTED);
     }
 }
 
 TEST(Sniff, DetectsEveryImportFormat) {
     auto document = treble_clef();
     ASSERT_TRUE(document);
-    EXPECT_EQ(engrave::sniff_format(exported(*document, Format::Mscz)), Format::Mscz);
-    EXPECT_EQ(engrave::sniff_format(exported(*document, Format::Mxl)), Format::Mxl);
-    EXPECT_EQ(engrave::sniff_format(exported(*document, Format::MusicXml)), Format::MusicXml);
-    EXPECT_EQ(engrave::sniff_format(exported(*document, Format::Midi)), Format::Midi);
-    EXPECT_EQ(engrave::sniff_format(read_file(g_engine->templates().front().path)), Format::Mscx);
+    EXPECT_EQ(engrave::sniff_format(exported(*document, Format::MSCZ)), Format::MSCZ);
+    EXPECT_EQ(engrave::sniff_format(exported(*document, Format::MXL)), Format::MXL);
+    EXPECT_EQ(engrave::sniff_format(exported(*document, Format::MUSIC_XML)), Format::MUSIC_XML);
+    EXPECT_EQ(engrave::sniff_format(exported(*document, Format::MIDI)), Format::MIDI);
+    EXPECT_EQ(engrave::sniff_format(read_file(g_engine->templates().front().path)), Format::MSCX);
     for (const char *name : {"bend.gp3", "bend.gp4", "heavy-accent.gp5", "sforzato.gpx", "sforzato.gp", "ptb-baseline.ptb"})
-        EXPECT_EQ(engrave::sniff_format(read_file(gp_data() / name)), Format::GuitarPro) << name;
+        EXPECT_EQ(engrave::sniff_format(read_file(gp_data() / name)), Format::GUITAR_PRO) << name;
 }
 
 TEST(Sniff, LooksPastByteOrderMarkAndProlog) {
-    EXPECT_EQ(engrave::sniff_format("\xEF\xBB\xBF\n<?xml version=\"1.0\"?>\n<!-- c -->\n<museScore version=\"5.00\"/>"), Format::Mscx);
+    EXPECT_EQ(engrave::sniff_format("\xEF\xBB\xBF\n<?xml version=\"1.0\"?>\n<!-- c -->\n<museScore version=\"5.00\"/>"), Format::MSCX);
     EXPECT_EQ(engrave::sniff_format("<?xml version=\"1.0\"?>\n<!DOCTYPE score-partwise PUBLIC \"-//Recordare//DTD MusicXML 4.0 "
                                     "Partwise//EN\" \"http://www.musicxml.org/dtds/partwise.dtd\">\n<score-timewise/>"),
-              Format::MusicXml);
+              Format::MUSIC_XML);
 }
 
 TEST(Sniff, RejectsUnknownContent) {
@@ -211,15 +211,15 @@ TEST(Sniff, RejectsUnknownContent) {
     EXPECT_EQ(engrave::sniff_format(std::string("PK\x03\x04", 4) + "not a zip"), std::nullopt);
     EXPECT_EQ(engrave::sniff_format("\x10"
                                     "FICHIER GUITAR"),
-              Format::GuitarPro)
+              Format::GUITAR_PRO)
         << "the magic alone decides";
 }
 
 TEST(Sniff, MapsExtensions) {
-    EXPECT_EQ(engrave::format_from_extension("a.MSCZ"), Format::Mscz);
-    EXPECT_EQ(engrave::format_from_extension("a.xml"), Format::MusicXml);
-    EXPECT_EQ(engrave::format_from_extension("a.kar"), Format::Midi);
-    EXPECT_EQ(engrave::format_from_extension("a.gtp"), Format::GuitarPro);
+    EXPECT_EQ(engrave::format_from_extension("a.MSCZ"), Format::MSCZ);
+    EXPECT_EQ(engrave::format_from_extension("a.xml"), Format::MUSIC_XML);
+    EXPECT_EQ(engrave::format_from_extension("a.kar"), Format::MIDI);
+    EXPECT_EQ(engrave::format_from_extension("a.gtp"), Format::GUITAR_PRO);
     EXPECT_EQ(engrave::format_from_extension("a.pdf"), std::nullopt);
     EXPECT_EQ(engrave::format_from_extension("mscz"), std::nullopt);
 }
@@ -227,7 +227,7 @@ TEST(Sniff, MapsExtensions) {
 TEST(Open, ReadsEveryImportFormatAtRevisionOne) {
     auto source = treble_clef("Round trip");
     ASSERT_TRUE(source);
-    for (const auto format : {Format::Mscz, Format::Mxl, Format::MusicXml, Format::Midi}) {
+    for (const auto format : {Format::MSCZ, Format::MXL, Format::MUSIC_XML, Format::MIDI}) {
         auto document = g_engine->open(bytes_of(exported(*source, format)));
         ASSERT_TRUE(document) << to_string(format) << ": " << document.error().message;
         EXPECT_EQ((*document)->revision(), 1u);
@@ -244,17 +244,17 @@ TEST(Open, ReadsEveryImportFormatAtRevisionOne) {
 TEST(Open, ExplicitFormatSkipsSniffing) {
     auto source = treble_clef();
     ASSERT_TRUE(source);
-    const auto mscz = bytes_of(exported(*source, Format::Mscz));
-    auto document = g_engine->open(mscz, {.format = Format::Midi});
+    const auto mscz = bytes_of(exported(*source, Format::MSCZ));
+    auto document = g_engine->open(mscz, {.format = Format::MIDI});
     ASSERT_FALSE(document);
-    EXPECT_EQ(document.error().code, ErrorCode::InvalidInput);
+    EXPECT_EQ(document.error().code, ErrorCode::INVALID_INPUT);
 }
 
 TEST(Open, FallsBackToTheExtension) {
     // Content the sniffer does not recognise is read as the extension's format.
     auto document = g_engine->open(bytes_of("not xml"), {.filename_hint = "score.musicxml"});
     ASSERT_FALSE(document);
-    EXPECT_EQ(document.error().code, ErrorCode::InvalidInput);
+    EXPECT_EQ(document.error().code, ErrorCode::INVALID_INPUT);
     EXPECT_NE(document.error().message.find("MusicXML"), std::string::npos) << document.error().message;
 }
 
@@ -264,16 +264,16 @@ TEST(Open, ReportsCallerErrors) {
         EXPECT_EQ(result.error().code, code) << result.error().message;
         EXPECT_FALSE(result.error().message.empty());
     };
-    expect_error(g_engine->open(std::span<const std::byte>{}), ErrorCode::InvalidInput);
-    expect_error(g_engine->open(bytes_of("hello")), ErrorCode::UnsupportedFormat);
-    expect_error(g_engine->open(bytes_of("hello"), {.filename_hint = "notes.txt"}), ErrorCode::UnsupportedFormat);
-    expect_error(g_engine->open(std::vector<std::byte>(engrave::max_input_bytes + 1)), ErrorCode::ResourceLimit);
+    expect_error(g_engine->open(std::span<const std::byte>{}), ErrorCode::INVALID_INPUT);
+    expect_error(g_engine->open(bytes_of("hello")), ErrorCode::UNSUPPORTED_FORMAT);
+    expect_error(g_engine->open(bytes_of("hello"), {.filename_hint = "notes.txt"}), ErrorCode::UNSUPPORTED_FORMAT);
+    expect_error(g_engine->open(std::vector<std::byte>(engrave::max_input_bytes + 1)), ErrorCode::RESOURCE_LIMIT);
     // Malformed XML has no root to sniff; only a file name makes it MusicXML.
-    expect_error(g_engine->open(bytes_of("<score-partwise><part")), ErrorCode::UnsupportedFormat);
-    expect_error(g_engine->open(bytes_of("<score-partwise><part"), {.filename_hint = "a.xml"}), ErrorCode::InvalidInput);
-    expect_error(g_engine->open(bytes_of("MThd")), ErrorCode::InvalidInput);
-    expect_error(g_engine->open(g_resources / "no-such-score.mscz"), ErrorCode::NotFound);
-    expect_error(g_engine->open(g_resources), ErrorCode::InvalidArgument);
+    expect_error(g_engine->open(bytes_of("<score-partwise><part")), ErrorCode::UNSUPPORTED_FORMAT);
+    expect_error(g_engine->open(bytes_of("<score-partwise><part"), {.filename_hint = "a.xml"}), ErrorCode::INVALID_INPUT);
+    expect_error(g_engine->open(bytes_of("MThd")), ErrorCode::INVALID_INPUT);
+    expect_error(g_engine->open(g_resources / "no-such-score.mscz"), ErrorCode::NOT_FOUND);
+    expect_error(g_engine->open(g_resources), ErrorCode::INVALID_ARGUMENT);
 }
 
 TEST(Contract, SecondEngineAborts) { EXPECT_DEATH((void) engrave::Engine::create({.resources = g_resources}), "one Engine per process"); }
@@ -302,7 +302,7 @@ int main(int argc, char **argv) {
     }
     // Failure before binding services must leave startup retryable.
     auto missing = engrave::Engine::create({.resources = g_resources / "c5-missing-resources"});
-    if (missing || missing.error().code != ErrorCode::NotFound) {
+    if (missing || missing.error().code != ErrorCode::NOT_FOUND) {
         std::fprintf(stderr, "C5 startup failure did not leave services unbound\n");
         return 1;
     }
@@ -344,11 +344,11 @@ TEST(Open, UnicodeFilenameLyricsAndNonBmpRoundTrip) {
     }
     auto document = g_engine->open(path);
     ASSERT_TRUE(document) << document.error().message;
-    const auto saved = (*document)->export_score({.format = Format::Mscz});
+    const auto saved = (*document)->export_score({.format = Format::MSCZ});
     ASSERT_TRUE(saved) << saved.error().message;
     auto reopened = g_engine->open(*saved);
     ASSERT_TRUE(reopened) << reopened.error().message;
-    EXPECT_NE(exported(**reopened, Format::MusicXml).find(text), std::string::npos);
-    const auto render = (*reopened)->render({.format = engrave::RenderFormat::Svg});
+    EXPECT_NE(exported(**reopened, Format::MUSIC_XML).find(text), std::string::npos);
+    const auto render = (*reopened)->render({.format = engrave::RenderFormat::SVG});
     ASSERT_TRUE(render) << render.error().message;
 }

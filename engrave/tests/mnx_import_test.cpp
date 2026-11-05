@@ -87,9 +87,9 @@ TEST(MnxImport, IndependentSemanticOracle) {
 TEST(MnxImport, InvalidInputAndRecovery) {
     for (const std::string input :
          {"{", "{}", "{\"mnx\":{\"version\":27}}", "{\"mnx\":{\"version\":27},\"global\":{\"measures\":[]},\"parts\":[]}"}) {
-        auto opened = engine->open(std::as_bytes(std::span(input)), {.format = engrave::Format::Mnx});
+        auto opened = engine->open(std::as_bytes(std::span(input)), {.format = engrave::Format::MNX});
         EXPECT_FALSE(opened);
-        if (!opened) EXPECT_EQ(opened.error().code, engrave::ErrorCode::InvalidInput);
+        if (!opened) EXPECT_EQ(opened.error().code, engrave::ErrorCode::INVALID_INPUT);
     }
     EXPECT_TRUE(engine->open(data / "tupletSimple.mnx"));
 }

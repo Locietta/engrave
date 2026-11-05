@@ -79,9 +79,9 @@ bool engine_warned() { return MScore::_error != MsError::MS_NO_ERROR && MScore::
 
 std::string_view to_string(Policy policy) noexcept {
     switch (policy) {
-        case Policy::Transaction: return "Transaction";
-        case Policy::Snapshot: return "Snapshot";
-        case Policy::Unexposed: return "Unexposed";
+        case Policy::TRANSACTION: return "Transaction";
+        case Policy::SNAPSHOT: return "Snapshot";
+        case Policy::UNEXPOSED: return "Unexposed";
     }
     return "Unknown";
 }
@@ -99,7 +99,7 @@ Policy policy_of(const Op &op) {
 Result<Target> EditContext::target(const Ref &ref) const {
     if (const auto *made = std::get_if<OpRef>(&ref)) {
         if (made->op >= op_) {
-            return fail(ErrorCode::InvalidArgument,
+            return fail(ErrorCode::INVALID_ARGUMENT,
                         std::format("an OpRef names operation {}, which does not run before this one", made->op));
         }
         return Target{ref, nullptr, epoch_};
@@ -107,7 +107,7 @@ Result<Target> EditContext::target(const Ref &ref) const {
     const Result<Resolved> found =
         std::holds_alternative<ElementId>(ref) ? resolve(master_, std::get<ElementId>(ref)) : resolve(master_, std::get<Address>(ref));
     if (!found) return std::unexpected(found.error());
-    if (!found->writable) return fail(ErrorCode::InvalidArgument, "layout builds this element; it cannot be edited");
+    if (!found->writable) return fail(ErrorCode::INVALID_ARGUMENT, "layout builds this element; it cannot be edited");
     return Target{ref, found->object, epoch_};
 }
 
@@ -115,13 +115,13 @@ Result<EngravingObject *> EditContext::object(const Target &target) const {
     if (const auto *made = std::get_if<OpRef>(&target.ref)) {
         const auto &list = created_[made->op];
         if (made->item >= list.size()) {
-            return fail(ErrorCode::InvalidArgument,
+            return fail(ErrorCode::INVALID_ARGUMENT,
                         std::format("operation {} created {} element(s), not {}", made->op, list.size(), made->item + 1));
         }
         EngravingObject *object = list[made->item];
         const auto objects = document_objects(master_);
         if (std::ranges::find(objects, object) == objects.end()) {
-            return fail(ErrorCode::StaleHandle,
+            return fail(ErrorCode::STALE_HANDLE,
                         std::format("element {} of operation {} is no longer part of the score", made->item, made->op));
         }
         return object;
@@ -137,7 +137,7 @@ Result<mu::engraving::Score *> EditContext::score(const ScoreSel &selection) con
     const Result<Resolved> found = resolve(master_, *selection.excerpt);
     if (!found) return std::unexpected(found.error());
     if (!found->object->isScore()) {
-        return fail(ErrorCode::InvalidArgument, std::format("{} is not a score", to_string(*selection.excerpt)));
+        return fail(ErrorCode::INVALID_ARGUMENT, std::format("{} is not a score", to_string(*selection.excerpt)));
     }
     return mu::engraving::toScore(found->object);
 }
@@ -167,22 +167,22 @@ BatchGuard::BatchGuard(Document &document) : document_(document), context_(*Docu
 
 Result<void> BatchGuard::admit(std::optional<std::uint64_t> expected_revision) const {
     const auto &document = DocumentAccess::impl(document_);
-    if (document.poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
+    if (document.poisoned) return fail(ErrorCode::POISONED, "an earlier edit left the document unusable");
     if (expected_revision && *expected_revision != document.revision) {
-        return fail(ErrorCode::RevisionConflict,
+        return fail(ErrorCode::REVISION_CONFLICT,
                     std::format("the document is at revision {}, not {}", document.revision, *expected_revision));
     }
     const MasterScore &master = context_.master();
     const UndoStack *stack = master.undoStack();
     if (master.readOnly() || stack->isLocked() || stack->hasActiveTransaction())
-        return fail(ErrorCode::EditRejected, "the score cannot be edited now");
+        return fail(ErrorCode::EDIT_REJECTED, "the score cannot be edited now");
     return {};
 }
 
 Result<EditResult> BatchGuard::edit(const Batch &batch, std::optional<std::uint64_t> expected_revision) {
     if (const auto admitted = admit(expected_revision); !admitted) return std::unexpected(admitted.error());
     context_.created_.assign(batch.ops.size(), {});
-    Policy policy = Policy::Transaction;
+    Policy policy = Policy::TRANSACTION;
     std::vector<Step> steps;
     std::vector<bool> snapshot_step;
     steps.reserve(batch.ops.size());
@@ -191,9 +191,9 @@ Result<EditResult> BatchGuard::edit(const Batch &batch, std::optional<std::uint6
         const Op &op = batch.ops[i];
         context_.op_ = i;
         const Policy own = policy_of(op);
-        if (own == Policy::Unexposed) return fail(ErrorCode::Unsupported, std::format("{} is not available", op_name(op)), i);
-        if (own == Policy::Snapshot) policy = Policy::Snapshot;
-        snapshot_step.push_back(own == Policy::Snapshot);
+        if (own == Policy::UNEXPOSED) return fail(ErrorCode::UNSUPPORTED, std::format("{} is not available", op_name(op)), i);
+        if (own == Policy::SNAPSHOT) policy = Policy::SNAPSHOT;
+        snapshot_step.push_back(own == Policy::SNAPSHOT);
         auto step = std::visit([this](const auto &value) { return prepare(context_, value); }, op);
         if (!step) {
             Error error = std::move(step.error());
@@ -220,16 +220,16 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
         policy = *hooks.policy;
         // A forced policy applies to every step, and the guard cannot tell which of
         // them the unwind is safe for.
-        std::ranges::fill(snapshot_step, policy == Policy::Snapshot);
+        std::ranges::fill(snapshot_step, policy == Policy::SNAPSHOT);
     }
     // Without per-step policies (run(), whose caller brings its own steps), a snapshot
     // policy says nothing about which step is safe to unwind.
-    bool snapshot_ran = snapshot_step.empty() && policy == Policy::Snapshot;
+    bool snapshot_ran = snapshot_step.empty() && policy == Policy::SNAPSHOT;
 
     MasterScore &master = context_.master();
     UndoStack *stack = master.undoStack();
     std::optional<Snapshot> snapshot;
-    if (policy == Policy::Snapshot) {
+    if (policy == Policy::SNAPSHOT) {
         snapshot = Snapshot{music::export_native_score(*document.engine->context, document.project, "mscz", music::ExportOptions{}, {}),
                             music::semantic_dump(&master).dump(1),
                             id_list(master),
@@ -245,10 +245,10 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
     bool engine_threw = false;
     const auto check_engine = [&failure, &result, &steps](std::size_t step) {
         if (engine_failed()) {
-            failure = Error{ErrorCode::EditRejected, std::format("the engine refused it: {}", MScore::errorToString(MScore::_error)),
+            failure = Error{ErrorCode::EDIT_REJECTED, std::format("the engine refused it: {}", MScore::errorToString(MScore::_error)),
                             step < steps.size() ? std::optional(step) : std::nullopt};
         } else if (engine_warned()) {
-            result.diagnostics.push_back({Severity::Warning, MScore::errorToString(MScore::_error)});
+            result.diagnostics.push_back({Severity::WARNING, MScore::errorToString(MScore::_error)});
         }
         MScore::setError(MsError::MS_NO_ERROR);
         return !failure;
@@ -256,7 +256,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
     try {
         MScore::setError(MsError::MS_NO_ERROR);
         master.startCmd(muse::TranslatableString::untranslatable("engrave edit"));
-        if (!stack->hasActiveTransaction()) return fail(ErrorCode::EditRejected, "the engine did not start a transaction");
+        if (!stack->hasActiveTransaction()) return fail(ErrorCode::EDIT_REJECTED, "the engine did not start a transaction");
         for (std::size_t i = 0; i <= steps.size(); ++i) {
             context_.op_ = i;
             if (hooks.before_step) hooks.before_step(i);
@@ -279,7 +279,7 @@ Result<EditResult> BatchGuard::execute(std::vector<Step> steps, Policy policy, s
     } catch (const std::exception &error) {
         const std::size_t op = context_.op_;
         engine_threw = true;
-        failure = Error{ErrorCode::EditRejected, std::format("the engine failed: {}", error.what()),
+        failure = Error{ErrorCode::EDIT_REJECTED, std::format("the engine failed: {}", error.what()),
                         op < steps.size() ? std::optional(op) : std::nullopt};
     } catch (...) {
         roll_back(snapshot ? &*snapshot : nullptr, history, true);

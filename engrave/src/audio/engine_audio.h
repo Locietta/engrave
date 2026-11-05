@@ -47,8 +47,7 @@ namespace music {
 // The engine's audio services, SoundFonts and render state. EngineContext owns
 // the only instance and creates it idle; initialize_engine_audio() builds the
 // services on first use. profiles must outlive it.
-class EngineAudio {
-public:
+struct EngineAudio {
     explicit EngineAudio(const muse::mpe::IArticulationProfilesRepository &profiles);
     ~EngineAudio();
 

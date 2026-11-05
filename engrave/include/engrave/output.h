@@ -17,13 +17,13 @@ namespace engrave {
 // Score file formats. Capabilities lists which of them the engine reads and
 // which it writes.
 enum struct Format {
-    Mscz,      // MuseScore archive
-    Mscx,      // uncompressed MuseScore XML
-    MusicXml,  // uncompressed MusicXML
-    Mxl,       // compressed MusicXML
-    Midi,      // Standard MIDI File, including karaoke (.kar)
-    GuitarPro, // Guitar Pro 1-7 and Power Tab
-    Mnx,       // MNX JSON, schema 27; import only (.mnx or recognised JSON content)
+    MSCZ,      // MuseScore archive
+    MSCX,      // uncompressed MuseScore XML
+    MUSIC_XML,  // uncompressed MusicXML
+    MXL,       // compressed MusicXML
+    MIDI,      // Standard MIDI File, including karaoke (.kar)
+    GUITAR_PRO, // Guitar Pro 1-7 and Power Tab
+    MNX,       // MNX JSON, schema 27; import only (.mnx or recognised JSON content)
 };
 
 std::string_view to_string(Format format) noexcept;
@@ -52,7 +52,7 @@ struct CaptureOptions {
 };
 
 struct ExportOptions {
-    Format format = Format::Mscz;
+    Format format = Format::MSCZ;
     bool midi_expand_repeats = true;
     bool midi_rpns = true;
     // Master by default; an excerpt is exported as an independent score.
@@ -72,7 +72,7 @@ struct ExportOutput {
 // y and height span the system for measures, and height spans it for segments.
 // Segment x/y preserve the legacy truncation to integer units. IDs are local to
 // this result, unrelated to ElementId. Page indices are zero-based.
-enum struct PositionKind { Measure, Segment };
+enum struct PositionKind { MEASURE, SEGMENT };
 
 struct PositionElement {
     std::int32_t id = 0;
@@ -108,9 +108,9 @@ inline constexpr std::uint64_t position_capture_index_bound(std::uint64_t max_by
 
 // What render() draws.
 enum struct RenderFormat {
-    Pdf, // one document holding the requested pages
-    Png, // one image per page
-    Svg, // one drawing per page
+    PDF, // one document holding the requested pages
+    PNG, // one image per page
+    SVG, // one drawing per page
 };
 
 std::string_view to_string(RenderFormat format) noexcept;
@@ -124,7 +124,7 @@ inline constexpr std::int64_t max_render_pixels = 64'000'000;
 
 struct RenderOptions {
     ScoreSel score;
-    RenderFormat format = RenderFormat::Pdf;
+    RenderFormat format = RenderFormat::PDF;
     // Inclusive, 0-based page range. Any negative last_page means the last page.
     std::int32_t first_page = 0;
     std::int32_t last_page = -1;

@@ -2,6 +2,18 @@
 // Bounded, transactional DOM pitch editing for the live engraving score.
 #include "score_edit.h"
 
+#include <algorithm>
+#include <cstddef>
+#include <functional>
+#include <map>
+#include <set>
+#include <stdexcept>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
+#include <vector>
+
 #include "engraving/dom/chord.h"
 #include "engraving/dom/engravingobject.h"
 #include "engraving/dom/excerpt.h"
@@ -19,23 +31,11 @@
 #include "engraving/dom/spannermap.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/tie.h"
-#include "engraving/types/fraction.h"
 #include "engraving/editing/editnote.h"
 #include "engraving/editing/transaction/undostack.h"
 #include "engraving/editing/transpose.h"
 #include "engraving/infrastructure/eid.h"
-
-#include <algorithm>
-#include <cstddef>
-#include <functional>
-#include <map>
-#include <set>
-#include <stdexcept>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <utility>
-#include <vector>
+#include "engraving/types/fraction.h"
 
 namespace music {
 using namespace mu::engraving;
@@ -175,8 +175,7 @@ bool has_dirty_version_chrome(const MasterScore *score) {
     return false;
 }
 
-class ScoreCommandGuard {
-public:
+struct ScoreCommandGuard {
     explicit ScoreCommandGuard(MasterScore *score) : score_(score) {}
 
     ~ScoreCommandGuard() {

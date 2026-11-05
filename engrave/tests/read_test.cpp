@@ -139,11 +139,11 @@ TEST(Read, InstrumentLabelNumberFlags500) {
         EXPECT_EQ(label.showNumberShort(), short_flag);
     };
     const auto check_roundtrip = [&](const std::string &xml, bool long_flag, bool short_flag) {
-        auto document = g_engine->open(as_bytes(xml), {.format = engrave::Format::Mscx});
+        auto document = g_engine->open(as_bytes(xml), {.format = engrave::Format::MSCX});
         ASSERT_TRUE(document) << document.error().message;
         check_flags(**document, long_flag, short_flag);
-        for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
-            SCOPED_TRACE(format == engrave::Format::Mscx ? "MSCX" : "MSCZ");
+        for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
+            SCOPED_TRACE(format == engrave::Format::MSCX ? "MSCX" : "MSCZ");
             const auto saved = (*document)->export_score({.format = format, .native_version = "5.00"});
             ASSERT_TRUE(saved) << saved.error().message;
             auto reopened = g_engine->open(*saved, {.format = format});
@@ -187,7 +187,7 @@ TEST(Export470, SelectedExcerptIsStandaloneAndBounded) {
     auto selected = engrave::select_score(master_of(*document), selection);
     ASSERT_TRUE(selected);
     const auto expected = music::semantic_dump(&master_of(*document))["excerpts"][0]["score"];
-    for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+    for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
         auto default_bytes = document->export_score({.format = format, .score = selection});
         auto explicit_bytes = document->export_score({.format = format, .score = selection, .native_version = "5.00"});
         ASSERT_TRUE(default_bytes);
@@ -205,13 +205,13 @@ TEST(Export470, SelectedExcerptIsStandaloneAndBounded) {
         options.capture.max_bytes = result->bytes.size() - 1;
         const auto limited = document->export_score_with_warnings(options);
         ASSERT_FALSE(limited);
-        EXPECT_EQ(limited.error().code, ErrorCode::ResourceLimit);
+        EXPECT_EQ(limited.error().code, ErrorCode::RESOURCE_LIMIT);
     }
     // Selection still goes through the structural guard.
     ASSERT_TRUE(document->edit({{engrave::SetStyle{selection, "staffDistance", 9.0}}}));
     auto refused = document->export_score_with_warnings({.score = selection, .native_version = "4.70"});
     ASSERT_FALSE(refused);
-    EXPECT_EQ(refused.error().code, ErrorCode::Unsupported);
+    EXPECT_EQ(refused.error().code, ErrorCode::UNSUPPORTED);
     ASSERT_FALSE(refused.error().export_warnings.empty());
     EXPECT_EQ(refused.error().export_warnings.front().code, "B470_UNSUPPORTED_FEATURE");
 }
@@ -235,12 +235,12 @@ TEST(Export470, WarningIdentifiersAreStableAndDistinct) {
 TEST(Export470, SelectsVersionsAndPreservesTheDefaultWriter) {
     auto document = open_path(write470_fixture());
     ASSERT_TRUE(document);
-    for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+    for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
         auto tick = std::time(nullptr) / 2;
         auto original = document->export_score({.format = format});
         auto explicit_500 = document->export_score_with_warnings({.format = format, .native_version = "5.00"});
         // ZIP timestamps have two-second precision, as in the existing capture tests.
-        for (int attempt = 0; attempt < 2 && format == engrave::Format::Mscz && tick != std::time(nullptr) / 2; ++attempt) {
+        for (int attempt = 0; attempt < 2 && format == engrave::Format::MSCZ && tick != std::time(nullptr) / 2; ++attempt) {
             tick = std::time(nullptr) / 2;
             original = document->export_score({.format = format});
             explicit_500 = document->export_score_with_warnings({.format = format, .native_version = "5.00"});
@@ -251,19 +251,19 @@ TEST(Export470, SelectsVersionsAndPreservesTheDefaultWriter) {
         EXPECT_EQ(*original, explicit_500->bytes);
         const auto invalid = document->export_score_with_warnings({.format = format, .native_version = "4.71"});
         ASSERT_FALSE(invalid);
-        EXPECT_EQ(invalid.error().code, ErrorCode::Unsupported);
+        EXPECT_EQ(invalid.error().code, ErrorCode::UNSUPPORTED);
         EXPECT_NE(invalid.error().message.find("4.71"), std::string::npos);
     }
-    const auto non_native = document->export_score_with_warnings({.format = engrave::Format::MusicXml, .native_version = "4.70"});
+    const auto non_native = document->export_score_with_warnings({.format = engrave::Format::MUSIC_XML, .native_version = "4.70"});
     ASSERT_FALSE(non_native);
-    EXPECT_EQ(non_native.error().code, ErrorCode::Unsupported);
+    EXPECT_EQ(non_native.error().code, ErrorCode::UNSUPPORTED);
 }
 
 TEST(Export470, ConvertsInstrumentNamesWithoutWarnings) {
     auto document = open_path(write470_fixture());
     ASSERT_TRUE(document);
     const auto revision = document->revision();
-    const auto xml = document->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
+    const auto xml = document->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
     if (!xml) {
         for (const auto &w : xml.error().export_warnings) ADD_FAILURE() << w.code << ": " << w.message;
         FAIL() << xml.error().message;
@@ -274,38 +274,38 @@ TEST(Export470, ConvertsInstrumentNamesWithoutWarnings) {
     EXPECT_EQ(text.find("<InstrumentLabel>"), std::string::npos);
     EXPECT_NE(text.find("<longName>Piano</longName>"), std::string::npos);
     EXPECT_NE(text.find("<shortName>Pno.</shortName>"), std::string::npos);
-    const auto archive = document->export_score_with_warnings({.format = engrave::Format::Mscz, .native_version = "4.70"});
+    const auto archive = document->export_score_with_warnings({.format = engrave::Format::MSCZ, .native_version = "4.70"});
     if (!archive) FAIL() << archive.error().message;
     EXPECT_TRUE(archive->warnings.empty());
-    const auto reopened = g_engine->open(archive->bytes, {.format = engrave::Format::Mscz});
+    const auto reopened = g_engine->open(archive->bytes, {.format = engrave::Format::MSCZ});
     ASSERT_TRUE(reopened);
     EXPECT_EQ(document->revision(), revision);
-    const auto legacy = document->export_score({.format = engrave::Format::Mscx, .native_version = "4.70"});
+    const auto legacy = document->export_score({.format = engrave::Format::MSCX, .native_version = "4.70"});
     ASSERT_TRUE(legacy);
     const auto bounded =
-        document->export_score_with_warnings({.format = engrave::Format::Mscx,
+        document->export_score_with_warnings({.format = engrave::Format::MSCX,
                                               .capture = {.max_bytes = xml->bytes.size() + 1, .max_working_bytes = 16 * 1024 * 1024},
                                               .native_version = "4.70"});
     ASSERT_TRUE(bounded);
     EXPECT_EQ(bounded->bytes, xml->bytes);
     EXPECT_TRUE(bounded->warnings.empty());
     const auto too_small = document->export_score_with_warnings(
-        {.format = engrave::Format::Mscx, .capture = {.max_bytes = 1024, .max_working_bytes = 16 * 1024 * 1024}, .native_version = "4.70"});
+        {.format = engrave::Format::MSCX, .capture = {.max_bytes = 1024, .max_working_bytes = 16 * 1024 * 1024}, .native_version = "4.70"});
     ASSERT_FALSE(too_small);
-    EXPECT_EQ(too_small.error().code, ErrorCode::ResourceLimit);
+    EXPECT_EQ(too_small.error().code, ErrorCode::RESOURCE_LIMIT);
     const auto stopped = document->export_score_with_warnings(
-        {.format = engrave::Format::Mscz, .capture = {.cancelled = [] { return true; }}, .native_version = "4.70"});
+        {.format = engrave::Format::MSCZ, .capture = {.cancelled = [] { return true; }}, .native_version = "4.70"});
     ASSERT_FALSE(stopped);
-    EXPECT_EQ(stopped.error().code, ErrorCode::Cancelled);
+    EXPECT_EQ(stopped.error().code, ErrorCode::CANCELLED);
 }
 
 TEST(Export470, InterruptsConversionAndSerializationAndRecovers) {
     using Progress = engrave::testing::Write470Progress;
     auto document = open_path(write470_fixture());
     ASSERT_TRUE(document);
-    const auto baseline = document->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
+    const auto baseline = document->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
     ASSERT_TRUE(baseline);
-    for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+    for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
         for (auto stage : {Progress::Stage::Converting, Progress::Stage::Serializing}) {
             Progress observed;
             const auto result =
@@ -321,7 +321,7 @@ TEST(Export470, InterruptsConversionAndSerializationAndRecovers) {
                                                                       }},
                                                       .native_version = "4.70"});
             ASSERT_FALSE(result);
-            EXPECT_EQ(result.error().code, ErrorCode::Cancelled);
+            EXPECT_EQ(result.error().code, ErrorCode::CANCELLED);
             EXPECT_EQ(observed.stage, stage);
             EXPECT_GE(observed.units, 2u);
             EXPECT_EQ(engrave::testing::write470_progress().stage, Progress::Stage::None);
@@ -351,10 +351,10 @@ TEST(Export470, InterruptsConversionAndSerializationAndRecovers) {
                                                                                .max_working_bytes = allowance},
                                                                    .native_version = "4.70"});
         ASSERT_FALSE(limited);
-        EXPECT_EQ(limited.error().code, ErrorCode::ResourceLimit);
+        EXPECT_EQ(limited.error().code, ErrorCode::RESOURCE_LIMIT);
         EXPECT_EQ(last.stage, Progress::Stage::Serializing);
         EXPECT_GE(last.units, 2u);
-        const auto recovery = document->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
+        const auto recovery = document->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
         ASSERT_TRUE(recovery);
         EXPECT_EQ(recovery->bytes, baseline->bytes);
     }
@@ -373,7 +373,7 @@ TEST(Export470, ConvertsPageLocksWithStableObjectWarnings) {
         second.replace(pos, std::char_traits<char>::length(from), to);
     }
     source.insert(end + std::string_view("</Measure>").size(), second);
-    auto opened = g_engine->open(as_bytes(source), {.format = engrave::Format::Mscx});
+    auto opened = g_engine->open(as_bytes(source), {.format = engrave::Format::MSCX});
     ASSERT_TRUE(opened);
     auto document = std::move(*opened);
     auto &master = master_of(*document);
@@ -400,7 +400,7 @@ TEST(Export470, ConvertsPageLocksWithStableObjectWarnings) {
     } remove_lock{master, &lock, &next_lock};
 
     for (int repeat = 0; repeat != 2; ++repeat) {
-        const auto result = document->export_score_with_warnings({.format = engrave::Format::Mscz, .native_version = "4.70"});
+        const auto result = document->export_score_with_warnings({.format = engrave::Format::MSCZ, .native_version = "4.70"});
         ASSERT_TRUE(result);
         ASSERT_EQ(result->warnings.size(), 2u);
         EXPECT_EQ(result->warnings[0].code, "B470_PAGE_LOCK_DROPPED");
@@ -419,9 +419,9 @@ TEST(Export470, RefusesANonNeutralFiveOnlyStyle) {
     auto &master = master_of(*document);
     const auto score_id = engrave::from_engine(master.eid());
     master.style().set(mu::engraving::Sid::minSystemDistance, mu::engraving::Spatium(99.0));
-    const auto result = document->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
+    const auto result = document->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
     ASSERT_FALSE(result);
-    EXPECT_EQ(result.error().code, ErrorCode::Unsupported);
+    EXPECT_EQ(result.error().code, ErrorCode::UNSUPPORTED);
     ASSERT_EQ(result.error().export_warnings.size(), 1u);
     const auto &warning = result.error().export_warnings.front();
     EXPECT_EQ(warning.code, "B470_UNSUPPORTED_FEATURE");
@@ -437,9 +437,9 @@ TEST(Export470, DeduplicatesUnmappedStylesWithoutPublishing) {
     auto &master = master_of(*document);
     master.style().set(mu::engraving::Sid::minSystemDistance, mu::engraving::Spatium(99.0));
     master.style().set(mu::engraving::Sid::maxSystemDistance, mu::engraving::Spatium(100.0));
-    const auto result = document->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
+    const auto result = document->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
     ASSERT_FALSE(result);
-    EXPECT_EQ(result.error().code, ErrorCode::Unsupported);
+    EXPECT_EQ(result.error().code, ErrorCode::UNSUPPORTED);
     ASSERT_EQ(result.error().export_warnings.size(), 1u);
     EXPECT_EQ(result.error().export_warnings.front().code, "B470_UNSUPPORTED_FEATURE");
     EXPECT_NE(result.error().message.find("minSystemDistance"), std::string::npos);
@@ -450,12 +450,12 @@ TEST(Export470, StaveLabelsSurviveDefaultExportAndReopen) {
     auto document = open_path(write470_fixture().parent_path() / "stave_labels.source.mscx");
     ASSERT_TRUE(document);
     for (int pass = 0; pass < 2; ++pass) {
-        auto saved = document->export_score({.format = engrave::Format::Mscx});
+        auto saved = document->export_score({.format = engrave::Format::MSCX});
         ASSERT_TRUE(saved);
         const std::string text(reinterpret_cast<const char *>(saved->data()), saved->size());
         for (auto value : {"<StaveSharingLabel>", "<eid>H_H</eid>", "<eid>I_I</eid>", "Players 1", "Players 2"})
             EXPECT_NE(text.find(value), std::string::npos) << value;
-        const auto downgraded = document->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
+        const auto downgraded = document->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
         ASSERT_TRUE(downgraded);
         const auto &warnings = downgraded->warnings;
         ASSERT_EQ(warnings.size(), 2u);
@@ -465,7 +465,7 @@ TEST(Export470, StaveLabelsSurviveDefaultExportAndReopen) {
         EXPECT_EQ(warnings[1].code, "B470_STAVE_SHARING_LABEL_DROPPED");
         EXPECT_EQ(warnings[0].object->id, "H_H");
         EXPECT_EQ(warnings[1].object->id, "I_I");
-        auto reopened = g_engine->open(*saved, {.format = engrave::Format::Mscx});
+        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MSCX});
         ASSERT_TRUE(reopened);
         document = std::move(*reopened);
     }
@@ -479,12 +479,12 @@ TEST(Export470, PitchEditsKeepPairedTiesAndRefuseOneEnd) {
     ASSERT_TRUE(first);
     ASSERT_TRUE(last);
     ASSERT_TRUE(document->edit({{engrave::SetPitch{*first, 62, 16}}}));
-    auto rejected = document->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
+    auto rejected = document->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
     ASSERT_FALSE(rejected);
     ASSERT_EQ(rejected.error().export_warnings.size(), 1u);
     EXPECT_EQ(rejected.error().export_warnings[0].code, "B470_INVALID_TIE");
     ASSERT_TRUE(document->edit({{engrave::SetPitch{*last, 62, 16}}}));
-    auto paired = document->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
+    auto paired = document->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
     ASSERT_TRUE(paired) << paired.error().message;
     EXPECT_TRUE(paired->warnings.empty());
 }
@@ -493,7 +493,7 @@ TEST(Export470, ConvertsConnectionsAndRefusesUnequalPitches) {
     for (auto name : {"ties", "ties_paired_edit", "spanners", "brackets"}) {
         auto document = open_path(write470_fixture().parent_path() / (std::string(name) + ".mscx"));
         ASSERT_TRUE(document);
-        const auto result = document->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
+        const auto result = document->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
         if (!result)
             for (const auto &warning : result.error().export_warnings) ADD_FAILURE() << warning.message;
         ASSERT_TRUE(result) << result.error().message;
@@ -501,7 +501,7 @@ TEST(Export470, ConvertsConnectionsAndRefusesUnequalPitches) {
     }
     auto document = open_path(write470_fixture().parent_path() / "ties_mismatched.mscx");
     ASSERT_TRUE(document);
-    const auto result = document->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
+    const auto result = document->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
     ASSERT_FALSE(result);
     ASSERT_EQ(result.error().export_warnings.size(), 1u);
     EXPECT_EQ(result.error().export_warnings[0].code, "B470_INVALID_TIE");
@@ -511,7 +511,7 @@ TEST(Export470, ConvertsConnectionsAndRefusesUnequalPitches) {
 TEST(Export470, HiddenPartTiesAreRefusedInBothFormats) {
     auto document = open_path(write470_fixture().parent_path() / "ties_hidden.mscx");
     ASSERT_TRUE(document);
-    for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+    for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
         auto result = document->export_score_with_warnings({.format = format, .native_version = "4.70"});
         ASSERT_FALSE(result);
         ASSERT_EQ(result.error().export_warnings.size(), 1u);
@@ -525,7 +525,7 @@ class WarningIdentity : public testing::TestWithParam<std::optional<engrave::Exp
 TEST_P(WarningIdentity, InvalidArgumentWithoutArtifact) {
     auto document = open_path(write470_fixture());
     ASSERT_TRUE(document);
-    for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+    for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
         engrave::ExportWarning warning{"B470_UNSUPPORTED_FEATURE", "test invalid identity", std::nullopt};
         warning.object = GetParam();
         engrave::write470::set_warning_identity_test_fault(std::move(warning));
@@ -533,7 +533,7 @@ TEST_P(WarningIdentity, InvalidArgumentWithoutArtifact) {
         // The failed Result has no ExportOutput/bytes alternative: no artifact
         // can be passed to the host for publication, nor an anonymous warning.
         ASSERT_FALSE(result);
-        EXPECT_EQ(result.error().code, ErrorCode::InvalidArgument);
+        EXPECT_EQ(result.error().code, ErrorCode::INVALID_ARGUMENT);
         EXPECT_TRUE(result.error().export_warnings.empty());
         // Injection is consumed once; the same document still exports normally.
         EXPECT_TRUE(document->export_score_with_warnings({.format = format, .native_version = "4.70"}));
@@ -554,9 +554,9 @@ INSTANTIATE_TEST_SUITE_P(
 TEST(Export470, MissingTieIdNamesTheStartNote) {
     auto source = read_text(write470_fixture().parent_path() / "ties_mismatched.mscx");
     source.erase(source.find("<eid>H_H</eid>"), std::string("<eid>H_H</eid>").size());
-    auto document = g_engine->open(as_bytes(source), {.format = engrave::Format::Mscx});
+    auto document = g_engine->open(as_bytes(source), {.format = engrave::Format::MSCX});
     ASSERT_TRUE(document);
-    auto result = (*document)->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
+    auto result = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
     ASSERT_FALSE(result);
     ASSERT_EQ(result.error().export_warnings.size(), 1u);
     EXPECT_EQ(result.error().export_warnings[0].object, (engrave::ExportWarningObject{"note", "G_G"}));
@@ -564,8 +564,8 @@ TEST(Export470, MissingTieIdNamesTheStartNote) {
     auto &master = master_of(**document);
     for (auto *object : engrave::document_objects(master))
         if (object->eid().isValid()) master.eidRegister()->removeItem(object);
-    auto first = (*document)->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
-    auto second = (*document)->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
+    auto first = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
+    auto second = (*document)->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
     ASSERT_FALSE(first);
     ASSERT_FALSE(second);
     EXPECT_EQ(first.error().export_warnings[0].object, second.error().export_warnings[0].object);
@@ -586,7 +586,7 @@ TEST(Export470, HiddenExcerptAndMasterStavesAreBothChecked) {
         tie->startNote()->staff()->setVisible(false);
     }
     ASSERT_EQ(ties, 4u);
-    for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+    for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
         auto result = document->export_score_with_warnings({.format = format, .native_version = "4.70"});
         ASSERT_FALSE(result);
         ASSERT_EQ(result.error().export_warnings.size(), ties);
@@ -598,7 +598,7 @@ TEST(Export470, EnabledFluteGroupingIsWarnedAndReopensDisabled) {
     auto document = open_path(write470_fixture().parent_path() / "four_flutes.mscx");
     ASSERT_TRUE(document);
     ASSERT_TRUE(master_of(*document).style().styleB(mu::engraving::Sid::windsNameByGroup));
-    for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+    for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
         auto result = document->export_score_with_warnings({.format = format, .native_version = "4.70"});
         ASSERT_TRUE(result) << result.error().message;
         ASSERT_EQ(result->warnings.size(), 4u);
@@ -614,12 +614,12 @@ TEST(Export470, EnabledFluteGroupingIsWarnedAndReopensDisabled) {
 TEST(Export470, PartNumericIdsSurviveButPartEidsHaveNoLegacyField) {
     auto document = open_path(write470_fixture().parent_path() / "shared_parts.source.mscx");
     ASSERT_TRUE(document);
-    auto result = document->export_score_with_warnings({.format = engrave::Format::Mscx, .native_version = "4.70"});
+    auto result = document->export_score_with_warnings({.format = engrave::Format::MSCX, .native_version = "4.70"});
     ASSERT_TRUE(result);
     const std::string xml(reinterpret_cast<const char *>(result->bytes.data()), result->bytes.size());
     for (const auto *id : {"1", "2", "3", "4"}) EXPECT_NE(xml.find(std::string("<Part id=\"") + id + "\">"), std::string::npos);
     for (const auto *id : {"P_P", "Q_Q", "R_R", "S_S"}) EXPECT_EQ(xml.find(std::string("<eid>") + id + "</eid>"), std::string::npos);
-    auto reopened = g_engine->open(result->bytes, {.format = engrave::Format::Mscx});
+    auto reopened = g_engine->open(result->bytes, {.format = engrave::Format::MSCX});
     ASSERT_TRUE(reopened);
     EXPECT_EQ(master_of(**reopened).parts().size(), 4u);
 }
@@ -853,7 +853,7 @@ TEST(Read, EditRefreshesLayoutAfterAFontIsAdded) {
     const auto frame = xml.find("<height>10</height>");
     ASSERT_NE(frame, std::string::npos);
     xml.insert(frame, "<Text><style>title</style><text><font face=\"Petaluma Script\"/>MMMWWWiii012345</text></Text>");
-    auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::Mscx});
+    auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::MSCX});
     ASSERT_TRUE(opened);
     auto &document = **opened;
     auto *title = master_of(document).getText(mu::engraving::TextStyleType::TITLE);
@@ -877,11 +877,11 @@ TEST(Read, PositionsExpandRepeatsInRawPageUnitsWithoutEditing) {
 <note><pitch><step>C</step><octave>4</octave></pitch><duration>4</duration><type>whole</type></note>
 <barline location="right"><repeat direction="backward"/></barline></measure></part>
 </score-partwise>)";
-    auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::MusicXml});
+    auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::MUSIC_XML});
     ASSERT_TRUE(opened);
     auto &document = **opened;
     const auto revision = document.revision();
-    for (const auto kind : {engrave::PositionKind::Measure, engrave::PositionKind::Segment}) {
+    for (const auto kind : {engrave::PositionKind::MEASURE, engrave::PositionKind::SEGMENT}) {
         const auto positions = document.positions(kind);
         ASSERT_TRUE(positions);
         ASSERT_EQ(positions->elements.size(), 1u);
@@ -896,7 +896,7 @@ TEST(Read, PositionsExpandRepeatsInRawPageUnitsWithoutEditing) {
         EXPECT_LT(positions->page_width, 11000.0);
         EXPECT_GT(positions->page_height, 12000.0);
         EXPECT_GT(positions->elements[0].sy, 0.0);
-        if (kind == engrave::PositionKind::Segment) {
+        if (kind == engrave::PositionKind::SEGMENT) {
             EXPECT_EQ(positions->elements[0].x, std::trunc(positions->elements[0].x));
             EXPECT_EQ(positions->elements[0].y, std::trunc(positions->elements[0].y));
         }
@@ -912,7 +912,7 @@ TEST(Read, PositionsUsePageLocalCoordinatesOnLaterPages) {
     const auto pages = document->page_count();
     ASSERT_TRUE(pages);
     ASSERT_GE(*pages, 2);
-    const auto positions = document->positions(engrave::PositionKind::Measure);
+    const auto positions = document->positions(engrave::PositionKind::MEASURE);
     ASSERT_TRUE(positions);
     EXPECT_NEAR(positions->page_width, 9921.264, 1.0);
     EXPECT_NEAR(positions->page_height, 1417.32, 1.0);
@@ -931,14 +931,14 @@ TEST(Read, PositionsUsePageLocalCoordinatesOnLaterPages) {
 TEST(Read, PositionCaptureLimitsAndCancellation) {
     auto document = open_path(corpus_file({".mscx"}));
     ASSERT_TRUE(document);
-    for (const auto kind : {engrave::PositionKind::Measure, engrave::PositionKind::Segment}) {
+    for (const auto kind : {engrave::PositionKind::MEASURE, engrave::PositionKind::SEGMENT}) {
         const auto original = document->positions(kind);
         ASSERT_TRUE(original);
         ASSERT_FALSE(original->elements.empty());
         const auto size = engrave::position_payload_bytes(*original);
         ASSERT_GT(size, 0u);
         const auto rejected = document->positions(kind, {}, {.max_bytes = size - 1});
-        expect_code(rejected, ErrorCode::ResourceLimit, "position payload limit");
+        expect_code(rejected, ErrorCode::RESOURCE_LIMIT, "position payload limit");
         const auto bounded = document->positions(kind, {}, {.max_bytes = size + 1});
         ASSERT_TRUE(bounded);
         EXPECT_EQ(bounded->page_width, original->page_width);
@@ -961,7 +961,7 @@ TEST(Read, PositionCaptureLimitsAndCancellation) {
         }
         int checks = 0;
         const auto cancelled = document->positions(kind, {}, {.cancelled = [&] { return ++checks == 3; }});
-        expect_code(cancelled, ErrorCode::Cancelled, "cancelled position capture");
+        expect_code(cancelled, ErrorCode::CANCELLED, "cancelled position capture");
         EXPECT_EQ(checks, 3);
     }
 }
@@ -976,7 +976,7 @@ TEST(Read, ExcerptPositionsMatchTheLegacyWriterAndSelectionErrors) {
     ASSERT_FALSE(outline->excerpts.empty());
     const engrave::ScoreSel excerpt{outline->excerpts.front().id};
     const auto revision = document->revision();
-    for (const auto kind : {engrave::PositionKind::Measure, engrave::PositionKind::Segment}) {
+    for (const auto kind : {engrave::PositionKind::MEASURE, engrave::PositionKind::SEGMENT}) {
         const auto positions = document->positions(kind, excerpt);
         ASSERT_TRUE(positions);
         ASSERT_FALSE(positions->elements.empty());
@@ -984,7 +984,7 @@ TEST(Read, ExcerptPositionsMatchTheLegacyWriterAndSelectionErrors) {
         ASSERT_TRUE(pages);
         auto selected = engrave::select_score(master_of(*document), excerpt);
         ASSERT_TRUE(selected);
-        const auto legacy = music::score_positions(*selected, kind == engrave::PositionKind::Segment);
+        const auto legacy = music::score_positions(*selected, kind == engrave::PositionKind::SEGMENT);
         EXPECT_DOUBLE_EQ(positions->page_width, legacy.at("pageSize").at("width").get<double>());
         EXPECT_DOUBLE_EQ(positions->page_height, legacy.at("pageSize").at("height").get<double>());
         EXPECT_NEAR(positions->page_width, 9921.2598, 0.1);
@@ -1002,7 +1002,7 @@ TEST(Read, ExcerptPositionsMatchTheLegacyWriterAndSelectionErrors) {
             EXPECT_DOUBLE_EQ(element.sx, expected.at("sx").get<double>());
             EXPECT_DOUBLE_EQ(element.sy, expected.at("sy").get<double>());
             EXPECT_EQ(element.page, expected.at("page").get<int>());
-            if (kind == engrave::PositionKind::Segment) {
+            if (kind == engrave::PositionKind::SEGMENT) {
                 EXPECT_EQ(element.x, std::trunc(element.x));
                 EXPECT_EQ(element.y, std::trunc(element.y));
             }
@@ -1014,21 +1014,21 @@ TEST(Read, ExcerptPositionsMatchTheLegacyWriterAndSelectionErrors) {
     }
     EXPECT_EQ(document->revision(), revision);
     const ElementId missing{0x1234, 0x5678};
-    expect_code(document->positions(engrave::PositionKind::Measure, {missing}), ErrorCode::NotFound, "missing score");
+    expect_code(document->positions(engrave::PositionKind::MEASURE, {missing}), ErrorCode::NOT_FOUND, "missing score");
     const auto notes = document->query({.types = {"Note"}, .limit = 1});
     ASSERT_TRUE(notes);
     ASSERT_FALSE(notes->elements.empty());
-    expect_code(document->positions(engrave::PositionKind::Measure, {notes->elements.front().id}), ErrorCode::InvalidArgument,
+    expect_code(document->positions(engrave::PositionKind::MEASURE, {notes->elements.front().id}), ErrorCode::INVALID_ARGUMENT,
                 "note is not a score");
-    expect_code(document->positions(static_cast<engrave::PositionKind>(99)), ErrorCode::InvalidArgument, "unknown kind");
+    expect_code(document->positions(static_cast<engrave::PositionKind>(99)), ErrorCode::INVALID_ARGUMENT, "unknown kind");
 
     // Keep the removed score alive in the engine's id registry while checking
     // that it is no longer reachable from the document, then restore ownership.
     MasterScore &master = master_of(*document);
     auto *removed = master.excerpts().front();
     master.removeExcerpt(removed);
-    expect_code(document->outline(excerpt), ErrorCode::StaleHandle, "stale outline");
-    expect_code(document->positions(engrave::PositionKind::Measure, excerpt), ErrorCode::StaleHandle, "stale score");
+    expect_code(document->outline(excerpt), ErrorCode::STALE_HANDLE, "stale outline");
+    expect_code(document->positions(engrave::PositionKind::MEASURE, excerpt), ErrorCode::STALE_HANDLE, "stale score");
     master.addExcerpt(removed);
 }
 
@@ -1036,12 +1036,12 @@ TEST(Read, PositionsRefuseAPoisonedDocument) {
     auto document = open_path(corpus_file({".mscx"}));
     ASSERT_TRUE(document);
     auto &hooks = engrave::DocumentAccess::edit_hooks(*document);
-    hooks.policy = engrave::api::Policy::Snapshot;
+    hooks.policy = engrave::api::Policy::SNAPSHOT;
     hooks.fail_restore = true;
     hooks.before_step = [](std::size_t) { throw std::runtime_error("injected"); };
     EXPECT_ANY_THROW((void) document->edit({{engrave::SetStyle{{}, "staffDistance", 9.0}}}));
     hooks = {};
-    expect_code(document->positions(engrave::PositionKind::Measure), ErrorCode::Poisoned, "poisoned document");
+    expect_code(document->positions(engrave::PositionKind::MEASURE), ErrorCode::POISONED, "poisoned document");
 }
 
 TEST(Read, ExcerptExportsReopenAsIndependentScores) {
@@ -1075,11 +1075,11 @@ TEST(Read, ExcerptExportsReopenAsIndependentScores) {
     };
     const auto revision = document->revision();
     for (const auto format :
-         {engrave::Format::Mscx, engrave::Format::Mscz, engrave::Format::MusicXml, engrave::Format::Mxl, engrave::Format::Midi}) {
+         {engrave::Format::MSCX, engrave::Format::MSCZ, engrave::Format::MUSIC_XML, engrave::Format::MXL, engrave::Format::MIDI}) {
         SCOPED_TRACE(engrave::to_string(format));
         const auto exported = document->export_score({.format = format, .score = selection});
         ASSERT_TRUE(exported);
-        if (format == engrave::Format::Mscx) {
+        if (format == engrave::Format::MSCX) {
             const std::string xml(reinterpret_cast<const char *>(exported->data()), exported->size());
             EXPECT_EQ(xml.find("<linkedTo>"), std::string::npos) << "this one-staff excerpt must not refer to master-score elements";
             const auto bounded =
@@ -1087,7 +1087,7 @@ TEST(Read, ExcerptExportsReopenAsIndependentScores) {
             ASSERT_TRUE(bounded);
             EXPECT_EQ(*bounded, *exported);
             expect_code(document->export_score({.format = format, .score = selection, .capture = {.max_bytes = exported->size() - 1}}),
-                        ErrorCode::ResourceLimit, "standalone excerpt output limit");
+                        ErrorCode::RESOURCE_LIMIT, "standalone excerpt output limit");
         }
         const auto reopened = g_engine->open(*exported, {.format = format});
         ASSERT_TRUE(reopened) << reopened.error().message;
@@ -1095,7 +1095,7 @@ TEST(Read, ExcerptExportsReopenAsIndependentScores) {
         ASSERT_TRUE(part);
         EXPECT_EQ(part->parts.size(), 1u);
         EXPECT_TRUE(part->excerpts.empty());
-        if (format != engrave::Format::Midi) {
+        if (format != engrave::Format::MIDI) {
             EXPECT_EQ(part->parts.front().name, source->parts.front().name);
             EXPECT_EQ(part->measure_count, source->measure_count);
             EXPECT_EQ(part->title, source->title);
@@ -1103,7 +1103,7 @@ TEST(Read, ExcerptExportsReopenAsIndependentScores) {
         const auto notes = (*reopened)->query({.types = {"Note"}, .props = {"pitch"}});
         ASSERT_TRUE(notes);
         EXPECT_EQ(pitches(*notes), pitches(*source_notes));
-        if (format == engrave::Format::Mscx || format == engrave::Format::Mscz) {
+        if (format == engrave::Format::MSCX || format == engrave::Format::MSCZ) {
             EXPECT_DOUBLE_EQ(master_of(**reopened).style().styleS(mu::engraving::Sid::staffDistance).val(), 9.0);
             EXPECT_EQ(master_of(**reopened).metaTag(u"workTitle"), master_of(*document).metaTag(u"workTitle"));
             EXPECT_EQ(master_of(**reopened).metaTag(u"partName").toStdString(), with_excerpt->excerpts.front().name);
@@ -1111,16 +1111,16 @@ TEST(Read, ExcerptExportsReopenAsIndependentScores) {
     }
     EXPECT_EQ(document->revision(), revision);
     const ElementId missing{0x1234, 0x5678};
-    expect_code(document->export_score({.format = engrave::Format::Mscz, .score = {missing}}), ErrorCode::NotFound,
+    expect_code(document->export_score({.format = engrave::Format::MSCZ, .score = {missing}}), ErrorCode::NOT_FOUND,
                 "missing excerpt export");
     const auto master_notes = document->query({.types = {"Note"}, .limit = 1});
     ASSERT_TRUE(master_notes);
     ASSERT_FALSE(master_notes->elements.empty());
-    expect_code(document->export_score({.format = engrave::Format::MusicXml, .score = {master_notes->elements.front().id}}),
-                ErrorCode::InvalidArgument, "note is not an excerpt");
+    expect_code(document->export_score({.format = engrave::Format::MUSIC_XML, .score = {master_notes->elements.front().id}}),
+                ErrorCode::INVALID_ARGUMENT, "note is not an excerpt");
     auto *removed = master_of(*document).excerpts().front();
     master_of(*document).removeExcerpt(removed);
-    expect_code(document->export_score({.format = engrave::Format::Mscz, .score = selection}), ErrorCode::StaleHandle,
+    expect_code(document->export_score({.format = engrave::Format::MSCZ, .score = selection}), ErrorCode::STALE_HANDLE,
                 "stale excerpt export");
     master_of(*document).addExcerpt(removed);
 }
@@ -1134,9 +1134,9 @@ TEST(Read, MscxMasterExportRetainsStyle) {
     ASSERT_TRUE(original);
     ASSERT_FALSE(original->excerpts.empty());
     ASSERT_TRUE(document->edit({{engrave::SetStyle{{}, "staffDistance", 9.0}}}));
-    const auto exported = document->export_score({.format = engrave::Format::Mscx});
+    const auto exported = document->export_score({.format = engrave::Format::MSCX});
     ASSERT_TRUE(exported);
-    const auto reopened = g_engine->open(*exported, {.format = engrave::Format::Mscx});
+    const auto reopened = g_engine->open(*exported, {.format = engrave::Format::MSCX});
     ASSERT_TRUE(reopened);
     EXPECT_DOUBLE_EQ(master_of(**reopened).style().styleS(mu::engraving::Sid::staffDistance).val(), 9.0);
     const auto outline = (*reopened)->outline();
@@ -1148,7 +1148,7 @@ TEST(Read, MscxMasterExportRetainsStyle) {
 TEST(Read, ScoreCaptureLimitsAndCancellation) {
     auto document = open_path(corpus_file({".mscx"}));
     ASSERT_TRUE(document);
-    for (const auto format : {engrave::Format::Mscx, engrave::Format::Mscz, engrave::Format::MusicXml, engrave::Format::Mxl}) {
+    for (const auto format : {engrave::Format::MSCX, engrave::Format::MSCZ, engrave::Format::MUSIC_XML, engrave::Format::MXL}) {
         SCOPED_TRACE(engrave::to_string(format));
         auto tick = std::time(nullptr) / 2;
         auto original = document->export_score({.format = format});
@@ -1159,7 +1159,7 @@ TEST(Read, ScoreCaptureLimitsAndCancellation) {
         // happened to straddle that boundary, so identical writers compare
         // exactly without masking any archive bytes.
         for (int attempt = 0;
-             attempt < 2 && (format == engrave::Format::Mscz || format == engrave::Format::Mxl) && tick != std::time(nullptr) / 2;
+             attempt < 2 && (format == engrave::Format::MSCZ || format == engrave::Format::MXL) && tick != std::time(nullptr) / 2;
              ++attempt) {
             tick = std::time(nullptr) / 2;
             original = document->export_score({.format = format});
@@ -1169,18 +1169,18 @@ TEST(Read, ScoreCaptureLimitsAndCancellation) {
         ASSERT_TRUE(bounded) << bounded.error().message;
         EXPECT_EQ(*bounded, *original);
         const auto rejected = document->export_score({.format = format, .capture = {.max_bytes = original->size() - 1}});
-        expect_code(rejected, ErrorCode::ResourceLimit, "score output limit");
+        expect_code(rejected, ErrorCode::RESOURCE_LIMIT, "score output limit");
         const auto workspace = document->export_score({.format = format, .capture = {.max_working_bytes = 64}});
-        expect_code(workspace, ErrorCode::ResourceLimit, "score workspace limit");
+        expect_code(workspace, ErrorCode::RESOURCE_LIMIT, "score workspace limit");
         int checks = 0;
         const auto cancelled = document->export_score({.format = format, .capture = {.cancelled = [&] { return ++checks == 20; }}});
-        expect_code(cancelled, ErrorCode::Cancelled, "cancelled score capture");
+        expect_code(cancelled, ErrorCode::CANCELLED, "cancelled score capture");
         EXPECT_EQ(checks, 20);
     }
-    expect_code(document->export_score({.format = engrave::Format::Midi, .capture = {.max_bytes = 64}}), ErrorCode::Unsupported,
+    expect_code(document->export_score({.format = engrave::Format::MIDI, .capture = {.max_bytes = 64}}), ErrorCode::UNSUPPORTED,
                 "bounded MIDI capture");
     int checks = 0;
-    EXPECT_THROW((void) document->export_score({.format = engrave::Format::Mscz, .capture = {.cancelled = [&]() -> bool {
+    EXPECT_THROW((void) document->export_score({.format = engrave::Format::MSCZ, .capture = {.cancelled = [&]() -> bool {
                                                                                      if (++checks == 20)
                                                                                          throw std::runtime_error(
                                                                                              "capture callback failure");
@@ -1188,32 +1188,32 @@ TEST(Read, ScoreCaptureLimitsAndCancellation) {
                                                                                  }}}),
                  std::runtime_error);
     EXPECT_EQ(checks, 20);
-    EXPECT_TRUE(document->export_score({.format = engrave::Format::Mscz}));
+    EXPECT_TRUE(document->export_score({.format = engrave::Format::MSCZ}));
 }
 
 TEST(Read, LargeScoreCaptureStopsBeforeMaterializingTheOutput) {
     auto document = open_path(corpus_file({".mscx"}));
     ASSERT_TRUE(document);
     master_of(*document).setMetaTag(u"workTitle", muse::String::fromStdString(std::string(512 * 1024, 'x')));
-    const auto rejected = document->export_score({.format = engrave::Format::Mscx, .capture = {.max_bytes = 1024}});
-    expect_code(rejected, ErrorCode::ResourceLimit, "large score output limit");
-    const auto success = document->export_score({.format = engrave::Format::Mscx});
+    const auto rejected = document->export_score({.format = engrave::Format::MSCX, .capture = {.max_bytes = 1024}});
+    expect_code(rejected, ErrorCode::RESOURCE_LIMIT, "large score output limit");
+    const auto success = document->export_score({.format = engrave::Format::MSCX});
     ASSERT_TRUE(success);
     ASSERT_GT(success->size(), 512u * 1024u);
-    const auto bounded = document->export_score({.format = engrave::Format::Mscx, .capture = {.max_bytes = success->size() + 1}});
+    const auto bounded = document->export_score({.format = engrave::Format::MSCX, .capture = {.max_bytes = success->size() + 1}});
     ASSERT_TRUE(bounded);
     EXPECT_EQ(*bounded, *success);
     auto tick = std::time(nullptr) / 2;
-    auto archive = document->export_score({.format = engrave::Format::Mscz});
+    auto archive = document->export_score({.format = engrave::Format::MSCZ});
     ASSERT_TRUE(archive);
     auto bounded_archive = document->export_score(
-        {.format = engrave::Format::Mscz, .capture = {.max_bytes = archive->size() + 1, .max_working_bytes = 16 * 1024 * 1024}});
+        {.format = engrave::Format::MSCZ, .capture = {.max_bytes = archive->size() + 1, .max_working_bytes = 16 * 1024 * 1024}});
     for (int attempt = 0; attempt < 2 && tick != std::time(nullptr) / 2; ++attempt) {
         tick = std::time(nullptr) / 2;
-        archive = document->export_score({.format = engrave::Format::Mscz});
+        archive = document->export_score({.format = engrave::Format::MSCZ});
         ASSERT_TRUE(archive);
         bounded_archive = document->export_score(
-            {.format = engrave::Format::Mscz, .capture = {.max_bytes = archive->size() + 1, .max_working_bytes = 16 * 1024 * 1024}});
+            {.format = engrave::Format::MSCZ, .capture = {.max_bytes = archive->size() + 1, .max_working_bytes = 16 * 1024 * 1024}});
     }
     ASSERT_TRUE(bounded_archive);
     EXPECT_EQ(*bounded_archive, *archive);
@@ -1228,7 +1228,7 @@ TEST(Read, StandaloneExcerptKeepsLinksBetweenItsOwnStaves) {
     ASSERT_TRUE(full);
     ASSERT_FALSE(full->excerpts.empty());
     const engrave::ScoreSel selection{full->excerpts.front().id};
-    const auto exported = document->export_score({.format = engrave::Format::Mscx, .score = selection});
+    const auto exported = document->export_score({.format = engrave::Format::MSCX, .score = selection});
     ASSERT_TRUE(exported);
     const std::string xml(reinterpret_cast<const char *>(exported->data()), exported->size());
     std::set<std::string> seen;
@@ -1251,7 +1251,7 @@ TEST(Read, StandaloneExcerptKeepsLinksBetweenItsOwnStaves) {
         }
     }
     ASSERT_GT(links, 0u);
-    const auto reopened = g_engine->open(*exported, {.format = engrave::Format::Mscx});
+    const auto reopened = g_engine->open(*exported, {.format = engrave::Format::MSCX});
     ASSERT_TRUE(reopened);
     const auto outline = (*reopened)->outline();
     ASSERT_TRUE(outline);
@@ -1556,7 +1556,7 @@ TEST(Read, ExtremeTickRangesAndMeasureWindows) {
     ASSERT_GT(at_one, 0);
     EXPECT_EQ(narrow->total, static_cast<std::size_t>(at_one));
     std::swap(request.from_tick, request.to_tick);
-    expect_code(document->query(request), ErrorCode::InvalidArgument, "reversed extreme bounds");
+    expect_code(document->query(request), ErrorCode::INVALID_ARGUMENT, "reversed extreme bounds");
 
     request.from_tick = engrave::Fraction{1, 2};
     request.to_tick.reset();
@@ -1569,10 +1569,10 @@ TEST(Read, ExtremeTickRangesAndMeasureWindows) {
 
     for (const std::int64_t denominator : {std::int64_t{0}, std::int64_t{-1}, min}) {
         request.from_tick = engrave::Fraction{0, denominator};
-        expect_code(document->query(request), ErrorCode::InvalidArgument, "invalid lower denominator");
+        expect_code(document->query(request), ErrorCode::INVALID_ARGUMENT, "invalid lower denominator");
         request.from_tick.reset();
         request.to_tick = engrave::Fraction{0, denominator};
-        expect_code(document->query(request), ErrorCode::InvalidArgument, "invalid upper denominator");
+        expect_code(document->query(request), ErrorCode::INVALID_ARGUMENT, "invalid upper denominator");
         request.to_tick.reset();
     }
     const auto max32 = std::numeric_limits<std::int32_t>::max();
@@ -1581,7 +1581,7 @@ TEST(Read, ExtremeTickRangesAndMeasureWindows) {
          {std::pair{max32, std::int32_t{1}}, std::pair{max32, max32}, std::pair{min32, min32}, std::pair{std::int32_t{0}, min32}}) {
         request.first_measure = first;
         request.measure_count = count;
-        expect_code(document->query(request), ErrorCode::InvalidArgument, "out-of-range measure window");
+        expect_code(document->query(request), ErrorCode::INVALID_ARGUMENT, "out-of-range measure window");
     }
 }
 
@@ -1625,38 +1625,38 @@ TEST(Read, LimitsAreEnforced) {
 
     engrave::Query request;
     request.limit = 0;
-    expect_code(document->query(request), ErrorCode::InvalidArgument, "a limit of 0");
+    expect_code(document->query(request), ErrorCode::INVALID_ARGUMENT, "a limit of 0");
     request.limit = engrave::max_query_results + 1;
-    expect_code(document->query(request), ErrorCode::ResourceLimit, "a limit over the cap");
+    expect_code(document->query(request), ErrorCode::RESOURCE_LIMIT, "a limit over the cap");
     request.limit = engrave::max_query_results;
     request.types = {"NoSuchType"};
-    expect_code(document->query(request), ErrorCode::InvalidArgument, "an unknown type");
+    expect_code(document->query(request), ErrorCode::INVALID_ARGUMENT, "an unknown type");
     request.types = {};
     request.props = {"noSuchProperty"};
-    expect_code(document->query(request), ErrorCode::NotFound, "an unknown property name");
+    expect_code(document->query(request), ErrorCode::NOT_FOUND, "an unknown property name");
     request.props = {};
     request.staves = {99};
-    expect_code(document->query(request), ErrorCode::InvalidArgument, "a staff the score has not");
+    expect_code(document->query(request), ErrorCode::INVALID_ARGUMENT, "a staff the score has not");
     request.staves = {};
     request.voices = {4};
-    expect_code(document->query(request), ErrorCode::InvalidArgument, "a voice over 3");
+    expect_code(document->query(request), ErrorCode::INVALID_ARGUMENT, "a voice over 3");
     request.voices = {};
     request.first_measure = 0;
     request.measure_count = static_cast<std::int32_t>(engrave::max_query_measures) + 1;
-    expect_code(document->query(request), ErrorCode::InvalidArgument, "a window over the measure cap");
+    expect_code(document->query(request), ErrorCode::INVALID_ARGUMENT, "a window over the measure cap");
     request.measure_count = measures + 1;
-    expect_code(document->query(request), ErrorCode::InvalidArgument, "a window past the last measure");
+    expect_code(document->query(request), ErrorCode::INVALID_ARGUMENT, "a window past the last measure");
     request.measure_count.reset();
     request.first_measure = measures + 1;
-    expect_code(document->query(request), ErrorCode::InvalidArgument, "a window that starts past the end");
+    expect_code(document->query(request), ErrorCode::INVALID_ARGUMENT, "a window that starts past the end");
     request.first_measure.reset();
     request.from_tick = engrave::Fraction{1, 2};
     request.to_tick = engrave::Fraction{1, 4};
-    expect_code(document->query(request), ErrorCode::InvalidArgument, "a reversed tick range");
+    expect_code(document->query(request), ErrorCode::INVALID_ARGUMENT, "a reversed tick range");
     request.from_tick.reset();
     request.to_tick.reset();
     request.cursor = 100000;
-    expect_code(document->query(request), ErrorCode::InvalidArgument, "a cursor past the end");
+    expect_code(document->query(request), ErrorCode::INVALID_ARGUMENT, "a cursor past the end");
     request.cursor = 0;
 
     // A score with more elements than one query may report is a ResourceLimit, not a
@@ -1675,7 +1675,7 @@ TEST(Read, LimitsAreEnforced) {
     everything.types = {"Measure"};
     const auto tooMany = document->query(everything);
     ASSERT_FALSE(tooMany) << "a query over " << everything.types.front() << " elements succeeded";
-    EXPECT_EQ(tooMany.error().code, ErrorCode::ResourceLimit);
+    EXPECT_EQ(tooMany.error().code, ErrorCode::RESOURCE_LIMIT);
     EXPECT_FALSE(tooMany.error().message.empty());
 
     // The same score narrowed to a measure window fits again.
@@ -1762,11 +1762,11 @@ TEST(Read, GetReadsProperties) {
 
     // A property name the catalogue does not know, and one the type does not have.
     const auto unknown = document->get(note_id, {"noSuchProperty"});
-    expect_code(unknown, ErrorCode::NotFound, "an unknown property name");
+    expect_code(unknown, ErrorCode::NOT_FOUND, "an unknown property name");
     const auto foreign = document->get(dynamic_id, {"concertClefType"});
-    expect_code(foreign, ErrorCode::InvalidArgument, "a property of another type");
+    expect_code(foreign, ErrorCode::INVALID_ARGUMENT, "a property of another type");
     // A reference only a batch can use.
-    expect_code(document->get(engrave::OpRef{}), ErrorCode::InvalidArgument, "an OpRef");
+    expect_code(document->get(engrave::OpRef{}), ErrorCode::INVALID_ARGUMENT, "an OpRef");
 }
 
 TEST(Read, LayoutBoxesComeFromTheLayout) {
@@ -1820,35 +1820,35 @@ TEST(Read, ErrorsForStaleAndMissingReferences) {
 
     // An id that names nothing is NotFound, in get() and in a measure window alike.
     const ElementId missing{0x1234, 0x5678};
-    expect_code(document->get(missing), ErrorCode::NotFound, "an id nothing has");
+    expect_code(document->get(missing), ErrorCode::NOT_FOUND, "an id nothing has");
     engrave::Query window;
     window.from_measure = missing;
-    expect_code(document->query(window), ErrorCode::NotFound, "a measure id nothing has");
+    expect_code(document->query(window), ErrorCode::NOT_FOUND, "a measure id nothing has");
     // A selection has to name a score.
     engrave::Query wrong_score;
     wrong_score.score = engrave::ScoreSel{note_id};
-    expect_code(document->query(wrong_score), ErrorCode::InvalidArgument, "a selection that names a note");
+    expect_code(document->query(wrong_score), ErrorCode::INVALID_ARGUMENT, "a selection that names a note");
     wrong_score.score = engrave::ScoreSel{missing};
-    expect_code(document->query(wrong_score), ErrorCode::NotFound, "a selection nothing has");
-    expect_code(document->outline(engrave::ScoreSel{missing}), ErrorCode::NotFound, "an outline of nothing");
-    expect_code(document->outline(engrave::ScoreSel{note_id}), ErrorCode::InvalidArgument, "an outline of a note");
+    expect_code(document->query(wrong_score), ErrorCode::NOT_FOUND, "a selection nothing has");
+    expect_code(document->outline(engrave::ScoreSel{missing}), ErrorCode::NOT_FOUND, "an outline of nothing");
+    expect_code(document->outline(engrave::ScoreSel{note_id}), ErrorCode::INVALID_ARGUMENT, "an outline of a note");
     // A measure window names a measure of this score.
     engrave::Query not_a_measure;
     not_a_measure.from_measure = note_id;
-    expect_code(document->query(not_a_measure), ErrorCode::InvalidArgument, "a window that names a note");
+    expect_code(document->query(not_a_measure), ErrorCode::INVALID_ARGUMENT, "a window that names a note");
     engrave::Query both_forms;
     both_forms.first_measure = 0;
     both_forms.from_measure = outline->measures.front().id;
-    expect_code(document->query(both_forms), ErrorCode::InvalidArgument, "a window named twice");
+    expect_code(document->query(both_forms), ErrorCode::INVALID_ARGUMENT, "a window named twice");
 
     // A page, a system and a segment that the layout does not have are stale.
-    expect_code(document->get(engrave::Address{engrave::PageAddress{.score = {}, .index = 9999}}), ErrorCode::StaleHandle,
+    expect_code(document->get(engrave::Address{engrave::PageAddress{.score = {}, .index = 9999}}), ErrorCode::STALE_HANDLE,
                 "a page past the end");
-    expect_code(document->get(engrave::Address{engrave::SystemAddress{.score = {}, .page = 9999, .index = 0}}), ErrorCode::StaleHandle,
+    expect_code(document->get(engrave::Address{engrave::SystemAddress{.score = {}, .page = 9999, .index = 0}}), ErrorCode::STALE_HANDLE,
                 "a system on no page");
     expect_code(document->get(engrave::Address{engrave::SegmentAddress{
                     .measure = outline->measures.front().id, .tick = engrave::Fraction{1000, 1}, .kind = "ChordRest"}}),
-                ErrorCode::StaleHandle, "a segment at no tick");
+                ErrorCode::STALE_HANDLE, "a segment at no tick");
     // The first page and the first measure's own segment do resolve.
     const auto first_page = document->get(engrave::Address{engrave::PageAddress{.score = {}, .index = 0}});
     ASSERT_TRUE(first_page) << first_page.error().message;
@@ -1862,7 +1862,7 @@ TEST(Read, ErrorsForStaleAndMissingReferences) {
     ASSERT_FALSE(other.empty());
     auto second = open_path(other);
     ASSERT_TRUE(second);
-    expect_code(second->get(note_id), ErrorCode::NotFound, "an id of another document");
+    expect_code(second->get(note_id), ErrorCode::NOT_FOUND, "an id of another document");
 }
 
 // A leading omitted rest must remain part of the triplet. Otherwise measure
@@ -1913,7 +1913,7 @@ TEST(Read, HiddenLeadingTupletRestPreservesFollowingNotes) {
         ASSERT_EQ(rests->elements.size(), 1u);
         EXPECT_EQ(ticks_of(rests->elements.front().tick), 0);
         EXPECT_EQ(ticks_of(rests->elements.front().duration), 320);
-        const auto saved = (*document)->export_score({.format = engrave::Format::Mscz});
+        const auto saved = (*document)->export_score({.format = engrave::Format::MSCZ});
         ASSERT_TRUE(saved);
         const auto reopened = g_engine->open(*saved);
         ASSERT_TRUE(reopened);
@@ -1954,15 +1954,15 @@ std::vector<mu::engraving::Dynamic *> imported_dynamics(engrave::Document &docum
 // Parse the exported document before reopening it: successful import alone does
 // not establish that literal text was serialized as well-formed XML.
 std::unique_ptr<engrave::Document> dynamics_native_roundtrip(engrave::Document &document, std::string_view expected_text = "",
-                                                             engrave::Format format = engrave::Format::Mscx) {
+                                                             engrave::Format format = engrave::Format::MSCX) {
     const auto saved = document.export_score({.format = format});
     EXPECT_TRUE(saved);
     if (!saved) return nullptr;
-    if (format == engrave::Format::Mscx && !expected_text.empty()) {
+    if (format == engrave::Format::MSCX && !expected_text.empty()) {
         const std::string xml(reinterpret_cast<const char *>(saved->data()), saved->size());
         EXPECT_NE(xml.find(std::format("<text>{}</text>", expected_text)), std::string::npos);
     }
-    if (format == engrave::Format::Mscx) {
+    if (format == engrave::Format::MSCX) {
         const muse::ByteArray bytes(reinterpret_cast<const char *>(saved->data()), saved->size());
         muse::XmlStreamReader reader(bytes);
         while (!reader.atEnd()) reader.readNext();
@@ -2019,7 +2019,7 @@ TEST(Read, MusicXmlDynamicsVelocityIsBoundedBeforeConversion) {
         const auto direction = std::format(
             R"(<direction><direction-type><dynamics><f/></dynamics></direction-type><sound dynamics="{}"/></direction>)", c.value);
         auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "", std::format("dynamics=\"{}\"", c.value))),
-                                     {.format = engrave::Format::MusicXml});
+                                     {.format = engrave::Format::MUSIC_XML});
         ASSERT_TRUE(opened);
         const auto check = [&](engrave::Document &document) {
             const auto dynamics = imported_dynamics(document);
@@ -2035,13 +2035,13 @@ TEST(Read, MusicXmlDynamicsVelocityIsBoundedBeforeConversion) {
             EXPECT_EQ(static_cast<mu::engraving::Note *>(note->object)->userVelocity(), c.note);
         };
         check(**opened);
-        for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+        for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
             auto reopened = dynamics_native_roundtrip(**opened, "", format);
             ASSERT_TRUE(reopened);
             check(*reopened);
         }
     }
-    const auto plain = g_engine->open(as_bytes(dynamics_musicxml("", "")), {.format = engrave::Format::MusicXml});
+    const auto plain = g_engine->open(as_bytes(dynamics_musicxml("", "")), {.format = engrave::Format::MUSIC_XML});
     ASSERT_TRUE(plain);
     engrave::Query query;
     query.types = {"Note"};
@@ -2055,7 +2055,7 @@ TEST(Read, MusicXmlDynamicsVelocityIsBoundedBeforeConversion) {
     const std::string longNumber(100000, '9');
     const auto direction = std::format(
         R"(<direction><direction-type><dynamics><f/></dynamics></direction-type><sound dynamics="{}"/></direction>)", longNumber);
-    auto large = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
+    auto large = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MUSIC_XML});
     ASSERT_TRUE(large);
     const auto dynamics = imported_dynamics(**large);
     ASSERT_EQ(dynamics.size(), 1u);
@@ -2118,7 +2118,7 @@ TEST(Read, MusicXmlDynamicsContainersAndLiteralSafety) {
             const auto container = std::format("<dynamics>{}</dynamics>", c.children);
             const auto direction = std::format("<direction><direction-type>{}</direction-type></direction>", container);
             const auto xml = dynamics_musicxml(notation ? "" : direction, notation ? container : "");
-            auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::MusicXml});
+            auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::MUSIC_XML});
             ASSERT_TRUE(opened);
             const auto check = [&](engrave::Document &document, bool reopened) {
                 const auto dynamics = imported_dynamics(document);
@@ -2132,7 +2132,7 @@ TEST(Read, MusicXmlDynamicsContainersAndLiteralSafety) {
                 EXPECT_TRUE(dynamics.front()->visible());
             };
             check(**opened, false);
-            for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+            for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
                 auto reopened = dynamics_native_roundtrip(**opened, c.type == DynamicType::OTHER ? c.xml : "", format);
                 ASSERT_TRUE(reopened);
                 check(*reopened, true);
@@ -2148,7 +2148,7 @@ TEST(Read, MusicXmlManyLiteralSpansPreserveText) {
     }
     const auto direction =
         "<direction><direction-type><dynamics><other-dynamics>" + literal + "f</other-dynamics></dynamics></direction-type></direction>";
-    auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
+    auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MUSIC_XML});
     ASSERT_TRUE(opened);
     const auto dynamics = imported_dynamics(**opened);
     ASSERT_EQ(dynamics.size(), 1u);
@@ -2165,7 +2165,7 @@ TEST(Read, MusicXmlDynamicsSeparateContainersKeepStyleAndTiming) {
         const auto direction =
             std::format(R"(<direction placement="below"><direction-type>{}</direction-type><offset>1</offset></direction>)", containers);
         auto opened = g_engine->open(as_bytes(dynamics_musicxml(notation ? "" : direction, notation ? containers : "")),
-                                     {.format = engrave::Format::MusicXml});
+                                     {.format = engrave::Format::MUSIC_XML});
         ASSERT_TRUE(opened);
         const auto check = [&](engrave::Document &document) {
             const auto dynamics = imported_dynamics(document);
@@ -2183,7 +2183,7 @@ TEST(Read, MusicXmlDynamicsSeparateContainersKeepStyleAndTiming) {
             EXPECT_EQ(types, (std::set<DynamicType>{DynamicType::P, DynamicType::F}));
         };
         check(**opened);
-        for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+        for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
             auto reopened = dynamics_native_roundtrip(**opened, "", format);
             ASSERT_TRUE(reopened);
             check(*reopened);
@@ -2196,7 +2196,7 @@ TEST(Read, MusicXmlDynamicsKeepPerContainerInferredPlacement) {
 <dynamics default-y="30"><p/></dynamics><dynamics default-y="-30"><f/></dynamics>
 <dynamics/></direction-type></direction>)",
                                        "");
-    auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::MusicXml});
+    auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::MUSIC_XML});
     ASSERT_TRUE(opened);
     const auto dynamics = imported_dynamics(**opened);
     ASSERT_EQ(dynamics.size(), 2u);
@@ -2240,7 +2240,7 @@ TEST(Read, MusicXmlSingleDynamicsKeepNativeBehavior) {
             const auto container = std::format("<dynamics><{}/></dynamics>", c.tag);
             const auto direction = std::format("<direction><direction-type>{}</direction-type></direction>", container);
             auto opened = g_engine->open(as_bytes(dynamics_musicxml(notation ? "" : direction, notation ? container : "")),
-                                         {.format = engrave::Format::MusicXml});
+                                         {.format = engrave::Format::MUSIC_XML});
             ASSERT_TRUE(opened);
             const auto dynamics = imported_dynamics(**opened);
             ASSERT_EQ(dynamics.size(), 1u);
@@ -2252,7 +2252,7 @@ TEST(Read, MusicXmlSingleDynamicsKeepNativeBehavior) {
 }
 
 TEST(Read, MusicXmlDynamicsHyphenRangeKeepsExistingBehavior) {
-    auto seed = g_engine->open(as_bytes(dynamics_musicxml("", "")), {.format = engrave::Format::MusicXml});
+    auto seed = g_engine->open(as_bytes(dynamics_musicxml("", "")), {.format = engrave::Format::MUSIC_XML});
     ASSERT_TRUE(seed);
     auto &config = const_cast<mu::iex::musicxml::IMusicXmlConfiguration &>(engrave::DocumentAccess::context(**seed).musicXml());
 
@@ -2267,14 +2267,14 @@ TEST(Read, MusicXmlDynamicsHyphenRangeKeepsExistingBehavior) {
     const auto xml = dynamics_musicxml(R"(<direction><direction-type><dynamics><mp/></dynamics>
 <words>-</words><dynamics><f/></dynamics></direction-type></direction>)",
                                        "");
-    auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::MusicXml});
+    auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::MUSIC_XML});
     ASSERT_TRUE(opened);
     const auto dynamics = imported_dynamics(**opened);
     ASSERT_EQ(dynamics.size(), 1u);
     EXPECT_EQ(dynamics.front()->xmlText().toStdString(),
               "<sym>dynamicMezzo</sym><sym>dynamicPiano</sym><sym>dynamicCombinedSeparatorHyphen</sym><sym>dynamicForte</sym>");
     const auto words = dynamics_musicxml("<direction><direction-type><words>mf</words></direction-type></direction>", "");
-    auto inferred = g_engine->open(as_bytes(words), {.format = engrave::Format::MusicXml});
+    auto inferred = g_engine->open(as_bytes(words), {.format = engrave::Format::MUSIC_XML});
     ASSERT_TRUE(inferred);
     const auto wordDynamics = imported_dynamics(**inferred);
     ASSERT_EQ(wordDynamics.size(), 1u);
@@ -2288,7 +2288,7 @@ TEST(Read, MusicXmlGroupedDynamicsSoundOverrideAndReimport) {
         for (bool sound : {false, true}) {
             const auto direction = std::format("<direction><direction-type><dynamics>{}</dynamics></direction-type>{}</direction>",
                                                children, sound ? "<sound dynamics=\"50\"/>" : "");
-            auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
+            auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MUSIC_XML});
             ASSERT_TRUE(opened);
             const auto check = [&](engrave::Document &doc) {
                 const auto dynamics = imported_dynamics(doc);
@@ -2298,14 +2298,14 @@ TEST(Read, MusicXmlGroupedDynamicsSoundOverrideAndReimport) {
                 EXPECT_EQ(dynamics.front()->velocity(), sound ? 45 : (other ? -1 : 96));
             };
             check(**opened);
-            for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+            for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
                 auto reopened = dynamics_native_roundtrip(**opened, "", format);
                 ASSERT_TRUE(reopened);
                 check(*reopened);
             }
-            const auto saved = (*opened)->export_score({.format = engrave::Format::MusicXml});
+            const auto saved = (*opened)->export_score({.format = engrave::Format::MUSIC_XML});
             ASSERT_TRUE(saved);
-            auto reopened = g_engine->open(*saved, {.format = engrave::Format::MusicXml});
+            auto reopened = g_engine->open(*saved, {.format = engrave::Format::MUSIC_XML});
             ASSERT_TRUE(reopened);
             check(**reopened);
         }
@@ -2317,15 +2317,15 @@ TEST(Read, MusicXmlLiteralDynamicsExportReimport) {
         const auto direction = std::format("<direction><direction-type><dynamics><other-dynamics>{}</other-dynamics></dynamics>"
                                            "</direction-type></direction>",
                                            literal);
-        auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
+        auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MUSIC_XML});
         ASSERT_TRUE(opened);
-        const auto saved = (*opened)->export_score({.format = engrave::Format::MusicXml});
+        const auto saved = (*opened)->export_score({.format = engrave::Format::MUSIC_XML});
         ASSERT_TRUE(saved);
         const muse::ByteArray bytes(reinterpret_cast<const char *>(saved->data()), saved->size());
         muse::XmlStreamReader reader(bytes);
         while (!reader.atEnd()) reader.readNext();
         EXPECT_FALSE(reader.isError());
-        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MusicXml});
+        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MUSIC_XML});
         ASSERT_TRUE(reopened);
         const auto dynamics = imported_dynamics(**reopened);
         ASSERT_EQ(dynamics.size(), 1u);
@@ -2340,7 +2340,7 @@ TEST(Read, MusicXmlOrdinarySingleDynamicsSerializeAsStandardTags) {
             const auto container = std::format("<dynamics><{}/></dynamics>", tag);
             const auto direction = std::format("<direction><direction-type>{}</direction-type></direction>", container);
             auto opened = g_engine->open(as_bytes(dynamics_musicxml(notation ? "" : direction, notation ? container : "")),
-                                         {.format = engrave::Format::MusicXml});
+                                         {.format = engrave::Format::MUSIC_XML});
             ASSERT_TRUE(opened);
             const auto check = [&](engrave::Document &doc) {
                 const auto dynamics = imported_dynamics(doc);
@@ -2349,12 +2349,12 @@ TEST(Read, MusicXmlOrdinarySingleDynamicsSerializeAsStandardTags) {
                 EXPECT_FALSE(dynamics.front()->hasCustomText());
             };
             check(**opened);
-            for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+            for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
                 auto reopened = dynamics_native_roundtrip(**opened, "", format);
                 ASSERT_TRUE(reopened);
                 check(*reopened);
             }
-            const auto saved = (*opened)->export_score({.format = engrave::Format::MusicXml});
+            const auto saved = (*opened)->export_score({.format = engrave::Format::MUSIC_XML});
             ASSERT_TRUE(saved);
             const std::string xml(reinterpret_cast<const char *>(saved->data()), saved->size());
             EXPECT_NE(xml.find(std::format("<{}/>", tag)), std::string::npos);
@@ -2367,11 +2367,11 @@ TEST(Read, MusicXmlSingleSmuflDynamicsExportReimport) {
         const auto direction = std::format("<direction><direction-type><dynamics><other-dynamics smufl=\"{}\"/>"
                                            "</dynamics></direction-type></direction>",
                                            name);
-        auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
+        auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MUSIC_XML});
         ASSERT_TRUE(opened);
-        const auto saved = (*opened)->export_score({.format = engrave::Format::MusicXml});
+        const auto saved = (*opened)->export_score({.format = engrave::Format::MUSIC_XML});
         ASSERT_TRUE(saved);
-        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MusicXml});
+        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MUSIC_XML});
         ASSERT_TRUE(reopened);
         const auto dynamics = imported_dynamics(**reopened);
         ASSERT_EQ(dynamics.size(), 1u);
@@ -2394,7 +2394,7 @@ TEST(Read, MusicXmlGroupedSmuflDynamicsExportReimport) {
           "<other-dynamics>&lt;sym&gt;f&lt;/sym&gt; &amp; </other-dynamics><other-dynamics smufl=\"dynamicSforzato\"/>"}) {
         SCOPED_TRACE(children);
         const auto direction = std::format("<direction><direction-type><dynamics>{}</dynamics></direction-type></direction>", children);
-        auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
+        auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MUSIC_XML});
         ASSERT_TRUE(opened);
         const auto original = imported_dynamics(**opened);
         ASSERT_EQ(original.size(), 1u);
@@ -2409,7 +2409,7 @@ TEST(Read, MusicXmlGroupedSmuflDynamicsExportReimport) {
         } else if (children.starts_with("<p/><other-dynamics> subito ")) {
             EXPECT_EQ(type, mu::engraving::DynamicType::P);
         }
-        const auto saved = (*opened)->export_score({.format = engrave::Format::MusicXml});
+        const auto saved = (*opened)->export_score({.format = engrave::Format::MUSIC_XML});
         ASSERT_TRUE(saved);
         const std::string xml(reinterpret_cast<const char *>(saved->data()), saved->size());
         EXPECT_NE(xml.find("smufl=\"dynamicSforzato\""), std::string::npos);
@@ -2419,7 +2419,7 @@ TEST(Read, MusicXmlGroupedSmuflDynamicsExportReimport) {
             EXPECT_EQ(xml.find("smufl=\"dynamicForte\""), std::string::npos);
             EXPECT_EQ(xml.find("smufl=\"dynamicPiano\""), std::string::npos);
         }
-        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MusicXml});
+        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MUSIC_XML});
         ASSERT_TRUE(reopened);
         const auto dynamics = imported_dynamics(**reopened);
         ASSERT_EQ(dynamics.size(), 1u);
@@ -2433,14 +2433,14 @@ TEST(Read, MusicXmlGroupedSmuflDynamicsExportReimport) {
 TEST(Read, MusicXmlGroupedProseRetainsTypeWithoutNamedSymbol) {
     const auto direction =
         R"(<direction><direction-type><dynamics><other-dynamics>sempre f</other-dynamics><p/></dynamics></direction-type></direction>)";
-    auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
+    auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MUSIC_XML});
     ASSERT_TRUE(opened);
     const auto original = imported_dynamics(**opened);
     ASSERT_EQ(original.size(), 1u);
     EXPECT_EQ(original.front()->dynamicType(), mu::engraving::DynamicType::F);
-    const auto saved = (*opened)->export_score({.format = engrave::Format::MusicXml});
+    const auto saved = (*opened)->export_score({.format = engrave::Format::MUSIC_XML});
     ASSERT_TRUE(saved);
-    auto reopened = g_engine->open(*saved, {.format = engrave::Format::MusicXml});
+    auto reopened = g_engine->open(*saved, {.format = engrave::Format::MUSIC_XML});
     ASSERT_TRUE(reopened);
     const auto dynamics = imported_dynamics(**reopened);
     ASSERT_EQ(dynamics.size(), 1u);
@@ -2456,15 +2456,15 @@ TEST(Read, MusicXmlGroupedWhitespaceRetainsType) {
           "<f/><other-dynamics>&#32;</other-dynamics><p/>"}) {
         SCOPED_TRACE(children);
         const auto direction = std::format("<direction><direction-type><dynamics>{}</dynamics></direction-type></direction>", children);
-        auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
+        auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MUSIC_XML});
         ASSERT_TRUE(opened);
         const auto original = imported_dynamics(**opened);
         ASSERT_EQ(original.size(), 1u);
         const auto expected = children.starts_with("<f/>") ? mu::engraving::DynamicType::F : mu::engraving::DynamicType::SF;
         EXPECT_EQ(original.front()->dynamicType(), expected);
-        const auto saved = (*opened)->export_score({.format = engrave::Format::MusicXml});
+        const auto saved = (*opened)->export_score({.format = engrave::Format::MUSIC_XML});
         ASSERT_TRUE(saved);
-        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MusicXml});
+        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MUSIC_XML});
         ASSERT_TRUE(reopened);
         const auto dynamics = imported_dynamics(**reopened);
         ASSERT_EQ(dynamics.size(), 1u);
@@ -2479,16 +2479,16 @@ TEST(Read, MusicXmlSingleOtherDynamicLettersExportText) {
     for (const std::string letter : {"m", "r", "s", "z"}) {
         const auto direction = std::format(
             "<direction><direction-type><dynamics><other-dynamics>{}</other-dynamics></dynamics></direction-type></direction>", letter);
-        auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
+        auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MUSIC_XML});
         ASSERT_TRUE(opened);
         const auto original = imported_dynamics(**opened);
         ASSERT_EQ(original.size(), 1u);
         const auto type = original.front()->dynamicType();
-        const auto saved = (*opened)->export_score({.format = engrave::Format::MusicXml});
+        const auto saved = (*opened)->export_score({.format = engrave::Format::MUSIC_XML});
         ASSERT_TRUE(saved);
         const std::string xml(reinterpret_cast<const char *>(saved->data()), saved->size());
         EXPECT_NE(xml.find(std::format("<other-dynamics>{}</other-dynamics>", letter)), std::string::npos);
-        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MusicXml});
+        auto reopened = g_engine->open(*saved, {.format = engrave::Format::MUSIC_XML});
         ASSERT_TRUE(reopened);
         const auto dynamics = imported_dynamics(**reopened);
         ASSERT_EQ(dynamics.size(), 1u);
@@ -2499,13 +2499,13 @@ TEST(Read, MusicXmlSingleOtherDynamicLettersExportText) {
 
 TEST(Read, MusicXmlEngineLocalSymbolIsNotExportedAsSmufl) {
     const auto direction = R"(<direction><direction-type><dynamics><f/></dynamics></direction-type></direction>)";
-    auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MusicXml});
+    auto opened = g_engine->open(as_bytes(dynamics_musicxml(direction, "")), {.format = engrave::Format::MUSIC_XML});
     ASSERT_TRUE(opened);
     const auto dynamics = imported_dynamics(**opened);
     ASSERT_EQ(dynamics.size(), 1u);
     dynamics.front()->setDynamicType(mu::engraving::DynamicType::OTHER);
     dynamics.front()->setXmlText(u"<sym>ornamentPrallMordent</sym>");
-    const auto saved = (*opened)->export_score({.format = engrave::Format::MusicXml});
+    const auto saved = (*opened)->export_score({.format = engrave::Format::MUSIC_XML});
     ASSERT_TRUE(saved);
     const std::string xml(reinterpret_cast<const char *>(saved->data()), saved->size());
     EXPECT_EQ(xml.find("smufl=\"ornamentPrallMordent\""), std::string::npos);
@@ -2514,7 +2514,7 @@ TEST(Read, MusicXmlEngineLocalSymbolIsNotExportedAsSmufl) {
 TEST(Read, MusicXmlNotationDynamicsKeepExistingVisibility) {
     auto xml = dynamics_musicxml("", "<dynamics><f/><p/></dynamics>");
     xml.replace(xml.find("<notations>"), std::string("<notations>").size(), "<notations print-object=\"no\">");
-    auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::MusicXml});
+    auto opened = g_engine->open(as_bytes(xml), {.format = engrave::Format::MUSIC_XML});
     ASSERT_TRUE(opened);
     const auto dynamics = imported_dynamics(**opened);
     ASSERT_EQ(dynamics.size(), 1u);
@@ -2624,7 +2624,7 @@ TEST(Read, ChordLineOffsetsEachAndCombined500) {
                     std::unique_ptr<mu::engraving::ChordLine> copy(line->clone());
                     EXPECT_EQ(copy->hasSourceOffsets(), mask != 0);
                     EXPECT_EQ(copy->sourceOffsets(), line->sourceOffsets());
-                    for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+                    for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
                         auto saved = (*document)->export_score({.format = format, .native_version = "5.00"});
                         ASSERT_TRUE(saved) << saved.error().message;
                         auto reopened = g_engine->open(*saved, {.format = format});
@@ -2695,7 +2695,7 @@ TEST(Read, ChordLineOffsetMillimetreUnitsSurvivePropertyOrderingAndReopen) {
         ASSERT_FALSE(lines[0]->offsetIsSpatiumDependent());
         EXPECT_NEAR(lines[0]->sourceOffsets()[3].x(), mu::engraving::DPMM, 1e-6);
         const auto source = lines[0]->sourceOffsets();
-        for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+        for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
             auto saved = (*document)->export_score({.format = format, .native_version = "5.00"});
             ASSERT_TRUE(saved);
             auto reopened = g_engine->open(*saved, {.format = format});
@@ -2719,7 +2719,7 @@ TEST(Read, ChordLineMixedSourcesRejectInBothOrders) {
         xml.insert(first ? xml.find("<o1") : xml.find("</ChordLine>"), path);
         auto document = g_engine->open(as_bytes(xml));
         ASSERT_FALSE(document);
-        EXPECT_EQ(document.error().code, ErrorCode::InvalidInput);
+        EXPECT_EQ(document.error().code, ErrorCode::INVALID_INPUT);
         EXPECT_NE(document.error().message.find("ChordLine"), std::string::npos);
     }
 }
@@ -2745,7 +2745,7 @@ TEST(Read, ChordLinePhysicalOffsetsFollowBothSpatiumCallbacks) {
             EXPECT_NEAR(line->sourceOffsets()[i].x(), original[i].x() * 0.75, 1e-9);
             EXPECT_NEAR(line->sourceOffsets()[i].y(), original[i].y() * 0.75, 1e-9);
         }
-        auto saved = (*document)->export_score({.format = engrave::Format::Mscx, .native_version = "5.00"});
+        auto saved = (*document)->export_score({.format = engrave::Format::MSCX, .native_version = "5.00"});
         ASSERT_TRUE(saved);
         auto reopened = g_engine->open(*saved);
         ASSERT_TRUE(reopened);
@@ -2769,7 +2769,7 @@ TEST(Read, ChordLineZeroMissingAndMalformedOffsets) {
         ASSERT_EQ(lines.size(), 1u);
         EXPECT_EQ(lines[0]->hasSourceOffsets(), !tags.empty());
         EXPECT_EQ(lines[0]->sourceOffsets(), (std::array<muse::PointF, 4>{}));
-        auto saved = (*document)->export_score({.format = engrave::Format::Mscx, .native_version = "5.00"});
+        auto saved = (*document)->export_score({.format = engrave::Format::MSCX, .native_version = "5.00"});
         ASSERT_TRUE(saved);
         auto reopened = g_engine->open(*saved);
         ASSERT_TRUE(reopened);
@@ -2808,7 +2808,7 @@ TEST(Read, ChordLineActualGoldenTypedGeometry) {
         EXPECT_NEAR(path.elementAt(i).x, 1.5 * i * line->spatium(), 1e-6);
         EXPECT_NEAR(path.elementAt(i).y, 2.5 * line->spatium(), 1e-6);
     }
-    for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
+    for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
         auto saved = doc->export_score({.format = format, .native_version = "5.00"});
         ASSERT_TRUE(saved);
         auto reopened = g_engine->open(*saved, {.format = format});

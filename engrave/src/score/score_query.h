@@ -59,8 +59,7 @@ struct ScoreRegionView {
     bool has_cross_region_spanners = false;
 };
 
-class ScoreQueryLimit : public std::runtime_error {
-public:
+struct ScoreQueryLimit : std::runtime_error {
     using std::runtime_error::runtime_error;
 };
 

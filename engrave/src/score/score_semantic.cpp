@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #include "score_semantic.h"
 
+#include <algorithm>
+#include <cmath>
+#include <string>
+#include <tuple>
+
 #include "engraving/dom/arpeggio.h"
 #include "engraving/dom/articulation.h"
-#include "engraving/dom/tremolosinglechord.h"
-#include "engraving/dom/tremolotwochord.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/clef.h"
 #include "engraving/dom/dynamic.h"
@@ -29,14 +32,11 @@
 #include "engraving/dom/textlinebase.h"
 #include "engraving/dom/tie.h"
 #include "engraving/dom/timesig.h"
+#include "engraving/dom/tremolosinglechord.h"
+#include "engraving/dom/tremolotwochord.h"
 #include "engraving/dom/tuplet.h"
 #include "engraving/dom/volta.h"
 #include "engraving/types/typesconv.h"
-
-#include <algorithm>
-#include <cmath>
-#include <string>
-#include <tuple>
 
 using namespace mu::engraving;
 using json = nlohmann::ordered_json;

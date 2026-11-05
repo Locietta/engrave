@@ -241,7 +241,7 @@ std::unique_ptr<engrave::Document> open_text(std::string_view text, engrave::Ope
 }
 
 std::string export_mscz(engrave::Document &document) {
-    auto bytes = document.export_score({.format = engrave::Format::Mscz});
+    auto bytes = document.export_score({.format = engrave::Format::MSCZ});
     EXPECT_TRUE(bytes) << bytes.error().message;
     return bytes ? text_of(*bytes) : std::string{};
 }
@@ -885,14 +885,14 @@ TEST(Handles, H7RemovedElementsGoStale) {
             // Inside the batch the element is out of the score but not yet destroyed.
             const auto during = engrave::resolve(master, id);
             EXPECT_FALSE(during) << "a removed element resolves inside its own batch";
-            if (!during) EXPECT_EQ(during.error().code, ErrorCode::StaleHandle);
-            if (roll_back) return std::unexpected(engrave::Error{ErrorCode::EditRejected, "rolled back by the test"});
+            if (!during) EXPECT_EQ(during.error().code, ErrorCode::STALE_HANDLE);
+            if (roll_back) return std::unexpected(engrave::Error{ErrorCode::EDIT_REJECTED, "rolled back by the test"});
             return {};
         });
     };
 
     // The rollback brings the element back with its id.
-    const auto rolled_back = engrave::api::BatchGuard(*document).run({remove(true)}, engrave::api::Policy::Transaction, {});
+    const auto rolled_back = engrave::api::BatchGuard(*document).run({remove(true)}, engrave::api::Policy::TRANSACTION, {});
     ASSERT_FALSE(rolled_back);
     EXPECT_EQ(rolled_back.error().op_index, 0u);
     EXPECT_EQ(document->revision(), 1u);
@@ -901,14 +901,14 @@ TEST(Handles, H7RemovedElementsGoStale) {
     expect_inv(*document);
 
     // Committed, the history cleanup destroys the element, and the id names nothing.
-    const auto committed = engrave::api::BatchGuard(*document).run({remove(false)}, engrave::api::Policy::Transaction, {});
+    const auto committed = engrave::api::BatchGuard(*document).run({remove(false)}, engrave::api::Policy::TRANSACTION, {});
     ASSERT_TRUE(committed) << committed.error().message;
     EXPECT_EQ(document->revision(), 2u);
     EXPECT_TRUE(std::ranges::contains(committed->removed, id) || std::ranges::contains(committed->replaced, id))
         << "the batch does not report the removed id";
     const auto gone = engrave::resolve(master, id);
     ASSERT_FALSE(gone) << "the removed element still resolves after the commit";
-    EXPECT_EQ(gone.error().code, ErrorCode::NotFound);
+    EXPECT_EQ(gone.error().code, ErrorCode::NOT_FOUND);
     expect_inv(*document);
 }
 
@@ -1047,7 +1047,7 @@ std::map<std::string, std::string> id_types(const std::string &text) {
 
 bool warned_about(engrave::Document &document, std::string_view text) {
     for (const auto &diagnostic : document.diagnostics()) {
-        if (diagnostic.severity == engrave::Severity::Warning && diagnostic.message.find(text) != std::string::npos) return true;
+        if (diagnostic.severity == engrave::Severity::WARNING && diagnostic.message.find(text) != std::string::npos) return true;
     }
     return false;
 }
@@ -1084,7 +1084,7 @@ void expect_repaired(const std::string &text) {
     auto strict = g_engine->open(as_bytes(text), {.strict_ids = true});
     if (repaired) {
         ASSERT_FALSE(strict);
-        EXPECT_EQ(strict.error().code, ErrorCode::InvalidInput);
+        EXPECT_EQ(strict.error().code, ErrorCode::INVALID_INPUT);
     } else {
         EXPECT_TRUE(strict) << "a dropped duplicate does not need strict ids to reject it";
     }
@@ -1199,7 +1199,7 @@ TEST(Handles, H10MalformedIdsInTheInput) {
 
         auto strict = g_engine->open(as_bytes(text), {.strict_ids = true});
         ASSERT_FALSE(strict) << "strict ids accepted '" << value << "'";
-        EXPECT_EQ(strict.error().code, ErrorCode::InvalidInput);
+        EXPECT_EQ(strict.error().code, ErrorCode::INVALID_INPUT);
     }
 
     // Two texts that differ but decode to one id: a half keeps its low 64 bits, so
@@ -1248,7 +1248,7 @@ TEST(Handles, H11StaleHandles) {
         if (other_texts.contains(engrave::to_string(entry.id))) continue;
         const auto resolved = engrave::resolve(other_master, entry.id);
         ASSERT_FALSE(resolved) << "another document's id resolves";
-        EXPECT_EQ(resolved.error().code, ErrorCode::NotFound);
+        EXPECT_EQ(resolved.error().code, ErrorCode::NOT_FOUND);
         ++checked;
         break;
     }
@@ -1334,12 +1334,12 @@ TEST(Handles, H12Addresses) {
     // A missing position is a stale handle, an unknown kind a caller error.
     const auto missing = engrave::resolve(master, engrave::PageAddress{.score = {}, .index = 9999});
     ASSERT_FALSE(missing);
-    EXPECT_EQ(missing.error().code, ErrorCode::StaleHandle);
+    EXPECT_EQ(missing.error().code, ErrorCode::STALE_HANDLE);
     auto bad_kind = std::get<engrave::SegmentAddress>(*address);
     bad_kind.kind = "NoSuchSegment";
     const auto bad = engrave::resolve(master, engrave::Address{bad_kind});
     ASSERT_FALSE(bad);
-    EXPECT_EQ(bad.error().code, ErrorCode::InvalidArgument);
+    EXPECT_EQ(bad.error().code, ErrorCode::INVALID_ARGUMENT);
 }
 
 TEST(Handles, SegmentTicksValidateBeforeResolvingOrEditing) {
@@ -1369,7 +1369,7 @@ TEST(Handles, SegmentTicksValidateBeforeResolvingOrEditing) {
         address.tick = tick;
         const auto found = document->get(engrave::Ref{engrave::Address{address}});
         ASSERT_FALSE(found);
-        EXPECT_EQ(found.error().code, ErrorCode::StaleHandle);
+        EXPECT_EQ(found.error().code, ErrorCode::STALE_HANDLE);
     }
     // Equivalent large fractions must still resolve a nonzero position in a
     // later measure, without overflowing the measure-relative lookup.
@@ -1412,7 +1412,7 @@ TEST(Handles, SegmentTicksValidateBeforeResolvingOrEditing) {
     ASSERT_TRUE(wide_position) << wide_position.error().message;
     EXPECT_EQ(wide_position->object, later_segment);
     ASSERT_FALSE(wrapped_position);
-    EXPECT_EQ(wrapped_position.error().code, ErrorCode::StaleHandle);
+    EXPECT_EQ(wrapped_position.error().code, ErrorCode::STALE_HANDLE);
     EXPECT_FALSE(unrepresentable_address);
 
     for (const auto tick : {engrave::Fraction{low - 1, 1},
@@ -1428,19 +1428,19 @@ TEST(Handles, SegmentTicksValidateBeforeResolvingOrEditing) {
         address.tick = tick;
         const auto found = document->get(engrave::Ref{engrave::Address{address}});
         ASSERT_FALSE(found) << tick.num << '/' << tick.den;
-        EXPECT_EQ(found.error().code, ErrorCode::InvalidArgument);
+        EXPECT_EQ(found.error().code, ErrorCode::INVALID_ARGUMENT);
     }
 
     // This used to wrap to tick zero and add text at the first segment.
     address.tick = {4294967296LL, 1};
-    const auto before = document->export_score({.format = engrave::Format::Mscx});
+    const auto before = document->export_score({.format = engrave::Format::MSCX});
     ASSERT_TRUE(before);
     const auto revision = document->revision();
     const auto edit = document->edit({{engrave::AddText{engrave::Address{address}, "staff", "wrong position"}}});
     ASSERT_FALSE(edit);
-    EXPECT_EQ(edit.error().code, ErrorCode::InvalidArgument);
+    EXPECT_EQ(edit.error().code, ErrorCode::INVALID_ARGUMENT);
     EXPECT_EQ(document->revision(), revision);
-    const auto after = document->export_score({.format = engrave::Format::Mscx});
+    const auto after = document->export_score({.format = engrave::Format::MSCX});
     ASSERT_TRUE(after);
     EXPECT_EQ(*after, *before);
 
@@ -1449,7 +1449,7 @@ TEST(Handles, SegmentTicksValidateBeforeResolvingOrEditing) {
     address.measure = {0, 0};
     const auto missing = document->get(engrave::Ref{engrave::Address{address}});
     ASSERT_FALSE(missing);
-    EXPECT_EQ(missing.error().code, ErrorCode::NotFound);
+    EXPECT_EQ(missing.error().code, ErrorCode::NOT_FOUND);
 }
 
 // --- H13 ------------------------------------------------------------------

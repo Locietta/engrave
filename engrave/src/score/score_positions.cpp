@@ -2,6 +2,14 @@
 // Adapted from partitioncloud/webmscore web/importexport/positionjsonwriter.cpp.
 // The pinned engine revision is the vendor/musescore submodule (docs/dev/fork.md).
 #include "score_positions.h"
+
+#include <algorithm>
+#include <cmath>
+#include <functional>
+#include <limits>
+#include <stdexcept>
+#include <vector>
+
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/page.h"
@@ -9,12 +17,6 @@
 #include "engraving/dom/score.h"
 #include "engraving/dom/segment.h"
 #include "engraving/dom/system.h"
-#include <algorithm>
-#include <cmath>
-#include <limits>
-#include <stdexcept>
-#include <functional>
-#include <vector>
 
 namespace music {
 namespace {

@@ -1,10 +1,9 @@
 #pragma once
 
-#include <engrave/error.h>
-#include <engrave/output.h>
-
 #include <string>
 
+#include <engrave/error.h>
+#include <engrave/output.h>
 #include "engrave/src/runtime/noqt_runtime.h"
 
 namespace mu::engraving {

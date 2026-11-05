@@ -24,15 +24,14 @@ class IMusicXmlConfiguration;
 } // namespace mu::iex::musicxml
 
 namespace music {
-class RuntimeAssets;
-class EngineAudio;
+struct RuntimeAssets;
+struct EngineAudio;
 
 // The engine's services, owned in a fixed initialisation order and destroyed in
 // the reverse order (see notes/cleanup/c5/DESIGN.md in the superproject). One
 // context per process, created and destroyed on the owner thread; every
 // document of the engine must be destroyed first.
-class EngineContext {
-public:
+struct EngineContext {
     // assets is the UTF-8 path of the resource directory; cache_root the UTF-8
     // parent of the runtime cache directory (empty: the system temporary
     // directory). Throws std::invalid_argument when the resources are missing,

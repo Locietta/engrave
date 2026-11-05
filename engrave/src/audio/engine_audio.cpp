@@ -1,28 +1,29 @@
-#include "global/io/streamfile.h"
 // SPDX-License-Identifier: GPL-3.0-only
 //
 // Offline audio driver. See engine_audio.h for the lifetime/threading contract.
 
 #include "engine_audio.h"
-#include "audio_output.h"
-#include "audio/engine/internal/offlinecancellation.h"
-#include "global/defer.h"
-#include "audio/engine/internal/offlinetiming.h"
 
 #include <algorithm>
 #include <array>
-#include <thread>
 #include <cstdlib>
-#include <filesystem>
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <map>
 #include <memory>
 #include <set>
 #include <stdexcept>
+#include <thread>
 #include <utility>
 
 #include <fluidsynth.h>
+
+#include "audio/engine/internal/offlinecancellation.h"
+#include "audio/engine/internal/offlinetiming.h"
+#include "audio_output.h"
+#include "global/defer.h"
+#include "global/io/streamfile.h"
 
 #include "audio/common/audioutils.h"
 #include "audio/common/soundfonttypes.h"
@@ -82,8 +83,7 @@ constexpr const char *kChordsTrackNamePrefix = "Chords.";
 // renderedFrames is the number of output frames already encoded: the writer
 // reports completed frames after each chunk, so this is the start of the
 // chunk currently being rendered.
-class CapturingMidiOutPort final : public midi::IMidiOutPort {
-public:
+struct CapturingMidiOutPort final : midi::IMidiOutPort {
     midi::MidiDeviceList availableDevices() const override { return {}; }
 
     Ret connect(const midi::MidiDeviceID &) override { return make_ok(); }

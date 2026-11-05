@@ -1,11 +1,11 @@
 #pragma once
 
-#include "engrave/src/audio/audio_mix.h"
-
 #include <cstdint>
 #include <functional>
 #include <optional>
 #include <vector>
+
+#include "engrave/src/audio/audio_mix.h"
 
 namespace music {
 
