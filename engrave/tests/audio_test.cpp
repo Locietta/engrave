@@ -147,7 +147,7 @@ TEST(Audio, EditThenRenderInvalidatesPlayback) {
     auto document = detail::open_score("chordline_path.mscx");
     ASSERT_TRUE(document);
     engrave::RenderOptions renderOptions;
-    renderOptions.format = engrave::RenderFormat::Svg;
+    renderOptions.format = engrave::RenderFormat::SVG;
     const auto beforeRender = document->render(renderOptions);
     ASSERT_TRUE(beforeRender);
     const auto beforeAudio = detail::render_audio(*document, {});
@@ -178,19 +178,19 @@ TEST(Audio, EachEncoderWritesItsContainer) {
     };
 
     const Case cases[] = {
-        {engrave::AudioFormat::Wav, [](std::span<const std::byte> b) { return b.size() > 12 && detail::text_of(b.first(4)) == "RIFF"; },
+        {engrave::AudioFormat::WAV, [](std::span<const std::byte> b) { return b.size() > 12 && detail::text_of(b.first(4)) == "RIFF"; },
          "WAV"},
-        {engrave::AudioFormat::Flac, [](std::span<const std::byte> b) { return b.size() > 4 && detail::text_of(b.first(4)) == "fLaC"; },
+        {engrave::AudioFormat::FLAC, [](std::span<const std::byte> b) { return b.size() > 4 && detail::text_of(b.first(4)) == "fLaC"; },
          "FLAC"},
-        {engrave::AudioFormat::Opus, [](std::span<const std::byte> b) { return b.size() > 4 && detail::text_of(b.first(4)) == "OggS"; },
+        {engrave::AudioFormat::OPUS, [](std::span<const std::byte> b) { return b.size() > 4 && detail::text_of(b.first(4)) == "OggS"; },
          "Opus in Ogg"},
-        {engrave::AudioFormat::Mp3,
+        {engrave::AudioFormat::MP3,
          [](std::span<const std::byte> b) {
              return b.size() > 4 && (detail::text_of(b.first(3)) == "ID3" ||
                                      (std::to_integer<std::uint8_t>(b[0]) == 0xff && (std::to_integer<std::uint8_t>(b[1]) & 0xe0) == 0xe0));
          },
          "MP3"},
-        {engrave::AudioFormat::Aac,
+        {engrave::AudioFormat::AAC,
          [](std::span<const std::byte> b) {
              return b.size() > 4 && std::to_integer<std::uint8_t>(b[0]) == 0xff && (std::to_integer<std::uint8_t>(b[1]) & 0xf0) == 0xf0;
          },
@@ -206,7 +206,7 @@ TEST(Audio, EachEncoderWritesItsContainer) {
         EXPECT_GT(rendered.result.frames, 0u) << entry.name;
         EXPECT_GT(rendered.result.bytes, 0u) << entry.name;
         EXPECT_NEAR(rendered.result.seconds, double(rendered.result.frames) / 44100.0, 0.01) << entry.name;
-        if (entry.format == engrave::AudioFormat::Wav) {
+        if (entry.format == engrave::AudioFormat::WAV) {
             std::string error;
             const auto wav = detail::decode_wav(rendered.bytes, error);
             ASSERT_TRUE(wav) << error;
@@ -222,7 +222,7 @@ TEST(Audio, TheSinkReceivesTheStreamInChunks) {
     auto document = detail::open_score(detail::audio_score());
     ASSERT_TRUE(document);
     engrave::AudioOptions options;
-    options.format = engrave::AudioFormat::Wav;
+    options.format = engrave::AudioFormat::WAV;
     const detail::Rendered rendered = detail::render_audio(*document, options);
     ASSERT_GT(rendered.bytes.size(), 0u);
     // A 4.8 s float32 stereo WAV is about 1.7 MiB, so the 1 MiB chunk size shows.
@@ -236,8 +236,8 @@ TEST(Audio, TheSinkReceivesTheStreamInChunks) {
 TEST(Audio, EncodedFileBudgetDoesNotPublishPartialAudio) {
     auto document = detail::open_score(detail::audio_score());
     ASSERT_TRUE(document);
-    for (const auto format : {engrave::AudioFormat::Wav, engrave::AudioFormat::Flac, engrave::AudioFormat::Opus, engrave::AudioFormat::Mp3,
-                              engrave::AudioFormat::Aac}) {
+    for (const auto format : {engrave::AudioFormat::WAV, engrave::AudioFormat::FLAC, engrave::AudioFormat::OPUS, engrave::AudioFormat::MP3,
+                              engrave::AudioFormat::AAC}) {
         SCOPED_TRACE(engrave::to_string(format));
         engrave::AudioOptions options;
         options.format = format;
@@ -254,7 +254,7 @@ TEST(Audio, EncodedFileBudgetDoesNotPublishPartialAudio) {
             const auto failed =
                 document->render_audio(options, [&delivered](std::span<const std::byte> chunk) { delivered += chunk.size(); });
             ASSERT_FALSE(failed);
-            EXPECT_EQ(failed.error().code, engrave::ErrorCode::ResourceLimit);
+            EXPECT_EQ(failed.error().code, engrave::ErrorCode::RESOURCE_LIMIT);
             EXPECT_EQ(delivered, 0u);
         }
         options.max_bytes.reset();
@@ -272,7 +272,7 @@ TEST(Audio, IntegerWavStopsAtTheByteLimit) {
         std::size_t delivered = 0;
         const auto failed = document->render_audio(options, [&delivered](std::span<const std::byte> bytes) { delivered += bytes.size(); });
         ASSERT_FALSE(failed);
-        EXPECT_EQ(failed.error().code, engrave::ErrorCode::ResourceLimit);
+        EXPECT_EQ(failed.error().code, engrave::ErrorCode::RESOURCE_LIMIT);
         EXPECT_EQ(delivered, 0u);
         options.max_bytes.reset();
         const auto original = detail::render_audio(*document, options);
@@ -293,7 +293,7 @@ TEST(Audio, TotalWriteBudgetIncludesWavHeaderPatches) {
     std::size_t delivered = 0;
     const auto failed = document->render_audio(options, [&delivered](std::span<const std::byte> bytes) { delivered += bytes.size(); });
     ASSERT_FALSE(failed);
-    EXPECT_EQ(failed.error().code, engrave::ErrorCode::ResourceLimit);
+    EXPECT_EQ(failed.error().code, engrave::ErrorCode::RESOURCE_LIMIT);
     EXPECT_EQ(delivered, 0u);
     options.max_write_bytes = original.bytes.size() + 8;
     EXPECT_EQ(detail::render_audio(*document, options).bytes, original.bytes);
@@ -306,7 +306,7 @@ TEST(Audio, FailedSinkDoesNotPoisonNextRender) {
     auto document = detail::open_score(detail::audio_score());
     ASSERT_TRUE(document);
     engrave::AudioOptions options;
-    options.format = engrave::AudioFormat::Wav;
+    options.format = engrave::AudioFormat::WAV;
     const auto expected = detail::render_audio(*document, options);
     ASSERT_FALSE(expected.bytes.empty());
     EXPECT_THROW(
@@ -330,7 +330,7 @@ TEST(Audio, SecondRenderEqualsAFreshProcess) {
     auto document = detail::open_score(detail::audio_score());
     ASSERT_TRUE(document) << "the corpus has no " << detail::audio_score();
     engrave::AudioOptions options;
-    options.format = engrave::AudioFormat::Wav;
+    options.format = engrave::AudioFormat::WAV;
 
     const detail::Rendered first = detail::render_audio(*document, options);
     const detail::Rendered second = detail::render_audio(*document, options);
@@ -362,7 +362,7 @@ TEST(Audio, TheSoundFontListSelectsTheDefaultAndPerTrack) {
     const std::int32_t track = track_list->tracks.front().track;
 
     engrave::AudioOptions options;
-    options.format = engrave::AudioFormat::Wav;
+    options.format = engrave::AudioFormat::WAV;
     const detail::Rendered defaults = detail::render_audio(*document, options);
     ASSERT_FALSE(defaults.bytes.empty());
 
@@ -389,20 +389,20 @@ TEST(Audio, TheSoundFontListSelectsTheDefaultAndPerTrack) {
     per_track.tracks.front() = choice;
     const auto missing = document->render_audio(per_track, [](std::span<const std::byte>) {});
     ASSERT_FALSE(missing);
-    EXPECT_EQ(missing.error().code, engrave::ErrorCode::NotFound);
+    EXPECT_EQ(missing.error().code, engrave::ErrorCode::NOT_FOUND);
 
     choice.soundfont = 7;
     per_track.tracks.front() = choice;
     const auto out_of_range = document->render_audio(per_track, [](std::span<const std::byte>) {});
     ASSERT_FALSE(out_of_range);
-    EXPECT_EQ(out_of_range.error().code, engrave::ErrorCode::InvalidArgument);
+    EXPECT_EQ(out_of_range.error().code, engrave::ErrorCode::INVALID_ARGUMENT);
 }
 
 TEST(Audio, TheReverbSwitchChangesTheMix) {
     auto document = detail::open_score(detail::audio_score());
     ASSERT_TRUE(document);
     engrave::AudioOptions wet;
-    wet.format = engrave::AudioFormat::Wav;
+    wet.format = engrave::AudioFormat::WAV;
     engrave::AudioOptions dry = wet;
     dry.reverb = false;
     const detail::Rendered reverb = detail::render_audio(*document, wet);
@@ -420,7 +420,7 @@ TEST(Audio, EncoderSettingsReachTheEncoder) {
     auto document = detail::open_score(detail::audio_score());
     ASSERT_TRUE(document);
     engrave::AudioOptions options;
-    options.format = engrave::AudioFormat::Wav;
+    options.format = engrave::AudioFormat::WAV;
     const detail::Rendered float32 = detail::render_audio(*document, options);
 
     options.bit_depth = 16;
@@ -434,7 +434,7 @@ TEST(Audio, EncoderSettingsReachTheEncoder) {
     EXPECT_LT(int16.bytes.size(), float32.bytes.size());
 
     engrave::AudioOptions lossy;
-    lossy.format = engrave::AudioFormat::Mp3;
+    lossy.format = engrave::AudioFormat::MP3;
     lossy.bitrate_kbps = 64;
     const detail::Rendered small = detail::render_audio(*document, lossy);
     lossy.bitrate_kbps = 320;
@@ -455,7 +455,7 @@ TEST(Audio, OptionsAreValidated) {
 
     engrave::AudioOptions options;
     options.sample_rate = 48000;
-    EXPECT_EQ(code_of(options), engrave::ErrorCode::Unsupported) << "a sample rate other than the engine's";
+    EXPECT_EQ(code_of(options), engrave::ErrorCode::UNSUPPORTED) << "a sample rate other than the engine's";
     options.sample_rate = 44100;
     EXPECT_EQ(code_of(options), std::nullopt) << "the engine's own sample rate";
 
@@ -463,44 +463,44 @@ TEST(Audio, OptionsAreValidated) {
     engrave::AudioTrackOptions track;
     track.preset = "Grand Piano";
     options.tracks.push_back(track);
-    EXPECT_EQ(code_of(options), engrave::ErrorCode::Unsupported) << "a preset";
+    EXPECT_EQ(code_of(options), engrave::ErrorCode::UNSUPPORTED) << "a preset";
 
     options = {};
     options.tracks.push_back(engrave::AudioTrackOptions{.track = 99});
-    EXPECT_EQ(code_of(options), engrave::ErrorCode::InvalidArgument) << "a track that does not exist";
+    EXPECT_EQ(code_of(options), engrave::ErrorCode::INVALID_ARGUMENT) << "a track that does not exist";
     options = {};
     options.tracks.push_back(engrave::AudioTrackOptions{.track = 0});
     options.tracks.push_back(engrave::AudioTrackOptions{.track = 0});
-    EXPECT_EQ(code_of(options), engrave::ErrorCode::InvalidArgument) << "a track named twice";
+    EXPECT_EQ(code_of(options), engrave::ErrorCode::INVALID_ARGUMENT) << "a track named twice";
 
     options = {};
     options.bit_depth = 16;
-    options.format = engrave::AudioFormat::Flac;
+    options.format = engrave::AudioFormat::FLAC;
     EXPECT_EQ(code_of(options), std::nullopt) << "FLAC takes 16 bits";
     options.bit_depth = 32;
-    EXPECT_EQ(code_of(options), engrave::ErrorCode::InvalidArgument) << "FLAC takes no float samples";
+    EXPECT_EQ(code_of(options), engrave::ErrorCode::INVALID_ARGUMENT) << "FLAC takes no float samples";
     options = {};
     options.bit_depth = 16;
-    options.format = engrave::AudioFormat::Mp3;
-    EXPECT_EQ(code_of(options), engrave::ErrorCode::InvalidArgument) << "a bit depth for a lossy format";
+    options.format = engrave::AudioFormat::MP3;
+    EXPECT_EQ(code_of(options), engrave::ErrorCode::INVALID_ARGUMENT) << "a bit depth for a lossy format";
     options = {};
     options.bitrate_kbps = 192;
-    options.format = engrave::AudioFormat::Wav;
-    EXPECT_EQ(code_of(options), engrave::ErrorCode::InvalidArgument) << "a bitrate for a lossless format";
+    options.format = engrave::AudioFormat::WAV;
+    EXPECT_EQ(code_of(options), engrave::ErrorCode::INVALID_ARGUMENT) << "a bitrate for a lossless format";
     options = {};
     options.bitrate_kbps = 1000;
-    options.format = engrave::AudioFormat::Aac;
-    EXPECT_EQ(code_of(options), engrave::ErrorCode::InvalidArgument) << "a bitrate above the range";
+    options.format = engrave::AudioFormat::AAC;
+    EXPECT_EQ(code_of(options), engrave::ErrorCode::INVALID_ARGUMENT) << "a bitrate above the range";
 
     options = {};
     options.reverb_send = 1.5;
-    EXPECT_EQ(code_of(options), engrave::ErrorCode::InvalidArgument) << "a reverb send above 1";
+    EXPECT_EQ(code_of(options), engrave::ErrorCode::INVALID_ARGUMENT) << "a reverb send above 1";
     options = {};
     options.master_volume_db = 25.0;
-    EXPECT_EQ(code_of(options), engrave::ErrorCode::InvalidArgument) << "a master volume above 24 dB";
+    EXPECT_EQ(code_of(options), engrave::ErrorCode::INVALID_ARGUMENT) << "a master volume above 24 dB";
     options = {};
     options.tracks.push_back(engrave::AudioTrackOptions{.track = 0, .balance = 2.0});
-    EXPECT_EQ(code_of(options), engrave::ErrorCode::InvalidArgument) << "a balance outside [-1, 1]";
+    EXPECT_EQ(code_of(options), engrave::ErrorCode::INVALID_ARGUMENT) << "a balance outside [-1, 1]";
 }
 
 TEST(Audio, AudioTracksReportTheDefaultsAndTheExcerpt) {
@@ -580,7 +580,7 @@ TEST(Audio, AnExcerptRendersAsTheMasterWithItsOwnParts) {
     ASSERT_GE(outline->excerpts.size(), 2u);
 
     engrave::AudioOptions master;
-    master.format = engrave::AudioFormat::Wav;
+    master.format = engrave::AudioFormat::WAV;
     engrave::AudioOptions excerpt = master;
     excerpt.score = engrave::ScoreSel{outline->excerpts.front().id};
 
@@ -638,7 +638,7 @@ TEST(RuntimeAssets, SoundFontReplacementChangesTheNextRenderAndIsAtomic) {
 
     auto missing = g_engine->set_soundfonts({g_soundfonts[0], copy});
     ASSERT_FALSE(missing);
-    EXPECT_EQ(missing.error().code, engrave::ErrorCode::NotFound);
+    EXPECT_EQ(missing.error().code, engrave::ErrorCode::NOT_FOUND);
     const auto bad = detail::temp_file("malformed.sf2");
     {
         std::ofstream out(bad, std::ios::binary);
@@ -647,13 +647,13 @@ TEST(RuntimeAssets, SoundFontReplacementChangesTheNextRenderAndIsAtomic) {
     auto invalid = g_engine->set_soundfonts({bad});
     std::filesystem::remove(bad);
     ASSERT_FALSE(invalid);
-    EXPECT_EQ(invalid.error().code, engrave::ErrorCode::InvalidInput);
+    EXPECT_EQ(invalid.error().code, engrave::ErrorCode::INVALID_INPUT);
     EXPECT_EQ(g_engine->capabilities().soundfonts, selection);
     EXPECT_EQ(detail::render_audio(*document, {}).bytes, second.bytes);
     ASSERT_TRUE(g_engine->set_soundfonts({}));
     auto disabled = document->render_audio({}, [](std::span<const std::byte>) {});
     ASSERT_FALSE(disabled);
-    EXPECT_EQ(disabled.error().code, engrave::ErrorCode::Unsupported);
+    EXPECT_EQ(disabled.error().code, engrave::ErrorCode::UNSUPPORTED);
     ASSERT_TRUE(g_engine->set_soundfonts(g_soundfonts));
     EXPECT_EQ(document->revision(), revision);
     const auto mix_after = document->audio_tracks();

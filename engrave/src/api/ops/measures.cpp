@@ -51,9 +51,9 @@ using mu::engraving::TimeSigType;
 using mu::engraving::Transaction;
 using mu::engraving::VOICES;
 
-std::unexpected<Error> invalid(std::string message) { return std::unexpected(Error{ErrorCode::InvalidArgument, std::move(message)}); }
+std::unexpected<Error> invalid(std::string message) { return std::unexpected(Error{ErrorCode::INVALID_ARGUMENT, std::move(message)}); }
 
-std::unexpected<Error> refused(std::string message) { return std::unexpected(Error{ErrorCode::EditRejected, std::move(message)}); }
+std::unexpected<Error> refused(std::string message) { return std::unexpected(Error{ErrorCode::EDIT_REJECTED, std::move(message)}); }
 
 // The transaction the batch runs in; the guard has it open while a step runs.
 Transaction &transaction(EditContext &context) { return context.master().transactionManager()->currentOrDummyTransaction(); }

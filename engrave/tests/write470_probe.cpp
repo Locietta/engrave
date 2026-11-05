@@ -44,9 +44,9 @@ int main(int argc, char **argv) {
     options.score = selection;
     const std::string format(argv[4]);
     if (format == "mscx")
-        options.format = engrave::Format::Mscx;
+        options.format = engrave::Format::MSCX;
     else if (format == "mscz")
-        options.format = engrave::Format::Mscz;
+        options.format = engrave::Format::MSCZ;
     else
         return 1;
     if (std::string(argv[5]) != "default") options.native_version = argv[5];

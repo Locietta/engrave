@@ -37,11 +37,11 @@ namespace {
 
 std::string_view extension_of(engrave::AudioFormat format) {
     switch (format) {
-        case engrave::AudioFormat::Wav: return "wav";
-        case engrave::AudioFormat::Flac: return "flac";
-        case engrave::AudioFormat::Opus: return "ogg";
-        case engrave::AudioFormat::Mp3: return "mp3";
-        case engrave::AudioFormat::Aac: return "aac";
+        case engrave::AudioFormat::WAV: return "wav";
+        case engrave::AudioFormat::FLAC: return "flac";
+        case engrave::AudioFormat::OPUS: return "ogg";
+        case engrave::AudioFormat::MP3: return "mp3";
+        case engrave::AudioFormat::AAC: return "aac";
     }
     return "bin";
 }
@@ -195,8 +195,8 @@ int main(int argc, char **argv) {
 
         if (mode == "positions") {
             std::filesystem::create_directories(out);
-            for (const auto [kind, filename] : {std::pair{engrave::PositionKind::Measure, "measurePositions.json"},
-                                                std::pair{engrave::PositionKind::Segment, "segmentPositions.json"}}) {
+            for (const auto [kind, filename] : {std::pair{engrave::PositionKind::MEASURE, "measurePositions.json"},
+                                                std::pair{engrave::PositionKind::SEGMENT, "segmentPositions.json"}}) {
                 const auto positions = (*document)->positions(kind);
                 if (!positions) throw std::runtime_error(positions.error().message);
                 nlohmann::json result;
@@ -222,10 +222,10 @@ int main(int argc, char **argv) {
         if (mode == "export") {
             std::filesystem::create_directories(out);
             const auto before = notes(**document);
-            const std::pair<engrave::Format, const char *> formats[] = {{engrave::Format::MusicXml, "score.musicxml"},
-                                                                        {engrave::Format::Mscz, "score.mscz"},
-                                                                        {engrave::Format::Mxl, "score.mxl"},
-                                                                        {engrave::Format::Midi, "score.mid"}};
+            const std::pair<engrave::Format, const char *> formats[] = {{engrave::Format::MUSIC_XML, "score.musicxml"},
+                                                                        {engrave::Format::MSCZ, "score.mscz"},
+                                                                        {engrave::Format::MXL, "score.mxl"},
+                                                                        {engrave::Format::MIDI, "score.mid"}};
             for (auto [kind, name] : formats) {
                 engrave::ExportOptions ex;
                 ex.format = kind;
@@ -236,7 +236,7 @@ int main(int argc, char **argv) {
                 if (!reopened) throw std::runtime_error(reopened.error().message);
                 // Native serialization must preserve note placement and pitch exactly.
                 // Interchange import normalizes voices/staves; the captured oracle owns it.
-                if ((kind == engrave::Format::Mscz || kind == engrave::Format::Mscx) && notes(**reopened) != before)
+                if ((kind == engrave::Format::MSCZ || kind == engrave::Format::MSCX) && notes(**reopened) != before)
                     throw std::runtime_error("native semantic reopen changed notes");
             }
             return 0;
@@ -244,7 +244,7 @@ int main(int argc, char **argv) {
 
         if (mode == "render") {
             engrave::RenderOptions render;
-            render.format = engrave::RenderFormat::Svg;
+            render.format = engrave::RenderFormat::SVG;
             const auto svg = (*document)->render(render);
             if (!svg) {
                 std::fprintf(stderr, "error: %s: %s\n", std::string(engrave::to_string(svg.error().code)).c_str(),
@@ -255,7 +255,7 @@ int main(int argc, char **argv) {
             for (std::size_t page = 0; page < svg->pages.size(); ++page)
                 write(out / ("page-" + std::to_string(page) + ".svg"), svg->pages[page]);
 
-            render.format = engrave::RenderFormat::Png;
+            render.format = engrave::RenderFormat::PNG;
             const auto png = (*document)->render(render);
             if (!png) {
                 std::fprintf(stderr, "error: %s: %s\n", std::string(engrave::to_string(png.error().code)).c_str(),
@@ -265,7 +265,7 @@ int main(int argc, char **argv) {
             for (std::size_t page = 0; page < png->pages.size(); ++page)
                 write(out / ("page-" + std::to_string(page) + ".png"), png->pages[page]);
 
-            render.format = engrave::RenderFormat::Pdf;
+            render.format = engrave::RenderFormat::PDF;
             const auto pdf = (*document)->render(render);
             if (!pdf) {
                 std::fprintf(stderr, "error: %s: %s\n", std::string(engrave::to_string(pdf.error().code)).c_str(),
@@ -280,15 +280,15 @@ int main(int argc, char **argv) {
         engrave::AudioOptions audio;
         audio.use_repeats = repeats;
         if (format == "wav")
-            audio.format = engrave::AudioFormat::Wav;
+            audio.format = engrave::AudioFormat::WAV;
         else if (format == "flac")
-            audio.format = engrave::AudioFormat::Flac;
+            audio.format = engrave::AudioFormat::FLAC;
         else if (format == "ogg" || format == "opus")
-            audio.format = engrave::AudioFormat::Opus;
+            audio.format = engrave::AudioFormat::OPUS;
         else if (format == "mp3")
-            audio.format = engrave::AudioFormat::Mp3;
+            audio.format = engrave::AudioFormat::MP3;
         else if (format == "aac")
-            audio.format = engrave::AudioFormat::Aac;
+            audio.format = engrave::AudioFormat::AAC;
         else
             return usage();
         audio.sample_rate = sample_rate;
@@ -297,7 +297,7 @@ int main(int argc, char **argv) {
         const auto rendered = (*document)->render_audio(
             audio, [&bytes](std::span<const std::byte> chunk) { bytes.insert(bytes.end(), chunk.begin(), chunk.end()); });
         if (test_output_open_failure) {
-            if (rendered || rendered.error().code != engrave::ErrorCode::Io || !bytes.empty())
+            if (rendered || rendered.error().code != engrave::ErrorCode::IO || !bytes.empty())
                 throw std::runtime_error("output open failure did not return Io without calling the sink");
             const auto recovered = (*document)->render_audio(
                 audio, [&bytes](std::span<const std::byte> chunk) { bytes.insert(bytes.end(), chunk.begin(), chunk.end()); });

@@ -210,7 +210,7 @@ std::string_view segment_token(SegmentType type) {
 template <typename T>
 Result<Resolved> resolve_at(const std::vector<T *> &items, std::int32_t index, std::string_view what) {
     if (index < 0 || static_cast<std::size_t>(index) >= items.size()) {
-        return fail(ErrorCode::StaleHandle, std::format("no {} at index {}", what, index));
+        return fail(ErrorCode::STALE_HANDLE, std::format("no {} at index {}", what, index));
     }
     return Resolved{items[static_cast<std::size_t>(index)], false};
 }
@@ -362,9 +362,9 @@ Result<Resolved> resolve(MasterScore &master, const ElementId &id) {
     }
 
     EngravingObject *object = master.eidRegister()->itemFromEID(eid);
-    if (!object) return fail(ErrorCode::NotFound, std::format("no element has id {}", to_string(id)));
+    if (!object) return fail(ErrorCode::NOT_FOUND, std::format("no element has id {}", to_string(id)));
     if (!in_document(master, object)) {
-        return fail(ErrorCode::StaleHandle, std::format("the element with id {} is not part of the score", to_string(id)));
+        return fail(ErrorCode::STALE_HANDLE, std::format("the element with id {} is not part of the score", to_string(id)));
     }
     return Resolved{object, true};
 }
@@ -382,7 +382,7 @@ Result<Score *> select_score(MasterScore &master, const ScoreSel &selection) {
     if (!found) return std::unexpected(found.error());
     if (found->object->type() != ElementType::SCORE) {
         return std::unexpected(
-            Error{ErrorCode::InvalidArgument, std::format("the selection names a {}, not a score", found->object->typeName())});
+            Error{ErrorCode::INVALID_ARGUMENT, std::format("the selection names a {}, not a score", found->object->typeName())});
     }
     return mu::engraving::toScore(found->object);
 }
@@ -395,16 +395,16 @@ Result<Resolved> resolve(MasterScore &master, const Address &address) {
                 const Result<Resolved> measure = resolve(master, value.measure);
                 if (!measure) return measure;
                 if (measure->object->type() != ElementType::MEASURE) {
-                    return fail(ErrorCode::InvalidArgument, "a segment address names a measure");
+                    return fail(ErrorCode::INVALID_ARGUMENT, "a segment address names a measure");
                 }
                 const SegmentType kind = segment_type_of(value.kind);
                 if (kind == SegmentType::Invalid) {
-                    return fail(ErrorCode::InvalidArgument, std::format("'{}' is not a segment type", value.kind));
+                    return fail(ErrorCode::INVALID_ARGUMENT, std::format("'{}' is not a segment type", value.kind));
                 }
                 const Fraction &tick = value.tick;
                 if (tick.num < std::numeric_limits<int>::min() || tick.num > std::numeric_limits<int>::max() || tick.den <= 0 ||
                     tick.den > std::numeric_limits<int>::max()) {
-                    return fail(ErrorCode::InvalidArgument, "a segment tick must fit the engine's fraction with a positive denominator");
+                    return fail(ErrorCode::INVALID_ARGUMENT, "a segment tick must fit the engine's fraction with a positive denominator");
                 }
                 Measure *found = mu::engraving::toMeasure(measure->object);
                 // findSegment subtracts the measure tick before comparing. Large
@@ -421,17 +421,17 @@ Result<Resolved> resolve(MasterScore &master, const Address &address) {
                     }
                 }
                 if (!segment) {
-                    return fail(ErrorCode::StaleHandle,
+                    return fail(ErrorCode::STALE_HANDLE,
                                 std::format("no {} segment at tick {}/{}", value.kind, value.tick.num, value.tick.den));
                 }
                 return Resolved{segment, true};
             } else if constexpr (std::is_same_v<T, PageAddress>) {
                 const Result<Score *> selected = select_score(master, value.score);
-                if (!selected) return fail(ErrorCode::StaleHandle, selected.error().message);
+                if (!selected) return fail(ErrorCode::STALE_HANDLE, selected.error().message);
                 return resolve_at((*selected)->pages(), value.index, "page");
             } else if constexpr (std::is_same_v<T, SystemAddress>) {
                 const Result<Score *> selected = select_score(master, value.score);
-                if (!selected) return fail(ErrorCode::StaleHandle, selected.error().message);
+                if (!selected) return fail(ErrorCode::STALE_HANDLE, selected.error().message);
                 const Result<Resolved> page = resolve_at((*selected)->pages(), value.page, "page");
                 if (!page) return page;
                 return resolve_at(mu::engraving::toPage(page->object)->systems(), value.index, "system");
@@ -439,7 +439,7 @@ Result<Resolved> resolve(MasterScore &master, const Address &address) {
                 const Result<Resolved> spanner = resolve(master, value.spanner);
                 if (!spanner) return spanner;
                 if (!spanner->object->isSpanner()) {
-                    return fail(ErrorCode::InvalidArgument, "a spanner segment address names a spanner");
+                    return fail(ErrorCode::INVALID_ARGUMENT, "a spanner segment address names a spanner");
                 }
                 return resolve_at(mu::engraving::toSpanner(spanner->object)->spannerSegments(), value.index, "spanner segment");
             }
@@ -503,11 +503,11 @@ std::vector<Diagnostic> id_repairs(MasterScore &master) {
     std::vector<Diagnostic> diagnostics;
     if (repairs.malformed > 0) {
         diagnostics.push_back(
-            {Severity::Warning, std::format("{} element id(s) were malformed and ignored; those elements got new ids", repairs.malformed)});
+            {Severity::WARNING, std::format("{} element id(s) were malformed and ignored; those elements got new ids", repairs.malformed)});
     }
     if (repairs.duplicate > 0) {
         diagnostics.push_back(
-            {Severity::Warning, std::format("{} element(s) shared an id with another; each got a new id", repairs.duplicate)});
+            {Severity::WARNING, std::format("{} element(s) shared an id with another; each got a new id", repairs.duplicate)});
     }
     return diagnostics;
 }

@@ -29,12 +29,12 @@ std::optional<Format> sniff_zip(const std::string &data) {
             xml.readNext();
             if (!xml.isStartElement() || xml.name() != "rootfile") continue;
             const std::string path = xml.attribute("full-path").toStdString();
-            if (ends_with(path, ".mscx")) return Format::Mscz;
+            if (ends_with(path, ".mscx")) return Format::MSCZ;
             musicxml = musicxml || ends_with(path, ".musicxml") || (ends_with(path, ".xml") && !path.starts_with("META-INF/"));
         }
-        if (musicxml) return Format::Mxl;
+        if (musicxml) return Format::MXL;
     }
-    if (zip.fileExists("Content/score.gpif")) return Format::GuitarPro;
+    if (zip.fileExists("Content/score.gpif")) return Format::GUITAR_PRO;
     return std::nullopt;
 }
 
@@ -47,8 +47,8 @@ std::optional<Format> sniff_xml(const std::string &data) {
     while (!xml.atEnd()) {
         xml.readNext();
         if (xml.isStartElement()) {
-            if (xml.name() == "museScore") return Format::Mscx;
-            if (xml.name() == "score-partwise" || xml.name() == "score-timewise") return Format::MusicXml;
+            if (xml.name() == "museScore") return Format::MSCX;
+            if (xml.name() == "score-partwise" || xml.name() == "score-timewise") return Format::MUSIC_XML;
             return std::nullopt;
         }
     }
@@ -66,14 +66,14 @@ std::optional<Format> sniff_format(const std::string &data) {
     const auto first = text.find_first_not_of(" \t\r\n");
     if (first != std::string_view::npos && text[first] == '{') {
         auto json = nlohmann::json::parse(text, nullptr, false);
-        if (json.is_object() && json.contains("mnx") && json["mnx"].is_object()) return Format::Mnx;
+        if (json.is_object() && json.contains("mnx") && json["mnx"].is_object()) return Format::MNX;
     }
-    if (head.starts_with("MThd")) return Format::Midi;
+    if (head.starts_with("MThd")) return Format::MIDI;
     if (auto format = sniff_xml(data)) return format;
     // importGTP's magics: Power Tab, GP6 (BCFZ), and GP1-5, whose header is a
     // length byte followed by "FICHIER GUITAR PRO" or "FICHIER GUITARE PRO".
     if (head.starts_with("ptab") || head.starts_with("BCFZ") || (!head.empty() && head.substr(1).starts_with("FICHIER GUITAR")))
-        return Format::GuitarPro;
+        return Format::GUITAR_PRO;
     return std::nullopt;
 }
 
@@ -81,15 +81,15 @@ std::optional<Format> format_from_extension(const std::filesystem::path &name) {
     const auto u8 = name.extension().u8string();
     std::string ext(u8.begin(), u8.end());
     std::ranges::transform(ext, ext.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-    if (ext == ".mnx") return Format::Mnx;
-    if (ext == ".mscz") return Format::Mscz;
-    if (ext == ".mscx") return Format::Mscx;
-    if (ext == ".musicxml" || ext == ".xml") return Format::MusicXml;
-    if (ext == ".mxl") return Format::Mxl;
-    if (ext == ".mid" || ext == ".midi" || ext == ".kar") return Format::Midi;
+    if (ext == ".mnx") return Format::MNX;
+    if (ext == ".mscz") return Format::MSCZ;
+    if (ext == ".mscx") return Format::MSCX;
+    if (ext == ".musicxml" || ext == ".xml") return Format::MUSIC_XML;
+    if (ext == ".mxl") return Format::MXL;
+    if (ext == ".mid" || ext == ".midi" || ext == ".kar") return Format::MIDI;
     if (ext == ".gp" || ext == ".gp3" || ext == ".gp4" || ext == ".gp5" || ext == ".gp6" || ext == ".gp7" || ext == ".gpx" ||
         ext == ".gtp" || ext == ".ptb")
-        return Format::GuitarPro;
+        return Format::GUITAR_PRO;
     return std::nullopt;
 }
 

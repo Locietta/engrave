@@ -32,7 +32,7 @@ using mu::engraving::Part;
 using mu::engraving::Score;
 using mu::engraving::Staff;
 
-std::unexpected<Error> invalid(std::string message) { return std::unexpected(Error{ErrorCode::InvalidArgument, std::move(message)}); }
+std::unexpected<Error> invalid(std::string message) { return std::unexpected(Error{ErrorCode::INVALID_ARGUMENT, std::move(message)}); }
 
 Result<Part *> part_at(EditContext &context, const Target &target) {
     auto object = context.object(target);

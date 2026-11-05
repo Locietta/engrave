@@ -1,8 +1,10 @@
 #pragma once
-#include "engrave/src/score/export_options.h"
+
 #include <memory>
-#include <string>
 #include <stdexcept>
+#include <string>
+
+#include "engrave/src/score/export_options.h"
 
 namespace mu::engraving {
 class EngravingProject;
@@ -10,7 +12,7 @@ class MasterScore;
 } // namespace mu::engraving
 
 namespace music {
-class EngineContext;
+struct EngineContext;
 
 struct UnsupportedScoreVersion : std::runtime_error {
     using std::runtime_error::runtime_error;

@@ -22,8 +22,7 @@ typedef struct _cairo cairo_t;
 namespace muse::draw {
 class IFontsDatabase;
 
-class CairoPainter final : public IPaintProvider {
-public:
+struct CairoPainter final : IPaintProvider {
     /*! deviceDpi is the logical DPI of the Cairo target (the value
      *  Painter::deviceLogicalDpi() must report).  For MuseScore engraving
      *  coordinates the baseline is 1200.

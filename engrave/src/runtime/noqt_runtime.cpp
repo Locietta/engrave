@@ -1,34 +1,36 @@
 #include "noqt_runtime.h"
-#include "engrave/src/score/score_metadata.h"
-#include "engrave/src/score/score_excerpts.h"
-#include "engrave/src/io/score_imports.h"
-#include "engrave/src/io/midi_import_adapter.h"
-#include "engraving/rw/rwregister.h"
-#include "engrave/src/score/score_positions.h"
-#include "engrave/src/render/score_render.h"
-#include "engine_context.h"
-#include "global/log.h"
-#include "global/io/buffer.h"
-#include "global/io/writebudget.h"
-#include "global/serialization/zipreader.h"
-#include "global/serialization/zipwriter.h"
-#include "global/serialization/xmlstreamreader.h"
-#include "engraving/engravingproject.h"
-#include "engraving/dom/masterscore.h"
-#include "engraving/dom/score.h"
-#include "engraving/dom/excerpt.h"
-#include "engraving/dom/instrtemplate.h"
-#include "engraving/dom/instrument.h"
-#include "engraving/dom/part.h"
-#include "engraving/infrastructure/localfileinfoprovider.h"
-#include "engraving/rw/inoutdata.h"
-#include "importexport/musicxml/internal/import/importmusicxml.h"
-#include "importexport/musicxml/internal/export/exportmusicxml.h"
-#include "importexport/midi/internal/midiexport/exportmidi.h"
+
 #include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <vector>
+
+#include "engine_context.h"
+#include "engrave/src/io/midi_import_adapter.h"
+#include "engrave/src/io/score_imports.h"
+#include "engrave/src/render/score_render.h"
+#include "engrave/src/score/score_excerpts.h"
+#include "engrave/src/score/score_metadata.h"
+#include "engrave/src/score/score_positions.h"
+#include "engraving/dom/excerpt.h"
+#include "engraving/dom/instrtemplate.h"
+#include "engraving/dom/instrument.h"
+#include "engraving/dom/masterscore.h"
+#include "engraving/dom/part.h"
+#include "engraving/dom/score.h"
+#include "engraving/engravingproject.h"
+#include "engraving/infrastructure/localfileinfoprovider.h"
+#include "engraving/rw/inoutdata.h"
+#include "engraving/rw/rwregister.h"
+#include "global/io/buffer.h"
+#include "global/io/writebudget.h"
+#include "global/log.h"
+#include "global/serialization/xmlstreamreader.h"
+#include "global/serialization/zipreader.h"
+#include "global/serialization/zipwriter.h"
+#include "importexport/midi/internal/midiexport/exportmidi.h"
+#include "importexport/musicxml/internal/export/exportmusicxml.h"
+#include "importexport/musicxml/internal/import/importmusicxml.h"
 
 namespace music {
 using namespace muse;
@@ -36,8 +38,7 @@ using namespace mu;
 
 namespace {
 
-class CaptureOutputBuffer final : public io::Buffer {
-public:
+struct CaptureOutputBuffer final : io::Buffer {
     explicit CaptureOutputBuffer(ByteArray *data) : Buffer(data) {}
 protected:
     bool resizeData(size_t size) override {

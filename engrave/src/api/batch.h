@@ -29,9 +29,9 @@ namespace engrave::api {
 
 // How a batch that contains the operation is rolled back.
 enum struct Policy {
-    Transaction, // the transaction's unwind restores the score (proven by the harness)
-    Snapshot,    // the score is restored from an in-memory MSCZ written before the batch
-    Unexposed,   // edit() refuses the operation
+    TRANSACTION, // the transaction's unwind restores the score (proven by the harness)
+    SNAPSHOT,    // the score is restored from an in-memory MSCZ written before the batch
+    UNEXPOSED,   // edit() refuses the operation
 };
 
 std::string_view to_string(Policy policy) noexcept;
@@ -44,10 +44,9 @@ struct Target {
     std::size_t epoch = 0;
 };
 
-class BatchGuard;
+struct BatchGuard;
 
-class EditContext {
-public:
+struct EditContext {
     explicit EditContext(mu::engraving::MasterScore &master) : master_(master) {}
 
     mu::engraving::MasterScore &master() const { return master_; }
@@ -69,7 +68,7 @@ public:
     void created(mu::engraving::EngravingObject *object);
 
 private:
-    friend class BatchGuard;
+    friend struct BatchGuard;
 
     mu::engraving::MasterScore &master_;
     std::size_t op_ = 0;
@@ -111,8 +110,7 @@ struct EditHooks {
 
 // Runs a batch as one transaction. edit() is Document::edit; run() takes steps
 // that are already prepared, for the library's tests that bring their own.
-class BatchGuard {
-public:
+struct BatchGuard {
     explicit BatchGuard(Document &document);
 
     Result<EditResult> edit(const Batch &batch, std::optional<std::uint64_t> expected_revision);

@@ -1,16 +1,19 @@
 #include "score_render.h"
-#include "cairo_painter.h"
-#include "engrave/src/runtime/engine_context.h"
-#include "draw/painter.h"
-#include "engraving/dom/score.h"
-#include "engraving/dom/mscore.h"
-#include "engraving/rendering/iscorerenderer.h"
-#include <cairo.h>
-#include <cairo-pdf.h>
-#include <cairo-svg.h>
+
 #include <cmath>
 #include <memory>
 #include <stdexcept>
+
+#include <cairo-pdf.h>
+#include <cairo-svg.h>
+#include <cairo.h>
+
+#include "cairo_painter.h"
+#include "draw/painter.h"
+#include "engrave/src/runtime/engine_context.h"
+#include "engraving/dom/mscore.h"
+#include "engraving/dom/score.h"
+#include "engraving/rendering/iscorerenderer.h"
 
 namespace music {
 namespace {

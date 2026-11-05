@@ -241,7 +241,7 @@ std::string check_commit(Engine &engine, const OpCase &op_case, const std::files
     if (const std::string problem = inv(*document); !problem.empty()) return "fail: INV: " + problem;
     if (const std::string problem = op_case.expect(*document, before, after); !problem.empty()) return "fail: " + problem;
 
-    const auto saved = document->export_score({.format = Format::Mscz});
+    const auto saved = document->export_score({.format = Format::MSCZ});
     if (!saved) return "fail: the save failed";
     auto reopened = engine.open(std::span<const std::byte>(*saved));
     if (!reopened) return "fail: the reopen failed";
@@ -304,7 +304,7 @@ std::string check_injection(Engine &engine, const OpCase &op_case, const std::fi
 std::string check_poison(Engine &engine, const OpCase &op_case, const std::filesystem::path &fixture) {
     auto document = open(engine, fixture);
     api::EditHooks &hooks = DocumentAccess::edit_hooks(*document);
-    hooks.policy = api::Policy::Snapshot;
+    hooks.policy = api::Policy::SNAPSHOT;
     hooks.fail_restore = true;
     const Batch batch = op_case.make(*document);
     try {
@@ -315,7 +315,7 @@ std::string check_poison(Engine &engine, const OpCase &op_case, const std::files
     hooks = {};
     const auto again = document->edit(batch);
     const auto saved = document->export_score({});
-    if (again || again.error().code != ErrorCode::Poisoned || saved || saved.error().code != ErrorCode::Poisoned)
+    if (again || again.error().code != ErrorCode::POISONED || saved || saved.error().code != ErrorCode::POISONED)
         return "a poisoned document still works";
     return {};
 }
@@ -354,7 +354,7 @@ std::pair<std::string, std::string> check_rollbacks(Engine &engine, const OpCase
                  },
                  std::format("engine error before step {}", step)});
     }
-    if (policy == api::Policy::Snapshot) {
+    if (policy == api::Policy::SNAPSHOT) {
         if (std::string failure = check_poison(engine, op_case, fixture); !failure.empty()) c4.push_back(std::move(failure));
     }
     return {summary(c3), summary(c4)};
@@ -370,7 +370,7 @@ std::vector<OpCase> &cases() {
 Fingerprint fingerprint(Document &document) {
     MasterScore &master = master_of(document);
     Fingerprint print;
-    const auto saved = document.export_score({.format = Format::Mscz});
+    const auto saved = document.export_score({.format = Format::MSCZ});
     if (!saved) throw std::runtime_error("fingerprint: the save failed: " + saved.error().message);
     print.files = mscz_files(*saved);
     print.semantic = music::semantic_dump(&master).dump(1);
@@ -487,17 +487,17 @@ EvidenceRow run_case(Engine &engine, const OpCase &op_case, const std::filesyste
         row.c3_unwind = row.c4_unwind = "not probed: " + unprobed->second;
     } else {
         std::tie(row.c3_unwind, row.c4_unwind) =
-            check_rollbacks(engine, op_case, fixture, row.pushes, ops, api::Policy::Transaction, row.r4);
+            check_rollbacks(engine, op_case, fixture, row.pushes, ops, api::Policy::TRANSACTION, row.r4);
     }
-    std::tie(row.c3_snapshot, row.c4_snapshot) = check_rollbacks(engine, op_case, fixture, row.pushes, ops, api::Policy::Snapshot, row.r4);
+    std::tie(row.c3_snapshot, row.c4_snapshot) = check_rollbacks(engine, op_case, fixture, row.pushes, ops, api::Policy::SNAPSHOT, row.r4);
 
     const bool committed = row.c1 == pass;
     if (committed && row.c2 == pass && row.c3_unwind == pass && row.c4_unwind == pass && row.r4 == pass)
-        row.verdict = api::Policy::Transaction;
+        row.verdict = api::Policy::TRANSACTION;
     else if (committed && row.c3_snapshot == pass && row.c4_snapshot == pass)
-        row.verdict = api::Policy::Snapshot;
+        row.verdict = api::Policy::SNAPSHOT;
     else
-        row.verdict = api::Policy::Unexposed;
+        row.verdict = api::Policy::UNEXPOSED;
     return row;
 }
 

@@ -24,51 +24,52 @@ std::string utf8(const std::filesystem::path &path) {
 
 std::string_view to_string(ErrorCode code) noexcept {
     switch (code) {
-        case ErrorCode::InvalidArgument: return "InvalidArgument";
-        case ErrorCode::InvalidInput: return "InvalidInput";
-        case ErrorCode::UnsupportedFormat: return "UnsupportedFormat";
-        case ErrorCode::NotFound: return "NotFound";
-        case ErrorCode::StaleHandle: return "StaleHandle";
-        case ErrorCode::ResourceLimit: return "ResourceLimit";
-        case ErrorCode::Unsupported: return "Unsupported";
-        case ErrorCode::Io: return "Io";
-        case ErrorCode::RevisionConflict: return "RevisionConflict";
-        case ErrorCode::EditRejected: return "EditRejected";
-        case ErrorCode::Poisoned: return "Poisoned";
-        case ErrorCode::Cancelled: return "Cancelled";
+        case ErrorCode::INVALID_ARGUMENT: return "InvalidArgument";
+        case ErrorCode::INVALID_INPUT: return "InvalidInput";
+        case ErrorCode::UNSUPPORTED_FORMAT: return "UnsupportedFormat";
+        case ErrorCode::NOT_FOUND: return "NotFound";
+        case ErrorCode::STALE_HANDLE: return "StaleHandle";
+        case ErrorCode::RESOURCE_LIMIT: return "ResourceLimit";
+        case ErrorCode::UNSUPPORTED: return "Unsupported";
+        case ErrorCode::IO: return "Io";
+        case ErrorCode::REVISION_CONFLICT: return "RevisionConflict";
+        case ErrorCode::EDIT_REJECTED: return "EditRejected";
+        case ErrorCode::POISONED: return "Poisoned";
+        case ErrorCode::CANCELLED: return "Cancelled";
     }
     return "Unknown";
 }
 
 std::string_view to_string(Format format) noexcept {
     switch (format) {
-        case Format::Mscz: return "MSCZ";
-        case Format::Mscx: return "MSCX";
-        case Format::MusicXml: return "MusicXML";
-        case Format::Mxl: return "MXL";
-        case Format::Midi: return "MIDI";
-        case Format::GuitarPro: return "Guitar Pro";
-        case Format::Mnx: return "MNX";
+        case Format::MSCZ: return "MSCZ";
+        case Format::MSCX: return "MSCX";
+        case Format::MUSIC_XML: return "MusicXML";
+        case Format::MXL: return "MXL";
+        case Format::MIDI: return "MIDI";
+        case Format::GUITAR_PRO: return "Guitar Pro";
+        case Format::MNX: return "MNX";
     }
     return "Unknown";
 }
 
 std::string_view to_string(RenderFormat format) noexcept {
     switch (format) {
-        case RenderFormat::Pdf: return "PDF";
-        case RenderFormat::Png: return "PNG";
-        case RenderFormat::Svg: return "SVG";
+        case RenderFormat::PDF: return "PDF";
+        case RenderFormat::PNG: return "PNG";
+        case RenderFormat::SVG: return "SVG";
     }
     return "Unknown";
 }
 
 std::string_view to_string(AudioFormat format) noexcept {
     switch (format) {
-        case AudioFormat::Wav: return "WAV";
-        case AudioFormat::Flac: return "FLAC";
-        case AudioFormat::Opus: return "Opus";
-        case AudioFormat::Mp3: return "MP3";
-        case AudioFormat::Aac: return "AAC";
+        case AudioFormat::WAV: return "WAV";
+        case AudioFormat::FLAC: return "FLAC";
+        case AudioFormat::OGG: return "OGG";
+        case AudioFormat::OPUS: return "Opus";
+        case AudioFormat::MP3: return "MP3";
+        case AudioFormat::AAC: return "AAC";
     }
     return "Unknown";
 }

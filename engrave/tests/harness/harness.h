@@ -86,7 +86,7 @@ struct EvidenceRow {
     std::size_t pushes = 0;
     // "pass", or "fail: <reason>"; the C3/C4 pair runs once per rollback path.
     std::string c1, c2, c3_unwind, c4_unwind, c3_snapshot, c4_snapshot, r4;
-    api::Policy verdict = api::Policy::Unexposed;
+    api::Policy verdict = api::Policy::UNEXPOSED;
 };
 
 EvidenceRow run_case(Engine &engine, const OpCase &op_case, const std::filesystem::path &fixture);

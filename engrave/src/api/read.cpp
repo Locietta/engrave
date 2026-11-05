@@ -116,7 +116,7 @@ Result<std::vector<Pid>> named_pids(const std::vector<std::string> &names) {
     pids.reserve(names.size());
     for (const std::string &name : names) {
         const Pid pid = api::pid_of(name);
-        if (pid == Pid::END) return fail(ErrorCode::NotFound, std::format("no property '{}'", name));
+        if (pid == Pid::END) return fail(ErrorCode::NOT_FOUND, std::format("no property '{}'", name));
         pids.push_back(pid);
     }
     return pids;
@@ -364,7 +364,7 @@ Result<MeasureWindow> measure_window(const Query &request, Score &score, MasterS
     const auto last_index = static_cast<std::int64_t>(count);
     MeasureWindow window;
     if ((request.first_measure || request.measure_count) && (request.from_measure || request.to_measure)) {
-        return fail(ErrorCode::InvalidArgument, "a query names its measure window by index or by id, not both");
+        return fail(ErrorCode::INVALID_ARGUMENT, "a query names its measure window by index or by id, not both");
     }
     if (!request.first_measure && !request.measure_count && !request.from_measure && !request.to_measure) {
         return window; // the whole score
@@ -373,11 +373,11 @@ Result<MeasureWindow> measure_window(const Query &request, Score &score, MasterS
         const Result<Resolved> found = resolve(master, id);
         if (!found) return std::unexpected(found.error());
         if (found->object->type() != mu::engraving::ElementType::MEASURE) {
-            return fail(ErrorCode::InvalidArgument, std::format("{} is not a measure", what));
+            return fail(ErrorCode::INVALID_ARGUMENT, std::format("{} is not a measure", what));
         }
         const MeasureIndex index(score);
         const auto position = index.index_of(mu::engraving::toMeasure(found->object));
-        if (position < 0) return fail(ErrorCode::InvalidArgument, std::format("{} is not a measure of the score", what));
+        if (position < 0) return fail(ErrorCode::INVALID_ARGUMENT, std::format("{} is not a measure of the score", what));
         return position;
     };
     if (request.from_measure) {
@@ -399,12 +399,12 @@ Result<MeasureWindow> measure_window(const Query &request, Score &score, MasterS
     }
     window.given = true;
     if (window.first < 0 || last < window.first || last > last_index || last > std::numeric_limits<std::int32_t>::max()) {
-        return fail(ErrorCode::InvalidArgument,
+        return fail(ErrorCode::INVALID_ARGUMENT,
                     std::format("the measure window [{}, {}) is not inside the score's {} measure(s)", window.first, last, count));
     }
     window.last = static_cast<std::int32_t>(last);
     if (static_cast<std::size_t>(window.last - window.first) > max_query_measures) {
-        return fail(ErrorCode::InvalidArgument, std::format("a measure window is at most {} measures wide", max_query_measures));
+        return fail(ErrorCode::INVALID_ARGUMENT, std::format("a measure window is at most {} measures wide", max_query_measures));
     }
     return window;
 }
@@ -434,7 +434,7 @@ Order order_of(const ElementInfo &element, int score) {
 Result<Outline> Document::outline(const ScoreSel &selection) {
     impl_->engine->check_thread();
     if (!impl_->poisoned) impl_->refresh_fonts();
-    if (impl_->poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
+    if (impl_->poisoned) return fail(ErrorCode::POISONED, "an earlier edit left the document unusable");
     MasterScore &master = *impl_->project->masterScore();
     const Result<Score *> selected = select_score(master, selection);
     if (!selected) return std::unexpected(selected.error());
@@ -468,37 +468,37 @@ Result<Outline> Document::outline(const ScoreSel &selection) {
 Result<QueryResult> Document::query(const Query &request) {
     impl_->engine->check_thread();
     if (!impl_->poisoned && request.layout_boxes) impl_->refresh_fonts();
-    if (impl_->poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
+    if (impl_->poisoned) return fail(ErrorCode::POISONED, "an earlier edit left the document unusable");
     MasterScore &master = *impl_->project->masterScore();
     const Result<Score *> selected = select_score(master, request.score);
     if (!selected) return std::unexpected(selected.error());
     Score &score = **selected;
 
-    if (request.limit == 0) return fail(ErrorCode::InvalidArgument, "a query limit is at least 1");
+    if (request.limit == 0) return fail(ErrorCode::INVALID_ARGUMENT, "a query limit is at least 1");
     if (request.limit > max_query_results) {
-        return fail(ErrorCode::ResourceLimit, std::format("a query reports at most {} elements at a time", max_query_results));
+        return fail(ErrorCode::RESOURCE_LIMIT, std::format("a query reports at most {} elements at a time", max_query_results));
     }
     for (const std::string &type : request.types) {
-        if (!api::has_type(type)) return fail(ErrorCode::InvalidArgument, std::format("no element type '{}'", type));
+        if (!api::has_type(type)) return fail(ErrorCode::INVALID_ARGUMENT, std::format("no element type '{}'", type));
     }
     const Result<std::vector<Pid>> props = named_pids(request.props);
     if (!props) return std::unexpected(props.error());
     const auto nstaves = static_cast<std::int32_t>(score.nstaves());
     for (const std::int32_t staff : request.staves) {
         if (staff < 0 || staff >= nstaves) {
-            return fail(ErrorCode::InvalidArgument, std::format("staff {} is not one of the score's {}", staff, nstaves));
+            return fail(ErrorCode::INVALID_ARGUMENT, std::format("staff {} is not one of the score's {}", staff, nstaves));
         }
     }
     for (const std::int32_t voice : request.voices) {
         if (voice < 0 || voice >= static_cast<std::int32_t>(mu::engraving::VOICES)) {
-            return fail(ErrorCode::InvalidArgument, std::format("voice {} is not in 0..{}", voice, mu::engraving::VOICES - 1));
+            return fail(ErrorCode::INVALID_ARGUMENT, std::format("voice {} is not in 0..{}", voice, mu::engraving::VOICES - 1));
         }
     }
     if ((request.from_tick && request.from_tick->den <= 0) || (request.to_tick && request.to_tick->den <= 0)) {
-        return fail(ErrorCode::InvalidArgument, "a tick range must have positive denominators");
+        return fail(ErrorCode::INVALID_ARGUMENT, "a tick range must have positive denominators");
     }
     if (request.from_tick && request.to_tick && before(*request.to_tick, *request.from_tick)) {
-        return fail(ErrorCode::InvalidArgument, "a tick range ends before it starts");
+        return fail(ErrorCode::INVALID_ARGUMENT, "a tick range ends before it starts");
     }
     const Result<MeasureWindow> window = measure_window(request, score, master);
     if (!window) return std::unexpected(window.error());
@@ -551,12 +551,12 @@ Result<QueryResult> Document::query(const Query &request) {
     }
 
     if (rows.size() > max_query_results) {
-        return fail(ErrorCode::ResourceLimit,
+        return fail(ErrorCode::RESOURCE_LIMIT,
                     std::format("the query matches {} elements; one query reports at most {}", rows.size(), max_query_results));
     }
     std::ranges::sort(rows, {}, &std::pair<Order, ElementInfo>::first);
     if (request.cursor > rows.size()) {
-        return fail(ErrorCode::InvalidArgument,
+        return fail(ErrorCode::INVALID_ARGUMENT,
                     std::format("the cursor {} is past the {} element(s) the query matches", request.cursor, rows.size()));
     }
 
@@ -572,13 +572,13 @@ Result<QueryResult> Document::query(const Query &request) {
 Result<std::vector<PropertyRead>> Document::get(const Ref &target, const std::vector<std::string> &props) {
     impl_->engine->check_thread();
     if (!impl_->poisoned) impl_->refresh_fonts();
-    if (impl_->poisoned) return fail(ErrorCode::Poisoned, "an earlier edit left the document unusable");
+    if (impl_->poisoned) return fail(ErrorCode::POISONED, "an earlier edit left the document unusable");
     MasterScore &master = *impl_->project->masterScore();
     const Result<Resolved> resolved = std::visit(
         [&master](const auto &value) -> Result<Resolved> {
             using T = std::decay_t<decltype(value)>;
             if constexpr (std::is_same_v<T, OpRef>) {
-                return fail(ErrorCode::InvalidArgument, "an OpRef names an element of a batch, not of the document");
+                return fail(ErrorCode::INVALID_ARGUMENT, "an OpRef names an element of a batch, not of the document");
             } else {
                 return resolve(master, value);
             }
@@ -599,7 +599,7 @@ Result<std::vector<PropertyRead>> Document::get(const Ref &target, const std::ve
     if (!named) return std::unexpected(named.error());
     for (std::size_t i = 0; i < named->size(); ++i) {
         if (!has_property(known, (*named)[i])) {
-            return fail(ErrorCode::InvalidArgument, std::format("a {} has no property '{}'", object.typeName(), props[i]));
+            return fail(ErrorCode::INVALID_ARGUMENT, std::format("a {} has no property '{}'", object.typeName(), props[i]));
         }
     }
     std::vector<PropertyRead> reads;

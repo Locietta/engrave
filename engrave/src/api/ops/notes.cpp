@@ -41,7 +41,7 @@ using mu::engraving::Segment;
 using mu::engraving::Staff;
 using mu::engraving::Transpose;
 
-std::unexpected<Error> invalid(std::string message) { return std::unexpected(Error{ErrorCode::InvalidArgument, std::move(message)}); }
+std::unexpected<Error> invalid(std::string message) { return std::unexpected(Error{ErrorCode::INVALID_ARGUMENT, std::move(message)}); }
 
 // A duration in the engine's fraction, whose members the engine keeps as ints.
 std::optional<mu::engraving::Fraction> engine_fraction(const Fraction &value) {
@@ -133,13 +133,13 @@ Result<Step> prepare(EditContext &context, const EnterNotes &op) {
         const mu::engraving::track_idx_t track = mu::engraving::staff2track(at.staff, at.voice);
         NoteVal first = pitches.empty() ? NoteVal() : note_value(pitches.front());
         if (!score->setNoteRestAt(start, track, first, duration))
-            return std::unexpected(Error{ErrorCode::EditRejected, "the engine could not enter a note at this position"});
+            return std::unexpected(Error{ErrorCode::EDIT_REJECTED, "the engine could not enter a note at this position"});
         // The first piece of the entry sits where the address points; the rest of a
         // duration that reached past a barline is tied to it.
         Segment *entered_at = score->tick2segment(tick, true, mu::engraving::SegmentType::ChordRest);
         EngravingItem *entered = entered_at ? entered_at->element(track) : nullptr;
         if (!entered || !entered->isChordRest())
-            return std::unexpected(Error{ErrorCode::EditRejected, "the engine left no chord or rest at this position"});
+            return std::unexpected(Error{ErrorCode::EDIT_REJECTED, "the engine left no chord or rest at this position"});
         context.created(entered);
         if (!entered->isChord()) return {};
         Chord *chord = mu::engraving::toChord(entered);
@@ -154,7 +154,7 @@ Result<Step> prepare(EditContext &context, const EnterNotes &op) {
         for (std::size_t i = 1; i < pitches.size(); ++i) {
             NoteVal value = note_value(pitches[i]);
             if (!mu::engraving::NoteInput::addNoteToChord(score, chord, value))
-                return std::unexpected(Error{ErrorCode::EditRejected, std::format("the engine could not add pitch {}", pitches[i].pitch)});
+                return std::unexpected(Error{ErrorCode::EDIT_REJECTED, std::format("the engine could not add pitch {}", pitches[i].pitch)});
         }
         return {};
     };

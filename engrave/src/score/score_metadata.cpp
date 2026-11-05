@@ -32,7 +32,6 @@
 // chord-symbol pseudo track.
 
 #include "score_metadata.h"
-#include "engrave/src/audio/score_audio.h"
 
 #include <algorithm>
 #include <cfloat>
@@ -46,6 +45,7 @@
 #include <utility>
 #include <vector>
 
+#include "engrave/src/audio/score_audio.h"
 #include "global/realfn.h"
 #include "global/types/string.h"
 

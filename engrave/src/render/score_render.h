@@ -1,14 +1,16 @@
 #pragma once
-#include "engrave/src/score/export_options.h"
+
 #include <stdexcept>
 #include <string>
+
+#include "engrave/src/score/export_options.h"
 
 namespace mu::engraving {
 class Score;
 } // namespace mu::engraving
 
 namespace music {
-class EngineContext;
+struct EngineContext;
 
 // The page is larger than the renderer draws: 36..1200 dpi, 32767 pixels per
 // side and 64e6 pixels in all. A caller maps this to a resource-limit error,

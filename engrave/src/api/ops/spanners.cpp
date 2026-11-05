@@ -56,9 +56,9 @@ using mu::engraving::Tuplet;
 using mu::engraving::TupletBracketType;
 using mu::engraving::TupletNumberType;
 
-std::unexpected<Error> invalid(std::string message) { return std::unexpected(Error{ErrorCode::InvalidArgument, std::move(message)}); }
+std::unexpected<Error> invalid(std::string message) { return std::unexpected(Error{ErrorCode::INVALID_ARGUMENT, std::move(message)}); }
 
-std::unexpected<Error> rejected(std::string message) { return std::unexpected(Error{ErrorCode::EditRejected, std::move(message)}); }
+std::unexpected<Error> rejected(std::string message) { return std::unexpected(Error{ErrorCode::EDIT_REJECTED, std::move(message)}); }
 
 // The chord or rest a reference names: a chord rest, or the chord of a note.
 Result<ChordRest *> chord_rest(const EditContext &context, const Target &target) {

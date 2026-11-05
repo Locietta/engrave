@@ -3,7 +3,6 @@
 //   src/framework/draw/internal/ifontsdatabase.h
 //   src/framework/draw/internal/ifontsengine.h
 #include "runtime_assets.h"
-#include "draw/internal/fontprovider.h"
 
 #include <algorithm>
 #include <atomic>
@@ -27,6 +26,7 @@
 
 #include <zlib.h>
 
+#include "draw/internal/fontprovider.h"
 #include "draw/internal/fontsdatabase.h"
 #include "draw/internal/fontsengine.h"
 #include "draw/internal/ifontsdatabase.h"
@@ -50,8 +50,7 @@ std::string pathToUtf8(const std::filesystem::path &path) {
     return std::string(reinterpret_cast<const char *>(utf8.data()), utf8.size());
 }
 
-class CacheStore {
-public:
+struct CacheStore {
     explicit CacheStore(std::filesystem::path root) : root_(std::move(root)) {}
 
     void ensureDirectory() {
@@ -146,8 +145,7 @@ private:
     bool shutdownPending_ = false;
 };
 
-class ResourceLease {
-public:
+struct ResourceLease {
     explicit ResourceLease(std::shared_ptr<CacheStore> cache) : cache_(std::move(cache)) { cache_->retain(); }
 
     ~ResourceLease() { cache_->release(); }
@@ -158,8 +156,7 @@ private:
     std::shared_ptr<CacheStore> cache_;
 };
 
-class TempFileGuard {
-public:
+struct TempFileGuard {
     explicit TempFileGuard(std::filesystem::path path) : path_(std::move(path)) {}
 
     ~TempFileGuard() {
@@ -360,8 +357,7 @@ std::unique_ptr<draw::FontsEngine> createEngine(draw::IFontsDatabase &database) 
     return engine;
 }
 
-class RuntimeFontsDatabase final : public draw::FontsDatabase {
-public:
+struct RuntimeFontsDatabase final : draw::FontsDatabase {
     RuntimeFontsDatabase(std::shared_ptr<CacheStore> cacheStore, std::shared_ptr<const ActiveTable> active)
         : cacheStore_(std::move(cacheStore)), active_(std::move(active)) {}
 
@@ -431,8 +427,7 @@ private:
     std::shared_ptr<const ActiveTable> active_;
 };
 
-class FontsEngineProxy final : public draw::IFontsEngine {
-public:
+struct FontsEngineProxy final : draw::IFontsEngine {
     FontsEngineProxy(const OwnerState &owner, std::shared_ptr<CacheStore> cacheStore, std::unique_ptr<draw::FontsEngine> engine)
         : owner_(owner), cacheStore_(std::move(cacheStore)), engine_(std::move(engine)) {}
 

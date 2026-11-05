@@ -21,7 +21,7 @@ using mu::engraving::EngravingObject;
 using mu::engraving::Pid;
 using mu::engraving::PropertyFlags;
 
-std::unexpected<Error> invalid(std::string message) { return std::unexpected(Error{ErrorCode::InvalidArgument, std::move(message)}); }
+std::unexpected<Error> invalid(std::string message) { return std::unexpected(Error{ErrorCode::INVALID_ARGUMENT, std::move(message)}); }
 
 Result<Pid> property_id(const std::string &name) {
     const Pid pid = pid_of(name);

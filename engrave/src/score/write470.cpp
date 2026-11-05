@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #include "write470.h"
-#include <engrave/testing/write470.h>
 
 #include <algorithm>
 #include <array>
@@ -12,12 +11,13 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <utility>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <pugixml.hpp>
 
+#include <engrave/testing/write470.h>
 #include "engrave/src/api/handles.h"
 #include "engraving/automation/automationdata.h"
 #include "engraving/dom/chordlist.h"
@@ -95,8 +95,7 @@ void charge_xml(std::size_t bytes) {
     }
 }
 
-class OutputBuffer final : public muse::io::Buffer {
-public:
+struct OutputBuffer final : muse::io::Buffer {
     explicit OutputBuffer(muse::ByteArray *data, bool limit_output = true) : Buffer(data), limit_output_(limit_output) {}
 protected:
     bool resizeData(std::size_t size) override {
@@ -107,8 +106,7 @@ private:
     bool limit_output_;
 };
 
-class XmlOutput final : public pugi::xml_writer {
-public:
+struct XmlOutput final : pugi::xml_writer {
     explicit XmlOutput(muse::io::IODevice &output) : output_(output) {}
 
     void write(const void *data, std::size_t size) override {
@@ -522,7 +520,7 @@ void convert_degradations(pugi::xml_node node, std::vector<ExportWarning> &warni
 }
 
 Result<ExportOutput> refused(std::vector<ExportWarning> warnings) {
-    Error error{ErrorCode::Unsupported, "this score contains content the 4.70 writer cannot yet convert"};
+    Error error{ErrorCode::UNSUPPORTED, "this score contains content the 4.70 writer cannot yet convert"};
     for (auto &warning : warnings) {
         error.message += "\n" + warning.message;
         if (warning.code == "B470_UNSUPPORTED_FEATURE")
@@ -860,7 +858,7 @@ Result<ExportOutput> export_score(const music::EngineContext &context, const mus
     const auto *first = reinterpret_cast<const std::byte *>(data.constData());
     return ExportOutput{std::vector<std::byte>(first, first + data.size()), std::move(warnings)};
 } catch (const std::invalid_argument &error) {
-    return std::unexpected(Error{ErrorCode::InvalidArgument, error.what()});
+    return std::unexpected(Error{ErrorCode::INVALID_ARGUMENT, error.what()});
 }
 
 } // namespace engrave::write470

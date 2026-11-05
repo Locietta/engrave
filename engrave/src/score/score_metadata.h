@@ -28,10 +28,11 @@
 
 #pragma once
 
-#include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
 #include <vector>
+
+#include <nlohmann/json.hpp>
 
 namespace mu::engraving {
 class Score;

@@ -171,10 +171,10 @@ void collect(const std::filesystem::path &path) {
 TEST(Output, CapabilitiesListTheRenderAndAudioFormats) {
     const engrave::Capabilities capabilities = g_engine->capabilities();
     EXPECT_EQ(capabilities.render_formats,
-              (std::vector<engrave::RenderFormat>{engrave::RenderFormat::Pdf, engrave::RenderFormat::Png, engrave::RenderFormat::Svg}));
+              (std::vector<engrave::RenderFormat>{engrave::RenderFormat::PDF, engrave::RenderFormat::PNG, engrave::RenderFormat::SVG}));
     EXPECT_EQ(capabilities.audio_formats,
-              (std::vector<engrave::AudioFormat>{engrave::AudioFormat::Wav, engrave::AudioFormat::Flac, engrave::AudioFormat::Opus,
-                                                 engrave::AudioFormat::Mp3, engrave::AudioFormat::Aac}));
+              (std::vector<engrave::AudioFormat>{engrave::AudioFormat::WAV, engrave::AudioFormat::FLAC, engrave::AudioFormat::OPUS,
+                                                 engrave::AudioFormat::MP3, engrave::AudioFormat::AAC}));
     EXPECT_EQ(capabilities.soundfonts, music::test::g_soundfonts);
     EXPECT_EQ(capabilities.audio_sample_rate, 44100);
 }
@@ -197,7 +197,7 @@ TEST(Output, RenderMatchesTheA2Goldens) {
         EXPECT_EQ(*count, golden.at("pdf").get<std::int32_t>()) << name << ": page count";
 
         engrave::RenderOptions options;
-        options.format = engrave::RenderFormat::Svg;
+        options.format = engrave::RenderFormat::SVG;
         const auto svg = document.render(options);
         ASSERT_TRUE(svg) << name << ": " << svg.error().message;
         const auto &pages = golden.at("svg");
@@ -208,7 +208,7 @@ TEST(Output, RenderMatchesTheA2Goldens) {
                 << name << ": page " << page << " SVG differs from the A2 golden";
         }
 
-        options.format = engrave::RenderFormat::Png;
+        options.format = engrave::RenderFormat::PNG;
         const auto png = document.render(options);
         ASSERT_TRUE(png) << name << ": " << png.error().message;
         ASSERT_EQ(png->pages.size(), svg->pages.size());
@@ -221,7 +221,7 @@ TEST(Output, RenderMatchesTheA2Goldens) {
         EXPECT_EQ(music::test::sha256_hex(image->rgba), expected.at("sha256").get<std::string>())
             << name << ": the RGBA pixels differ from the A2 golden";
 
-        options.format = engrave::RenderFormat::Pdf;
+        options.format = engrave::RenderFormat::PDF;
         const auto pdf = document.render(options);
         ASSERT_TRUE(pdf) << name << ": " << pdf.error().message;
         ASSERT_FALSE(pdf->document.empty());
@@ -240,7 +240,7 @@ TEST(Output, PageRangesAndLimits) {
     ASSERT_EQ(*document.page_count(), 2);
 
     engrave::RenderOptions all;
-    all.format = engrave::RenderFormat::Svg;
+    all.format = engrave::RenderFormat::SVG;
     const auto everything = document.render(all);
     ASSERT_TRUE(everything);
     ASSERT_EQ(everything->pages.size(), 2u);
@@ -259,7 +259,7 @@ TEST(Output, PageRangesAndLimits) {
     EXPECT_EQ(first->pages.front(), everything->pages.front());
 
     engrave::RenderOptions pdf;
-    pdf.format = engrave::RenderFormat::Pdf;
+    pdf.format = engrave::RenderFormat::PDF;
     const auto full = document.render(pdf);
     ASSERT_TRUE(full);
     pdf.first_page = 1;
@@ -271,31 +271,31 @@ TEST(Output, PageRangesAndLimits) {
 
     engrave::RenderOptions bad = all;
     bad.first_page = -1;
-    music::test::expect_code(document.render(bad), engrave::ErrorCode::InvalidArgument, "a negative first page");
+    music::test::expect_code(document.render(bad), engrave::ErrorCode::INVALID_ARGUMENT, "a negative first page");
     bad = all;
     bad.first_page = 1;
     bad.last_page = 0;
-    music::test::expect_code(document.render(bad), engrave::ErrorCode::InvalidArgument, "a reversed range");
+    music::test::expect_code(document.render(bad), engrave::ErrorCode::INVALID_ARGUMENT, "a reversed range");
     bad = all;
     bad.last_page = 5;
-    music::test::expect_code(document.render(bad), engrave::ErrorCode::InvalidArgument, "a range past the end");
+    music::test::expect_code(document.render(bad), engrave::ErrorCode::INVALID_ARGUMENT, "a range past the end");
     bad = all;
-    bad.format = engrave::RenderFormat::Png;
+    bad.format = engrave::RenderFormat::PNG;
     bad.dpi = engrave::min_render_dpi - 1;
-    music::test::expect_code(document.render(bad), engrave::ErrorCode::InvalidArgument, "a dpi below the minimum");
+    music::test::expect_code(document.render(bad), engrave::ErrorCode::INVALID_ARGUMENT, "a dpi below the minimum");
     bad.dpi = engrave::max_render_dpi + 1;
-    music::test::expect_code(document.render(bad), engrave::ErrorCode::InvalidArgument, "a dpi above the maximum");
+    music::test::expect_code(document.render(bad), engrave::ErrorCode::INVALID_ARGUMENT, "a dpi above the maximum");
     bad = all;
     bad.dpi = 96;
-    music::test::expect_code(document.render(bad), engrave::ErrorCode::InvalidArgument, "a dpi on a format that takes none");
+    music::test::expect_code(document.render(bad), engrave::ErrorCode::INVALID_ARGUMENT, "a dpi on a format that takes none");
 
     // 8.27 x 11.69 inch at 1200 dpi is 139e6 pixels, over the renderer's 64e6.
     music::test::OpenedScore page = music::test::open("ghost_note.mscx");
     ASSERT_TRUE(page.document);
     engrave::RenderOptions huge;
-    huge.format = engrave::RenderFormat::Png;
+    huge.format = engrave::RenderFormat::PNG;
     huge.dpi = engrave::max_render_dpi;
-    music::test::expect_code(page.document->render(huge), engrave::ErrorCode::ResourceLimit, "an oversized page");
+    music::test::expect_code(page.document->render(huge), engrave::ErrorCode::RESOURCE_LIMIT, "an oversized page");
 }
 
 TEST(Output, CancellationPollsPageBoundariesAndDiscardsAllPages) {
@@ -304,19 +304,19 @@ TEST(Output, CancellationPollsPageBoundariesAndDiscardsAllPages) {
     ASSERT_TRUE(opened.document);
     auto &document = *opened.document;
     ASSERT_EQ(*document.page_count(), 2);
-    for (auto format : {engrave::RenderFormat::Pdf, engrave::RenderFormat::Svg, engrave::RenderFormat::Png}) {
+    for (auto format : {engrave::RenderFormat::PDF, engrave::RenderFormat::SVG, engrave::RenderFormat::PNG}) {
         engrave::RenderOptions options;
         options.format = format;
         // PDF: 1 before page 1, 2 after drawing page 1, 3 before page 2,
         // 4 after drawing page 2, 5 after final encoding.
         // SVG/PNG: each page polls before draw, before encode, after encode.
-        const int total = format == engrave::RenderFormat::Pdf ? 5 : 6;
+        const int total = format == engrave::RenderFormat::PDF ? 5 : 6;
         for (int stop = 1; stop <= total; ++stop) {
             int polls = 0;
             options.cancelled = [&] { return ++polls == stop; };
             const auto result = document.render(options);
             ASSERT_FALSE(result) << stop;
-            EXPECT_EQ(result.error().code, engrave::ErrorCode::Cancelled);
+            EXPECT_EQ(result.error().code, engrave::ErrorCode::CANCELLED);
             EXPECT_EQ(polls, stop); // no later page/encode boundary was crossed
             options.cancelled = {};
             ASSERT_TRUE(document.render(options));
@@ -350,7 +350,7 @@ TEST(Output, SelectionsNameTheScoreOrOneOfItsExcerpts) {
     EXPECT_EQ(laid_out->excerpts.front().pages, *excerpt_pages) << "page_count did not lay the excerpt out";
 
     engrave::RenderOptions options;
-    options.format = engrave::RenderFormat::Svg;
+    options.format = engrave::RenderFormat::SVG;
     options.score = excerpt;
     const auto rendered = document.render(options);
     ASSERT_TRUE(rendered) << rendered.error().message;
@@ -365,7 +365,7 @@ TEST(Output, SelectionsNameTheScoreOrOneOfItsExcerpts) {
     engrave::ElementId absent;
     absent.hi = 1;
     absent.lo = 2;
-    music::test::expect_code(document.render(engrave::RenderOptions{.score = engrave::ScoreSel{absent}}), engrave::ErrorCode::NotFound,
+    music::test::expect_code(document.render(engrave::RenderOptions{.score = engrave::ScoreSel{absent}}), engrave::ErrorCode::NOT_FOUND,
                              "an id no element has");
 
     const auto score = document.page_count(engrave::ScoreSel{outline->excerpts.front().id});
@@ -375,7 +375,7 @@ TEST(Output, SelectionsNameTheScoreOrOneOfItsExcerpts) {
     ASSERT_TRUE(note);
     ASSERT_FALSE(note->elements.empty());
     music::test::expect_code(document.render(engrave::RenderOptions{.score = engrave::ScoreSel{note->elements.front().id}}),
-                             engrave::ErrorCode::InvalidArgument, "a selection that names a note");
+                             engrave::ErrorCode::INVALID_ARGUMENT, "a selection that names a note");
 }
 
 } // namespace
@@ -392,7 +392,7 @@ TEST(RuntimeAssets, FontRegistrationRelayoutsExistingScoresWithoutAnEdit) {
     ASSERT_NE(excerpt_text, std::string::npos);
     xml.replace(excerpt_text, std::string("<text>Flute</text>").size(), "<text><font face=\"Petaluma Script\"/>MMMWWWiii012345</text>");
     const auto *bytes = reinterpret_cast<const std::byte *>(xml.data());
-    auto opened = g_engine->open(std::span<const std::byte>(bytes, xml.size()), {.format = engrave::Format::Mscx});
+    auto opened = g_engine->open(std::span<const std::byte>(bytes, xml.size()), {.format = engrave::Format::MSCX});
     ASSERT_TRUE(opened);
     auto &document = **opened;
     const auto outline = document.outline();
@@ -412,10 +412,10 @@ TEST(RuntimeAssets, FontRegistrationRelayoutsExistingScoresWithoutAnEdit) {
     const auto revision = document.revision();
     const auto missing = g_engine->add_font(g_assets / "missing-font.ttf");
     ASSERT_FALSE(missing);
-    EXPECT_EQ(missing.error().code, engrave::ErrorCode::NotFound);
+    EXPECT_EQ(missing.error().code, engrave::ErrorCode::NOT_FOUND);
     const auto invalid = g_engine->add_font(g_assets / "engraving/instruments/instruments.xml");
     ASSERT_FALSE(invalid);
-    EXPECT_EQ(invalid.error().code, engrave::ErrorCode::InvalidInput);
+    EXPECT_EQ(invalid.error().code, engrave::ErrorCode::INVALID_INPUT);
 
     const auto source = g_assets / "fonts/petaluma/PetalumaScript.otf";
     const auto copy = std::filesystem::temp_directory_path() / "engrave-runtime-test-petaluma.otf";
@@ -497,7 +497,7 @@ TEST(RuntimeAssets, FontMetadataTracksRetainedCopiesAndReplacements) {
     }
     const auto invalid = g_engine->add_font(copy);
     ASSERT_FALSE(invalid);
-    EXPECT_EQ(invalid.error().code, engrave::ErrorCode::InvalidInput);
+    EXPECT_EQ(invalid.error().code, engrave::ErrorCode::INVALID_INPUT);
     const auto unchanged = g_engine->runtime_fonts();
     EXPECT_EQ(unchanged.size(), restored.size());
     EXPECT_NE(std::find_if(unchanged.begin(), unchanged.end(), [&](const auto &font) { return font.id == original.id; }), unchanged.end());

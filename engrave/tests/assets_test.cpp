@@ -242,7 +242,7 @@ int main(int argc, char **argv) {
             }
             expect(read(selection[0]) == soundBytes, "Retained SoundFont changed with its source");
             const auto invalid = publicEngine->set_soundfonts({soundInput});
-            expect(!invalid && invalid.error().code == engrave::ErrorCode::InvalidInput, "Invalid SoundFont was accepted");
+            expect(!invalid && invalid.error().code == engrave::ErrorCode::INVALID_INPUT, "Invalid SoundFont was accepted");
             expect(publicEngine->capabilities().soundfonts == selection, "Invalid selection changed capabilities");
             expect(!music::engine_audio_initialized(audio), "Failed SoundFont selection started audio services");
             {

@@ -164,7 +164,7 @@ TEST(AudioInternal, CancellationAtSynthesisWriteAndFinalFlushRemovesFileAndRecov
     options.cancelled = [&] { return ++polls == 100; };
     auto result = document.render_audio(options, [&](auto) { ++sinks; });
     ASSERT_FALSE(result);
-    EXPECT_EQ(result.error().code, engrave::ErrorCode::Cancelled);
+    EXPECT_EQ(result.error().code, engrave::ErrorCode::CANCELLED);
     EXPECT_EQ(polls, 100);
     EXPECT_EQ(sinks, 0);
     const auto &state = *engrave::DocumentAccess::impl(document).engine;
@@ -538,7 +538,7 @@ TEST(AudioInternal, DenseScoreCancellationLatencyAndRecovery) {
     options.cancelled = [&] { return muse::audio::OfflineCancellation::phase == Phase::PlaybackModel && ++modelPolls == 3000; };
     const auto result = document.render_audio(options, [&](auto) { ++sinks; });
     ASSERT_FALSE(result);
-    EXPECT_EQ(result.error().code, engrave::ErrorCode::Cancelled);
+    EXPECT_EQ(result.error().code, engrave::ErrorCode::CANCELLED);
     EXPECT_EQ(sinks, 0);
     const auto &state = *engrave::DocumentAccess::impl(document).engine;
     const auto intermediate = state.cache_dir / ("engrave-audio-" +
@@ -611,7 +611,7 @@ TEST(AudioInternal, CancellationDuringPublicationCleansUpAndRecovers) {
         cancel = true;
     });
     ASSERT_FALSE(result);
-    EXPECT_EQ(result.error().code, engrave::ErrorCode::Cancelled);
+    EXPECT_EQ(result.error().code, engrave::ErrorCode::CANCELLED);
     EXPECT_EQ(sinks, 1);
     const auto &state = *engrave::DocumentAccess::impl(document).engine;
     const auto intermediate = state.cache_dir / ("engrave-audio-" +

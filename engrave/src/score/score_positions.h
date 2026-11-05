@@ -3,10 +3,11 @@
 // The pinned engine revision is the vendor/musescore submodule (docs/dev/fork.md).
 #pragma once
 
-#include <nlohmann/json.hpp>
 #include <cstddef>
 #include <functional>
 #include <utility>
+
+#include <nlohmann/json.hpp>
 
 namespace mu::engraving {
 class Score;

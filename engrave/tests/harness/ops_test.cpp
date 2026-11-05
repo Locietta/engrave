@@ -103,7 +103,7 @@ TEST(Edit, AStaleRevisionConflicts) {
     const ElementId note = find_id(*document, "Note");
     const auto result = document->edit({{SetProperty{note, "color", Color{255, 0, 0}}}}, 7);
     ASSERT_FALSE(result);
-    EXPECT_EQ(result.error().code, ErrorCode::RevisionConflict);
+    EXPECT_EQ(result.error().code, ErrorCode::REVISION_CONFLICT);
     EXPECT_EQ(document->revision(), 1u);
 }
 
@@ -122,19 +122,19 @@ TEST(Edit, AFailingOperationRollsTheBatchBack) {
     };
 
     const Bad bad[] = {
-        {SetProperty{note, "noSuchProperty", 1.0}, ErrorCode::InvalidArgument},
-        {SetProperty{note, "color", std::int64_t{3}}, ErrorCode::InvalidArgument},
-        {SetProperty{note, "pitch", std::int64_t{60}}, ErrorCode::InvalidArgument},         // structural only
-        {SetProperty{note, "beamMode", engrave::Enum{"auto"}}, ErrorCode::InvalidArgument}, // not a Note property
+        {SetProperty{note, "noSuchProperty", 1.0}, ErrorCode::INVALID_ARGUMENT},
+        {SetProperty{note, "color", std::int64_t{3}}, ErrorCode::INVALID_ARGUMENT},
+        {SetProperty{note, "pitch", std::int64_t{60}}, ErrorCode::INVALID_ARGUMENT},         // structural only
+        {SetProperty{note, "beamMode", engrave::Enum{"auto"}}, ErrorCode::INVALID_ARGUMENT}, // not a Note property
         // An integer that does not fit the engine's int is not narrowed silently.
-        {SetProperty{note, "fret", std::int64_t{4294967297LL}}, ErrorCode::InvalidArgument},
-        {SetStyle{{}, "measureNumberInterval", std::int64_t{4294967297LL}}, ErrorCode::InvalidArgument},
-        {SetProperty{ElementId{1, 2}, "color", Color{}}, ErrorCode::NotFound},
-        {SetProperty{engrave::OpRef{1, 0}, "color", Color{}}, ErrorCode::InvalidArgument},
-        {ResetProperty{note, "noSuchProperty"}, ErrorCode::InvalidArgument},
-        {SetStyle{{}, "noSuchStyle", 1.0}, ErrorCode::InvalidArgument},
-        {SetStyle{{}, "staffDistance", true}, ErrorCode::InvalidArgument},
-        {SetStyle{{ElementId{1, 2}}, "staffDistance", 9.0}, ErrorCode::NotFound},
+        {SetProperty{note, "fret", std::int64_t{4294967297LL}}, ErrorCode::INVALID_ARGUMENT},
+        {SetStyle{{}, "measureNumberInterval", std::int64_t{4294967297LL}}, ErrorCode::INVALID_ARGUMENT},
+        {SetProperty{ElementId{1, 2}, "color", Color{}}, ErrorCode::NOT_FOUND},
+        {SetProperty{engrave::OpRef{1, 0}, "color", Color{}}, ErrorCode::INVALID_ARGUMENT},
+        {ResetProperty{note, "noSuchProperty"}, ErrorCode::INVALID_ARGUMENT},
+        {SetStyle{{}, "noSuchStyle", 1.0}, ErrorCode::INVALID_ARGUMENT},
+        {SetStyle{{}, "staffDistance", true}, ErrorCode::INVALID_ARGUMENT},
+        {SetStyle{{ElementId{1, 2}}, "staffDistance", 9.0}, ErrorCode::NOT_FOUND},
     };
     for (const Bad &entry : bad) {
         const auto result = document->edit({{red, entry.op}});
@@ -150,7 +150,7 @@ TEST(Edit, APoisonedDocumentRefusesWork) {
     auto document = open(fixture_name);
     ASSERT_TRUE(document);
     auto &hooks = engrave::DocumentAccess::edit_hooks(*document);
-    hooks.policy = engrave::api::Policy::Snapshot;
+    hooks.policy = engrave::api::Policy::SNAPSHOT;
     hooks.fail_restore = true;
     hooks.before_step = [](std::size_t) { throw std::runtime_error("injected"); };
     const Batch batch{{SetStyle{{}, "staffDistance", 9.0}}};
@@ -158,7 +158,7 @@ TEST(Edit, APoisonedDocumentRefusesWork) {
     hooks = {};
     const auto expect_poisoned = [](const auto &result) {
         ASSERT_FALSE(result);
-        EXPECT_EQ(result.error().code, ErrorCode::Poisoned);
+        EXPECT_EQ(result.error().code, ErrorCode::POISONED);
         EXPECT_EQ(result.error().message, "an earlier edit left the document unusable");
     };
     // Invalid inputs would normally produce other errors. Poison takes priority,
@@ -171,8 +171,8 @@ TEST(Edit, APoisonedDocumentRefusesWork) {
     expect_poisoned(document->get(engrave::OpRef{0, 0}));
     expect_poisoned(document->page_count(missing));
     expect_poisoned(document->render({.score = missing}));
-    expect_poisoned(document->positions(engrave::PositionKind::Measure, missing));
-    expect_poisoned(document->positions(engrave::PositionKind::Segment, missing, {}));
+    expect_poisoned(document->positions(engrave::PositionKind::MEASURE, missing));
+    expect_poisoned(document->positions(engrave::PositionKind::SEGMENT, missing, {}));
     expect_poisoned(document->audio_tracks(missing));
     bool called = false;
     const auto sink = [&called](std::span<const std::byte>) { called = true; };
@@ -213,7 +213,7 @@ TEST(Snapshot, S1RestoreIsIdempotent) {
         if (!document) continue;
         const std::string name = path.filename().string();
         const auto restore = [&document, &fail] {
-            EXPECT_FALSE(engrave::api::BatchGuard(**document).run({fail}, engrave::api::Policy::Snapshot, {}));
+            EXPECT_FALSE(engrave::api::BatchGuard(**document).run({fail}, engrave::api::Policy::SNAPSHOT, {}));
             return engrave::harness::fingerprint(**document);
         };
         const auto written = engrave::harness::fingerprint(**document);
@@ -249,7 +249,7 @@ TEST(Edit, AFailedMixedBatchKeepsTheLayout) {
     };
     const auto before = boxes(*document);
     ASSERT_GE(before.size(), 40u);
-    const auto svg_before = document->render({.format = engrave::RenderFormat::Svg, .first_page = 0, .last_page = 0});
+    const auto svg_before = document->render({.format = engrave::RenderFormat::SVG, .first_page = 0, .last_page = 0});
     ASSERT_TRUE(svg_before) << svg_before.error().message;
     ASSERT_FALSE(svg_before->pages.empty());
 
@@ -260,7 +260,7 @@ TEST(Edit, AFailedMixedBatchKeepsTheLayout) {
     const engrave::Batch batch{{engrave::Remove{note}, engrave::Remove{note}, engrave::SetLayoutBreak{measure, "line", false}}};
     const auto result = document->edit(batch);
     ASSERT_FALSE(result);
-    EXPECT_EQ(result.error().code, ErrorCode::StaleHandle);
+    EXPECT_EQ(result.error().code, ErrorCode::STALE_HANDLE);
     EXPECT_EQ(result.error().op_index, 1u);
     EXPECT_EQ(document->revision(), 1u);
 
@@ -275,7 +275,7 @@ TEST(Edit, AFailedMixedBatchKeepsTheLayout) {
         EXPECT_EQ(found->second.width, box.width) << engrave::to_string(id);
         EXPECT_EQ(found->second.height, box.height) << engrave::to_string(id);
     }
-    const auto svg_after = document->render({.format = engrave::RenderFormat::Svg, .first_page = 0, .last_page = 0});
+    const auto svg_after = document->render({.format = engrave::RenderFormat::SVG, .first_page = 0, .last_page = 0});
     ASSERT_TRUE(svg_after) << svg_after.error().message;
     ASSERT_FALSE(svg_after->pages.empty());
     EXPECT_TRUE(svg_before->pages[0] == svg_after->pages[0]) << "the rollback changed the first page";
@@ -323,7 +323,7 @@ void expect_chord_line(const ChordLine &line, const ChordLine::AppearanceState &
 
 engrave::Result<engrave::EditResult> chord_line_batch(engrave::Document &document, std::vector<engrave::api::Step> steps) {
     engrave::DocumentAccess::edit_hooks(document).keep_history = true;
-    return engrave::api::BatchGuard(document).run(std::move(steps), engrave::api::Policy::Transaction, std::nullopt);
+    return engrave::api::BatchGuard(document).run(std::move(steps), engrave::api::Policy::TRANSACTION, std::nullopt);
 }
 
 engrave::api::Step set_line(ChordLine &line, Pid pid, PropertyValue value) {
@@ -408,8 +408,8 @@ TEST(ChordLineEdit, PathEditAndOffsetResetSurviveNativeReopen) {
     seed_controls(line);
     ASSERT_TRUE(chord_line_batch(*document, {set_line(line, Pid::PATH, PropertyValue::fromValue(edited_path()))}));
     const auto expected = edited_path();
-    for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
-        SCOPED_TRACE(format == engrave::Format::Mscx ? "MSCX" : "MSCZ");
+    for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
+        SCOPED_TRACE(format == engrave::Format::MSCX ? "MSCX" : "MSCZ");
         const auto saved = document->export_score({.format = format, .native_version = "5.00"});
         ASSERT_TRUE(saved) << saved.error().message;
         auto reopened = g_engine->open(*saved, {.format = format});
@@ -431,8 +431,8 @@ TEST(ChordLineEdit, PathEditAndOffsetResetSurviveNativeReopen) {
         line.undoResetProperty(Pid::PATH);
         return {};
     }}));
-    for (auto format : {engrave::Format::Mscx, engrave::Format::Mscz}) {
-        SCOPED_TRACE(format == engrave::Format::Mscx ? "MSCX" : "MSCZ");
+    for (auto format : {engrave::Format::MSCX, engrave::Format::MSCZ}) {
+        SCOPED_TRACE(format == engrave::Format::MSCX ? "MSCX" : "MSCZ");
         const auto saved = document->export_score({.format = format, .native_version = "5.00"});
         ASSERT_TRUE(saved) << saved.error().message;
         auto reopened = g_engine->open(*saved, {.format = format});
