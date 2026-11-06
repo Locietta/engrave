@@ -8,6 +8,7 @@ import json
 import shutil
 import tempfile
 import unittest
+from unittest.mock import patch
 from support.inventory import validate_baseline, validate_actual
 from support import golden as g
 from integration.test_public_output import compare
@@ -74,8 +75,47 @@ class InventoryMutations(unittest.TestCase):
         for policy in ([], allow):
             counts = dict(identical=0, allowed=0, different=0, **{"missing-golden": 0})
             with contextlib.redirect_stdout(io.StringIO()):
-                compare(self.golden, self.fixture, self.actual, self.names, policy, "windows", counts)
+                if policy:
+                    with self.assertRaisesRegex(ValueError, "unused"):
+                        compare(self.golden, self.fixture, self.actual, self.names, policy, "windows", counts)
+                else:
+                    compare(self.golden, self.fixture, self.actual, self.names, policy, "windows", counts)
             self.assertEqual(counts["different"], 1)
+
+    def test_comparator_extra(self):
+        (self.actual / "unexpected").touch()
+        with self.assertRaisesRegex(ValueError, "inventory mismatch"):
+            compare(self.golden, self.fixture, self.actual, self.names, [], "windows", {})
+
+    def test_stale_selected_allowance(self):
+        allow = [{"fixture": self.fixture, "output": "page-0.svg", "kind": "different",
+                  "sha256": {"windows": "0" * 64}, "step": "mutation", "reason": "control"}]
+        counts = dict(identical=0, allowed=0, different=0, **{"missing-golden": 0})
+        with contextlib.redirect_stdout(io.StringIO()), self.assertRaisesRegex(ValueError, "unused"):
+            compare(self.golden, self.fixture, self.actual, self.names, allow, "windows", counts)
+
+    def test_changed_fixture(self):
+        inputs = self.root / "inputs"
+        shutil.copytree(g.FIXTURE_DIR, inputs)
+        with (inputs / self.fixture).open("ab") as stream:
+            stream.write(b"\n")
+        with patch.object(g, "FIXTURE_DIR", inputs), self.assertRaisesRegex(ValueError, "input fixture changed"):
+            compare(self.golden, self.fixture, self.actual, self.names, [], "windows", {})
+
+    def test_manifest_source_commit(self):
+        manifest = self.root / "tests/data/golden/inputs.json"
+        manifest.parent.mkdir(parents=True)
+        data = json.loads((g.ROOT / "tests/data/golden/inputs.json").read_text())
+        data["source_commit"] = "0" * 40
+        manifest.write_text(json.dumps(data))
+        with patch.object(g, "ROOT", self.root), self.assertRaisesRegex(ValueError, "manifest hash mismatch"):
+            validate_baseline(self.golden)
+
+    def test_dependency_mismatch(self):
+        from support.dependencies import validate_dependencies
+        with patch("support.dependencies.version", return_value="wrong"):
+            with self.assertRaisesRegex(RuntimeError, "PyMuPDF: installed wrong, required 2.0"):
+                validate_dependencies()
 
 if __name__ == "__main__":
     unittest.main()

@@ -743,10 +743,16 @@ def write_diff(root: Path, fixture: str, output: str, golden: Path, actual: Path
         "".join(line if line.endswith("\n") else line + "\n" for line in lines),
     )
 
+INPUT_MANIFEST_SHA256 = "1eb4ae615a35542ff6aac97263fe0a31f47126f2c0c9d2cf681b61f098816de1"
+
+
 def verify_input_provenance() -> list[str]:
     """Check current inputs against main's reviewed migration pins."""
     try:
-        pins = json.loads(read_text(ROOT / "tests/data/golden/inputs.json"))["fixtures"]
+        manifest = ROOT / "tests/data/golden/inputs.json"
+        if sha256(manifest.read_bytes()) != INPUT_MANIFEST_SHA256:
+            return ["input provenance manifest hash mismatch"]
+        pins = json.loads(read_text(manifest))["fixtures"]
         sources = {source.name: source for source in fixture_files() + mnx_fixture_files()}
         sources.update({name: FIXTURE_DIR / scenario["source"] for name, scenario in EDIT_SCENARIOS.items()})
         if set(pins) != set(sources):

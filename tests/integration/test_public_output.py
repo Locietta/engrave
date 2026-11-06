@@ -18,9 +18,7 @@ An output that is not identical is accepted only when ``tests/data/golden/allow.
 pins the actual file's sha256 for this platform, i.e. under the same rule the
 golden lane uses.
 
-Usage:
-  test_public_output.py --probe P --assets A --soundfont SF --golden DIR --allow FILE \\\\
-                    --output DIR [--render-fixtures f1,f2] [--audio-fixtures f1,f2]
+This module is used by tests/gate.py; partial captures are not an acceptance CLI.
 """
 
 from __future__ import annotations
@@ -31,36 +29,22 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 
-import argparse
 import subprocess
 import sys
 from pathlib import Path
 
 from support.golden import (
-    DEFAULT_PLATFORM,
     allow_accept,
     describe_audio,
     describe_pdf,
     describe_png,
     files_equal,
-    load_allow,
     normalize_svg,
     read_text,
     sha256,
     write_json,
     write_text,
 )
-
-DEFAULT_RENDER_FIXTURES = ("ghost_note.mscx", "repeat70.mscx", "slurs.mscz")
-# Two whose audio.json is identical to the golden and one that the golden lane
-# accepts through the allow-list.
-DEFAULT_AUDIO_FIXTURES = ("ghost_note.mscx", "lyrics.mscx", "repeat70.mscx")
-
-
-def fail(message: str) -> int:
-    print(message, file=sys.stderr)
-    return 1
-
 
 def probe_command(
     probe: Path,
@@ -117,24 +101,11 @@ def compare(
     platform: str,
     counts: dict,
     matched_allow: set | None = None,
-    scope: str | None = None,
 ) -> None:
-    import json
-    from support.golden import verify_golden_index
-    index = json.loads((golden_root / "index.json").read_text(encoding="utf8"))
-    issues = verify_golden_index(golden_root, index)
-    if issues or fixture not in index or not set(names) <= set(index[fixture]):
-        raise ValueError("invalid indexed baseline: " + repr(issues))
-    if scope is None:
-        from support.inventory import validate_actual
-        inventory = json.loads((Path(__file__).resolve().parents[1] / "data/gate-inventory.json").read_text(encoding="utf8"))
-        validate_actual(fixture, out, names, inventory)
-    else:
-        expected = {"audio.json"} if scope == "audio" else {
-            n for n in index[fixture] if n.startswith("page-") and n.endswith(".svg")
-        } | {"page-0.png.json", "score.pdf.json"}
-        if set(names) != expected or any(not (out / n).is_file() for n in expected):
-            raise ValueError("partial output inventory mismatch")
+    from support.inventory import validate_baseline, validate_actual
+    inventory = validate_baseline(golden_root)
+    validate_actual(fixture, out, names, inventory)
+    local_matched = set()
     for name in names:
         golden_file, actual_file = golden_root / fixture / name, out / name
         actual_sha = sha256(actual_file.read_bytes())
@@ -148,6 +119,7 @@ def compare(
             continue
         position, entry, problem = allow_accept(allow, fixture, name, "different", actual_sha, platform)
         if entry:
+            local_matched.add(position)
             if matched_allow is not None:
                 matched_allow.add(position)
             counts["allowed"] += 1
@@ -157,86 +129,8 @@ def compare(
         suffix = f" (allow mismatch: {problem})" if problem else ""
         print(f"different    {fixture}/{name} actual sha256={actual_sha}{suffix}")
 
-
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--probe", type=Path, required=True, help="engrave_output_probe")
-    parser.add_argument("--assets", type=Path, required=True)
-    parser.add_argument("--soundfont", type=Path, action="append", required=True)
-    parser.add_argument("--golden", type=Path, required=True, help="tests/data/golden/<platform>")
-    parser.add_argument("--allow", type=Path, required=True)
-    parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--corpus", type=Path, required=True, help="directory of the golden fixtures")
-    parser.add_argument("--render-fixtures", default=",".join(DEFAULT_RENDER_FIXTURES))
-    parser.add_argument("--audio-fixtures", default=",".join(DEFAULT_AUDIO_FIXTURES))
-    parser.add_argument("--platform", default=DEFAULT_PLATFORM, choices=("windows", "linux"))
-    parser.add_argument("--skip-render", action="store_true")
-    parser.add_argument("--skip-audio", action="store_true")
-    args = parser.parse_args()
-
-    if not args.probe.is_file():
-        return fail(f"no probe at {args.probe}")
-    allow = load_allow(args.allow)
-    counts = {"identical": 0, "allowed": 0, "different": 0, "missing-golden": 0}
-    report: dict = {
-        "golden": str(args.golden),
-        "probe": str(args.probe),
-        "fixtures": {},
-    }
-
-    fixtures = [] if args.skip_render else [name for name in args.render_fixtures.split(",") if name]
-    for fixture in fixtures:
-        source = args.corpus / fixture
-        if not source.is_file():
-            return fail(f"no fixture {source}")
-        raw, out = args.output / "raw" / fixture, args.output / "actual" / fixture
-        raw.mkdir(parents=True, exist_ok=True)
-        out.mkdir(parents=True, exist_ok=True)
-        error = run_probe(probe_command(args.probe, args.assets, args.soundfont, "render", source, raw))
-        if error:
-            return fail(f"{fixture}: render failed: {error}")
-        names = describe_render(raw, out)
-        import json
-        indexed = json.loads((args.golden / "index.json").read_text(encoding="utf8"))[fixture]
-        expected = {n for n in indexed if n.startswith("page-") and n.endswith(".svg")} | {"page-0.png.json", "score.pdf.json"}
-        if set(names) != expected:
-            raise ValueError("render inventory mismatch")
-        compare(args.golden, fixture, out, names, allow, args.platform, counts, scope="render")
-        report["fixtures"].setdefault(fixture, {})["render"] = names
-
-    fixtures = [] if args.skip_audio else [name for name in args.audio_fixtures.split(",") if name]
-    for fixture in fixtures:
-        source = args.corpus / fixture
-        if not source.is_file():
-            return fail(f"no fixture {source}")
-        raw, out = args.output / "raw" / fixture, args.output / "actual" / fixture
-        raw.mkdir(parents=True, exist_ok=True)
-        out.mkdir(parents=True, exist_ok=True)
-        error = run_probe(
-            probe_command(
-                args.probe,
-                args.assets,
-                args.soundfont,
-                "audio",
-                source,
-                raw / "score.wav",
-            )
-        )
-        if error:
-            return fail(f"{fixture}: audio failed: {error}")
-        names = describe_audio_file(raw / "score.wav", out)
-        compare(args.golden, fixture, out, names, allow, args.platform, counts, scope="audio")
-        report["fixtures"].setdefault(fixture, {})["audio"] = names
-
-    report["counts"] = counts
-    report["status"] = "pass" if counts["different"] == 0 and counts["missing-golden"] == 0 else "fail"
-    write_json(args.output / "report.json", report, indent=2)
-    print(
-        f"A4 output vs A2 goldens ({args.platform}): " + ", ".join(f"{count} {name}" for name, count in counts.items())
-    )
-    print(f"status: {report['status'].upper()}")
-    return 0 if report["status"] == "pass" else 1
-
+    from support.inventory import validate_allow_usage
+    validate_allow_usage(allow, local_matched, platform, {(fixture, n) for n in names})
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit("Partial comparison CLI removed; use tests/gate.py for validated captures")

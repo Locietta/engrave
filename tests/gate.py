@@ -43,6 +43,8 @@ def run_compat_exports(run, compat, build_dir, assets, soundfont, output, suffix
 
 
 def main():
+    from support.dependencies import validate_dependencies
+    validate_dependencies()
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--engine-source", type=Path, default=ROOT)
     for name in ("build-dir", "assets", "soundfont", "output"):
@@ -326,7 +328,7 @@ def main():
     dual = dict(identical=0, allowed=0, different=0, **{"missing-golden": 0})
     allow = g.load_allow(ROOT / "tests/data/golden/allow.json", context="engine-gate-archive")
     matched_allow = set()
-    from support.inventory import validate_baseline, validate_actual
+    from support.inventory import validate_baseline, validate_actual, validate_allow_usage
     inventory = validate_baseline(ROOT / "tests/data/golden" / platform)
     for source in sources:
         raw = a.output / "raw" / source.name
@@ -398,9 +400,9 @@ def main():
         [sys.executable, ROOT / "tests/support/check_semantic_dump.py", a.output / "actual"],
     )
     # Entries are only expected to match on the platforms they pin.
-    if any(i not in matched_allow and platform in e["sha256"] for i, e in enumerate(allow)):
-        raise RuntimeError("unused engine archive allow entries")
-    inputs = [a.soundfont, ROOT / "tests/data/golden/allow.json", *sources, *compat]
+    validate_allow_usage(allow, matched_allow, platform,
+                         {(fixture, name) for fixture, names in inventory.items() for name in names})
+    inputs = [ROOT / "tests/data/golden/inputs.json", a.soundfont, ROOT / "tests/data/golden/allow.json", *sources, *compat]
     provenance = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs}
     report = dict(
         provenance=provenance,
