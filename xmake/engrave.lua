@@ -1,8 +1,8 @@
 -- Engine targets of the engrave library (MuseScore 5.0 source tree).
 --
 -- This file is the engine's build interface.  The fork's own xmake.lua includes
--- it for the standalone build; the musescore-mcp superproject includes it from
--- its pinned vendor/musescore submodule (or its --musescore_source override),
+-- it for the standalone build; the engrave-mcp superproject includes it from
+-- its pinned vendor/engrave submodule (or its --engine_source override),
 -- which is why it sets no project identity, toolchain or package policy: those
 -- belong to the including project.
 --
@@ -154,9 +154,9 @@ ENGRAVE_INCLUDES = {
 
 -- The adapters' internal headers, included from the checkout root as
 -- "engrave/src/<area>/<file>.h" so that no engine include root can supply a
--- header of the same name, whatever the include order.  Besides the library
--- and its tests, only the musescore-mcp host includes them, as a privileged
--- client until A5 moves it onto the public API.
+-- header of the same name, whatever the include order.  These headers serve
+-- the library and its internal regression tests; the engrave-mcp host uses
+-- the public API.
 local engrave_src = engine("engrave/src")
 ENGRAVE_INTERNAL_INCLUDES = {
     source_root,
