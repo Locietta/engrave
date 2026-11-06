@@ -196,6 +196,11 @@
       "sha256": "baaf2a9d4694f811282189cdcf3e226b8519d239c834b764b8a8dfceecf0f185",
       "size": 7632
     },
+    "fonts/OFL.txt": {
+      "source": "fonts/OFL.txt",
+      "sha256": "cc25e12d298872fdebaef24043ea5453451872ac7dd81ecafb7c5790c5b53fbd",
+      "size": 4518
+    },
     "fonts/bravura/Bravura.otf": {
       "source": "fonts/bravura/Bravura.otf",
       "sha256": "cdf0f893ee1fdb64b7f6713d71ee0dcfc349c0ac01429a8e451b01a9e79f5f3b",
@@ -320,6 +325,11 @@
       "source": "fonts/gootville/GootvilleText.otf",
       "sha256": "cf76ddc77b211e4c6c7008edce37a5c886699f8e96d55084036343b2462ea49a",
       "size": 41652
+    },
+    "fonts/gootville/OFL.txt": {
+      "source": "fonts/gootville/OFL.txt",
+      "sha256": "7590a62c535f991a39f40307e9abd9377ef930bbf9838e9f2a70e4e025d468bc",
+      "size": 4464
     },
     "fonts/gootville/metadata.json": {
       "source": "fonts/gootville/metadata.json",
