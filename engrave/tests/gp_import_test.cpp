@@ -8,8 +8,7 @@
 // of range), so the test opens every score file of
 // src/importexport/guitarpro/tests/data and requires exactly those to fail; every other
 // file, the .gpx fixtures with their reference scores included, has to open.  The
-// reference MSCX files and the two updateReference scripts in that directory are not
-// inputs and are skipped.
+// reference MSCX files in that directory are not inputs and are skipped.
 
 #include <algorithm>
 #include <cstdio>

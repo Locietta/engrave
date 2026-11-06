@@ -6,7 +6,7 @@
 --       test_environment.cpp), which initialises the engrave runtime;
 --   *_test, semantic_dump
 --       regression binaries of the engrave adapters, driven by engrave-mcp's
---       scripts/run_lanes.py;
+--       test runners;
 --   engrave_api_test, example_embedder
 --       the public API's tests and its leak test, an embedder that sees
 --       nothing but engrave/include;

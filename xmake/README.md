@@ -2,9 +2,8 @@
 
 Configure with `xmake f -P . -y -m release --cairo_prefix=PREFIX`, then
 `xmake build -P . -y -j8`. The ordinary build contains eleven production libraries.
-Native score, MusicXML/MXL, MIDI, Guitar Pro/PowerTab and MNX imports are compiled;
-all audio encoders, including AAC, are always enabled. The MNX exporter remains
-uncompiled. Native score saves omit thumbnails and serialize excerpts sequentially.
+Native score, MusicXML/MXL, MIDI, Guitar Pro/PowerTab and MNX imports and the MNX
+exporter are compiled; all audio encoders, including AAC, are always enabled. Native score saves omit thumbnails and serialize excerpts sequentially.
 
 Tests and their GoogleTest dependency are opt-in. Add `--engrave_tests=y` to the
 complete configure command, then run `xmake build -P . -y -j8 c0_gate`. This builds
