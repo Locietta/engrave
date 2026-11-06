@@ -19,3 +19,10 @@ def validate_actual(fixture, out, names, inventory):
     present = {p.relative_to(out).as_posix() for p in out.rglob("*") if p.is_file()}
     if set(names) != expected or present != expected or len(names) != len(expected):
         raise ValueError(f"{fixture}: output inventory mismatch: missing={expected-present}, extra={present-expected}")
+
+
+def validate_allow_usage(allow, matched, platform, selected):
+    stale = [i for i, e in enumerate(allow)
+             if platform in e["sha256"] and (e["fixture"], e["output"]) in selected and i not in matched]
+    if stale:
+        raise ValueError(f"unused selected-platform allow entries: {stale}")
