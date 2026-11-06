@@ -26,4 +26,4 @@ The hash-pinned manifest replaces QRC staging lists. See `engrave/ASSETS.md` for
 directory contract and `python tools/test_install_assets.py` for packaging checks.
 Fonts and SoundFonts supplied by consumers remain external; no assets are embedded
 in the library. The hard fork accepts selected upstream fixes by cherry-pick;
-`TRIM` records historical deletions, and upstream sync tooling is retired.
+Historical deletions are preserved in Git history; upstream sync tooling is retired.

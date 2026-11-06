@@ -5,7 +5,7 @@
 --       and started by the harness in engrave/tests (gtest_main.cpp,
 --       test_environment.cpp), which initialises the engrave runtime;
 --   *_test, semantic_dump
---       regression binaries of the engrave adapters, driven by musescore-mcp's
+--       regression binaries of the engrave adapters, driven by engrave-mcp's
 --       scripts/run_lanes.py;
 --   engrave_api_test, example_embedder
 --       the public API's tests and its leak test, an embedder that sees
@@ -170,8 +170,8 @@ target("engrave_api_test")
     end
 target_end()
 
--- The handle tests (H1-H13) reach the score through the library's internal headers:
--- the public read and edit API they will eventually use does not exist yet.
+-- The handle tests (H1-H13) use internal score access to exercise handle
+-- invalidation alongside the public read and edit API tests.
 target("engrave_handles_test")
     set_kind("binary")
     set_default(false)
