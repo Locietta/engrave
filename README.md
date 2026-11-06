@@ -142,8 +142,15 @@ The optional `--mutex-wrapper` supports callers sharing xmake's Windows lock.
 `--skip-build` is diagnostic only. The dense-audio cancellation timing assertion
 can fail on Windows; failures are retained and must not be reported as a pass.
 
+Create a new virtual environment with Python 3.13 (`python -m venv .venv`),
+then install with `.venv/bin/python -m pip install -r tests/requirements.txt`
+(Windows: `.venv/Scripts/python.exe`). Run the commands above with that Python.
+All normalization and validation dependencies are exact pins matching the host
+pixi.lock. The gate rejects missing or different versions before building or
+capturing; PyMuPDF 2.1 changes normalized PDF bytes and is unsupported.
+
 Validation tools: Python 3.13, jsonschema 4.26.0, numpy 2.5.4, soundfile 0.14.0,
-Pillow 13.x, PyMuPDF 2.x and psutil 7.x. Cairo and DejaVu fonts must be installed
+Pillow 13.0.0, PyMuPDF 2.0 and psutil 7.2.2. Cairo and DejaVu fonts must be installed
 in the supplied native prefix on Linux. xmake 3.1.1+, MSVC 14.51+ or GCC 15.3
 build the C++23 closure. No MCP SDK or desktop MuseScore installation is needed.
 Shared input/baseline provenance is frozen under `tests/data`; the host reads
