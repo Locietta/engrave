@@ -19,10 +19,9 @@ namespace engrave {
 // Unsupported for it.
 enum struct AudioFormat {
     WAV,  // 32-bit float PCM, or 16/24-bit with a bit depth
-    MP3,  // 128 kbps
     FLAC, // 16-bit or 24-bit
-    OGG,  // 128 kbps Opus in an Ogg container, which the encoder resamples to 48 kHz
-    OPUS, // alias / format
+    OPUS, // 128 kbps Opus in an Ogg container, which the encoder resamples to 48 kHz
+    MP3,  // 128 kbps
     AAC,  // 128 kbps, ADTS
 };
 
