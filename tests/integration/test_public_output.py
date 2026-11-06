@@ -117,6 +117,7 @@ def compare(
     platform: str,
     counts: dict,
     matched_allow: set | None = None,
+    scope: str | None = None,
 ) -> None:
     import json
     from support.golden import verify_golden_index
@@ -124,6 +125,16 @@ def compare(
     issues = verify_golden_index(golden_root, index)
     if issues or fixture not in index or not set(names) <= set(index[fixture]):
         raise ValueError("invalid indexed baseline: " + repr(issues))
+    if scope is None:
+        from support.inventory import validate_actual
+        inventory = json.loads((Path(__file__).resolve().parents[1] / "data/gate-inventory.json").read_text(encoding="utf8"))
+        validate_actual(fixture, out, names, inventory)
+    else:
+        expected = {"audio.json"} if scope == "audio" else {
+            n for n in index[fixture] if n.startswith("page-") and n.endswith(".svg")
+        } | {"page-0.png.json", "score.pdf.json"}
+        if set(names) != expected or any(not (out / n).is_file() for n in expected):
+            raise ValueError("partial output inventory mismatch")
     for name in names:
         golden_file, actual_file = golden_root / fixture / name, out / name
         actual_sha = sha256(actual_file.read_bytes())
@@ -190,7 +201,7 @@ def main() -> int:
         expected = {n for n in indexed if n.startswith("page-") and n.endswith(".svg")} | {"page-0.png.json", "score.pdf.json"}
         if set(names) != expected:
             raise ValueError("render inventory mismatch")
-        compare(args.golden, fixture, out, names, allow, args.platform, counts)
+        compare(args.golden, fixture, out, names, allow, args.platform, counts, scope="render")
         report["fixtures"].setdefault(fixture, {})["render"] = names
 
     fixtures = [] if args.skip_audio else [name for name in args.audio_fixtures.split(",") if name]
@@ -214,7 +225,7 @@ def main() -> int:
         if error:
             return fail(f"{fixture}: audio failed: {error}")
         names = describe_audio_file(raw / "score.wav", out)
-        compare(args.golden, fixture, out, names, allow, args.platform, counts)
+        compare(args.golden, fixture, out, names, allow, args.platform, counts, scope="audio")
         report["fixtures"].setdefault(fixture, {})["audio"] = names
 
     report["counts"] = counts

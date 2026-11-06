@@ -40,6 +40,8 @@ class InventoryMutations(unittest.TestCase):
                 (self.actual / name).unlink()
                 with self.assertRaises(ValueError):
                     validate_actual(self.fixture, self.actual, [n for n in self.names if n != name], self.inventory)
+                with self.assertRaises(ValueError):
+                    compare(self.golden, self.fixture, self.actual, [n for n in self.names if n != name], [], "windows", {})
                 (self.actual / name).write_bytes(data)
 
     def test_extra(self):
