@@ -400,8 +400,7 @@ def main():
         [sys.executable, ROOT / "tests/support/check_semantic_dump.py", a.output / "actual"],
     )
     # Entries are only expected to match on the platforms they pin.
-    validate_allow_usage(allow, matched_allow, platform,
-                         {(fixture, name) for fixture, names in inventory.items() for name in names})
+    validate_allow_usage(allow, matched_allow, platform)
     inputs = [ROOT / "tests/data/golden/inputs.json", a.soundfont, ROOT / "tests/data/golden/allow.json", *sources, *compat]
     provenance = {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs}
     report = dict(

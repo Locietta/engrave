@@ -111,6 +111,13 @@ class InventoryMutations(unittest.TestCase):
         with patch.object(g, "ROOT", self.root), self.assertRaisesRegex(ValueError, "manifest hash mismatch"):
             validate_baseline(self.golden)
 
+    def test_full_gate_rejects_allowance_outside_inventory(self):
+        from support.inventory import validate_allow_usage
+        allowance = [{"fixture": "unselected", "output": "unexpected", "sha256": {"windows": "0" * 64}}]
+        with self.assertRaisesRegex(ValueError, "unused"):
+            validate_allow_usage(allowance, set(), "windows")
+        validate_allow_usage(allowance, set(), "linux")
+
     def test_dependency_mismatch(self):
         from support.dependencies import validate_dependencies
         with patch("support.dependencies.version", return_value="wrong"):
