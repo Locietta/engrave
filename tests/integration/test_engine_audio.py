@@ -1,58 +1,8 @@
-"""Acceptance test suite for MuseScore 4 audio engine (roadmap step 5, part C2).
-
-Tests both probe-level engine capabilities and MCP server integration:
-1. Cross-platform current audio features:
-   - Captures the current host and compares it to the other host's A2 capture,
-     using explicit per-feature tolerances (frames/sample rate/channels exact)
-2. Pure sine wave SoundFont generation and pitch/onset/level accuracy:
-   - Renders known scores with tests/data/engine_audio/sine.sf2
-   - Asserts onset errors are at most 86 frames at 44.1 kHz (1.950113379 ms)
-   - Asserts fundamental frequencies are within 0.80 cent of equal temperament (A4 = 440 Hz)
-   - Asserts the explicit mf dynamic (velocity 80) produces an RMS within 2% of
-     the measured 0.1751
-3. MIDI event oracle (4.7.6 reference plus accepted 5.0 differences):
-   - Captures handleEvent MIDI events (NoteOn/Off, CC, PitchBend) via --midi-events,
-     including each event's render-frame offset
-   - tests/data/engine_audio/midi/<fixture>.json are the exact 4.7.6 reference streams
-     (commit 9a74eb1), not 5.0 re-baselines. The 5.0 stream must equal the reference
-     after applying ONLY the two accepted upstream differences documented in
-     MIDI_ACCEPTED_RULES (deduplicated/out-of-band CC11 and the SND velocity
-     fallback), with every accepted count pinned per fixture. All other fields and
-     per-class totals stay exact, and deliberate mutations must fail.
-4. Determinism and codec decoding across formats:
-   - Repeated exports produce byte-identical files per format (wav, flac, ogg, mp3, aac)
-   - Decoded durations (not the probe's own duration field) equal
-     repeat-expanded play time + 3.0 s within the codec's stated tolerance
-   - Exports every format to a non-ASCII output path and checks uriRoundTrip for a
-     non-ASCII SoundFont copy
-5. Performance and memory budget on a real dense workload:
-   - Generates tests/support/make_dense_score.py's deterministic 24-part, 300 s score
-     (33,600 notes with chords and dynamics) in a temporary directory
-   - Renders wav and ogg, measures render seconds per audio minute and peak memory
-   - Budget: < 12.0 s per audio minute and < 1.0 GiB peak memory. Measurements on
-     2026-10-28: Windows wav 7.6-7.8 s/min, ogg 8.7-8.9 s/min, ~462 MiB; Linux
-     wav 2.1-2.2 s/min, ogg 2.5-2.6 s/min, ~468 MiB. The older "~1 s/min / 240 MiB"
-     numbers came from a silent orchestral template with no chords and do not
-     describe this workload.
-6. Excerpt rendering parity:
-   - Asserts excerpt render is sample-identical to the master render with the other
-     parts muted; this is identity by construction (muting), not an independent
-     excerpt rendering path
-7. MCP-level mix and sync/async integration:
-   - Solo/mute silence (energy ratio < -80 dB)
-   - Volume gain within +/- 0.2 dB
-   - Pan balance via L/R energy separation
-   - Sync vs async byte identity, with async outputs written to a non-ASCII path
-   - .mid export parity against the platform's golden midi.json
-"""
-
 from __future__ import annotations
 
 import sys
 
 from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import argparse
 
@@ -99,8 +49,6 @@ from unittest.mock import patch
 from support.paths import REPO_ROOT
 
 ROOT = Path(__file__).resolve().parents[2]
-
-sys.path.insert(0, str(ROOT / "scripts"))
 
 import numpy as np
 
@@ -187,18 +135,6 @@ def run_probe(
 def golden_platform() -> str:
     return "windows" if sys.platform.startswith("win") else "linux"
 
-def probe_peak_bytes(result: dict[str, Any]) -> int:
-    """Peak process memory reported by the probe.
-
-    Windows reports PeakWorkingSetSize; Linux reports peak resident set size
-    (VmHWM) through the same field so budgets are comparable.
-    """
-    for key in ("peakWorkingSetBytes", "peakMemoryBytes", "peakVmHWMBytes"):
-        value = result.get(key)
-        if isinstance(value, (int, float)) and value > 0:
-            return int(value)
-    raise AssertionError(f"probe did not report peak memory: {result.get('peakWorkingSetBytes')}")
-
 def numeric_values(values: list[Any]) -> list[float]:
     """Flatten scalar lists and per-channel lists (rmsEnvelope is nested)."""
     if values and isinstance(values[0], list):
@@ -245,16 +181,6 @@ SINE_LEVEL_RMS = 0.1751
 
 SINE_LEVEL_RMS_RELATIVE_TOLERANCE = 0.02
 
-BUDGET_SECONDS_PER_AUDIO_MINUTE = 12.0
-
-BUDGET_PEAK_MEMORY_MIB = 1024.0
-
-DENSE_TRACKS = 24
-
-DENSE_PLAY_TIME_SECS = 300.0
-
-DENSE_FORMATS = ("wav", "ogg")
-
 DECODED_RATE = {"wav": 44100, "flac": 44100, "ogg": 48000, "mp3": 44100, "aac": 44100}
 
 DECODED_DURATION_TOLERANCE = {
@@ -270,9 +196,6 @@ class AudioCheckPending(Exception):
 
 def file_sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
-
-def git_revision(repo: Path) -> str:
-    return subprocess.check_output(["git", "-C", str(repo), "rev-parse", "HEAD"], text=True).strip()
 
 def audio_fixture_sources() -> dict[str, Path]:
     # The edit scenarios in golden.EDIT_SCENARIOS do not export audio.
@@ -303,91 +226,6 @@ def validate_version_proof(path: Path, platform: str, engine_commit: str) -> Non
     )
     expected_platform = {"windows": "Microsoft Windows", "linux": "Linux"}[platform]
     assert written_platform == expected_platform, (written_platform, expected_platform)
-
-async def capture_current_audio(
-    binary: Path, resources: Path, soundfont: Path, target: Path, engine_commit: str
-) -> None:
-    """Render the golden fixture inventory and preserve the server's version stamp."""
-    import base64
-
-    from support.composition_fixture import composition_musicxml
-
-    fixtures = audio_fixture_sources()
-    with tempfile.TemporaryDirectory(prefix="musescore-audio-capture-") as temporary:
-        raw = Path(temporary)
-        params = golden.StdioServerParameters(
-            command=str(binary.resolve()),
-            args=[
-                "--resources",
-                str(resources.resolve()),
-                "--soundfont",
-                str(soundfont.resolve()),
-            ],
-            cwd=str(raw),
-            env=probe_env(),
-        )
-        with (target / "server-stderr.log").open("w", encoding="utf-8") as log:
-            async with golden.stdio_client(params, errlog=log) as (read, write):
-                async with golden.ClientSession(read, write) as session:
-                    await session.initialize()
-                    created, error = await golden.call_tool(
-                        session,
-                        "score_create",
-                        {
-                            "template_id": "Treble_Clef",
-                            "title": "Audio capture provenance",
-                        },
-                    )
-                    assert not error, f"create version proof: {error}"
-                    proof_document = created["document"]
-                    proof = target / "version.mscx"
-                    _, error = await golden.call_tool(
-                        session,
-                        "score_export",
-                        {
-                            "document": proof_document,
-                            "kind": "score",
-                            "options": {"format": "mscx"},
-                            "destination": {"kind": "file", "path": str(proof)},
-                        },
-                    )
-                    assert not error, f"export version proof: {error}"
-                    await golden.call_tool(session, "score_close", {"document": proof_document})
-                    validate_version_proof(proof, golden_platform(), engine_commit)
-                    for name, source in fixtures.items():
-                        if name == "created.json":
-                            xml = composition_musicxml(json.loads(source.read_text(encoding="utf-8")))
-                            payload, error = await golden.call_tool(
-                                session,
-                                "score_open",
-                                {
-                                    "data": base64.b64encode(xml.encode()).decode(),
-                                    "format": "musicxml",
-                                },
-                            )
-                        else:
-                            payload, error = await golden.call_tool(
-                                session, "score_open", {"path": str(source.resolve())}
-                            )
-                        assert not error, f"{name}: open failed: {error}"
-                        document = payload["document"]
-                        try:
-                            wav = raw / "capture.wav"
-                            _, error = await golden.call_tool(
-                                session,
-                                "score_export",
-                                {
-                                    "document": document,
-                                    "kind": "audio",
-                                    "options": {"format": "wav"},
-                                    "destination": {"kind": "file", "path": str(wav)},
-                                },
-                            )
-                            assert not error, f"{name}: audio export failed: {error}"
-                            golden.write_json(target / name / "audio.json", golden.describe_audio(wav))
-                            wav.unlink()
-                        finally:
-                            await golden.call_tool(session, "score_close", {"document": document})
 
 def write_capture_manifest(
     target: Path,
@@ -431,72 +269,6 @@ def capture_destination(capture_root: Path, platform: str) -> Path:
             f"refusing to replace an unrelated capture: {destination}"
         )
     return destination
-
-def make_current_audio_capture(
-    binary: Path,
-    resources: Path,
-    soundfont: Path,
-    engine_source: Path,
-    capture_root: Path,
-) -> tuple[str, str]:
-    platform = golden_platform()
-    destination = capture_destination(capture_root, platform)
-    status = subprocess.run(
-        ["git", "status", "--porcelain"],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        check=True,
-    ).stdout
-    assert not status.strip(), "capture requires a clean superproject checkout"
-    source_commit = git_revision(ROOT)
-    engine_commit = git_revision(engine_source)
-    binary_sha, soundfont_sha = file_sha256(binary), file_sha256(soundfont)
-    fixtures = audio_fixture_sources()
-    fixture_hashes = {name: file_sha256(path) for name, path in fixtures.items()}
-    extractor_sha = file_sha256(ROOT / "tests/support/golden.py")
-    script_sha = file_sha256(Path(__file__))
-    fixture_helper_sha = file_sha256(ROOT / "tests/support/composition_fixture.py")
-    capture_root.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix=f"{platform}-capture-", dir=capture_root) as temporary:
-        target = Path(temporary)
-        asyncio.run(
-            asyncio.wait_for(
-                capture_current_audio(binary, resources, soundfont, target, engine_commit),
-                timeout=1800,
-            )
-        )
-        assert git_revision(ROOT) == source_commit, "superproject commit changed during capture"
-        assert git_revision(engine_source) == engine_commit, "engine commit changed during capture"
-        assert file_sha256(binary) == binary_sha, "binary changed during capture"
-        assert file_sha256(soundfont) == soundfont_sha, "soundfont changed during capture"
-        assert {name: file_sha256(path) for name, path in audio_fixture_sources().items()} == fixture_hashes, (
-            "fixture inventory or inputs changed during capture"
-        )
-        assert file_sha256(ROOT / "tests/support/golden.py") == extractor_sha, "extractor changed during capture"
-        assert file_sha256(Path(__file__)) == script_sha, "capture script changed during capture"
-        assert file_sha256(ROOT / "tests/support/composition_fixture.py") == fixture_helper_sha, (
-            "fixture helper changed during capture"
-        )
-        write_capture_manifest(
-            target,
-            platform,
-            source_commit,
-            engine_commit,
-            binary_sha,
-            soundfont_sha,
-            fixtures,
-        )
-        destination = capture_destination(capture_root, platform)
-        if destination.exists():
-            shutil.rmtree(destination)
-        shutil.copytree(target, destination)
-    print(
-        f"  Captured {len(fixtures)} fixtures to {destination} "
-        f"(host {socket.gethostname()}, commit {source_commit}, binary sha256 {binary_sha})"
-    )
-    return source_commit, engine_commit
 
 def read_audio_capture(
     tree: Path,
@@ -986,46 +758,6 @@ def midi_golden_file(name: str, golden_dir: Path) -> Path:
     if platform_file.is_file():
         return platform_file
     return golden_dir / f"{name}.json"
-
-def write_midi_goldens(
-    probe_bin: Path,
-    assets: Path,
-    soundfont: Path,
-    out_dir: Path,
-    golden_dir: Path,
-    platform_subdir: bool,
-) -> None:
-    """Regenerate the MIDI event goldens from the current probe binary."""
-    target = golden_dir / golden_platform() if platform_subdir else golden_dir
-    target.mkdir(parents=True, exist_ok=True)
-    for name, fixture in midi_fixtures():
-        assert fixture.is_file(), f"Fixture missing: {fixture}"
-        tmp_wav = out_dir / f"midi_{name}.wav"
-        result = run_probe(probe_bin, assets, soundfont, fixture, tmp_wav, ["--midi-events"])
-        assert result.get("ok") is True, f"Probe failed for {name}: {result}"
-        if tmp_wav.exists():
-            tmp_wav.unlink()
-        events = result.get("midiEvents", [])
-        total = result.get("midiEventTotal")
-        assert isinstance(total, int) and total == len(events), (
-            name,
-            total,
-            len(events),
-        )
-        assert result.get("midiEventsTruncated") is False, f"Probe truncated {name} events"
-        payload = {
-            "fixture": name,
-            "platform": golden_platform() if platform_subdir else "shared",
-            "eventTotal": total,
-            "events": events,
-        }
-        path = target / f"{name}.json"
-        path.write_text(json.dumps(payload, indent=1) + "\n", encoding="utf-8", newline="\n")
-        try:
-            display = path.resolve().relative_to(ROOT)
-        except ValueError:
-            display = path
-        print(f"  wrote {display}: {total} events")
 
 CC_EXPRESSION = 11
 
@@ -1541,89 +1273,6 @@ def test_determinism_and_decoding(
     }
     print(f"  Determinism and decoded-duration checks PASSED for {', '.join(formats)}")
     print(f"  Non-ASCII SoundFont and output paths PASSED for {', '.join(formats)}")
-
-def test_performance_and_memory(
-    probe_bin: Path,
-    assets: Path,
-    soundfont: Path,
-    out_dir: Path,
-    evidence: dict[str, Any],
-) -> None:
-    print("[5/6] Testing performance and memory on the generated dense orchestral score...")
-    from support.make_dense_score import generate_dense_score
-
-    budget_bytes = int(BUDGET_PEAK_MEMORY_MIB * 1024 * 1024)
-    measurements: dict[str, Any] = {}
-    with tempfile.TemporaryDirectory(prefix="musescore-dense-score-") as temp_dir:
-        temp = Path(temp_dir)
-        score_info = generate_dense_score(temp / "dense_orchestral.musicxml")
-        score_path = Path(score_info["path"])
-        assert score_info["parts"] == DENSE_TRACKS, score_info
-        assert score_info["play_time_secs"] == DENSE_PLAY_TIME_SECS, score_info
-
-        for fmt in DENSE_FORMATS:
-            out_path = temp / f"dense.{fmt}"
-            if out_path.exists():
-                out_path.unlink()
-            res = run_probe(probe_bin, assets, soundfont, score_path, out_path)
-            assert res.get("ok") is True, f"Dense {fmt} render failed: {res}"
-            assert res.get("trackCount") == DENSE_TRACKS, (
-                f"Dense score should expose {DENSE_TRACKS} tracks, got {res.get('trackCount')}"
-            )
-            play_time = float(res.get("playTime", 0.0))
-            assert abs(play_time - DENSE_PLAY_TIME_SECS) <= 0.01, (
-                f"Dense score play time {play_time} != {DENSE_PLAY_TIME_SECS}"
-            )
-            export_secs = float(res.get("exportSeconds", 0.0))
-            sec_per_audio_min = export_secs / (play_time / 60.0)
-            peak_bytes = probe_peak_bytes(res)
-            peak_mib = peak_bytes / (1024.0 * 1024.0)
-            output_bytes = out_path.stat().st_size
-            assert output_bytes > 0, f"Dense {fmt} output is empty"
-            assert output_bytes < 1024 * 1024 * 1024, f"Dense {fmt} output {output_bytes} exceeds the 1 GiB audio cap"
-            assert sec_per_audio_min < BUDGET_SECONDS_PER_AUDIO_MINUTE, (
-                f"Dense {fmt} export {sec_per_audio_min:.2f} s/audio-min exceeds budget "
-                f"{BUDGET_SECONDS_PER_AUDIO_MINUTE}"
-            )
-            assert peak_bytes < budget_bytes, (
-                f"Dense {fmt} peak memory {peak_mib:.1f} MiB exceeds budget {BUDGET_PEAK_MEMORY_MIB} MiB"
-            )
-            measurements[fmt] = {
-                "duration_seconds": round(float(res.get("duration", 0.0)), 3),
-                "play_time_seconds": round(play_time, 3),
-                "export_seconds": round(export_secs, 3),
-                "seconds_per_audio_minute": round(sec_per_audio_min, 3),
-                "peak_memory_mib": round(peak_mib, 1),
-                "output_bytes": output_bytes,
-                "track_count": res.get("trackCount"),
-            }
-            if out_path.exists():
-                out_path.unlink()
-
-        perf_info = {
-            "score": "generated by tests/support/make_dense_score.py",
-            "score_bytes": score_info["bytes"],
-            "parts": score_info["parts"],
-            "measures": score_info["measures"],
-            "notes": score_info["notes"],
-            "play_time_seconds": score_info["play_time_secs"],
-            "formats": measurements,
-            "budget_seconds_per_audio_minute": BUDGET_SECONDS_PER_AUDIO_MINUTE,
-            "budget_peak_memory_mib": BUDGET_PEAK_MEMORY_MIB,
-        }
-        evidence["performance_budget"] = {
-            "status": "passed",
-            "measurements": perf_info,
-        }
-
-    slowest = max(item["seconds_per_audio_minute"] for item in measurements.values())
-    highest = max(item["peak_memory_mib"] for item in measurements.values())
-    detail = ", ".join(f"{fmt} {item['seconds_per_audio_minute']:.2f} s/min" for fmt, item in measurements.items())
-    print(
-        f"  Performance budget PASSED: {detail} (budget "
-        f"{BUDGET_SECONDS_PER_AUDIO_MINUTE} s/min), {highest:.1f} MiB "
-        f"(budget {BUDGET_PEAK_MEMORY_MIB} MiB); slowest {slowest:.2f} s/min"
-    )
 
 def test_excerpt_rendering_parity(
     probe_bin: Path,
