@@ -50,7 +50,6 @@ music::EngineAudioFormat engine_format(AudioFormat format) {
     switch (format) {
         case AudioFormat::WAV: return music::EngineAudioFormat::WAV;
         case AudioFormat::FLAC: return music::EngineAudioFormat::FLAC;
-        case AudioFormat::OGG:
         case AudioFormat::OPUS: return music::EngineAudioFormat::OGG;
         case AudioFormat::MP3: return music::EngineAudioFormat::MP3;
         case AudioFormat::AAC: return music::EngineAudioFormat::AAC;
@@ -62,7 +61,6 @@ const char *file_extension(AudioFormat format) {
     switch (format) {
         case AudioFormat::WAV: return ".wav";
         case AudioFormat::FLAC: return ".flac";
-        case AudioFormat::OGG:
         case AudioFormat::OPUS: return ".ogg";
         case AudioFormat::MP3: return ".mp3";
         case AudioFormat::AAC: return ".aac";
@@ -70,9 +68,7 @@ const char *file_extension(AudioFormat format) {
     return ".audio";
 }
 
-bool is_lossy(AudioFormat format) {
-    return format == AudioFormat::OGG || format == AudioFormat::OPUS || format == AudioFormat::MP3 || format == AudioFormat::AAC;
-}
+bool is_lossy(AudioFormat format) { return format == AudioFormat::OPUS || format == AudioFormat::MP3 || format == AudioFormat::AAC; }
 
 AudioMix to_mix(const music::AudioOutputParams &output) { return {output.volume_db, output.balance, output.muted, output.solo}; }
 
