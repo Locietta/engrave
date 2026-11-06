@@ -1,5 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-only
+#include <cmath>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <iterator>
+#include <stdexcept>
+#include <thread>
+
 #include <ft2build.h>
+#include <nlohmann/json.hpp>
+#include FT_FREETYPE_H
 
 #include "draw/internal/ifontsengine.h"
 #include "draw/types/font.h"
@@ -9,16 +19,6 @@
 #include "engrave/src/runtime/runtime_assets.h"
 #include "global/io/ifilesystem.h"
 #include <engrave/engine.h>
-#include FT_FREETYPE_H
-#include <cmath>
-#include <filesystem>
-#include <fstream>
-#include <iostream>
-#include <iterator>
-#include <stdexcept>
-#include <thread>
-
-#include <nlohmann/json.hpp>
 
 namespace {
 void expect(bool value, const char *message) {

@@ -26,13 +26,13 @@
 
 #include <ft2build.h>
 
-#include "fontfaceutils.h"
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
 #include FT_BBOX_H
 #include FT_TRUETYPE_TABLES_H
 #include <hb-ft.h>
 
+#include "fontfaceutils.h"
 #include "global/types/bytearray.h"
 #include "log.h"
 

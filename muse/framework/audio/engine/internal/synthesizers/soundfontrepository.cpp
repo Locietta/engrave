@@ -22,7 +22,6 @@
 #include "soundfontrepository.h"
 
 #include "fluidsynth/fluidsoundfontparser.h"
-
 #include "log.h"
 
 using namespace muse;
