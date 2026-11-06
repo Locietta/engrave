@@ -46,6 +46,8 @@ from typing import Any
 
 from unittest.mock import patch
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from support.paths import REPO_ROOT
 
 ROOT = Path(__file__).resolve().parents[2]
