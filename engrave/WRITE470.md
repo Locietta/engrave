@@ -38,13 +38,13 @@ struct ExportOutput {
 - **Ordering Contract**:
   - `Document::export_score_with_warnings` returns ordered `ExportWarning` values.
   - On a successful export, warnings contain degraded feature warnings in document encounter order.
-  - On a refused export, degraded warnings are prepended before unmapped feature warnings (`degraded` followed by `unsupported`).
+  - On a refused export that reaches post-serialization checks, degraded warnings are prepended before unmapped feature warnings (`degraded` followed by `unsupported`). However, an invalid tie returns early (`write470.cpp:599`) before degradation and style scans run, so only `B470_INVALID_TIE` is reported and no degradation warnings precede it in that case.
   - Identical warning objects are deduplicated preserving the order of their first occurrence.
   - Non-EID warning locators retain document-wide score indices (master score 0, followed by excerpts in source order) even when exporting an excerpt.
 
 ### Fail-Closed Behavior
 - **Byte-only Export**: Calling `Document::export_score(ExportOptions)` fails closed: if the export produces any compatibility warnings, the method returns `ErrorCode::UNSUPPORTED` and attaches the warnings to `Error::export_warnings`. This ensures callers cannot silently discard compatibility degradation.
-- **Refused Export**: If an export is refused due to incompatible features, no bytes are produced (`bytes` is empty), and `Error::export_warnings` details all blocking elements.
+- **Refused Export**: If an export is refused due to incompatible features, no bytes are produced (`bytes` is empty), and `Error::export_warnings` reports blocking elements. Refusal warnings are not exhaustive: an invalid tie returns early (`write470.cpp:599`) before degradation and style scans run, so only `B470_INVALID_TIE` is reported, and other blockers appear only after the invalid tie is fixed.
 
 ## 2. Bounded Supported Subset
 
