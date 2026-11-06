@@ -51,15 +51,21 @@ Teardown behavior on abort depends on host OS characteristics to maintain respon
 - **Windows**: When cancelling dense event collections (at least 16,384 timestamps across two or more tracks), origin-event stores from the playback model are moved into four batches and cleared in parallel across joined background threads before completing model destruction. This avoids blocking the owner thread during large memory release operations.
 - **Linux**: Teardown is performed synchronously on the owner thread. Background multi-threaded freeing is disabled on Linux to prevent memory contention across `glibc` allocation arenas.
 
-Under dense scores (e.g. 12 parts, 256 measures, 16 notes per measure = 49,152 notes), internal polling ensures detection-to-return latency remains bounded (p95 <= 30 ms, max <= 50 ms across all phases).
+Under specific 50-trial dense-score probes (12 parts x 256 measures x 16 notes per measure = 49,152 notes), measurements showed p95 <= 30 ms and max <= 50 ms across all phases on reference test hardware. These timings represent empirical measurements from those specific test configurations and do not establish universal performance bounds or guarantees for arbitrary score inputs, custom soundfonts, disk performance, or host OS scheduling.
 
 ## 4. Unpolled and Indivisible Intervals
 
-The following operations are indivisible and are not interrupted mid-flight:
-- **Document Loading & Initial Layout**: Score parsing and initial layout during `Engine::open` run without internal cancellation polling.
-- **Conditional Relayout**: If an audio render is requested for an excerpt or score selection that has no pre-computed layout pages, `ensure_layout` invokes layout synchronously before audio synthesis begins.
-- **Atomic Library Operations**: Single 64-frame FluidSynth block renders, individual native codec decompressions, and individual OS filesystem read/write system calls cannot be interrupted mid-call.
-- **Active Sink Execution**: The callback is polled between `ByteSink` chunks, not within a running sink invocation.
+The following operations are indivisible or unpolled internally, several of which are reachable on the audio render path:
+- **Document Loading & Initial Layout**: Score parsing, repair, and layout during `Engine::open -> load_native_score -> finish_load` run without internal cancellation polling. Because host audio workers may call `Engine::open` on an MSCZ immediately before `render_audio`, this interval is reachable in an audio export job before the audio callback scope is established.
+- **Conditional Relayout**: Audio rendering calls `engine_audio_tracks -> music::select_score -> ensure_layout -> Score::doLayout` when the selected score (e.g. an unlaid-out excerpt) has no pre-computed pages.
+- **First-Use Font & Service Setup**: First-use or changed-font parsing, text shaping cache population, and audio service initialisation.
+- **Playback & State Caches**: Repeat and tempo cache updates, and individual playback render operations.
+- **Automation Resampling**: Automation curve resampling within an automation layer.
+- **Memory & Container Operations**: Heap allocations and bulk container copies/moves (including moving MPE origin-event store batches).
+- **Atomic Library & File Operations**: Native codec and sample decompression calls, a single 64-frame FluidSynth buffer render, individual OS filesystem read/write system calls, and intermediate file deletion.
+- **Active Sink Execution**: The cancellation predicate is polled between `ByteSink` chunks during publication, but cannot interrupt an active, in-flight sink delivery. Final cleanup remains indivisible.
+
+Because these intervals are indivisible, fixed dense-score distribution tests do not establish arbitrary-input latency bounds.
 
 ## 5. Resource Limits and Budget Enforcement
 
