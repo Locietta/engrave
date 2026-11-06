@@ -1,7 +1,7 @@
 # Installed runtime assets
 
 From a Git checkout, run `python tools/install_assets.py /absolute/install/share/engrave`.
-The destination must be new. Pass it as `EngineOptions::resource_dir` (or the gate's
+The destination must be new. Pass it as `EngineOptions::resources` (or the gate's
 `--assets`). Run the same command with `--verify` to check installed bytes against
 this engine's manifest. Python and Git are packaging tools, not runtime dependencies.
 

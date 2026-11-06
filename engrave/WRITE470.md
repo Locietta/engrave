@@ -1,269 +1,108 @@
-# Native 4.70 export, bounded conversions
+# MuseScore 4.70 Format Export Contract
 
-`ExportOptions::native_version` selects `"5.00"` (the default) or `"4.70"`
-for MSCX and MSCZ. An unknown version, or a non-default native version on
-another format, returns `Unsupported`: the version may be meaningful but this
-engine has no writer for that request. The 5.00 route is the existing writer.
+`engrave` provides backward-compatibility score export for the MuseScore 4.70 format (interoperable with MuseScore 4.7.0 through 4.7.6). This document defines the compatibility contract, what is preserved, what is degraded with warnings, and what is refused.
 
-Use `Document::export_score_with_warnings` when requesting 4.70. It returns
-owned bytes and ordered `ExportWarning` values, each with a stable `code`, human
-`message`, and an optional source `{kind,id}` object. On refusal, the result is
-`Unsupported` and the warnings are in `Error::export_warnings`; the document is
-not changed. The original byte-only `export_score` signature remains available.
-It refuses a successful warning-bearing export and attaches the warnings to
-its error, so its caller cannot unknowingly discard them. The engine has no
-job abstraction: the host must retain `ExportOutput::warnings` and
-`Error::export_warnings` in its captured job result for synchronous and
-background calls alike.
+## 1. Activation and API Contract
 
-The initial writer is intentionally small and fails closed. It accepts a
-checked subset of the 5.00 serialization, converts `InstrumentLabel` names to
-the 4.70 instrument representation, restores the part's 4.70 `trackName`,
-writes a 4.70 style and header, and produces an MSCX or an MSCZ containing
-that MSCX. It accepts the checked piano, pitched standard staff, treble
-clef, 4/4, whole/half-note structures, bounded ties/pedal and ordinary braces
-described below. Other serialized nodes, attributes,
-instrument IDs and enum values are refused. It preserves the frozen linked Flute excerpt and rejects custom chord
-lists and non-generated automation. A complete scan of the serialized score
-also identifies the named 5.00-only features, including inside structures that
-are independently refused.
+### Requesting 4.70 Export
+Set `ExportOptions::native_version = "4.70"` for MSCX or MSCZ exports:
 
-Styles are especially conservative. `style470_catalog.inc` records the entire
-5.00 style serialization of the independently checked 4.70 control score, and
-the style names produced by the 4.7.6 writer. Unknown or changed style values are refused except for the individually
-bounded B5 mappings below. It
-copies the known 4.70 style fields, sets `defaultsVersion` to 470, and omits
-only the captured neutral 5.00-only fields. This is a guard, not a general
-style conversion. It must be broadened with individually specified compatibility
-rules and oracle fixtures, not by removing the comparison.
+```cpp
+struct ExportOptions {
+    Format format = Format::MSCZ; // MSCX or MSCZ
+    std::string native_version = "4.70"; // default is "5.00"
+    ScoreSel score;                      // Master by default, or specific excerpt
+    CaptureOptions capture;
+};
+```
 
-The public warning contract is `{ "code": ..., "message": ..., "object":
-{ "kind": ..., "id": ... } }`. `ExportWarning::object` is an optional
-`ExportWarningObject` with owned, standard-library strings `kind` and `id`.
-Range and column identifiers are strings, not element handles. Serializers
-must emit these two fields; `to_string(object)` is only a display convenience.
-Codes and messages below are frozen. A refusal returns no score bytes; a
-`*_DROPPED` warning on a refused export identifies the unsupported mapping,
-not a successful projection. Additional unmapped content produces
-`B470_UNSUPPORTED_FEATURE` warnings and prevents output.
+Any version string other than `"5.00"` or `"4.70"`, or requesting a non-default version on other file formats (MusicXML, MIDI), returns `ErrorCode::UNSUPPORTED`.
 
-| Code | Exact message | Object kind and source id |
-| --- | --- | --- |
-| `B470_SHARED_PART_DROPPED` | Shared-part mapping was removed; its staves and content were retained as ordinary parts. | `shared_part`, SharedPart EID (including disabled mappings) |
-| `B470_STAVE_SHARING_LABEL_DROPPED` | Stave-sharing label was removed. | `stave_sharing_label`, label EID |
-| `B470_PAGE_LOCK_DROPPED` | Page lock was removed. | `page_lock`, `<start-measure-EID>..<end-measure-EID>` |
-| `B470_GROUP_BRACKET_DROPPED` | Group bracket was removed. | `group_bracket`, `<start-staff-EID>:<zero-based-column>` |
-| `B470_INSTRUMENT_GROUP_NAME_DROPPED` | Instrument group-name override was removed. | `part`, part EID; one warning for multiple override fields |
-| `B470_INVALID_TIE` | Cannot write 4.70: tied notes have different pitches. | `tie`, tie EID; refuses output |
+### Warning Structure and Ordering Contract
+Use `Document::export_score_with_warnings(ExportOptions)` to receive exported bytes and ordered compatibility warnings:
+
+```cpp
+struct ExportWarning {
+    std::string code;
+    std::string message;
+    std::optional<ExportWarningObject> object; // { kind, id }
+};
+
+struct ExportOutput {
+    std::vector<std::byte> bytes;
+    std::vector<ExportWarning> warnings;
+};
+```
+
+- **Warning Contract**: Each warning has a stable, frozen `code`, human-readable `message`, and an object identity `{ kind, id }`. Every B470 warning carries an object identity `{ kind, id }` (the normalizer in `write470.cpp:453` requires non-empty `kind` and `id`, and the unsupported-target path supplies `{ "request", "version:<requested value>" }`; warnings cannot be anonymous). Host schemas must require `{ kind, id }` for every B470 warning and describe both EIDs and non-EID locator/composite forms (`id` is not uniformly an EID). Codes and messages are frozen.
+- **Ordering Contract**:
+  - `Document::export_score_with_warnings` returns ordered `ExportWarning` values.
+  - On a successful export, warnings are not purely in document encounter order: `convert_degradations` first collects serialized degradations (`B470_SHARED_PART_DROPPED`, `B470_STAVE_SHARING_LABEL_DROPPED`, `B470_PAGE_LOCK_DROPPED`, `B470_GROUP_BRACKET_DROPPED`) during a pre-order traversal of the serialized score XML, followed by a separate pass over source scores and parts (`write470.cpp:643`) that appends instrument group-name warnings (`B470_INSTRUMENT_GROUP_NAME_DROPPED`).
+  - On a refused export that reaches post-serialization checks, degraded warnings are prepended before unmapped feature warnings (`degraded` followed by `unsupported`). However, an invalid tie returns early (`write470.cpp:599`) before degradation and style scans run, so only `B470_INVALID_TIE` is reported and no degradation warnings precede it in that case.
+  - Identical warning objects are deduplicated preserving the order of their first occurrence.
+  - Non-EID warning locators retain document-wide score indices (master score 0, followed by excerpts in source order) even when exporting an excerpt.
+
+### Fail-Closed Behavior
+- **Byte-only Export**: Calling `Document::export_score(ExportOptions)` fails closed: if the export produces any compatibility warnings, the method returns `ErrorCode::UNSUPPORTED` and attaches the warnings to `Error::export_warnings`. This ensures callers cannot silently discard compatibility degradation.
+- **Refused Export**: If an export is refused due to incompatible features, no bytes are produced (`bytes` is empty), and `Error::export_warnings` reports blocking elements. Refusal warnings are not exhaustive: an invalid tie returns early (`write470.cpp:599`) before degradation and style scans run, so only `B470_INVALID_TIE` is reported, and other blockers appear only after the invalid tie is fixed.
+
+## 2. Bounded Supported Subset
+
+The initial 4.70 exporter is intentionally small and fails closed. It accepts only an independently checked, bounded subset of 5.00 notation and structures; everything else is refused (`ErrorCode::UNSUPPORTED`).
+
+The guard in `engrave/src/score/write470.cpp:376` accepts only:
+- **Instruments**: Accepts only `piano` or `flute` instrument IDs (flute requires bounded pitch ranges `minPitchP=59`, `maxPitchP=98`, `minPitchA=60`, `maxPitchA=93`). All other instrument IDs and tokens are refused.
+- **Staves & Clefs**: Standard pitched staves (`group="pitched"`, `name="stdNormal"`), and only G clefs (`concertClefType="G"`, `transposingClefType="G"`). Bass clef and all other clef types are refused.
+- **Time & Key Signatures**: Only 4/4 time signature (`sigN="4"`, `sigD="4"`) and C major key signature (`concertKey="0"`). All other meters and key signatures are refused.
+- **Notes, Rests & Durations**: Pitched notes, half rests, and whole, half, and quarter durations (`whole`, `half`, `quarter`). Eighth durations (`eighth`) and the specified grace forms (`appoggiatura` and `grace8after`) are accepted only for standalone excerpts; everything else is refused.
+- **Ties & Spanners**: Same-voice, same-measure ties (including paired pitch edits). Note spanners must be `Tie`; non-note spanners must be `Pedal` matching the strictly checked subset (`write470.cpp:321`): no XML attributes, only permitted child fields (`eid`, `track`, `track2`, `startTick`, `ticks`, and optional `continueTextPlace`/`endTextPlace` which must be `"auto"`), track 0 (`track="0"`, `track2="0"`), staff 1, start tick 0 (`startTick="0/1"`), duration 960 ticks (`ticks="1/2"`), spanning from half-measure position 0 to 2 in staff 1 measure voice. All other pedal spanners, spanner properties, custom chord lists, and non-generated automation curves are refused.
+- **Braces**: Ordinary score braces (`bracket type="1"`).
+- **Identities**: Serialized musical, staff, and score EIDs supported by the bounded mapping, plus legacy numeric part IDs. MuseScore 4.70 has no part EID representation; part EIDs are omitted.
+- **Excerpt Selections**: An excerpt selected via `ExportOptions::score` (such as the verified linked Flute excerpt) exports as a standalone 4.70 score with its own parts, style, and linked notation elements preserved.
+
+## 3. Degraded Features (Exported with Warnings)
+
+Five feature families are converted into compatible 4.70 structures while emitting structured warnings:
+
+| Code | Exact Frozen Message | Object Kind & Source ID |
+|---|---|---|
+| `B470_SHARED_PART_DROPPED` | Shared-part mapping was removed; its staves and content were retained as ordinary parts. | `kind: "shared_part"`, `id: <SharedPart-EID>` (including disabled mappings) |
+| `B470_STAVE_SHARING_LABEL_DROPPED` | Stave-sharing label was removed. | `kind: "stave_sharing_label"`, `id: <label-EID>` |
+| `B470_PAGE_LOCK_DROPPED` | Page lock was removed. | `kind: "page_lock"`, `id: "<start-measure-EID>..<end-measure-EID>"` |
+| `B470_GROUP_BRACKET_DROPPED` | Group bracket was removed. | `kind: "group_bracket"`, `id: "<start-staff-EID>:<zero-based-column>"` |
+| `B470_INSTRUMENT_GROUP_NAME_DROPPED` | Instrument group-name override was removed. | `kind: "part"`, `id: <part-EID>` (one warning for multiple override fields) |
+
+## 4. Refused Features
+
+The exporter strictly refuses output (`ErrorCode::UNSUPPORTED`) when encountering constructs that cannot be faithfully represented or downgraded in 4.70:
+
+| Code | Exact Frozen Message | Object Kind & Source ID |
+|---|---|---|
+| `B470_INVALID_TIE` | Cannot write 4.70: tied notes have different pitches. | `kind: "tie"` with tie EID; if tie has no EID, uses the owner's actual kind (e.g. `kind: "note"`) and owner EID; falls back to `kind: "tie"` with deterministic locator; refuses output |
 | `B470_UNSUPPORTED_FEATURE` | Cannot write 4.70: the source feature has no defined downgrade. | Owning source object kind and EID; refuses output |
-| `B470_UNSUPPORTED_TARGET` | Cannot write the requested score version. | `request`, `version:<requested value>`; refuses output |
+| `B470_UNSUPPORTED_TARGET` | Cannot write the requested score version. | `kind: "request"`, `id: "version:<requested value>"`; refuses output |
 
-The old `export_warning_code` C++ names remain aliases where applicable;
-all values now use the frozen identities. Automation, custom chord
-lists, unmapped styles and other unmapped constructs use `B470_UNSUPPORTED_FEATURE`.
-Detailed refusal reasons remain in `Error::message`.
+### Tie Warning Identities and Locators
+Per `engrave/src/score/write470.cpp:581`, an invalid-tie warning never stringifies an invalid-EID sentinel:
+1. If the tie has a valid EID, it uses `kind: "tie"` and the tie EID.
+2. If the tie lacks an EID, it traverses to the nearest addressable ancestor with a valid EID and uses the owner's actual lowercase type name (e.g. `kind: "note"`) and that owner's EID.
+3. If no addressable owner exists, `kind: "tie"` uses the explicitly non-EID deterministic locator:
+```text
+locator:score:<s>/measure:<m>/tick:<t>/track:<k>/note:<n>/tieFor
+```
+Score, measure, and note indices are zero-based in document, measure, and chord order (the locator's note index `<n>` is within its chord); `<t>` is the absolute engine tick (480 per quarter); and `<k>` is the engine staff/voice track index. The master is score zero, followed by excerpts in source order. This source-revision locator is deterministic and is not a query handle. Only the complete numeric tie-locator shape above is accepted (all five components and the final `tieFor` field are required).
 
-B2b additionally converts the checked half-note ties (including paired pitch
-edits), the track-0 pedal from tick 0 to 960, and ordinary braces. Connections
-are translated from 5.00 endpoint EIDs / SpannerMap to 4.70 relative locations.
-Unknown connection properties remain guarded and refuse output. Part names
-and numeric part IDs are retained; musical EIDs are copied. The 4.70 part
-format has no part EID and the frozen preservation fixture does not demand it.
+## 5. Style Compatibility Guard
 
-B5 converts the five frozen degradation families in `convert_degradations`:
-SharedPart becomes an ordinary Part with its staff, visibility and content;
-shared references are omitted. Labels, page-lock ranges and group brackets
-are omitted with their frozen source identities. Ordinary braces remain.
-InstrumentLabel group overrides are omitted once per owning part; ordinary
-long/short names are translated to the legacy Instrument representation.
-Only identical warning objects are deduplicated; unsupported properties still
-refuse the entire export, retaining detailed reasons in the error message.
+Style properties are guarded against the verified 4.70 style catalogue (`engrave/src/score/style470_catalog.inc`):
+- Sets `defaultsVersion` to `470`.
+- Omits neutral 5.00-only style fields (`windsNameByGroup`, `vocalsNameByGroup`, and default values for `lyricsStackingOrder`, `maskSlurs`, `maskTies`).
+- Preserves legacy header/footer options (`headerFirstPage`, empty header/footer text, and `$C` center-footer macros in excerpts).
+- Any unrecognized or modified style value outside the catalogue causes immediate export refusal.
 
-The frozen excerpt uses a pitched flute, quarter notes, half rests, C-major
-key signatures and same-voice same-measure ties. Nested scores undergo the
-same structural, connection and full-style checks as their master. Links on
-staff and musical objects (including ties) retain their source EIDs. All
-master/excerpt note graphs are checked for unequal-pitch ties before writing.
-This does not establish general instrument/rhythm/spanner compatibility.
+## 6. Cooperative Cancellation
 
-## Selected excerpt export (engrave-25 candidate)
-
-An excerpt selected through `ExportOptions::score` is now converted from the
-same standalone 5.00 serialization used by the default native exporter. Only
-that excerpt is emitted. The serializer retains links between emitted objects
-and omits references to master objects outside the standalone file. The
-selected score supplies its own style and part names. The master export path
-and the 5.00 writer are unchanged.
-
-Selection additionally accepts the legacy instrument-excerpt title VBox,
-eighth durations, appoggiaturas and eighth after-graces used by the full
-`fixtures/golden/linked_parts.mscx` excerpt. Ties use the existing engine
-`Location` calculation, including grace indices, rather than a new musical
-timing algorithm. Unrecognized tie properties and other constructs still
-refuse output with the frozen warnings. Invalid-tie scans cover emitted
-scores; non-EID warning locators retain their document-wide score indices.
-
-`tests/test_write470_excerpts.py` captures both native formats for the parent's
-`tests/phase_b/excerpts.mscx` and full linked-parts fixture. It checks empty
-warning arrays and representable EIDs/link edges against standalone 5.00,
-then compares every field in the independently dumped source excerpt body
-with the standalone 4.70 result. `--verify-only` permits Windows captures to
-be checked on physical Linux. `Export470.SelectedExcerptIsStandaloneAndBounded`
-also checks reopening, output limits, in-process default/explicit 5.00 byte
-equality and unsupported-style refusal.
-
-EXECUTED on Windows and physical `cachy`: native builds with
-`engrave_tests=y`, 15/15 Export470 tests, 21/21 API tests, and both fixture
-selections in MSCX/MSCZ with exactly `[]` warnings. The archived 4.7.6 reader
-opens all eight Windows/Linux 4.70 captures and matches the complete source
-excerpt bodies (parts/names, measures, signatures, notes/ties and all other
-dumped fields). Each oracle run verifies all 87 SHA256SUMS entries and sets
-its subprocess LD_LIBRARY_PATH solely to the oracle's `lib/`. The full Linux
-bounded oracle suite also passes 26 exports, the real paired edit and frozen
-refusals; focused gap checks pass on both hosts. The frozen engrave-19
-default/explicit 5.00 byte checks pass on both hosts with their documented
-revision/ZIP-time normalization. The byte runner now accepts the probe's
-structured empty warning array instead of requiring empty stdout.
-
-The archive/manifest-verified Windows 4.7.6 host independently re-exported
-all four Windows selection outputs to both formats: all eight re-exports
-retain complete oracle semantics, element EIDs and serialized links. A
-separate master-with-excerpt control measures the historical MSCX limitation:
-that old host discards the separately archived nested excerpt when extracting
-its MSCX output, while its MSCZ output retains it. Standalone selections put
-their own content in the main score and retain it through both old formats.
-This does not establish general old-host MSCX excerpt retention.
-
-Retained evidence is in the parent's ignored `notes/phase-b/e25/`, with remote
-captures at `cachy:~/OSS/engrave-e25/`. The parent owns the full two-host
-engine gate, hash-pinned golden comparison, host MCP route tests, final pin/tag
-and independent Terra/Astra review. No full engine gate, pin/tag, push or
-phase acceptance is claimed here.
-
-The five 5.00-only style differences have explicit projections:
-`windsNameByGroup` and `vocalsNameByGroup` boolean values are omitted with
-the group-name behavior; ordinary instrument names are retained.
-`lyricsStackingOrder`, `maskSlurs` and `maskTies` boolean values may be omitted
-only when the affected lyrics/slurs/ties are absent (or the catalog's neutral
-value already matches). Excerpts also copy legacy `headerFirstPage` boolean
-values, empty header/footer text and the legacy `$C` center-footer macro.
-All other catalog, uniqueness, attribute and value checks remain in place.
-The complete style of each excerpt is validated independently.
-
-### Warning identities and bounded identity preservation
-
-Invalid EID sentinels are never warning identities. An unequal-pitch tie uses
-its own valid EID, otherwise its start note's EID, otherwise the nearest
-addressable ancestor (with that ancestor's kind). If none exists, `kind:"tie"`
-uses the explicitly non-EID locator
-`locator:score:<s>/measure:<m>/tick:<t>/track:<k>/note:<n>/tieFor`.
-Score, measure and note indices are zero-based in document, measure and chord
-order; tick is the absolute engine tick (480 per quarter), track is the engine
-staff/voice track. The master is score zero, followed by excerpts in source
-order. This source-revision locator is deterministic and is not a query handle.
-Only the complete numeric tie-locator shape above is accepted (all five
-components and the final `tieFor` field are required). Other malformed/empty
-warning identities fail as invalid source arguments;
-they cannot become successful anonymous warnings. Composite range/bracket keys
-must contain valid EIDs and a nonempty numeric column where applicable.
-Host schemas must require `{kind,id}` for every B470 warning and describe both
-EIDs and these non-EID locator/composite forms; `id` is not uniformly an EID.
-
-Enabled wind/vocal group naming is projected off by the old reader. If a score
-contains multiple parts with the same applicable instrument, each affected part
-receives the frozen `B470_INSTRUMENT_GROUP_NAME_DROPPED` message and its source
-part EID. This extends that identity's trigger to the enabled group style;
-no warning code or message is added. Potential groups are checked even when
-hidden. A single applicable instrument has no current group behavior to lose.
-
-The 4.70 identity promise is limited to the serialized musical, staff and score
-EIDs supported by the bounded mapping, plus legacy numeric part IDs. Part EIDs
-(ordinary and shared) have no interoperable 4.70 field and are omitted; current
-host reopen assigns fresh ones. A numeric part ID is not a retained part EID.
-The parent must explicitly approve this format limitation in B1's contract;
-this implementation introduces no new warning code or fixture expectation to
-authorize that product decision. If preservation of part EIDs is required,
-the current 4.70 mapping cannot satisfy it and phase acceptance remains blocked.
-
-`tests/test_write470_oracle.py` checks the parent's frozen `tests/phase_b`
-manifest and all 87 preserved oracle files, then compares complete oracle
-semantics and warning arrays for thirteen successful cases in both formats,
-an actual paired pitch edit and the two refused cases. No warnings are
-filtered. The oracle dump cannot prove EIDs, links or brace properties:
-independent old-reader re-export must check those at phase acceptance.
-
-The control fixture in `tests/data/write470/minimal.mscx` is the preserved
-4.70 header fixture, SHA-256
-`64b08d861b6f7eabe0c20890c736fb38fcc691f505bc0420340c90aff741735a`.
-The source of the 5.00 style catalog was an existing Windows exporter reporting
-`engrave-19`'s `45ea71c` revision; its style SHA and the 4.7.6 style SHA are
-recorded in the catalog. The exporter binary's SHA-256 was
-`9bb30c131b5c9997f5024b41ff804b895a608d14e0d5adc1b00786c5ca56996f`;
-the embedded revision and binary hash are not a clean-build attestation.
-The adjacent `engrave19.mscx` and `engrave19.mscz` are captures from the
-`engrave-19` Windows public exporter of the frozen
-`custom_part_name.mscx.mscz` corpus input (SHA-256
-`82fdedeaf524cf284fec79ad514f93f62d7b860607ccb8be36c87e0b77e66f70`).
-The MSCX capture used the Windows host binary SHA-256
-`e89cc4b6d23bf3965e10f89b8b11a10a30196ac33fd6c179dcb03498ac9bcd32`;
-the MSCZ capture used the exporter binary above. Both report `45ea71c` in
-their score XML. `test_engrave19_bytes.py` pins the capture hashes, checks
-default and explicit 5.00 exports, and explains the only
-normalizations: ZIP timestamps and a later build's revision stamp. At the same
-revision it hashes the raw ZIP after zeroing timestamps.
-
-Remaining work includes general rhythms/instruments, arbitrary styles,
-further ties and spanners, layout/image data, automation and custom chords.
-Every newly accepted mapping needs independent semantics and oracle evidence.
-The following B2b evidence is historical; its refused B5 cases are superseded
-by the B5 implementation and its separately retained execution report.
-
-## B2b executed evidence
-
-Windows and physical Linux compiled with `engrave_tests=y`; the focused
-Export470 suite passed 8/8 and the public API suite passed 21/21 on each.
-The preserved archive's 87 checksums and dumper hash were verified. On Linux,
-14 file exports (seven cases, MSCX and MSCZ) plus the real paired pitch edit
-matched the complete frozen oracle semantics. The real one-end edit refused
-output with the exact frozen invalid-tie warning. Fifteen Windows exports
-also matched that oracle. A hash-checked preserved Windows 4.7.6 host
-(`6471b23d944dbed23844ea0785423eee781223f46ef86856e86195672256a010`)
-reopened and re-exported the ID and brace outputs, retaining their required
-XML properties; the semantic dumper alone does not establish those properties.
-
-All seven preserved fixtures match their empty warning arrays exactly.
-`ties_mismatched` and `unsupported_target` match their complete frozen warning
-arrays exactly. The five degraded fixtures have the exact frozen feature
-warnings (including kinds and compound IDs), plus additional unmapped-feature
-warnings: their complete arrays do not match, and no output is produced.
-`excerpts` likewise refuses rather than claiming the frozen preservation case.
-These are remaining phase-B gaps, not accepted degradations or oracle passes.
-
-The ordinary 5.00 control matched engrave-20 raw MSCX and MSCZ bytes on Linux.
-On Windows the control differed only in programRevision (`84b04f2` versus
-`542d326`); after the already documented revision normalization, MSCX hashes
-matched. Label-bearing 5.00 scores deliberately change: both labels now
-survive export/reopen. No golden was updated. Full read-suite runs against the
-local historical corpus have the same three pre-4.6 fixture failures on the
-baseline and candidate; the focused tests above are separately executed.
-
-## B5 executed evidence
-
-Windows and physical Linux compiled with `engrave_tests=y`. On each, the
-focused Export470 suite passed 9/9 and the public API suite passed 21/21.
-All thirteen successful frozen cases matched complete preserved-oracle JSON
-and exact warning arrays in MSCX and MSCZ: 26 Linux and 26 Windows outputs.
-This includes preservation of `excerpts` with no warnings and all five
-warned degradations. The actual paired edit also matched its oracle JSON;
-the one-end edit and unsupported target refused with exact frozen warnings.
-The runner verified all 87 SHA256SUMS entries and the dumper digest, and
-limited each oracle subprocess's LD_LIBRARY_PATH to the preserved `lib/`.
-
-A Windows default-5.00 label-bearing export matched the baseline after only
-the documented programRevision normalization (`542d326` versus `56aabbb`);
-raw cross-build bytes therefore differ in that build stamp. Default versus
-explicit 5.00 bytes matched in both formats in the focused tests. The 5.00
-writer source was not changed. No golden or frozen expectation was changed.
-The parent owns the full engine gate, golden comparison, old-reader identity
-and brace-association checks, host/schema fixes, Terra re-review and final
-tag/pin. These focused results do not establish full phase-B acceptance.
+During 4.70 XML conversion, serialization progress is checked against `CaptureOptions::cancelled` every <= 4 KiB:
+- An observed cancellation aborts serialization immediately with `ErrorCode::CANCELLED`.
+- No output file or partial XML bytes are published.
+- Working buffer budgets (`CaptureOptions::max_working_bytes`) and final byte budgets (`CaptureOptions::max_bytes`) remain strictly enforced throughout the conversion.

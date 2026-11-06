@@ -1,95 +1,133 @@
-# ![MuseScore Studio](share/icons/musescore_logo_full.png)
+# engrave
 
-Music notation and composition software
+`engrave` is a native, headless C++ score engine library providing core music notation, layout, engraving, rendering, import/export, and audio synthesis capabilities. It is built with [xmake](https://xmake.io/) and is completely free of Qt, GUI, and desktop application dependencies.
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.en.html)
-[![Coverage](https://s3.us-east-1.amazonaws.com/extensions.musescore.org/test/code_coverage/coverage_badge.svg?)](https://github.com/musescore/MuseScore/actions/workflows/check_unit_tests.yml)
+The library serves as the core engraving and playback engine for the [`engrave-mcp`](https://github.com/Locietta/engrave-mcp) Model Context Protocol (MCP) host.
 
-MuseScore Studio is an open source and free music notation software. For support, contribution, and bug reports visit MuseScore.org. Fork and make pull requests!
+## Relationship to MuseScore
 
-## Features
+`engrave` is a hard fork of MuseScore core (derived from upstream MuseScore 5.0 development).
+- **Ancestral Provenance**: The fork's upstream synchronization history terminates at `upstream-final` (syncing upstream MuseScore commit `32f0a26e5b` and framework `da3885cb`). Since that sync point, development moves forward independently.
+- **Headless Score Library**: All desktop UI, Qt bindings, user-interaction widgets, QML, cloud services, and legacy score readers prior to MuseScore 4.6 have been removed.
+- **Attribution & Disclaimer**: `engrave` acknowledges original copyright and contributions from MuseScore Limited and the MuseScore community. It is an independent library project and is not affiliated with, endorsed by, or maintained by MuseScore or Muse Group.
 
-- WYSIWYG design, notes are entered on a "virtual notepaper"
-- TrueType font(s) for printing & display allows for high quality scaling to all sizes
-- Easy & fast note entry
-- Many editing functions
-- MusicXML import/export
-- MIDI (SMF) import/export
-- MEI import/export
-- MuseData import
-- MIDI input for note entry
-- Integrated sequencer and software synthesizer to play the score
-- Print or create PDF files
+## Supported Formats
 
-## More info
+Capabilities can be queried programmatically via `Engine::capabilities()`.
 
-- [MuseScore Studio Homepage](https://musescore.org)
-- [MuseScore Studio Git workflow instructions](https://musescore.org/en/developers-handbook/git-workflow)
-- [How to compile MuseScore Studio?](https://github.com/musescore/MuseScore/wiki/Set-up-developer-environment)
+### Input Formats
+- **MuseScore**: `.mscz` (compressed archive) and `.mscx` (uncompressed XML), versions 4.60 to 5.00. Files created with MuseScore versions prior to 4.60 (mscVersion < 460) return `ErrorCode::UNSUPPORTED`; versions above the current 5.00 format (mscVersion > 500) are rejected.
+- **MusicXML**: Uncompressed `.musicxml` / `.xml` and compressed `.mxl`.
+- **MIDI**: Standard MIDI Files (`.mid`, `.midi`, `.kar`).
+- **Guitar Pro**: Guitar Pro 1–7 (`.gtp`, `.gp3`, `.gp4`, `.gp5`, `.gpx`, `.gp`) and PowerTab (`.ptb`).
+- **MNX**: W3C MNX JSON (schema 27; import only).
 
-## License
-
-MuseScore Studio is licensed under GPL version 3.0. See [license file](https://github.com/musescore/MuseScore/blob/master/LICENSE.txt) in the same directory.
-
-## Packages
-
-See [Code Structure on Wiki](https://github.com/musescore/MuseScore/wiki/CodeStructure)
+### Export Formats
+- **Score Files** (`Document::export_score`, `Document::export_score_with_warnings`):
+  - **MuseScore**: `.mscz` and `.mscx` (default native version `"5.00"`). A restricted, bounded compatibility writer is available for version `"4.70"` (interoperable with MuseScore 4.7.0–4.7.6; see [WRITE470.md](engrave/WRITE470.md)).
+  - **MusicXML**: Uncompressed MusicXML and compressed `.mxl`.
+  - **MIDI**: Standard MIDI File, with configurable repeat expansion and RPN controls.
+  - **Excerpt Export**: Export an individual linked part or excerpt as a standalone score via `ExportOptions::score`.
+- **Visual Rendering** (`Document::render` via Cairo):
+  - **PDF**: Multi-page vector document.
+  - **PNG**: High-resolution raster images per page (36 to 1200 DPI; transparent or score-styled background).
+  - **SVG**: Scalable vector graphics per page.
+  - Inclusive page range selection (`first_page` to `last_page`).
+- **Audio Synthesis** (`Document::render_audio` via FluidSynth):
+  - Encoders: **WAV** (16, 24, 32-bit float), **FLAC** (16, 24-bit), **Opus** (in Ogg container, 48 kHz), **MP3** (128 kbps default, 32–512 kbps), **AAC** (128 kbps, ADTS).
+  - Multi-track mixing: Per-track volume (dB), stereo pan/balance, mute, solo, and SoundFont selection.
+  - Reverb: Aux send/return with Muse Reverb DSP.
+  - Streaming: Delivers encoded bytes chunk-by-chunk to a caller-supplied `ByteSink`.
+- **Geometry & Query**:
+  - `Document::positions`: Exact 1200-DPI layout units for page-local measure/segment bounding boxes and repeat-expanded playback event positions.
+  - `Document::query`: Structural inspection of score elements via stable typed handles.
 
 ## Building
 
-**Read the [Compilation section](https://github.com/musescore/MuseScore/wiki/Set-up-developer-environment) of the [MuseScore Wiki](https://github.com/musescore/MuseScore/wiki) for a complete build walkthrough and a list of dependencies.**
+`engrave` uses the [xmake](https://xmake.io/) build system and requires a C++23 conforming compiler.
 
-### Getting sources
+### Prerequisites
+- **xmake** >= 3.1.1
+- **C++23 Compiler**:
+  - Windows: MSVC (Visual Studio 2022 / Build Tools 17.10+) or clang-cl
+  - Linux: GCC 13+ or Clang 16+
+- **Python** 3 and **Git** (for asset installation and manifest verification)
+- **Cairo**:
+  - Linux: Install the system development package (e.g. `libcairo2-dev` on Ubuntu/Debian, `cairo-devel` on Fedora, `cairo` on Arch/CachyOS).
+  - Windows: Provide the cairo install prefix using `--cairo_prefix=<path>` (e.g. pointing to a directory with `include/cairo` and `lib/cairo.lib`, such as a conda or pixi environment).
 
-If using git to download repo of entire code history, type:
+All other C/C++ third-party dependencies (FreeType, HarfBuzz, libflac, LAME, libopus, libopusenc, fdk-aac, pugixml, utfcpp, picojson, mnxdom, zlib, nlohmann-json) are managed and built from source recipes in `xmake/packages/`.
 
-    git clone  --recurse-submodules https://github.com/musescore/MuseScore.git
-    cd MuseScore
+### Build Commands
 
-(The `--recurse-submodules` ensures that the [`muse_framework`](https://github.com/musescore/muse_framework) git submodule is checked out into the `muse/` subdirectory.)
+#### Windows
+```pwsh
+# Configure with cairo prefix and release mode
+xmake f -m release --cairo_prefix=C:/path/to/cairo/prefix
 
-Otherwise, you can just download the latest source release tarball from the [Releases page](https://github.com/musescore/MuseScore/releases), and then from your download directory type:
+# Build the engrave library target
+xmake build engrave
+```
 
-    tar xzf MuseScore-x.x.x.tar.gz
-    cd MuseScore-x.x.x
+#### Linux
+```bash
+# Configure release build (uses system cairo by default)
+xmake f -m release
 
-### Release Build
+# Build the engrave library target
+xmake build engrave
+```
 
-To compile MuseScore Studio for release, type:
+### Configuration Options
+- `--cairo_prefix=<path>`: Custom installation prefix for the Cairo graphics library.
+- `--engrave_tests=y`: Enable development test targets (requires GoogleTest, resolved automatically).
 
-    cmake -P build.cmake -DCMAKE_BUILD_TYPE=Release
+## Asset Installation
 
-On MacOS, append `-G Ninja` in order to use the `ninja` build tool (which you may need to install), since this
-is required to compile Swift components.
+Runtime assets (SMuFL music fonts, text fonts, instrument templates, engraving styles, and MPE profiles) are installed using `tools/install_assets.py`. The installer reads committed Git blobs to ensure byte-exact preservation regardless of local line-ending configurations.
 
-If something goes wrong, append the word "clean" to the above command to delete the build subdirectory:
+```bash
+# Install assets to a target directory
+python tools/install_assets.py <destination_dir>
 
-    cmake -P build.cmake -DCMAKE_BUILD_TYPE=Release clean
+# Verify installed files against the pinned manifest (engrave/assets.json)
+python tools/install_assets.py <destination_dir> --verify
+```
 
-Then try running the first command again.
+Pass `<destination_dir>` to `EngineOptions::resources` when initializing the engine. For details, see [engrave/ASSETS.md](engrave/ASSETS.md).
 
-### Running
+## Public API
 
-To start MuseScore Studio, type:
+Public headers are located under `engrave/include/engrave/`:
+- `engrave/engrave.h`: Umbrella include header.
+- `engrave/engine.h`: `Engine` runtime lifecycle, font registration, SoundFont configuration, and document creation/opening.
+- `engrave/document.h`: `Document` operations: layout, editing, rendering, audio synthesis, export, positions, and queries.
+- `engrave/output.h`: Export and render options (`ExportOptions`, `RenderOptions`, formats).
+- `engrave/audio.h`: Audio rendering options, mixer parameters, track selection, and format settings (`AudioOptions`, `AudioFormat`).
+- `engrave/edit.h`: Batch score edit operations, note and measure manipulation, and undo/redo semantics.
+- `engrave/query.h`: Score inspection, element handles, and property queries.
+- `engrave/export_warning.h`: Structured warnings emitted by compatibility exporters.
+- `engrave/error.h`: Error codes (`ErrorCode`) and `Result<T>` monadic wrapper.
+- `engrave/version.h`: Engine version information.
 
-    cmake -P build.cmake -DCMAKE_BUILD_TYPE=Release run
+### Execution Model and Lifecycle Rules
+The engine operates on a single dedicated owner thread per process. Lifecycle rules per `engrave/include/engrave/engine.h:105`:
+- **Single Instance Per Process**: A process has at most one `Engine`. A second `Engine::create()` aborts the process only after a `create()` call has succeeded in claiming the process-global singleton (`s_engine_created` via `engine.cpp:90`). Initial validation failures due to missing resources or nonexistent font/SoundFont file paths return an error (`ErrorCode::NOT_FOUND` or `ErrorCode::INVALID_ARGUMENT`) before the singleton is claimed, so a subsequent `Engine::create()` call can succeed. (A font that exists on disk but fails during engine runtime loading fails after the singleton is claimed, preventing retries). Once claimed, any subsequent `Engine::create()` aborts, even after the first `Engine` has been destroyed.
+- **Open Documents at Teardown**: Destroying an `Engine` while any of its `Document` instances are still open aborts the process. All documents must be destroyed before the engine is destroyed.
+- **Owner Thread Affiliation**: Every call on an `Engine` and its `Document` instances must occur on the thread that created the engine; a call from another thread aborts.
 
-Or run the compiled executable directly.
+## Testing
 
-### Debug Build
+Engine tests are built with xmake:
+```bash
+xmake f --engrave_tests=y
+xmake build c0_gate
+```
 
-A debug version can be built and run by replacing `-DCMAKE_BUILD_TYPE=Release`
-with `-DCMAKE_BUILD_TYPE=Debug` in the above commands.
+Full conformance testing, golden render/audio regressions, and multi-format validation are currently driven from the companion host repository [`engrave-mcp`](https://github.com/Locietta/engrave-mcp) via `scripts/engine_gate.py`.
 
-If you omit the `-DCMAKE_BUILD_TYPE` option entirely then `RelWithDebInfo` is
-used by default, as it provides a useful compromise between Release and Debug.
+## License
 
-### Testing
+`engrave` is free software licensed under the **GNU General Public License version 3.0 (GPLv3)**. See [LICENSE.txt](LICENSE.txt).
 
-See the [Unit tests section](https://github.com/musescore/MuseScore/wiki/Unit-tests) of the [MuseScore Studio Wiki](https://github.com/musescore/MuseScore/wiki) for instructions on how to run the test suite.
-
-### Code Formatting
-
-Run `./hooks/install.sh` to install a pre-commit hook that will format your staged files. Requires that you install `uncrustify`.
-
-If you have problems, please report them. To uninstall, run `./hooks/uninstall.sh`.
+Bundled font families and third-party components are licensed under their respective terms (including GNU FreeFont with embedding exception, MScore with font exception, SIL Open Font License 1.1, LGPL 2.1, MIT, and BSD). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the complete attribution and license inventory.
