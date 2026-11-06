@@ -129,7 +129,7 @@ build dependencies are explicitly marked as such.
 
 | Component | In-Tree Path | Upstream Origin | License |
 |---|---|---|---|
-| **FluidSynth** | `muse/framework/audio/thirdparty/fluidsynth/fluidsynth-2.3.3/` | FluidSynth team (https://www.fluidsynth.org/) | GNU Lesser General Public License v2.1 (`LGPL-2.1`) |
+| **FluidSynth** | `muse/framework/audio/thirdparty/fluidsynth/fluidsynth-2.3.3/` | FluidSynth team (https://www.fluidsynth.org/) | GNU Lesser General Public License v2.1 or later (`LGPL-2.1-or-later`) |
 | **stb_vorbis** | `muse/framework/audio/thirdparty/stb/stb_vorbis.c` | Sean Barrett (stb libraries, https://github.com/nothings/stb) | Dual MIT License / Public Domain (Unlicense) |
 | **kors_logger** | `muse/framework/global/thirdparty/kors_logger/` | Igor Korsukov | MIT License |
 | **sg14::inplace_function** | `muse/framework/global/thirdparty/sg14/inplace_function.h` | SG14 / David Krauss | Boost Software License 1.0 (`BSL-1.0`) |
@@ -141,7 +141,7 @@ build dependencies are explicitly marked as such.
 
 #### FluidSynth (`muse/framework/audio/thirdparty/fluidsynth/fluidsynth-2.3.3/`)
 - **Version**: 2.3.3 (trimmed and patched to compile standalone with `NO_GLIB`).
-- **License**: GNU Lesser General Public License version 2.1 (`LGPL-2.1`), located at `muse/framework/audio/thirdparty/fluidsynth/fluidsynth-2.3.3/LICENSE`.
+- **License**: GNU Lesser General Public License version 2.1 "or (at your option) any later version" (`LGPL-2.1-or-later`), located at `muse/framework/audio/thirdparty/fluidsynth/fluidsynth-2.3.3/LICENSE`.
 - **Note**: FluidSynth provides offline SoundFont software synthesis in the audio rendering subsystem.
 
 #### stb_vorbis (`muse/framework/audio/thirdparty/stb/stb_vorbis.c`)
@@ -189,10 +189,10 @@ The standalone `xmake` build resolves and compiles the following third-party dep
 | **utfcpp** | 4.1.1 | Boost Software License 1.0 | UTF-8 conversion routines |
 | **picojson** | commit 111c9be | 2-Clause BSD License | JSON parsing for audio settings and styles |
 | **mnxdom** | commit 45bf462 | MIT License | W3C MNX score representation |
-| **mnx-json-schema** | draft schema | W3C Software and Document License | MNX schema validation |
+| **mnx-json-schema** | commit 40af3ec (`pboettch/json-schema-validator`) | MIT License | JSON schema validator for MNX |
 | **zlib** | 1.3.1 | zlib License | Compression for MSCZ and MXL zip archives |
 | **nlohmann_json** | 3.12.0 | MIT License | JSON parser for asset manifests and templates |
 | **cairo** | System / external prefix | LGPL-2.1 / MPL-1.1 | Vector (PDF/SVG) and raster (PNG) rendering |
 | **GoogleTest** (opt-in tests) | 1.17.0 | BSD-3-Clause | Unit test execution |
 
-*Note: The licenses in section 3 apply to external upstream packages fetched at build time, not in-tree files.*
+*Note: The licenses in section 3 apply to external upstream packages fetched at build time, not in-tree files. The `mnx-json-schema` recipe builds `pboettch/json-schema-validator` (MIT); the W3C MNX JSON schema itself is vendored for test validation under `src/importexport/mnx/tests/data/schema/` (W3C Software and Document License).*
