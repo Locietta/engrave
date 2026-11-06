@@ -108,7 +108,7 @@ TEST(StreamingFile, LimitsApplyBeforeWritesAndCountRewrites) {
 #ifndef _WIN32
 TEST(StreamingFile, FinalizationFailurePropagates) {
     muse::io::StreamingFileDevice out("/dev/full");
-    ASSERT_TRUE(out.open(muse::io::IODevice::WriteOnly));
+    ASSERT_TRUE(out.open(muse::io::IODevice::WRITE_ONLY));
     const uint8_t value = 1;
     out.write(&value, 1);
     out.close();
