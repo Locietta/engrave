@@ -13,3 +13,9 @@ referencing==0.37.0
 rpds-py==2026.9.1
 pymupdf-layout==2.0
 pymupdf4llm==2.0
+typing-extensions==4.16.0
+networkx==3.7
+onnxruntime==1.31.0
+flatbuffers==25.12.19
+packaging==26.3
+protobuf==7.36.2
