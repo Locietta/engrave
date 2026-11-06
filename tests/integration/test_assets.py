@@ -36,6 +36,9 @@ def fallback_fixture():
         return Path(os.environ["ENGRAVE_MCP_FAMILY_FALLBACK_FONT"])
     root = REPO_ROOT
     candidates = (
+        a.font.parent / "Ubuntu-M.ttf",
+        a.font.parent / "Ubuntu-B.ttf",
+        a.font.parent / "DejaVuSans-Bold.ttf",
         root / ".pixi/envs/native/fonts/Ubuntu-M.ttf",
         Path("C:/Windows/Fonts/arialbd.ttf"),
         Path("/usr/share/fonts/truetype/ubuntu/Ubuntu-M.ttf"),
