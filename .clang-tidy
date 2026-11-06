@@ -1,6 +1,6 @@
 # Naming rules shared with the engrave-mcp host (see ../../.clang-tidy).
 Checks: "-*,readability-identifier-naming"
-HeaderFilterRegex: '.*[\\/]vendor[\\/]engrave[\\/](engrave|src|muse)[\\/].*'
+HeaderFilterRegex: '.*[\\/](engrave|src|muse)[\\/].*'
 ExcludeHeaderFilterRegex: '.*[\\/]thirdparty[\\/].*'
 
 CheckOptions:
