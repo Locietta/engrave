@@ -25,11 +25,10 @@
 #include "engraving/types/types.h"
 
 namespace mu::engraving {
-class Score;
-class Measure;
+struct Score;
+struct Measure;
 
-class ExchangeVoices {
-public:
+struct ExchangeVoices {
     static void exchange_voices_in_selection(Score *score, voice_idx_t src_voice, voice_idx_t dst_voice);
     static void exchange_voices(Score *score, Measure *measure, voice_idx_t src_voice, voice_idx_t dst_voice, staff_idx_t src_staff,
                                 staff_idx_t dst_staff);

@@ -25,8 +25,7 @@
 #include "draw/ipaintprovider.h"
 
 namespace mu::engraving::rendering::score {
-class PaintDebugger : public muse::draw::IPaintProvider {
-public:
+struct PaintDebugger : muse::draw::IPaintProvider {
     PaintDebugger(muse::draw::IPaintProviderPtr real);
 
     muse::draw::IPaintProviderPtr real_provider() const;

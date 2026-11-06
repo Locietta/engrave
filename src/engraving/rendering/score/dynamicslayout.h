@@ -25,10 +25,9 @@
 #include "../dom/dynamic.h"
 
 namespace mu::engraving::rendering::score {
-class LayoutConfiguration;
+struct LayoutConfiguration;
 
-class DynamicsLayout {
-public:
+struct DynamicsLayout {
     static void layout_dynamic(Dynamic *item, Dynamic::LayoutData *ldata, const LayoutConfiguration &conf);
 
 private:

@@ -28,73 +28,72 @@
 #include "paintoptions.h"
 
 namespace muse::draw {
-class Painter;
+struct Painter;
 } // namespace muse::draw
 
 namespace mu::engraving {
-class Score;
-class EngravingItem;
-class Page;
+struct Score;
+struct EngravingItem;
+struct Page;
 
-class Accidental;
-class ActionIcon;
-class Arpeggio;
+struct Accidental;
+struct ActionIcon;
+struct Arpeggio;
 
-class BarLine;
-class Beam;
-class Box;
-class Bracket;
+struct BarLine;
+struct Beam;
+struct Box;
+struct Bracket;
 
-class Chord;
-class Clef;
+struct Chord;
+struct Clef;
 
-class Dynamic;
+struct Dynamic;
 
-class EngravingItem;
+struct EngravingItem;
 
-class FiguredBassItem;
+struct FiguredBassItem;
 
-class FretDiagram;
+struct FretDiagram;
 
-class Harmony;
+struct Harmony;
 
-class Image;
+struct Image;
 
-class IndicatorIcon;
+struct IndicatorIcon;
 
 enum class KerningType : unsigned char;
-class KeySig;
+struct KeySig;
 
-class LedgerLine;
-class SLine;
-class LineSegment;
-class Lyrics;
+struct LedgerLine;
+struct SLine;
+struct LineSegment;
+struct Lyrics;
 
-class NoteDot;
+struct NoteDot;
 
-class Parenthesis;
+struct Parenthesis;
 
-class Rest;
+struct Rest;
 
-class ShadowNote;
-class Spanner;
-class Slur;
-class SlurSegment;
-class SlurTie;
-class Spacer;
-class StaffText;
-class Stem;
+struct ShadowNote;
+struct Spanner;
+struct Slur;
+struct SlurSegment;
+struct SlurTie;
+struct Spacer;
+struct StaffText;
+struct Stem;
 
-class TextBase;
-class Text;
-class TextLineBaseSegment;
-class TieSegment;
-class TimeSig;
+struct TextBase;
+struct Text;
+struct TextLineBaseSegment;
+struct TieSegment;
+struct TimeSig;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering {
-class IScoreRenderer {
-public:
+struct IScoreRenderer {
     virtual ~IScoreRenderer() = default;
 
     // Main interface

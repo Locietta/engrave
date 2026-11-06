@@ -19,7 +19,8 @@ struct OfflineTiming {
     }
 };
 
-class OfflineTimer {
+struct OfflineTimer {
+private:
     using Clock = std::chrono::steady_clock;
     double &total_;
     Clock::time_point start_;
@@ -33,8 +34,7 @@ public:
     }
 };
 
-class OfflineTimingReport {
-public:
+struct OfflineTimingReport {
     OfflineTimingReport() { OfflineTiming::current() = {}; }
 
     ~OfflineTimingReport() {

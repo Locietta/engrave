@@ -28,13 +28,12 @@
 #include "benddatacontextsplitchord.h"
 
 namespace mu::engraving {
-class Note;
-class Chord;
+struct Note;
+struct Chord;
 } // namespace mu::engraving
 
 namespace mu::iex::guitarpro {
-class BendDataCollectorSplitChord {
-public:
+struct BendDataCollectorSplitChord {
 
     void store_bend_data(const mu::engraving::Note *note, const mu::engraving::PitchValues &pitch_values);
     BendDataContextSplitChord collect_bend_data_context();

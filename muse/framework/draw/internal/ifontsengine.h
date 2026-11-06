@@ -29,8 +29,7 @@
 #include "types/fontstypes.h"
 
 namespace muse::draw {
-class IFontsEngine {
-public:
+struct IFontsEngine {
     virtual ~IFontsEngine() = default;
 
     virtual void set_render_cache_dir_path(const io::PathT &path, const std::string &revision = std::string()) = 0;

@@ -24,8 +24,7 @@
 #include "../imnxconfiguration.h"
 
 namespace mu::iex::mnxio {
-class MnxConfiguration : public IMnxConfiguration {
-public:
+struct MnxConfiguration : IMnxConfiguration {
     void init();
 
     int mnx_indent_spaces() const override;

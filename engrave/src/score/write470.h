@@ -7,7 +7,7 @@
 #include "engrave/src/runtime/noqt_runtime.h"
 
 namespace mu::engraving {
-class Score;
+struct Score;
 } // namespace mu::engraving
 
 namespace engrave::write470 {

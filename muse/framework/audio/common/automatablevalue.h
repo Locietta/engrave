@@ -34,8 +34,7 @@ using AutomationEnvelope = mpe::AutomationCurve<muse::secs_t>;
 
 //! NOTE: a parameter that is either a fixed value, or driven by an AutomationEnvelope over time
 template <typename T>
-class AutomatableValue {
-public:
+struct AutomatableValue {
     AutomatableValue() = default;
 
     AutomatableValue(const T &value) : value_(value) {}

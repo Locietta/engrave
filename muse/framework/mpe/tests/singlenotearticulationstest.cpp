@@ -29,7 +29,7 @@ using namespace muse;
 using namespace muse::mpe;
 using namespace muse::mpe::tests;
 
-class MpeSingleNoteArticulationsTest : public ::testing::Test {
+struct MpeSingleNoteArticulationsTest : ::testing::Test {
 protected:
     void SetUp() override {
         // [GIVEN] Nominal arrangement data of the very first quarter note on the score, with the 120BPM tempo and 4/4 time signature

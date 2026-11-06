@@ -32,32 +32,31 @@
 #include "score.h"
 
 namespace mu::engraving {
-class EngravingProject;
-class MscReader;
-class MscWriter;
-class MscLoader;
-class TransactionManager;
+struct EngravingProject;
+struct MscReader;
+struct MscWriter;
+struct MscLoader;
+struct TransactionManager;
 } // namespace mu::engraving
 
 namespace mu::engraving::compat {
-class ScoreAccess;
-class ReadStyleHook;
+struct ScoreAccess;
+struct ReadStyleHook;
 } // namespace mu::engraving::compat
 
 namespace mu::engraving {
-class Excerpt;
-class MasterScore;
-class Part;
-class RepeatList;
+struct Excerpt;
+struct MasterScore;
+struct Part;
+struct RepeatList;
 struct RepeatSegmentInfo;
-class Revisions;
-class TempoTimeline;
-class TimeSigMap;
-class UndoStack;
-class ScoreAutomationController;
+struct Revisions;
+struct TempoTimeline;
+struct TimeSigMap;
+struct UndoStack;
+struct ScoreAutomationController;
 
-class MidiMapping {
-public:
+struct MidiMapping {
     Part *part() { return part_; }
 
     const Part *part() const { return part_; }
@@ -73,7 +72,7 @@ public:
 private:
 
     MidiMapping() = default; // should be created only within MasterScore
-    friend class MasterScore;
+    friend struct MasterScore;
 
     Part *part_ = nullptr;
     std::unique_ptr<InstrChannel> articulation_;
@@ -83,7 +82,8 @@ private:
     PartChannelSettingsLink link_;
 };
 
-class MasterScore : public Score {
+struct MasterScore : Score {
+private:
     OBJECT_ALLOCATOR(engraving, MasterScore)
 
 public:
@@ -243,11 +243,11 @@ private:
     void do_update_midi_mapping(int &maxport, std::set<int> &occupied_midi_channels, unsigned int &search_midi_mapping_from, Part *part,
                                 InstrChannel *channel, bool use_drumset);
 
-    friend class EngravingProject;
-    friend class compat::ScoreAccess;
-    friend class read114::Read114;
-    friend class read400::Read400;
-    friend class TransactionManager;
+    friend struct EngravingProject;
+    friend struct compat::ScoreAccess;
+    friend struct read114::Read114;
+    friend struct read400::Read400;
+    friend struct TransactionManager;
 
     MasterScore(const EngravingServices &services, std::weak_ptr<EngravingProject> project = std::weak_ptr<EngravingProject>());
     MasterScore(const EngravingServices &services, const MStyle &,

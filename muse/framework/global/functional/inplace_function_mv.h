@@ -29,7 +29,7 @@
 
 namespace muse::functional {
 template <typename Signature, size_t Capacity = 32, size_t Alignment = alignof(std::max_align_t)>
-class MoveOnlyInplaceFunction;
+struct MoveOnlyInplaceFunction;
 
 namespace detail {
 template <typename>
@@ -81,8 +81,7 @@ const MoveOnlyInplaceFunctionVTable<Ret, Args...> *moveOnlyInplaceFunctionVTable
 } // namespace detail
 
 template <typename Ret, typename... Args, size_t Capacity, size_t Alignment>
-class MoveOnlyInplaceFunction<Ret(Args...), Capacity, Alignment> {
-public:
+struct MoveOnlyInplaceFunction<Ret(Args...), Capacity, Alignment> {
     MoveOnlyInplaceFunction() noexcept = default;
 
     MoveOnlyInplaceFunction(std::nullptr_t) noexcept {}

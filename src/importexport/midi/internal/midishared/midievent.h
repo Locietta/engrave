@@ -26,7 +26,7 @@
 #include "engraving/compat/midi/midicoreevent.h"
 
 namespace mu::iex::midi {
-class MidiEvent : public engraving::MidiCoreEvent {
+struct MidiEvent : engraving::MidiCoreEvent {
 protected:
     std::vector<uchar> edata_value;
     int len_value{0};

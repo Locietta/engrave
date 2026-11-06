@@ -7,8 +7,7 @@
 namespace muse::io {
 // A synchronous reader over caller-owned bytes. The span must outlive the
 // device and every consumer. Writes are rejected; no mutable alias is exposed.
-class ByteView final : public IODevice {
-public:
+struct ByteView final : IODevice {
     explicit ByteView(std::span<const uint8_t> bytes) : bytes_(bytes) {}
 
 protected:

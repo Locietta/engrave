@@ -30,8 +30,7 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class XmlReader : public muse::XmlStreamReader {
-public:
+struct XmlReader : muse::XmlStreamReader {
 
     XmlReader() = default;
 

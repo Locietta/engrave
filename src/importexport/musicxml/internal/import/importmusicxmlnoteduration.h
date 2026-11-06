@@ -27,8 +27,8 @@
 #include "serialization/xmlstreamreader.h"
 
 namespace mu::iex::musicxml {
-class MusicXmlLogger;
-class MusicXmlParserPass1;
+struct MusicXmlLogger;
+struct MusicXmlParserPass1;
 
 //---------------------------------------------------------
 //   MusicXmlNoteDuration
@@ -38,8 +38,7 @@ class MusicXmlParserPass1;
  Parse the note time related part of the /score-partwise/part/measure/note node.
  */
 
-class MusicXmlNoteDuration {
-public:
+struct MusicXmlNoteDuration {
     MusicXmlNoteDuration(int divs, MusicXmlLogger *logger, MusicXmlParserPass1 *pass1)
         : divs_(divs), pass1_(pass1), logger_(logger) { /* nothing so far */ }
 

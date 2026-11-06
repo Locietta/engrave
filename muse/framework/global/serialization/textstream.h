@@ -26,15 +26,14 @@
 #include <vector>
 
 namespace muse {
-class ByteArray;
-class String;
+struct ByteArray;
+struct String;
 
 namespace io {
-class IODevice;
+struct IODevice;
 } // namespace io
 
-class TextStream {
-public:
+struct TextStream {
     TextStream() = default;
     explicit TextStream(io::IODevice *device);
     virtual ~TextStream();

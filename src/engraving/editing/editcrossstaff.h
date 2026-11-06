@@ -23,12 +23,11 @@
 #pragma once
 
 namespace mu::engraving {
-class ChordRest;
-class Score;
-class Transaction;
+struct ChordRest;
+struct Score;
+struct Transaction;
 
-class EditCrossStaff {
-public:
+struct EditCrossStaff {
     static void move_up(Transaction &tx, Score *score, ChordRest *cr);
     static void move_down(Transaction &tx, Score *score, ChordRest *cr);
 };

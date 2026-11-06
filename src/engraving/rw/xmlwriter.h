@@ -27,10 +27,9 @@
 #include "../dom/property.h"
 
 namespace mu::engraving {
-class EngravingObject;
+struct EngravingObject;
 
-class XmlWriter : public muse::XmlStreamWriter {
-public:
+struct XmlWriter : muse::XmlStreamWriter {
     XmlWriter() = default;
     XmlWriter(muse::io::IODevice *dev);
     ~XmlWriter();

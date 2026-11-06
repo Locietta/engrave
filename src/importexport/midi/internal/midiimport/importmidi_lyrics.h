@@ -26,8 +26,8 @@
 #include <vector>
 
 namespace mu::iex::midi {
-class MidiFile;
-class MTrack;
+struct MidiFile;
+struct MTrack;
 
 namespace MidiLyrics {
 void extract_lyrics_to_midi_data(const MidiFile *mf);

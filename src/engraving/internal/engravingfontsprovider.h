@@ -29,10 +29,9 @@
 #include "engravingfont.h"
 
 namespace mu::engraving {
-class EngravingFont;
+struct EngravingFont;
 
-class EngravingFontsProvider : public IEngravingFontsProvider {
-public:
+struct EngravingFontsProvider : IEngravingFontsProvider {
     explicit EngravingFontsProvider(muse::draw::IFontProvider &font_provider) : font_provider_(font_provider) {}
 
     void deinit();

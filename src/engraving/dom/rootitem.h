@@ -25,12 +25,13 @@
 #include "engravingitem.h"
 
 namespace mu::engraving {
-class Score;
+struct Score;
 
 //! Sits above the pages, which are the top of the visual hierarchy. It takes no part in
 //! that hierarchy - nothing is laid out inside it - and exists only to head an
 //! accessibility tree; see EngravingItem::accessibleChildren().
-class RootItem : public EngravingItem {
+struct RootItem : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, RootItem)
 public:
     //! Which tree this one heads: the score's own, or the one formed by the objects

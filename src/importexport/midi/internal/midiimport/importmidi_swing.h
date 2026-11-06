@@ -25,7 +25,7 @@
 #include "importmidi_operation.h"
 
 namespace mu::engraving {
-class Staff;
+struct Staff;
 } // namespace mu::engraving
 
 namespace mu::iex::midi { namespace Swing {

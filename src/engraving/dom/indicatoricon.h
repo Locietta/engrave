@@ -27,7 +27,8 @@
 #include "draw/types/font.h"
 
 namespace mu::engraving {
-class IndicatorIcon : public EngravingItem {
+struct IndicatorIcon : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, IndicatorIcon)
 
 public:

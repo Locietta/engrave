@@ -10,15 +10,14 @@
 #include "style/styledef.h"
 
 namespace muse::draw {
-class Painter;
+struct Painter;
 } // namespace muse::draw
 
 namespace mu::engraving {
-class Shape;
-class EngravingItem;
+struct Shape;
+struct EngravingItem;
 
-class IEngravingFont {
-public:
+struct IEngravingFont {
 
     virtual ~IEngravingFont() = default;
 

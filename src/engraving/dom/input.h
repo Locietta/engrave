@@ -34,15 +34,15 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class ChordRest;
-class Drumset;
-class EngravingItem;
-class Note;
-class Score;
-class Segment;
-class Selection;
-class Slur;
-class Staff;
+struct ChordRest;
+struct Drumset;
+struct EngravingItem;
+struct Note;
+struct Score;
+struct Segment;
+struct Selection;
+struct Slur;
+struct Staff;
 
 // no ordinal for the visual repres. of string
 // (topmost in TAB varies according to visual order and presence of bass strings)
@@ -58,8 +58,7 @@ enum class NoteEntryMethod : char { UNKNOWN, BY_NOTE_NAME, BY_DURATION, REPITCH,
 //   InputState
 //---------------------------------------------------------
 
-class InputState {
-public:
+struct InputState {
     bool is_valid() const;
 
     ChordRest *cr() const;

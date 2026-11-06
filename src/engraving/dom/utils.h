@@ -29,25 +29,25 @@
 #include "draw/types/geometry.h"
 
 namespace mu::engraving {
-class Chord;
-class ChordRest;
-class Drumset;
-class EngravingItem;
-class KeySig;
-class Lyrics;
-class Measure;
-class Note;
-class PartialLyricsLine;
-class Rest;
-class Score;
-class Score;
-class Segment;
-class Selection;
-class Spanner;
-class Staff;
-class System;
-class Tuplet;
-class Volta;
+struct Chord;
+struct ChordRest;
+struct Drumset;
+struct EngravingItem;
+struct KeySig;
+struct Lyrics;
+struct Measure;
+struct Note;
+struct PartialLyricsLine;
+struct Rest;
+struct Score;
+struct Score;
+struct Segment;
+struct Selection;
+struct Spanner;
+struct Staff;
+struct System;
+struct Tuplet;
+struct Volta;
 struct NoteVal;
 
 enum class Key : signed char;

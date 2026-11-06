@@ -25,17 +25,16 @@
 #include <vector>
 
 namespace mu::engraving {
-class Measure;
-class MeasureBase;
-class Score;
-class System;
-class Transaction;
-class RangeLock;
+struct Measure;
+struct MeasureBase;
+struct Score;
+struct System;
+struct Transaction;
+struct RangeLock;
 
 enum class LayoutBreakType : unsigned char;
 
-class EditSystemLocks {
-public:
+struct EditSystemLocks {
     static void undo_add_system_lock(Transaction &tx, const RangeLock *lock);
     static void undo_remove_system_lock(Transaction &tx, const RangeLock *lock);
     static void undo_remove_all_locks(Transaction &tx, Score *score);

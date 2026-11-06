@@ -37,17 +37,16 @@
 #include "playbackcontext.h"
 
 namespace mu::engraving {
-class Score;
-class Note;
-class EngravingItem;
-class Segment;
-class Instrument;
-class RepeatList;
+struct Score;
+struct Note;
+struct EngravingItem;
+struct Segment;
+struct Instrument;
+struct RepeatList;
 
 // Follows the committed changes of the loaded score as its changes listener
 // until it is destroyed or loads another score.
-class PlaybackModel : public IScoreChangesListener {
-public:
+struct PlaybackModel : IScoreChangesListener {
     // profilesRepository may be null (no default articulation profiles); it must
     // outlive the model.
     explicit PlaybackModel(const muse::mpe::IArticulationProfilesRepository *profiles_repository)

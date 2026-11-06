@@ -23,14 +23,13 @@
 #pragma once
 
 namespace mu::engraving {
-class Score;
-class Transaction;
+struct Score;
+struct Transaction;
 
 enum class Voicing : signed char;
 enum class HDuration : signed char;
 
-class RealizeChordSymbols {
-public:
+struct RealizeChordSymbols {
     // Realize selected chord symbols into notes on the staff.
     //
     // If a voicing and duration type are specified, the harmony voicing settings will be

@@ -25,11 +25,11 @@
 #include <map>
 
 namespace mu::engraving {
-class TimeSigMap;
+struct TimeSigMap;
 } // namespace mu::engraving
 
 namespace mu::iex::midi {
-class MTrack;
+struct MTrack;
 
 namespace Simplify {
 void simplify_durations_for_drums(std::multimap<int, MTrack> &tracks, const engraving::TimeSigMap *sigmap);

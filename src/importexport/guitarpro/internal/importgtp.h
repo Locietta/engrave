@@ -40,24 +40,24 @@
 #include "guitarbendimport/guitarbendimporter.h"
 
 namespace mu::engraving {
-class Chord;
-class ChordRest;
-class Drumset;
-class Instrument;
-class LetRing;
-class Measure;
-class Note;
-class PalmMute;
-class Score;
-class Segment;
-class Tuplet;
-class Vibrato;
-class Volta;
-class MasterScore;
-class Ottava;
-class Hairpin;
-class Bend;
-class Slur;
+struct Chord;
+struct ChordRest;
+struct Drumset;
+struct Instrument;
+struct LetRing;
+struct Measure;
+struct Note;
+struct PalmMute;
+struct Score;
+struct Segment;
+struct Tuplet;
+struct Vibrato;
+struct Volta;
+struct MasterScore;
+struct Ottava;
+struct Hairpin;
+struct Bend;
+struct Slur;
 } // namespace mu::engraving
 
 namespace mu::iex::guitarpro {
@@ -128,8 +128,7 @@ struct GpBar {
 //   GuitarPro
 //---------------------------------------------------------
 
-class GuitarPro {
-public:
+struct GuitarPro {
     const std::shared_ptr<mu::engraving::IEngravingConfiguration> &engraving_configuration() const;
 
 protected:
@@ -342,7 +341,7 @@ public:
 //   GuitarPro1
 //---------------------------------------------------------
 
-class GuitarPro1 : public GuitarPro {
+struct GuitarPro1 : GuitarPro {
 protected:
     ReadNoteResult read_note(int string, mu::engraving::Note *note);
     int read_beat_effects(int track, mu::engraving::Segment *) override;
@@ -357,8 +356,7 @@ public:
 //   GuitarPro2
 //---------------------------------------------------------
 
-class GuitarPro2 : public GuitarPro1 {
-public:
+struct GuitarPro2 : GuitarPro1 {
     GuitarPro2(mu::engraving::MasterScore *s, int v) : GuitarPro1(s, v) {}
 
     bool read(muse::io::IODevice *) override;
@@ -368,7 +366,8 @@ public:
 //   GuitarPro3
 //---------------------------------------------------------
 
-class GuitarPro3 : public GuitarPro1 {
+struct GuitarPro3 : GuitarPro1 {
+private:
     int read_beat_effects(int track, mu::engraving::Segment *segment) override;
 
 public:
@@ -381,7 +380,8 @@ public:
 //   GuitarPro4
 //---------------------------------------------------------
 
-class GuitarPro4 : public GuitarPro {
+struct GuitarPro4 : GuitarPro {
+private:
     std::vector<int> cur_dynam;
     std::vector<int> tuple_kind;
     void read_info();
@@ -400,7 +400,8 @@ public:
 //   GuitarPro5
 //---------------------------------------------------------
 
-class GuitarPro5 : public GuitarPro {
+struct GuitarPro5 : GuitarPro {
+private:
     std::map<std::pair<int, int>, bool> dead_end;
     int beat_counter_value{0};
     std::unordered_map<mu::engraving::Chord *, mu::engraving::TremoloType> tremolos_in_chords_; // for adding tremolo for tied notes
@@ -432,7 +433,8 @@ public:
 //   GuitarPro6
 //---------------------------------------------------------
 
-class GuitarPro6 : public GuitarPro {
+struct GuitarPro6 : GuitarPro {
+private:
     // an integer stored in the header indicating that the file is not compressed (BCFS).
     const int gpx_header_uncompressed = 1397113666;
     // an integer stored in the header indicating that the file is not compressed (BCFZ).
@@ -487,7 +489,8 @@ public:
     bool read(muse::io::IODevice *) override;
 };
 
-class GuitarPro7 : public GuitarPro6 {
+struct GuitarPro7 : GuitarPro6 {
+private:
     virtual std::unique_ptr<IGPDomBuilder> create_gp_dom_builder() const override;
 
 public:

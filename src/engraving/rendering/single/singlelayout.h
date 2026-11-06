@@ -27,113 +27,112 @@
 #include "dom/textbase.h"
 
 namespace mu::engraving {
-class MStyle;
-class IEngravingFont;
-class EngravingItem;
-class Score;
+struct MStyle;
+struct IEngravingFont;
+struct EngravingItem;
+struct Score;
 
-class Accidental;
-class ActionIcon;
-class Ambitus;
-class Arpeggio;
-class Articulation;
+struct Accidental;
+struct ActionIcon;
+struct Ambitus;
+struct Arpeggio;
+struct Articulation;
 
-class BagpipeEmbellishment;
-class BarLine;
-class Bend;
-class Bracket;
-class Breath;
+struct BagpipeEmbellishment;
+struct BarLine;
+struct Bend;
+struct Bracket;
+struct Breath;
 
-class Capo;
-class Chord;
-class ChordLine;
-class Clef;
+struct Capo;
+struct Chord;
+struct ChordLine;
+struct Clef;
 
-class DummyParent;
-class Dynamic;
+struct DummyParent;
+struct Dynamic;
 
-class Expression;
+struct Expression;
 
-class Fermata;
-class Fingering;
-class FretDiagram;
-class FSymbol;
+struct Fermata;
+struct Fingering;
+struct FretDiagram;
+struct FSymbol;
 
-class Glissando;
-class GlissandoSegment;
-class GradualTempoChange;
-class GradualTempoChangeSegment;
+struct Glissando;
+struct GlissandoSegment;
+struct GradualTempoChange;
+struct GradualTempoChangeSegment;
 
-class Hairpin;
-class HairpinSegment;
-class HarpPedalDiagram;
+struct Hairpin;
+struct HairpinSegment;
+struct HarpPedalDiagram;
 
-class Image;
-class InstrumentChange;
+struct Image;
+struct InstrumentChange;
 
-class Jump;
+struct Jump;
 
-class KeySig;
+struct KeySig;
 
-class LayoutBreak;
-class LetRing;
-class LetRingSegment;
-class SLine;
-class LineSegment;
-class Lyrics;
+struct LayoutBreak;
+struct LetRing;
+struct LetRingSegment;
+struct SLine;
+struct LineSegment;
+struct Lyrics;
 
-class Marker;
-class MeasureNumber;
-class MeasureRepeat;
+struct Marker;
+struct MeasureNumber;
+struct MeasureRepeat;
 
-class NoteHead;
-class NoteLine;
+struct NoteHead;
+struct NoteLine;
 
-class Ornament;
-class Ottava;
-class OttavaSegment;
+struct Ornament;
+struct Ottava;
+struct OttavaSegment;
 
-class PalmMute;
-class PalmMuteSegment;
-class Pedal;
-class PedalSegment;
-class PlayCountText;
-class PlayTechAnnotation;
+struct PalmMute;
+struct PalmMuteSegment;
+struct Pedal;
+struct PedalSegment;
+struct PlayCountText;
+struct PlayTechAnnotation;
 
-class RehearsalMark;
+struct RehearsalMark;
 
-class Slur;
-class SoundFlag;
-class Spacer;
-class StaffText;
-class StaveSharingLabel;
-class StaffTypeChange;
-class Sticking;
-class StringTunings;
-class Symbol;
-class SystemText;
+struct Slur;
+struct SoundFlag;
+struct Spacer;
+struct StaffText;
+struct StaveSharingLabel;
+struct StaffTypeChange;
+struct Sticking;
+struct StringTunings;
+struct Symbol;
+struct SystemText;
 
-class TempoText;
-class Text;
-class TextLine;
-class TextLineSegment;
-class TextLineBaseSegment;
-class TimeSig;
-class TremoloSingleChord;
-class TremoloTwoChord;
-class TremoloBar;
-class Trill;
-class TrillSegment;
+struct TempoText;
+struct Text;
+struct TextLine;
+struct TextLineSegment;
+struct TextLineBaseSegment;
+struct TimeSig;
+struct TremoloSingleChord;
+struct TremoloTwoChord;
+struct TremoloBar;
+struct Trill;
+struct TrillSegment;
 
-class Vibrato;
-class VibratoSegment;
-class Volta;
-class VoltaSegment;
+struct Vibrato;
+struct VibratoSegment;
+struct Volta;
+struct VoltaSegment;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::single {
-class SingleLayout {
-public:
+struct SingleLayout {
     SingleLayout() = default;
 
     static void layout_item(engraving::EngravingItem *item);

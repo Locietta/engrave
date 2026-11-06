@@ -26,8 +26,7 @@
 #include "global/realfn.h"
 
 namespace muse::draw {
-class Matrix {
-public:
+struct Matrix {
     Matrix() {}
 
     Matrix(double m11, double m12, double m21, double m22, double dx, double dy)
@@ -70,7 +69,7 @@ public:
     }
 
 private:
-    friend class Transform;
+    friend struct Transform;
 
     double m11_ = 1;
     double m12_ = 0;

@@ -32,8 +32,7 @@ namespace mu::iex::musicxml {
  The description of a single voice in a MusicXML part.
 */
 
-class VoiceDesc {
-public:
+struct VoiceDesc {
     VoiceDesc();
     void incr_chord_rests(int s);
     int number_chord_rests() const;

@@ -25,8 +25,7 @@
 #include "audio/common/soundfonttypes.h"
 
 namespace muse::audio::synth {
-class ISoundFontRepository {
-public:
+struct ISoundFontRepository {
     virtual ~ISoundFontRepository() = default;
 
     virtual void load_sound_fonts(const std::vector<SoundFontUri> &uris) = 0;

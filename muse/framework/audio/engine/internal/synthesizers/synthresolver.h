@@ -29,8 +29,7 @@
 #include "../../isynthresolver.h"
 
 namespace muse::audio::synth {
-class SynthResolver : public ISynthResolver {
-public:
+struct SynthResolver : ISynthResolver {
     void init(const AudioInputParams &default_input_params, const audio::OutputSpec &default_output_spec) override;
 
     ISynthesizerPtr resolve_synth(const TrackId track_id, const AudioInputParams &params, const OutputSpec &spec,

@@ -26,13 +26,14 @@
 #include "chordtextlinebase.h"
 
 namespace mu::engraving {
-class Rasgueado;
+struct Rasgueado;
 
 //---------------------------------------------------------
 //   @@ RasgueadoSegment
 //---------------------------------------------------------
 
-class RasgueadoSegment final : public TextLineBaseSegment {
+struct RasgueadoSegment final : TextLineBaseSegment {
+private:
     OBJECT_ALLOCATOR(engraving, RasgueadoSegment)
     DECLARE_CLASSOF(ElementType::RASGUEADO_SEGMENT)
 
@@ -43,14 +44,15 @@ public:
 
     Rasgueado *rasgueado() const { return (Rasgueado *) spanner(); }
 
-    friend class Rasgueado;
+    friend struct Rasgueado;
 };
 
 //---------------------------------------------------------
 //   @@ Rasgueado
 //---------------------------------------------------------
 
-class Rasgueado final : public ChordTextLineBase {
+struct Rasgueado final : ChordTextLineBase {
+private:
     OBJECT_ALLOCATOR(engraving, Rasgueado)
     DECLARE_CLASSOF(ElementType::RASGUEADO)
 

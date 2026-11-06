@@ -28,8 +28,7 @@
 
 namespace muse::audio::dsp {
 template <typename ValueT, int _initialSteps = 1024, typename StepT = double>
-class SmoothLinearValue {
-public:
+struct SmoothLinearValue {
     SmoothLinearValue(const ValueT &start_value = ValueT(0)) {
         static_assert(std::is_floating_point<StepT>::value, "Internal step type needs to be floating point.");
         target_value_ = current_value_ = start_value;

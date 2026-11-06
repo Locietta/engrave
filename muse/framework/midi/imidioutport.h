@@ -26,8 +26,7 @@
 #include "miditypes.h"
 
 namespace muse::midi {
-class IMidiOutPort {
-public:
+struct IMidiOutPort {
     virtual ~IMidiOutPort() = default;
 
     virtual MidiDeviceList available_devices() const = 0;

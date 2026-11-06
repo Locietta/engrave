@@ -33,16 +33,16 @@
 #include "../infrastructure/eid.h"
 
 namespace mu::engraving {
-class Beam;
-class DummyParent;
-class EngravingObject;
-class LinkedObjects;
-class Measure;
-class MStyle;
-class Score;
-class Spanner;
-class Staff;
-class Tuplet;
+struct Beam;
+struct DummyParent;
+struct EngravingObject;
+struct LinkedObjects;
+struct Measure;
+struct MStyle;
+struct Score;
+struct Spanner;
+struct Staff;
+struct Tuplet;
 } // namespace mu::engraving
 
 namespace mu::engraving::read500 {
@@ -51,8 +51,7 @@ struct TextStyleMap {
     TextStyleType ss;
 };
 
-class ReadContext {
-public:
+struct ReadContext {
 
     ReadContext(Score *score, bool input_paste_mode = false);
     ~ReadContext();

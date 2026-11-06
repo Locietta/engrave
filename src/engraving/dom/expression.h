@@ -24,10 +24,11 @@
 #include "textbase.h"
 
 namespace mu::engraving {
-class Dynamic;
-class Transaction;
+struct Dynamic;
+struct Transaction;
 
-class Expression final : public TextBase {
+struct Expression final : TextBase {
+private:
     M_PROPERTY(bool, snap_to_dynamics, set_snap_to_dynamics)
     DECLARE_CLASSOF(ElementType::EXPRESSION)
 

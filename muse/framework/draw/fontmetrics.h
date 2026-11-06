@@ -30,8 +30,7 @@
 #include "ifontprovider.h"
 
 namespace muse::draw {
-class FontMetrics {
-public:
+struct FontMetrics {
     FontMetrics(const Font &font);
 
     // FontMetrics is a value type constructed throughout layout without an owner

@@ -25,11 +25,10 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class Score;
-class Transaction;
+struct Score;
+struct Transaction;
 
-class EditVoice {
-public:
+struct EditVoice {
     static void change_selected_elements_voice(Transaction &tx, Score *score, voice_idx_t voice);
     static void change_selected_elements_voice_assignment(Transaction &tx, Score *score, VoiceAssignment voice_assignment);
 };

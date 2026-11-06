@@ -30,7 +30,8 @@ namespace mu::engraving {
 //   MeasureNumber
 //---------------------------------------------------------
 
-class MeasureNumber : public MeasureNumberBase {
+struct MeasureNumber : MeasureNumberBase {
+private:
     OBJECT_ALLOCATOR(engraving, MeasureNumber)
     DECLARE_CLASSOF(ElementType::MEASURE_NUMBER)
 

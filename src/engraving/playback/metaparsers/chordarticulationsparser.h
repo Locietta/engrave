@@ -26,10 +26,9 @@
 #include "metaparserbase.h"
 
 namespace mu::engraving {
-class Chord;
+struct Chord;
 
-class ChordArticulationsParser : public MetaParserBase<ChordArticulationsParser> {
-public:
+struct ChordArticulationsParser : MetaParserBase<ChordArticulationsParser> {
     static void build_chord_articulation_map(const Chord *chord, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
 
 protected:

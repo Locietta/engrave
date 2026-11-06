@@ -30,9 +30,8 @@
 #include "ipaintprovider.h"
 
 namespace muse::draw {
-class IImageProvider {
+struct IImageProvider {
 
-public:
     virtual ~IImageProvider() = default;
 
     virtual std::shared_ptr<Pixmap> create_pixmap(const ByteArray &data) const = 0;

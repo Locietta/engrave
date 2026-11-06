@@ -26,14 +26,13 @@
 #include "guitarbendimporttypes.h"
 
 namespace mu::engraving {
-class Note;
+struct Note;
 } // namespace mu::engraving
 
 namespace mu::iex::guitarpro {
 int gp_pitch_to_quarter_tones(int gp_pitch);
 
-class DiveInfoConverter {
-public:
+struct DiveInfoConverter {
     static ImportedDiveInfo fill_dive_info(const mu::engraving::Note *note, const mu::engraving::PitchValues &pitch_values,
                                            bool is_continued_whammy = false);
 

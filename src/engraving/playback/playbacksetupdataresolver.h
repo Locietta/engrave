@@ -26,10 +26,9 @@
 #include "mpe/events.h"
 
 namespace mu::engraving {
-class Instrument;
+struct Instrument;
 
-class PlaybackSetupDataResolver {
-public:
+struct PlaybackSetupDataResolver {
     void resolve_setup_data(const Instrument *instrument, muse::mpe::PlaybackSetupData &result) const;
     void resolve_chord_symbols_setup_data(const Instrument *instrument, muse::mpe::PlaybackSetupData &result) const;
     void resolve_metronome_setup_data(muse::mpe::PlaybackSetupData &result) const;

@@ -25,8 +25,7 @@
 #include <type_traits>
 
 namespace muse {
-class Flag {
-public:
+struct Flag {
     constexpr inline Flag(int value) noexcept : i(value) {}
 
     constexpr inline Flag(unsigned int value) noexcept : i(int(value)) {}
@@ -44,7 +43,8 @@ private:
 };
 
 template <typename Enum>
-class Flags {
+struct Flags {
+private:
     static_assert(sizeof(Enum) <= sizeof(int));
     static_assert(std::is_enum<Enum>::value);
 

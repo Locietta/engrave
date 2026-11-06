@@ -25,7 +25,7 @@
 #include <vector>
 
 namespace mu::iex::midi {
-class ReducedFraction;
+struct ReducedFraction;
 
 namespace MidiTuplet {
 struct TupletInfo;

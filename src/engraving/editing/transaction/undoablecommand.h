@@ -28,8 +28,8 @@
 #include "engraving/types/types.h"
 
 namespace mu::engraving {
-class EngravingItem;
-class EngravingObject;
+struct EngravingItem;
+struct EngravingObject;
 
 enum class CommandType : signed char {
     UNKNOWN = -1,
@@ -182,8 +182,7 @@ struct ChangedRange {
     staff_idx_t staff_idx_to = muse::nidx;
 };
 
-class UndoableCommand {
-public:
+struct UndoableCommand {
     virtual ~UndoableCommand() = default;
 
     virtual void undo();

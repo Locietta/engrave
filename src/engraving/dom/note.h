@@ -34,17 +34,17 @@
 #include "tiejumppointlist.h"
 
 namespace mu::engraving {
-class Accidental;
-class AccidentalState;
-class Chord;
-class Factory;
-class NoteDot;
-class Score;
-class Spanner;
-class StaffType;
-class Text;
-class Tie;
-class Transaction;
+struct Accidental;
+struct AccidentalState;
+struct Chord;
+struct Factory;
+struct NoteDot;
+struct Score;
+struct Spanner;
+struct StaffType;
+struct Text;
+struct Tie;
+struct Transaction;
 enum class AccidentalType : unsigned char;
 enum class NoteType : unsigned char;
 struct NoteParenthesisInfo;
@@ -57,8 +57,7 @@ static constexpr int max_dots = 4;
 // with respect to the note. Each note can hold a vector of line attach points, which
 // it may use to make spacing decision with the surrounding items.
 //--------------------------------------------------------------------------------
-class LineAttachPoint {
-public:
+struct LineAttachPoint {
     LineAttachPoint(EngravingItem *l, double x, double y, bool start) : line_(l), pos_(PointF(x, y)), start_(start) {}
 
     const EngravingItem *line() const { return line_; }
@@ -77,7 +76,8 @@ private:
 //   @@ NoteHead
 //---------------------------------------------------------
 
-class NoteHead final : public Symbol {
+struct NoteHead final : Symbol {
+private:
     OBJECT_ALLOCATOR(engraving, NoteHead)
     DECLARE_CLASSOF(ElementType::NOTEHEAD)
 
@@ -128,7 +128,8 @@ static const int invalid_line = -10000;
 //   @P veloType         enum (Note.OFFSET_VAL, Note.USER_VAL)
 //---------------------------------------------------------------------------------------
 
-class Note final : public EngravingItem {
+struct Note final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, Note)
     DECLARE_CLASSOF(ElementType::NOTE)
 
@@ -530,7 +531,7 @@ public:
 
 private:
 
-    friend class Factory;
+    friend struct Factory;
     Note(DummyParentOr<Chord> ch);
     Note(const Note &, bool link = false);
 

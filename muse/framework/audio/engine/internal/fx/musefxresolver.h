@@ -26,8 +26,7 @@
 #include "abstractfxresolver.h"
 
 namespace muse::audio::fx {
-class MuseFxResolver : public AbstractFxResolver {
-public:
+struct MuseFxResolver : AbstractFxResolver {
     AudioResourceMetaList resolve_resources() const override;
 
 private:

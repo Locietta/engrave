@@ -31,8 +31,7 @@
 namespace muse::audio {
 //! NOTE Just combines several nodes into one entity
 template <typename T>
-class ChainNode : public AudioNode<T> {
-public:
+struct ChainNode : AudioNode<T> {
 
     void add(IAudioNodePtr node);
     void remove(IAudioNodePtr node);

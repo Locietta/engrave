@@ -34,7 +34,8 @@ namespace mu::engraving {
 ///    it draws the horizontal staff lines.
 //-------------------------------------------------------------------
 
-class StaffLines final : public EngravingItem {
+struct StaffLines final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, StaffLines)
     DECLARE_CLASSOF(ElementType::STAFF_LINES)
 
@@ -60,7 +61,7 @@ public:
     bool collect_for_drawing() const override;
 
 private:
-    friend class Factory;
+    friend struct Factory;
     StaffLines(DummyParentOr<Measure> parent);
 
     double lw_ = 0.0;

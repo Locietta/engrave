@@ -24,14 +24,13 @@
 #include "mpe/events.h"
 
 namespace mu::engraving {
-class Note;
-class GuitarBend;
-class Score;
+struct Note;
+struct GuitarBend;
+struct Score;
 struct RenderingContext;
 struct GraceChordCtx;
 
-class BendsRenderer {
-public:
+struct BendsRenderer {
     static bool is_multibend_part(const Note *note);
 
     static void render(const Note *note, const RenderingContext &ctx, muse::mpe::PlaybackEventList &result);

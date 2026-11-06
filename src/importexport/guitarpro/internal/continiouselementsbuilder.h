@@ -26,8 +26,7 @@
 #include "engraving/dom/line.h"
 
 namespace mu::iex::guitarpro {
-class ContiniousElementsBuilder {
-public:
+struct ContiniousElementsBuilder {
     enum class ImportType {
         NONE,
         LET_RING,

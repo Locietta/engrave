@@ -27,12 +27,11 @@
 #include "../dom/tuplet.h"
 
 namespace mu::engraving {
-class Fraction;
-class Score;
-class Transaction;
+struct Fraction;
+struct Score;
+struct Transaction;
 
-class EditTuplet {
-public:
+struct EditTuplet {
     // Divides each selected chord/rest into a tuplet (3:2 on a quarter: 3 eighths in the time of a quarter). Keeps a range
     // selection, otherwise selects the start of the first tuplet. Returns the tuplets in score order
     static std::vector<Tuplet *> add_tuplets(Transaction &tx, Score *score, const Fraction &ratio, TupletNumberType number_type,

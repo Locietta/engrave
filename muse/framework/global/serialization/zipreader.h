@@ -30,8 +30,7 @@
 #include "global/io/iodevice.h"
 
 namespace muse {
-class ZipReader {
-public:
+struct ZipReader {
 
     struct FileInfo {
         io::PathT file_path;
@@ -63,8 +62,7 @@ private:
     io::PathT file_path_;
 };
 
-class ZipUnpack {
-public:
+struct ZipUnpack {
 
     Ret unpack(const io::PathT &zip_path, const io::PathT &dir_path);
 };

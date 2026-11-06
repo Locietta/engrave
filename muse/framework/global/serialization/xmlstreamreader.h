@@ -30,8 +30,7 @@
 #include "types/string.h"
 
 namespace muse {
-class XmlStreamReader {
-public:
+struct XmlStreamReader {
 
     enum TokenType { NO_TOKEN = 0, INVALID, START_DOCUMENT, END_DOCUMENT, START_ELEMENT, END_ELEMENT, CHARACTERS, COMMENT, DTD, UNKNOWN };
 

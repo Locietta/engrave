@@ -151,7 +151,8 @@ struct MScoreError {
 //    MuseScore application object
 //---------------------------------------------------------
 
-class MScore {
+struct MScore {
+private:
     static int h_raster_value, v_raster_value;
     static bool vertical_orientation_value;
 

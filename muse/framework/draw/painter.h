@@ -35,11 +35,10 @@
 
 #include "ipaintprovider.h"
 
-class QPaintDevice;
+struct QPaintDevice;
 
 namespace muse::draw {
-class Painter {
-public:
+struct Painter {
     Painter(IPaintProviderPtr provider, const std::string &name);
 
     ~Painter();
@@ -202,8 +201,7 @@ inline void Painter::draw_convex_polygon(const PolygonF &poly) { draw_convex_pol
 
 inline void Painter::draw_text(double x, double y, const String &text) { draw_text(PointF(x, y), text); }
 
-class PainterItemMarker {
-public:
+struct PainterItemMarker {
     PainterItemMarker(Painter *p, const std::string &name) : painter_(p) {
         if (!enabled) {
             return;

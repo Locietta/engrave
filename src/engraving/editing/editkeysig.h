@@ -28,11 +28,12 @@
 #include "../dom/keysig.h"
 
 namespace mu::engraving {
-class Score;
-class Staff;
-class Transaction;
+struct Score;
+struct Staff;
+struct Transaction;
 
-class ChangeKeySig : public UndoableCommand {
+struct ChangeKeySig : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeKeySig)
 
     KeySig *keysig = nullptr;
@@ -50,8 +51,7 @@ public:
     UNDO_CHANGED_OBJECTS({keysig})
 };
 
-class EditKeySig {
-public:
+struct EditKeySig {
     static void undo_change_key_sig(Transaction &tx, Score *score, Staff *ostaff, const Fraction &tick, KeySigEvent key);
 };
 } // namespace mu::engraving

@@ -34,11 +34,11 @@
 #include "../midishared/midifile.h"
 
 namespace mu::engraving {
-class InstrumentTemplate;
+struct InstrumentTemplate;
 } // namespace mu::engraving
 
 namespace mu::iex::midi {
-class ReducedFraction;
+struct ReducedFraction;
 
 namespace MidiCharset {
 std::string default_charset();
@@ -58,8 +58,7 @@ namespace MidiOperations {
 // and - other importmidi files where algorithm requires it
 
 template <typename T>
-class TrackOp {
-public:
+struct TrackOp {
     explicit TrackOp(T input_default_value) : operation{{-1, input_default_value}}, can_redefine_default_later_value(true) {}
 
     const T &value(int track_index) const {
@@ -106,8 +105,7 @@ private:
 };
 
 template <typename T>
-class Op {
-public:
+struct Op {
 
     explicit Op(T input_default_value)
         : value_value(input_default_value), value_was_set(false), default_value_value{input_default_value},
@@ -223,8 +221,7 @@ struct FileData {
     HumanBeatData human_beat_data;
 };
 
-class Data {
-public:
+struct Data {
     FileData *data();
     const FileData *data() const;
 
@@ -239,8 +236,8 @@ public:
 
 
 private:
-    friend class CurrentTrackSetter;
-    friend class CurrentMidiFileSetter;
+    friend struct CurrentTrackSetter;
+    friend struct CurrentMidiFileSetter;
 
     std::string current_midi_file;
     std::string midi_operations_file;
@@ -250,8 +247,7 @@ private:
 };
 
 // scoped setter of current track
-class CurrentTrackSetter {
-public:
+struct CurrentTrackSetter {
     CurrentTrackSetter(Data &opers, int track) : opers_value(opers) {
         old_value = opers_value.current_track_value;
         opers_value.current_track_value = track;
@@ -270,8 +266,7 @@ private:
 };
 
 // scoped setter of current MIDI file
-class CurrentMidiFileSetter {
-public:
+struct CurrentMidiFileSetter {
     CurrentMidiFileSetter(Data &opers, const std::string &file_name) : opers_value(opers) {
         old_value = opers_value.current_midi_file;
         opers_value.current_midi_file = file_name;

@@ -32,7 +32,7 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class EngravingObject;
+struct EngravingObject;
 
 // EIDs in the input that could not be used as they were: the text was not a valid
 // id, or another element already had it. The reader repairs both, so these count
@@ -44,8 +44,7 @@ struct EIDRepairCount {
     bool any() const { return malformed > 0 || duplicate > 0; }
 };
 
-class EIDRegister {
-public:
+struct EIDRegister {
     EIDRegister() = default;
 
     EID new_eid_for_item(const EngravingObject *item);

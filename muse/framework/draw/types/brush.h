@@ -31,8 +31,7 @@
 #include "global/realfn.h"
 
 namespace muse::draw {
-class LinearGradient {
-public:
+struct LinearGradient {
     struct ColorStop {
         double position = 0.0;
         Color color = Color::black;
@@ -81,8 +80,7 @@ private:
     std::vector<ColorStop> color_stops_;
 };
 
-class Brush {
-public:
+struct Brush {
     Brush() {}
 
     Brush(BrushStyle style) : style_(style) {}

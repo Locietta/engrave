@@ -33,8 +33,7 @@ struct FxChainTag {
 } // namespace muse::audio
 
 namespace muse::audio::engine {
-class FxChain : public ChainNode<FxChainTag> {
-public:
+struct FxChain : ChainNode<FxChainTag> {
     void set_fx_list(const std::vector<IFxProcessorPtr> &fx_list);
 
     //! NOTE Must be set after adding all nodes to the chain

@@ -35,8 +35,7 @@ enum class EditDataType : signed char {
     TEXT_EDIT_DATA,
 };
 
-class ElementEditData {
-public:
+struct ElementEditData {
     virtual ~ElementEditData() = default;
 
     struct PropertyData {

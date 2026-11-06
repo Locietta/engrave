@@ -27,7 +27,8 @@
 #include "stringdata.h"
 
 namespace mu::engraving {
-class StringTunings final : public StaffTextBase {
+struct StringTunings final : StaffTextBase {
+private:
     OBJECT_ALLOCATOR(engraving, StringTunings)
     DECLARE_CLASSOF(ElementType::STRING_TUNINGS)
 

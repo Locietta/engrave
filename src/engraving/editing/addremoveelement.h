@@ -27,7 +27,8 @@
 #include "../dom/segment.h"
 
 namespace mu::engraving {
-class AddElement : public UndoableCommand {
+struct AddElement : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, AddElement)
 
     EngravingItem *element = nullptr;
@@ -51,7 +52,8 @@ public:
     UNDO_TYPE(CommandType::ADD_ELEMENT)
 };
 
-class RemoveElement : public UndoableCommand {
+struct RemoveElement : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, RemoveElement)
 
     EngravingItem *element = nullptr;
@@ -70,7 +72,8 @@ public:
     UNDO_TYPE(CommandType::REMOVE_ELEMENT)
 };
 
-class ChangeElement : public UndoableCommand {
+struct ChangeElement : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeElement)
 
     EngravingItem *old_element = nullptr;
@@ -86,7 +89,8 @@ public:
     UNDO_CHANGED_OBJECTS({old_element, new_element})
 };
 
-class ChangeParent : public UndoableCommand {
+struct ChangeParent : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeParent)
 
     EngravingItem *element = nullptr;
@@ -103,7 +107,8 @@ public:
     UNDO_CHANGED_OBJECTS({element, parent})
 };
 
-class ChangeSegmentParent : public UndoableCommand {
+struct ChangeSegmentParent : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeSegmentParent)
 
     Segment *segment = nullptr;
@@ -120,7 +125,8 @@ public:
     UNDO_CHANGED_OBJECTS({segment})
 };
 
-class LinkUnlink : public UndoableCommand {
+struct LinkUnlink : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, LinkUnlink)
 
     bool must_delete{false};
@@ -138,7 +144,8 @@ public:
     ~LinkUnlink();
 };
 
-class Unlink : public LinkUnlink {
+struct Unlink : LinkUnlink {
+private:
     OBJECT_ALLOCATOR(engraving, Unlink)
 public:
     Unlink(EngravingObject *);
@@ -151,7 +158,8 @@ public:
     UNDO_NAME("Unlink")
 };
 
-class Link : public LinkUnlink {
+struct Link : LinkUnlink {
+private:
     OBJECT_ALLOCATOR(engraving, Link)
 public:
     Link(EngravingObject *, EngravingObject *);

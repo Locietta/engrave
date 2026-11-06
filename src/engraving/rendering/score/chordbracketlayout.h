@@ -27,14 +27,13 @@
 #include "layoutcontext.h"
 
 namespace mu::engraving {
-class ChordBracket;
-class Segment;
-class Shape;
+struct ChordBracket;
+struct Segment;
+struct Shape;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class ChordBracketLayout {
-public:
+struct ChordBracketLayout {
     static void layout_segment(Segment *segment, LayoutContext &ctx);
     static void update_horizontal_spacing(const Segment *first_segment, const Segment *second_segment, staff_idx_t staff_idx,
                                           double squeeze_factor, double &min_distance);

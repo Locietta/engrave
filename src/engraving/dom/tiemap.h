@@ -26,13 +26,14 @@
 #include "elementmap.h"
 
 namespace mu::engraving {
-class Tie;
+struct Tie;
 
 //---------------------------------------------------------
 //   TieMap
 //---------------------------------------------------------
 
-class TieMap : public ElementMap {
+struct TieMap : ElementMap {
+private:
     OBJECT_ALLOCATOR(engraving, TieMap)
 public:
     TieMap() {}

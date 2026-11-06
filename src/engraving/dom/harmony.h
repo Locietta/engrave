@@ -35,9 +35,9 @@
 
 namespace mu::engraving {
 struct ChordDescription;
-class ParsedChord;
-class Score;
-class Transaction;
+struct ParsedChord;
+struct Score;
+struct Transaction;
 
 enum class HarmonyType : unsigned char { STANDARD, ROMAN, NASHVILLE };
 
@@ -154,7 +154,7 @@ private:
     String text_;
 };
 
-class HDegree;
+struct HDegree;
 
 //---------------------------------------------------------
 //   @@ HarmonyInfo
@@ -168,8 +168,7 @@ class HDegree;
 //   @P parsedChord_   ParsedChord*    parsed representation of the plaintext chord
 //---------------------------------------------------------
 
-class HarmonyInfo {
-public:
+struct HarmonyInfo {
     HarmonyInfo(int id, int root_tpc, int bass_tpc, String text_name, ParsedChord *pc, Score *score)
         : id_(id), root_tpc_(root_tpc), bass_tpc_(bass_tpc), text_name_(text_name), parsed_chord_(pc), score_(score) {}
 
@@ -230,7 +229,8 @@ private:
 //      layout standard chords and polychords
 //---------------------------------------------------------
 
-class Harmony final : public TextBase {
+struct Harmony final : TextBase {
+private:
     OBJECT_ALLOCATOR(engraving, Harmony)
     DECLARE_CLASSOF(ElementType::HARMONY)
 

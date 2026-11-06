@@ -26,13 +26,12 @@
 #include "splitchord/benddataprocessorsplitchord.h"
 
 namespace mu::engraving {
-class Note;
-class Score;
+struct Note;
+struct Score;
 } // namespace mu::engraving
 
 namespace mu::iex::guitarpro {
-class BendBuilder {
-public:
+struct BendBuilder {
     void add_elements_to_score(mu::engraving::Score *score, const BendDataContext &bend_ctx, const DiveDataContext &dive_ctx);
 
 private:

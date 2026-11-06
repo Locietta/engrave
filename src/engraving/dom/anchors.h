@@ -26,18 +26,16 @@
 #include "score.h"
 
 namespace mu::engraving {
-class Factory;
+struct Factory;
 
-class EditTimeTickAnchors {
-public:
+struct EditTimeTickAnchors {
     static void update_anchors(const EngravingItem *item);
     static void update_anchors(Measure *measure, staff_idx_t staff_idx, const std::set<Fraction> &additional_anchor_rel_ticks = {});
     static TimeTickAnchor *create_time_tick_anchor(Measure *measure, Fraction rel_tick, staff_idx_t staff_idx);
     static void update_layout(Measure *measure);
 };
 
-class MoveElementAnchors {
-public:
+struct MoveElementAnchors {
     static void move_segment(EngravingItem *element, Segment *new_seg, Fraction tick_diff);
     static void check_measure_boundaries_and_move_if_need(EngravingItem *element);
 
@@ -56,9 +54,10 @@ private:
     static void rebase_offset_on_move_segment(EngravingItem *element, const PointF &cur_offset, Segment *new_seg, Segment *old_seg);
 };
 
-class TimeTickAnchor : public EngravingItem {
+struct TimeTickAnchor : EngravingItem {
+private:
     TimeTickAnchor(DummyParentOr<Segment> parent);
-    friend class Factory;
+    friend struct Factory;
 
 public:
     Segment *segment() const { return to_segment(ownership_parent_item()); }

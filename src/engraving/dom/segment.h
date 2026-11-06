@@ -25,12 +25,12 @@
 #include "engravingitem.h"
 
 namespace mu::engraving {
-class Factory;
-class Measure;
-class Segment;
-class ChordRest;
-class Spanner;
-class System;
+struct Factory;
+struct Measure;
+struct Segment;
+struct ChordRest;
+struct Spanner;
+struct System;
 
 //-------------------------------------------------------------------
 //   SegmentType
@@ -109,7 +109,8 @@ constexpr SegmentType operator~(const SegmentType &t) { return static_cast<Segme
 //   @P tick            int               midi tick position (read only)
 //------------------------------------------------------------------------
 
-class Segment final : public EngravingItem {
+struct Segment final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, Segment)
     DECLARE_CLASSOF(ElementType::SEGMENT)
 
@@ -392,7 +393,7 @@ private:
 
     void add_articulations_to_shape(const Chord *chord, Shape &shape);
 
-    friend class Factory;
+    friend struct Factory;
     Segment(DummyParentOr<Measure> m);
     Segment(DummyParentOr<Measure>, SegmentType, const Fraction &);
     Segment(const Segment &);

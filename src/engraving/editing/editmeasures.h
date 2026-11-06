@@ -27,7 +27,8 @@
 #include "../dom/measure.h"
 
 namespace mu::engraving {
-class InsertRemoveMeasures : public UndoableCommand {
+struct InsertRemoveMeasures : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, InsertRemoveMeasures)
 
     MeasureBase *fm = nullptr;
@@ -50,7 +51,8 @@ public:
     UNDO_CHANGED_OBJECTS({fm, lm})
 };
 
-class RemoveMeasures : public InsertRemoveMeasures {
+struct RemoveMeasures : InsertRemoveMeasures {
+private:
     OBJECT_ALLOCATOR(engraving, RemoveMeasures)
 public:
     RemoveMeasures(MeasureBase *m1, MeasureBase *m2, bool input_move_stc = true) : InsertRemoveMeasures(m1, m2, input_move_stc) {}
@@ -63,7 +65,8 @@ public:
     UNDO_NAME("RemoveMeasures")
 };
 
-class InsertMeasures : public InsertRemoveMeasures {
+struct InsertMeasures : InsertRemoveMeasures {
+private:
     OBJECT_ALLOCATOR(engraving, InsertMeasures)
 public:
     InsertMeasures(MeasureBase *m1, MeasureBase *m2, bool input_move_stc = true) : InsertRemoveMeasures(m1, m2, input_move_stc) {}
@@ -76,7 +79,8 @@ public:
     UNDO_NAME("InsertMeasures")
 };
 
-class ChangeMeasureLen : public UndoableCommand {
+struct ChangeMeasureLen : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeMeasureLen)
 
     Measure *measure = nullptr;
@@ -92,7 +96,8 @@ public:
     UNDO_CHANGED_OBJECTS({measure})
 };
 
-class ChangeMMRest : public UndoableCommand {
+struct ChangeMMRest : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeMMRest)
 
     Measure *m;
@@ -111,7 +116,8 @@ public:
 // ChangeMMRestNext & ChangeMMRestPrev SHOULD ONLY BE USED FOR MMRests
 // Setting next_ & prev_ involves the score's MeasureList for regular measures
 // This is handled through undo commands above
-class ChangeMMRestNext : public UndoableCommand {
+struct ChangeMMRestNext : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeMMRestNext)
 
     Measure *mmrest_ = nullptr;
@@ -126,7 +132,8 @@ public:
     UNDO_CHANGED_OBJECTS({mmrest_})
 };
 
-class ChangeMMRestPrev : public UndoableCommand {
+struct ChangeMMRestPrev : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeMMRestPrev)
 
     Measure *mmrest_ = nullptr;
@@ -141,7 +148,8 @@ public:
     UNDO_CHANGED_OBJECTS({mmrest_})
 };
 
-class ChangeMeasureRepeatCount : public UndoableCommand {
+struct ChangeMeasureRepeatCount : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeMeasureRepeatCount)
 
     Measure *m = nullptr;

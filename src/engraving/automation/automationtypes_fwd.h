@@ -30,7 +30,7 @@ struct AutomationCurveKey;
 struct AutomationPointEdit;
 using AutomationPointEdits = std::vector<AutomationPointEdit>;
 
-class AutomationData;
+struct AutomationData;
 using AutomationDataPtr = std::shared_ptr<AutomationData>;
 using AutomationDataConstPtr = std::shared_ptr<const AutomationData>;
 } // namespace mu::engraving

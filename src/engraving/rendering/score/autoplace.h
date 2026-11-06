@@ -26,8 +26,7 @@
 #include "dom/spanner.h"
 
 namespace mu::engraving::rendering::score {
-class Autoplace {
-public:
+struct Autoplace {
 
     static void autoplace_segment_element(const EngravingItem *item, EngravingItem::LayoutData *ldata, bool above, bool add);
     static void autoplace_measure_element(const EngravingItem *item, EngravingItem::LayoutData *ldata, bool above, bool add);

@@ -27,8 +27,7 @@
 #include "dom/stavesharinglabel.h"
 
 namespace mu::engraving::rendering::score {
-class StaveSharingLayout {
-public:
+struct StaveSharingLayout {
     static void update_stave_sharing_for_full_system(MeasureBase *first_mb, MeasureBase *last_mb, LayoutContext &ctx);
     static bool update_stave_sharing_for_last_added_measure(System *system, LayoutContext &ctx);
     static void update_notation_without_recomputing_track_map(Measure *measure, LayoutContext &ctx);

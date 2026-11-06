@@ -26,8 +26,7 @@
 #include <string>
 
 namespace mu::engraving {
-class MessageBox {
-public:
+struct MessageBox {
     enum Button { OK, CANCEL };
 
     Button warning(const std::string &title, const std::string &text, const std::set<Button> &buttons = {OK, CANCEL});

@@ -25,12 +25,11 @@
 #include "../types/fraction.h"
 
 namespace mu::engraving {
-class Score;
+struct Score;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class ScoreLayout {
-public:
+struct ScoreLayout {
 
     static void layout_range(Score *score, const Fraction &st, const Fraction &et);
 };

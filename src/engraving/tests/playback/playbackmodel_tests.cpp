@@ -51,7 +51,7 @@ static constexpr duration_t quarter_note_duration = 500000;                    /
 static constexpr duration_t half_note_duration = ::quarter_note_duration * 2;  // duration in microseconds for 1/2 120BPM
 static constexpr duration_t whole_note_duration = ::quarter_note_duration * 4; // duration in microseconds for 4/4 120BPM
 
-class EngravingPlaybackModelTests : public ::testing::Test {
+struct EngravingPlaybackModelTests : ::testing::Test {
 protected:
     void SetUp() override {
         dummy_pattern_segment_.arrangement_pattern =

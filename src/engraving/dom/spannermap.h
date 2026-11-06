@@ -28,14 +28,13 @@
 #include "engraving/thirdparty/intervaltree/IntervalTree.h"
 
 namespace mu::engraving {
-class Spanner;
+struct Spanner;
 
 //---------------------------------------------------------
 //   SpannerMap
 //---------------------------------------------------------
 
-class SpannerMap : std::multimap<int, Spanner *> {
-public:
+struct SpannerMap : private std::multimap<int, Spanner *> {
     typedef typename std::multimap<int, Spanner *>::const_reverse_iterator const_reverse_it;
     typedef typename std::multimap<int, Spanner *>::const_iterator const_it;
 

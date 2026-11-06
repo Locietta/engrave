@@ -39,8 +39,7 @@ namespace muse::audio::synth {
 void release_sound_font_cache();
 struct Fluid;
 
-class FluidSynth : public AbstractSynthesizer {
-public:
+struct FluidSynth : AbstractSynthesizer {
     // midiOutPort, when given, receives every event the synthesizer handles; it
     // and config must outlive the synthesizer.
     FluidSynth(const audio::AudioSourceParams &params, const engine::IAudioEngineConfiguration &config, midi::IMidiOutPort *midi_out_port);

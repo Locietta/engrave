@@ -29,8 +29,7 @@
 #include "global/types/ret.h"
 
 namespace muse::audio::encode {
-class AbstractAudioEncoder {
-public:
+struct AbstractAudioEncoder {
     AbstractAudioEncoder(const AbstractAudioEncoder &) = delete;
     AbstractAudioEncoder(AbstractAudioEncoder &&) = delete;
 

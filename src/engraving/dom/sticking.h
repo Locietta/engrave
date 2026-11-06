@@ -31,7 +31,8 @@ namespace mu::engraving {
 ///    Drum sticking
 //-----------------------------------------------------------------------------
 
-class Sticking final : public TextBase {
+struct Sticking final : TextBase {
+private:
     OBJECT_ALLOCATOR(engraving, Sticking)
     DECLARE_CLASSOF(ElementType::STICKING)
 

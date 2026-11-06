@@ -24,152 +24,151 @@
 #include "../paintoptions.h"
 
 namespace muse::draw {
-class Painter;
+struct Painter;
 } // namespace muse::draw
 
 namespace mu::engraving {
-class MStyle;
-class IEngravingFont;
-class Score;
-class EngravingItem;
+struct MStyle;
+struct IEngravingFont;
+struct Score;
+struct EngravingItem;
 
-class Accidental;
-class ActionIcon;
-class Ambitus;
-class Arpeggio;
-class Articulation;
+struct Accidental;
+struct ActionIcon;
+struct Ambitus;
+struct Arpeggio;
+struct Articulation;
 
-class BagpipeEmbellishment;
-class BarLine;
-class Beam;
-class Bend;
-class Bracket;
-class Breath;
+struct BagpipeEmbellishment;
+struct BarLine;
+struct Beam;
+struct Bend;
+struct Bracket;
+struct Breath;
 
-class Capo;
-class Chord;
-class ChordBracket;
-class ChordLine;
-class Clef;
+struct Capo;
+struct Chord;
+struct ChordBracket;
+struct ChordLine;
+struct Clef;
 
-class DeadSlapped;
-class Dynamic;
+struct DeadSlapped;
+struct Dynamic;
 
-class Expression;
+struct Expression;
 
-class Fermata;
-class Fingering;
-class FiguredBass;
-class FiguredBassItem;
-class FretDiagram;
-class FSymbol;
+struct Fermata;
+struct Fingering;
+struct FiguredBass;
+struct FiguredBassItem;
+struct FretDiagram;
+struct FSymbol;
 
-class Glissando;
-class GlissandoSegment;
-class GradualTempoChange;
-class GradualTempoChangeSegment;
-class GuitarBend;
-class GuitarBendSegment;
+struct Glissando;
+struct GlissandoSegment;
+struct GradualTempoChange;
+struct GradualTempoChangeSegment;
+struct GuitarBend;
+struct GuitarBendSegment;
 
-class Hairpin;
-class HairpinSegment;
-class HammerOnPullOffSegment;
-class HammerOnPullOffText;
-class HarpPedalDiagram;
-class HarmonicMarkSegment;
-class Harmony;
-class Hook;
+struct Hairpin;
+struct HairpinSegment;
+struct HammerOnPullOffSegment;
+struct HammerOnPullOffText;
+struct HarpPedalDiagram;
+struct HarmonicMarkSegment;
+struct Harmony;
+struct Hook;
 
-class Image;
+struct Image;
 
-class InstrumentChange;
-class InstrumentName;
+struct InstrumentChange;
+struct InstrumentName;
 
-class Jump;
+struct Jump;
 
-class KeySig;
+struct KeySig;
 
-class LayoutBreak;
-class LedgerLine;
-class LetRing;
-class LetRingSegment;
-class SLine;
-class LineSegment;
-class Lyrics;
+struct LayoutBreak;
+struct LedgerLine;
+struct LetRing;
+struct LetRingSegment;
+struct SLine;
+struct LineSegment;
+struct Lyrics;
 
-class Marker;
-class MeasureNumber;
-class MeasureRepeat;
+struct Marker;
+struct MeasureNumber;
+struct MeasureRepeat;
 
-class Note;
-class NoteHead;
-class NoteLineSegment;
+struct Note;
+struct NoteHead;
+struct NoteLineSegment;
 
-class Ornament;
-class Ottava;
-class OttavaSegment;
+struct Ornament;
+struct Ottava;
+struct OttavaSegment;
 
-class PalmMute;
-class PalmMuteSegment;
-class Pedal;
-class PedalSegment;
-class PickScrapeSegment;
-class PlayCountText;
-class PlayTechAnnotation;
+struct PalmMute;
+struct PalmMuteSegment;
+struct Pedal;
+struct PedalSegment;
+struct PickScrapeSegment;
+struct PlayCountText;
+struct PlayTechAnnotation;
 
-class RasgueadoSegment;
-class RehearsalMark;
-class Rest;
+struct RasgueadoSegment;
+struct RehearsalMark;
+struct Rest;
 
-class ShadowNote;
-class Slur;
-class SlurSegment;
-class SoundFlag;
-class Spacer;
-class StaffLines;
-class StaffState;
-class StaffText;
-class StaveSharingLabel;
-class StaffTypeChange;
-class Stem;
-class StemSlash;
-class Sticking;
-class StringTunings;
-class Symbol;
-class SystemDivider;
-class SystemText;
+struct ShadowNote;
+struct Slur;
+struct SlurSegment;
+struct SoundFlag;
+struct Spacer;
+struct StaffLines;
+struct StaffState;
+struct StaffText;
+struct StaveSharingLabel;
+struct StaffTypeChange;
+struct Stem;
+struct StemSlash;
+struct Sticking;
+struct StringTunings;
+struct Symbol;
+struct SystemDivider;
+struct SystemText;
 
-class TabDurationSymbol;
-class Tapping;
-class TempoText;
-class Text;
-class TextBase;
-class TextBlock;
-class TextFragment;
-class TextLine;
-class TextLineSegment;
-class TextLineBaseSegment;
-class TieSegment;
-class TimeSig;
-class TremoloSingleChord;
-class TremoloTwoChord;
-class TremoloBar;
-class Trill;
-class TrillSegment;
-class TripletFeel;
-class Tuplet;
+struct TabDurationSymbol;
+struct Tapping;
+struct TempoText;
+struct Text;
+struct TextBase;
+struct TextBlock;
+struct TextFragment;
+struct TextLine;
+struct TextLineSegment;
+struct TextLineBaseSegment;
+struct TieSegment;
+struct TimeSig;
+struct TremoloSingleChord;
+struct TremoloTwoChord;
+struct TremoloBar;
+struct Trill;
+struct TrillSegment;
+struct TripletFeel;
+struct Tuplet;
 
-class Vibrato;
-class VibratoSegment;
-class Volta;
-class VoltaSegment;
+struct Vibrato;
+struct VibratoSegment;
+struct Volta;
+struct VoltaSegment;
 
-class WhammyBarSegment;
+struct WhammyBarSegment;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::single {
-class SingleDraw {
-public:
+struct SingleDraw {
 
     static void draw_item(const EngravingItem *item, muse::draw::Painter *painter, const PaintOptions &opt); // factory
 

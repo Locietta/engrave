@@ -28,10 +28,9 @@
 namespace mu::engraving {
 const std::vector<Sid> &page_styles();
 
-class MStyle;
+struct MStyle;
 
-class PageSizeGetAccessor {
-public:
+struct PageSizeGetAccessor {
     PageSizeGetAccessor(const MStyle &style);
 
     double width() const;
@@ -50,8 +49,7 @@ private:
     const MStyle &style_;
 };
 
-class PageSizeSetAccessor {
-public:
+struct PageSizeSetAccessor {
     PageSizeSetAccessor(MStyle &style);
 
     double width() const;

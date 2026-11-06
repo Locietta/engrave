@@ -27,18 +27,17 @@
 #include "../../dom/articulation.h"
 
 namespace mu::engraving {
-class Dynamic;
-class Excerpt;
-class HarmonyInfo;
-class MasterScore;
-class Score;
+struct Dynamic;
+struct Excerpt;
+struct HarmonyInfo;
+struct MasterScore;
+struct Score;
 enum class DynamicType : unsigned char;
 enum class SymId;
 } // namespace mu::engraving
 
 namespace mu::engraving::compat {
-class CompatUtils {
-public:
+struct CompatUtils {
     static void assign_initial_part_to_excerpts(const std::vector<Excerpt *> &excerpts);
     static void do_compatibility_conversions(MasterScore *master_score);
     static ArticulationAnchor translate_to_new_articulation_anchor(int anchor);

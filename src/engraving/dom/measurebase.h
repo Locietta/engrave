@@ -31,12 +31,12 @@
 #include "engravingitem.h"
 
 namespace mu::engraving {
-class Box;
-class LayoutBreak;
-class Measure;
-class Score;
-class System;
-class RangeLock;
+struct Box;
+struct LayoutBreak;
+struct Measure;
+struct Score;
+struct System;
+struct RangeLock;
 
 //---------------------------------------------------------
 //   Repeat
@@ -60,7 +60,8 @@ constexpr bool operator&(Repeat t1, Repeat t2) { return static_cast<int>(t1) & s
 //   @P prevMeasureMM   Measure     the previous multi-measure rest Measure (read-only)
 //---------------------------------------------------------
 
-class MeasureBase : public EngravingItem {
+struct MeasureBase : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, MeasureBase)
 
 public:
@@ -213,8 +214,7 @@ private:
 //   MeasureBaseList
 //---------------------------------------------------------
 
-class MeasureBaseList {
-public:
+struct MeasureBaseList {
     MeasureBaseList();
 
     MeasureBase *first() const { return first_; }

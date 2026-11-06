@@ -27,8 +27,7 @@
 #include "dom/tapping.h"
 
 namespace mu::engraving::rendering::score {
-class TappingLayout {
-public:
+struct TappingLayout {
     static void layout_tapping(Tapping *item, Tapping::LayoutData *ldata, LayoutContext &ctx);
 
 private:

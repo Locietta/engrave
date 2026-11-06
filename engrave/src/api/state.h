@@ -18,7 +18,7 @@
 #include "engrave/src/runtime/noqt_runtime.h"
 
 namespace mu::engraving {
-class MasterScore;
+struct MasterScore;
 } // namespace mu::engraving
 
 namespace engrave {

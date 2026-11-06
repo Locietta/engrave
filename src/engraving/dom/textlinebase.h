@@ -29,15 +29,16 @@
 #include "property.h"
 
 namespace mu::engraving {
-class EngravingItem;
-class Text;
-class TextLineBase;
+struct EngravingItem;
+struct Text;
+struct TextLineBase;
 
 //---------------------------------------------------------
 //   @@ TextLineBaseSegment
 //---------------------------------------------------------
 
-class TextLineBaseSegment : public LineSegment {
+struct TextLineBaseSegment : LineSegment {
+private:
     OBJECT_ALLOCATOR(engraving, TextLineBaseSegment)
 
 public:
@@ -87,7 +88,8 @@ protected:
 //   @@ TextLineBase
 //---------------------------------------------------------
 
-class TextLineBase : public SLine {
+struct TextLineBase : SLine {
+private:
     OBJECT_ALLOCATOR(engraving, TextLineBase)
 
     M_PROPERTY(bool, line_visible, set_line_visible)
@@ -155,7 +157,7 @@ public:
     void reset() override;
 
 protected:
-    friend class TextLineBaseSegment;
+    friend struct TextLineBaseSegment;
 };
 
 inline bool is_system_text_line(const EngravingItem *element) { return element && element->is_text_line_base() && element->system_flag(); }

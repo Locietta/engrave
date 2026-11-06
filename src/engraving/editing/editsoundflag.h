@@ -27,7 +27,8 @@
 #include "../dom/soundflag.h"
 
 namespace mu::engraving {
-class ChangeSoundFlag : public UndoableCommand {
+struct ChangeSoundFlag : UndoableCommand {
+private:
     SoundFlag *sound_flag_ = nullptr;
     SoundFlag::PresetCodes presets_;
     SoundFlag::PlayingTechniqueCode playing_technique_;

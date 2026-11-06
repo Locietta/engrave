@@ -29,13 +29,14 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class Factory;
+struct Factory;
 
 //---------------------------------------------------------
 //   BracketItem
 //---------------------------------------------------------
 
-class BracketItem final : public EngravingItem {
+struct BracketItem final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, BracketItem)
 
 public:
@@ -80,7 +81,7 @@ public:
 
 private:
 
-    friend class Factory;
+    friend struct Factory;
 
     BracketItem(DummyParentOr<EngravingItem> parent);
     BracketItem(DummyParentOr<EngravingItem> parent, BracketType bracket_type, size_t span);

@@ -28,14 +28,13 @@
 #include "../dom/parenthesis.h"
 
 namespace mu::engraving {
-class Chord;
-class Note;
-class EngravingItem;
-class Articulation;
+struct Chord;
+struct Note;
+struct EngravingItem;
+struct Articulation;
 enum class SymId;
 
-class EditChord {
-public:
+struct EditChord {
     static void add_chord_parentheses(Chord *chord, std::vector<Note *> notes, bool add_to_linked = true, bool generated = false);
     static void remove_chord_parentheses(Chord *chord, std::vector<Note *> notes, bool add_to_linked = true, bool generated = false);
     static void toggle_articulation(Score *score, SymId attr);
@@ -53,7 +52,8 @@ private:
     static void do_remove_all_note_parentheses(Chord *chord, Parenthesis *left_paren);
 };
 
-class ChangeChordStaffMove : public UndoableCommand {
+struct ChangeChordStaffMove : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeChordStaffMove)
 
     ChordRest *chord_rest = nullptr;
@@ -69,7 +69,8 @@ public:
     UNDO_CHANGED_OBJECTS({chord_rest})
 };
 
-class SwapCR : public UndoableCommand {
+struct SwapCR : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, SwapCR)
 
     ChordRest *cr1 = nullptr;
@@ -85,7 +86,8 @@ public:
     UNDO_CHANGED_OBJECTS({cr1, cr2})
 };
 
-class ChangeSpanArpeggio : public UndoableCommand {
+struct ChangeSpanArpeggio : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeSpanArpeggio)
 
     Chord *chord_ = nullptr;
@@ -99,7 +101,8 @@ public:
     UNDO_CHANGED_OBJECTS({chord_})
 };
 
-class AddNoteParenthesisInfo : public UndoableCommand {
+struct AddNoteParenthesisInfo : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, AddNoteParenthesisInfo)
 
     void redo() override;
@@ -117,7 +120,8 @@ public:
     UNDO_TYPE(CommandType::ADD_NOTE_PARENTHESES_INFO)
 };
 
-class RemoveNoteParenthesisInfo : public UndoableCommand {
+struct RemoveNoteParenthesisInfo : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, RemoveNoteParenthesisInfo)
 
     void redo() override;
@@ -135,7 +139,8 @@ public:
     UNDO_TYPE(CommandType::REMOVE_NOTE_PARENTHESES_INFO)
 };
 
-class RemoveSingleNoteParentheses : public UndoableCommand {
+struct RemoveSingleNoteParentheses : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, RemoveSingleNoteParentheses)
 
     Chord *chord_ = nullptr;

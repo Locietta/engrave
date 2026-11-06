@@ -29,8 +29,8 @@
 #include <engraving/types/types.h>
 
 namespace mu::engraving {
-class Note;
-class Chord;
+struct Note;
+struct Chord;
 } // namespace mu::engraving
 
 namespace mu::iex::guitarpro {

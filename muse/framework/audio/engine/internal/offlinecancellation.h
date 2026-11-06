@@ -6,32 +6,37 @@
 namespace muse::audio {
 // Owner-thread only. The driver catches callback exceptions before entering C
 // codecs; inner polls return failure, never unwind through a C callback.
-class OfflineCancellation {
+struct OfflineCancellation {
+private:
     inline static thread_local const std::function<bool()> *s_poll = nullptr;
     const std::function<bool()> *previous_;
 public:
     enum class Phase { OTHER, PLAYBACK_MODEL, SEQUENCER, SYNTHESIS, ENCODING };
     inline static thread_local Phase phase = Phase::OTHER;
 
-    class SequencerScope {
+    struct SequencerScope {
+    private:
         Phase previous = std::exchange(phase, Phase::SEQUENCER);
     public:
         ~SequencerScope() { phase = previous; }
     };
 
-    class EncodingScope {
+    struct EncodingScope {
+    private:
         Phase previous = std::exchange(phase, Phase::ENCODING);
     public:
         ~EncodingScope() { phase = previous; }
     };
 
-    class ModelScope {
+    struct ModelScope {
+    private:
         Phase previous = std::exchange(phase, Phase::PLAYBACK_MODEL);
     public:
         ~ModelScope() { phase = previous; }
     };
 
-    class SynthesisScope {
+    struct SynthesisScope {
+    private:
         Phase previous = std::exchange(phase, Phase::SYNTHESIS);
     public:
         ~SynthesisScope() { phase = previous; }

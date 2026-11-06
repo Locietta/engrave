@@ -23,10 +23,9 @@
 #pragma once
 
 namespace mu::engraving {
-class Score;
+struct Score;
 
-class ImplodeExplode {
-public:
+struct ImplodeExplode {
     /// Explodes contents of top selected staff into subsequent staves.
     static bool explode(Score *score);
 

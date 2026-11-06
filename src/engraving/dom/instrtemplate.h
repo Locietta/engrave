@@ -32,19 +32,18 @@
 #include "stringdata.h"
 
 namespace mu::engraving {
-class XmlWriter;
-class XmlReader;
-class Part;
-class Staff;
-class StaffType;
+struct XmlWriter;
+struct XmlReader;
+struct Part;
+struct Staff;
+struct StaffType;
 struct ScoreOrder;
 
 //---------------------------------------------------------
 //   InstrumentGenre
 //---------------------------------------------------------
 
-class InstrumentGenre {
-public:
+struct InstrumentGenre {
     String id;
     String name;
 
@@ -58,8 +57,7 @@ public:
 //   InstrumentFamily
 //---------------------------------------------------------
 
-class InstrumentFamily {
-public:
+struct InstrumentFamily {
     String id;
     String name;
 
@@ -73,8 +71,7 @@ public:
 //   InstrumentTemplate
 //---------------------------------------------------------
 
-class InstrumentTemplate {
-public:
+struct InstrumentTemplate {
     InstrumentTemplate();
     InstrumentTemplate(const InstrumentTemplate &);
     ~InstrumentTemplate();

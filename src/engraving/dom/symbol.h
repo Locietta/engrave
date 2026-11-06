@@ -32,8 +32,8 @@
 #include "bsymbol.h"
 
 namespace mu::engraving {
-class Segment;
-class IEngravingFont;
+struct Segment;
+struct IEngravingFont;
 
 //---------------------------------------------------------
 //   @@ Symbol
@@ -42,7 +42,8 @@ class IEngravingFont;
 //   @P symbol       string       the SMuFL name of the symbol
 //---------------------------------------------------------
 
-class Symbol : public BSymbol {
+struct Symbol : BSymbol {
+private:
     OBJECT_ALLOCATOR(engraving, Symbol)
     DECLARE_CLASSOF(ElementType::SYMBOL)
 
@@ -93,7 +94,8 @@ protected:
 ///    Symbol constructed from a font glyph (i.e. a text character or emoji).
 //---------------------------------------------------------
 
-class FSymbol final : public BSymbol {
+struct FSymbol final : BSymbol {
+private:
     OBJECT_ALLOCATOR(engraving, FSymbol)
     DECLARE_CLASSOF(ElementType::FSYMBOL)
 

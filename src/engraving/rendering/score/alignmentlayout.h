@@ -25,14 +25,13 @@
 #include <vector>
 
 namespace mu::engraving {
-class EngravingItem;
-class HammerOnPullOff;
-class System;
+struct EngravingItem;
+struct HammerOnPullOff;
+struct System;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class AlignmentLayout {
-public:
+struct AlignmentLayout {
     static void align_items_with_their_snapping_chain(const std::vector<EngravingItem *> &elements, const System *system);
     static void align_items_for_system(const std::vector<EngravingItem *> &elements, const System *system);
     static void align_items_group(const std::vector<EngravingItem *> &elements, const System *system);

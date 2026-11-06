@@ -23,8 +23,8 @@
 #include <vector>
 
 namespace mu::engraving {
-class MasterScore;
-class Score;
+struct MasterScore;
+struct Score;
 } // namespace mu::engraving
 
 namespace music {

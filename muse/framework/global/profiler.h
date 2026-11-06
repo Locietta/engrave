@@ -2,8 +2,7 @@
 #pragma once
 #ifdef ENGRAVE_PROFILE
 namespace muse::profiler {
-class Scope {
-public:
+struct Scope {
     explicit Scope(const char *);
     ~Scope();
 

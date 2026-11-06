@@ -30,21 +30,21 @@
 #include "transaction/undoablecommand.h"
 
 namespace mu::engraving {
-class Note;
-class Score;
-class Selection;
-class Tie;
-class TieJumpPointList;
+struct Note;
+struct Score;
+struct Selection;
+struct Tie;
+struct TieJumpPointList;
 
-class EditTie {
-public:
+struct EditTie {
     static void cmd_add_tie(Score *score, bool add_to_chord = false);
     static Tie *cmd_toggle_tie(Score *score);
     static void cmd_toggle_laissez_vib(Score *score);
     static std::vector<Note *> cmd_tie_note_list(const Selection &selection, bool note_entry_mode);
 };
 
-class ChangeTieJumpPointActive : public UndoableCommand {
+struct ChangeTieJumpPointActive : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeTieJumpPointActive)
 
     TieJumpPointList *jump_point_list_ = nullptr;

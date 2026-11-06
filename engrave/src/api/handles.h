@@ -18,11 +18,11 @@
 #include <engrave/handle.h>
 
 namespace mu::engraving {
-class EID;
-class EngravingItem;
-class EngravingObject;
-class MasterScore;
-class Score;
+struct EID;
+struct EngravingItem;
+struct EngravingObject;
+struct MasterScore;
+struct Score;
 } // namespace mu::engraving
 
 namespace engrave {

@@ -26,8 +26,8 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class EngravingItem;
-class MStyle;
+struct EngravingItem;
+struct MStyle;
 
 template <typename T>
 struct PaddingVector : std::array<T, ::mu::engraving::tot_element_types> {

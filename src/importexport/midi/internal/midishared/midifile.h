@@ -37,7 +37,8 @@ using uchar = unsigned char;
 namespace mu::iex::midi {
 using MidiIODevice = muse::io::IODevice;
 
-class MidiTrack {
+struct MidiTrack {
+private:
     std::multimap<int, MidiEvent> events_value;
     int out_channel_value;
     int out_port_value;
@@ -71,7 +72,8 @@ public:
 //   MidiFile
 //---------------------------------------------------------
 
-class MidiFile {
+struct MidiFile {
+private:
     MidiIODevice *fp;
     std::vector<MidiTrack> tracks_value;
     int division_value;

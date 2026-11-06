@@ -26,7 +26,7 @@
 #include "playback/metaparsers/metaparserbase.h"
 
 namespace mu::engraving {
-class ArpeggioMetaParser : public MetaParserBase<ArpeggioMetaParser> {
+struct ArpeggioMetaParser : MetaParserBase<ArpeggioMetaParser> {
 protected:
     friend MetaParserBase;
 

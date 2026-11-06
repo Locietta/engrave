@@ -28,13 +28,14 @@
 #include "instrument.h"
 
 namespace mu::engraving {
-class Clef;
+struct Clef;
 
 //---------------------------------------------------------
 //   @@ InstrumentChange
 //---------------------------------------------------------
 
-class InstrumentChange final : public TextBase {
+struct InstrumentChange final : TextBase {
+private:
     OBJECT_ALLOCATOR(engraving, InstrumentChange)
     DECLARE_CLASSOF(ElementType::INSTRUMENT_CHANGE)
 

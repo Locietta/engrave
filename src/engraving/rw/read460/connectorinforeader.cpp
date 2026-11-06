@@ -148,8 +148,7 @@ void ConnectorInfoReader::update() {
 //   ConnectorInfoReader::addToScore
 //---------------------------------------------------------
 
-class ReadAddConnectorVisitor : public rtti::Visitor<ReadAddConnectorVisitor> {
-public:
+struct ReadAddConnectorVisitor : rtti::Visitor<ReadAddConnectorVisitor> {
 
     template <typename T>
     static bool do_visit(EngravingObject *item, ConnectorInfoReader *info, bool paste_mode) {

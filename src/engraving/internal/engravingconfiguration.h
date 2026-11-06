@@ -25,8 +25,7 @@
 #include "../iengravingconfiguration.h"
 
 namespace mu::engraving {
-class EngravingConfiguration : public IEngravingConfiguration {
-public:
+struct EngravingConfiguration : IEngravingConfiguration {
     EngravingConfiguration();
 
     void init();

@@ -42,7 +42,7 @@ static constexpr duration_t quarter_note_duration = 500000; // duration in micro
 static constexpr track_idx_t bends_track = staff2track(0);
 static constexpr track_idx_t dives_track = staff2track(2);
 
-class EngravingBendsRendererTests : public ::testing::Test {
+struct EngravingBendsRendererTests : ::testing::Test {
 protected:
     static void SetUpTestSuite() {
         s_score = ScoreRW::read_score(u"playback/playbackeventsrenderer_data/guitar_bends/guitar_bends.mscx");

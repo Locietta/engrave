@@ -4,8 +4,7 @@
 #include "gp67dombuilder.h"
 
 namespace mu::iex::guitarpro {
-class GP6DomBuilder : public GP67DomBuilder {
-public:
+struct GP6DomBuilder : GP67DomBuilder {
     GP6DomBuilder() = default;
 
 private:

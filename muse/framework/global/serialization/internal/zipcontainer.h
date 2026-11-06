@@ -29,8 +29,7 @@
 #include "io/iodevice.h"
 
 namespace muse {
-class ZipContainer {
-public:
+struct ZipContainer {
     static bool starts_with_entry(const uint8_t *data, size_t size, std::span<const uint8_t> name);
 
     explicit ZipContainer(io::IODevice *device);

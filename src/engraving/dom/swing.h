@@ -24,11 +24,10 @@
 #define MU_ENGRAVING_SWING_H
 
 namespace mu::engraving {
-class Chord;
+struct Chord;
 struct SwingParameters;
 
-class Swing {
-public:
+struct Swing {
     struct ChordDurationAdjustment {
         double remaining_duration_multiplier = 0.;
         double duration_multiplier = 0.;

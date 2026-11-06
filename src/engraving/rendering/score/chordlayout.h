@@ -32,14 +32,14 @@
 #include "dom/mmrest.h"
 
 namespace mu::engraving {
-class MStyle;
-class Measure;
-class Note;
-class Rest;
-class Score;
-class Segment;
-class Staff;
-class Slur;
+struct MStyle;
+struct Measure;
+struct Note;
+struct Rest;
+struct Score;
+struct Segment;
+struct Staff;
+struct Slur;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
@@ -81,8 +81,7 @@ struct OffsetInfo {
     std::set<track_idx_t> tracks_to_adjust;
 };
 
-class ChordLayout {
-public:
+struct ChordLayout {
 
     static void layout(Chord *item, LayoutContext &ctx);
 
@@ -128,7 +127,7 @@ public:
     static double center_x(const Chord *chord);
 
 private:
-    friend class RestLayout;
+    friend struct RestLayout;
 
     static void layout_pitched(Chord *item, LayoutContext &ctx);
     static void layout_tablature(Chord *item, LayoutContext &ctx);

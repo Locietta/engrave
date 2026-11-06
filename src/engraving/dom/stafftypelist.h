@@ -32,8 +32,7 @@ namespace mu::engraving {
 //    to keep track of staff type changes
 //---------------------------------------------------------
 
-class StaffTypeList {
-public:
+struct StaffTypeList {
     StaffType &staff_type(const Fraction &);
     const StaffType &staff_type(const Fraction &f) const;
     StaffType *set_staff_type(const Fraction &, const StaffType &);

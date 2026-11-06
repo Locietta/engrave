@@ -15,12 +15,11 @@
 #include "engraving/dom/stringdata.h"
 
 namespace mu::iex::guitarpro {
-class GPScore;
-class GPTrack;
-class GPDomModel;
+struct GPScore;
+struct GPTrack;
+struct GPDomModel;
 
-class GPConverter {
-public:
+struct GPConverter {
     GPConverter(mu::engraving::Score *score, std::unique_ptr<GPDomModel> &&input_gp_dom);
 
     void convert_gp();

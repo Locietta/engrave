@@ -28,8 +28,7 @@ namespace muse::audio {
 //! NOTE This is a ring buffer, not thread-safe.
 //! Designed to align processed audio blocks
 //! For example, we expect block 512, but the driver requests 470
-class AlignmentBuffer {
-public:
+struct AlignmentBuffer {
     AlignmentBuffer(size_t capacity) : buf_(capacity) {}
 
     inline size_t capacity() const { return buf_.size(); }

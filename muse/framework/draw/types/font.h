@@ -26,8 +26,7 @@
 #include "global/types/flags.h"
 
 namespace muse::draw {
-class Font {
-public:
+struct Font {
     struct FontFamily {
         FontFamily() = default;
 

@@ -31,7 +31,8 @@ namespace mu::engraving {
 ///     This class implements a dead slapped element.
 //---------------------------------------------------------
 
-class DeadSlapped : public EngravingItem {
+struct DeadSlapped : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, DeadSlapped)
     DECLARE_CLASSOF(ElementType::DEAD_SLAPPED)
 
@@ -49,7 +50,7 @@ public:
 
 private:
 
-    friend class Factory;
+    friend struct Factory;
 
     DeadSlapped(Rest *parent);
 };

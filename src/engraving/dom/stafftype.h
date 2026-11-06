@@ -31,11 +31,11 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class Chord;
-class ChordRest;
-class MStyle;
-class Score;
-class Staff;
+struct Chord;
+struct ChordRest;
+struct MStyle;
+struct Score;
+struct Staff;
 
 //---------------------------------------------------------
 //   TablatureFont
@@ -127,7 +127,8 @@ enum class ParenthesizeTiedFret : unsigned char {
 //   StaffType
 //---------------------------------------------------------
 
-class StaffType {
+struct StaffType {
+private:
     // The default color of a new staff type, set by initStaffTypes().
     static Color s_default_color;
 
@@ -390,7 +391,7 @@ public:
 
 private:
 
-    friend class TabDurationSymbol;
+    friend struct TabDurationSymbol;
 
     Score *score_ = nullptr;
 

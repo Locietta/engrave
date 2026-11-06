@@ -31,8 +31,8 @@
 #include "../types/symid.h"
 
 namespace mu::engraving {
-class Groups;
-class TDuration;
+struct Groups;
+struct TDuration;
 
 enum class PType : unsigned char {
     UNDEFINED = 0,
@@ -136,8 +136,7 @@ enum class PType : unsigned char {
     GROUPS,
 };
 
-class PropertyValue {
-public:
+struct PropertyValue {
     PropertyValue() = default;
 
     // Base

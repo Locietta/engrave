@@ -39,7 +39,8 @@
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;
 
-class CmdStateLocker {
+struct CmdStateLocker {
+private:
     Score *score_ = nullptr;
 public:
     CmdStateLocker(Score *s) : score_(s) { score_->cmd_state().lock(); }

@@ -27,12 +27,11 @@
 struct OggOpusEnc;
 
 namespace muse::io {
-class IODevice;
+struct IODevice;
 } // namespace muse::io
 
 namespace muse::audio::encode {
-class OggEncoder : public AbstractAudioEncoder {
-public:
+struct OggEncoder : AbstractAudioEncoder {
     OggEncoder(const SoundTrackFormat &, io::IODevice &);
 
     ~OggEncoder() noexcept override;

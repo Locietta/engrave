@@ -8,8 +8,7 @@
 #include "gptrack.h"
 
 namespace mu::iex::guitarpro {
-class GP67DomBuilder : public IGPDomBuilder {
-public:
+struct GP67DomBuilder : IGPDomBuilder {
     GP67DomBuilder();
 
     void build_gp_dom_model(muse::XmlDomElement *dom_elem) override;

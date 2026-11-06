@@ -23,13 +23,12 @@
 #pragma once
 
 namespace mu::engraving {
-class Score;
-class Transaction;
+struct Score;
+struct Transaction;
 
 enum class BeamMode : signed char;
 
-class EditBeam {
-public:
+struct EditBeam {
     static void set_beam_mode(Transaction &tx, Score *score, BeamMode mode);
     static void beam_selected_range(Transaction &tx, Score *score);
     static void reset_beam_mode(Transaction &tx, Score *score);

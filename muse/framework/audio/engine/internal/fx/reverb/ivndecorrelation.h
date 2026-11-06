@@ -35,8 +35,7 @@ namespace muse::audio::fx {
 extern const float ivn15_gn[64][15];
 extern const float ivn15_ms[64][15];
 
-class ImprovedVelvetNoiseDecorrelation {
-public:
+struct ImprovedVelvetNoiseDecorrelation {
     void configure(int sequence_number, double samplerate, int max_block_size) {
         assert(sequence_number >= 0 && sequence_number < 64);
 

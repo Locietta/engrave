@@ -30,8 +30,7 @@
 #include "rgba.h"
 
 namespace muse {
-class Color {
-public:
+struct Color {
     Color();
     Color(const Color &other);
 

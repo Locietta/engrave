@@ -27,15 +27,16 @@
 #include "textbase.h"
 
 namespace mu::engraving {
-class Transaction;
+struct Transaction;
 
 //---------------------------------------------------------
 //   Lyrics
 //---------------------------------------------------------
 
-class LyricsLine;
+struct LyricsLine;
 
-class Lyrics final : public TextBase {
+struct Lyrics final : TextBase {
+private:
     OBJECT_ALLOCATOR(engraving, Lyrics)
     DECLARE_CLASSOF(ElementType::LYRICS)
 
@@ -123,7 +124,7 @@ public:
 
 private:
 
-    friend class Factory;
+    friend struct Factory;
     Lyrics(DummyParentOr<ChordRest> parent);
     Lyrics(const Lyrics &);
 
@@ -140,7 +141,8 @@ private:
 ///   \cond PLUGIN_API \private \endcond
 //---------------------------------------------------------
 
-class LyricsLine : public SLine {
+struct LyricsLine : SLine {
+private:
     OBJECT_ALLOCATOR(engraving, LyricsLine)
     DECLARE_CLASSOF(ElementType::LYRICSLINE)
 
@@ -184,7 +186,8 @@ protected:
 ///   \cond PLUGIN_API \private \endcond
 //---------------------------------------------------------
 
-class LyricsLineSegment : public LineSegment {
+struct LyricsLineSegment : LineSegment {
+private:
     OBJECT_ALLOCATOR(engraving, LyricsLineSegment)
     DECLARE_CLASSOF(ElementType::LYRICSLINE_SEGMENT)
 
@@ -232,7 +235,8 @@ protected:
     LyricsLineSegment(const ElementType &type, LyricsLine *sp, ElementFlags f = ElementFlag::NOTHING);
 };
 
-class PartialLyricsLine final : public LyricsLine {
+struct PartialLyricsLine final : LyricsLine {
+private:
     OBJECT_ALLOCATOR(engraving, PartialLyricsLine)
     DECLARE_CLASSOF(ElementType::PARTIAL_LYRICSLINE)
 
@@ -279,7 +283,8 @@ private:
     AutoOnOff center_between_staves_ = AutoOnOff::AUTO;
 };
 
-class PartialLyricsLineSegment final : public LyricsLineSegment {
+struct PartialLyricsLineSegment final : LyricsLineSegment {
+private:
     OBJECT_ALLOCATOR(engraving, PartialLyricsLineSegment)
     DECLARE_CLASSOF(ElementType::PARTIAL_LYRICSLINE_SEGMENT)
 

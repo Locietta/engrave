@@ -27,16 +27,15 @@
 #include "engravingitem.h"
 
 namespace mu::engraving {
-class Instrument;
-class RangeLock;
-class TremoloSingleChord;
-class TremoloTwoChord;
+struct Instrument;
+struct RangeLock;
+struct TremoloSingleChord;
+struct TremoloTwoChord;
 
 enum class SegmentType;
 enum class TripletFeelType : unsigned char;
 
-class Factory {
-public:
+struct Factory {
 
     static EngravingItem *create_item(ElementType type, DummyParentOr<EngravingItem> parent, bool is_accessible_enabled = true);
     static EngravingItem *create_item_by_name(const AsciiStringView &name, DummyParentOr<EngravingItem> parent,

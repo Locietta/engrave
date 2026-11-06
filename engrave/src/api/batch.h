@@ -20,9 +20,9 @@
 #include <engrave/error.h>
 
 namespace mu::engraving {
-class EngravingObject;
-class MasterScore;
-class Score;
+struct EngravingObject;
+struct MasterScore;
+struct Score;
 } // namespace mu::engraving
 
 namespace engrave::api {

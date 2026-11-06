@@ -28,7 +28,8 @@
 
 namespace mu::engraving {
 /// change instrument in an InstrumentChange element
-class ChangeInstrument : public UndoableCommand {
+struct ChangeInstrument : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeInstrument)
 
     InstrumentChange *is = nullptr;

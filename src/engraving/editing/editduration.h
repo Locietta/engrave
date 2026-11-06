@@ -23,11 +23,10 @@
 #pragma once
 
 namespace mu::engraving {
-class Score;
-class Transaction;
+struct Score;
+struct Transaction;
 
-class EditDuration {
-public:
+struct EditDuration {
     static void double_duration(Transaction &tx, Score *score);
     static void half_duration(Transaction &tx, Score *score);
     static void inc_duration_dotted(Transaction &tx, Score *score);

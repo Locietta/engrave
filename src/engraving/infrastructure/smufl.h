@@ -29,8 +29,7 @@
 #include "../types/symid.h"
 
 namespace mu::engraving {
-class Smufl {
-public:
+struct Smufl {
 
     static bool init();
 

@@ -33,8 +33,7 @@
 #undef NOT_IMPLEMENTED
 
 namespace muse {
-class Ret {
-public:
+struct Ret {
 
     enum class Code {
         UNDEFINED = -1,

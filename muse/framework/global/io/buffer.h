@@ -27,8 +27,7 @@
 #include "global/types/bytearray.h"
 
 namespace muse::io {
-class Buffer : public IODevice {
-public:
+struct Buffer : IODevice {
     static Buffer opened(OpenMode, ByteArray * = nullptr);
     static Buffer opened(OpenMode, ByteArray &&);
 

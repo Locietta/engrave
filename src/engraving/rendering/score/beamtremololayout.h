@@ -30,10 +30,10 @@
 #include "layoutcontext.h"
 
 namespace mu::engraving {
-class Chord;
-class ChordRest;
-class Beam;
-class TremoloTwoChord;
+struct Chord;
+struct ChordRest;
+struct Beam;
+struct TremoloTwoChord;
 enum class ActionIconType : signed char;
 enum class SpannerSegmentType : unsigned char;
 enum class ChordBeamAnchorType : unsigned char;
@@ -46,8 +46,7 @@ enum class SlopeConstraint : char {
 };
 
 namespace mu::engraving::rendering::score {
-class BeamTremoloLayout {
-public:
+struct BeamTremoloLayout {
 
     static void setup_l_data(const BeamBase *item, BeamBase::LayoutData *ldata, const LayoutContext &ctx);
 

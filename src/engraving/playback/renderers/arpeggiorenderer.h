@@ -25,8 +25,7 @@
 #include "renderbase.h"
 
 namespace mu::engraving {
-class ArpeggioRenderer : public RenderBase<ArpeggioRenderer> {
-public:
+struct ArpeggioRenderer : RenderBase<ArpeggioRenderer> {
     static const muse::mpe::ArticulationTypeSet &supported_types();
 
     static void do_render(const EngravingItem *item, const muse::mpe::ArticulationType preferred_type, const RenderingContext &ctx,

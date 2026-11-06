@@ -24,7 +24,8 @@
 #include "engravingitem.h"
 
 namespace mu::engraving {
-class Lasso : public EngravingItem {
+struct Lasso : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, Lasso)
     DECLARE_CLASSOF(ElementType::LASSO)
 

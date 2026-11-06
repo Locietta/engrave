@@ -27,8 +27,7 @@
 #include "style.h"
 
 namespace mu::engraving {
-class DefaultStyle {
-public:
+struct DefaultStyle {
     static DefaultStyle *instance();
 
     void init(const muse::io::PathT &default_style_file_path, const muse::io::PathT &part_style_file_path, const SizeF &default_page_size);

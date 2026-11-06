@@ -26,8 +26,7 @@
 #include "renderbase.h"
 
 namespace mu::engraving {
-class TremoloRenderer : public RenderBase<TremoloRenderer> {
-public:
+struct TremoloRenderer : RenderBase<TremoloRenderer> {
     static const muse::mpe::ArticulationTypeSet &supported_types();
 
     static void do_render(const EngravingItem *item, const muse::mpe::ArticulationType preferred_type, const RenderingContext &ctx,

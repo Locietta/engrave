@@ -26,8 +26,7 @@
 #include "iirbiquadfilter.h"
 
 namespace muse::audio::fx {
-class AllPassDispersion {
-public:
+struct AllPassDispersion {
     AllPassDispersion() {
         // these values have been manually tuned to produce a 50-sample IR that has a (low) peak of 0.453731
         processor_[0].set_target_coefficients(IirBiquadFilter::create_allpass2_p(0.2492, 2.168, 1.0));

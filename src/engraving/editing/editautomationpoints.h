@@ -32,9 +32,10 @@
 #include "engraving/automation/automationtypes.h"
 
 namespace mu::engraving {
-class ScoreAutomationController;
+struct ScoreAutomationController;
 
-class EditAutomationPoints : public UndoableCommand {
+struct EditAutomationPoints : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, EditAutomationPoints)
 
 public:

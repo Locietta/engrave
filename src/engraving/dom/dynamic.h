@@ -25,13 +25,13 @@
 #include "textbase.h"
 
 namespace muse::draw {
-class Painter;
+struct Painter;
 } // namespace muse::draw
 
 namespace mu::engraving {
-class Transaction;
-class Measure;
-class Segment;
+struct Transaction;
+struct Measure;
+struct Segment;
 
 struct Dyn {
     DynamicType type = DynamicType::OTHER;
@@ -48,7 +48,8 @@ struct Dyn {
 //   @P range  enum (Dynamic.STAFF, .PART, .SYSTEM)
 //-----------------------------------------------------------------------------
 
-class Dynamic final : public TextBase {
+struct Dynamic final : TextBase {
+private:
     OBJECT_ALLOCATOR(engraving, Dynamic)
     DECLARE_CLASSOF(ElementType::DYNAMIC)
 

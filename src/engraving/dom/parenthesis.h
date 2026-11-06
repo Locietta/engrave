@@ -24,7 +24,8 @@
 #include "engravingitem.h"
 
 namespace mu::engraving {
-class Parenthesis : public EngravingItem {
+struct Parenthesis : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, Parenthesis)
     M_PROPERTY2(DirectionH, direction, set_direction, DirectionH::LEFT)
 

@@ -38,8 +38,7 @@ namespace mu::engraving {
 ///   shaped curve.
 //---------------------------------------------------------
 
-class EaseInOut final {
-public:
+struct EaseInOut final {
     EaseInOut() : ease_in_(0.0), ease_out_(1.0) {}
 
     EaseInOut(double ease_in, double ease_out) : ease_in_(ease_in), ease_out_(ease_out) {}

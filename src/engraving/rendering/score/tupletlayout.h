@@ -25,14 +25,13 @@
 #include "layoutcontext.h"
 
 namespace mu::engraving {
-class ChordRest;
-class DurationElement;
-class Tuplet;
+struct ChordRest;
+struct DurationElement;
+struct Tuplet;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class TupletLayout {
-public:
+struct TupletLayout {
     static void layout(Tuplet *item, LayoutContext &ctx);
 
     static void layout_tuplet_and_nested_tuplets(Tuplet *t, LayoutContext &ctx);

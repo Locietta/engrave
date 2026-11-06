@@ -42,11 +42,12 @@
 #include "engraving/engravingerrors.h"
 
 namespace mu::engraving {
-class PalmMute;
+struct PalmMute;
 } // namespace mu::engraving
 
 namespace mu::iex::guitarpro {
-class PowerTab {
+struct PowerTab {
+private:
     muse::io::IODevice *file = nullptr;
     mu::engraving::MasterScore *score = nullptr;
 

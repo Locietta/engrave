@@ -28,8 +28,8 @@
 #include "notedot.h"
 
 namespace mu::engraving {
-class TDuration;
-class Transaction;
+struct TDuration;
+struct Transaction;
 
 struct RestVerticalClearance {
 public:
@@ -62,7 +62,8 @@ private:
 ///     This class implements a rest.
 //---------------------------------------------------------
 
-class Rest : public ChordRest {
+struct Rest : ChordRest {
+private:
     OBJECT_ALLOCATOR(engraving, Rest)
     DECLARE_CLASSOF(ElementType::REST)
 
@@ -156,7 +157,7 @@ protected:
 
 private:
 
-    friend class Factory;
+    friend struct Factory;
     Rest(DummyParentOr<Segment> parent);
     Rest(DummyParentOr<Segment> parent, const TDuration &);
 

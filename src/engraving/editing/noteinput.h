@@ -32,15 +32,15 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class Chord;
-class ChordRest;
-class Fraction;
-class InputState;
-class Note;
-class Score;
-class Segment;
-class TDuration;
-class Transaction;
+struct Chord;
+struct ChordRest;
+struct Fraction;
+struct InputState;
+struct Note;
+struct Score;
+struct Segment;
+struct TDuration;
+struct Transaction;
 
 struct NoteVal;
 struct Position;
@@ -53,8 +53,7 @@ struct NoteInputParams {
     int drum_pitch = -1;
 };
 
-class NoteInput {
-public:
+struct NoteInput {
     //! NOTE: Methods related to entering notes/rests into the score.
 
     static bool resolve_note_input_params(const Score *score, int note, bool add_flag, NoteInputParams &out);

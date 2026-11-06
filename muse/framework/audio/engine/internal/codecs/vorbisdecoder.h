@@ -28,8 +28,7 @@
 #include "thirdparty/fluidsynth/vorbis_decode.h"
 
 namespace muse::audio::codec {
-class VorbisDecoder : public fluid::IVorbisDecoder {
-public:
+struct VorbisDecoder : fluid::IVorbisDecoder {
     VorbisDecoder() = default;
 
     int decode_memory(const unsigned char *mem, unsigned int len, short **output, unsigned int *channels = nullptr,

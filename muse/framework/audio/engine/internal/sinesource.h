@@ -25,8 +25,7 @@
 #include "abstractaudiosource.h"
 
 namespace muse::audio::engine {
-class SineSource : public AbstractAudioSource {
-public:
+struct SineSource : AbstractAudioSource {
     SineSource();
     ~SineSource() = default;
 

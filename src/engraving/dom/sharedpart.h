@@ -28,7 +28,8 @@ namespace mu::engraving {
 using SharedTrackMap = std::map<track_idx_t, track_idx_t>;
 std::string dump(const SharedTrackMap &map);
 
-class SharedPart final : public Part {
+struct SharedPart final : Part {
+private:
     OBJECT_ALLOCATOR(engraving, SharedPart)
     DECLARE_CLASSOF(ElementType::SHARED_PART)
 

@@ -28,8 +28,8 @@
 #include <cstdint>
 
 namespace mu::engraving {
-class Drumset;
-class Instrument;
+struct Drumset;
+struct Instrument;
 } // namespace mu::engraving
 
 namespace mu::iex::guitarpro::drumset {

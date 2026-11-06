@@ -30,19 +30,18 @@
 #include "../../dom/input.h"
 
 namespace mu::engraving {
-class EngravingObject;
-class Score;
-class Segment;
-class Box;
+struct EngravingObject;
+struct Score;
+struct Segment;
+struct Box;
 
-class EditData;
+struct EditData;
 
-class UndoableCommand;
+struct UndoableCommand;
 enum class UndoableCommandFilter : unsigned char;
 enum class CommandType : signed char;
 
-class UndoableTransaction {
-public:
+struct UndoableTransaction {
     UndoableTransaction(Score *s, const muse::TranslatableString &action_name);
     ~UndoableTransaction();
 
@@ -113,8 +112,7 @@ private:
     static void apply_selection_info(const SelectionInfo &, Selection &);
 };
 
-class UndoStack {
-public:
+struct UndoStack {
     UndoStack();
     ~UndoStack();
 

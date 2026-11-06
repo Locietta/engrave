@@ -29,9 +29,10 @@
 #include "../dom/score.h"
 
 namespace mu::engraving {
-class Transaction;
+struct Transaction;
 
-class ChangeStyle : public UndoableCommand {
+struct ChangeStyle : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeStyle)
 
     Score *score = nullptr;
@@ -51,7 +52,8 @@ public:
     UNDO_CHANGED_OBJECTS({score})
 };
 
-class ChangeStyleValues : public UndoableCommand {
+struct ChangeStyleValues : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeStyleValues)
 
 public:
@@ -70,8 +72,7 @@ private:
     std::unordered_map<Sid, PropertyValue> values_;
 };
 
-class EditStyle {
-public:
+struct EditStyle {
     static bool load_style(Transaction &tx, Score *score, muse::io::IODevice &dev, bool ign = false, bool overlap = false);
 };
 } // namespace mu::engraving

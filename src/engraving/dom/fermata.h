@@ -28,18 +28,19 @@
 #include "engravingitem.h"
 
 namespace mu::engraving {
-class ChordRest;
-class Factory;
-class Measure;
-class Page;
-class Segment;
-class System;
+struct ChordRest;
+struct Factory;
+struct Measure;
+struct Page;
+struct Segment;
+struct System;
 
 //---------------------------------------------------------
 //    Fermata
 //---------------------------------------------------------
 
-class Fermata final : public EngravingItem {
+struct Fermata final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, Fermata)
     DECLARE_CLASSOF(ElementType::FERMATA)
 
@@ -84,7 +85,7 @@ public:
 
 private:
 
-    friend class Factory;
+    friend struct Factory;
     Fermata(EngravingObject *parent);
 
     SymId sym_id_ = SymId::NO_SYM;

@@ -25,12 +25,12 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class ChordRest;
-class EngravingItem;
-class Lyrics;
-class Note;
-class Score;
-class Segment;
+struct ChordRest;
+struct EngravingItem;
+struct Lyrics;
+struct Note;
+struct Score;
+struct Segment;
 
 struct ChordRestNavigateOptions {
     bool skip_grace = false;
@@ -38,8 +38,7 @@ struct ChordRestNavigateOptions {
     bool disable_over_repeats = false;
 };
 
-class Navigation {
-public:
+struct Navigation {
     static ChordRest *next_chord_rest(const ChordRest *cr, const ChordRestNavigateOptions &options = {});
     static ChordRest *prev_chord_rest(const ChordRest *cr, const ChordRestNavigateOptions &options = {});
     static Lyrics *last_lyrics_in_measure(const Segment *seg, const staff_idx_t staff_idx, const int no, const PlacementV &placement);

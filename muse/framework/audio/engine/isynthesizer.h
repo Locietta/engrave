@@ -28,8 +28,7 @@
 #include "audio/common/timeposition.h"
 
 namespace muse::audio::synth {
-class ISynthesizer {
-public:
+struct ISynthesizer {
     virtual ~ISynthesizer() = default;
 
     virtual std::string name() const = 0;

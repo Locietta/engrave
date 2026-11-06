@@ -30,15 +30,14 @@
 #include "io/path.h"
 
 namespace mu::engraving {
-class Image;
-class Score;
+struct Image;
+struct Score;
 
 //---------------------------------------------------------
 //   ImageStoreItem
 //---------------------------------------------------------
 
-class ImageStoreItem {
-public:
+struct ImageStoreItem {
     ImageStoreItem(const std::string &p);
     void dereference(Image *);
     void reference(Image *);
@@ -76,8 +75,7 @@ private:
 //   ImageStore
 //---------------------------------------------------------
 
-class ImageStore {
-public:
+struct ImageStore {
     ImageStore() = default;
     ImageStore(const ImageStore &) = delete;
     ImageStore &operator=(const ImageStore &) = delete;

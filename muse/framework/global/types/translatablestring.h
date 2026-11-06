@@ -29,8 +29,7 @@
 namespace muse {
 //! Note: in order to make the string visible for `lupdate`,
 //! you must write TranslatableString(...) explicitly.
-class TranslatableString {
-public:
+struct TranslatableString {
     const char *context = nullptr;
     String str;
     const char *disambiguation = nullptr;

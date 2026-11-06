@@ -28,11 +28,11 @@
 #include "global/types/translatablestring.h"
 
 namespace mu::engraving {
-class EditData;
-class MasterScore;
-class UndoableCommand;
-class UndoableTransaction;
-class UndoStack;
+struct EditData;
+struct MasterScore;
+struct UndoableCommand;
+struct UndoableTransaction;
+struct UndoStack;
 
 /// # Transaction and TransactionManager
 ///
@@ -101,8 +101,7 @@ class UndoStack;
 /// anywhere in the module is not feasible. We might reserve it for a few
 /// ambiguous places only.
 
-class Transaction {
-public:
+struct Transaction {
     Transaction(const Transaction &) = delete;
     Transaction &operator=(const Transaction &) = delete;
 
@@ -120,7 +119,7 @@ public:
     static void set_push_hook(PushHook hook);
 
 private:
-    friend class TransactionManager;
+    friend struct TransactionManager;
     Transaction(UndoableTransaction *undoable_transaction);
 
     static Transaction &dummy();
@@ -131,8 +130,7 @@ private:
     static inline PushHook s_push_hook = nullptr;
 };
 
-class TransactionManager {
-public:
+struct TransactionManager {
     explicit TransactionManager(MasterScore *master_score);
 
     UndoStack *undo_stack() const;

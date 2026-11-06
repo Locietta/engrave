@@ -46,8 +46,7 @@ struct UpdateState {
 //    determine what to layout and what to repaint:
 //---------------------------------------------------------
 
-class CmdState {
-public:
+struct CmdState {
     LayoutFlags layout_flags;
 
     bool excerpts_changed = false;

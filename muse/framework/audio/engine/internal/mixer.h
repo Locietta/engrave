@@ -35,8 +35,7 @@ struct ContextMixerTag {
 } // namespace muse::audio
 
 namespace muse::audio::engine {
-class Mixer : public AudioNode<ContextMixerTag> {
-public:
+struct Mixer : AudioNode<ContextMixerTag> {
     ~Mixer() override;
 
     void init();

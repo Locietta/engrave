@@ -26,10 +26,9 @@
 #include "rendering/score/layoutcontext.h"
 
 namespace mu::engraving::rendering::score {
-class LayoutConfiguration;
+struct LayoutConfiguration;
 
-class MarkerLayout {
-public:
+struct MarkerLayout {
     static void layout_marker(Marker *item, Marker::LayoutData *ldata, LayoutContext &ctx);
 
 private:

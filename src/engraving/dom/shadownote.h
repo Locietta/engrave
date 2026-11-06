@@ -38,7 +38,8 @@ namespace mu::engraving {
  which shows the note insert position in note entry mode.
 */
 
-class ShadowNote final : public EngravingItem {
+struct ShadowNote final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, ShadowNote)
     DECLARE_CLASSOF(ElementType::SHADOW_NOTE)
 

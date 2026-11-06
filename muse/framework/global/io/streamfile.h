@@ -11,8 +11,7 @@
 #include "ioretcodes.h"
 
 namespace muse::io {
-class StreamingFileDevice final : public IODevice {
-public:
+struct StreamingFileDevice final : IODevice {
     explicit StreamingFileDevice(std::filesystem::path path, std::optional<std::uint64_t> max_bytes = {},
                                  std::optional<std::uint64_t> max_write_bytes = {}, std::function<bool()> cancelled = {})
         : path_(std::move(path)), max_bytes_(max_bytes), max_write_bytes_(max_write_bytes), cancelled_(std::move(cancelled)) {}

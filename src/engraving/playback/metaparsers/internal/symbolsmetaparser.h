@@ -26,8 +26,7 @@
 #include "playback/metaparsers/metaparserbase.h"
 
 namespace mu::engraving {
-class SymbolsMetaParser : public MetaParserBase<SymbolsMetaParser> {
-public:
+struct SymbolsMetaParser : MetaParserBase<SymbolsMetaParser> {
     static muse::mpe::ArticulationTypeSet symbol_to_articulations(SymId sym_id, OrnamentStyle ornament_style = OrnamentStyle::DEFAULT);
 
 private:

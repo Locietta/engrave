@@ -27,17 +27,16 @@
 #include "engraving/types/types.h"
 
 namespace mu::engraving {
-class Segment;
-class ChordRest;
-class Staff;
+struct Segment;
+struct ChordRest;
+struct Staff;
 } // namespace mu::engraving
 
 namespace mu::iex::midi { namespace MidiTie {
 bool is_tied_for(const engraving::Segment *seg, mu::engraving::track_idx_t strack, mu::engraving::voice_idx_t voice);
 bool is_tied_back(const engraving::Segment *seg, mu::engraving::track_idx_t strack, mu::engraving::voice_idx_t voice);
 
-class TieStateMachine {
-public:
+struct TieStateMachine {
     enum class State : char { UNTIED, TIED_FOR, TIED_BOTH, TIED_BACK };
 
     void add_seg(const engraving::Segment *seg, mu::engraving::track_idx_t strack);

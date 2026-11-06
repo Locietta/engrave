@@ -27,14 +27,15 @@
 #include "engravingitem.h"
 
 namespace mu::engraving {
-class Transaction;
+struct Transaction;
 
 //---------------------------------------------------------
 //   @@ BSymbol
 ///    base class for Symbol and Image
 //---------------------------------------------------------
 
-class BSymbol : public EngravingItem {
+struct BSymbol : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, BSymbol)
 public:
 

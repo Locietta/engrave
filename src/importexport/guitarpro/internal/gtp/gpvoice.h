@@ -6,8 +6,7 @@
 #include "gpbeat.h"
 
 namespace mu::iex::guitarpro {
-class GPVoice {
-public:
+struct GPVoice {
 
     void add_gp_beat(const std::shared_ptr<GPBeat> &b) { beats_value.push_back(b); }
 

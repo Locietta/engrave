@@ -25,12 +25,11 @@
 #include "benddatacontextsplitchord.h"
 
 namespace mu::engraving {
-class Score;
+struct Score;
 } // namespace mu::engraving
 
 namespace mu::iex::guitarpro {
-class BendDataProcessorSplitChord {
-public:
+struct BendDataProcessorSplitChord {
     BendDataProcessorSplitChord(mu::engraving::Score *score);
     void process_bends(const BendDataContextSplitChord &bend_data_ctx);
 

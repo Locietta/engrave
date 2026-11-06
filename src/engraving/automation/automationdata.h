@@ -27,8 +27,7 @@
 #include <string>
 
 namespace mu::engraving {
-class AutomationData {
-public:
+struct AutomationData {
     const AutomationCurveMap &curves() const;
     const AutomationCurve &curve(const AutomationCurveKey &key) const;
 

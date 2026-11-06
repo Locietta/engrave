@@ -28,8 +28,7 @@
 #include "global/logstream.h"
 
 namespace mu::engraving {
-class EID {
-public:
+struct EID {
     // max size of base64 string of 64-bit int is ceil(log(2^64) / log(64)) = 11
     static constexpr size_t max_uin_t64_bas_e64_size = 11;
     // 2 * uint64_t as base64 + separator

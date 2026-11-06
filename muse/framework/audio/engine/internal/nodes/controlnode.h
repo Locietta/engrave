@@ -31,8 +31,7 @@ struct ControlTag {
 } // namespace muse::audio
 
 namespace muse::audio::engine {
-class ControlNode : public AudioNode<ControlTag> {
-public:
+struct ControlNode : AudioNode<ControlTag> {
 
     void set_volume(float value);
     float volume() const;

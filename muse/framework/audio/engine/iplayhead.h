@@ -27,14 +27,12 @@
 #include "audio/common/timeposition.h"
 
 namespace muse::audio::engine {
-class IPlayheadPosition {
-public:
+struct IPlayheadPosition {
     virtual ~IPlayheadPosition() = default;
     virtual const TimePosition &current_position() const = 0;
 };
 
-class IPlayhead : public IPlayheadPosition {
-public:
+struct IPlayhead : IPlayheadPosition {
 
     virtual void forward(const TimePosition &delta) = 0;
 };

@@ -31,8 +31,7 @@ namespace mu::engraving {
 //    - the distance between two note lines
 //    - used for many layout items
 //---------------------------------------------------------
-class Spatium {
-public:
+struct Spatium {
     constexpr Spatium() = default;
 
     explicit constexpr Spatium(double v) : val_(v) {}

@@ -26,14 +26,15 @@
 #include "property.h"
 
 namespace mu::engraving {
-class Transaction;
+struct Transaction;
 
 //---------------------------------------------------------
 //   Box
 //   virtual base class for frames "boxes"
 //---------------------------------------------------------
 
-class Box : public MeasureBase {
+struct Box : MeasureBase {
+private:
     OBJECT_ALLOCATOR(engraving, Box)
 
 public:
@@ -115,7 +116,8 @@ private:
 //   horizontal frame
 //---------------------------------------------------------
 
-class HBox final : public Box {
+struct HBox final : Box {
+private:
     OBJECT_ALLOCATOR(engraving, HBox)
     DECLARE_CLASSOF(ElementType::HBOX)
 
@@ -144,7 +146,8 @@ private:
 //   vertical frame
 //---------------------------------------------------------
 
-class VBox : public Box {
+struct VBox : Box {
+private:
     OBJECT_ALLOCATOR(engraving, VBox)
     DECLARE_CLASSOF(ElementType::VBOX)
 
@@ -181,7 +184,8 @@ private:
 //   frame containing fret diagrams
 //---------------------------------------------------------
 
-class FBox : public VBox {
+struct FBox : VBox {
+private:
     OBJECT_ALLOCATOR(engraving, FBox)
     DECLARE_CLASSOF(ElementType::FBOX)
 
@@ -242,9 +246,10 @@ private:
 //   Text frame.
 //---------------------------------------------------------
 
-class Text;
+struct Text;
 
-class TBox : public VBox {
+struct TBox : VBox {
+private:
     OBJECT_ALLOCATOR(engraving, TBox)
     DECLARE_CLASSOF(ElementType::TBOX)
 

@@ -30,18 +30,17 @@
 #include "layoutcontext.h"
 
 namespace mu::engraving {
-class Beam;
-class Chord;
-class Rest;
-class ChordRest;
-class Measure;
-class Score;
-class Segment;
+struct Beam;
+struct Chord;
+struct Rest;
+struct ChordRest;
+struct Measure;
+struct Score;
+struct Segment;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class BeamLayout {
-public:
+struct BeamLayout {
 
     static void layout(Beam *item, const LayoutContext &ctx);
     static void layout_if_need(Beam *item, const LayoutContext &ctx);

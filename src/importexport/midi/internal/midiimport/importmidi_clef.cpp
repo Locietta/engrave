@@ -47,8 +47,7 @@
 using namespace mu::engraving;
 
 namespace mu::iex::midi { namespace MidiClef {
-class AveragePitch {
-public:
+struct AveragePitch {
     AveragePitch() : sum_pitch_(0), count_(0) {}
 
     AveragePitch(int sum_pitch, int count) : sum_pitch_(sum_pitch), count_(count) {}
@@ -71,8 +70,7 @@ private:
     int count_;
 };
 
-class MinMaxPitch {
-public:
+struct MinMaxPitch {
     MinMaxPitch() : min_pitch_(std::numeric_limits<int>::max()), max_pitch_(-1) {}
 
     MinMaxPitch(int min_pitch, int max_pitch) : min_pitch_(min_pitch), max_pitch_(max_pitch) {}

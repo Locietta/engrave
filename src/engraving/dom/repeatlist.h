@@ -30,18 +30,19 @@
 #include "types/string.h"
 
 namespace mu::engraving {
-class Score;
-class Measure;
-class Volta;
-class Jump;
-class RepeatListElement;
+struct Score;
+struct Measure;
+struct Volta;
+struct Jump;
+struct RepeatListElement;
 using RepeatListElementList = std::vector<RepeatListElement *>;
 
 //---------------------------------------------------------
 //   RepeatSegment
 //---------------------------------------------------------
 
-class RepeatSegment {
+struct RepeatSegment {
+private:
     OBJECT_ALLOCATOR(engraving, RepeatSegment)
 public:
     int tick; // start tick
@@ -71,7 +72,7 @@ public:
 
     inline friend bool operator!=(const RepeatSegment &lhs, const RepeatSegment &rhs) { return !(lhs == rhs); }
 
-    friend class RepeatList;
+    friend struct RepeatList;
 private:
     std::vector<const Measure *> measure_list_;
 };
@@ -86,7 +87,8 @@ struct RepeatSegmentInfo {
 //   RepeatList
 //---------------------------------------------------------
 
-class RepeatList : public std::vector<RepeatSegment *> {
+struct RepeatList : std::vector<RepeatSegment *> {
+private:
     OBJECT_ALLOCATOR(engraving, RepeatList)
 
 public:

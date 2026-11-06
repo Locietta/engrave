@@ -26,13 +26,14 @@
 #include "chordtextlinebase.h"
 
 namespace mu::engraving {
-class PickScrape;
+struct PickScrape;
 
 //---------------------------------------------------------
 //   @@ PickScrapeSegment
 //---------------------------------------------------------
 
-class PickScrapeSegment final : public TextLineBaseSegment {
+struct PickScrapeSegment final : TextLineBaseSegment {
+private:
     OBJECT_ALLOCATOR(engraving, PickScrapeSegment)
     DECLARE_CLASSOF(ElementType::PICK_SCRAPE_SEGMENT)
 
@@ -43,14 +44,15 @@ public:
 
     PickScrape *pick_scrape() const { return (PickScrape *) spanner(); }
 
-    friend class PickScrape;
+    friend struct PickScrape;
 };
 
 //---------------------------------------------------------
 //   @@ PickScrape
 //---------------------------------------------------------
 
-class PickScrape final : public ChordTextLineBase {
+struct PickScrape final : ChordTextLineBase {
+private:
     OBJECT_ALLOCATOR(engraving, PickScrape)
     DECLARE_CLASSOF(ElementType::PICK_SCRAPE)
 

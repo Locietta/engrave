@@ -30,7 +30,7 @@ using namespace muse;
 using namespace muse::mpe;
 using namespace muse::mpe::tests;
 
-class MpeMultiNoteArticulationsTest : public ::testing::Test {
+struct MpeMultiNoteArticulationsTest : ::testing::Test {
 protected:
     void SetUp() override {
         // [GIVEN] Rendering data of the very first quarter note on the score, with the 120BPM tempo and 4/4 time signature

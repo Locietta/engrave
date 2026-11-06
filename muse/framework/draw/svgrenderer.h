@@ -27,11 +27,10 @@
 #include "types/geometry.h"
 #include "painter.h"
 
-class QSvgRenderer;
+struct QSvgRenderer;
 
 namespace muse::draw {
-class SvgRenderer {
-public:
+struct SvgRenderer {
     SvgRenderer(const ByteArray &data);
     ~SvgRenderer();
 

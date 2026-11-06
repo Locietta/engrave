@@ -26,8 +26,8 @@
 #include "textbase.h"
 
 namespace mu::engraving {
-class Factory;
-class Segment;
+struct Factory;
+struct Segment;
 
 /*---------------------------------------------------------
 NOTE ON ARCHITECTURE
@@ -86,9 +86,10 @@ constexpr int fbi_digit_none = -1;
 //   @P suffix             enum (FiguredBassItem.NONE, .DOUBLEFLAT, .FLAT, .NATURAL, .SHARP, .DOUBLESHARP, .PLUS, .BACKSLASH, .SLASH)  accidental/diacritic after the digit
 //---------------------------------------------------------
 
-class FiguredBass;
+struct FiguredBass;
 
-class FiguredBassItem final : public EngravingItem {
+struct FiguredBassItem final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, FiguredBassItem)
     DECLARE_CLASSOF(ElementType::FIGURED_BASS_ITEM)
 
@@ -184,7 +185,7 @@ public:
 
 private:
 
-    friend class FiguredBass;
+    friend struct FiguredBass;
 
     FiguredBassItem(FiguredBass *parent, int line = 0);
     FiguredBassItem(const FiguredBassItem &);
@@ -231,7 +232,8 @@ struct FiguredBassFont {
 //   @P ticks   int   duration in ticks
 //---------------------------------------------------------
 
-class FiguredBass final : public TextBase {
+struct FiguredBass final : TextBase {
+private:
     OBJECT_ALLOCATOR(engraving, FiguredBass)
     DECLARE_CLASSOF(ElementType::FIGURED_BASS)
 
@@ -310,7 +312,7 @@ public:
 
 private:
 
-    friend class Factory;
+    friend struct Factory;
     FiguredBass(DummyParentOr<Segment> parent);
     FiguredBass(const FiguredBass &);
 

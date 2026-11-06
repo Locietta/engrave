@@ -32,7 +32,8 @@ namespace mu::engraving {
 ///    a single segment of slur; also used for Tie
 //---------------------------------------------------------
 
-class SlurSegment : public SlurTieSegment {
+struct SlurSegment : SlurTieSegment {
+private:
     OBJECT_ALLOCATOR(engraving, SlurSegment)
     DECLARE_CLASSOF(ElementType::SLUR_SEGMENT)
 
@@ -64,7 +65,8 @@ protected:
 //   @@ Slur
 //---------------------------------------------------------
 
-class Slur : public SlurTie {
+struct Slur : SlurTie {
+private:
     OBJECT_ALLOCATOR(engraving, Slur)
     DECLARE_CLASSOF(ElementType::SLUR)
 
@@ -136,7 +138,7 @@ private:
     PartialSpannerDirection calc_incoming_direction(bool incoming);
     PartialSpannerDirection calc_outgoing_direction(bool outgoing);
 
-    friend class Factory;
+    friend struct Factory;
 
     StemFloated stem_floated_; // end point position is attached to stem but floated towards the note
 };

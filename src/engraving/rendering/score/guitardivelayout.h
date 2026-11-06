@@ -24,16 +24,15 @@
 #include "layoutcontext.h"
 
 namespace mu::engraving {
-class GuitarBend;
-class GuitarBendSegment;
-class LineSegment;
-class Note;
+struct GuitarBend;
+struct GuitarBendSegment;
+struct LineSegment;
+struct Note;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class GuitarDiveLayout {
-public:
-    friend class GuitarBendLayout;
+struct GuitarDiveLayout {
+    friend struct GuitarBendLayout;
 
     static void update_dive_sequences(const std::vector<mu::engraving::GuitarBend *> &bends, const LayoutContext &ctx);
     static void layout_dive_tab_staff(GuitarBendSegment *item, LayoutContext &);

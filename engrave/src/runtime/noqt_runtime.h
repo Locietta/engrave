@@ -7,8 +7,8 @@
 #include "engrave/src/score/export_options.h"
 
 namespace mu::engraving {
-class EngravingProject;
-class MasterScore;
+struct EngravingProject;
+struct MasterScore;
 } // namespace mu::engraving
 
 namespace music {

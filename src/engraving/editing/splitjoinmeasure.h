@@ -23,13 +23,12 @@
 #pragma once
 
 namespace mu::engraving {
-class MasterScore;
-class Measure;
-class Fraction;
-class Transaction;
+struct MasterScore;
+struct Measure;
+struct Fraction;
+struct Transaction;
 
-class SplitJoinMeasure {
-public:
+struct SplitJoinMeasure {
     /// Splits the measure at the given tick, at the given tick.
     static void split_measure(Transaction &tx, MasterScore *master_score, const Fraction &tick);
 

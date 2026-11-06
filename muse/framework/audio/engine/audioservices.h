@@ -7,12 +7,11 @@
 #include "internal/audiofactory.h"
 
 namespace muse::midi {
-class IMidiOutPort;
+struct IMidiOutPort;
 } // namespace muse::midi
 
 namespace muse::audio::engine {
-class AudioServices {
-public:
+struct AudioServices {
     explicit AudioServices(midi::IMidiOutPort *midi_out_port);
     ~AudioServices();
     AudioServices(const AudioServices &) = delete;

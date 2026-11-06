@@ -30,8 +30,7 @@ enum class DateFormat {
     LOCALE_SHORT_FORMAT
 };
 
-class Date {
-public:
+struct Date {
     Date() = default;
     Date(int y, int m, int d);
 
@@ -59,8 +58,7 @@ private:
     int day_ = 0;
 };
 
-class Time {
-public:
+struct Time {
 
     Time() = default;
     Time(int h, int m, int s);
@@ -85,8 +83,7 @@ private:
     int second_ = 0;
 };
 
-class DateTime {
-public:
+struct DateTime {
     DateTime() = default;
     DateTime(const Date &d, const Time &t);
 

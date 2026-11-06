@@ -26,14 +26,15 @@
 #include "line.h"
 
 namespace mu::engraving {
-class Trill;
-class Accidental;
+struct Trill;
+struct Accidental;
 
 //---------------------------------------------------------
 //   @@ TrillSegment
 //---------------------------------------------------------
 
-class TrillSegment final : public LineSegment {
+struct TrillSegment final : LineSegment {
+private:
     OBJECT_ALLOCATOR(engraving, TrillSegment)
     DECLARE_CLASSOF(ElementType::TRILL_SEGMENT)
 
@@ -68,7 +69,8 @@ private:
 //   @P trillType  enum (Trill.DOWNPRALL_LINE, .PRALLPRALL_LINE, .PURE_LINE, .TRILL_LINE, .UPPRALL_LINE)
 //---------------------------------------------------------
 
-class Trill final : public SLine {
+struct Trill final : SLine {
+private:
     OBJECT_ALLOCATOR(engraving, Trill)
     DECLARE_CLASSOF(ElementType::TRILL)
 

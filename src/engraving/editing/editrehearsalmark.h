@@ -25,12 +25,11 @@
 #include "global/types/string.h"
 
 namespace mu::engraving {
-class RehearsalMark;
-class Score;
-class Transaction;
+struct RehearsalMark;
+struct Score;
+struct Transaction;
 
-class EditRehearsalMark {
-public:
+struct EditRehearsalMark {
     static void resequence_rehearsal_marks(Transaction &tx, Score *score);
 
     static muse::String create_rehearsal_mark_text(const Score *score, RehearsalMark *current);

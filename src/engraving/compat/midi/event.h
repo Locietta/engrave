@@ -30,8 +30,8 @@
 #include "midicoreevent.h"
 
 namespace mu::engraving {
-class Note;
-class Harmony;
+struct Note;
+struct Harmony;
 
 enum class BeatType : unsigned char;
 
@@ -40,7 +40,8 @@ enum class BeatType : unsigned char;
 //    interface to Synthesizer
 //---------------------------------------------------------
 
-class PlayEvent : public MidiCoreEvent {
+struct PlayEvent : MidiCoreEvent {
+private:
     OBJECT_ALLOCATOR(engraving, PlayEvent)
 protected:
     float tuning_value = .0f;
@@ -62,7 +63,8 @@ public:
 //    used for Sequencer interface
 //---------------------------------------------------------
 
-class NPlayEvent : public PlayEvent {
+struct NPlayEvent : PlayEvent {
+private:
     OBJECT_ALLOCATOR(engraving, NPlayEvent)
 
 public:
@@ -119,7 +121,8 @@ private:
 //   Event
 //---------------------------------------------------------
 
-class Event : public PlayEvent {
+struct Event : PlayEvent {
+private:
     OBJECT_ALLOCATOR(engraving, Event)
 
     int ontime_value;
@@ -193,14 +196,16 @@ public:
 //   EventsHolder
 //---------------------------------------------------------
 
-class EventList : public std::vector<Event> {
+struct EventList : std::vector<Event> {
+private:
     OBJECT_ALLOCATOR(engraving, EventList)
 public:
     void insert(const Event &);
     void insert_note(int channel, Note *);
 };
 
-class EventsHolder {
+struct EventsHolder {
+private:
     OBJECT_ALLOCATOR(engraving, EventsHolder)
 
     using events_multimap_t = std::multimap<int, NPlayEvent>;

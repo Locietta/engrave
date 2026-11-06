@@ -35,16 +35,16 @@
 #include "connectorinforeader.h"
 
 namespace mu::engraving {
-class Beam;
-class DummyParent;
-class EngravingObject;
-class LinkedObjects;
-class Measure;
-class Score;
-class Spanner;
-class Staff;
-class Tuplet;
-class MStyle;
+struct Beam;
+struct DummyParent;
+struct EngravingObject;
+struct LinkedObjects;
+struct Measure;
+struct Score;
+struct Spanner;
+struct Staff;
+struct Tuplet;
+struct MStyle;
 } // namespace mu::engraving
 
 namespace mu::engraving::read460 {
@@ -53,8 +53,7 @@ struct TextStyleMap {
     TextStyleType ss;
 };
 
-class ReadContext {
-public:
+struct ReadContext {
 
     ReadContext() = default;
     ReadContext(Score *score);

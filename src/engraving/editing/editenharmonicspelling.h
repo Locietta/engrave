@@ -27,10 +27,9 @@
 namespace mu::engraving {
 enum class Key : signed char;
 enum class Prefer : char;
-class Score;
+struct Score;
 
-class EditEnharmonicSpelling {
-public:
+struct EditEnharmonicSpelling {
     static void spell(Score *score);
     static void spell_with_sharps_or_flats(Score *score, Prefer prefer);
     static void change_enharmonic_spelling(Score *score, bool both);

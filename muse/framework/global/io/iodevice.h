@@ -28,8 +28,7 @@
 #include "global/types/bytearray.h"
 
 namespace muse::io {
-class IODevice {
-public:
+struct IODevice {
 
     enum OpenMode { UNKNOWN, READ_ONLY, WRITE_ONLY, READ_WRITE, APPEND };
 

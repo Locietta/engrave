@@ -63,7 +63,8 @@ private:
 //   TextEditUndoableCommand
 //---------------------------------------------------------
 
-class TextEditUndoableCommand : public UndoableCommand {
+struct TextEditUndoableCommand : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, TextEditUndoableCommand)
 
 public:
@@ -89,7 +90,8 @@ protected:
 //   ChangeText
 //---------------------------------------------------------
 
-class ChangeTextProperties : public TextEditUndoableCommand {
+struct ChangeTextProperties : TextEditUndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeTextProperties)
 
 public:
@@ -112,7 +114,8 @@ private:
 //   ChangeText
 //---------------------------------------------------------
 
-class ChangeText : public TextEditUndoableCommand {
+struct ChangeText : TextEditUndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeText)
 
 public:
@@ -137,7 +140,8 @@ private:
 //   InsertText
 //---------------------------------------------------------
 
-class InsertText : public ChangeText {
+struct InsertText : ChangeText {
+private:
     OBJECT_ALLOCATOR(engraving, InsertText)
 public:
     InsertText(const TextCursor *tc, const String &t) : ChangeText(tc, t) {}
@@ -152,7 +156,8 @@ public:
 //   RemoveText
 //---------------------------------------------------------
 
-class RemoveText : public ChangeText {
+struct RemoveText : ChangeText {
+private:
     OBJECT_ALLOCATOR(engraving, RemoveText)
 public:
     RemoveText(const TextCursor *tc, const String &t) : ChangeText(tc, t) {}
@@ -167,7 +172,8 @@ public:
 //   SplitJoinText
 //---------------------------------------------------------
 
-class SplitJoinText : public TextEditUndoableCommand {
+struct SplitJoinText : TextEditUndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, SplitJoinText)
 protected:
     virtual void split();
@@ -181,7 +187,8 @@ public:
 //   SplitText
 //---------------------------------------------------------
 
-class SplitText : public SplitJoinText {
+struct SplitText : SplitJoinText {
+private:
     OBJECT_ALLOCATOR(engraving, SplitText)
 
     virtual void undo() override { join(); }
@@ -197,7 +204,8 @@ public:
 //   JoinText
 //---------------------------------------------------------
 
-class JoinText : public SplitJoinText {
+struct JoinText : SplitJoinText {
+private:
     OBJECT_ALLOCATOR(engraving, JoinText)
 
     virtual void undo() override { split(); }

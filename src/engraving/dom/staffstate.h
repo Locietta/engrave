@@ -28,7 +28,7 @@
 #include "draw/types/painterpath.h"
 
 namespace mu::engraving {
-class Transaction;
+struct Transaction;
 
 enum class StaffStateType : char { INSTRUMENT, TYPE, VISIBLE, INVISIBLE };
 
@@ -36,7 +36,8 @@ enum class StaffStateType : char { INSTRUMENT, TYPE, VISIBLE, INVISIBLE };
 //   @@ StaffState
 //---------------------------------------------------------
 
-class StaffState final : public EngravingItem {
+struct StaffState final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, StaffState)
     DECLARE_CLASSOF(ElementType::STAFF_STATE)
 
@@ -73,7 +74,7 @@ public:
 
 private:
 
-    friend class Factory;
+    friend struct Factory;
     StaffState(DummyParentOr<EngravingItem> parent);
     StaffState(const StaffState &);
 

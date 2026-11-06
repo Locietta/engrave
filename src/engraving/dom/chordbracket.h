@@ -26,7 +26,8 @@
 #include "engravingitem.h"
 
 namespace mu::engraving {
-class ChordBracket final : public Arpeggio {
+struct ChordBracket final : Arpeggio {
+private:
     OBJECT_ALLOCATOR(engraving, ChordBracket)
     DECLARE_CLASSOF(ElementType::CHORD_BRACKET)
 
@@ -46,7 +47,7 @@ public:
     bool right_side() const { return right_side_; }
 
 private:
-    friend class Factory;
+    friend struct Factory;
 
     ChordBracket(DummyParentOr<Chord> parent);
 

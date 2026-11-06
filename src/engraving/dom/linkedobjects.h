@@ -27,7 +27,8 @@
 #include "engravingobject.h"
 
 namespace mu::engraving {
-class LinkedObjects : public std::list<EngravingObject *> {
+struct LinkedObjects : std::list<EngravingObject *> {
+private:
     OBJECT_ALLOCATOR(engraving, LinkedObjects)
 
 public:

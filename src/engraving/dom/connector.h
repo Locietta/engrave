@@ -31,9 +31,9 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class EngravingItem;
-class EngravingObject;
-class Score;
+struct EngravingItem;
+struct EngravingObject;
+struct Score;
 
 //---------------------------------------------------------
 //   @@ ConnectorInfo
@@ -44,7 +44,8 @@ class Score;
 ///    such elements.
 //---------------------------------------------------------
 
-class ConnectorInfo {
+struct ConnectorInfo {
+private:
     OBJECT_ALLOCATOR(engraving, ConnectorInfo)
 
 public:

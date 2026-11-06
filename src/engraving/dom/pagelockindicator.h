@@ -25,9 +25,10 @@
 #include "indicatoricon.h"
 
 namespace mu::engraving {
-class RangeLock;
+struct RangeLock;
 
-class PageLockIndicator : public IndicatorIcon {
+struct PageLockIndicator : IndicatorIcon {
+private:
     OBJECT_ALLOCATOR(engraving, PageLockIndicator)
     DECLARE_CLASSOF(ElementType::PAGE_LOCK_INDICATOR)
 

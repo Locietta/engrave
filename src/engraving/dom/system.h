@@ -31,22 +31,21 @@
 #include "instrumentname.h"
 
 namespace mu::engraving {
-class Box;
-class Bracket;
-class InstrumentName;
-class MeasureBase;
-class Page;
-class SpannerSegment;
-class StaffVisibilityIndicator;
-class RangeLock;
+struct Box;
+struct Bracket;
+struct InstrumentName;
+struct MeasureBase;
+struct Page;
+struct SpannerSegment;
+struct StaffVisibilityIndicator;
+struct RangeLock;
 
 //---------------------------------------------------------
 //   SysStaff
 ///  One staff in a System.
 //---------------------------------------------------------
 
-class SysStaff {
-public:
+struct SysStaff {
     SysStaff() {}
 
     ~SysStaff();
@@ -107,7 +106,8 @@ private:
 ///    a complete piece of the timeline.
 //---------------------------------------------------------
 
-class System final : public EngravingItem {
+struct System final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, System)
     DECLARE_CLASSOF(ElementType::SYSTEM)
 
@@ -308,7 +308,7 @@ public:
     DECLARE_LAYOUTDATA_METHODS(System)
 
 private:
-    friend class Factory;
+    friend struct Factory;
 
     System(Score *parent);
 

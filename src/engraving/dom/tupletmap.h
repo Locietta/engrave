@@ -25,7 +25,7 @@
 #include <vector>
 
 namespace mu::engraving {
-class Tuplet;
+struct Tuplet;
 
 //---------------------------------------------------------
 //   Tuplet2
@@ -42,8 +42,7 @@ struct Tuplet2 {
 //   TupletMap
 //---------------------------------------------------------
 
-class TupletMap {
-public:
+struct TupletMap {
     TupletMap() {}
 
     Tuplet *find_new(Tuplet *o);

@@ -58,12 +58,12 @@
 
 namespace mu::engraving {
 enum class Key : signed char;
-class Staff;
-class Score;
-class TDuration;
-class DurationElement;
-class Measure;
-class KeyList;
+struct Staff;
+struct Score;
+struct TDuration;
+struct DurationElement;
+struct Measure;
+struct KeyList;
 } // namespace mu::engraving
 
 namespace mu::iex::midi {
@@ -100,12 +100,12 @@ MidiOperations::TimeSigNumerator fraction_numerator_to_user_value(int n);
 MidiOperations::TimeSigDenominator fraction_denominator_to_user_value(int z);
 } // namespace Meter
 
-class MidiTrack;
-class MidiChord;
-class MidiEvent;
+struct MidiTrack;
+struct MidiChord;
+struct MidiEvent;
 
-class MTrack {
-public: // chords store tuplet iterators, so we need to copy class explicitly
+struct MTrack {
+    // chords store tuplet iterators, so we need to copy class explicitly
     MTrack() = default;
     MTrack(const MTrack &other);
     MTrack &operator=(MTrack other);

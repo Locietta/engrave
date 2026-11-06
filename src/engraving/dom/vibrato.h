@@ -26,13 +26,14 @@
 #include "line.h"
 
 namespace mu::engraving {
-class Vibrato;
+struct Vibrato;
 
 //---------------------------------------------------------
 //   @@ VibratoSegment
 //---------------------------------------------------------
 
-class VibratoSegment final : public LineSegment {
+struct VibratoSegment final : LineSegment {
+private:
     OBJECT_ALLOCATOR(engraving, VibratoSegment)
     DECLARE_CLASSOF(ElementType::VIBRATO_SEGMENT)
 
@@ -60,7 +61,8 @@ private:
 //   Vibrato
 //---------------------------------------------------------
 
-class Vibrato final : public SLine {
+struct Vibrato final : SLine {
+private:
     OBJECT_ALLOCATOR(engraving, Vibrato)
     DECLARE_CLASSOF(ElementType::VIBRATO)
 

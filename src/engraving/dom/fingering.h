@@ -28,13 +28,14 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class Note;
+struct Note;
 
 //---------------------------------------------------------
 //   @@ Fingering
 //---------------------------------------------------------
 
-class Fingering final : public TextBase {
+struct Fingering final : TextBase {
+private:
     OBJECT_ALLOCATOR(engraving, Fingering)
     DECLARE_CLASSOF(ElementType::FINGERING)
 

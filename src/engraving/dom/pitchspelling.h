@@ -26,8 +26,8 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class MidiNote;
-class Note;
+struct MidiNote;
+struct Note;
 enum class Key : signed char;
 
 static constexpr int invalid_pitch = -1;

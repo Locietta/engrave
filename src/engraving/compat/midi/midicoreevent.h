@@ -156,7 +156,8 @@ enum CntrType {
 //   MidiCoreEvent
 //---------------------------------------------------------
 
-class MidiCoreEvent {
+struct MidiCoreEvent {
+private:
     OBJECT_ALLOCATOR(engraving, MidiCoreEvent)
 protected:
     uint8_t type_value = 0;

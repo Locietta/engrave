@@ -26,13 +26,14 @@
 #include "chordtextlinebase.h"
 
 namespace mu::engraving {
-class HarmonicMark;
+struct HarmonicMark;
 
 //---------------------------------------------------------
 //   @@ HarmonicMarkSegment
 //---------------------------------------------------------
 
-class HarmonicMarkSegment final : public TextLineBaseSegment {
+struct HarmonicMarkSegment final : TextLineBaseSegment {
+private:
     OBJECT_ALLOCATOR(engraving, HarmonicMarkSegment)
     DECLARE_CLASSOF(ElementType::HARMONIC_MARK_SEGMENT)
 
@@ -43,14 +44,15 @@ public:
 
     HarmonicMark *harmonic_mark() const { return (HarmonicMark *) spanner(); }
 
-    friend class HarmonicMark;
+    friend struct HarmonicMark;
 };
 
 //---------------------------------------------------------
 //   @@ HarmonicMark
 //---------------------------------------------------------
 
-class HarmonicMark final : public ChordTextLineBase {
+struct HarmonicMark final : ChordTextLineBase {
+private:
     OBJECT_ALLOCATOR(engraving, HarmonicMark)
     DECLARE_CLASSOF(ElementType::HARMONIC_MARK)
 

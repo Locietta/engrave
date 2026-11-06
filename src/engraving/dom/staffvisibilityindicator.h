@@ -25,7 +25,8 @@
 #include "indicatoricon.h"
 
 namespace mu::engraving {
-class StaffVisibilityIndicator : public IndicatorIcon {
+struct StaffVisibilityIndicator : IndicatorIcon {
+private:
     OBJECT_ALLOCATOR(engraving, StaffVisibilityIndicator)
     DECLARE_CLASSOF(ElementType::STAFF_VISIBILITY_INDICATOR)
 

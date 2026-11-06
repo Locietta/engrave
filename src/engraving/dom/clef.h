@@ -31,9 +31,9 @@
 #include "engravingitem.h"
 
 namespace mu::engraving {
-class Transaction;
-class Factory;
-class Segment;
+struct Transaction;
+struct Factory;
+struct Segment;
 
 static const int no_clef = -1000;
 
@@ -89,7 +89,8 @@ struct ClefInfo {
 //   @P isSmall       bool    small, mid-staff clef (read only, set by layout)
 //---------------------------------------------------------
 
-class Clef final : public EngravingItem {
+struct Clef final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, Clef)
     DECLARE_CLASSOF(ElementType::CLEF)
 
@@ -183,7 +184,7 @@ public:
 
 private:
 
-    friend class Factory;
+    friend struct Factory;
     Clef(DummyParentOr<Segment> parent);
 
     bool show_courtesy_ = true;

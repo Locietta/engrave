@@ -46,8 +46,7 @@ inline bool geometry_is_equal(T a1, T a2) {
 // Point
 // ====================================
 template <typename T>
-class PointX {
-public:
+struct PointX {
     inline PointX() = default;
 
     inline PointX(T x, T y) : x_(x), y_(y) {}
@@ -177,8 +176,7 @@ using PairF = std::pair<double, double>;
 // Line
 // ====================================
 template <typename T>
-class LineX {
-public:
+struct LineX {
     inline LineX() = default;
 
     inline LineX(const PointX<T> &p1, const PointX<T> &p2) : p1_(p1), p2_(p2) {}
@@ -234,8 +232,7 @@ using Line = LineX<int>;
 // Size
 // ====================================
 template <typename T>
-class SizeX {
-public:
+struct SizeX {
     inline SizeX() = default;
 
     inline SizeX(T w, T h) : w_(w), h_(h) {}
@@ -281,8 +278,7 @@ inline SizeX<T> operator/(const SizeX<T> &s, T c) {
 using Size = SizeX<int>;
 using SizeF = SizeX<double>;
 
-class ScaleF : public SizeX<double> {
-public:
+struct ScaleF : SizeX<double> {
     ScaleF() = default;
 
     ScaleF(double w, double h) : SizeX<double>(w, h) {}
@@ -292,8 +288,7 @@ public:
 // Rect
 // ====================================
 template <typename T>
-class RectX {
-public:
+struct RectX {
     inline RectX() = default;
 
     inline RectX(T x, T y, T w, T h) : x_(x), y_(y), w_(w), h_(h) {}
@@ -515,8 +510,7 @@ inline std::string dump(const RectX<T> &r) {
 
 using RectF = RectX<double>;
 
-class Rect : public RectX<int> {
-public:
+struct Rect : RectX<int> {
     inline Rect() : RectX<int>() {}
 
     inline Rect(int x, int y, int w, int h) : RectX<int>(x, y, w, h) {}
@@ -528,8 +522,7 @@ public:
 // Polygon
 // ====================================
 template <typename T>
-class PolygonX : public std::vector<PointX<T>> {
-public:
+struct PolygonX : std::vector<PointX<T>> {
 
     inline PolygonX() = default;
 

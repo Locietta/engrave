@@ -34,10 +34,9 @@
 #include "types/painterpath.h"
 
 namespace muse::draw {
-class Painter;
+struct Painter;
 
-class IPaintProvider {
-public:
+struct IPaintProvider {
     virtual ~IPaintProvider() = default;
 
     virtual bool is_active() const = 0;

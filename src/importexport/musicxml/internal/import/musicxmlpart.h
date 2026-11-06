@@ -25,8 +25,7 @@
 #include "musicxmlvoicedesc.h"
 
 namespace mu::iex::musicxml {
-class MusicXmlOctaveShiftList : public std::map<engraving::Fraction, int> {
-public:
+struct MusicXmlOctaveShiftList : std::map<engraving::Fraction, int> {
     MusicXmlOctaveShiftList() {}
 
     int octave_shift(const engraving::Fraction f) const;
@@ -34,8 +33,7 @@ public:
     void calc_octave_shift_shifts();
 };
 
-class MusicXmlPart {
-public:
+struct MusicXmlPart {
     MusicXmlPart(muse::String id = {}, muse::String name = {});
     void add_measure_number_and_duration(muse::String measure_number, engraving::Fraction measure_duration);
 

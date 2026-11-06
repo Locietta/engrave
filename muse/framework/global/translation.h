@@ -24,7 +24,7 @@
 #include <string>
 
 namespace muse {
-class String;
+struct String;
 
 std::string trc(const char *context, const char *key, const char *disambiguation = nullptr, int n = -1);
 

@@ -23,11 +23,10 @@
 #pragma once
 
 namespace mu::engraving {
-class Score;
-class Transaction;
+struct Score;
+struct Transaction;
 
-class EditSlashNotation {
-public:
+struct EditSlashNotation {
     /// Fills the selected region with slashes.
     static void slash_fill(Transaction &tx, Score *score);
     /// Converts rhythms in the selected region to slashes.

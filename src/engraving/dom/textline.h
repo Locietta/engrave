@@ -26,13 +26,14 @@
 #include "textlinebase.h"
 
 namespace mu::engraving {
-class Note;
+struct Note;
 
 //---------------------------------------------------------
 //   @@ TextLineSegment
 //---------------------------------------------------------
 
-class TextLineSegment final : public TextLineBaseSegment {
+struct TextLineSegment final : TextLineBaseSegment {
+private:
     OBJECT_ALLOCATOR(engraving, TextLineSegment)
     DECLARE_CLASSOF(ElementType::TEXTLINE_SEGMENT)
 
@@ -52,7 +53,8 @@ public:
 //   @@ TextLine
 //---------------------------------------------------------
 
-class TextLine final : public TextLineBase {
+struct TextLine final : TextLineBase {
+private:
     OBJECT_ALLOCATOR(engraving, TextLine)
     DECLARE_CLASSOF(ElementType::TEXTLINE)
 

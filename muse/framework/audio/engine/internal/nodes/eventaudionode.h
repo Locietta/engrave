@@ -30,8 +30,7 @@
 #include "../iaudiofactory.h"
 
 namespace muse::audio::engine {
-class EventAudioNode : public AudioSourceNode {
-public:
+struct EventAudioNode : AudioSourceNode {
     // audioFactory makes the synthesizer for the input params; it must outlive the node.
     EventAudioNode(const IAudioFactory &audio_factory, TrackId track_id, const mpe::PlaybackData &playback_data);
 

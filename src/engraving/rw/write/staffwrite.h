@@ -25,13 +25,12 @@
 #include "writecontext.h"
 
 namespace mu::engraving {
-class Staff;
-class MeasureBase;
+struct Staff;
+struct MeasureBase;
 } // namespace mu::engraving
 
 namespace mu::engraving::write {
-class StaffWrite {
-public:
+struct StaffWrite {
 
     static void write_staff(const Staff *staff, XmlWriter &xml, WriteContext &ctx, MeasureBase *measure_start, MeasureBase *measure_end,
                             staff_idx_t staff_start, staff_idx_t staff_idx);

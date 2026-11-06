@@ -41,7 +41,7 @@
 namespace mu::engraving {
 struct Interval;
 struct NoteVal;
-class TDuration;
+struct TDuration;
 } // namespace mu::engraving
 
 namespace mu::iex::mnxio {

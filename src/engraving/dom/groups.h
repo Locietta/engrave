@@ -30,15 +30,14 @@
 #include "durationtype.h"
 
 namespace mu::engraving {
-class ChordRest;
+struct ChordRest;
 
 //---------------------------------------------------------
 //   @@ Groups
 ///    GroupNodes must be sorted by tick
 //---------------------------------------------------------
 
-class Groups {
-public:
+struct Groups {
     Groups() {}
 
     Groups(const GroupNodes &nodes) : nodes_(nodes) {}

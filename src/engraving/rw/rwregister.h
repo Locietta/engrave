@@ -26,8 +26,7 @@
 #include "iwriter.h"
 
 namespace mu::engraving::rw {
-class RWRegister {
-public:
+struct RWRegister {
 
     static IReaderPtr reader(int version = -1);
 

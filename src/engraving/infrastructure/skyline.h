@@ -31,18 +31,17 @@
 #include "shape.h"
 
 namespace muse::draw {
-class Painter;
+struct Painter;
 } // namespace muse::draw
 
 namespace mu::engraving {
-class Segment;
+struct Segment;
 
 //---------------------------------------------------------
 //   SkylineLine
 //---------------------------------------------------------
 
-class SkylineLine {
-public:
+struct SkylineLine {
     SkylineLine(bool n) : is_north_(n) {}
 
     void add(const ShapeElement &r);
@@ -104,7 +103,8 @@ private:
 //   Skyline
 //---------------------------------------------------------
 
-class Skyline {
+struct Skyline {
+private:
     SkylineLine north_value;
     SkylineLine south_value;
 

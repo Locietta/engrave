@@ -28,7 +28,8 @@
 #include "dom/arpeggio.h"
 
 namespace mu::engraving::rendering::score {
-class ArpeggioLayout {
+struct ArpeggioLayout {
+private:
     static constexpr int arbitrary_arpeggio_length = INT_MAX;
 public:
 

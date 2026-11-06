@@ -26,8 +26,7 @@
 #include "io/path.h"
 
 namespace mu::iex::musicxml {
-class IMusicXmlConfiguration {
-public:
+struct IMusicXmlConfiguration {
     virtual ~IMusicXmlConfiguration() = default;
 
     virtual bool import_breaks() const = 0;

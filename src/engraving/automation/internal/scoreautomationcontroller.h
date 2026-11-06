@@ -33,25 +33,24 @@
 #include "engraving/types/types.h"
 
 namespace mu::engraving {
-class Score;
-class Fraction;
-class EngravingItem;
-class Measure;
-class Segment;
-class Dynamic;
-class Fermata;
-class Hairpin;
-class TempoText;
-class GradualTempoChange;
-class Volta;
-class MeasureRepeat;
-class RepeatList;
-class RepeatSegment;
+struct Score;
+struct Fraction;
+struct EngravingItem;
+struct Measure;
+struct Segment;
+struct Dynamic;
+struct Fermata;
+struct Hairpin;
+struct TempoText;
+struct GradualTempoChange;
+struct Volta;
+struct MeasureRepeat;
+struct RepeatList;
+struct RepeatSegment;
 struct RepeatSegmentInfo;
 struct ScoreChanges;
 
-class ScoreAutomationController {
-public:
+struct ScoreAutomationController {
     void init(Score *score);
     void ensure_initialized(Score *score);
 

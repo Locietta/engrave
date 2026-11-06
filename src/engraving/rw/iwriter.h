@@ -31,22 +31,21 @@
 #include "xmlwriter.h"
 
 namespace mu::engraving {
-class Score;
-class EngravingItem;
-class Segment;
-class SelectionFilter;
+struct Score;
+struct EngravingItem;
+struct Segment;
+struct SelectionFilter;
 struct SelectedSymbol;
 } // namespace mu::engraving
 
 namespace mu::engraving::write {
-class WriteContext;
+struct WriteContext;
 } // namespace mu::engraving::write
 
 namespace mu::engraving::rw {
 struct WriteInOutData;
 
-class IWriter {
-public:
+struct IWriter {
     virtual ~IWriter() = default;
 
     virtual bool write_score(Score *score, muse::io::IODevice *device, WriteInOutData *out = nullptr) = 0;

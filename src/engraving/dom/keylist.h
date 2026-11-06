@@ -35,7 +35,8 @@ namespace mu::engraving {
 //    to keep track of key signature changes
 //---------------------------------------------------------
 
-class KeyList : public std::map<const int, KeySigEvent> {
+struct KeyList : std::map<const int, KeySigEvent> {
+private:
     OBJECT_ALLOCATOR(engraving, KeyList)
 public:
     KeyList() {}

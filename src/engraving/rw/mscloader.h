@@ -27,7 +27,7 @@
 #include "../infrastructure/mscreader.h"
 
 namespace mu::engraving::compat {
-class ReadStyleHook;
+struct ReadStyleHook;
 } // namespace mu::engraving::compat
 
 namespace mu::engraving::rw {
@@ -35,17 +35,16 @@ struct ReadInOutData;
 } // namespace mu::engraving::rw
 
 namespace mu::engraving {
-class MasterScore;
-class XmlReader;
+struct MasterScore;
+struct XmlReader;
 
-class MscLoader {
-public:
+struct MscLoader {
     MscLoader() = default;
 
     muse::Ret load_mscz(MasterScore *score, const MscReader &msc_reader, rw::ReadInOutData *out, bool ignore_version_error);
 
 private:
-    friend class MasterScore;
+    friend struct MasterScore;
     muse::Ret read_master_score(MasterScore *score, XmlReader &, bool ignore_version_error, rw::ReadInOutData *out = nullptr,
                                 compat::ReadStyleHook *style_hook = nullptr);
 };

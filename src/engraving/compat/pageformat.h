@@ -25,8 +25,8 @@
 #include "draw/types/geometry.h"
 
 namespace mu::engraving {
-class MStyle;
-class XmlReader;
+struct MStyle;
+struct XmlReader;
 } // namespace mu::engraving
 
 namespace mu::engraving::compat {
@@ -34,7 +34,8 @@ namespace mu::engraving::compat {
 //   @@ PageFormat
 //---------------------------------------------------------
 
-class PageFormat {
+struct PageFormat {
+private:
     muse::SizeF size_value;
     double printable_width_value;  // _width - left margin - right margin
     double even_left_margin_value; // values in inch

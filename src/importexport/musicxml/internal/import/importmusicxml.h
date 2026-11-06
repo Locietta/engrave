@@ -27,12 +27,12 @@
 #include "engraving/engravingerrors.h"
 
 namespace mu::engraving {
-class MasterScore;
-class Score;
+struct MasterScore;
+struct Score;
 } // namespace mu::engraving
 
 namespace mu::iex::musicxml {
-class IMusicXmlConfiguration;
+struct IMusicXmlConfiguration;
 
 engraving::Err import_music_xmlfrom_buffer(engraving::Score *score, const muse::String &, const muse::ByteArray &data,
                                            const IMusicXmlConfiguration &configuration);

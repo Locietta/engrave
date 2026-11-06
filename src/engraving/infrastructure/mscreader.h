@@ -28,12 +28,11 @@
 #include "mscio.h"
 
 namespace muse {
-class ZipReader;
+struct ZipReader;
 } // namespace muse
 
 namespace mu::engraving {
-class MscReader {
-public:
+struct MscReader {
 
     struct Params {
         muse::io::IODevice *device = nullptr;

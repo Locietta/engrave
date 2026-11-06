@@ -26,7 +26,7 @@
 #include "draw/types/painterpath.h"
 
 namespace mu::engraving {
-class Factory;
+struct Factory;
 
 //---------------------------------------------------------
 //   SpacerType
@@ -39,7 +39,8 @@ enum class SpacerType : char { UP, DOWN, FIXED };
 ///    Vertical spacer element to adjust the distance of staves.
 //-------------------------------------------------------------------
 
-class Spacer final : public EngravingItem {
+struct Spacer final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, Spacer)
     DECLARE_CLASSOF(ElementType::SPACER)
 
@@ -75,7 +76,7 @@ public:
 
 private:
 
-    friend class Factory;
+    friend struct Factory;
     Spacer(DummyParentOr<Measure> parent);
     Spacer(const Spacer &);
 

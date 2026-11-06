@@ -27,7 +27,8 @@
 #include "../dom/clef.h"
 
 namespace mu::engraving {
-class ChangeClefType : public UndoableCommand {
+struct ChangeClefType : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeClefType)
 
     Clef *clef = nullptr;
@@ -44,14 +45,13 @@ public:
     UNDO_CHANGED_OBJECTS({clef})
 };
 
-class ChordRest;
-class EngravingItem;
-class Score;
-class Staff;
-class Transaction;
+struct ChordRest;
+struct EngravingItem;
+struct Score;
+struct Staff;
+struct Transaction;
 
-class EditClef {
-public:
+struct EditClef {
     static bool can_insert_clef(const Score *score, ClefType type);
     static void insert_clef(Transaction &tx, Score *score, ClefType type);
     static void insert_clef(Transaction &tx, Score *score, Clef *clef, ChordRest *cr);

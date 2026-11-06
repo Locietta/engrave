@@ -27,9 +27,9 @@
 #include "bsymbol.h"
 
 namespace muse::draw {
-class IImageProvider;
-class Pixmap;
-class SvgRenderer;
+struct IImageProvider;
+struct Pixmap;
+struct SvgRenderer;
 } // namespace muse::draw
 
 namespace muse::io {
@@ -37,7 +37,7 @@ struct PathT;
 } // namespace muse::io
 
 namespace mu::engraving {
-class ImageStoreItem;
+struct ImageStoreItem;
 
 enum class ImageType : char { NONE, RASTER, SVG };
 
@@ -45,7 +45,8 @@ enum class ImageType : char { NONE, RASTER, SVG };
 //   @@ Image
 //---------------------------------------------------------
 
-class Image final : public BSymbol {
+struct Image final : BSymbol {
+private:
     OBJECT_ALLOCATOR(engraving, Image)
     DECLARE_CLASSOF(ElementType::IMAGE)
 

@@ -30,10 +30,9 @@
 #include "global/io/iodevice.h"
 
 namespace muse {
-class TextStream;
+struct TextStream;
 
-class XmlStreamWriter {
-public:
+struct XmlStreamWriter {
     XmlStreamWriter();
     explicit XmlStreamWriter(io::IODevice *dev);
     virtual ~XmlStreamWriter();

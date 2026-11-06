@@ -26,10 +26,9 @@
 #include "metaparserbase.h"
 
 namespace mu::engraving {
-class Note;
+struct Note;
 
-class NoteArticulationsParser : public MetaParserBase<NoteArticulationsParser> {
-public:
+struct NoteArticulationsParser : MetaParserBase<NoteArticulationsParser> {
     static void build_note_articulation_map(const Note *note, const RenderingContext &ctx, muse::mpe::ArticulationMap &result);
 
     static void parse_playing_technique(const RenderingContext &ctx, const track_idx_t track_idx, muse::mpe::ArticulationMap &result,

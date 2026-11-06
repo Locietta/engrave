@@ -29,12 +29,10 @@
 #include "isynthesizer.h"
 
 namespace muse::audio::synth {
-class ISynthResolver {
-public:
+struct ISynthResolver {
     virtual ~ISynthResolver() = default;
 
-    class IResolver {
-    public:
+    struct IResolver {
         virtual ~IResolver() = default;
 
         virtual ISynthesizerPtr resolve_synth(const TrackId track_id, const AudioInputParams &params,

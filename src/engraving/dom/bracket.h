@@ -26,9 +26,9 @@
 #include "bracketitem.h"
 
 namespace mu::engraving {
-class Factory;
-class System;
-class Transaction;
+struct Factory;
+struct System;
+struct Transaction;
 enum class BracketType : signed char;
 enum class InstrumentNameType : char;
 
@@ -36,7 +36,8 @@ enum class InstrumentNameType : char;
 //   @@ Bracket
 //---------------------------------------------------------
 
-class Bracket final : public EngravingItem {
+struct Bracket final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, Bracket)
     DECLARE_CLASSOF(ElementType::BRACKET)
 
@@ -121,7 +122,7 @@ public:
     DECLARE_LAYOUTDATA_METHODS(Bracket)
 
 private:
-    friend class Factory;
+    friend struct Factory;
 
     Bracket(DummyParentOr<EngravingItem> parent);
 

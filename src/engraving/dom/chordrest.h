@@ -32,16 +32,16 @@
 namespace mu::engraving {
 enum class CrossMeasure : signed char { UNKNOWN = -1, NONE = 0, FIRST, SECOND };
 
-class Articulation;
-class BeamBase;
-class BeamSegment;
-class Lyrics;
-class Measure;
-class Score;
-class Segment;
-class Slur;
-class TabDurationSymbol;
-class Transaction;
+struct Articulation;
+struct BeamBase;
+struct BeamSegment;
+struct Lyrics;
+struct Measure;
+struct Score;
+struct Segment;
+struct Slur;
+struct TabDurationSymbol;
+struct Transaction;
 enum class SegmentType;
 
 //-------------------------------------------------------------------
@@ -49,7 +49,8 @@ enum class SegmentType;
 //    Virtual base class. Chords and rests can be part of a beam
 //-------------------------------------------------------------------
 
-class ChordRest : public DurationElement {
+struct ChordRest : DurationElement {
+private:
     OBJECT_ALLOCATOR(engraving, ChordRest)
     DECLARE_CLASSOF(ElementType::INVALID) // dummy
 

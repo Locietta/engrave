@@ -26,13 +26,14 @@
 #include "chordtextlinebase.h"
 
 namespace mu::engraving {
-class WhammyBar;
+struct WhammyBar;
 
 //---------------------------------------------------------
 //   @@ WhammyBarSegment
 //---------------------------------------------------------
 
-class WhammyBarSegment final : public TextLineBaseSegment {
+struct WhammyBarSegment final : TextLineBaseSegment {
+private:
     OBJECT_ALLOCATOR(engraving, WhammyBarSegment)
     DECLARE_CLASSOF(ElementType::WHAMMY_BAR_SEGMENT)
 
@@ -43,14 +44,15 @@ public:
 
     WhammyBar *whammy_bar() const { return (WhammyBar *) spanner(); }
 
-    friend class WhammyBar;
+    friend struct WhammyBar;
 };
 
 //---------------------------------------------------------
 //   @@ WhammyBar
 //---------------------------------------------------------
 
-class WhammyBar final : public ChordTextLineBase {
+struct WhammyBar final : ChordTextLineBase {
+private:
     OBJECT_ALLOCATOR(engraving, WhammyBar)
     DECLARE_CLASSOF(ElementType::WHAMMY_BAR)
 

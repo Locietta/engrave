@@ -26,7 +26,7 @@
 #include "playback/metaparsers/metaparserbase.h"
 
 namespace mu::engraving {
-class AnnotationsMetaParser : public MetaParserBase<AnnotationsMetaParser> {
+struct AnnotationsMetaParser : MetaParserBase<AnnotationsMetaParser> {
 protected:
     friend MetaParserBase;
 

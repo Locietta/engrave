@@ -28,8 +28,7 @@
 #include "gpdommodel.h"
 
 namespace mu::iex::guitarpro {
-class IGPDomBuilder {
-public:
+struct IGPDomBuilder {
     virtual ~IGPDomBuilder() = default;
     virtual void build_gp_dom_model(muse::XmlDomElement *dom_elem) = 0;
     virtual std::unique_ptr<GPDomModel> get_gp_dom_model() = 0;

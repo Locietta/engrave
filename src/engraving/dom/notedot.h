@@ -26,15 +26,16 @@
 #include "engravingitem.h"
 
 namespace mu::engraving {
-class Factory;
-class Note;
-class Rest;
+struct Factory;
+struct Note;
+struct Rest;
 
 //---------------------------------------------------------
 //   @@ NoteDot
 //---------------------------------------------------------
 
-class NoteDot final : public EngravingItem {
+struct NoteDot final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, NoteDot)
     DECLARE_CLASSOF(ElementType::NOTEDOT)
 
@@ -51,7 +52,7 @@ public:
     EngravingItem *element_base() const override;
 
 private:
-    friend class Factory;
+    friend struct Factory;
     NoteDot(DummyParentOr<Note> parent);
     NoteDot(Rest *parent);
 };

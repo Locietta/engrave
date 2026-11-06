@@ -25,14 +25,13 @@
 #include <vector>
 
 namespace mu::engraving {
-class MasterScore;
-class EngravingItem;
-class System;
+struct MasterScore;
+struct EngravingItem;
+struct System;
 } // namespace mu::engraving
 
 namespace mu::engraving::compat {
-class EngravingCompat {
-public:
+struct EngravingCompat {
     static void do_pre_layout_compat_if_needed(MasterScore *score);
     static void do_post_layout_compat_if_needed(MasterScore *score);
 
@@ -58,8 +57,7 @@ private:
     static void apply_pre400_style_compat(MasterScore *master_score);
 };
 
-class AlignmentMigration500 {
-public:
+struct AlignmentMigration500 {
     static void migrate_snapped_and_same_item_type_alignment(MasterScore *master_score);
     static void migrate_hopo_letter_alignment(MasterScore *master_score);
 private:

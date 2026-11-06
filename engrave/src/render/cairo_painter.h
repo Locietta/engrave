@@ -20,7 +20,7 @@ struct _cairo;
 typedef struct _cairo cairo_t;
 
 namespace muse::draw {
-class IFontsDatabase;
+struct IFontsDatabase;
 
 struct CairoPainter final : IPaintProvider {
     /*! deviceDpi is the logical DPI of the Cairo target (the value

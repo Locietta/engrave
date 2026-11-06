@@ -30,8 +30,8 @@
 #include "engraving/compat/midi/compatmidirenderinternal.h"
 
 namespace mu::engraving {
-class Score;
-class SynthesizerState;
+struct Score;
+struct SynthesizerState;
 } // namespace mu::engraving
 
 namespace mu::iex::midi {
@@ -41,8 +41,7 @@ using MidiPath = muse::io::PathT;
 //   ExportMidi
 //---------------------------------------------------------
 
-class ExportMidi {
-public:
+struct ExportMidi {
     ExportMidi(engraving::Score *s) { score_ = s; }
 
     bool write(const MidiPath &name, bool midi_expand_repeats, bool export_rp_ns);

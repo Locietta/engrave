@@ -29,10 +29,10 @@
 #include "types/string.h"
 
 namespace mu::engraving {
-class SynthesizerState;
+struct SynthesizerState;
 
-class XmlWriter;
-class XmlReader;
+struct XmlWriter;
+struct XmlReader;
 
 //---------------------------------------------------------
 //   IdValue
@@ -51,7 +51,8 @@ struct IdValue {
 //   SynthesizerGroup
 //---------------------------------------------------------
 
-class SynthesizerGroup : public std::list<IdValue> {
+struct SynthesizerGroup : std::list<IdValue> {
+private:
     OBJECT_ALLOCATOR(engraving, SynthesizerGroup)
 
 public:
@@ -71,7 +72,8 @@ private:
 //   SynthesizerState
 //---------------------------------------------------------
 
-class SynthesizerState : public std::list<SynthesizerGroup> {
+struct SynthesizerState : std::list<SynthesizerGroup> {
+private:
     OBJECT_ALLOCATOR(engraving, SynthesizerState)
 
 public:

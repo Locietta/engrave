@@ -31,8 +31,7 @@ struct SignalTag {
 } // namespace muse::audio
 
 namespace muse::audio::engine {
-class SignalNode : public AudioNode<SignalTag> {
-public:
+struct SignalNode : AudioNode<SignalTag> {
 
     bool is_silent() const;
 

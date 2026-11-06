@@ -32,7 +32,8 @@ namespace mu::engraving {
 ///   Reimplemented by MMRestRange
 //---------------------------------------------------------
 
-class MeasureNumberBase : public TextBase {
+struct MeasureNumberBase : TextBase {
+private:
     OBJECT_ALLOCATOR(engraving, MeasureNumberBase)
 public:
     MeasureNumberBase(const ElementType &type, DummyParentOr<Measure> parent, TextStyleType = TextStyleType::DEFAULT);

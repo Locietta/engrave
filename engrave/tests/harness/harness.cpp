@@ -169,8 +169,7 @@ void on_push(UndoableCommand *command, bool appended) {
     }
 }
 
-class PushHook {
-public:
+struct PushHook {
     PushHook(Inject mode, std::size_t at) {
         g_pushes = {mode, at};
         mu::engraving::Transaction::set_push_hook(on_push);

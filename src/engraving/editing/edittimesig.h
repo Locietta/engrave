@@ -25,14 +25,13 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class Fraction;
-class Measure;
-class Score;
-class TimeSig;
-class Transaction;
+struct Fraction;
+struct Measure;
+struct Score;
+struct TimeSig;
+struct Transaction;
 
-class EditTimeSig {
-public:
+struct EditTimeSig {
     static void add_time_sig(Transaction &tx, Score *score, Measure *fm, staff_idx_t staff_idx, TimeSig *ts, bool local);
     static void remove_time_sig(Transaction &tx, Score *score, TimeSig *ts);
 

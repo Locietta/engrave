@@ -31,15 +31,14 @@
 */
 
 namespace mu::engraving {
-class Score;
+struct Score;
 
 //---------------------------------------------------
 //   PauseMap
 //    MIDI files cannot contain pauses so need to insert
 //    extra ticks extra ticks and tempo changes instead.
 //---------------------------------------------------
-class PauseMap : std::map<int, int> {
-public:
+struct PauseMap : private std::map<int, int> {
     void calculate(const engraving::Score *s);
 
     inline int tick_with_pauses(int utick) const { return utick + offset_at_u_tick(utick); }

@@ -34,11 +34,11 @@
 #include "velocitymap.h"
 
 namespace mu::engraving {
-class EventsHolder;
-class MasterScore;
-class Staff;
-class Instrument;
-class Chord;
+struct EventsHolder;
+struct MasterScore;
+struct Staff;
+struct Instrument;
+struct Chord;
 
 // This struct specifies how to render an articulation.
 //   atype - the articulation type to implement, such as SymId::ornamentTurn
@@ -135,8 +135,7 @@ static const std::vector<OrnamentExcursion> excursions = {
 ///   MIDI renderer for a score
 //---------------------------------------------------------
 
-class CompatMidiRendererInternal {
-public:
+struct CompatMidiRendererInternal {
 
     //! @brief helper structure to find channel
     struct ChannelLookup {

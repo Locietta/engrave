@@ -24,8 +24,7 @@
 #include "../isinglerenderer.h"
 
 namespace mu::engraving::rendering::single {
-class SingleRenderer : public ISingleRenderer {
-public:
+struct SingleRenderer : ISingleRenderer {
     SingleRenderer() = default;
 
     void layout_item(EngravingItem *item) override;

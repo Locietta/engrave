@@ -25,8 +25,7 @@
 #include "layoutcontext.h"
 
 namespace mu::engraving::rendering::score {
-class ScorePageViewLayout {
-public:
+struct ScorePageViewLayout {
 
     static void layout_page_view(Score *score, LayoutContext &ctx, const Fraction &stick, const Fraction &etick);
     static void layout_headers_footers(LayoutContext &ctx);

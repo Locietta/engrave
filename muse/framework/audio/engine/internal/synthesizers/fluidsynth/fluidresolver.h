@@ -33,8 +33,7 @@
 #include "fluidsynth.h"
 
 namespace muse::audio::synth {
-class FluidResolver : public ISynthResolver::IResolver {
-public:
+struct FluidResolver : ISynthResolver::IResolver {
     // The repository, configuration and MIDI port (optional: it receives the
     // events every synthesizer handles) must outlive the resolver.
     FluidResolver(const ISoundFontRepository &sound_font_repository, const engine::IAudioEngineConfiguration &config,

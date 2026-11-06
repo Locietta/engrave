@@ -27,7 +27,8 @@
 #include "../dom/score.h"
 
 namespace mu::engraving {
-class ChangeMetaTags : public UndoableCommand {
+struct ChangeMetaTags : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeMetaTags)
 
     Score *score = nullptr;
@@ -43,7 +44,8 @@ public:
     UNDO_CHANGED_OBJECTS({score})
 };
 
-class ChangeMetaText : public UndoableCommand {
+struct ChangeMetaText : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeMetaText)
 
     Score *score = nullptr;
@@ -60,7 +62,8 @@ public:
     UNDO_CHANGED_OBJECTS({score})
 };
 
-class ChangeScoreOrder : public UndoableCommand {
+struct ChangeScoreOrder : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeScoreOrder)
 
     Score *score = nullptr;
@@ -75,7 +78,8 @@ public:
     UNDO_CHANGED_OBJECTS({score})
 };
 
-class ChangePageNumberOffset : public UndoableCommand {
+struct ChangePageNumberOffset : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangePageNumberOffset)
 
     Score *score = nullptr;

@@ -29,13 +29,14 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class Factory;
+struct Factory;
 
 //---------------------------------------------------------
 //   @@ Ambitus
 //---------------------------------------------------------
 
-class Ambitus final : public EngravingItem {
+struct Ambitus final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, Ambitus)
     DECLARE_CLASSOF(ElementType::AMBITUS)
 
@@ -129,7 +130,7 @@ public:
 
 private:
 
-    friend class Factory;
+    friend struct Factory;
     Ambitus(DummyParentOr<Segment> parent);
     Ambitus(const Ambitus &a);
 

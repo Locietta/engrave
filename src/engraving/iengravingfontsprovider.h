@@ -31,8 +31,7 @@
 #include "iengravingfont.h"
 
 namespace mu::engraving {
-class IEngravingFontsProvider {
-public:
+struct IEngravingFontsProvider {
     virtual ~IEngravingFontsProvider() = default;
 
     virtual void add_internal_font(const std::string &name, const std::string &family, const muse::io::PathT &file_path) = 0;

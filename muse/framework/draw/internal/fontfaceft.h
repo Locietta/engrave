@@ -28,8 +28,7 @@ struct FData;
 struct GlyphMetrics;
 struct SymbolMetrics;
 
-class FontFaceFT : public IFontFace {
-public:
+struct FontFaceFT : IFontFace {
 
     FontFaceFT();
     ~FontFaceFT();

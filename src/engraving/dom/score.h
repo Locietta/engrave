@@ -61,88 +61,88 @@
 #include "tuplet.h"
 
 namespace mu::engraving {
-class IMimeData;
+struct IMimeData;
 } // namespace mu::engraving
 
 namespace mu::engraving::read114 {
-class Read114;
+struct Read114;
 } // namespace mu::engraving::read114
 
 namespace mu::engraving::read302 {
-class Read302;
+struct Read302;
 } // namespace mu::engraving::read302
 
 namespace mu::engraving::read400 {
-class Read400;
+struct Read400;
 } // namespace mu::engraving::read400
 
 namespace mu::engraving::read410 {
-class Read410;
+struct Read410;
 } // namespace mu::engraving::read410
 
 namespace mu::engraving::read460 {
-class Read460;
+struct Read460;
 } // namespace mu::engraving::read460
 
 namespace mu::engraving::read500 {
-class Read500;
+struct Read500;
 } // namespace mu::engraving::read500
 
 namespace mu::engraving::write {
-class Writer;
+struct Writer;
 } // namespace mu::engraving::write
 
 namespace mu::engraving::compat {
-class WriteScoreHook;
+struct WriteScoreHook;
 } // namespace mu::engraving::compat
 
 namespace mu::engraving {
-class Articulation;
-class Box;
-class Bracket;
-class Chord;
-class ChordRest;
-class Element;
-class EventsHolder;
-class Excerpt;
-class FiguredBass;
-class Harmony;
-class InstrumentTemplate;
-class InputState;
-class KeyList;
-class KeySigEvent;
-class LinkedObjects;
-class Lyrics;
-class MasterScore;
-class Measure;
-class MeasureBase;
-class Note;
-class Page;
-class Part;
-class RehearsalMark;
-class RepeatList;
+struct Articulation;
+struct Box;
+struct Bracket;
+struct Chord;
+struct ChordRest;
+struct Element;
+struct EventsHolder;
+struct Excerpt;
+struct FiguredBass;
+struct Harmony;
+struct InstrumentTemplate;
+struct InputState;
+struct KeyList;
+struct KeySigEvent;
+struct LinkedObjects;
+struct Lyrics;
+struct MasterScore;
+struct Measure;
+struct MeasureBase;
+struct Note;
+struct Page;
+struct Part;
+struct RehearsalMark;
+struct RepeatList;
 struct RepeatSegmentInfo;
-class Rest;
-class RootItem;
-class Score;
-class IEngravingFont;
-class Segment;
-class Slur;
-class Spanner;
-class Staff;
-class System;
-class TDuration;
-class TempoTimeline;
-class Text;
-class TimeSig;
-class TimeSigMap;
-class Transaction;
-class TransactionManager;
-class Tuplet;
-class UndoableCommand;
-class UndoStack;
+struct Rest;
+struct RootItem;
+struct Score;
+struct IEngravingFont;
+struct Segment;
+struct Slur;
+struct Spanner;
+struct Staff;
+struct System;
+struct TDuration;
+struct TempoTimeline;
+struct Text;
+struct TimeSig;
+struct TimeSigMap;
+struct Transaction;
+struct TransactionManager;
+struct Tuplet;
+struct UndoableCommand;
+struct UndoStack;
 
-class ShadowNote;
+struct ShadowNote;
 
 struct Interval;
 struct NoteVal;
@@ -234,8 +234,7 @@ struct ScoreChanges {
 // A cache that follows the committed changes of a master score (the playback
 // model). MasterScore calls it synchronously, in registration order, when a
 // transaction commits or an undo/redo completes.
-class IScoreChangesListener {
-public:
+struct IScoreChangesListener {
     virtual ~IScoreChangesListener() = default;
     virtual void on_score_changes(const ScoreChanges &changes) = 0;
 };
@@ -266,7 +265,8 @@ public:
 //    a Score has always an associated MasterScore
 //---------------------------------------------------------------------------------------
 
-class Score : public EngravingObject {
+struct Score : EngravingObject {
+private:
     OBJECT_ALLOCATOR(engraving, Score)
     DECLARE_CLASSOF(ElementType::SCORE)
 
@@ -949,7 +949,7 @@ public:
     virtual AutomationDataConstPtr automation_data() const;
     virtual void edit_automation_points(const AutomationCurveKey &key, AutomationPointEdits &edits, bool undoable = true);
 
-    friend class Chord;
+    friend struct Chord;
 
     BracketType bracket_type(staff_idx_t staff_idx, size_t idx) const;
     size_t bracket_span(staff_idx_t staff_idx, size_t idx) const;
@@ -960,7 +960,7 @@ public:
 protected:
     virtual void on_time_inserted(const Fraction &tick, const Fraction &len, const std::vector<RepeatSegmentInfo> &old_segments);
 
-    friend class MasterScore;
+    friend struct MasterScore;
     explicit Score(const EngravingServices &services);
     Score(MasterScore *, bool force_part_style = true);
     Score(MasterScore *, const MStyle &);
@@ -970,12 +970,12 @@ protected:
 
 private:
 
-    friend class read302::Read302;
-    friend class read400::Read400;
-    friend class read410::Read410;
-    friend class read460::Read460;
-    friend class read500::Read500;
-    friend class write::Writer;
+    friend struct read302::Read302;
+    friend struct read400::Read400;
+    friend struct read410::Read410;
+    friend struct read460::Read460;
+    friend struct read500::Read500;
+    friend struct write::Writer;
 
     static std::set<Score *> valid_scores;
 
@@ -1108,7 +1108,8 @@ static inline const Score *to_score(const EngravingObject *e) {
 //   ScoreLoad
 //---------------------------------------------------------
 
-class ScoreLoad {
+struct ScoreLoad {
+private:
     static int loading_;
 
 public:

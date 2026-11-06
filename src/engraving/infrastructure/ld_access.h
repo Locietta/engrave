@@ -53,8 +53,7 @@ enum class LdAccess : unsigned char {
 #define LD_INDEPENDENT
 
 template <typename T>
-class LdFieldDebug {
-public:
+struct LdFieldDebug {
 
     LdFieldDebug(const char *name, T def = T()) : name_(name), def_(def) {}
 
@@ -101,8 +100,7 @@ private:
 };
 
 template <typename T>
-class LdFieldProd {
-public:
+struct LdFieldProd {
 
     LdFieldProd(const char *, T def = T()) : val_(def) {}
 

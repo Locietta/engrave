@@ -26,8 +26,7 @@
 #include "setupresolverbase.h"
 
 namespace mu::engraving {
-class VoicesSetupDataResolver : public SetupDataResolverBase<VoicesSetupDataResolver> {
-public:
+struct VoicesSetupDataResolver : SetupDataResolverBase<VoicesSetupDataResolver> {
     static muse::mpe::PlaybackSetupData do_resolve(const Instrument *instrument);
 };
 } // namespace mu::engraving

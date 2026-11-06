@@ -25,7 +25,8 @@
 #include "tie.h"
 
 namespace mu::engraving {
-class PartialTieSegment : public TieSegment {
+struct PartialTieSegment : TieSegment {
+private:
     OBJECT_ALLOCATOR(engraving, PartialTieSegment)
     DECLARE_CLASSOF(ElementType::PARTIAL_TIE_SEGMENT)
 
@@ -40,7 +41,8 @@ private:
     String format_bars_and_beats() const override;
 };
 
-class PartialTie : public Tie {
+struct PartialTie : Tie {
+private:
     OBJECT_ALLOCATOR(engraving, PartialTie)
     DECLARE_CLASSOF(ElementType::PARTIAL_TIE);
 

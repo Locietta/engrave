@@ -22,9 +22,8 @@
 #pragma once
 
 namespace mu::iex::mnxio {
-class IMnxConfiguration : MODULE_GLOBAL_EXPORT_INTERFACE {
+struct IMnxConfiguration : private MODULE_GLOBAL_EXPORT_INTERFACE {
 
-public:
     virtual ~IMnxConfiguration() = default;
 
     virtual int mnx_indent_spaces() const = 0;

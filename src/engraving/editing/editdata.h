@@ -73,13 +73,12 @@ enum class Grip : signed char {
 //   EditData
 //    used in dragGrip
 //---------------------------------------------------------
-class ElementEditData;
+struct ElementEditData;
 using ElementEditDataPtr = std::shared_ptr<ElementEditData>;
 
-class EngravingItem;
+struct EngravingItem;
 
-class EditData {
-public:
+struct EditData {
 
     PointF pos;
     KeyboardModifiers modifiers;

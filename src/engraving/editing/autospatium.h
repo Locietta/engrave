@@ -23,10 +23,9 @@
 #pragma once
 
 namespace mu::engraving {
-class Score;
+struct Score;
 
-class AutoSpatium {
-public:
+struct AutoSpatium {
     static void update(Score *score);
 };
 } // namespace mu::engraving

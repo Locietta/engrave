@@ -28,18 +28,17 @@
 
 namespace mu::engraving {
 struct EngravingServices;
-class MasterScore;
-class TDuration;
-class TimeSig;
-class Chord;
+struct MasterScore;
+struct TDuration;
+struct TimeSig;
+struct Chord;
 enum class Key : signed char;
 
 //---------------------------------------------------------
 //   MCursor
 //---------------------------------------------------------
 
-class MCursor {
-public:
+struct MCursor {
     MCursor(MasterScore *s = 0);
     void create_score(const EngravingServices &services, const String &s);
 

@@ -4,8 +4,7 @@
 #include "types/string.h"
 
 namespace mu::iex::guitarpro {
-class GPScore {
-public:
+struct GPScore {
 
     void set_title(const muse::String &title) { title_value = title; }
 

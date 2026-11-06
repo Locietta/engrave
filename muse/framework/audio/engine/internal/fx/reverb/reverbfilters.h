@@ -41,8 +41,7 @@ auto one_zero_coeffs_from_nyquist_gain(T gain_fact_nyq) {
 }
 
 template <typename T>
-class OneZeroFilter {
-public:
+struct OneZeroFilter {
     T process_sample(T x0) {
         auto res = cf.b0 * x0 + cf.b1 * x1;
         x1 = x0;
@@ -94,8 +93,7 @@ auto one_pole_coeffs_lowpass1_point(T freq, T gain_fact, double sample_rate) {
 }
 
 template <typename T>
-class OnePoleFilter {
-public:
+struct OnePoleFilter {
     T process_sample(T x0) {
         auto res = cf.b0 * x0 + cf.b1 * x1 - cf.a1 * y1_;
         x1 = x0;

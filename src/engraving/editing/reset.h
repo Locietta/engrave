@@ -25,11 +25,10 @@
 #include "../style/styledef.h"
 
 namespace mu::engraving {
-class Score;
-class Transaction;
+struct Score;
+struct Transaction;
 
-class Reset {
-public:
+struct Reset {
     static void reset_all_positions(Transaction &tx, Score *score);
     static void reset_to_default_layout(Transaction &tx, Score *score);
     static void reset_text_style_overrides(Score *score); //! Not undoable

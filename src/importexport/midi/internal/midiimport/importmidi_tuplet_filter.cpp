@@ -35,8 +35,7 @@ bool is_more_tuplet_voices_allowed(int voices_in_use, int available_voices) {
     return !(voices_in_use >= available_voices || voices_in_use >= tuplet_voice_limit());
 }
 
-class TupletErrorResult {
-public:
+struct TupletErrorResult {
     TupletErrorResult(double t = 0.0, double rel_places = 0.0, const ReducedFraction &r = ReducedFraction(0, 1), size_t vc = 0,
                       size_t tc = 0)
         : tuplet_average_error(t), relative_used_chord_places(rel_places), sum_length_of_rests(r), voice_count(vc), tuplet_count(tc) {}
@@ -430,8 +429,7 @@ prepare_voice_intervals(const std::vector<int> &selected_tuplets,
     return voice_intervals;
 }
 
-class ValidTuplets {
-public:
+struct ValidTuplets {
     ValidTuplets(int tuplets_size) : indexes_(tuplets_size), first_(0) {
         for (int i = 0; i != (int) indexes_.size(); ++i) {
             indexes_[i] = {i - 1, i + 1};

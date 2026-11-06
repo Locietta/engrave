@@ -26,8 +26,7 @@
 #include "renderbase.h"
 
 namespace mu::engraving {
-class ChordArticulationsRenderer : public RenderBase<ChordArticulationsRenderer> {
-public:
+struct ChordArticulationsRenderer : RenderBase<ChordArticulationsRenderer> {
     static const muse::mpe::ArticulationTypeSet &supported_types();
 
     static void do_render(const EngravingItem *item, const muse::mpe::ArticulationType type, const RenderingContext &ctx,

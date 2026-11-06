@@ -23,8 +23,7 @@
 #pragma once
 
 namespace mu::engraving {
-class IEngravingContextConfiguration {
-public:
+struct IEngravingContextConfiguration {
     virtual ~IEngravingContextConfiguration() = default;
 
     virtual double gui_scaling() const = 0;

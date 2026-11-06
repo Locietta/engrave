@@ -25,14 +25,13 @@
 #include <string>
 
 namespace muse {
-class ByteArray;
+struct ByteArray;
 
 namespace io {
-class IODevice;
+struct IODevice;
 } // namespace io
 
-class ZipWriter {
-public:
+struct ZipWriter {
     explicit ZipWriter(io::IODevice *device);
     ~ZipWriter();
 

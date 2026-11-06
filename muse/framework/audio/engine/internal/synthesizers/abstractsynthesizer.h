@@ -30,8 +30,7 @@
 #include "../../isynthesizer.h"
 
 namespace muse::audio::synth {
-class AbstractSynthesizer : public ISynthesizer {
-public:
+struct AbstractSynthesizer : ISynthesizer {
     // config must outlive the synthesizer.
     AbstractSynthesizer(const audio::AudioInputParams &params, const engine::IAudioEngineConfiguration &config);
     virtual ~AbstractSynthesizer() = default;

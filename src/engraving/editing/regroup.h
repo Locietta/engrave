@@ -25,12 +25,11 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class Fraction;
-class Score;
-class Transaction;
+struct Fraction;
+struct Score;
+struct Transaction;
 
-class Regroup {
-public:
+struct Regroup {
     /// Combine consecutive rests into fewer rests of longer duration, and tied
     /// notes/chords into fewer notes of longer duration. Only operates on one voice.
     static void regroup_notes_and_rests(Transaction &tx, Score *score, const Fraction &start_tick, const Fraction &end_tick,

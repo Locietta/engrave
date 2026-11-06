@@ -25,12 +25,11 @@
 #include "paintoptions.h"
 
 namespace mu::engraving {
-class EngravingItem;
+struct EngravingItem;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering {
-class ISingleRenderer {
-public:
+struct ISingleRenderer {
     virtual ~ISingleRenderer() = default;
 
     virtual void layout_item(EngravingItem *item) = 0;

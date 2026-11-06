@@ -27,16 +27,17 @@
 #include <optional>
 
 namespace mu::engraving {
-class Score;
-class System;
-class Lyrics;
-class LyricsLine;
-class LyricsLineSegment;
-class SkylineLine;
+struct Score;
+struct System;
+struct Lyrics;
+struct LyricsLine;
+struct LyricsLineSegment;
+struct SkylineLine;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class LyricsLayout {
+struct LyricsLayout {
+private:
     struct LyricsVerse {
     private:
         std::vector<Lyrics *> lyrics_;

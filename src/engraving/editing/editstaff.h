@@ -29,7 +29,8 @@
 #include "../dom/staff.h"
 
 namespace mu::engraving {
-class InsertStaff : public UndoableCommand {
+struct InsertStaff : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, InsertStaff)
 
     Staff *staff = nullptr;
@@ -46,7 +47,8 @@ public:
     UNDO_CHANGED_OBJECTS({staff})
 };
 
-class RemoveStaff : public UndoableCommand {
+struct RemoveStaff : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, RemoveStaff)
 
     Staff *staff = nullptr;
@@ -64,7 +66,8 @@ public:
     UNDO_CHANGED_OBJECTS({staff})
 };
 
-class AddSystemObjectStaff : public UndoableCommand {
+struct AddSystemObjectStaff : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, AddSystemObjectStaff)
 
     Staff *staff = nullptr;
@@ -79,7 +82,8 @@ public:
     UNDO_CHANGED_OBJECTS({staff})
 };
 
-class RemoveSystemObjectStaff : public UndoableCommand {
+struct RemoveSystemObjectStaff : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, RemoveSystemObjectStaff)
 
     Staff *staff = nullptr;
@@ -94,7 +98,8 @@ public:
     UNDO_CHANGED_OBJECTS({staff})
 };
 
-class InsertMStaff : public UndoableCommand {
+struct InsertMStaff : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, InsertMStaff)
 
     Measure *measure = nullptr;
@@ -111,7 +116,8 @@ public:
     UNDO_CHANGED_OBJECTS({measure})
 };
 
-class RemoveMStaff : public UndoableCommand {
+struct RemoveMStaff : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, RemoveMStaff)
 
     Measure *measure = nullptr;
@@ -128,7 +134,8 @@ public:
     UNDO_CHANGED_OBJECTS({measure})
 };
 
-class InsertStaves : public UndoableCommand {
+struct InsertStaves : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, InsertStaves)
 
     Measure *measure = nullptr;
@@ -145,7 +152,8 @@ public:
     UNDO_CHANGED_OBJECTS({measure})
 };
 
-class RemoveStaves : public UndoableCommand {
+struct RemoveStaves : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, RemoveStaves)
 
     Measure *measure = nullptr;
@@ -162,7 +170,8 @@ public:
     UNDO_CHANGED_OBJECTS({measure})
 };
 
-class SortStaves : public UndoableCommand {
+struct SortStaves : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, SortStaves)
 
     Score *score = nullptr;
@@ -183,7 +192,8 @@ public:
 //   ChangeStaff
 //---------------------------------------------------------
 
-class ChangeStaff : public UndoableCommand {
+struct ChangeStaff : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeStaff)
 
     Staff *staff = nullptr;
@@ -213,7 +223,8 @@ public:
 //   ChangeStaffType
 //---------------------------------------------------------
 
-class ChangeStaffType : public UndoableCommand {
+struct ChangeStaffType : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeStaffType)
 
     Staff *staff = nullptr;
@@ -230,7 +241,8 @@ public:
     UNDO_CHANGED_OBJECTS({staff})
 };
 
-class ChangeMStaffProperties : public UndoableCommand {
+struct ChangeMStaffProperties : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeMStaffProperties)
 
     Measure *measure = nullptr;
@@ -248,7 +260,8 @@ public:
     UNDO_CHANGED_OBJECTS({measure})
 };
 
-class ChangeMStaffHideIfEmpty : public UndoableCommand {
+struct ChangeMStaffHideIfEmpty : UndoableCommand {
+private:
     OBJECT_ALLOCATOR(engraving, ChangeMStaffHideIfEmpty)
 
     Measure *measure = nullptr;

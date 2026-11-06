@@ -35,8 +35,7 @@ struct SourceTag {
 
 namespace muse::audio::engine {
 //! NOTE Abstract Base Audio Source Node
-class AudioSourceNode : public AudioNode<SourceTag> {
-public:
+struct AudioSourceNode : AudioNode<SourceTag> {
 
     virtual void seek(const TimePosition &position, const bool flush_sound = true) = 0;
     virtual void flush() = 0;

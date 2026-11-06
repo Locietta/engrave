@@ -27,9 +27,9 @@
 #include "engravingitem.h"
 
 namespace mu::engraving {
-class Factory;
-class Note;
-class Transaction;
+struct Factory;
+struct Note;
+struct Transaction;
 enum class AccidentalVal : signed char;
 
 // NOTE: keep this in sync with accList array in accidentals.cpp
@@ -229,7 +229,8 @@ enum class AccidentalBracket : char {
 //   @P isSmall     bool
 //---------------------------------------------------------
 
-class Accidental final : public EngravingItem {
+struct Accidental final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, Accidental)
     DECLARE_CLASSOF(ElementType::ACCIDENTAL)
 
@@ -316,7 +317,7 @@ public:
 
 private:
 
-    friend class Factory;
+    friend struct Factory;
 
     Accidental(DummyParentOr<EngravingItem> parent);
 

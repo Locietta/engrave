@@ -28,14 +28,14 @@
 #include "engraving/engravingerrors.h"
 
 namespace mu::engraving {
-class Fraction;
-class Score;
-class Part;
-class VBox;
+struct Fraction;
+struct Score;
+struct Part;
+struct VBox;
 } // namespace mu::engraving
 
 namespace mu::iex::musicxml {
-class VoiceOverlapDetector;
+struct VoiceOverlapDetector;
 
 //---------------------------------------------------------
 //   PageFormat
@@ -131,11 +131,10 @@ bool is_likely_subtitle_text(const muse::String &text, const bool case_insensiti
 //   MusicXmlParserPass1
 //---------------------------------------------------------
 
-class MusicXmlLogger;
-class IMusicXmlConfiguration;
+struct MusicXmlLogger;
+struct IMusicXmlConfiguration;
 
-class MusicXmlParserPass1 {
-public:
+struct MusicXmlParserPass1 {
     MusicXmlParserPass1(engraving::Score *score, const IMusicXmlConfiguration &configuration, MusicXmlLogger *logger);
 
     const IMusicXmlConfiguration *configuration() const { return &configuration_; }

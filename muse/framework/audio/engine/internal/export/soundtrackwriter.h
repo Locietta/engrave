@@ -34,13 +34,12 @@
 #include "abstractaudioencoder.h"
 
 namespace muse::io {
-class IODevice;
+struct IODevice;
 } // namespace muse::io
 
 namespace muse::audio::soundtrack {
-class SoundTrackWriter {
+struct SoundTrackWriter {
 
-public:
     SoundTrackWriter(io::IODevice &dst_device, const SoundTrackFormat &format, const secs_t total_duration, IAudioNodePtr source,
                      std::function<void(uint64_t)> block_completed = {},
                      std::function<encode::AbstractAudioEncoderPtr(const SoundTrackFormat &, io::IODevice &)> encoder_factory = {},

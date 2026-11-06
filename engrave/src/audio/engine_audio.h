@@ -23,23 +23,23 @@
 #include "midi/miditypes.h"
 
 namespace muse::mpe {
-class IArticulationProfilesRepository;
+struct IArticulationProfilesRepository;
 } // namespace muse::mpe
 
 namespace muse::io {
-class IODevice;
+struct IODevice;
 } // namespace muse::io
 
 namespace muse::audio {
 struct SoundTrackFormat;
 
 namespace encode {
-class AbstractAudioEncoder;
+struct AbstractAudioEncoder;
 } // namespace encode
 } // namespace muse::audio
 
 namespace mu::engraving {
-class MasterScore;
+struct MasterScore;
 } // namespace mu::engraving
 
 namespace music {

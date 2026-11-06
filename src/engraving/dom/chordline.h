@@ -30,10 +30,10 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class Factory;
+struct Factory;
 
-class Chord;
-class Note;
+struct Chord;
+struct Note;
 
 //---------------------------------------------------------
 //   @@ ChordLine
@@ -41,7 +41,8 @@ class Note;
 ///    implements fall, doit, plop, bend
 //---------------------------------------------------------
 
-class ChordLine final : public EngravingItem {
+struct ChordLine final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, ChordLine)
     DECLARE_CLASSOF(ElementType::CHORDLINE)
 
@@ -137,7 +138,7 @@ public:
 
 private:
 
-    friend class Factory;
+    friend struct Factory;
 
     ChordLine(DummyParentOr<Chord> parent);
     ChordLine(const ChordLine &);

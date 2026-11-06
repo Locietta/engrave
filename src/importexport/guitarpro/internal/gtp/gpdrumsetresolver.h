@@ -19,8 +19,7 @@ struct GPDrum {
         : pitch(pitch), element(element), variation(variation), name_value(name) {}
 };
 
-class GPDrumSetResolver {
-public:
+struct GPDrumSetResolver {
 
     GPDrumSetResolver() = default;
     virtual ~GPDrumSetResolver() = default;

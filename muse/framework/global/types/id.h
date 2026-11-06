@@ -29,8 +29,7 @@
 #include "global/logstream.h"
 
 namespace muse {
-class ID {
-public:
+struct ID {
     ID();
     ID(const ID &id);
     ID(const std::string &id);

@@ -31,8 +31,7 @@
 
 namespace mu::engraving {
 template <class T>
-class SetupDataResolverBase {
-public:
+struct SetupDataResolverBase {
     static bool resolve(const Instrument *instrument, muse::mpe::PlaybackSetupData &result) {
         assert(instrument);
         if (!instrument) {

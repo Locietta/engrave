@@ -29,8 +29,7 @@
 
 namespace muse::audio::fx {
 template <typename SampleT, int maxNumChannels>
-class SampleDelay {
-public:
+struct SampleDelay {
     SampleDelay() {}
 
     ~SampleDelay() {}

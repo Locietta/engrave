@@ -26,13 +26,14 @@
 #include "chordtextlinebase.h"
 
 namespace mu::engraving {
-class PalmMute;
+struct PalmMute;
 
 //---------------------------------------------------------
 //   @@ PalmMuteSegment
 //---------------------------------------------------------
 
-class PalmMuteSegment final : public TextLineBaseSegment {
+struct PalmMuteSegment final : TextLineBaseSegment {
+private:
     OBJECT_ALLOCATOR(engraving, PalmMuteSegment)
     DECLARE_CLASSOF(ElementType::PALM_MUTE_SEGMENT)
 
@@ -43,14 +44,15 @@ public:
 
     PalmMute *palm_mute() const { return (PalmMute *) spanner(); }
 
-    friend class PalmMute;
+    friend struct PalmMute;
 };
 
 //---------------------------------------------------------
 //   @@ PalmMute
 //---------------------------------------------------------
 
-class PalmMute final : public ChordTextLineBase {
+struct PalmMute final : ChordTextLineBase {
+private:
     OBJECT_ALLOCATOR(engraving, PalmMute)
     DECLARE_CLASSOF(ElementType::PALM_MUTE)
 
@@ -69,7 +71,7 @@ public:
 protected:
     Sid default_pos_sid() const override;
 
-    friend class PalmMuteLine;
+    friend struct PalmMuteLine;
 };
 } // namespace mu::engraving
 #endif

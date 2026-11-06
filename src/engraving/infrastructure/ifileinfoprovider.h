@@ -28,8 +28,7 @@
 #include "io/path.h"
 
 namespace mu::engraving {
-class IFileInfoProvider {
-public:
+struct IFileInfoProvider {
     virtual ~IFileInfoProvider() = default;
 
     virtual bool saved() const = 0;

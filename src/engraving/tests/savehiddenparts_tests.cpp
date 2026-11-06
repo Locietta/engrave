@@ -47,8 +47,7 @@ using namespace mu::engraving;
 using namespace muse;
 using namespace muse::io;
 
-class EngravingSaveHiddenPartsTests : public ::testing::Test {
-public:
+struct EngravingSaveHiddenPartsTests : ::testing::Test {
     static constexpr int num_measures = 10;
 
     /* Two single-staff instruments:

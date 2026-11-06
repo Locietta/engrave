@@ -24,8 +24,7 @@
 #include "ifontface.h"
 
 namespace muse::draw {
-class FontFaceDU : public IFontFace {
-public:
+struct FontFaceDU : IFontFace {
     FontFaceDU(IFontFace *origin);
     ~FontFaceDU();
 

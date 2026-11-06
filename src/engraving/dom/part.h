@@ -28,10 +28,10 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class Staff;
-class Score;
-class SharedPart;
-class InstrumentTemplate;
+struct Staff;
+struct Score;
+struct SharedPart;
+struct InstrumentTemplate;
 
 struct TrackRange {
     track_idx_t start_track = muse::nidx;
@@ -58,7 +58,8 @@ struct TrackRange {
 //   @P volume          int
 //---------------------------------------------------------
 
-class Part : public EngravingObject {
+struct Part : EngravingObject {
+private:
     OBJECT_ALLOCATOR(engraving, Part)
     DECLARE_CLASSOF(ElementType::PART)
 
@@ -200,7 +201,7 @@ public:
     void set_shared_part(SharedPart *p) { shared_part_ = p; }
 
 private:
-    friend class SharedPart;
+    friend struct SharedPart;
 
     static String plain_part_name(const Instrument *instrument);
 

@@ -24,15 +24,14 @@
 #include "../ireader.h"
 
 namespace mu::engraving {
-class Score;
-class XmlReader;
+struct Score;
+struct XmlReader;
 } // namespace mu::engraving
 
 namespace mu::engraving::read460 {
-class ReadContext;
+struct ReadContext;
 
-class Read460 : public rw::IReader {
-public:
+struct Read460 : rw::IReader {
 
     muse::Ret read_score_file(Score *score, XmlReader &e, rw::ReadInOutData *data) override;
 

@@ -37,8 +37,7 @@ struct TrackChainTag {
 namespace muse::audio::engine {
 //! NOTE A typical node chain for processing a track:
 //! signalnode <- controlnode <- fxnode[] <- audiosource
-class TrackChain : public ChainNode<TrackChainTag> {
-public:
+struct TrackChain : ChainNode<TrackChainTag> {
 
     TrackChain(TrackId track_id, const std::string &track_name);
 

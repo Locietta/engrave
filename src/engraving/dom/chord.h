@@ -37,18 +37,18 @@
 #include "draw/types/color.h"
 
 namespace mu::engraving {
-class AccidentalState;
-class Arpeggio;
-class Chord;
-class Hook;
-class LedgerLine;
-class Note;
-class NoteEventList;
-class Stem;
-class StemSlash;
-class Transaction;
-class TremoloSingleChord;
-class TremoloTwoChord;
+struct AccidentalState;
+struct Arpeggio;
+struct Chord;
+struct Hook;
+struct LedgerLine;
+struct Note;
+struct NoteEventList;
+struct Stem;
+struct StemSlash;
+struct Transaction;
+struct TremoloSingleChord;
+struct TremoloTwoChord;
 
 enum class NoteType : unsigned char {
     ///.\{
@@ -78,7 +78,8 @@ enum class PlayEventType : unsigned char {
     ///.\}
 };
 
-class GraceNotesGroup final : public std::vector<Chord *>, public EngravingItem {
+struct GraceNotesGroup final : std::vector<Chord *>, EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, GraceNotesGroup)
 public:
     GraceNotesGroup *clone() const override { return new GraceNotesGroup(*this); }
@@ -136,7 +137,8 @@ private:
 
 using NoteParenthesisInfoList = std::vector<NoteParenthesisInfo *>;
 
-class Chord final : public ChordRest {
+struct Chord final : ChordRest {
+private:
     OBJECT_ALLOCATOR(engraving, Chord)
     DECLARE_CLASSOF(ElementType::CHORD)
 
@@ -432,7 +434,7 @@ public:
 
 private:
 
-    friend class Factory;
+    friend struct Factory;
 
     Chord(DummyParentOr<Segment> parent);
     Chord(const Chord &, bool link = false);

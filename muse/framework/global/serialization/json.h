@@ -30,11 +30,10 @@
 
 namespace muse {
 struct JsonData;
-class JsonArray;
-class JsonObject;
+struct JsonArray;
+struct JsonObject;
 
-class JsonValue {
-public:
+struct JsonValue {
     JsonValue(bool v);
     JsonValue(int v);
     JsonValue(double v);
@@ -74,15 +73,14 @@ public:
     JsonValue &operator=(const JsonObject &obj);
 
 private:
-    friend class JsonObject;
-    friend class JsonArray;
+    friend struct JsonObject;
+    friend struct JsonArray;
 
     void detach();
     std::shared_ptr<JsonData> data_;
 };
 
-class JsonValueRef {
-public:
+struct JsonValueRef {
     JsonValueRef(const std::string &key, JsonObject *o);
     JsonValueRef(size_t i, JsonArray *a);
 
@@ -104,8 +102,7 @@ private:
     JsonArray *array_ = nullptr;
 };
 
-class JsonArray {
-public:
+struct JsonArray {
 
     JsonArray(std::shared_ptr<JsonData> d = nullptr);
     JsonArray(std::initializer_list<JsonValue> args);
@@ -156,16 +153,15 @@ public:
     JsonValueRef operator[](size_t i);
 
 private:
-    friend class JsonValue;
-    friend class JsonObject;
-    friend class JsonDocument;
+    friend struct JsonValue;
+    friend struct JsonObject;
+    friend struct JsonDocument;
 
     void detach();
     std::shared_ptr<JsonData> data_;
 };
 
-class JsonObject {
-public:
+struct JsonObject {
     JsonObject(std::shared_ptr<JsonData> d = nullptr);
 
     bool is_valid() const;
@@ -190,16 +186,15 @@ public:
     JsonValueRef operator[](const std::string &key);
 
 private:
-    friend class JsonValue;
-    friend class JsonArray;
-    friend class JsonDocument;
+    friend struct JsonValue;
+    friend struct JsonArray;
+    friend struct JsonDocument;
 
     void detach();
     std::shared_ptr<JsonData> data_;
 };
 
-class JsonDocument {
-public:
+struct JsonDocument {
     JsonDocument(std::shared_ptr<JsonData> d = nullptr);
     JsonDocument(JsonObject o);
     JsonDocument(JsonArray a);

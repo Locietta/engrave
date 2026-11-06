@@ -29,13 +29,13 @@
 #include "engravingitem.h"
 
 namespace mu::engraving {
-class Factory;
+struct Factory;
 
-class ChordRest;
-class Measure;
-class Page;
-class Segment;
-class System;
+struct ChordRest;
+struct Measure;
+struct Page;
+struct Segment;
+struct System;
 
 //---------------------------------------------------------
 //   ArticulationInfo
@@ -93,7 +93,8 @@ std::set<SymId> flip_articulations(const std::set<SymId> &articulation_symbol_id
 ///    articulation marks
 //---------------------------------------------------------
 
-class Articulation : public EngravingItem {
+struct Articulation : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, Articulation)
     DECLARE_CLASSOF(ElementType::ARTICULATION)
 
@@ -209,7 +210,7 @@ public:
     //! ------------------
 
 protected:
-    friend class mu::engraving::Factory;
+    friend struct mu::engraving::Factory;
     Articulation(DummyParentOr<ChordRest> parent, ElementType type = ElementType::ARTICULATION);
 
 private:

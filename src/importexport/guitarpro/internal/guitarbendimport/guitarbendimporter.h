@@ -26,14 +26,13 @@
 #include "bendbuilder.h"
 
 namespace mu::engraving {
-class Note;
-class Chord;
-class Score;
+struct Note;
+struct Chord;
+struct Score;
 } // namespace mu::engraving
 
 namespace mu::iex::guitarpro {
-class GuitarBendImporter {
-public:
+struct GuitarBendImporter {
 
     GuitarBendImporter(mu::engraving::Score *score);
 

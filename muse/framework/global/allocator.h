@@ -57,8 +57,7 @@ public:                                                                         
     }                                                                                                                              \
 private:
 
-class ObjectAllocator {
-public:
+struct ObjectAllocator {
 
     using destroyer_t = void (*)(void *);
 
@@ -142,8 +141,7 @@ private:
     Statistic statistic_;
 };
 
-class AllocatorsRegister {
-public:
+struct AllocatorsRegister {
 
     static AllocatorsRegister *instance() {
         static AllocatorsRegister r;

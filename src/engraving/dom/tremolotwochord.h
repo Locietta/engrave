@@ -32,9 +32,10 @@
 #include "chord.h"
 
 namespace mu::engraving {
-class Chord;
+struct Chord;
 
-class TremoloTwoChord final : public BeamBase {
+struct TremoloTwoChord final : BeamBase {
+private:
     OBJECT_ALLOCATOR(engraving, TremoloTwoChord)
     DECLARE_CLASSOF(ElementType::TREMOLO_TWOCHORD)
 
@@ -131,7 +132,7 @@ public:
     //! -----------------
 
 private:
-    friend class Factory;
+    friend struct Factory;
 
     TremoloTwoChord(DummyParentOr<Chord> parent);
     TremoloTwoChord(const TremoloTwoChord &);

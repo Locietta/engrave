@@ -26,7 +26,7 @@
 #include "playback/metaparsers/metaparserbase.h"
 
 namespace mu::engraving {
-class GraceNotesMetaParser : public MetaParserBase<GraceNotesMetaParser> {
+struct GraceNotesMetaParser : MetaParserBase<GraceNotesMetaParser> {
 protected:
     friend MetaParserBase;
 

@@ -26,14 +26,13 @@
 #include "global/types/translatablestring.h"
 
 namespace mu::engraving {
-class Note;
-class Tie;
-class TieJumpPointList;
+struct Note;
+struct Tie;
+struct TieJumpPointList;
 
 // Items of TieJumpPointList
 // Stores information about an endpoint
-class TieJumpPoint {
-public:
+struct TieJumpPoint {
     TieJumpPoint(Note *note, bool active, int idx, bool following_note);
 
     TieJumpPoint() {}
@@ -70,8 +69,7 @@ private:
 
 // Created & deleted by Note
 // Manages adding and removing ties from endpoints
-class TieJumpPointList {
-public:
+struct TieJumpPointList {
     TieJumpPointList(Note *note) : note_(note) {}
 
     ~TieJumpPointList();

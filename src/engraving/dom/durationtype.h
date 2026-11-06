@@ -26,16 +26,15 @@
 #include "../types/types.h"
 
 namespace mu::engraving {
-class Measure;
-class TimeSigFrac;
+struct Measure;
+struct TimeSigFrac;
 enum class BeatType : unsigned char;
 
 //---------------------------------------------------------
 //   TDuration
 //---------------------------------------------------------
 
-class TDuration {
-public:
+struct TDuration {
     TDuration() : val_(DurationType::V_INVALID), dots_(0) {}
 
     TDuration(const Fraction &l, bool truncate = false, int max_dots = 4, DurationType max_type = DurationType::V_LONG);

@@ -29,8 +29,7 @@
 
 namespace mu::engraving {
 template <class T>
-class FilterBase {
-public:
+struct FilterBase {
     static bool is_item_playable(const EngravingItem *item, const RenderingContext &ctx) {
         IF_ASSERT_FAILED(item) { return false; }
 

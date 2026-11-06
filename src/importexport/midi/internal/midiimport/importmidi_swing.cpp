@@ -33,8 +33,7 @@
 using namespace mu::engraving;
 
 namespace mu::iex::midi { namespace Swing {
-class SwingDetector {
-public:
+struct SwingDetector {
     SwingDetector(MidiOperations::Swing st);
 
     void add(ChordRest *cr);

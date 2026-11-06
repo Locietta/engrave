@@ -26,11 +26,12 @@
 #include "engravingitem.h"
 
 namespace mu::engraving {
-class Factory;
-class Segment;
-class Transaction;
+struct Factory;
+struct Segment;
+struct Transaction;
 
-class KeySig final : public EngravingItem {
+struct KeySig final : EngravingItem {
+private:
     OBJECT_ALLOCATOR(engraving, KeySig)
     DECLARE_CLASSOF(ElementType::KEYSIG)
 
@@ -113,7 +114,7 @@ public:
     DECLARE_LAYOUTDATA_METHODS(KeySig)
 
 private:
-    friend class Factory;
+    friend struct Factory;
 
     KeySig(DummyParentOr<Segment>);
     KeySig(const KeySig &);

@@ -25,18 +25,17 @@
 #include "layoutcontext.h"
 
 namespace mu::engraving {
-class BarLine;
-class Page;
-class System;
-class StaffLines;
-class TextBase;
-class SlurTieSegment;
+struct BarLine;
+struct Page;
+struct System;
+struct StaffLines;
+struct TextBase;
+struct SlurTieSegment;
 enum class SegmentType;
 } // namespace mu::engraving
 
 namespace mu::engraving::rendering::score {
-class MaskLayout {
-public:
+struct MaskLayout {
     static void compute_masks(LayoutContext &ctx, Page *page);
 
 private:

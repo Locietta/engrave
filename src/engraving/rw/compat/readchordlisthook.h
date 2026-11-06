@@ -25,13 +25,12 @@
 #include "types/string.h"
 
 namespace mu::engraving {
-class XmlReader;
-class Score;
+struct XmlReader;
+struct Score;
 } // namespace mu::engraving
 
 namespace mu::engraving::compat {
-class ReadChordListHook {
-public:
+struct ReadChordListHook {
     ReadChordListHook(Score *score);
 
     void read(XmlReader &e);
