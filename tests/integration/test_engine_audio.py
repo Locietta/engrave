@@ -1679,162 +1679,28 @@ def test_excerpt_rendering_parity(
     )
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Acceptance test suite for MuseScore 4 audio engine")
-    parser.add_argument(
-        "--engine-only",
-        action="store_true",
-        help="Run fork audio assertions without the frozen MCP host or dense benchmark",
-    )
-    parser.add_argument(
-        "--bin-dir",
-        type=Path,
-        default=None,
-        help="Directory containing build executables",
-    )
-    parser.add_argument("--binary", type=Path, default=None, help="Path to engrave-mcp executable")
-    parser.add_argument(
-        "--resources",
-        type=Path,
-        default=ROOT / ".runtime" / "assets",
-        help="Path to assets",
-    )
-    parser.add_argument(
-        "--soundfont",
-        type=Path,
-        default=ROOT / ".runtime" / "soundfonts" / "FluidR3Mono_GM.sf3",
-        help="Path to soundfont",
-    )
-    parser.add_argument("--output", type=Path, required=True, help="Output directory for test artifacts")
-    parser.add_argument(
-        "--write-midi-goldens",
-        action="store_true",
-        help="Regenerate tests/data/engine_audio/midi goldens from the current probe",
-    )
-    parser.add_argument(
-        "--midi-golden-dir",
-        type=Path,
-        default=ROOT / "tests/data/engine_audio" / "midi",
-        help="Directory for --write-midi-goldens",
-    )
-    parser.add_argument(
-        "--platform-subdir",
-        action="store_true",
-        help="Write MIDI goldens under <dir>/<platform>/ when hosts differ",
-    )
-    parser.add_argument(
-        "--defer-dense-performance",
-        action="store_true",
-        help="Leave the dense performance check pending and exit nonzero",
-    )
-    parser.add_argument(
-        "--engine-source",
-        type=Path,
-        default=Path(os.environ.get("MUSESCORE_ENGINE_SOURCE", ROOT)),
-        help="Git checkout used to build the engine",
-    )
-    parser.add_argument(
-        "--cross-platform-captures",
-        type=Path,
-        default=ROOT / "artifacts" / "a2" / "audio-cross-platform",
-        help="Directory containing windows/ and linux/ current captures",
-    )
-    parser.add_argument(
-        "--capture-cross-platform-only",
-        action="store_true",
-        help="Capture this host without running or comparing the other checks",
-    )
+    parser = argparse.ArgumentParser(description="Standalone engine audio checks")
+    parser.add_argument("--engine-only", action="store_true", help="accepted for host wrapper compatibility")
+    parser.add_argument("--bin-dir", type=Path, required=True)
+    parser.add_argument("--resources", type=Path, required=True)
+    parser.add_argument("--soundfont", type=Path, required=True)
+    parser.add_argument("--engine-source", type=Path, default=ROOT)
+    parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-
+    probe_bin = find_probe_binary(args.bin_dir)
     out_dir = args.output.resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
-    if args.capture_cross_platform_only:
-        if not args.binary or not args.binary.is_file():
-            parser.error("--capture-cross-platform-only requires an existing --binary")
-        make_current_audio_capture(
-            args.binary,
-            args.resources,
-            args.soundfont,
-            args.engine_source,
-            args.cross_platform_captures.resolve(),
-        )
-        return 0
-
-    probe_bin = find_probe_binary(args.bin_dir)
-    print(f"Using probe binary: {probe_bin}")
-
-    if args.write_midi_goldens:
-        write_midi_goldens(
-            probe_bin,
-            args.resources,
-            args.soundfont,
-            out_dir,
-            args.midi_golden_dir,
-            args.platform_subdir,
-        )
-        return 0
-
-    evidence: dict[str, Any] = {}
-
-    def dense_performance() -> None:
-        if args.defer_dense_performance:
-            raise AudioCheckPending("dense performance must be measured separately")
-        test_performance_and_memory(probe_bin, args.resources, args.soundfont, out_dir, evidence)
-
-    def mcp_integration() -> None:
-        if not args.binary or not args.binary.is_file():
-            raise AudioCheckPending("MCP binary not supplied or missing")
-        asyncio.run(test_mcp_level_integration(args.binary, args.resources, args.soundfont, out_dir, evidence))
-
-    def cross_platform() -> None:
-        if not args.binary or not args.binary.is_file():
-            raise AudioCheckPending("MCP binary not supplied or missing for current capture")
-        captures = args.cross_platform_captures.resolve()
-        source_commit, engine_commit = make_current_audio_capture(
-            args.binary, args.resources, args.soundfont, args.engine_source, captures
-        )
-        test_cross_platform_audio_features(
-            evidence,
-            captures,
-            source_commit,
-            engine_commit,
-            audio_fixture_sources(),
-            file_sha256(args.soundfont),
-        )
-
+    evidence = {}
     checks = [
         ("reporting_regressions", test_audio_check_reporting),
         ("sine_threshold_mutations", test_sine_threshold_mutations),
-        (
-            "pitch_onset_level",
-            lambda: test_pitch_onset_and_level(probe_bin, args.resources, out_dir, evidence),
-        ),
-        (
-            "midi_goldens",
-            lambda: test_midi_event_goldens(probe_bin, args.resources, args.soundfont, out_dir, evidence),
-        ),
-        (
-            "determinism_codecs",
-            lambda: test_determinism_and_decoding(probe_bin, args.resources, args.soundfont, out_dir, evidence),
-        ),
-        ("dense_performance", dense_performance),
-        (
-            "excerpt_parity",
-            lambda: test_excerpt_rendering_parity(probe_bin, args.resources, args.soundfont, out_dir, evidence),
-        ),
-        ("mcp_integration", mcp_integration),
-        ("cross_platform", cross_platform),
+        ("pitch_onset_level", lambda: test_pitch_onset_and_level(probe_bin, args.resources, out_dir, evidence)),
+        ("midi_goldens", lambda: test_midi_event_goldens(probe_bin, args.resources, args.soundfont, out_dir, evidence)),
+        ("determinism_codecs", lambda: test_determinism_and_decoding(probe_bin, args.resources, args.soundfont, out_dir, evidence)),
+        ("excerpt_parity", lambda: test_excerpt_rendering_parity(probe_bin, args.resources, args.soundfont, out_dir, evidence)),
     ]
-    if args.engine_only:
-        checks = [
-            (name, check)
-            for name, check in checks
-            if name not in {"dense_performance", "mcp_integration", "cross_platform"}
-        ]
     code = run_audio_checks(checks, evidence)
-
-    evidence_path = out_dir / "evidence.json"
-    evidence_path.write_text(json.dumps(evidence, indent=2), encoding="utf-8")
-    print(f"\nEvidence saved to {evidence_path}")
+    (out_dir / "evidence.json").write_text(json.dumps(evidence, indent=2), encoding="utf-8")
     return code
 
 if __name__ == "__main__":

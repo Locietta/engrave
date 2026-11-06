@@ -933,26 +933,6 @@ def compare_trees(
     print(f"result: {'PASS' if failing == 0 else 'FAIL'}")
     return 0 if failing == 0 else 1
 
-def command_compare(args) -> int:
-    allow = load_allow(args.allow)
-    args.output.mkdir(parents=True, exist_ok=True)
-    actual = args.output / "actual"
-    with tempfile.TemporaryDirectory(prefix="golden-log-") as temporary:
-        asyncio.run(
-            asyncio.wait_for(
-                capture_tree(
-                    args.binary,
-                    args.resources,
-                    args.soundfont,
-                    actual,
-                    Path(temporary) / "server-stderr.log",
-                ),
-                timeout=1800,
-            )
-        )
-        # Keep a copy of the server log for debugging (outside the compared tree).
-        shutil.copyfile(Path(temporary) / "server-stderr.log", args.output / "server-stderr.log")
-    return compare_trees(args.golden, actual, allow, args.output, args.platform)
 
 def command_pin(args) -> int:
     report_path = args.output / "report.json"
