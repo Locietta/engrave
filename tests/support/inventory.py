@@ -21,8 +21,8 @@ def validate_actual(fixture, out, names, inventory):
         raise ValueError(f"{fixture}: output inventory mismatch: missing={expected-present}, extra={present-expected}")
 
 
-def validate_allow_usage(allow, matched, platform, selected):
+def validate_allow_usage(allow, matched, platform, selected=None):
     stale = [i for i, e in enumerate(allow)
-             if platform in e["sha256"] and (e["fixture"], e["output"]) in selected and i not in matched]
+             if platform in e["sha256"] and (selected is None or (e["fixture"], e["output"]) in selected) and i not in matched]
     if stale:
         raise ValueError(f"unused selected-platform allow entries: {stale}")
