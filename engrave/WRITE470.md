@@ -18,8 +18,8 @@ struct ExportOptions {
 
 Any version string other than `"5.00"` or `"4.70"`, or requesting a non-default version on other file formats (MusicXML, MIDI), returns `ErrorCode::Unsupported`.
 
-### Warning Structure
-Use `Document::export_score_with_warnings(ExportOptions)` to receive exported bytes and compatibility warnings:
+### Warning Structure and Ordering Contract
+Use `Document::export_score_with_warnings(ExportOptions)` to receive exported bytes and ordered compatibility warnings:
 
 ```cpp
 struct ExportWarning {
@@ -34,8 +34,13 @@ struct ExportOutput {
 };
 ```
 
-- Each warning has a stable, frozen `code` and descriptive `message`.
-- `ExportWarning::object` identifies the source element with `kind` and `id` strings (which may be an Element ID or a deterministic locator).
+- **Warning Contract**: Each warning has a stable, frozen `code`, human-readable `message`, and an optional source `{ kind, id }` object. Codes and messages are frozen.
+- **Ordering Contract**:
+  - `Document::export_score_with_warnings` returns ordered `ExportWarning` values.
+  - On a successful export, warnings contain degraded feature warnings in document encounter order.
+  - On a refused export, degraded warnings are prepended before unmapped feature warnings (`degraded` followed by `unsupported`).
+  - Identical warning objects are deduplicated preserving the order of their first occurrence.
+  - Non-EID warning locators retain document-wide score indices (master score 0, followed by excerpts in source order) even when exporting an excerpt.
 
 ### Fail-Closed Behavior
 - **Byte-only Export**: Calling `Document::export_score(ExportOptions)` fails closed: if the export produces any compatibility warnings, the method returns `ErrorCode::Unsupported` and attaches the warnings to `Error::export_warnings`. This ensures callers cannot silently discard compatibility degradation.
@@ -59,26 +64,29 @@ The guard in `engrave/src/score/write470.cpp:376` accepts only:
 
 Five feature families are converted into compatible 4.70 structures while emitting structured warnings:
 
-| Warning Code | Condition and Degradation | Object Kind & Source ID |
+| Code | Exact Frozen Message | Object Kind & Source ID |
 |---|---|---|
-| `B470_SHARED_PART_DROPPED` | Shared-part mapping is converted to an ordinary part. Staves and notation content are preserved; shared part references are removed. | `kind: "shared_part"`, `id: <SharedPart-EID>` |
-| `B470_STAVE_SHARING_LABEL_DROPPED` | Stave-sharing labels are removed from exported staves. | `kind: "stave_sharing_label"`, `id: <label-EID>` |
-| `B470_PAGE_LOCK_DROPPED` | Page lock ranges are removed. | `kind: "page_lock"`, `id: "<start-measure-EID>..<end-measure-EID>"` |
-| `B470_GROUP_BRACKET_DROPPED` | Group brackets are removed; standard score braces are retained. | `kind: "group_bracket"`, `id: "<start-staff-EID>:<column>"` |
-| `B470_INSTRUMENT_GROUP_NAME_DROPPED` | Enabled wind/vocal group naming overrides are removed per owning part; ordinary long/short instrument names are retained. | `kind: "part"`, `id: <part-EID>` |
+| `B470_SHARED_PART_DROPPED` | Shared-part mapping was removed; its staves and content were retained as ordinary parts. | `kind: "shared_part"`, `id: <SharedPart-EID>` (including disabled mappings) |
+| `B470_STAVE_SHARING_LABEL_DROPPED` | Stave-sharing label was removed. | `kind: "stave_sharing_label"`, `id: <label-EID>` |
+| `B470_PAGE_LOCK_DROPPED` | Page lock was removed. | `kind: "page_lock"`, `id: "<start-measure-EID>..<end-measure-EID>"` |
+| `B470_GROUP_BRACKET_DROPPED` | Group bracket was removed. | `kind: "group_bracket"`, `id: "<start-staff-EID>:<zero-based-column>"` |
+| `B470_INSTRUMENT_GROUP_NAME_DROPPED` | Instrument group-name override was removed. | `kind: "part"`, `id: <part-EID>` (one warning for multiple override fields) |
 
 ## 4. Refused Features
 
 The exporter strictly refuses output (`ErrorCode::Unsupported`) when encountering constructs that cannot be faithfully represented or downgraded in 4.70:
 
-| Warning Code | Condition | Object Kind & Source ID |
+| Code | Exact Frozen Message | Object Kind & Source ID |
 |---|---|---|
-| `B470_INVALID_TIE` | Tied notes have unequal pitches. | `kind: "tie"`, `id: <tie-EID>` (or start note EID, ancestor EID, or deterministic locator) |
-| `B470_UNSUPPORTED_FEATURE` | Constructs with no defined 4.70 downgrade (e.g. non-generated automation, custom chord lists, unsupported spanner types). | Owning source object kind and ID |
-| `B470_UNSUPPORTED_TARGET` | Requested version is not `"5.00"` or `"4.70"`. | `kind: "request"`, `id: "version:<requested>"` |
+| `B470_INVALID_TIE` | Cannot write 4.70: tied notes have different pitches. | `kind: "tie"` with tie EID; if tie has no EID, uses the owner's actual kind (e.g. `kind: "note"`) and owner EID; falls back to `kind: "tie"` with deterministic locator; refuses output |
+| `B470_UNSUPPORTED_FEATURE` | Cannot write 4.70: the source feature has no defined downgrade. | Owning source object kind and EID; refuses output |
+| `B470_UNSUPPORTED_TARGET` | Cannot write the requested score version. | `kind: "request"`, `id: "version:<requested value>"`; refuses output |
 
-### Tie Locators for Unaddressable Ties
-When an invalid tie lacks a direct EID or addressable ancestor, `id` uses the deterministic non-EID locator:
+### Tie Warning Identities and Locators
+Per `engrave/src/score/write470.cpp:581`, an invalid-tie warning never stringifies an invalid-EID sentinel:
+1. If the tie has a valid EID, it uses `kind: "tie"` and the tie EID.
+2. If the tie lacks an EID, it traverses to the nearest addressable ancestor with a valid EID and uses the owner's actual lowercase type name (e.g. `kind: "note"`) and that owner's EID.
+3. If no addressable owner exists, `kind: "tie"` uses the explicitly non-EID deterministic locator:
 ```text
 locator:score:<s>/measure:<m>/tick:<t>/track:<k>/note:<n>/tieFor
 ```
