@@ -33,9 +33,6 @@
 #include "containers.h"
 #include "global/logstream.h"
 
-// Protect Char::NULL from the C null-pointer macro.
-#undef NULL
-
 namespace muse {
 enum CaseSensitivity { CASE_INSENSITIVE = 0, CASE_SENSITIVE = 1 };
 
@@ -72,7 +69,10 @@ private:
 // Char (UTF-16)
 // ============================
 struct Char {
-
+    // Hide the C null-pointer macro only while Char::NULL is declared; the macro
+    // must stay available to the rest of the translation unit.
+#pragma push_macro("NULL")
+#undef NULL
     enum SpecialCharacter {
         NULL = 0x0000,
         TABULATION = 0x0009,
@@ -90,6 +90,7 @@ struct Char {
         LINE_SEPARATOR = 0x2028,
         LAST_VALID_CODE_POINT = 0x10ffff
     };
+#pragma pop_macro("NULL")
 
     constexpr Char() = default;
 
