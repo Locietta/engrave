@@ -112,7 +112,7 @@ Public headers are located under `engrave/include/engrave/`:
 
 ### Execution Model and Lifecycle Rules
 The engine operates on a single dedicated owner thread per process. Lifecycle rules per `engrave/include/engrave/engine.h:105`:
-- **Single Instance Per Process**: A process has at most one `Engine`, created once. A second `Engine::create()` aborts the process, even after the first `Engine` has been destroyed.
+- **Single Instance Per Process**: A process has at most one `Engine`. A second `Engine::create()` aborts the process only after a `create()` call has succeeded in claiming the process-global singleton (`s_engine_created` via `engine.cpp:90`). Initial validation failures due to missing resources or nonexistent font/SoundFont file paths return an error (`ErrorCode::NOT_FOUND` or `ErrorCode::INVALID_ARGUMENT`) before the singleton is claimed, so a subsequent `Engine::create()` call can succeed. (A font that exists on disk but fails during engine runtime loading fails after the singleton is claimed, preventing retries). Once claimed, any subsequent `Engine::create()` aborts, even after the first `Engine` has been destroyed.
 - **Open Documents at Teardown**: Destroying an `Engine` while any of its `Document` instances are still open aborts the process. All documents must be destroyed before the engine is destroyed.
 - **Owner Thread Affiliation**: Every call on an `Engine` and its `Document` instances must occur on the thread that created the engine; a call from another thread aborts.
 
