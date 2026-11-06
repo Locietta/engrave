@@ -1,0 +1,286 @@
+{
+ "creators": {},
+ "movement_title": null,
+ "part_list": {
+  "groups": [],
+  "parts": [
+   {
+    "abbreviation": "Pno.",
+    "id": "P1",
+    "instruments": [
+     {
+      "id": "P1-I1",
+      "midi_channel": 1,
+      "midi_device_port": "1",
+      "midi_program": 1,
+      "name": "Piano",
+      "pan": 0,
+      "sound": "keyboard.piano",
+      "volume": 78.7402
+     }
+    ],
+    "name": "Piano"
+   }
+  ]
+ },
+ "parts": [
+  {
+   "abbreviation": "Pno.",
+   "id": "P1",
+   "instruments": [
+    {
+     "id": "P1-I1",
+     "midi_channel": 1,
+     "midi_device_port": "1",
+     "midi_program": 1,
+     "name": "Piano",
+     "pan": 0,
+     "sound": "keyboard.piano",
+     "volume": 78.7402
+    }
+   ],
+   "measures": [
+    {
+     "attributes": [
+      {
+       "clefs": [
+        {
+         "line": 2,
+         "sign": "G",
+         "staff": 1
+        }
+       ],
+       "divisions": 1,
+       "key": {
+        "fifths": 0
+       },
+       "tick": 0,
+       "time": {
+        "beat_type": 4,
+        "beats": 4
+       }
+      }
+     ],
+     "barlines": [
+      {
+       "bar_style": "heavy-light",
+       "location": "left",
+       "repeat": {
+        "direction": "forward"
+       }
+      }
+     ],
+     "directions": [
+      {
+       "placement": "above",
+       "tick": 0,
+       "words": [
+        "1,2   1   3,4,5"
+       ]
+      },
+      {
+       "metronome": {
+        "beat_unit": "quarter",
+        "per_minute": "400"
+       },
+       "placement": "above",
+       "sound": {
+        "tempo": 400
+       },
+       "tick": 0
+      }
+     ],
+     "end_tick": 1920,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 0,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 1920,
+       "pitch": {
+        "alter": 0,
+        "midi": 60,
+        "octave": 4,
+        "step": "C"
+       },
+       "staff": 1,
+       "tick": 0,
+       "type": "whole",
+       "voice": 1
+      }
+     ],
+     "number": "1",
+     "start_tick": 0,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [
+      {
+       "ending": {
+        "number": "1",
+        "text": "1.",
+        "type": "start"
+       },
+       "location": "left"
+      },
+      {
+       "bar_style": "light-heavy",
+       "ending": {
+        "number": "1",
+        "type": "stop"
+       },
+       "location": "right",
+       "repeat": {
+        "direction": "backward"
+       }
+      }
+     ],
+     "directions": [],
+     "end_tick": 3840,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 1,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 1920,
+       "pitch": {
+        "alter": 0,
+        "midi": 62,
+        "octave": 4,
+        "step": "D"
+       },
+       "staff": 1,
+       "tick": 1920,
+       "type": "whole",
+       "voice": 1
+      }
+     ],
+     "number": "2",
+     "start_tick": 1920,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [
+      {
+       "ending": {
+        "number": "3",
+        "text": "3.",
+        "type": "start"
+       },
+       "location": "left"
+      },
+      {
+       "ending": {
+        "number": "3",
+        "type": "stop"
+       },
+       "location": "right"
+      }
+     ],
+     "directions": [],
+     "end_tick": 5760,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 2,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 1920,
+       "pitch": {
+        "alter": 0,
+        "midi": 64,
+        "octave": 4,
+        "step": "E"
+       },
+       "staff": 1,
+       "tick": 3840,
+       "type": "whole",
+       "voice": 1
+      }
+     ],
+     "number": "3",
+     "start_tick": 3840,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [],
+     "directions": [],
+     "end_tick": 7680,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 3,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 1920,
+       "pitch": {
+        "alter": 0,
+        "midi": 65,
+        "octave": 4,
+        "step": "F"
+       },
+       "staff": 1,
+       "tick": 5760,
+       "type": "whole",
+       "voice": 1
+      }
+     ],
+     "number": "4",
+     "start_tick": 5760,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [
+      {
+       "bar_style": "light-heavy",
+       "location": "right"
+      }
+     ],
+     "directions": [],
+     "end_tick": 9600,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 4,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 1920,
+       "pitch": {
+        "alter": 0,
+        "midi": 67,
+        "octave": 4,
+        "step": "G"
+       },
+       "staff": 1,
+       "tick": 7680,
+       "type": "whole",
+       "voice": 1
+      }
+     ],
+     "number": "5",
+     "start_tick": 7680,
+     "unhandled": []
+    }
+   ],
+   "name": "Piano"
+  }
+ ],
+ "rights": [],
+ "work_title": "Repeat Test"
+}

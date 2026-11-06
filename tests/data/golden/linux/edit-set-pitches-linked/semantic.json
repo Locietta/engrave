@@ -1,0 +1,1893 @@
+{
+ "annotations": [],
+ "events": [
+  [
+   [
+    {
+     "duration": "quarter",
+     "elements": [
+      "ChordLine:Fall"
+     ],
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 73,
+       "tpc1": 21,
+       "tpc2": 21
+      }
+     ],
+     "tick": 0,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 75,
+       "tpc1": 11,
+       "tpc2": 11
+      }
+     ],
+     "tick": 480,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 77,
+       "tpc1": 13,
+       "tpc2": 13
+      }
+     ],
+     "tick": 960,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "kind": "rest",
+     "tick": 1440,
+     "ticks": 480
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 1920,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 3840,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 5760,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 7680,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 9600,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 11520,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 13440,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 15360,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 17280,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 19200,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 21120,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 23040,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 24960,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 26880,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 28800,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 30720,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 32640,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 34560,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 36480,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 38400,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 40320,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 42240,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 44160,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 46080,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 48000,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 49920,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 51840,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 53760,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 55680,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 57600,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 59520,
+     "ticks": 1920
+    }
+   ],
+   [],
+   [],
+   []
+  ],
+  [
+   [
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 55,
+       "tpc1": 15,
+       "tpc2": 15
+      }
+     ],
+     "tick": 0,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 57,
+       "tpc1": 17,
+       "tpc2": 17
+      }
+     ],
+     "tick": 480,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 59,
+       "tpc1": 19,
+       "tpc2": 19
+      }
+     ],
+     "tick": 960,
+     "ticks": 480
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 60,
+       "tpc1": 14,
+       "tpc2": 14
+      }
+     ],
+     "tick": 1440,
+     "ticks": 480
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 1920,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 3840,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 5760,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 7680,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 9600,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 11520,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 13440,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 15360,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 17280,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 19200,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 21120,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 23040,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 24960,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 26880,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 28800,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 30720,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 32640,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 34560,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 36480,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 38400,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 40320,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 42240,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 44160,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 46080,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 48000,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 49920,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 51840,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 53760,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 55680,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 57600,
+     "ticks": 1920
+    },
+    {
+     "duration": "measure",
+     "kind": "rest",
+     "tick": 59520,
+     "ticks": 1920
+    }
+   ],
+   [],
+   [],
+   []
+  ]
+ ],
+ "excerpts": [
+  {
+   "name": "Alto",
+   "partIds": [
+    "1"
+   ],
+   "score": {
+    "annotations": [],
+    "events": [
+     [
+      [
+       {
+        "duration": "quarter",
+        "elements": [
+         "ChordLine:Fall"
+        ],
+        "grace": "none",
+        "kind": "chord",
+        "notes": [
+         {
+          "head": "normal",
+          "headType": "auto",
+          "pitch": 73,
+          "tpc1": 21,
+          "tpc2": 21
+         }
+        ],
+        "tick": 0,
+        "ticks": 480
+       },
+       {
+        "duration": "quarter",
+        "grace": "none",
+        "kind": "chord",
+        "notes": [
+         {
+          "head": "normal",
+          "headType": "auto",
+          "pitch": 75,
+          "tpc1": 11,
+          "tpc2": 11
+         }
+        ],
+        "tick": 480,
+        "ticks": 480
+       },
+       {
+        "duration": "quarter",
+        "grace": "none",
+        "kind": "chord",
+        "notes": [
+         {
+          "head": "normal",
+          "headType": "auto",
+          "pitch": 77,
+          "tpc1": 13,
+          "tpc2": 13
+         }
+        ],
+        "tick": 960,
+        "ticks": 480
+       },
+       {
+        "duration": "quarter",
+        "kind": "rest",
+        "tick": 1440,
+        "ticks": 480
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 1920,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 3840,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 5760,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 7680,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 9600,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 11520,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 13440,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 15360,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 17280,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 19200,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 21120,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 23040,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 24960,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 26880,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 28800,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 30720,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 32640,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 34560,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 36480,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 38400,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 40320,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 42240,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 44160,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 46080,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 48000,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 49920,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 51840,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 53760,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 55680,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 57600,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 59520,
+        "ticks": 1920
+       }
+      ],
+      [],
+      [],
+      []
+     ]
+    ],
+    "measures": [
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 0,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 1920,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 3840,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 5760,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 7680,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 9600,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 11520,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 13440,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 15360,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 17280,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 19200,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 21120,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 23040,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 24960,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 26880,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 28800,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 30720,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 32640,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 34560,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 36480,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 38400,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 40320,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 42240,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 44160,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 46080,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 48000,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 49920,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 51840,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 53760,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 55680,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 57600,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 59520,
+      "ticks": 1920,
+      "timesig": "4/4"
+     }
+    ],
+    "parts": [
+     {
+      "id": "1",
+      "instrumentId": "alto",
+      "longName": "Alto",
+      "partName": "Alto",
+      "shortName": "A.",
+      "show": true,
+      "staves": [
+       {
+        "group": "pitched",
+        "index": 0,
+        "invisible": false,
+        "lines": 5
+       }
+      ],
+      "transpose": [
+       0,
+       0
+      ]
+     }
+    ],
+    "segmentElements": [],
+    "signatures": [
+     {
+      "staff": 0,
+      "tick": 0,
+      "type": "Clef",
+      "value": "G"
+     },
+     {
+      "staff": 0,
+      "tick": 0,
+      "type": "TimeSig",
+      "value": "4/4"
+     }
+    ],
+    "spanners": []
+   }
+  },
+  {
+   "name": "Tenor",
+   "partIds": [
+    "2"
+   ],
+   "score": {
+    "annotations": [],
+    "events": [
+     [
+      [
+       {
+        "duration": "quarter",
+        "grace": "none",
+        "kind": "chord",
+        "notes": [
+         {
+          "head": "normal",
+          "headType": "auto",
+          "pitch": 55,
+          "tpc1": 15,
+          "tpc2": 15
+         }
+        ],
+        "tick": 0,
+        "ticks": 480
+       },
+       {
+        "duration": "quarter",
+        "grace": "none",
+        "kind": "chord",
+        "notes": [
+         {
+          "head": "normal",
+          "headType": "auto",
+          "pitch": 57,
+          "tpc1": 17,
+          "tpc2": 17
+         }
+        ],
+        "tick": 480,
+        "ticks": 480
+       },
+       {
+        "duration": "quarter",
+        "grace": "none",
+        "kind": "chord",
+        "notes": [
+         {
+          "head": "normal",
+          "headType": "auto",
+          "pitch": 59,
+          "tpc1": 19,
+          "tpc2": 19
+         }
+        ],
+        "tick": 960,
+        "ticks": 480
+       },
+       {
+        "duration": "quarter",
+        "grace": "none",
+        "kind": "chord",
+        "notes": [
+         {
+          "head": "normal",
+          "headType": "auto",
+          "pitch": 60,
+          "tpc1": 14,
+          "tpc2": 14
+         }
+        ],
+        "tick": 1440,
+        "ticks": 480
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 1920,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 3840,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 5760,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 7680,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 9600,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 11520,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 13440,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 15360,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 17280,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 19200,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 21120,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 23040,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 24960,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 26880,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 28800,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 30720,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 32640,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 34560,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 36480,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 38400,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 40320,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 42240,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 44160,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 46080,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 48000,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 49920,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 51840,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 53760,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 55680,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 57600,
+        "ticks": 1920
+       },
+       {
+        "duration": "measure",
+        "kind": "rest",
+        "tick": 59520,
+        "ticks": 1920
+       }
+      ],
+      [],
+      [],
+      []
+     ]
+    ],
+    "measures": [
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 0,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 1920,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 3840,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 5760,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 7680,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 9600,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 11520,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 13440,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 15360,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 17280,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 19200,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 21120,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 23040,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 24960,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 26880,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 28800,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 30720,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 32640,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 34560,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 36480,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 38400,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 40320,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 42240,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 44160,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 46080,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 48000,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 49920,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 51840,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 53760,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 55680,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 57600,
+      "ticks": 1920,
+      "timesig": "4/4"
+     },
+     {
+      "endRepeat": 0,
+      "startRepeat": false,
+      "tick": 59520,
+      "ticks": 1920,
+      "timesig": "4/4"
+     }
+    ],
+    "parts": [
+     {
+      "id": "2",
+      "instrumentId": "tenor",
+      "longName": "Tenor",
+      "partName": "Tenor",
+      "shortName": "T.",
+      "show": true,
+      "staves": [
+       {
+        "group": "pitched",
+        "index": 0,
+        "invisible": false,
+        "lines": 5
+       }
+      ],
+      "transpose": [
+       0,
+       0
+      ]
+     }
+    ],
+    "segmentElements": [],
+    "signatures": [
+     {
+      "staff": 0,
+      "tick": 0,
+      "type": "Clef",
+      "value": "G8vb"
+     },
+     {
+      "staff": 0,
+      "tick": 0,
+      "type": "TimeSig",
+      "value": "4/4"
+     }
+    ],
+    "spanners": []
+   }
+  }
+ ],
+ "measures": [
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 0,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 1920,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 3840,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 5760,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 7680,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 9600,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 11520,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 13440,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 15360,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 17280,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 19200,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 21120,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 23040,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 24960,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 26880,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 28800,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 30720,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 32640,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 34560,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 36480,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 38400,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 40320,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 42240,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 44160,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 46080,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 48000,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 49920,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 51840,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 53760,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 55680,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 57600,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 59520,
+   "ticks": 1920,
+   "timesig": "4/4"
+  }
+ ],
+ "metadata": {
+  "arranger": "",
+  "composer": "",
+  "copyright": "",
+  "lyricist": "",
+  "movementNumber": "",
+  "movementTitle": "",
+  "source": "",
+  "translator": "",
+  "workNumber": "",
+  "workTitle": "testpart1"
+ },
+ "parts": [
+  {
+   "id": "1",
+   "instrumentId": "alto",
+   "longName": "Alto",
+   "partName": "Alto",
+   "shortName": "A.",
+   "show": true,
+   "staves": [
+    {
+     "group": "pitched",
+     "index": 0,
+     "invisible": false,
+     "lines": 5
+    }
+   ],
+   "transpose": [
+    0,
+    0
+   ]
+  },
+  {
+   "id": "2",
+   "instrumentId": "tenor",
+   "longName": "Tenor",
+   "partName": "Tenor",
+   "shortName": "T.",
+   "show": true,
+   "staves": [
+    {
+     "group": "pitched",
+     "index": 1,
+     "invisible": false,
+     "lines": 5
+    }
+   ],
+   "transpose": [
+    0,
+    0
+   ]
+  }
+ ],
+ "playbackOrder": [
+  [
+   0,
+   61440,
+   0
+  ]
+ ],
+ "schema": 1,
+ "segmentElements": [],
+ "signatures": [
+  {
+   "staff": 0,
+   "tick": 0,
+   "type": "Clef",
+   "value": "G"
+  },
+  {
+   "staff": 1,
+   "tick": 0,
+   "type": "Clef",
+   "value": "G8vb"
+  },
+  {
+   "staff": 0,
+   "tick": 0,
+   "type": "TimeSig",
+   "value": "4/4"
+  },
+  {
+   "staff": 1,
+   "tick": 0,
+   "type": "TimeSig",
+   "value": "4/4"
+  }
+ ],
+ "spanners": [],
+ "tempoMap": [
+  [
+   0,
+   120.0
+  ]
+ ]
+}

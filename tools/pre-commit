@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+"""Check staged engine blobs without changing the index or working tree."""
+
+import subprocess
+import sys
+from pathlib import Path
+
+
+def main():
+    engine = Path(subprocess.check_output(["git", "rev-parse", "--show-toplevel"], text=True).strip())
+    names = subprocess.check_output(["git", "diff", "--cached", "--name-only", "-z", "--diff-filter=ACMR"])
+    failed = False
+    for raw in names.split(b"\0"):
+        if not raw:
+            continue
+        name = raw.decode("utf-8")
+        path = Path(name)
+        if path.parts[0] not in {"engrave", "src", "muse"} or "thirdparty" in path.parts:
+            continue
+        if path.suffix.lower() not in {".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx"}:
+            continue
+        blob = subprocess.check_output(["git", "show", ":" + name])
+        result = subprocess.run(
+            [
+                "clang-format",
+                "--style=file:" + str(engine / ".clang-format"),
+                "--assume-filename=" + str(engine / path),
+            ],
+            cwd=engine,
+            input=blob,
+            capture_output=True,
+        )
+        if result.returncode or result.stdout != blob:
+            print("pre-commit: staged engine file requires formatting: " + name, file=sys.stderr)
+            if result.stderr:
+                sys.stderr.buffer.write(result.stderr)
+            failed = True
+    return int(failed)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

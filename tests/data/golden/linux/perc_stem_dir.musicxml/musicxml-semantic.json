@@ -1,0 +1,1355 @@
+{
+ "creators": {},
+ "movement_title": null,
+ "part_list": {
+  "groups": [],
+  "parts": [
+   {
+    "abbreviation": "Perc.  3",
+    "id": "P1",
+    "instruments": [
+     {
+      "id": "P1-I28",
+      "midi_channel": 16,
+      "midi_device_port": "1",
+      "midi_program": 1,
+      "midi_unpitched": 28,
+      "name": "Closed Hi-Hat",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I29",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 29,
+      "name": "Pedal Hi-Hat",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I30",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 30,
+      "name": "Open Hi-Hat",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I31",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 31,
+      "name": "Ride Cymbal",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I32",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 32,
+      "name": "Stick Click",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I37",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 37,
+      "name": "Bass Drum",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I38",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 38,
+      "name": "Snare Rim",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I39",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 39,
+      "name": "Snare",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I55",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 55,
+      "name": "Tambourine",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I56",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 56,
+      "name": "Splash Cymbal",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I57",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 57,
+      "name": "Cowbell",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I58",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 58,
+      "name": "Suspended Cymbal",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I59",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 59,
+      "name": "Vibraslap",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I60",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 60,
+      "name": "Hand Cymbals",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I61",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 61,
+      "name": "Hi Bongo",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I62",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 62,
+      "name": "Lo Bongo",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I63",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 63,
+      "name": "Mute Hi Conga",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I64",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 64,
+      "name": "Hi Conga",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I65",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 65,
+      "name": "Lo Conga",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I66",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 66,
+      "name": "Hi Timbale",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I67",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 67,
+      "name": "Lo Timbale",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I68",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 68,
+      "name": "Hi Agogô",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I69",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 69,
+      "name": "Lo Agogô",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I70",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 70,
+      "name": "Cabasa",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I71",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 71,
+      "name": "Maracas",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I72",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 72,
+      "name": "Long Whistle",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I73",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 73,
+      "name": "Short Whistle",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I74",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 74,
+      "name": "Short Güiro",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I75",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 75,
+      "name": "Long Güiro",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I76",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 76,
+      "name": "Claves",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I77",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 77,
+      "name": "Hi Woodblock",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I78",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 78,
+      "name": "Lo Woodblock",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I79",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 79,
+      "name": "Mute Cuica",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I80",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 80,
+      "name": "Open Cuica",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I81",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 81,
+      "name": "Mute Triangle",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I82",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 82,
+      "name": "Triangle",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I83",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 83,
+      "name": "Shaker",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I84",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 84,
+      "name": "Sleigh Bells",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I85",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 85,
+      "name": "Mark Tree",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I86",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 86,
+      "name": "Castanets",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I87",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 87,
+      "name": "Mute Surdo",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I88",
+      "midi_channel": 16,
+      "midi_program": 1,
+      "midi_unpitched": 88,
+      "name": "Surdo",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     }
+    ],
+    "name": "Percussion 3"
+   }
+  ]
+ },
+ "parts": [
+  {
+   "abbreviation": "Perc.  3",
+   "id": "P1",
+   "instruments": [
+    {
+     "id": "P1-I28",
+     "midi_channel": 16,
+     "midi_device_port": "1",
+     "midi_program": 1,
+     "midi_unpitched": 28,
+     "name": "Closed Hi-Hat",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I29",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 29,
+     "name": "Pedal Hi-Hat",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I30",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 30,
+     "name": "Open Hi-Hat",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I31",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 31,
+     "name": "Ride Cymbal",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I32",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 32,
+     "name": "Stick Click",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I37",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 37,
+     "name": "Bass Drum",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I38",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 38,
+     "name": "Snare Rim",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I39",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 39,
+     "name": "Snare",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I55",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 55,
+     "name": "Tambourine",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I56",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 56,
+     "name": "Splash Cymbal",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I57",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 57,
+     "name": "Cowbell",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I58",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 58,
+     "name": "Suspended Cymbal",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I59",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 59,
+     "name": "Vibraslap",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I60",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 60,
+     "name": "Hand Cymbals",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I61",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 61,
+     "name": "Hi Bongo",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I62",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 62,
+     "name": "Lo Bongo",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I63",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 63,
+     "name": "Mute Hi Conga",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I64",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 64,
+     "name": "Hi Conga",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I65",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 65,
+     "name": "Lo Conga",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I66",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 66,
+     "name": "Hi Timbale",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I67",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 67,
+     "name": "Lo Timbale",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I68",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 68,
+     "name": "Hi Agogô",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I69",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 69,
+     "name": "Lo Agogô",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I70",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 70,
+     "name": "Cabasa",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I71",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 71,
+     "name": "Maracas",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I72",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 72,
+     "name": "Long Whistle",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I73",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 73,
+     "name": "Short Whistle",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I74",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 74,
+     "name": "Short Güiro",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I75",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 75,
+     "name": "Long Güiro",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I76",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 76,
+     "name": "Claves",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I77",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 77,
+     "name": "Hi Woodblock",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I78",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 78,
+     "name": "Lo Woodblock",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I79",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 79,
+     "name": "Mute Cuica",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I80",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 80,
+     "name": "Open Cuica",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I81",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 81,
+     "name": "Mute Triangle",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I82",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 82,
+     "name": "Triangle",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I83",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 83,
+     "name": "Shaker",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I84",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 84,
+     "name": "Sleigh Bells",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I85",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 85,
+     "name": "Mark Tree",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I86",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 86,
+     "name": "Castanets",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I87",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 87,
+     "name": "Mute Surdo",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I88",
+     "midi_channel": 16,
+     "midi_program": 1,
+     "midi_unpitched": 88,
+     "name": "Surdo",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    }
+   ],
+   "measures": [
+    {
+     "attributes": [
+      {
+       "clefs": [
+        {
+         "sign": "percussion",
+         "staff": 1
+        }
+       ],
+       "divisions": 2,
+       "key": {
+        "fifths": 0
+       },
+       "staff_details": [
+        {
+         "lines": 1,
+         "staff": 1
+        }
+       ],
+       "tick": 0,
+       "time": {
+        "beat_type": 4,
+        "beats": 4
+       }
+      }
+     ],
+     "barlines": [],
+     "directions": [
+      {
+       "placement": "above",
+       "tick": 0,
+       "words": [
+        "InstrLow"
+       ]
+      },
+      {
+       "placement": "above",
+       "tick": 480,
+       "words": [
+        "InstrHigh"
+       ]
+      }
+     ],
+     "end_tick": 1920,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 0,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "rest": {
+        "measure": false
+       },
+       "staff": 1,
+       "tick": 0,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "instrument_id": "P1-I61",
+       "staff": 1,
+       "tick": 480,
+       "type": "quarter",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "F"
+       },
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "instrument_id": "P1-I61",
+       "staff": 1,
+       "tick": 960,
+       "type": "quarter",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "F"
+       },
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "instrument_id": "P1-I61",
+       "staff": 1,
+       "tick": 1440,
+       "type": "quarter",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "F"
+       },
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "instrument_id": "P1-I64",
+       "staff": 1,
+       "tick": 0,
+       "type": "quarter",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "D"
+       },
+       "voice": 2
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "rest": {
+        "measure": false
+       },
+       "staff": 1,
+       "tick": 480,
+       "type": "quarter",
+       "voice": 2
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "rest": {
+        "measure": false
+       },
+       "staff": 1,
+       "tick": 960,
+       "type": "quarter",
+       "voice": 2
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "instrument_id": "P1-I64",
+       "staff": 1,
+       "tick": 1440,
+       "type": "quarter",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "D"
+       },
+       "voice": 2
+      }
+     ],
+     "number": "1",
+     "start_tick": 0,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [],
+     "directions": [
+      {
+       "placement": "above",
+       "tick": 1920,
+       "words": [
+        "InstrHigh"
+       ]
+      },
+      {
+       "placement": "above",
+       "tick": 1920,
+       "words": [
+        "InstrLow"
+       ]
+      }
+     ],
+     "end_tick": 3840,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 1,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 240,
+       "instrument_id": "P1-I61",
+       "staff": 1,
+       "tick": 1920,
+       "type": "eighth",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "F"
+       },
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 240,
+       "instrument_id": "P1-I61",
+       "staff": 1,
+       "tick": 2160,
+       "type": "eighth",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "F"
+       },
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 240,
+       "instrument_id": "P1-I61",
+       "staff": 1,
+       "tick": 2400,
+       "type": "eighth",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "F"
+       },
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 240,
+       "instrument_id": "P1-I61",
+       "staff": 1,
+       "tick": 2640,
+       "type": "eighth",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "F"
+       },
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 240,
+       "instrument_id": "P1-I61",
+       "staff": 1,
+       "tick": 2880,
+       "type": "eighth",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "F"
+       },
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 240,
+       "instrument_id": "P1-I61",
+       "staff": 1,
+       "tick": 3120,
+       "type": "eighth",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "F"
+       },
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 240,
+       "instrument_id": "P1-I61",
+       "staff": 1,
+       "tick": 3360,
+       "type": "eighth",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "F"
+       },
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 240,
+       "instrument_id": "P1-I61",
+       "staff": 1,
+       "tick": 3600,
+       "type": "eighth",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "F"
+       },
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "dots": 1,
+       "duration_ticks": 720,
+       "instrument_id": "P1-I64",
+       "staff": 1,
+       "tick": 1920,
+       "type": "quarter",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "D"
+       },
+       "voice": 2
+      },
+      {
+       "chord": false,
+       "duration_ticks": 240,
+       "instrument_id": "P1-I64",
+       "staff": 1,
+       "tick": 2640,
+       "type": "eighth",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "D"
+       },
+       "voice": 2
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "instrument_id": "P1-I64",
+       "staff": 1,
+       "tick": 2880,
+       "type": "quarter",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "D"
+       },
+       "voice": 2
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "rest": {
+        "measure": false
+       },
+       "staff": 1,
+       "tick": 3360,
+       "type": "quarter",
+       "voice": 2
+      }
+     ],
+     "number": "2",
+     "start_tick": 1920,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [],
+     "directions": [
+      {
+       "placement": "above",
+       "tick": 3840,
+       "words": [
+        "Claves"
+       ]
+      },
+      {
+       "placement": "above",
+       "tick": 3840,
+       "words": [
+        "Maracas"
+       ]
+      }
+     ],
+     "end_tick": 5760,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 2,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 240,
+       "instrument_id": "P1-I61",
+       "staff": 1,
+       "tick": 3840,
+       "type": "eighth",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "F"
+       },
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 240,
+       "instrument_id": "P1-I61",
+       "staff": 1,
+       "tick": 4080,
+       "type": "eighth",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "F"
+       },
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "instrument_id": "P1-I61",
+       "staff": 1,
+       "tick": 4320,
+       "type": "quarter",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "F"
+       },
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "instrument_id": "P1-I61",
+       "staff": 1,
+       "tick": 4800,
+       "type": "quarter",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "F"
+       },
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "rest": {
+        "measure": false
+       },
+       "staff": 1,
+       "tick": 5280,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "dots": 1,
+       "duration_ticks": 720,
+       "instrument_id": "P1-I62",
+       "staff": 1,
+       "tick": 3840,
+       "type": "quarter",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "E"
+       },
+       "voice": 2
+      },
+      {
+       "chord": false,
+       "duration_ticks": 240,
+       "instrument_id": "P1-I62",
+       "staff": 1,
+       "tick": 4560,
+       "type": "eighth",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "E"
+       },
+       "voice": 2
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "instrument_id": "P1-I62",
+       "staff": 1,
+       "tick": 4800,
+       "type": "quarter",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "E"
+       },
+       "voice": 2
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "rest": {
+        "measure": false
+       },
+       "staff": 1,
+       "tick": 5280,
+       "type": "quarter",
+       "voice": 2
+      }
+     ],
+     "number": "3",
+     "start_tick": 3840,
+     "unhandled": []
+    }
+   ],
+   "name": "Percussion 3"
+  }
+ ],
+ "rights": [],
+ "work_title": null
+}

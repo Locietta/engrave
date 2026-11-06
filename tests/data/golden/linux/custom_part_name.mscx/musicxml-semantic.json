@@ -1,0 +1,414 @@
+{
+ "creators": {
+  "composer": [
+   "Yannis A. Paul"
+  ]
+ },
+ "movement_title": null,
+ "part_list": {
+  "groups": [],
+  "parts": [
+   {
+    "abbreviation": "Flgl.",
+    "id": "P1",
+    "instruments": [
+     {
+      "id": "P1-I1",
+      "midi_channel": 1,
+      "midi_device_port": "1",
+      "midi_program": 1,
+      "name": "Klavier",
+      "pan": 0,
+      "sound": "keyboard.piano",
+      "volume": 78.7402
+     }
+    ],
+    "name": "Klavier"
+   }
+  ]
+ },
+ "parts": [
+  {
+   "abbreviation": "Flgl.",
+   "id": "P1",
+   "instruments": [
+    {
+     "id": "P1-I1",
+     "midi_channel": 1,
+     "midi_device_port": "1",
+     "midi_program": 1,
+     "name": "Klavier",
+     "pan": 0,
+     "sound": "keyboard.piano",
+     "volume": 78.7402
+    }
+   ],
+   "measures": [
+    {
+     "attributes": [
+      {
+       "clefs": [
+        {
+         "line": 2,
+         "sign": "G",
+         "staff": 1
+        }
+       ],
+       "divisions": 1,
+       "key": {
+        "fifths": 0
+       },
+       "tick": 0,
+       "time": {
+        "beat_type": 4,
+        "beats": 4
+       }
+      }
+     ],
+     "barlines": [],
+     "directions": [
+      {
+       "dynamics": [
+        "p"
+       ],
+       "placement": "below",
+       "sound": {
+        "dynamics": 54.44
+       },
+       "tick": 0
+      },
+      {
+       "placement": "below",
+       "tick": 0,
+       "wedges": [
+        {
+         "number": "1",
+         "spread": 11.5,
+         "type": "crescendo"
+        }
+       ]
+      },
+      {
+       "placement": "below",
+       "tick": 1920,
+       "wedges": [
+        {
+         "number": "1",
+         "type": "stop"
+        }
+       ]
+      }
+     ],
+     "end_tick": 1920,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 0,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 65,
+        "octave": 4,
+        "step": "F"
+       },
+       "staff": 1,
+       "tick": 0,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 65,
+        "octave": 4,
+        "step": "F"
+       },
+       "staff": 1,
+       "tick": 480,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 65,
+        "octave": 4,
+        "step": "F"
+       },
+       "staff": 1,
+       "tick": 960,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 65,
+        "octave": 4,
+        "step": "F"
+       },
+       "staff": 1,
+       "tick": 1440,
+       "type": "quarter",
+       "voice": 1
+      }
+     ],
+     "number": "1",
+     "start_tick": 0,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [
+      {
+       "bar_style": "heavy-light",
+       "location": "left",
+       "repeat": {
+        "direction": "forward"
+       }
+      },
+      {
+       "bar_style": "light-heavy",
+       "location": "right",
+       "repeat": {
+        "direction": "backward"
+       }
+      }
+     ],
+     "directions": [
+      {
+       "dynamics": [
+        "f"
+       ],
+       "placement": "below",
+       "sound": {
+        "dynamics": 106.67
+       },
+       "tick": 1920
+      },
+      {
+       "placement": "below",
+       "tick": 1920,
+       "wedges": [
+        {
+         "number": "1",
+         "spread": 11.5,
+         "type": "crescendo"
+        }
+       ]
+      },
+      {
+       "placement": "below",
+       "tick": 3360,
+       "wedges": [
+        {
+         "number": "1",
+         "type": "stop"
+        }
+       ]
+      }
+     ],
+     "end_tick": 3840,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 1,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 65,
+        "octave": 4,
+        "step": "F"
+       },
+       "staff": 1,
+       "tick": 1920,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 65,
+        "octave": 4,
+        "step": "F"
+       },
+       "staff": 1,
+       "tick": 2400,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 65,
+        "octave": 4,
+        "step": "F"
+       },
+       "staff": 1,
+       "tick": 2880,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 65,
+        "octave": 4,
+        "step": "F"
+       },
+       "staff": 1,
+       "tick": 3360,
+       "type": "quarter",
+       "voice": 1
+      }
+     ],
+     "number": "2",
+     "start_tick": 1920,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [
+      {
+       "bar_style": "light-heavy",
+       "location": "right"
+      }
+     ],
+     "directions": [
+      {
+       "dynamics": [
+        "ppp"
+       ],
+       "placement": "below",
+       "sound": {
+        "dynamics": 17.78
+       },
+       "tick": 3840
+      },
+      {
+       "placement": "below",
+       "tick": 3840,
+       "wedges": [
+        {
+         "number": "1",
+         "spread": 11.5,
+         "type": "crescendo"
+        }
+       ]
+      },
+      {
+       "placement": "below",
+       "tick": 5280,
+       "wedges": [
+        {
+         "number": "1",
+         "type": "stop"
+        }
+       ]
+      },
+      {
+       "dynamics": [
+        "p"
+       ],
+       "placement": "below",
+       "sound": {
+        "dynamics": 54.44
+       },
+       "tick": 5280
+      }
+     ],
+     "end_tick": 5760,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 2,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 67,
+        "octave": 4,
+        "step": "G"
+       },
+       "staff": 1,
+       "tick": 3840,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 67,
+        "octave": 4,
+        "step": "G"
+       },
+       "staff": 1,
+       "tick": 4320,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 67,
+        "octave": 4,
+        "step": "G"
+       },
+       "staff": 1,
+       "tick": 4800,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 67,
+        "octave": 4,
+        "step": "G"
+       },
+       "staff": 1,
+       "tick": 5280,
+       "type": "quarter",
+       "voice": 1
+      }
+     ],
+     "number": "3",
+     "start_tick": 3840,
+     "unhandled": []
+    }
+   ],
+   "name": "Klavier"
+  }
+ ],
+ "rights": [],
+ "work_title": "Idee in Noten no.8"
+}

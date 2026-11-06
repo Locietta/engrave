@@ -1,0 +1,15 @@
+{
+  "title": "Native Evening / 原生晚曲",
+  "tempo": 100,
+  "parts": [
+    {"name": "Violin", "midiProgram": 41, "measures": [
+      {"notes": [{"pitches": [67], "ticks": 480}, {"pitches": [69], "ticks": 480}, {"pitches": [71], "ticks": 480}, {"pitches": [74], "ticks": 480}]},
+      {"notes": [{"pitches": [72], "ticks": 480}, {"pitches": [71], "ticks": 480}, {"pitches": [69], "ticks": 480}, {"pitches": [], "ticks": 480}]}]},
+    {"name": "Piano", "midiProgram": 1, "measures": [
+      {"notes": [{"pitches": [48, 55, 60], "ticks": 1920}]},
+      {"notes": [{"pitches": [50, 57, 62], "ticks": 1920}]}]},
+    {"name": "Cello", "midiProgram": 43, "measures": [
+      {"notes": [{"pitches": [48], "ticks": 480}, {"pitches": [48], "ticks": 480}, {"pitches": [55], "ticks": 480}, {"pitches": [55], "ticks": 480}]},
+      {"notes": [{"pitches": [50], "ticks": 480}, {"pitches": [50], "ticks": 480}, {"pitches": [57], "ticks": 480}, {"pitches": [57], "ticks": 480}]}]}
+  ]
+}

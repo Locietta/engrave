@@ -1,0 +1,471 @@
+{
+ "creators": {},
+ "movement_title": null,
+ "part_list": {
+  "groups": [],
+  "parts": [
+   {
+    "abbreviation": "od.guit.",
+    "id": "P1",
+    "instruments": [
+     {
+      "id": "P1-I1",
+      "midi_channel": 1,
+      "midi_device_port": "1",
+      "midi_program": 30,
+      "name": "",
+      "pan": -44,
+      "sound": "pluck.guitar.electric",
+      "volume": 58.2677
+     }
+    ],
+    "name": "Guitar I"
+   }
+  ]
+ },
+ "parts": [
+  {
+   "abbreviation": "od.guit.",
+   "id": "P1",
+   "instruments": [
+    {
+     "id": "P1-I1",
+     "midi_channel": 1,
+     "midi_device_port": "1",
+     "midi_program": 30,
+     "name": "",
+     "pan": -44,
+     "sound": "pluck.guitar.electric",
+     "volume": 58.2677
+    }
+   ],
+   "measures": [
+    {
+     "attributes": [
+      {
+       "clefs": [
+        {
+         "line": 2,
+         "sign": "G",
+         "staff": 1
+        }
+       ],
+       "divisions": 2,
+       "key": {
+        "fifths": 0,
+        "mode": "major"
+       },
+       "tick": 0,
+       "time": {
+        "beat_type": 4,
+        "beats": 4
+       },
+       "transpose": {
+        "chromatic": 0,
+        "diatonic": 0,
+        "octave_change": -1
+       }
+      }
+     ],
+     "barlines": [],
+     "directions": [
+      {
+       "dynamics": [
+        "f"
+       ],
+       "placement": "below",
+       "sound": {
+        "dynamics": 106.67
+       },
+       "tick": 0
+      },
+      {
+       "metronome": {
+        "beat_unit": "quarter",
+        "per_minute": "120"
+       },
+       "placement": "above",
+       "sound": {
+        "tempo": 120
+       },
+       "tick": 0
+      }
+     ],
+     "end_tick": 1920,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 0,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 67,
+        "octave": 4,
+        "step": "G"
+       },
+       "staff": 1,
+       "tick": 0,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 240,
+       "notations": {
+        "technical": [
+         {
+          "bend_alter": 2,
+          "first_beat": "0",
+          "last_beat": "100",
+          "name": "bend"
+         }
+        ]
+       },
+       "pitch": {
+        "alter": 0,
+        "midi": 77,
+        "octave": 5,
+        "step": "F"
+       },
+       "staff": 1,
+       "tick": 480,
+       "type": "eighth",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 240,
+       "notations": {
+        "technical": [
+         {
+          "bend_alter": -2,
+          "first_beat": "0",
+          "last_beat": "100",
+          "name": "bend"
+         }
+        ]
+       },
+       "notehead": {
+        "parentheses": true,
+        "value": "normal"
+       },
+       "pitch": {
+        "alter": 0,
+        "midi": 79,
+        "octave": 5,
+        "step": "G"
+       },
+       "staff": 1,
+       "tick": 720,
+       "type": "eighth",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 960,
+       "notations": {
+        "technical": [
+         {
+          "bend_alter": 2,
+          "first_beat": "0",
+          "last_beat": "100",
+          "name": "bend"
+         }
+        ]
+       },
+       "notehead": {
+        "parentheses": true,
+        "value": "normal"
+       },
+       "pitch": {
+        "alter": 0,
+        "midi": 77,
+        "octave": 5,
+        "step": "F"
+       },
+       "staff": 1,
+       "tick": 960,
+       "type": "half",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 0,
+       "grace": {},
+       "pitch": {
+        "alter": 0,
+        "midi": 79,
+        "octave": 5,
+        "step": "G"
+       },
+       "staff": 1,
+       "tick": 1920,
+       "type": "eighth",
+       "voice": 1
+      }
+     ],
+     "number": "1",
+     "start_tick": 0,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [],
+     "directions": [],
+     "end_tick": 3840,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 1,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 960,
+       "notations": {
+        "technical": [
+         {
+          "bend_alter": 2,
+          "first_beat": "0",
+          "last_beat": "50",
+          "name": "bend"
+         }
+        ]
+       },
+       "pitch": {
+        "alter": 0,
+        "midi": 69,
+        "octave": 4,
+        "step": "A"
+       },
+       "staff": 1,
+       "tick": 1920,
+       "type": "half",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 0,
+       "grace": {},
+       "pitch": {
+        "alter": 0,
+        "midi": 71,
+        "octave": 4,
+        "step": "B"
+       },
+       "staff": 1,
+       "tick": 2880,
+       "type": "eighth",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 0,
+       "grace": {},
+       "notations": {
+        "technical": [
+         {
+          "bend_alter": 2,
+          "first_beat": "0",
+          "last_beat": "50",
+          "name": "bend",
+          "pre_bend": true
+         }
+        ]
+       },
+       "pitch": {
+        "alter": 0,
+        "midi": 69,
+        "octave": 4,
+        "step": "A"
+       },
+       "staff": 1,
+       "tick": 2880,
+       "type": "eighth",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 960,
+       "notations": {
+        "technical": [
+         {
+          "bend_alter": 2,
+          "first_beat": "0",
+          "last_beat": "50",
+          "name": "bend"
+         }
+        ]
+       },
+       "pitch": {
+        "alter": 0,
+        "midi": 72,
+        "octave": 5,
+        "step": "C"
+       },
+       "staff": 1,
+       "tick": 2880,
+       "type": "half",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 0,
+       "grace": {},
+       "pitch": {
+        "alter": 0,
+        "midi": 74,
+        "octave": 5,
+        "step": "D"
+       },
+       "staff": 1,
+       "tick": 3840,
+       "type": "eighth",
+       "voice": 1
+      }
+     ],
+     "number": "2",
+     "start_tick": 1920,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [
+      {
+       "bar_style": "light-heavy",
+       "location": "right"
+      }
+     ],
+     "directions": [],
+     "end_tick": 5760,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 2,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 0,
+       "grace": {},
+       "notehead": {
+        "parentheses": true,
+        "value": "normal"
+       },
+       "pitch": {
+        "alter": 0,
+        "midi": 69,
+        "octave": 4,
+        "step": "A"
+       },
+       "staff": 1,
+       "tick": 3840,
+       "type": "eighth",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 960,
+       "notations": {
+        "technical": [
+         {
+          "bend_alter": -2,
+          "first_beat": "0",
+          "last_beat": "100",
+          "name": "bend",
+          "pre_bend": true
+         }
+        ]
+       },
+       "pitch": {
+        "alter": 0,
+        "midi": 71,
+        "octave": 4,
+        "step": "B"
+       },
+       "staff": 1,
+       "tick": 3840,
+       "type": "half",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 0,
+       "grace": {},
+       "notehead": {
+        "parentheses": true,
+        "value": "normal"
+       },
+       "pitch": {
+        "alter": 0,
+        "midi": 65,
+        "octave": 4,
+        "step": "F"
+       },
+       "staff": 1,
+       "tick": 4800,
+       "type": "eighth",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 960,
+       "notations": {
+        "technical": [
+         {
+          "bend_alter": -2,
+          "first_beat": "0",
+          "last_beat": "100",
+          "name": "bend",
+          "pre_bend": true
+         },
+         {
+          "bend_alter": -2,
+          "first_beat": "0",
+          "last_beat": "65",
+          "name": "bend"
+         }
+        ]
+       },
+       "pitch": {
+        "alter": 0,
+        "midi": 67,
+        "octave": 4,
+        "step": "G"
+       },
+       "staff": 1,
+       "tick": 4800,
+       "type": "half",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 0,
+       "grace": {},
+       "pitch": {
+        "alter": 0,
+        "midi": 65,
+        "octave": 4,
+        "step": "F"
+       },
+       "staff": 1,
+       "tick": 5760,
+       "type": "eighth",
+       "voice": 1
+      }
+     ],
+     "number": "3",
+     "start_tick": 3840,
+     "unhandled": []
+    }
+   ],
+   "name": "Guitar I"
+  }
+ ],
+ "rights": [],
+ "work_title": null
+}

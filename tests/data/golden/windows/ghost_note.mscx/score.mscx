@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<museScore version="5.00">
+  <programVersion></programVersion>
+  <programRevision></programRevision>
+  <Score>
+    <eid>e1</eid>
+    <Division>480</Division>
+    <Style>
+      <pageWidth>8.26772</pageWidth>
+      <pageHeight>11.6929</pageHeight>
+      <pagePrintableWidth>7.08661</pagePrintableWidth>
+      <pageEvenLeftMargin>0.590551</pageEvenLeftMargin>
+      <pageOddLeftMargin>0.590551</pageOddLeftMargin>
+      <pageEvenTopMargin>0.590551</pageEvenTopMargin>
+      <pageEvenBottomMargin>0.590551</pageEvenBottomMargin>
+      <pageOddTopMargin>0.590551</pageOddTopMargin>
+      <pageOddBottomMargin>0.590551</pageOddBottomMargin>
+      <pageNumberFontSize>9</pageNumberFontSize>
+      <pageNumberFontStyle>0</pageNumberFontStyle>
+      <pageNumberMusicalSymbolSize>9</pageNumberMusicalSymbolSize>
+      <spatium>1.75</spatium>
+      </Style>
+    <showInvisible>1</showInvisible>
+    <showUnprintable>1</showUnprintable>
+    <showFrames>1</showFrames>
+    <showMargins>0</showMargins>
+    <open>1</open>
+    <metaTag name="arranger"></metaTag>
+    <metaTag name="composer"></metaTag>
+    <metaTag name="copyright"></metaTag>
+    <metaTag name="creationDate"></metaTag>
+    <metaTag name="lyricist"></metaTag>
+    <metaTag name="movementNumber"></metaTag>
+    <metaTag name="movementTitle"></metaTag>
+    <metaTag name="originalFormat">gp</metaTag>
+    <metaTag name="platform"></metaTag>
+    <metaTag name="source"></metaTag>
+    <metaTag name="sourceRevisionId"></metaTag>
+    <metaTag name="translator"></metaTag>
+    <metaTag name="workNumber"></metaTag>
+    <metaTag name="workTitle"></metaTag>
+    <Part id="1">
+      <eid>e2</eid>
+      <Staff>
+        <eid>e3</eid>
+        <StaffType group="pitched">
+          <name>stdNormal</name>
+          </StaffType>
+        </Staff>
+      <Staff>
+        <eid>e4</eid>
+        <linkedTo>e3</linkedTo>
+        <StaffType group="tablature">
+          <name>tab6StrSimple</name>
+          <lines>6</lines>
+          <lineDistance>1.5</lineDistance>
+          <stemless>1</stemless>
+          <timesig>0</timesig>
+          <durations>0</durations>
+          <durationFontName>MuseScore Tab Modern</durationFontName>
+          <durationFontSize>15</durationFontSize>
+          <durationFontY>0</durationFontY>
+          <fretUseTextStyle>0</fretUseTextStyle>
+          <fretPresetIdx>0</fretPresetIdx>
+          <fretFontSize>9</fretFontSize>
+          <fretFontY>0</fretFontY>
+          <linesThrough>0</linesThrough>
+          <minimStyle>0</minimStyle>
+          <onLines>1</onLines>
+          <showRests>0</showRests>
+          <stemsDown>1</stemsDown>
+          <stemsThrough>0</stemsThrough>
+          <upsideDown>0</upsideDown>
+          <useNumbers>1</useNumbers>
+          </StaffType>
+        </Staff>
+      <Instrument id="guitar-steel">
+        <InstrumentLabel>
+          <longName>Guitar</longName>
+          <shortName>dist.guit.</shortName>
+          </InstrumentLabel>
+        <trackName></trackName>
+        <transposeDiatonic>-7</transposeDiatonic>
+        <transposeChromatic>-12</transposeChromatic>
+        <instrumentId>pluck.guitar.acoustic</instrumentId>
+        <singleNoteDynamics>0</singleNoteDynamics>
+        <StringData>
+          <frets>24</frets>
+          <string>52</string>
+          <string>57</string>
+          <string>62</string>
+          <string>67</string>
+          <string>71</string>
+          <string>76</string>
+          </StringData>
+        <Articulation name="staccatissimo">
+          <velocity>100</velocity>
+          <gateTime>30</gateTime>
+          </Articulation>
+        <Articulation name="staccato">
+          <velocity>100</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="portato">
+          <velocity>100</velocity>
+          <gateTime>67</gateTime>
+          </Articulation>
+        <Articulation name="tenuto">
+          <velocity>100</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="accent">
+          <velocity>120</velocity>
+          <gateTime>67</gateTime>
+          </Articulation>
+        <Articulation name="marcato">
+          <velocity>144</velocity>
+          <gateTime>67</gateTime>
+          </Articulation>
+        <Articulation name="sforzato">
+          <velocity>169</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Channel>
+          <program value="30"/>
+          <controller ctrl="7" value="67"/>
+          <synti>Fluid</synti>
+          <midiPort>0</midiPort>
+          <midiChannel>4</midiChannel>
+          </Channel>
+        </Instrument>
+      </Part>
+    <Staff id="1">
+      <VBox>
+        <height>10</height>
+        <sizeIsSpatiumDependent>1</sizeIsSpatiumDependent>
+        <eid>e5</eid>
+        <Text>
+          <style>composer</style>
+          <eid>e6</eid>
+          <text>Music by Muse</text>
+          </Text>
+        <Text>
+          <style>poet</style>
+          <eid>e7</eid>
+          <text>Words by Matt Bellamy</text>
+          </Text>
+        </VBox>
+      <Measure>
+        <eid>e8</eid>
+        <voice>
+          <KeySig>
+            <eid>e9</eid>
+            <concertKey>0</concertKey>
+            </KeySig>
+          <TimeSig>
+            <eid>e10</eid>
+            <sigN>4</sigN>
+            <sigD>4</sigD>
+            </TimeSig>
+          <Dynamic>
+            <subtype>f</subtype>
+            <velocity>96</velocity>
+            <eid>e11</eid>
+            </Dynamic>
+          <Tempo>
+            <tempo>2.25</tempo>
+            <eid>e12</eid>
+            <text><sym>metNoteQuarterUp</sym> = 135</text>
+            </Tempo>
+          <Chord>
+            <eid>e13</eid>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>e14</eid>
+              <pitch>59</pitch>
+              <tpc>19</tpc>
+              <fret>19</fret>
+              <string>5</string>
+              </Note>
+            </Chord>
+          <Chord>
+            <eid>e15</eid>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>e16</eid>
+              <parentheses>both</parentheses>
+              <pitch>57</pitch>
+              <tpc>17</tpc>
+              <fret>17</fret>
+              <string>5</string>
+              <ghost>1</ghost>
+              </Note>
+            <NoteParenGroup>
+              <Parenthesis>
+                <eid>e17</eid>
+                </Parenthesis>
+              <Parenthesis>
+                <horizontalDirection>right</horizontalDirection>
+                <eid>e18</eid>
+                </Parenthesis>
+              <Notes>
+                <NoteEID>e16</NoteEID>
+                </Notes>
+              </NoteParenGroup>
+            <NoteParenGroup>
+              <Parenthesis>
+                <eid>e19</eid>
+                </Parenthesis>
+              <Parenthesis>
+                <horizontalDirection>right</horizontalDirection>
+                <eid>e20</eid>
+                </Parenthesis>
+              <Notes>
+                <NoteEID>e16</NoteEID>
+                </Notes>
+              </NoteParenGroup>
+            </Chord>
+          <Rest>
+            <eid>e21</eid>
+            <durationType>half</durationType>
+            </Rest>
+          <BarLine>
+            <subtype>end</subtype>
+            <eid>e22</eid>
+            </BarLine>
+          </voice>
+        </Measure>
+      </Staff>
+    <Staff id="2">
+      <Measure>
+        <voice>
+          <Chord>
+            <eid>e23</eid>
+            <linkedTo>e13</linkedTo>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>e24</eid>
+              <linkedTo>e14</linkedTo>
+              <pitch>59</pitch>
+              <tpc>19</tpc>
+              <fret>19</fret>
+              <string>5</string>
+              </Note>
+            </Chord>
+          <Chord>
+            <eid>e25</eid>
+            <linkedTo>e15</linkedTo>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>e26</eid>
+              <linkedTo>e16</linkedTo>
+              <parentheses>both</parentheses>
+              <pitch>57</pitch>
+              <tpc>17</tpc>
+              <fret>17</fret>
+              <string>5</string>
+              <ghost>1</ghost>
+              </Note>
+            <NoteParenGroup>
+              <Parenthesis>
+                <eid>e27</eid>
+                <linkedTo>e19</linkedTo>
+                </Parenthesis>
+              <Parenthesis>
+                <horizontalDirection>right</horizontalDirection>
+                <eid>e28</eid>
+                <linkedTo>e20</linkedTo>
+                </Parenthesis>
+              <Notes>
+                <NoteEID>e26</NoteEID>
+                </Notes>
+              </NoteParenGroup>
+            </Chord>
+          <Rest>
+            <eid>e29</eid>
+            <linkedTo>e21</linkedTo>
+            <durationType>half</durationType>
+            </Rest>
+          <BarLine>
+            <subtype>end</subtype>
+            <eid>e30</eid>
+            <linkedTo>e22</linkedTo>
+            </BarLine>
+          </voice>
+        </Measure>
+      </Staff>
+    </Score>
+  </museScore>

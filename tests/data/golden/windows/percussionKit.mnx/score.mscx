@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<museScore version="5.00">
+  <programVersion></programVersion>
+  <programRevision></programRevision>
+  <Score>
+    <eid>e1</eid>
+    <Division>480</Division>
+    <Style>
+      <spatium>1.75</spatium>
+      </Style>
+    <showInvisible>1</showInvisible>
+    <showUnprintable>1</showUnprintable>
+    <showFrames>1</showFrames>
+    <showMargins>0</showMargins>
+    <metaTag name="arranger"></metaTag>
+    <metaTag name="composer"></metaTag>
+    <metaTag name="copyright"></metaTag>
+    <metaTag name="creationDate"></metaTag>
+    <metaTag name="lyricist"></metaTag>
+    <metaTag name="movementNumber"></metaTag>
+    <metaTag name="movementTitle"></metaTag>
+    <metaTag name="platform"></metaTag>
+    <metaTag name="source"></metaTag>
+    <metaTag name="translator"></metaTag>
+    <metaTag name="workNumber"></metaTag>
+    <metaTag name="workTitle"></metaTag>
+    <Part id="1">
+      <eid>e2</eid>
+      <Staff>
+        <eid>e3</eid>
+        <StaffType group="pitched">
+          <name>stdNormal</name>
+          </StaffType>
+        </Staff>
+      <Instrument id="drumset">
+        <InstrumentLabel>
+          <longName>Drumset</longName>
+          <shortName>Drs.</shortName>
+          </InstrumentLabel>
+        <trackName>Drumset</trackName>
+        <instrumentId>drum.group.set</instrumentId>
+        <useDrumset>1</useDrumset>
+        <percussionPanelColumns>8</percussionPanelColumns>
+        <Drum pitch="35">
+          <head>normal</head>
+          <line>8</line>
+          <voice>1</voice>
+          <name>Acoustic Bass Drum</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="38">
+          <head>normal</head>
+          <line>4</line>
+          <voice>0</voice>
+          <name>Acoustic Snare</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="42">
+          <head>cross</head>
+          <line>0</line>
+          <voice>0</voice>
+          <name>Closed Hi-Hat</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="45">
+          <head>normal</head>
+          <line>6</line>
+          <voice>0</voice>
+          <name>Low Tom</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="46">
+          <head>xcircle</head>
+          <line>-2</line>
+          <voice>0</voice>
+          <name>Open Hi-Hat</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="49">
+          <head>cross</head>
+          <line>-4</line>
+          <voice>0</voice>
+          <name>Crash Cymbal 1</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="50">
+          <head>normal</head>
+          <line>2</line>
+          <voice>0</voice>
+          <name>High Tom</name>
+          <stem>1</stem>
+          </Drum>
+        <Drum pitch="51">
+          <head>cross</head>
+          <line>-6</line>
+          <voice>0</voice>
+          <name>Ride Cymbal 1</name>
+          <stem>1</stem>
+          </Drum>
+        <clef>PERC</clef>
+        <Articulation>
+          <velocity>100</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="staccatissimo">
+          <velocity>100</velocity>
+          <gateTime>33</gateTime>
+          </Articulation>
+        <Articulation name="staccato">
+          <velocity>100</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="portato">
+          <velocity>100</velocity>
+          <gateTime>67</gateTime>
+          </Articulation>
+        <Articulation name="tenuto">
+          <velocity>100</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="marcato">
+          <velocity>120</velocity>
+          <gateTime>67</gateTime>
+          </Articulation>
+        <Articulation name="sforzato">
+          <velocity>150</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Articulation name="sforzatoStaccato">
+          <velocity>150</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoStaccato">
+          <velocity>120</velocity>
+          <gateTime>50</gateTime>
+          </Articulation>
+        <Articulation name="marcatoTenuto">
+          <velocity>120</velocity>
+          <gateTime>100</gateTime>
+          </Articulation>
+        <Channel>
+          <controller ctrl="0" value="1"/>
+          <controller ctrl="32" value="0"/>
+          <program value="0"/>
+          <synti>Fluid</synti>
+          </Channel>
+        </Instrument>
+      </Part>
+    <Staff id="1">
+      <Measure>
+        <eid>e4</eid>
+        <voice>
+          <KeySig>
+            <eid>e5</eid>
+            <concertKey>0</concertKey>
+            </KeySig>
+          <TimeSig>
+            <eid>e6</eid>
+            <sigN>4</sigN>
+            <sigD>4</sigD>
+            </TimeSig>
+          <Chord>
+            <eid>e7</eid>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>e8</eid>
+              <pitch>35</pitch>
+              <tpc>19</tpc>
+              </Note>
+            </Chord>
+          <Chord>
+            <eid>e9</eid>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>e10</eid>
+              <pitch>38</pitch>
+              <tpc>16</tpc>
+              </Note>
+            <Note>
+              <eid>e11</eid>
+              <pitch>42</pitch>
+              <tpc>20</tpc>
+              <head>cross</head>
+              </Note>
+            </Chord>
+          <Chord>
+            <eid>e12</eid>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>e13</eid>
+              <pitch>45</pitch>
+              <tpc>17</tpc>
+              </Note>
+            <Note>
+              <eid>e14</eid>
+              <pitch>46</pitch>
+              <tpc>12</tpc>
+              <head>xcircle</head>
+              </Note>
+            </Chord>
+          <Chord>
+            <eid>e15</eid>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>e16</eid>
+              <pitch>38</pitch>
+              <tpc>16</tpc>
+              </Note>
+            <Note>
+              <eid>e17</eid>
+              <pitch>50</pitch>
+              <tpc>16</tpc>
+              </Note>
+            <Note>
+              <eid>e18</eid>
+              <pitch>49</pitch>
+              <tpc>21</tpc>
+              <head>cross</head>
+              </Note>
+            <Note>
+              <eid>e19</eid>
+              <pitch>51</pitch>
+              <tpc>11</tpc>
+              <head>cross</head>
+              </Note>
+            </Chord>
+          </voice>
+        </Measure>
+      <Measure>
+        <eid>e20</eid>
+        <voice>
+          <Chord>
+            <eid>e21</eid>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>e22</eid>
+              <Tie>
+                <startElement>e16</startElement>
+                <endElement>e22</endElement>
+                <eid>e23</eid>
+                <track>0</track>
+                </Tie>
+              <pitch>38</pitch>
+              <tpc>16</tpc>
+              </Note>
+            </Chord>
+          <Chord>
+            <eid>e24</eid>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>e25</eid>
+              <pitch>42</pitch>
+              <tpc>20</tpc>
+              <head>cross</head>
+              </Note>
+            </Chord>
+          <Chord>
+            <eid>e26</eid>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>e27</eid>
+              <pitch>35</pitch>
+              <tpc>19</tpc>
+              </Note>
+            </Chord>
+          <Chord>
+            <eid>e28</eid>
+            <durationType>quarter</durationType>
+            <Note>
+              <eid>e29</eid>
+              <pitch>49</pitch>
+              <tpc>21</tpc>
+              <head>cross</head>
+              </Note>
+            </Chord>
+          </voice>
+        </Measure>
+      </Staff>
+    </Score>
+  </museScore>

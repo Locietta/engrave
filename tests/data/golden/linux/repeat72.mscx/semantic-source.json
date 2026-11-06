@@ -1,0 +1,236 @@
+{
+ "annotations": [
+  {
+   "bpm": 400.0002,
+   "subtype": "Tempo",
+   "text": " = 400",
+   "tick": 0,
+   "track": 0,
+   "type": "Tempo"
+  }
+ ],
+ "events": [
+  [
+   [
+    {
+     "duration": "whole",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 60,
+       "tpc1": 14,
+       "tpc2": 14
+      }
+     ],
+     "tick": 0,
+     "ticks": 1920
+    },
+    {
+     "duration": "whole",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 62,
+       "tpc1": 16,
+       "tpc2": 16
+      }
+     ],
+     "tick": 1920,
+     "ticks": 1920
+    },
+    {
+     "duration": "whole",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 64,
+       "tpc1": 18,
+       "tpc2": 18
+      }
+     ],
+     "tick": 3840,
+     "ticks": 1920
+    },
+    {
+     "duration": "whole",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 65,
+       "tpc1": 13,
+       "tpc2": 13
+      }
+     ],
+     "tick": 5760,
+     "ticks": 1920
+    },
+    {
+     "duration": "whole",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 67,
+       "tpc1": 15,
+       "tpc2": 15
+      }
+     ],
+     "tick": 7680,
+     "ticks": 1920
+    }
+   ],
+   [],
+   [],
+   []
+  ]
+ ],
+ "excerpts": [],
+ "measures": [
+  {
+   "endRepeat": 0,
+   "startRepeat": true,
+   "tick": 0,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 2,
+   "startRepeat": false,
+   "tick": 1920,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 3840,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 5760,
+   "ticks": 1920,
+   "timesig": "4/4"
+  },
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 7680,
+   "ticks": 1920,
+   "timesig": "4/4"
+  }
+ ],
+ "metadata": {
+  "arranger": "",
+  "composer": "",
+  "copyright": "",
+  "lyricist": "",
+  "movementNumber": "",
+  "movementTitle": "",
+  "source": "",
+  "translator": "",
+  "workNumber": "",
+  "workTitle": "Repeat Test"
+ },
+ "parts": [
+  {
+   "id": "1",
+   "instrumentId": "piano",
+   "longName": "Piano",
+   "partName": "Piano",
+   "shortName": "Pno.",
+   "show": true,
+   "staves": [
+    {
+     "group": "pitched",
+     "index": 0,
+     "invisible": false,
+     "lines": 5
+    }
+   ],
+   "transpose": [
+    0,
+    0
+   ]
+  }
+ ],
+ "playbackOrder": [
+  [
+   0,
+   3840,
+   0
+  ],
+  [
+   0,
+   1920,
+   3840
+  ],
+  [
+   3840,
+   5760,
+   5760
+  ]
+ ],
+ "schema": 1,
+ "segmentElements": [],
+ "signatures": [
+  {
+   "staff": 0,
+   "tick": 0,
+   "type": "TimeSig",
+   "value": "4/4"
+  }
+ ],
+ "spanners": [
+  {
+   "anchor": 1,
+   "beginText": "1.",
+   "endings": [
+    1
+   ],
+   "tick": 1920,
+   "tick2": 3840,
+   "track": 0,
+   "track2": 0,
+   "type": "Volta"
+  },
+  {
+   "anchor": 1,
+   "beginText": "3.",
+   "endings": [
+    3
+   ],
+   "tick": 3840,
+   "tick2": 5760,
+   "track": 0,
+   "track2": 0,
+   "type": "Volta"
+  }
+ ],
+ "tempoMap": [
+  [
+   0,
+   400.0002
+  ],
+  [
+   3840,
+   400.0002
+  ]
+ ]
+}

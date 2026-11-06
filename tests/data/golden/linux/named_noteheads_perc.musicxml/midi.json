@@ -1,0 +1,190 @@
+{
+ "division": 480,
+ "format": 1,
+ "tracks": [
+  [
+   [
+    0,
+    {
+     "data": "50657263757373696f6e",
+     "metaType": 3,
+     "type": "meta"
+    }
+   ],
+   [
+    0,
+    {
+     "data": "04021808",
+     "metaType": 88,
+     "type": "meta"
+    }
+   ],
+   [
+    0,
+    {
+     "data": "0000",
+     "metaType": 89,
+     "type": "meta"
+    }
+   ],
+   [
+    0,
+    {
+     "data": "07a120",
+     "metaType": 81,
+     "type": "meta"
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 9,
+     "num": 121,
+     "type": "cc",
+     "val": 0
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 9,
+     "program": 0,
+     "type": "program"
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 9,
+     "num": 7,
+     "type": "cc",
+     "val": 100
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 9,
+     "num": 10,
+     "type": "cc",
+     "val": 63
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 9,
+     "num": 91,
+     "type": "cc",
+     "val": 0
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 9,
+     "num": 93,
+     "type": "cc",
+     "val": 0
+    }
+   ],
+   [
+    0,
+    {
+     "data": "00",
+     "metaType": 33,
+     "type": "meta"
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 9,
+     "pitch": 45,
+     "type": "note_on",
+     "vel": 80
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 9,
+     "num": 2,
+     "type": "cc",
+     "val": 80
+    }
+   ],
+   [
+    479,
+    {
+     "ch": 9,
+     "pitch": 45,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    480,
+    {
+     "ch": 9,
+     "pitch": 45,
+     "type": "note_on",
+     "vel": 80
+    }
+   ],
+   [
+    480,
+    {
+     "ch": 9,
+     "num": 2,
+     "type": "cc",
+     "val": 80
+    }
+   ],
+   [
+    959,
+    {
+     "ch": 9,
+     "pitch": 45,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    960,
+    {
+     "ch": 9,
+     "pitch": 45,
+     "type": "note_on",
+     "vel": 80
+    }
+   ],
+   [
+    960,
+    {
+     "ch": 9,
+     "num": 2,
+     "type": "cc",
+     "val": 80
+    }
+   ],
+   [
+    1919,
+    {
+     "ch": 9,
+     "pitch": 45,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    1920,
+    {
+     "data": "",
+     "metaType": 47,
+     "type": "meta"
+    }
+   ]
+  ]
+ ]
+}

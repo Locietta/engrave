@@ -1,0 +1,150 @@
+{
+ "annotations": [],
+ "events": [
+  [
+   [
+    {
+     "duration": "half",
+     "kind": "rest",
+     "tick": 0,
+     "ticks": 960
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 72,
+       "tpc1": 14,
+       "tpc2": 14
+      }
+     ],
+     "tick": 960,
+     "ticks": 320,
+     "tuplet": "3/2"
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 67,
+       "tpc1": 15,
+       "tpc2": 15
+      }
+     ],
+     "tick": 1280,
+     "ticks": 320,
+     "tuplet": "3/2"
+    },
+    {
+     "duration": "quarter",
+     "grace": "none",
+     "kind": "chord",
+     "notes": [
+      {
+       "head": "normal",
+       "headType": "auto",
+       "pitch": 76,
+       "tpc1": 18,
+       "tpc2": 18
+      }
+     ],
+     "tick": 1600,
+     "ticks": 320,
+     "tuplet": "3/2"
+    }
+   ],
+   [],
+   [],
+   []
+  ]
+ ],
+ "excerpts": [],
+ "measures": [
+  {
+   "endRepeat": 0,
+   "startRepeat": false,
+   "tick": 0,
+   "ticks": 1920,
+   "timesig": "4/4"
+  }
+ ],
+ "metadata": {
+  "arranger": "",
+  "composer": "",
+  "copyright": "",
+  "lyricist": "",
+  "movementNumber": "",
+  "movementTitle": "",
+  "source": "",
+  "translator": "",
+  "workNumber": "",
+  "workTitle": ""
+ },
+ "parts": [
+  {
+   "id": "1",
+   "instrumentId": "piano",
+   "longName": "",
+   "partName": "Piano",
+   "shortName": "",
+   "show": true,
+   "staves": [
+    {
+     "group": "pitched",
+     "index": 0,
+     "invisible": false,
+     "lines": 5
+    }
+   ],
+   "transpose": [
+    0,
+    0
+   ]
+  }
+ ],
+ "playbackOrder": [
+  [
+   0,
+   1920,
+   0
+  ]
+ ],
+ "schema": 1,
+ "segmentElements": [],
+ "signatures": [
+  {
+   "staff": 0,
+   "tick": 0,
+   "type": "Clef",
+   "value": "G"
+  },
+  {
+   "key": 0,
+   "staff": 0,
+   "tick": 0,
+   "type": "KeySig",
+   "value": 0
+  },
+  {
+   "staff": 0,
+   "tick": 0,
+   "type": "TimeSig",
+   "value": "4/4"
+  }
+ ],
+ "spanners": [],
+ "tempoMap": [
+  [
+   0,
+   120.0
+  ]
+ ]
+}

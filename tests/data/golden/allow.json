@@ -1,0 +1,304 @@
+{
+ "entries": [
+  {
+   "context": "engine-gate-archive",
+   "fixture": "bend.gp",
+   "kind": "different",
+   "output": "score.mscx",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "sha256": {
+    "linux": "e05235df929a26ab3ccf07c6802e77f11332472e8be60c4dc03c36c4d35a7b53",
+    "windows": "e05235df929a26ab3ccf07c6802e77f11332472e8be60c4dc03c36c4d35a7b53"
+   },
+   "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "bends.mid",
+   "kind": "different",
+   "output": "score.mscx",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "sha256": {
+    "linux": "4870f1d6fb2119b54f8f02eb95e1d5b03f8d03c42a1a25658b34a9b905085a90",
+    "windows": "4870f1d6fb2119b54f8f02eb95e1d5b03f8d03c42a1a25658b34a9b905085a90"
+   },
+   "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "chordline_path.mscx",
+   "kind": "different",
+   "output": "score.mscx",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "sha256": {
+    "linux": "a2d67cd7bd032bcb57326e75cc7da2e28e99ff8495850a8054a1581aef215b3b",
+    "windows": "a2d67cd7bd032bcb57326e75cc7da2e28e99ff8495850a8054a1581aef215b3b"
+   },
+   "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "coverage.musicxml",
+   "kind": "different",
+   "output": "score.mscx",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "sha256": {
+    "linux": "10368e7d628ce9f4a5de992a7d5751f69eca4a201b7331a8d615b67137b94a2f",
+    "windows": "10368e7d628ce9f4a5de992a7d5751f69eca4a201b7331a8d615b67137b94a2f"
+   },
+   "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "custom_part_name.mscx",
+   "kind": "different",
+   "output": "score.mscx",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "sha256": {
+    "linux": "e4c8af6db300e43e97e18a850a8dc001e5cc55b7d85303d2f13d9e0d8bb6527c",
+    "windows": "e4c8af6db300e43e97e18a850a8dc001e5cc55b7d85303d2f13d9e0d8bb6527c"
+   },
+   "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "drums_import.musicxml",
+   "kind": "different",
+   "output": "score.mscx",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "sha256": {
+    "linux": "420bc4269b6f00391f73a3bc869e59b985dc154c5ac073a2be5c5d057ffa0c07",
+    "windows": "420bc4269b6f00391f73a3bc869e59b985dc154c5ac073a2be5c5d057ffa0c07"
+   },
+   "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "evening.musicxml",
+   "kind": "different",
+   "output": "score.mscx",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "sha256": {
+    "linux": "46fd63272b296030a472050968fd24970ffe3e7485bd87316347f9f761fe7b4b",
+    "windows": "46fd63272b296030a472050968fd24970ffe3e7485bd87316347f9f761fe7b4b"
+   },
+   "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "ghost_note.mscx",
+   "kind": "different",
+   "output": "score.mscx",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "sha256": {
+    "linux": "00b2ad49580b317ba044bfcb2cbc3a994a7d36cac1e01018021d5a74c84a762e",
+    "windows": "00b2ad49580b317ba044bfcb2cbc3a994a7d36cac1e01018021d5a74c84a762e"
+   },
+   "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "hairpins_and_repeats.mscx",
+   "kind": "different",
+   "output": "score.mscx",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "sha256": {
+    "linux": "e4c8af6db300e43e97e18a850a8dc001e5cc55b7d85303d2f13d9e0d8bb6527c",
+    "windows": "e4c8af6db300e43e97e18a850a8dc001e5cc55b7d85303d2f13d9e0d8bb6527c"
+   },
+   "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "layout_elements.mscx",
+   "kind": "different",
+   "output": "score.mscx",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "sha256": {
+    "linux": "d4da0c305de1c86badee3804cebb4502c49614fbcba172f0a91dbe6ba61bb9dc",
+    "windows": "d4da0c305de1c86badee3804cebb4502c49614fbcba172f0a91dbe6ba61bb9dc"
+   },
+   "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "linked_parts.mscx",
+   "kind": "different",
+   "output": "score.mscx",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "sha256": {
+    "linux": "45547bf1cfd367d23c2162d5f68194de4166b8cd8f5b9439c72286882a5dfe28",
+    "windows": "45547bf1cfd367d23c2162d5f68194de4166b8cd8f5b9439c72286882a5dfe28"
+   },
+   "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "lyrics.mscx",
+   "kind": "different",
+   "output": "score.mscx",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "sha256": {
+    "linux": "fd5d3563b20852ca84c6d228331590822005113b9d9ccd56901dabfe9bd575fd",
+    "windows": "fd5d3563b20852ca84c6d228331590822005113b9d9ccd56901dabfe9bd575fd"
+   },
+   "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "named_noteheads_perc.musicxml",
+   "kind": "different",
+   "output": "score.mscx",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "sha256": {
+    "linux": "4abcc45bd35a6095af304bc8d1a4995f5155fba1fc540820c5f25e7c9d1e9f35",
+    "windows": "4abcc45bd35a6095af304bc8d1a4995f5155fba1fc540820c5f25e7c9d1e9f35"
+   },
+   "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "pedal.mscx",
+   "kind": "different",
+   "output": "score.mscx",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "sha256": {
+    "linux": "38affe664f00467a4c548a0f099d23e0153e31c90ca060418385a3bb3ed0fad0",
+    "windows": "38affe664f00467a4c548a0f099d23e0153e31c90ca060418385a3bb3ed0fad0"
+   },
+   "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "perc_stem_dir.musicxml",
+   "kind": "different",
+   "output": "score.mscx",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "sha256": {
+    "linux": "b28b57c7c7c60dc172420b69b41c707faa2a1740e79f81e26df0b715258b666c",
+    "windows": "b28b57c7c7c60dc172420b69b41c707faa2a1740e79f81e26df0b715258b666c"
+   },
+   "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "repeat70.mscx",
+   "kind": "different",
+   "output": "score.mscx",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "sha256": {
+    "linux": "1ab43428bc5ecde46529862bf0a4e9f04749462959b984239ee636d3f3395141",
+    "windows": "1ab43428bc5ecde46529862bf0a4e9f04749462959b984239ee636d3f3395141"
+   },
+   "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "repeat71.mscx",
+   "kind": "different",
+   "output": "score.mscx",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "sha256": {
+    "linux": "c6c37dcbabde9b3993400c4727af2028cec3c5ea9ff15b3535c9351a3d9df067",
+    "windows": "c6c37dcbabde9b3993400c4727af2028cec3c5ea9ff15b3535c9351a3d9df067"
+   },
+   "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "repeat72.mscx",
+   "kind": "different",
+   "output": "score.mscx",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "sha256": {
+    "linux": "610306aab2626b6160f4c66f79e730c1f549e0202adc479f03c2911ea9b3c61f",
+    "windows": "610306aab2626b6160f4c66f79e730c1f549e0202adc479f03c2911ea9b3c61f"
+   },
+   "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "repeat_with_2_voltas.mscx",
+   "kind": "different",
+   "output": "score.mscx",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "sha256": {
+    "linux": "489c1aac140558f81d5b873ece8e70e40d12ebf130f36504f4738ed44a6b6900",
+    "windows": "489c1aac140558f81d5b873ece8e70e40d12ebf130f36504f4738ed44a6b6900"
+   },
+   "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "slurs.mscz",
+   "kind": "different",
+   "output": "score.mscx",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "sha256": {
+    "linux": "65bf1f062a8dfa6b60a7677af9cdae398fc1d80d3c25a6b41cdc4d38d14adf7a",
+    "windows": "65bf1f062a8dfa6b60a7677af9cdae398fc1d80d3c25a6b41cdc4d38d14adf7a"
+   },
+   "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "tab_grace_prebend.mscx",
+   "kind": "different",
+   "output": "score.mscx",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "sha256": {
+    "linux": "1ccd9b963ad3c785e0aa0578214cb85eab378bf6ea1a2e4e48f22965550bf573",
+    "windows": "1ccd9b963ad3c785e0aa0578214cb85eab378bf6ea1a2e4e48f22965550bf573"
+   },
+   "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "graceArps.mnx",
+   "kind": "different",
+   "output": "score.mscx",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "sha256": {
+    "linux": "34980b60f26cf47874ca89cf5dce3da54fbca4ceda714ac7c6f49f08877c2ec8",
+    "windows": "34980b60f26cf47874ca89cf5dce3da54fbca4ceda714ac7c6f49f08877c2ec8"
+   },
+   "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "percussionKit.mnx",
+   "kind": "different",
+   "output": "score.mscx",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "sha256": {
+    "linux": "01d94c73b148f231350f5421279172c78cb42bb30f5358ad7b8d82fdb58364d7",
+    "windows": "01d94c73b148f231350f5421279172c78cb42bb30f5358ad7b8d82fdb58364d7"
+   },
+   "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "tupletSimple.mnx",
+   "kind": "different",
+   "output": "score.mscx",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "sha256": {
+    "linux": "62b5f035f1fe0b7727a924351a696167ef72d1261a0ceb3e2ce7d6c17a35f6a9",
+    "windows": "62b5f035f1fe0b7727a924351a696167ef72d1261a0ceb3e2ce7d6c17a35f6a9"
+   },
+   "step": "archive MSCX"
+  },
+  {
+   "context": "engine-gate-archive",
+   "fixture": "two-notes.mnx",
+   "kind": "different",
+   "output": "score.mscx",
+   "reason": "Current MSCZ inner MSCX representation, preserved from the reviewed primary index",
+   "sha256": {
+    "linux": "c7e0385b6147351951a55fda0f49294c0e13d96fb32ca6bef2c48802993bb9a4",
+    "windows": "c7e0385b6147351951a55fda0f49294c0e13d96fb32ca6bef2c48802993bb9a4"
+   },
+   "step": "archive MSCX"
+  }
+ ]
+}

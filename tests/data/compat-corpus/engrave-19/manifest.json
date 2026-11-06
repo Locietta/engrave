@@ -1,0 +1,482 @@
+{
+ "capture": {
+  "assets_manifest_sha256": "d1f04622c32f27ccc59edce37aea7d92735b18abe5c98881652cdca15a9019a2",
+  "build": "Windows MSVC xmake release, ccache enabled, tests exposed; incremental build at host 6b962a1",
+  "semantic_dump_binary_sha256": "b6c5ead636001c9c17b5053c1978519ce782defbe2d0f32d4c83884b0fe71955",
+  "soundfont_sha256": "cfcd66d89e8386823400eca64934b14fbea7bf48ba1f00d21189af1262794ec2",
+  "writer_binary_sha256": "e89cc4b6d23bf3965e10f89b8b11a10a30196ac33fd6c179dcb03498ac9bcd32",
+  "writer_pin": "engrave-19"
+ },
+ "entries": [
+  {
+   "features": [
+    "EID references in writer bytes",
+    "Guitar Pro import",
+    "notes",
+    "tempo map"
+   ],
+   "file": "bend.gp.mscz",
+   "framework_sha": "da3885cb",
+   "semantic": "bend.gp.semantic.json",
+   "semantic_sha256": "ce5385a6720c2aa151e77bfdbeee0e90d84f1212593fed974f1924851999707a",
+   "sha256": "417d4ad118da944aa01034fa44b6400b7bf26c59b70dab07e9cb845c2788f4d0",
+   "source": "fixtures/golden/bend.gp",
+   "source_sha256": "8114407dae4f9312abb348229d5c619275c6906b2ffa2bc62b63fbb167af8c0e",
+   "superproject_commit": "6b962a1d4406ef3b962481d14ce49df0db1c927d",
+   "upstream_sha": "32f0a26e5b",
+   "writer_sha": "45ea71c664404b3698e7bb7d1f7335ee3dbec4b5"
+  },
+  {
+   "features": [
+    "EID references in writer bytes",
+    "MIDI import",
+    "notes",
+    "tempo map"
+   ],
+   "file": "bends.mid.mscz",
+   "framework_sha": "da3885cb",
+   "semantic": "bends.mid.semantic.json",
+   "semantic_sha256": "bc823259430c5855b208efd17e091bfc6bd87631a1eef92345b44e1aeae12e4a",
+   "sha256": "333115299552cb60c5d70220ee203a8a531e9d04126a700202e89eb514f55030",
+   "source": "fixtures/golden/bends.mid",
+   "source_sha256": "39f30289f493ce6c97a29f94e748ab00ad1e5aa10221f18139cabbb84eb0539e",
+   "superproject_commit": "6b962a1d4406ef3b962481d14ce49df0db1c927d",
+   "upstream_sha": "32f0a26e5b",
+   "writer_sha": "45ea71c664404b3698e7bb7d1f7335ee3dbec4b5"
+  },
+  {
+   "features": [
+    "EID references in writer bytes",
+    "notes",
+    "rests",
+    "tempo map"
+   ],
+   "file": "chordline_path.mscx.mscz",
+   "framework_sha": "da3885cb",
+   "semantic": "chordline_path.mscx.semantic.json",
+   "semantic_sha256": "b43056aa89b07dd0eaa549bd3a7d73f0f9573cea2a9af58c01ae62208ffd6812",
+   "sha256": "27582103faec5fa9b1dd54777df514a9942d6d504295c651ddff904ca2e5cd69",
+   "source": "fixtures/golden/chordline_path.mscx",
+   "source_sha256": "c45e82a063455315c11880a4272f584a3603ef2962fceda2897ed3b00c619bf3",
+   "superproject_commit": "6b962a1d4406ef3b962481d14ce49df0db1c927d",
+   "upstream_sha": "32f0a26e5b",
+   "writer_sha": "45ea71c664404b3698e7bb7d1f7335ee3dbec4b5"
+  },
+  {
+   "features": [
+    "EID references in writer bytes",
+    "notes",
+    "rests",
+    "spanners",
+    "tempo map"
+   ],
+   "file": "coverage.musicxml.mscz",
+   "framework_sha": "da3885cb",
+   "semantic": "coverage.musicxml.semantic.json",
+   "semantic_sha256": "b463f4fc52836e807bff9bbb40ebabb07d4e81ea5f75d0f95ef88ce9dcc1106c",
+   "sha256": "b239f95e6ade1c5c6c6f12fa5bb0c6a45735eb2591445b10e1550bfe5791029d",
+   "source": "fixtures/golden/coverage.musicxml",
+   "source_sha256": "ebba437fec5252694b844ae47b2f701f813535098a5ecfabad5cb98b0d3083d5",
+   "superproject_commit": "6b962a1d4406ef3b962481d14ce49df0db1c927d",
+   "upstream_sha": "32f0a26e5b",
+   "writer_sha": "45ea71c664404b3698e7bb7d1f7335ee3dbec4b5"
+  },
+  {
+   "features": [
+    "EID references in writer bytes",
+    "notes",
+    "rests",
+    "tempo map"
+   ],
+   "file": "created.json.mscz",
+   "framework_sha": "da3885cb",
+   "semantic": "created.json.semantic.json",
+   "semantic_sha256": "e1a79ef26cc7eef398aee8122bb75477e53e85a4aff059e9a1e8c6d8e9070040",
+   "sha256": "a8d841d0af0b56744dff7ead93373e747a8196fae4bcfabf79fcca822d5b7d21",
+   "source": "fixtures/golden/created.json",
+   "source_sha256": "93d5565119ae0d56c97c4eadb33bae8b336f1b5c84ae1f582dea5fb9473493f9",
+   "superproject_commit": "6b962a1d4406ef3b962481d14ce49df0db1c927d",
+   "upstream_sha": "32f0a26e5b",
+   "writer_sha": "45ea71c664404b3698e7bb7d1f7335ee3dbec4b5"
+  },
+  {
+   "features": [
+    "EID references in writer bytes",
+    "notes",
+    "repeats",
+    "spanners",
+    "tempo map"
+   ],
+   "file": "custom_part_name.mscx.mscz",
+   "framework_sha": "da3885cb",
+   "semantic": "custom_part_name.mscx.semantic.json",
+   "semantic_sha256": "40789761ff02380d680a0b2e01a1520be2b40795c3fca4238552c78feee46bba",
+   "sha256": "82fdedeaf524cf284fec79ad514f93f62d7b860607ccb8be36c87e0b77e66f70",
+   "source": "fixtures/golden/custom_part_name.mscx",
+   "source_sha256": "43940b4eb1128c9428e3f2ba521d1051b7b63d9782de1da533e84907dcfccdca",
+   "superproject_commit": "6b962a1d4406ef3b962481d14ce49df0db1c927d",
+   "upstream_sha": "32f0a26e5b",
+   "writer_sha": "45ea71c664404b3698e7bb7d1f7335ee3dbec4b5"
+  },
+  {
+   "features": [
+    "EID references in writer bytes",
+    "notes",
+    "rests",
+    "tempo map"
+   ],
+   "file": "drums_import.musicxml.mscz",
+   "framework_sha": "da3885cb",
+   "semantic": "drums_import.musicxml.semantic.json",
+   "semantic_sha256": "771ec68230a370eb936a52d16519105aee94bda612c1b7903dfe77389ebe4747",
+   "sha256": "201377905300900e256163462fdae307bf38b4e5023cb7025ca86393fda976ba",
+   "source": "fixtures/golden/drums_import.musicxml",
+   "source_sha256": "07f649ff614f9058a8c3da6e80660aaf38023650ea40a9e45531c5e915229ce9",
+   "superproject_commit": "6b962a1d4406ef3b962481d14ce49df0db1c927d",
+   "upstream_sha": "32f0a26e5b",
+   "writer_sha": "45ea71c664404b3698e7bb7d1f7335ee3dbec4b5"
+  },
+  {
+   "features": [
+    "EID references in writer bytes",
+    "notes",
+    "rests",
+    "tablature",
+    "tempo map"
+   ],
+   "file": "ghost_note.mscx.mscz",
+   "framework_sha": "da3885cb",
+   "semantic": "ghost_note.mscx.semantic.json",
+   "semantic_sha256": "bdf7f43f29d20bbff67378da4813951b188be72b959a2054f63f78175b7ea39a",
+   "sha256": "b85be5bb4f0904d5eefc087afdbd4981bf5bdcd92d2aec291bb221ad546c8fd1",
+   "source": "fixtures/golden/ghost_note.mscx",
+   "source_sha256": "831172bfc81626a64c05a76f160890e1452cc50e59ab64ee1a9ece9b37c7815a",
+   "superproject_commit": "6b962a1d4406ef3b962481d14ce49df0db1c927d",
+   "upstream_sha": "32f0a26e5b",
+   "writer_sha": "45ea71c664404b3698e7bb7d1f7335ee3dbec4b5"
+  },
+  {
+   "features": [
+    "EID references in writer bytes",
+    "notes",
+    "repeats",
+    "spanners",
+    "tempo map"
+   ],
+   "file": "hairpins_and_repeats.mscx.mscz",
+   "framework_sha": "da3885cb",
+   "semantic": "hairpins_and_repeats.mscx.semantic.json",
+   "semantic_sha256": "40789761ff02380d680a0b2e01a1520be2b40795c3fca4238552c78feee46bba",
+   "sha256": "d58a8f27075b15ebef123a536e0911977519d5819206ee61915ac84d77217015",
+   "source": "fixtures/golden/hairpins_and_repeats.mscx",
+   "source_sha256": "6c462d2bd1f26f25013363492fba39a6bb097ea4238c4ebb6748b8ce74b50f7a",
+   "superproject_commit": "6b962a1d4406ef3b962481d14ce49df0db1c927d",
+   "upstream_sha": "32f0a26e5b",
+   "writer_sha": "45ea71c664404b3698e7bb7d1f7335ee3dbec4b5"
+  },
+  {
+   "features": [
+    "EID references in writer bytes",
+    "lyrics",
+    "notes",
+    "rests",
+    "spanners",
+    "tempo map",
+    "ties"
+   ],
+   "file": "layout_elements.mscx.mscz",
+   "framework_sha": "da3885cb",
+   "semantic": "layout_elements.mscx.semantic.json",
+   "semantic_sha256": "1914949f2ef0893d391c8bd33394bc68ec0bed5a89e5ebc4a6ff64ef410bb6ec",
+   "sha256": "0a365dbf971d5e9c4e1f7cc32f48f9573ad66b1d443313e935209c12c072269a",
+   "source": "fixtures/golden/layout_elements.mscx",
+   "source_sha256": "f56fcbf8a00d644ce99bebaff0a587b558bbd78e2a55f82f2eee80c91ff63394",
+   "superproject_commit": "6b962a1d4406ef3b962481d14ce49df0db1c927d",
+   "upstream_sha": "32f0a26e5b",
+   "writer_sha": "45ea71c664404b3698e7bb7d1f7335ee3dbec4b5"
+  },
+  {
+   "features": [
+    "EID references in writer bytes",
+    "linked parts and excerpts",
+    "notes",
+    "rests",
+    "tempo map",
+    "ties"
+   ],
+   "file": "linked_parts.mscx.mscz",
+   "framework_sha": "da3885cb",
+   "semantic": "linked_parts.mscx.semantic.json",
+   "semantic_sha256": "f4604b1665bf9c8cc729d77f6344986951d5cf159ef45f3e63708c137a92c30e",
+   "sha256": "f2ae4342e891a0d62829237288c5d0c3d2a5bfe9dab02d0e7e0fc5857463745c",
+   "source": "fixtures/golden/linked_parts.mscx",
+   "source_sha256": "afeed12e70f91074c0a38be9ed261a797ffea261082514de2a6c00251ccbed3e",
+   "superproject_commit": "6b962a1d4406ef3b962481d14ce49df0db1c927d",
+   "upstream_sha": "32f0a26e5b",
+   "writer_sha": "45ea71c664404b3698e7bb7d1f7335ee3dbec4b5"
+  },
+  {
+   "features": [
+    "EID references in writer bytes",
+    "lyrics",
+    "notes",
+    "tempo map"
+   ],
+   "file": "lyrics.mscx.mscz",
+   "framework_sha": "da3885cb",
+   "semantic": "lyrics.mscx.semantic.json",
+   "semantic_sha256": "8322439168d553b2ee58133a4a5f3bc5fa63b3fb66186310e3248b3affe0fb84",
+   "sha256": "19dc256cd0251748839b11fc6b80e56bc42d7dd7e24ef099853b729257b6cad7",
+   "source": "fixtures/golden/lyrics.mscx",
+   "source_sha256": "747c5cfb2bfac43b81090d545ea6d3fb8cd26db628b0a9cc0eb43f1cd5b99b35",
+   "superproject_commit": "6b962a1d4406ef3b962481d14ce49df0db1c927d",
+   "upstream_sha": "32f0a26e5b",
+   "writer_sha": "45ea71c664404b3698e7bb7d1f7335ee3dbec4b5"
+  },
+  {
+   "features": [
+    "EID references in writer bytes",
+    "notes",
+    "tempo map"
+   ],
+   "file": "named_noteheads_perc.musicxml.mscz",
+   "framework_sha": "da3885cb",
+   "semantic": "named_noteheads_perc.musicxml.semantic.json",
+   "semantic_sha256": "fd72d59c1aae5258cdc388e0b49bb8602e58dfe4b3e95e9b1224b95d611e218d",
+   "sha256": "15c3226be11dbbbc7cd282f89dd162c3b9ca5e03582af9a090a78537bd54af4f",
+   "source": "fixtures/golden/named_noteheads_perc.musicxml",
+   "source_sha256": "91cb901acf7ca9e82cbbb79b2fc67cbeefcb2483430fd2ff5a071d7cbea4da5a",
+   "superproject_commit": "6b962a1d4406ef3b962481d14ce49df0db1c927d",
+   "upstream_sha": "32f0a26e5b",
+   "writer_sha": "45ea71c664404b3698e7bb7d1f7335ee3dbec4b5"
+  },
+  {
+   "features": [
+    "EID references in writer bytes",
+    "notes",
+    "rests",
+    "spanners",
+    "tempo map"
+   ],
+   "file": "pedal.mscx.mscz",
+   "framework_sha": "da3885cb",
+   "semantic": "pedal.mscx.semantic.json",
+   "semantic_sha256": "e756deb069f59d2879373ba6f22312e15db7a4f9aab5a14309d1f61e4d2761ba",
+   "sha256": "e456d070c00ec010644b5e993ed574cede206994a8e13651b860b7a4882d246f",
+   "source": "fixtures/golden/pedal.mscx",
+   "source_sha256": "1401cc3c79a66d5b755991d7cd4df8367f96878e40ca2249b7a15eaad4c1a1cf",
+   "superproject_commit": "6b962a1d4406ef3b962481d14ce49df0db1c927d",
+   "upstream_sha": "32f0a26e5b",
+   "writer_sha": "45ea71c664404b3698e7bb7d1f7335ee3dbec4b5"
+  },
+  {
+   "features": [
+    "EID references in writer bytes",
+    "notes",
+    "rests",
+    "tempo map"
+   ],
+   "file": "perc_stem_dir.musicxml.mscz",
+   "framework_sha": "da3885cb",
+   "semantic": "perc_stem_dir.musicxml.semantic.json",
+   "semantic_sha256": "7b365b15ed6fcbe1676077287c9244f852c49bad43b51bbba4d1e6c436e900ca",
+   "sha256": "ef7d6b5e1a1e2b0f1274b429d544585041befac35061b632276216aff6f34984",
+   "source": "fixtures/golden/perc_stem_dir.musicxml",
+   "source_sha256": "ff0bbdb454c496364faa9927ec92bd29b52eed201734e30e99c73c55f59c4c4f",
+   "superproject_commit": "6b962a1d4406ef3b962481d14ce49df0db1c927d",
+   "upstream_sha": "32f0a26e5b",
+   "writer_sha": "45ea71c664404b3698e7bb7d1f7335ee3dbec4b5"
+  },
+  {
+   "features": [
+    "EID references in writer bytes",
+    "notes",
+    "repeats",
+    "spanners",
+    "tempo map"
+   ],
+   "file": "repeat70.mscx.mscz",
+   "framework_sha": "da3885cb",
+   "semantic": "repeat70.mscx.semantic.json",
+   "semantic_sha256": "f36c97058c6eb83c7f3754033d9e80b857e56bc4bb9b0eee6a89f16c4323a3e3",
+   "sha256": "38245193fd831fd799d91af18e86c872abce8312a158822bc386e9b760636041",
+   "source": "fixtures/golden/repeat70.mscx",
+   "source_sha256": "6f8419d3239c5b6958f94e5a26b1a78103b7b8c09880d7d57e5a1ae109a20655",
+   "superproject_commit": "6b962a1d4406ef3b962481d14ce49df0db1c927d",
+   "upstream_sha": "32f0a26e5b",
+   "writer_sha": "45ea71c664404b3698e7bb7d1f7335ee3dbec4b5"
+  },
+  {
+   "features": [
+    "EID references in writer bytes",
+    "notes",
+    "repeats",
+    "spanners",
+    "tempo map"
+   ],
+   "file": "repeat71.mscx.mscz",
+   "framework_sha": "da3885cb",
+   "semantic": "repeat71.mscx.semantic.json",
+   "semantic_sha256": "119b068a9227f19c2720c164a839f27ab473f04f25d53e221808f21e1ea61233",
+   "sha256": "97a14ba7aa6ceebff47d51e7f9cdfee3ec92bcde40bf9611fa77fe01c0cfce8f",
+   "source": "fixtures/golden/repeat71.mscx",
+   "source_sha256": "0484b66f23d5498484bd8ca8eba7c5871145b01665af1a79348f5e4857a3a622",
+   "superproject_commit": "6b962a1d4406ef3b962481d14ce49df0db1c927d",
+   "upstream_sha": "32f0a26e5b",
+   "writer_sha": "45ea71c664404b3698e7bb7d1f7335ee3dbec4b5"
+  },
+  {
+   "features": [
+    "EID references in writer bytes",
+    "notes",
+    "repeats",
+    "spanners",
+    "tempo map"
+   ],
+   "file": "repeat72.mscx.mscz",
+   "framework_sha": "da3885cb",
+   "semantic": "repeat72.mscx.semantic.json",
+   "semantic_sha256": "f36c97058c6eb83c7f3754033d9e80b857e56bc4bb9b0eee6a89f16c4323a3e3",
+   "sha256": "fdf9b403ccf971769c19b7258cd5a25271a3e784cdd29f5d01d6b5626d0bdb21",
+   "source": "fixtures/golden/repeat72.mscx",
+   "source_sha256": "f6f86642df227c851cdf2ac5e00a5d883560788cfa796af4b4a435537dedcbc7",
+   "superproject_commit": "6b962a1d4406ef3b962481d14ce49df0db1c927d",
+   "upstream_sha": "32f0a26e5b",
+   "writer_sha": "45ea71c664404b3698e7bb7d1f7335ee3dbec4b5"
+  },
+  {
+   "features": [
+    "EID references in writer bytes",
+    "notes",
+    "repeats",
+    "spanners",
+    "tempo map"
+   ],
+   "file": "repeat_with_2_voltas.mscx.mscz",
+   "framework_sha": "da3885cb",
+   "semantic": "repeat_with_2_voltas.mscx.semantic.json",
+   "semantic_sha256": "c5ca121ca4d0eec7e99055b5f512d8ff04be36adda34af115a8a073fbc8ec18d",
+   "sha256": "72e75a6b9b87e0a68a6654e2af8487a1f733c6a9e918c6f95bdb7a4ee9f3f70e",
+   "source": "fixtures/golden/repeat_with_2_voltas.mscx",
+   "source_sha256": "05111b03145fdac611c491375a0dba82f7787a5697d4a40c1afdb70ca164d1b6",
+   "superproject_commit": "6b962a1d4406ef3b962481d14ce49df0db1c927d",
+   "upstream_sha": "32f0a26e5b",
+   "writer_sha": "45ea71c664404b3698e7bb7d1f7335ee3dbec4b5"
+  },
+  {
+   "features": [
+    "EID references in writer bytes",
+    "notes",
+    "spanners",
+    "tempo map"
+   ],
+   "file": "slurs.mscz.mscz",
+   "framework_sha": "da3885cb",
+   "semantic": "slurs.mscz.semantic.json",
+   "semantic_sha256": "c2ef42b491534b79603892dbe2f4a2c7ab2c3057aefda5f48fd961971e190617",
+   "sha256": "72b29651daec3849688daa5b6009f1d321fe84e5daa4eee7467093bfd4c04848",
+   "source": "fixtures/golden/slurs.mscz",
+   "source_sha256": "bba43c6622453d578a88dd08c5190a4de931863645fd61b4437549b2bb728cad",
+   "superproject_commit": "6b962a1d4406ef3b962481d14ce49df0db1c927d",
+   "upstream_sha": "32f0a26e5b",
+   "writer_sha": "45ea71c664404b3698e7bb7d1f7335ee3dbec4b5"
+  },
+  {
+   "features": [
+    "EID references in writer bytes",
+    "notes",
+    "tablature",
+    "tempo map"
+   ],
+   "file": "tab_grace_prebend.mscx.mscz",
+   "framework_sha": "da3885cb",
+   "semantic": "tab_grace_prebend.mscx.semantic.json",
+   "semantic_sha256": "ac4960e451b21b4a3cd7a179741ddb612c38b87b5d26df018826879edacd93c7",
+   "sha256": "84a9ff0cdf345fb6d66828dec077787897ead2fdd7f58657cee3576531a45592",
+   "source": "fixtures/golden/tab_grace_prebend.mscx",
+   "source_sha256": "166e61c7bc1a51dea63f05fa953faa93880d2839555b2fb230cd39f69a3d31a7",
+   "superproject_commit": "6b962a1d4406ef3b962481d14ce49df0db1c927d",
+   "upstream_sha": "32f0a26e5b",
+   "writer_sha": "45ea71c664404b3698e7bb7d1f7335ee3dbec4b5"
+  },
+  {
+   "features": [
+    "EID references in writer bytes",
+    "notes",
+    "rests",
+    "tempo map"
+   ],
+   "file": "evening.musicxml.mscz",
+   "framework_sha": "da3885cb",
+   "semantic": "evening.musicxml.semantic.json",
+   "semantic_sha256": "dc433724dd2ec4a0eab87417e66570d4d614f11c09a858236e9cafaf2cbc64e3",
+   "sha256": "1b31b34df4c1f12bb8692d89e8834c60f858119ee87150dbd3ac02e9a221d891",
+   "source": "fixtures/evening.musicxml",
+   "source_sha256": "376f316a8a80ee8e13688f315040534179f3f9f670bb85ad830531cfe6c0b2a6",
+   "superproject_commit": "6b962a1d4406ef3b962481d14ce49df0db1c927d",
+   "upstream_sha": "32f0a26e5b",
+   "writer_sha": "45ea71c664404b3698e7bb7d1f7335ee3dbec4b5"
+  },
+  {
+   "features": [
+    "EID references in writer bytes",
+    "edited score",
+    "notes",
+    "rests",
+    "tempo map"
+   ],
+   "file": "edit-replace-measures.mscz",
+   "framework_sha": "da3885cb",
+   "semantic": "edit-replace-measures.semantic.json",
+   "semantic_sha256": "ec14ec485e3b802dbe585e0c81d69bc900a9291deb77b10acd6ef8bd5ed2b949",
+   "sha256": "4eb8d570f2e5de6fa67707098c193cfd33e4c460c14de43c7f87b198755e6da0",
+   "source": "fixtures/golden/created.json",
+   "source_sha256": "93d5565119ae0d56c97c4eadb33bae8b336f1b5c84ae1f582dea5fb9473493f9",
+   "superproject_commit": "6b962a1d4406ef3b962481d14ce49df0db1c927d",
+   "upstream_sha": "32f0a26e5b",
+   "writer_sha": "45ea71c664404b3698e7bb7d1f7335ee3dbec4b5"
+  },
+  {
+   "features": [
+    "EID references in writer bytes",
+    "edited score",
+    "notes",
+    "rests",
+    "spanners",
+    "tempo map"
+   ],
+   "file": "edit-set-pitches-coverage.mscz",
+   "framework_sha": "da3885cb",
+   "semantic": "edit-set-pitches-coverage.semantic.json",
+   "semantic_sha256": "b7a99b89bc8730ca03280abe6071cd95e2683e85b7456f581ef3fa338a7c97d7",
+   "sha256": "9a4153c6d7a5e9704ab86333f2a7057d98851460604fd77826f5ee3f7a9dee3c",
+   "source": "fixtures/golden/coverage.musicxml",
+   "source_sha256": "ebba437fec5252694b844ae47b2f701f813535098a5ecfabad5cb98b0d3083d5",
+   "superproject_commit": "6b962a1d4406ef3b962481d14ce49df0db1c927d",
+   "upstream_sha": "32f0a26e5b",
+   "writer_sha": "45ea71c664404b3698e7bb7d1f7335ee3dbec4b5"
+  },
+  {
+   "features": [
+    "EID references in writer bytes",
+    "edited score",
+    "linked parts and excerpts",
+    "multi-measure-rest references in writer bytes",
+    "notes",
+    "rests",
+    "tempo map"
+   ],
+   "file": "edit-set-pitches-linked.mscz",
+   "framework_sha": "da3885cb",
+   "semantic": "edit-set-pitches-linked.semantic.json",
+   "semantic_sha256": "a9fe4e78938b538e591800d90ecaab44063f52b633614d23bb7c2957e1f7e3bf",
+   "sha256": "0d3c1f6ee6e01a889a26fcf3e02ef345e4b44101a1f7a4c34e9d46f6d27f64e1",
+   "source": "fixtures/golden/chordline_path.mscx",
+   "source_sha256": "c45e82a063455315c11880a4272f584a3603ef2962fceda2897ed3b00c619bf3",
+   "superproject_commit": "6b962a1d4406ef3b962481d14ce49df0db1c927d",
+   "upstream_sha": "32f0a26e5b",
+   "writer_sha": "45ea71c664404b3698e7bb7d1f7335ee3dbec4b5"
+  }
+ ],
+ "schema": 1
+}

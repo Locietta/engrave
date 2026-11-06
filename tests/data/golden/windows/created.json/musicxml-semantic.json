@@ -1,0 +1,591 @@
+{
+ "creators": {},
+ "movement_title": null,
+ "part_list": {
+  "groups": [],
+  "parts": [
+   {
+    "abbreviation": null,
+    "id": "P1",
+    "instruments": [
+     {
+      "id": "P1-I1",
+      "midi_channel": 1,
+      "midi_device_port": "1",
+      "midi_program": 41,
+      "name": "Violin",
+      "pan": 0,
+      "sound": "strings.violin",
+      "volume": 78.7402
+     }
+    ],
+    "name": "Violin"
+   },
+   {
+    "abbreviation": null,
+    "id": "P2",
+    "instruments": [
+     {
+      "id": "P2-I1",
+      "midi_channel": 2,
+      "midi_device_port": "2",
+      "midi_program": 1,
+      "name": "Piano",
+      "pan": 0,
+      "sound": "keyboard.piano",
+      "volume": 78.7402
+     }
+    ],
+    "name": "Piano"
+   },
+   {
+    "abbreviation": null,
+    "id": "P3",
+    "instruments": [
+     {
+      "id": "P3-I1",
+      "midi_channel": 3,
+      "midi_device_port": "2",
+      "midi_program": 43,
+      "name": "Cello",
+      "pan": 0,
+      "sound": "strings.baryton",
+      "volume": 78.7402
+     }
+    ],
+    "name": "Cello"
+   }
+  ]
+ },
+ "parts": [
+  {
+   "abbreviation": null,
+   "id": "P1",
+   "instruments": [
+    {
+     "id": "P1-I1",
+     "midi_channel": 1,
+     "midi_device_port": "1",
+     "midi_program": 41,
+     "name": "Violin",
+     "pan": 0,
+     "sound": "strings.violin",
+     "volume": 78.7402
+    }
+   ],
+   "measures": [
+    {
+     "attributes": [
+      {
+       "clefs": [
+        {
+         "line": 2,
+         "sign": "G",
+         "staff": 1
+        }
+       ],
+       "divisions": 1,
+       "key": {
+        "fifths": 0
+       },
+       "tick": 0,
+       "time": {
+        "beat_type": 4,
+        "beats": 4
+       }
+      }
+     ],
+     "barlines": [],
+     "directions": [
+      {
+       "metronome": {
+        "beat_unit": "quarter",
+        "per_minute": "100"
+       },
+       "placement": "above",
+       "sound": {
+        "tempo": 100
+       },
+       "tick": 0
+      }
+     ],
+     "end_tick": 1920,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 0,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 67,
+        "octave": 4,
+        "step": "G"
+       },
+       "staff": 1,
+       "tick": 0,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 69,
+        "octave": 4,
+        "step": "A"
+       },
+       "staff": 1,
+       "tick": 480,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 71,
+        "octave": 4,
+        "step": "B"
+       },
+       "staff": 1,
+       "tick": 960,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 74,
+        "octave": 5,
+        "step": "D"
+       },
+       "staff": 1,
+       "tick": 1440,
+       "type": "quarter",
+       "voice": 1
+      }
+     ],
+     "number": "1",
+     "start_tick": 0,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [],
+     "directions": [],
+     "end_tick": 3840,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 1,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 72,
+        "octave": 5,
+        "step": "C"
+       },
+       "staff": 1,
+       "tick": 1920,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 71,
+        "octave": 4,
+        "step": "B"
+       },
+       "staff": 1,
+       "tick": 2400,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 69,
+        "octave": 4,
+        "step": "A"
+       },
+       "staff": 1,
+       "tick": 2880,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "rest": {
+        "measure": false
+       },
+       "staff": 1,
+       "tick": 3360,
+       "type": "quarter",
+       "voice": 1
+      }
+     ],
+     "number": "2",
+     "start_tick": 1920,
+     "unhandled": []
+    }
+   ],
+   "name": "Violin"
+  },
+  {
+   "abbreviation": null,
+   "id": "P2",
+   "instruments": [
+    {
+     "id": "P2-I1",
+     "midi_channel": 2,
+     "midi_device_port": "2",
+     "midi_program": 1,
+     "name": "Piano",
+     "pan": 0,
+     "sound": "keyboard.piano",
+     "volume": 78.7402
+    }
+   ],
+   "measures": [
+    {
+     "attributes": [
+      {
+       "clefs": [
+        {
+         "line": 2,
+         "sign": "G",
+         "staff": 1
+        }
+       ],
+       "divisions": 1,
+       "key": {
+        "fifths": 0
+       },
+       "tick": 0,
+       "time": {
+        "beat_type": 4,
+        "beats": 4
+       }
+      }
+     ],
+     "barlines": [],
+     "directions": [],
+     "end_tick": 1920,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 0,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 1920,
+       "pitch": {
+        "alter": 0,
+        "midi": 48,
+        "octave": 3,
+        "step": "C"
+       },
+       "staff": 1,
+       "tick": 0,
+       "type": "whole",
+       "voice": 1
+      },
+      {
+       "chord": true,
+       "duration_ticks": 1920,
+       "pitch": {
+        "alter": 0,
+        "midi": 55,
+        "octave": 3,
+        "step": "G"
+       },
+       "staff": 1,
+       "tick": 0,
+       "type": "whole",
+       "voice": 1
+      },
+      {
+       "chord": true,
+       "duration_ticks": 1920,
+       "pitch": {
+        "alter": 0,
+        "midi": 60,
+        "octave": 4,
+        "step": "C"
+       },
+       "staff": 1,
+       "tick": 0,
+       "type": "whole",
+       "voice": 1
+      }
+     ],
+     "number": "1",
+     "start_tick": 0,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [],
+     "directions": [],
+     "end_tick": 3840,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 1,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 1920,
+       "pitch": {
+        "alter": 0,
+        "midi": 50,
+        "octave": 3,
+        "step": "D"
+       },
+       "staff": 1,
+       "tick": 1920,
+       "type": "whole",
+       "voice": 1
+      },
+      {
+       "chord": true,
+       "duration_ticks": 1920,
+       "pitch": {
+        "alter": 0,
+        "midi": 57,
+        "octave": 3,
+        "step": "A"
+       },
+       "staff": 1,
+       "tick": 1920,
+       "type": "whole",
+       "voice": 1
+      },
+      {
+       "chord": true,
+       "duration_ticks": 1920,
+       "pitch": {
+        "alter": 0,
+        "midi": 62,
+        "octave": 4,
+        "step": "D"
+       },
+       "staff": 1,
+       "tick": 1920,
+       "type": "whole",
+       "voice": 1
+      }
+     ],
+     "number": "2",
+     "start_tick": 1920,
+     "unhandled": []
+    }
+   ],
+   "name": "Piano"
+  },
+  {
+   "abbreviation": null,
+   "id": "P3",
+   "instruments": [
+    {
+     "id": "P3-I1",
+     "midi_channel": 3,
+     "midi_device_port": "2",
+     "midi_program": 43,
+     "name": "Cello",
+     "pan": 0,
+     "sound": "strings.baryton",
+     "volume": 78.7402
+    }
+   ],
+   "measures": [
+    {
+     "attributes": [
+      {
+       "clefs": [
+        {
+         "line": 2,
+         "sign": "G",
+         "staff": 1
+        }
+       ],
+       "divisions": 1,
+       "key": {
+        "fifths": 0
+       },
+       "tick": 0,
+       "time": {
+        "beat_type": 4,
+        "beats": 4
+       }
+      }
+     ],
+     "barlines": [],
+     "directions": [],
+     "end_tick": 1920,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 0,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 48,
+        "octave": 3,
+        "step": "C"
+       },
+       "staff": 1,
+       "tick": 0,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 48,
+        "octave": 3,
+        "step": "C"
+       },
+       "staff": 1,
+       "tick": 480,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 55,
+        "octave": 3,
+        "step": "G"
+       },
+       "staff": 1,
+       "tick": 960,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 55,
+        "octave": 3,
+        "step": "G"
+       },
+       "staff": 1,
+       "tick": 1440,
+       "type": "quarter",
+       "voice": 1
+      }
+     ],
+     "number": "1",
+     "start_tick": 0,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [],
+     "directions": [],
+     "end_tick": 3840,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 1,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 50,
+        "octave": 3,
+        "step": "D"
+       },
+       "staff": 1,
+       "tick": 1920,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 50,
+        "octave": 3,
+        "step": "D"
+       },
+       "staff": 1,
+       "tick": 2400,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 57,
+        "octave": 3,
+        "step": "A"
+       },
+       "staff": 1,
+       "tick": 2880,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 57,
+        "octave": 3,
+        "step": "A"
+       },
+       "staff": 1,
+       "tick": 3360,
+       "type": "quarter",
+       "voice": 1
+      }
+     ],
+     "number": "2",
+     "start_tick": 1920,
+     "unhandled": []
+    }
+   ],
+   "name": "Cello"
+  }
+ ],
+ "rights": [],
+ "work_title": "Native Evening / 原生晚曲"
+}

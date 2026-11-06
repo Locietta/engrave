@@ -1,0 +1,239 @@
+{
+ "creators": {},
+ "movement_title": null,
+ "part_list": {
+  "groups": [
+   {
+    "number": 1,
+    "symbol": "none",
+    "type": "start"
+   },
+   {
+    "number": 1,
+    "type": "stop"
+   }
+  ],
+  "parts": [
+   {
+    "abbreviation": "Pno.",
+    "id": "P1",
+    "instruments": [
+     {
+      "id": "P1-I1",
+      "midi_channel": 1,
+      "midi_device_port": "1",
+      "midi_program": 1,
+      "name": "Piano",
+      "pan": 0,
+      "sound": "keyboard.piano",
+      "volume": 78.7402
+     }
+    ],
+    "name": "Piano"
+   }
+  ]
+ },
+ "parts": [
+  {
+   "abbreviation": "Pno.",
+   "id": "P1",
+   "instruments": [
+    {
+     "id": "P1-I1",
+     "midi_channel": 1,
+     "midi_device_port": "1",
+     "midi_program": 1,
+     "name": "Piano",
+     "pan": 0,
+     "sound": "keyboard.piano",
+     "volume": 78.7402
+    }
+   ],
+   "measures": [
+    {
+     "attributes": [
+      {
+       "clefs": [
+        {
+         "line": 2,
+         "sign": "G",
+         "staff": 1
+        },
+        {
+         "line": 4,
+         "sign": "F",
+         "staff": 2
+        }
+       ],
+       "divisions": 1,
+       "key": {
+        "fifths": 0
+       },
+       "staves": 2,
+       "tick": 0,
+       "time": {
+        "beat_type": 4,
+        "beats": 4
+       }
+      }
+     ],
+     "barlines": [],
+     "directions": [],
+     "end_tick": 1920,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 0,
+     "lyrics": [
+      {
+       "number": 1,
+       "staff": 1,
+       "syllabic": "single",
+       "text": "12321",
+       "tick": 0,
+       "voice": 1
+      },
+      {
+       "number": 1,
+       "staff": 2,
+       "syllabic": "single",
+       "text": "12321",
+       "tick": 0,
+       "voice": 5
+      }
+     ],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 1920,
+       "lyrics": [
+        {
+         "number": 1,
+         "syllabic": "single",
+         "text": "12321"
+        }
+       ],
+       "pitch": {
+        "alter": 0,
+        "midi": 72,
+        "octave": 5,
+        "step": "C"
+       },
+       "staff": 1,
+       "tick": 0,
+       "type": "whole",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 1920,
+       "lyrics": [
+        {
+         "number": 1,
+         "syllabic": "single",
+         "text": "12321"
+        }
+       ],
+       "pitch": {
+        "alter": 0,
+        "midi": 48,
+        "octave": 3,
+        "step": "C"
+       },
+       "staff": 2,
+       "tick": 0,
+       "type": "whole",
+       "voice": 5
+      }
+     ],
+     "number": "1",
+     "start_tick": 0,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [
+      {
+       "bar_style": "light-heavy",
+       "location": "right"
+      }
+     ],
+     "directions": [],
+     "end_tick": 3840,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 1,
+     "lyrics": [
+      {
+       "number": 1,
+       "staff": 1,
+       "syllabic": "single",
+       "text": "12321",
+       "tick": 1920,
+       "voice": 1
+      },
+      {
+       "number": 1,
+       "staff": 2,
+       "syllabic": "single",
+       "text": "12321",
+       "tick": 1920,
+       "voice": 5
+      }
+     ],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 1920,
+       "lyrics": [
+        {
+         "number": 1,
+         "syllabic": "single",
+         "text": "12321"
+        }
+       ],
+       "pitch": {
+        "alter": 0,
+        "midi": 60,
+        "octave": 4,
+        "step": "C"
+       },
+       "staff": 1,
+       "tick": 1920,
+       "type": "whole",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 1920,
+       "lyrics": [
+        {
+         "number": 1,
+         "syllabic": "single",
+         "text": "12321"
+        }
+       ],
+       "pitch": {
+        "alter": 0,
+        "midi": 60,
+        "octave": 4,
+        "step": "C"
+       },
+       "staff": 2,
+       "tick": 1920,
+       "type": "whole",
+       "voice": 5
+      }
+     ],
+     "number": "2",
+     "start_tick": 1920,
+     "unhandled": []
+    }
+   ],
+   "name": "Piano"
+  }
+ ],
+ "rights": [],
+ "work_title": null
+}

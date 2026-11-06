@@ -1,0 +1,22 @@
+{
+  "linux": {
+    "layout_elements.mscx/page-0.svg": {
+      "counts": {
+        "paths": 184,
+        "total_uses": 286
+      },
+      "reason": "Reviewed platform SVG counts; hash traces to main migration pins (independent hash audit at 7f9eb0d)",
+      "svg_sha256": "8a5f97be0d19115f95935005448469a94568638652f71804616300893f2d8907"
+    }
+  },
+  "windows": {
+    "layout_elements.mscx/page-0.svg": {
+      "counts": {
+        "paths": 184,
+        "total_uses": 286
+      },
+      "reason": "Reviewed platform SVG counts; hash traces to main migration pins (independent hash audit at 7f9eb0d)",
+      "svg_sha256": "dc52d8bc657935a349f7d8d36755cb36078e3175c09809a3e6d4e168be2db23f"
+    }
+  }
+}

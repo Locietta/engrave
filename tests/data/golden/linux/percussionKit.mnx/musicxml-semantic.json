@@ -1,0 +1,453 @@
+{
+ "creators": {},
+ "movement_title": null,
+ "part_list": {
+  "groups": [],
+  "parts": [
+   {
+    "abbreviation": "Drs.",
+    "id": "P1",
+    "instruments": [
+     {
+      "id": "P1-I36",
+      "midi_channel": 10,
+      "midi_device_port": "1",
+      "midi_program": 1,
+      "midi_unpitched": 36,
+      "name": "Acoustic Bass Drum",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I39",
+      "midi_channel": 10,
+      "midi_program": 1,
+      "midi_unpitched": 39,
+      "name": "Acoustic Snare",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I43",
+      "midi_channel": 10,
+      "midi_program": 1,
+      "midi_unpitched": 43,
+      "name": "Closed Hi-Hat",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I46",
+      "midi_channel": 10,
+      "midi_program": 1,
+      "midi_unpitched": 46,
+      "name": "Low Tom",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I47",
+      "midi_channel": 10,
+      "midi_program": 1,
+      "midi_unpitched": 47,
+      "name": "Open Hi-Hat",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I50",
+      "midi_channel": 10,
+      "midi_program": 1,
+      "midi_unpitched": 50,
+      "name": "Crash Cymbal 1",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I51",
+      "midi_channel": 10,
+      "midi_program": 1,
+      "midi_unpitched": 51,
+      "name": "High Tom",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     },
+     {
+      "id": "P1-I52",
+      "midi_channel": 10,
+      "midi_program": 1,
+      "midi_unpitched": 52,
+      "name": "Ride Cymbal 1",
+      "pan": 0,
+      "sound": null,
+      "volume": 78.7402
+     }
+    ],
+    "name": "Drumset"
+   }
+  ]
+ },
+ "parts": [
+  {
+   "abbreviation": "Drs.",
+   "id": "P1",
+   "instruments": [
+    {
+     "id": "P1-I36",
+     "midi_channel": 10,
+     "midi_device_port": "1",
+     "midi_program": 1,
+     "midi_unpitched": 36,
+     "name": "Acoustic Bass Drum",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I39",
+     "midi_channel": 10,
+     "midi_program": 1,
+     "midi_unpitched": 39,
+     "name": "Acoustic Snare",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I43",
+     "midi_channel": 10,
+     "midi_program": 1,
+     "midi_unpitched": 43,
+     "name": "Closed Hi-Hat",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I46",
+     "midi_channel": 10,
+     "midi_program": 1,
+     "midi_unpitched": 46,
+     "name": "Low Tom",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I47",
+     "midi_channel": 10,
+     "midi_program": 1,
+     "midi_unpitched": 47,
+     "name": "Open Hi-Hat",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I50",
+     "midi_channel": 10,
+     "midi_program": 1,
+     "midi_unpitched": 50,
+     "name": "Crash Cymbal 1",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I51",
+     "midi_channel": 10,
+     "midi_program": 1,
+     "midi_unpitched": 51,
+     "name": "High Tom",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    },
+    {
+     "id": "P1-I52",
+     "midi_channel": 10,
+     "midi_program": 1,
+     "midi_unpitched": 52,
+     "name": "Ride Cymbal 1",
+     "pan": 0,
+     "sound": null,
+     "volume": 78.7402
+    }
+   ],
+   "measures": [
+    {
+     "attributes": [
+      {
+       "clefs": [
+        {
+         "sign": "percussion",
+         "staff": 1
+        }
+       ],
+       "divisions": 1,
+       "key": {
+        "fifths": 0
+       },
+       "tick": 0,
+       "time": {
+        "beat_type": 4,
+        "beats": 4
+       }
+      }
+     ],
+     "barlines": [],
+     "directions": [],
+     "end_tick": 1920,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 0,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "instrument_id": "P1-I36",
+       "staff": 1,
+       "tick": 0,
+       "type": "quarter",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "E"
+       },
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "instrument_id": "P1-I39",
+       "staff": 1,
+       "tick": 480,
+       "type": "quarter",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "B"
+       },
+       "voice": 1
+      },
+      {
+       "chord": true,
+       "duration_ticks": 480,
+       "instrument_id": "P1-I43",
+       "notehead": {
+        "value": "x"
+       },
+       "staff": 1,
+       "tick": 480,
+       "type": "quarter",
+       "unpitched": {
+        "display_octave": 5,
+        "display_step": "F"
+       },
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "instrument_id": "P1-I46",
+       "staff": 1,
+       "tick": 960,
+       "type": "quarter",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "G"
+       },
+       "voice": 1
+      },
+      {
+       "chord": true,
+       "duration_ticks": 480,
+       "instrument_id": "P1-I47",
+       "notehead": {
+        "value": "circle-x"
+       },
+       "staff": 1,
+       "tick": 960,
+       "type": "quarter",
+       "unpitched": {
+        "display_octave": 5,
+        "display_step": "A"
+       },
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "instrument_id": "P1-I39",
+       "notations": {
+        "tied": [
+         {
+          "type": "start"
+         }
+        ]
+       },
+       "staff": 1,
+       "tick": 1440,
+       "tie": [
+        "start"
+       ],
+       "type": "quarter",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "B"
+       },
+       "voice": 1
+      },
+      {
+       "chord": true,
+       "duration_ticks": 480,
+       "instrument_id": "P1-I51",
+       "staff": 1,
+       "tick": 1440,
+       "type": "quarter",
+       "unpitched": {
+        "display_octave": 5,
+        "display_step": "D"
+       },
+       "voice": 1
+      },
+      {
+       "chord": true,
+       "duration_ticks": 480,
+       "instrument_id": "P1-I50",
+       "notehead": {
+        "value": "x"
+       },
+       "staff": 1,
+       "tick": 1440,
+       "type": "quarter",
+       "unpitched": {
+        "display_octave": 6,
+        "display_step": "C"
+       },
+       "voice": 1
+      },
+      {
+       "chord": true,
+       "duration_ticks": 480,
+       "instrument_id": "P1-I52",
+       "notehead": {
+        "value": "x"
+       },
+       "staff": 1,
+       "tick": 1440,
+       "type": "quarter",
+       "unpitched": {
+        "display_octave": 6,
+        "display_step": "E"
+       },
+       "voice": 1
+      }
+     ],
+     "number": "1",
+     "start_tick": 0,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [
+      {
+       "bar_style": "light-heavy",
+       "location": "right"
+      }
+     ],
+     "directions": [],
+     "end_tick": 3840,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 1,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "instrument_id": "P1-I39",
+       "notations": {
+        "tied": [
+         {
+          "type": "stop"
+         }
+        ]
+       },
+       "staff": 1,
+       "tick": 1920,
+       "tie": [
+        "stop"
+       ],
+       "type": "quarter",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "B"
+       },
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "instrument_id": "P1-I43",
+       "notehead": {
+        "value": "x"
+       },
+       "staff": 1,
+       "tick": 2400,
+       "type": "quarter",
+       "unpitched": {
+        "display_octave": 5,
+        "display_step": "F"
+       },
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "instrument_id": "P1-I36",
+       "staff": 1,
+       "tick": 2880,
+       "type": "quarter",
+       "unpitched": {
+        "display_octave": 4,
+        "display_step": "E"
+       },
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "instrument_id": "P1-I50",
+       "notehead": {
+        "value": "x"
+       },
+       "staff": 1,
+       "tick": 3360,
+       "type": "quarter",
+       "unpitched": {
+        "display_octave": 6,
+        "display_step": "C"
+       },
+       "voice": 1
+      }
+     ],
+     "number": "2",
+     "start_tick": 1920,
+     "unhandled": []
+    }
+   ],
+   "name": "Drumset"
+  }
+ ],
+ "rights": [],
+ "work_title": null
+}

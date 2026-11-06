@@ -1,0 +1,746 @@
+{
+ "division": 480,
+ "format": 1,
+ "tracks": [
+  [
+   [
+    0,
+    {
+     "data": "5069616e6f",
+     "metaType": 3,
+     "type": "meta"
+    }
+   ],
+   [
+    0,
+    {
+     "data": "04021808",
+     "metaType": 88,
+     "type": "meta"
+    }
+   ],
+   [
+    0,
+    {
+     "data": "0000",
+     "metaType": 89,
+     "type": "meta"
+    }
+   ],
+   [
+    0,
+    {
+     "data": "07a120",
+     "metaType": 81,
+     "type": "meta"
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 0,
+     "num": 121,
+     "type": "cc",
+     "val": 0
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 0,
+     "num": 100,
+     "type": "cc",
+     "val": 0
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 0,
+     "num": 101,
+     "type": "cc",
+     "val": 0
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 0,
+     "num": 6,
+     "type": "cc",
+     "val": 12
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 0,
+     "num": 100,
+     "type": "cc",
+     "val": 127
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 0,
+     "num": 101,
+     "type": "cc",
+     "val": 127
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 0,
+     "program": 0,
+     "type": "program"
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 0,
+     "num": 7,
+     "type": "cc",
+     "val": 100
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 0,
+     "num": 10,
+     "type": "cc",
+     "val": 64
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 0,
+     "num": 91,
+     "type": "cc",
+     "val": 0
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 0,
+     "num": 93,
+     "type": "cc",
+     "val": 0
+    }
+   ],
+   [
+    0,
+    {
+     "data": "00",
+     "metaType": 33,
+     "type": "meta"
+    }
+   ],
+   [
+    1,
+    {
+     "data": "",
+     "metaType": 47,
+     "type": "meta"
+    }
+   ]
+  ],
+  [
+   [
+    0,
+    {
+     "data": "5069616e6f",
+     "metaType": 3,
+     "type": "meta"
+    }
+   ],
+   [
+    0,
+    {
+     "data": "0000",
+     "metaType": 89,
+     "type": "meta"
+    }
+   ],
+   [
+    0,
+    {
+     "data": "00",
+     "metaType": 33,
+     "type": "meta"
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 0,
+     "pitch": 48,
+     "type": "note_on",
+     "vel": 80
+    }
+   ],
+   [
+    0,
+    {
+     "ch": 0,
+     "num": 2,
+     "type": "cc",
+     "val": 80
+    }
+   ],
+   [
+    2,
+    {
+     "ch": 0,
+     "num": 64,
+     "type": "cc",
+     "val": 127
+    }
+   ],
+   [
+    959,
+    {
+     "ch": 0,
+     "pitch": 48,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    960,
+    {
+     "ch": 0,
+     "pitch": 52,
+     "type": "note_on",
+     "vel": 80
+    }
+   ],
+   [
+    960,
+    {
+     "ch": 0,
+     "num": 2,
+     "type": "cc",
+     "val": 80
+    }
+   ],
+   [
+    1919,
+    {
+     "ch": 0,
+     "pitch": 52,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    1920,
+    {
+     "ch": 0,
+     "pitch": 55,
+     "type": "note_on",
+     "vel": 80
+    }
+   ],
+   [
+    1920,
+    {
+     "ch": 0,
+     "num": 2,
+     "type": "cc",
+     "val": 80
+    }
+   ],
+   [
+    2879,
+    {
+     "ch": 0,
+     "pitch": 55,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    2880,
+    {
+     "ch": 0,
+     "pitch": 52,
+     "type": "note_on",
+     "vel": 80
+    }
+   ],
+   [
+    2880,
+    {
+     "ch": 0,
+     "num": 2,
+     "type": "cc",
+     "val": 80
+    }
+   ],
+   [
+    2881,
+    {
+     "ch": 0,
+     "num": 64,
+     "type": "cc",
+     "val": 0
+    }
+   ],
+   [
+    3839,
+    {
+     "ch": 0,
+     "pitch": 52,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    3840,
+    {
+     "ch": 0,
+     "pitch": 48,
+     "type": "note_on",
+     "vel": 80
+    }
+   ],
+   [
+    3840,
+    {
+     "ch": 0,
+     "num": 2,
+     "type": "cc",
+     "val": 80
+    }
+   ],
+   [
+    3842,
+    {
+     "ch": 0,
+     "num": 64,
+     "type": "cc",
+     "val": 127
+    }
+   ],
+   [
+    4799,
+    {
+     "ch": 0,
+     "pitch": 48,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    4800,
+    {
+     "ch": 0,
+     "pitch": 52,
+     "type": "note_on",
+     "vel": 80
+    }
+   ],
+   [
+    4800,
+    {
+     "ch": 0,
+     "num": 2,
+     "type": "cc",
+     "val": 80
+    }
+   ],
+   [
+    5759,
+    {
+     "ch": 0,
+     "pitch": 52,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    5760,
+    {
+     "ch": 0,
+     "pitch": 55,
+     "type": "note_on",
+     "vel": 80
+    }
+   ],
+   [
+    5760,
+    {
+     "ch": 0,
+     "num": 2,
+     "type": "cc",
+     "val": 80
+    }
+   ],
+   [
+    6719,
+    {
+     "ch": 0,
+     "pitch": 55,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    6720,
+    {
+     "ch": 0,
+     "pitch": 52,
+     "type": "note_on",
+     "vel": 80
+    }
+   ],
+   [
+    6720,
+    {
+     "ch": 0,
+     "num": 2,
+     "type": "cc",
+     "val": 80
+    }
+   ],
+   [
+    6721,
+    {
+     "ch": 0,
+     "num": 64,
+     "type": "cc",
+     "val": 0
+    }
+   ],
+   [
+    7679,
+    {
+     "ch": 0,
+     "pitch": 52,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    7680,
+    {
+     "ch": 0,
+     "pitch": 48,
+     "type": "note_on",
+     "vel": 80
+    }
+   ],
+   [
+    7680,
+    {
+     "ch": 0,
+     "num": 2,
+     "type": "cc",
+     "val": 80
+    }
+   ],
+   [
+    7682,
+    {
+     "ch": 0,
+     "num": 64,
+     "type": "cc",
+     "val": 127
+    }
+   ],
+   [
+    8639,
+    {
+     "ch": 0,
+     "pitch": 48,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    8640,
+    {
+     "ch": 0,
+     "pitch": 52,
+     "type": "note_on",
+     "vel": 80
+    }
+   ],
+   [
+    8640,
+    {
+     "ch": 0,
+     "num": 2,
+     "type": "cc",
+     "val": 80
+    }
+   ],
+   [
+    9599,
+    {
+     "ch": 0,
+     "pitch": 52,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    9600,
+    {
+     "ch": 0,
+     "pitch": 55,
+     "type": "note_on",
+     "vel": 80
+    }
+   ],
+   [
+    9600,
+    {
+     "ch": 0,
+     "num": 2,
+     "type": "cc",
+     "val": 80
+    }
+   ],
+   [
+    10559,
+    {
+     "ch": 0,
+     "pitch": 55,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    10560,
+    {
+     "ch": 0,
+     "pitch": 52,
+     "type": "note_on",
+     "vel": 80
+    }
+   ],
+   [
+    10560,
+    {
+     "ch": 0,
+     "num": 2,
+     "type": "cc",
+     "val": 80
+    }
+   ],
+   [
+    10561,
+    {
+     "ch": 0,
+     "num": 64,
+     "type": "cc",
+     "val": 0
+    }
+   ],
+   [
+    11519,
+    {
+     "ch": 0,
+     "pitch": 52,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    11520,
+    {
+     "ch": 0,
+     "pitch": 48,
+     "type": "note_on",
+     "vel": 80
+    }
+   ],
+   [
+    11520,
+    {
+     "ch": 0,
+     "num": 2,
+     "type": "cc",
+     "val": 80
+    }
+   ],
+   [
+    11520,
+    {
+     "ch": 0,
+     "pitch": 52,
+     "type": "note_on",
+     "vel": 80
+    }
+   ],
+   [
+    11520,
+    {
+     "ch": 0,
+     "num": 2,
+     "type": "cc",
+     "val": 80
+    }
+   ],
+   [
+    11520,
+    {
+     "ch": 0,
+     "pitch": 55,
+     "type": "note_on",
+     "vel": 80
+    }
+   ],
+   [
+    11520,
+    {
+     "ch": 0,
+     "num": 2,
+     "type": "cc",
+     "val": 80
+    }
+   ],
+   [
+    11522,
+    {
+     "ch": 0,
+     "num": 64,
+     "type": "cc",
+     "val": 127
+    }
+   ],
+   [
+    13439,
+    {
+     "ch": 0,
+     "pitch": 48,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    13439,
+    {
+     "ch": 0,
+     "pitch": 52,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    13439,
+    {
+     "ch": 0,
+     "pitch": 55,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    13440,
+    {
+     "ch": 0,
+     "pitch": 48,
+     "type": "note_on",
+     "vel": 80
+    }
+   ],
+   [
+    13440,
+    {
+     "ch": 0,
+     "num": 2,
+     "type": "cc",
+     "val": 80
+    }
+   ],
+   [
+    13440,
+    {
+     "ch": 0,
+     "pitch": 52,
+     "type": "note_on",
+     "vel": 80
+    }
+   ],
+   [
+    13440,
+    {
+     "ch": 0,
+     "num": 2,
+     "type": "cc",
+     "val": 80
+    }
+   ],
+   [
+    13440,
+    {
+     "ch": 0,
+     "pitch": 55,
+     "type": "note_on",
+     "vel": 80
+    }
+   ],
+   [
+    13440,
+    {
+     "ch": 0,
+     "num": 2,
+     "type": "cc",
+     "val": 80
+    }
+   ],
+   [
+    13441,
+    {
+     "ch": 0,
+     "num": 64,
+     "type": "cc",
+     "val": 0
+    }
+   ],
+   [
+    15359,
+    {
+     "ch": 0,
+     "pitch": 48,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    15359,
+    {
+     "ch": 0,
+     "pitch": 52,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    15359,
+    {
+     "ch": 0,
+     "pitch": 55,
+     "type": "note_off",
+     "vel": 0
+    }
+   ],
+   [
+    15360,
+    {
+     "data": "",
+     "metaType": 47,
+     "type": "meta"
+    }
+   ]
+  ]
+ ]
+}

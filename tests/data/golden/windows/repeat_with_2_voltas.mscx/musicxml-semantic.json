@@ -1,0 +1,545 @@
+{
+ "creators": {
+  "composer": [
+   "Composer / arranger"
+  ]
+ },
+ "movement_title": null,
+ "part_list": {
+  "groups": [],
+  "parts": [
+   {
+    "abbreviation": "Vln.",
+    "id": "P1",
+    "instruments": [
+     {
+      "id": "P1-I1",
+      "midi_channel": 1,
+      "midi_device_port": "1",
+      "midi_program": 41,
+      "name": "Violin",
+      "pan": 0,
+      "sound": "strings.violin",
+      "volume": 78.7402
+     }
+    ],
+    "name": "Violin"
+   }
+  ]
+ },
+ "parts": [
+  {
+   "abbreviation": "Vln.",
+   "id": "P1",
+   "instruments": [
+    {
+     "id": "P1-I1",
+     "midi_channel": 1,
+     "midi_device_port": "1",
+     "midi_program": 41,
+     "name": "Violin",
+     "pan": 0,
+     "sound": "strings.violin",
+     "volume": 78.7402
+    }
+   ],
+   "measures": [
+    {
+     "attributes": [
+      {
+       "clefs": [
+        {
+         "line": 2,
+         "sign": "G",
+         "staff": 1
+        }
+       ],
+       "divisions": 1,
+       "key": {
+        "fifths": 0
+       },
+       "tick": 0,
+       "time": {
+        "beat_type": 4,
+        "beats": 4
+       }
+      }
+     ],
+     "barlines": [],
+     "directions": [],
+     "end_tick": 1920,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 0,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 65,
+        "octave": 4,
+        "step": "F"
+       },
+       "staff": 1,
+       "tick": 0,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 65,
+        "octave": 4,
+        "step": "F"
+       },
+       "staff": 1,
+       "tick": 480,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 65,
+        "octave": 4,
+        "step": "F"
+       },
+       "staff": 1,
+       "tick": 960,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 65,
+        "octave": 4,
+        "step": "F"
+       },
+       "staff": 1,
+       "tick": 1440,
+       "type": "quarter",
+       "voice": 1
+      }
+     ],
+     "number": "1",
+     "start_tick": 0,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [
+      {
+       "ending": {
+        "number": "1",
+        "text": "1.",
+        "type": "start"
+       },
+       "location": "left"
+      },
+      {
+       "bar_style": "light-heavy",
+       "ending": {
+        "number": "1",
+        "type": "stop"
+       },
+       "location": "right",
+       "repeat": {
+        "direction": "backward"
+       }
+      }
+     ],
+     "directions": [],
+     "end_tick": 3840,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 1,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 60,
+        "octave": 4,
+        "step": "C"
+       },
+       "staff": 1,
+       "tick": 1920,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 60,
+        "octave": 4,
+        "step": "C"
+       },
+       "staff": 1,
+       "tick": 2400,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 60,
+        "octave": 4,
+        "step": "C"
+       },
+       "staff": 1,
+       "tick": 2880,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 60,
+        "octave": 4,
+        "step": "C"
+       },
+       "staff": 1,
+       "tick": 3360,
+       "type": "quarter",
+       "voice": 1
+      }
+     ],
+     "number": "2",
+     "start_tick": 1920,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [
+      {
+       "ending": {
+        "number": "2",
+        "text": "2.",
+        "type": "start"
+       },
+       "location": "left"
+      },
+      {
+       "ending": {
+        "number": "2",
+        "type": "discontinue"
+       },
+       "location": "right"
+      }
+     ],
+     "directions": [],
+     "end_tick": 5760,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 2,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 65,
+        "octave": 4,
+        "step": "F"
+       },
+       "staff": 1,
+       "tick": 3840,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 65,
+        "octave": 4,
+        "step": "F"
+       },
+       "staff": 1,
+       "tick": 4320,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 65,
+        "octave": 4,
+        "step": "F"
+       },
+       "staff": 1,
+       "tick": 4800,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 65,
+        "octave": 4,
+        "step": "F"
+       },
+       "staff": 1,
+       "tick": 5280,
+       "type": "quarter",
+       "voice": 1
+      }
+     ],
+     "number": "3",
+     "start_tick": 3840,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [],
+     "directions": [],
+     "end_tick": 7680,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 3,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 60,
+        "octave": 4,
+        "step": "C"
+       },
+       "staff": 1,
+       "tick": 5760,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 60,
+        "octave": 4,
+        "step": "C"
+       },
+       "staff": 1,
+       "tick": 6240,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 60,
+        "octave": 4,
+        "step": "C"
+       },
+       "staff": 1,
+       "tick": 6720,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 60,
+        "octave": 4,
+        "step": "C"
+       },
+       "staff": 1,
+       "tick": 7200,
+       "type": "quarter",
+       "voice": 1
+      }
+     ],
+     "number": "4",
+     "start_tick": 5760,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [],
+     "directions": [],
+     "end_tick": 9600,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 4,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 65,
+        "octave": 4,
+        "step": "F"
+       },
+       "staff": 1,
+       "tick": 7680,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 65,
+        "octave": 4,
+        "step": "F"
+       },
+       "staff": 1,
+       "tick": 8160,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 65,
+        "octave": 4,
+        "step": "F"
+       },
+       "staff": 1,
+       "tick": 8640,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 65,
+        "octave": 4,
+        "step": "F"
+       },
+       "staff": 1,
+       "tick": 9120,
+       "type": "quarter",
+       "voice": 1
+      }
+     ],
+     "number": "5",
+     "start_tick": 7680,
+     "unhandled": []
+    },
+    {
+     "attributes": [],
+     "barlines": [
+      {
+       "bar_style": "light-heavy",
+       "location": "right"
+      }
+     ],
+     "directions": [],
+     "end_tick": 11520,
+     "figured_bass": [],
+     "harmony": [],
+     "implicit": false,
+     "index": 5,
+     "lyrics": [],
+     "notes": [
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 60,
+        "octave": 4,
+        "step": "C"
+       },
+       "staff": 1,
+       "tick": 9600,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 60,
+        "octave": 4,
+        "step": "C"
+       },
+       "staff": 1,
+       "tick": 10080,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 60,
+        "octave": 4,
+        "step": "C"
+       },
+       "staff": 1,
+       "tick": 10560,
+       "type": "quarter",
+       "voice": 1
+      },
+      {
+       "chord": false,
+       "duration_ticks": 480,
+       "pitch": {
+        "alter": 0,
+        "midi": 60,
+        "octave": 4,
+        "step": "C"
+       },
+       "staff": 1,
+       "tick": 11040,
+       "type": "quarter",
+       "voice": 1
+      }
+     ],
+     "number": "6",
+     "start_tick": 9600,
+     "unhandled": []
+    }
+   ],
+   "name": "Violin"
+  }
+ ],
+ "rights": [],
+ "work_title": "Untitled Score"
+}
