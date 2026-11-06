@@ -110,8 +110,11 @@ Public headers are located under `engrave/include/engrave/`:
 - `engrave/error.h`: Error codes (`ErrorCode`) and `Result<T>` monadic wrapper.
 - `engrave/version.h`: Engine version information.
 
-### Execution Model
-The engine operates on a single dedicated owner thread per process. An `Engine` instance manages process-global resources (fonts, audio context, and up to 16 concurrent open documents). All calls to an `Engine` and its `Document` instances must occur on the thread that created the engine.
+### Execution Model and Lifecycle Rules
+The engine operates on a single dedicated owner thread per process. Lifecycle rules per `engrave/include/engrave/engine.h:105`:
+- **Single Instance Per Process**: A process has at most one `Engine`, created once. A second `Engine::create()` aborts the process, even after the first `Engine` has been destroyed.
+- **Open Documents at Teardown**: Destroying an `Engine` while any of its `Document` instances are still open aborts the process. All documents must be destroyed before the engine is destroyed.
+- **Owner Thread Affiliation**: Every call on an `Engine` and its `Document` instances must occur on the thread that created the engine; a call from another thread aborts.
 
 ## Testing
 
