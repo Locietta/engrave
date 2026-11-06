@@ -34,7 +34,7 @@ struct ExportOutput {
 };
 ```
 
-- **Warning Contract**: Each warning has a stable, frozen `code`, human-readable `message`, and an optional source `{ kind, id }` object. Codes and messages are frozen.
+- **Warning Contract**: Each warning has a stable, frozen `code`, human-readable `message`, and an object identity `{ kind, id }`. Every B470 warning carries an object identity `{ kind, id }` (the normalizer in `write470.cpp:453` requires non-empty `kind` and `id`, and the unsupported-target path supplies `{ "request", "version:<requested value>" }`; warnings cannot be anonymous). Host schemas must require `{ kind, id }` for every B470 warning and describe both EIDs and non-EID locator/composite forms (`id` is not uniformly an EID). Codes and messages are frozen.
 - **Ordering Contract**:
   - `Document::export_score_with_warnings` returns ordered `ExportWarning` values.
   - On a successful export, warnings are not purely in document encounter order: `convert_degradations` first collects serialized degradations (`B470_SHARED_PART_DROPPED`, `B470_STAVE_SHARING_LABEL_DROPPED`, `B470_PAGE_LOCK_DROPPED`, `B470_GROUP_BRACKET_DROPPED`) during a pre-order traversal of the serialized score XML, followed by a separate pass over source scores and parts (`write470.cpp:643`) that appends instrument group-name warnings (`B470_INSTRUMENT_GROUP_NAME_DROPPED`).
@@ -90,7 +90,7 @@ Per `engrave/src/score/write470.cpp:581`, an invalid-tie warning never stringifi
 ```text
 locator:score:<s>/measure:<m>/tick:<t>/track:<k>/note:<n>/tieFor
 ```
-Where `s`, `m`, `n` are zero-based indices for score, measure, and note; `t` is absolute engine ticks (480 per quarter note); and `k` is the staff/voice track index.
+Score, measure, and note indices are zero-based in document, measure, and chord order (the locator's note index `<n>` is within its chord); `<t>` is the absolute engine tick (480 per quarter); and `<k>` is the engine staff/voice track index. The master is score zero, followed by excerpts in source order. This source-revision locator is deterministic and is not a query handle. Only the complete numeric tie-locator shape above is accepted (all five components and the final `tieFor` field are required).
 
 ## 5. Style Compatibility Guard
 
