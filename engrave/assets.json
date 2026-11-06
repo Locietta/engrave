@@ -3,8 +3,13 @@
   "files": {
     "LICENSE.txt": {
       "source": "LICENSE.txt",
-      "sha256": "73e75f61f0dfce4fd83ad1f3f45d1d6f9ea8cdfd21a92d7a9216d47e5b3bbb88",
-      "size": 36493
+      "sha256": "82b35ef765f396a274e1c5e5eaf114c7fe0344259ca0e3c1ac34321832f0d16d",
+      "size": 36180
+    },
+    "THIRD_PARTY_NOTICES.md": {
+      "source": "THIRD_PARTY_NOTICES.md",
+      "sha256": "46b0f92ec2d2cac13af938cf9343a3d99c3fd69c4db65d6ddadeeb410addeeaf",
+      "size": 15280
     },
     "data/harmony_to_diagram.xml": {
       "source": "src/engraving/data/harmony_to_diagram.xml",
