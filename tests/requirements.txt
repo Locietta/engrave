@@ -19,3 +19,5 @@ onnxruntime==1.31.0
 flatbuffers==25.12.19
 packaging==26.3
 protobuf==7.36.2
+pyyaml==6.0.3
+tabulate==0.10.0
