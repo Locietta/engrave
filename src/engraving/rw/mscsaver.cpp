@@ -21,18 +21,14 @@
  */
 #include "mscsaver.h"
 
-#include "global/io/buffer.h"
-
-#include "dom/masterscore.h"
 #include "dom/excerpt.h"
 #include "dom/imageStore.h"
-
+#include "dom/masterscore.h"
 #include "engraving/automation/internal/automationrw.h"
-
-#include "rwregister.h"
+#include "global/io/buffer.h"
 #include "inoutdata.h"
-
 #include "log.h"
+#include "rwregister.h"
 
 using namespace mu;
 using namespace muse;

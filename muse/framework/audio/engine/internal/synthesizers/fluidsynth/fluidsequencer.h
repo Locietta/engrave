@@ -23,10 +23,9 @@
 #ifndef MUSE_AUDIO_FLUIDSEQUENCER_H
 #define MUSE_AUDIO_FLUIDSEQUENCER_H
 
+#include "../../abstracteventsequencer.h"
 #include "midi/midievent.h"
 #include "mpe/events.h"
-
-#include "../../abstracteventsequencer.h"
 #include "soundmapping.h"
 
 namespace muse::audio::synth {

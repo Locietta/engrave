@@ -21,14 +21,13 @@
  */
 #include "mscreader.h"
 
+#include "engraving/engravingerrors.h"
+#include "io/dir.h"
 #include "io/file.h"
 #include "io/fileinfo.h"
-#include "io/dir.h"
-#include "serialization/zipreader.h"
-#include "serialization/xmlstreamreader.h"
-#include "engraving/engravingerrors.h"
-
 #include "log.h"
+#include "serialization/xmlstreamreader.h"
+#include "serialization/zipreader.h"
 
 //! NOTE The current implementation resolves files by extension.
 //! This will probably be changed in the future.

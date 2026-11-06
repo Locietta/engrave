@@ -23,9 +23,9 @@
 
 #include <vector>
 
-#include "draw/painter.h"
 #include "../iscorerenderer.h"
 #include "../paintoptions.h"
+#include "draw/painter.h"
 
 namespace mu::engraving {
 struct EngravingItem;

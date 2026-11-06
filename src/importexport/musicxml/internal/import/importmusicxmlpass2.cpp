@@ -20,21 +20,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "importmusicxmlpass2.h"
+
 #include <algorithm>
-#include <cmath>
-#include <memory>
 #include <charconv>
+#include <cmath>
 #include <cstdint>
+#include <memory>
 #include <set>
 #include <utility>
 #include <vector>
 
+#include "../shared/musicxmlfonthandler.h"
+#include "../shared/musicxmlsupport.h"
+#include "../shared/musicxmltypes.h"
 #include "containers.h"
-
-#include "engraving/types/symnames.h"
-#include "engraving/types/typesconv.h"
-#include "engraving/iengravingfont.h"
-
 #include "engraving/dom/accidental.h"
 #include "engraving/dom/arpeggio.h"
 #include "engraving/dom/articulation.h"
@@ -55,8 +55,8 @@
 #include "engraving/dom/fret.h"
 #include "engraving/dom/glissando.h"
 #include "engraving/dom/gradualtempochange.h"
-#include "engraving/dom/hammeronpulloff.h"
 #include "engraving/dom/hairpin.h"
+#include "engraving/dom/hammeronpulloff.h"
 #include "engraving/dom/harmony.h"
 #include "engraving/dom/instrchange.h"
 #include "engraving/dom/instrtemplate.h"
@@ -94,21 +94,17 @@
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/editing/transpose.h"
 #include "engraving/engravingerrors.h"
+#include "engraving/iengravingfont.h"
+#include "engraving/iengravingfontsprovider.h"
 #include "engraving/rendering/iscorerenderer.h"
-
+#include "engraving/rendering/score/tlayout.h"
+#include "engraving/types/symnames.h"
+#include "engraving/types/typesconv.h"
+#include "importexport/musicxml/imusicxmlconfiguration.h"
 #include "importmusicxmllogger.h"
 #include "importmusicxmlnoteduration.h"
 #include "importmusicxmlnotepitch.h"
 #include "importmusicxmlpass1.h"
-#include "importmusicxmlpass2.h"
-#include "../shared/musicxmlfonthandler.h"
-#include "../shared/musicxmlsupport.h"
-#include "../shared/musicxmltypes.h"
-
-#include "importexport/musicxml/imusicxmlconfiguration.h"
-#include "engraving/iengravingfontsprovider.h"
-#include "engraving/rendering/score/tlayout.h"
-
 #include "log.h"
 
 using namespace muse;

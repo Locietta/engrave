@@ -21,8 +21,8 @@
  */
 #include "zipreader.h"
 
-#include "global/io/file.h"
 #include "global/io/dir.h"
+#include "global/io/file.h"
 #include "internal/zipcontainer.h"
 
 using namespace muse;

@@ -21,10 +21,10 @@
  */
 #pragma once
 
-#include "engraving/types/types.h"
-
 #include <unordered_map>
 #include <utility>
+
+#include "engraving/types/types.h"
 
 namespace mu::engraving {
 // Normalized [0.0, 1.0] dynamic levels, aligned with MPE dynamic level percentages (5% steps starting at 17.5%)

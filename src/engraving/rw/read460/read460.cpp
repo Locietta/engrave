@@ -21,12 +21,14 @@
  */
 #include "read460.h"
 
+#include "../compat/readstyle.h"
+#include "../compat/tremolocompat.h"
 #include "../editing/noteinput.h"
 #include "../editing/paste.h"
 #include "../editing/transaction/transaction.h"
 #include "../editing/transpose.h"
+#include "../inoutdata.h"
 #include "../types/types.h"
-
 #include "dom/anchors.h"
 #include "dom/beam.h"
 #include "dom/breath.h"
@@ -50,16 +52,10 @@
 #include "dom/tie.h"
 #include "dom/tremolotwochord.h"
 #include "dom/tuplet.h"
-
 #include "engravingerrors.h"
-
-#include "../compat/readstyle.h"
-#include "../compat/tremolocompat.h"
-#include "../inoutdata.h"
+#include "log.h"
 #include "staffread.h"
 #include "tread.h"
-
-#include "log.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::read460;

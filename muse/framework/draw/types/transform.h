@@ -23,10 +23,9 @@
 #ifndef MUSE_DRAW_TRANSFORM_H
 #define MUSE_DRAW_TRANSFORM_H
 
-#include "global/realfn.h"
-
-#include "matrix.h"
 #include "geometry.h"
+#include "global/realfn.h"
+#include "matrix.h"
 
 namespace muse::draw {
 struct PainterPath;

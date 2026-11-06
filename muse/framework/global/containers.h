@@ -22,12 +22,12 @@
 #pragma once
 
 #include <algorithm>
-#include <vector>
 #include <list>
-#include <set>
-#include <unordered_set>
 #include <map>
+#include <set>
 #include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 //! NOTE useful functions for containers
 

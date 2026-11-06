@@ -24,7 +24,6 @@
 #include <variant>
 
 #include "../types/types.h"
-
 #include "paintoptions.h"
 
 namespace muse::draw {

@@ -24,13 +24,11 @@
 
 #include <vector>
 
-#include "iengravingfontsprovider.h"
-
+#include "../infrastructure/eid.h"
 #include "../types/types.h"
-
 #include "dom/interval.h"
 #include "dom/location.h"
-#include "../infrastructure/eid.h"
+#include "iengravingfontsprovider.h"
 
 namespace mu::engraving {
 struct Beam;

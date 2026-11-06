@@ -24,10 +24,9 @@
 #include <array>
 #include <vector>
 
-#include "io/path.h"
-
 #include "clef.h"
 #include "instrument.h"
+#include "io/path.h"
 #include "mscore.h"
 #include "stringdata.h"
 

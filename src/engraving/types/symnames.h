@@ -24,10 +24,9 @@
 #include <array>
 #include <map>
 
+#include "symid.h"
 #include "types/string.h"
 #include "types/translatablestring.h"
-
-#include "symid.h"
 
 namespace mu::engraving {
 struct SymNames {

@@ -23,14 +23,11 @@
 #include "testing/environment.h"
 
 #include "draw/drawmodule.h"
-#include "engraving/engravingmodule.h"
-#include "importexport/mnx/mnxmodule.h"
-
-#include "engraving/tests/utils/scorerw.h"
-
 #include "engraving/dom/instrtemplate.h"
 #include "engraving/dom/mscore.h"
-
+#include "engraving/engravingmodule.h"
+#include "engraving/tests/utils/scorerw.h"
+#include "importexport/mnx/mnxmodule.h"
 #include "log.h"
 
 using namespace mu;

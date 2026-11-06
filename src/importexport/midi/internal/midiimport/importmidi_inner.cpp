@@ -26,14 +26,11 @@
 #include <string>
 #include <string_view>
 
-#include "global/types/string.h"
-
-#include "importmidi_operations.h"
-#include "importmidi_chord.h"
-
 #include "engraving/dom/durationtype.h"
 #include "engraving/dom/sig.h"
-
+#include "global/types/string.h"
+#include "importmidi_chord.h"
+#include "importmidi_operations.h"
 #include "log.h"
 
 namespace mu::iex::midi {

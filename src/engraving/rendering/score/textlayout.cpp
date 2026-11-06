@@ -19,13 +19,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "log.h"
 #include "textlayout.h"
-#include "tlayout.h"
+
 #include "dom/box.h"
 #include "dom/page.h"
 #include "dom/staff.h"
 #include "dom/textlinebase.h"
+#include "log.h"
+#include "tlayout.h"
 #include "types/typesconv.h"
 
 using namespace mu::engraving::rendering::score;

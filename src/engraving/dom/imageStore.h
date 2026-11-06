@@ -25,9 +25,9 @@
 #include <list>
 #include <string>
 
-#include "types/string.h"
-#include "types/bytearray.h"
 #include "io/path.h"
+#include "types/bytearray.h"
+#include "types/string.h"
 
 namespace mu::engraving {
 struct Image;

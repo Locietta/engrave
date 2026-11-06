@@ -23,7 +23,6 @@
 #include "actionicon.h"
 
 #include "iengravingconfiguration.h" // IWYU pragma: keep
-
 #include "mscore.h"
 #include "property.h"
 #include "types/typesconv.h"

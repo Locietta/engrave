@@ -28,7 +28,6 @@
 #include "../dom/score.h"
 #include "../dom/staff.h"
 #include "../dom/textline.h"
-
 #include "log.h"
 #define LOG_UNDO() \
     if (0) LOGD()

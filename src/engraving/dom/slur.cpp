@@ -25,10 +25,10 @@
 #include "../editing/navigation.h"
 #include "../editing/transaction/transaction.h"
 #include "../rendering/iscorerenderer.h"
-
 #include "arpeggio.h"
 #include "beam.h"
 #include "chord.h"
+#include "log.h"
 #include "masterscore.h"
 #include "measure.h"
 #include "note.h"
@@ -39,8 +39,6 @@
 #include "stem.h"
 #include "system.h"
 #include "tremolotwochord.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

@@ -26,8 +26,6 @@
 #include <map>
 #include <set>
 
-#include "editchord.h"
-
 #include "../dom/accidental.h"
 #include "../dom/chord.h"
 #include "../dom/engravingitem.h"
@@ -36,7 +34,7 @@
 #include "../dom/select.h"
 #include "../dom/timesig.h"
 #include "../dom/utils.h"
-
+#include "editchord.h"
 #include "log.h"
 
 using namespace mu::engraving;

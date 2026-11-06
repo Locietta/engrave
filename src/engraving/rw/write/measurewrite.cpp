@@ -26,9 +26,8 @@
 #include "dom/mmrestrange.h"
 #include "dom/spacer.h"
 #include "dom/textlinebase.h"
-
-#include "types/typesconv.h"
 #include "twrite.h"
+#include "types/typesconv.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::write;

@@ -19,22 +19,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "importgtp.h"
-
 #include <cstdint>
 
-#include "serialization/zipreader.h"
-
-#include "gtp/gp7dombuilder.h"
-#include "engraving/dom/factory.h"
 #include "engraving/dom/bracketitem.h"
+#include "engraving/dom/factory.h"
 #include "engraving/dom/instrtemplate.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/stringtunings.h"
-
+#include "gtp/gp7dombuilder.h"
+#include "importgtp.h"
 #include "log.h"
+#include "serialization/zipreader.h"
 
 using namespace muse;
 using namespace muse::io;

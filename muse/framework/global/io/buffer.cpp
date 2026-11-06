@@ -20,12 +20,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "buffer.h"
-#include "writebudget.h"
 
 #include <cstring>
 #include <utility>
 
 #include "global/log.h"
+#include "writebudget.h"
 
 using namespace muse;
 using namespace muse::io;

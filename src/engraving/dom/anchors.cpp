@@ -20,15 +20,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "anchors.h"
+
 #include <climits>
 
-#include "anchors.h"
 #include "factory.h"
 #include "figuredbass.h"
 #include "fret.h"
 #include "harmony.h"
 #include "measure.h"
 #include "page.h"
+#include "rendering/score/measurelayout.h"
 #include "score.h"
 #include "spanner.h"
 #include "staff.h"
@@ -36,8 +38,6 @@
 #include "textlinebase.h"
 #include "timesig.h"
 #include "utils.h"
-
-#include "rendering/score/measurelayout.h"
 
 using namespace mu::engraving::rendering::score;
 

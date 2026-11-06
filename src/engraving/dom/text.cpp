@@ -22,10 +22,9 @@
 
 #include "text.h"
 
+#include "log.h"
 #include "rw/rwregister.h"
 #include "score.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

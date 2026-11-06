@@ -21,13 +21,10 @@
  */
 #include "typesconv.h"
 
-#include "global/types/translatablestring.h"
-
 #include "draw/types/drawtypes.h"
-
-#include "symnames.h"
-
+#include "global/types/translatablestring.h"
 #include "log.h"
+#include "symnames.h"
 
 using namespace mu;
 using namespace muse::draw;

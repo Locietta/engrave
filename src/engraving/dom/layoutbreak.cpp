@@ -20,15 +20,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
+#include "layoutbreak.h"
 
 #include "iengravingconfiguration.h" // IWYU pragma: keep
-
-#include "types/typesconv.h"
-
-#include "layoutbreak.h"
+#include "log.h"
 #include "measurebase.h"
 #include "score.h"
+#include "types/typesconv.h"
 
 using namespace mu;
 using namespace muse::draw;

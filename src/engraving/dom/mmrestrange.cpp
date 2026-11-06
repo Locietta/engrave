@@ -22,11 +22,9 @@
 
 #include "mmrestrange.h"
 
-#include "style/style.h"
-
-#include "measure.h"
-
 #include "log.h"
+#include "measure.h"
+#include "style/style.h"
 
 using namespace mu;
 using namespace mu::engraving;

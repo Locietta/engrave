@@ -20,7 +20,6 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "global/appinfo.h"
 #include "headerfooterlayout.h"
 
 #include "dom/factory.h"
@@ -28,7 +27,7 @@
 #include "dom/mscore.h"
 #include "dom/page.h"
 #include "dom/text.h"
-
+#include "global/appinfo.h"
 #include "ifileinfoprovider.h"
 #include "tlayout.h"
 

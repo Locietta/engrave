@@ -19,14 +19,13 @@
 #include <utility>
 #include <vector>
 
-#include "global/io/byteview.h"
-#include "global/serialization/json.h"
-#include "global/serialization/zipreader.h"
-
 #include "engraving/dom/instrument.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/score.h"
 #include "engraving/playback/playbackmodel.h"
+#include "global/io/byteview.h"
+#include "global/serialization/json.h"
+#include "global/serialization/zipreader.h"
 
 namespace music {
 namespace {

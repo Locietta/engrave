@@ -22,13 +22,12 @@
 
 #include "playbacksetupdataresolver.h"
 
-#include "mapping/keyboardssetupdataresolver.h"
-#include "mapping/stringssetupdataresolver.h"
-#include "mapping/windssetupdataresolver.h"
-#include "mapping/percussionssetupdataresolver.h"
-#include "mapping/voicessetupdataresolver.h"
-
 #include "log.h"
+#include "mapping/keyboardssetupdataresolver.h"
+#include "mapping/percussionssetupdataresolver.h"
+#include "mapping/stringssetupdataresolver.h"
+#include "mapping/voicessetupdataresolver.h"
+#include "mapping/windssetupdataresolver.h"
 
 using namespace mu::engraving;
 using namespace muse::mpe;

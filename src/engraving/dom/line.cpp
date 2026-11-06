@@ -24,17 +24,15 @@
 
 #include <vector>
 
-#include "containers.h"
-
-#include "iengravingconfiguration.h" // IWYU pragma: keep
-
 #include "../editing/navigation.h"
 #include "../rendering/iscorerenderer.h"
-
 #include "anchors.h"
 #include "barline.h"
 #include "chord.h"
+#include "containers.h"
 #include "dynamic.h"
+#include "iengravingconfiguration.h" // IWYU pragma: keep
+#include "log.h"
 #include "measure.h"
 #include "note.h"
 #include "page.h"
@@ -44,8 +42,6 @@
 #include "staff.h"
 #include "system.h"
 #include "utils.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

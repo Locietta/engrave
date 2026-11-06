@@ -23,7 +23,6 @@
 #include "ledgerline.h"
 
 #include "chord.h"
-
 #include "log.h"
 
 using namespace mu;

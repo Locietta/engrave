@@ -22,18 +22,17 @@
 
 #include "beam.h"
 
-#include <cmath>
 #include <algorithm>
-
-#include "containers.h"
-#include "realfn.h"
+#include <cmath>
 
 #include "../editing/elementeditdata.h"
-
 #include "actionicon.h"
 #include "chord.h"
+#include "containers.h"
 #include "groups.h"
+#include "log.h"
 #include "measure.h"
+#include "realfn.h"
 #include "rootitem.h"
 #include "score.h"
 #include "segment.h"
@@ -41,8 +40,6 @@
 #include "system.h"
 #include "tremolotwochord.h"
 #include "tuplet.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace muse;

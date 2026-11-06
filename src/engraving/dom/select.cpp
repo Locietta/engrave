@@ -25,12 +25,9 @@
  Implementation of class Selection plus other selection related functions.
 */
 
-#include "global/containers.h"
+#include "select.h"
 
 #include "../types/types.h"
-
-#include "rw/rwregister.h"
-
 #include "accidental.h"
 #include "arpeggio.h"
 #include "articulation.h"
@@ -44,12 +41,14 @@
 #include "figuredbass.h"
 #include "fingering.h"
 #include "fret.h"
+#include "global/containers.h"
 #include "guitarbend.h"
 #include "harmony.h"
 #include "harppedaldiagram.h"
 #include "hook.h"
 #include "laissezvib.h"
 #include "linkedobjects.h"
+#include "log.h"
 #include "lyrics.h"
 #include "measure.h"
 #include "mscore.h"
@@ -59,9 +58,9 @@
 #include "part.h"
 #include "partialtie.h"
 #include "rest.h"
+#include "rw/rwregister.h"
 #include "score.h"
 #include "segment.h"
-#include "select.h"
 #include "staff.h"
 #include "stafftextbase.h"
 #include "stem.h"
@@ -72,10 +71,7 @@
 #include "tremolosinglechord.h"
 #include "tremolotwochord.h"
 #include "tuplet.h"
-
 #include "utils.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

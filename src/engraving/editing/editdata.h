@@ -24,9 +24,9 @@
 
 #include <memory>
 
+#include "../types/types.h"
 #include "types/flags.h"
 #include "types/string.h"
-#include "../types/types.h"
 
 namespace mu::engraving {
 enum KeyboardModifier {

@@ -24,10 +24,9 @@
 
 #include <string>
 
-#include "string.h"
 #include "number.h"
-
 #include "rgba.h"
+#include "string.h"
 
 namespace muse {
 struct Color {

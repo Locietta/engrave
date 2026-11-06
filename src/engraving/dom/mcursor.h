@@ -23,8 +23,8 @@
 #ifndef MU_ENGRAVING_MCURSOR_H
 #define MU_ENGRAVING_MCURSOR_H
 
-#include "types/string.h"
 #include "../types/types.h"
+#include "types/string.h"
 
 namespace mu::engraving {
 struct EngravingServices;

@@ -26,8 +26,6 @@
 #include <tuple>
 #include <vector>
 
-#include "global/containers.h"
-
 #include "../dom/excerpt.h"
 #include "../dom/factory.h"
 #include "../dom/layoutbreak.h"
@@ -43,15 +41,14 @@
 #include "../dom/system.h"
 #include "../dom/timesig.h"
 #include "../dom/tremolotwochord.h"
-
 #include "addremoveelement.h"
 #include "editmeasures.h"
 #include "editspanner.h"
 #include "edittremolo.h"
+#include "global/containers.h"
+#include "log.h"
 #include "transaction/transaction.h"
 #include "transaction/undostack.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

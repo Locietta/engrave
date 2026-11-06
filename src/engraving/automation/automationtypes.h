@@ -21,15 +21,6 @@
  */
 #pragma once
 
-#include "global/types/id.h"
-#include "global/types/number.h"
-#include "global/types/sharedmap.h"
-
-#include "mpe/automationpoint.h"
-
-#include "engraving/infrastructure/eid.h"
-#include "engraving/types/types.h"
-
 #include <algorithm>
 #include <optional>
 #include <set>
@@ -37,6 +28,13 @@
 #include <type_traits>
 #include <variant>
 #include <vector>
+
+#include "engraving/infrastructure/eid.h"
+#include "engraving/types/types.h"
+#include "global/types/id.h"
+#include "global/types/number.h"
+#include "global/types/sharedmap.h"
+#include "mpe/automationpoint.h"
 
 namespace mu::engraving {
 struct AutomationPoint {

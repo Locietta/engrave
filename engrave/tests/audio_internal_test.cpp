@@ -1,30 +1,30 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Failure injection for the offline writer, with recovery through the public API.
 
-#include "output_fixture.h"
-#include "engrave/src/api/state.h"
-#include "engrave/src/audio/engine_audio.h"
-#include "audio/common/audioerrors.h"
-#include "audio/engine/internal/offlinecancellation.h"
-#include "audio/engine/internal/offlinetiming.h"
-#include "audio/engine/internal/export/abstractaudioencoder.h"
-#include "global/io/iodevice.h"
-
-#include <filesystem>
-#include <fstream>
 #include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <cstdio>
-#include <thread>
+#include <filesystem>
+#include <fstream>
 #include <latch>
 #include <memory>
 #include <span>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <gtest/gtest.h>
+
+#include "audio/common/audioerrors.h"
+#include "audio/engine/internal/export/abstractaudioencoder.h"
+#include "audio/engine/internal/offlinecancellation.h"
+#include "audio/engine/internal/offlinetiming.h"
+#include "engrave/src/api/state.h"
+#include "engrave/src/audio/engine_audio.h"
+#include "global/io/iodevice.h"
+#include "output_fixture.h"
 
 #ifdef _WIN32
 #include <process.h>

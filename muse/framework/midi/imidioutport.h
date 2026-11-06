@@ -22,8 +22,8 @@
 #ifndef MUSE_MIDI_IMIDIOUTPORT_H
 #define MUSE_MIDI_IMIDIOUTPORT_H
 
-#include "types/ret.h"
 #include "miditypes.h"
+#include "types/ret.h"
 
 namespace muse::midi {
 struct IMidiOutPort {

@@ -22,9 +22,9 @@
 
 #pragma once
 
-#include <cstring>
 #include <algorithm>
 #include <cassert>
+#include <cstring>
 
 #include "vectorops.h"
 

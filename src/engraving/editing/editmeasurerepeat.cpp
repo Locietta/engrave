@@ -24,8 +24,6 @@
 
 #include <vector>
 
-#include "translation.h"
-
 #include "../dom/barline.h"
 #include "../dom/factory.h"
 #include "../dom/measure.h"
@@ -35,8 +33,8 @@
 #include "../dom/select.h"
 #include "../dom/staff.h"
 #include "../dom/utils.h"
-
 #include "../infrastructure/messagebox.h"
+#include "translation.h"
 
 using namespace mu;
 using namespace mu::engraving;

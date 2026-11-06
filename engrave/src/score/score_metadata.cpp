@@ -46,9 +46,6 @@
 #include <vector>
 
 #include "engrave/src/audio/score_audio.h"
-#include "global/realfn.h"
-#include "global/types/string.h"
-
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/masterscore.h"
@@ -62,6 +59,8 @@
 #include "engraving/dom/textbase.h"
 #include "engraving/dom/timesig.h"
 #include "engraving/style/style.h"
+#include "global/realfn.h"
+#include "global/types/string.h"
 
 namespace music {
 namespace {

@@ -23,11 +23,10 @@
 #define MUSE_DRAW_IIMAGEPROVIDER_H
 
 #include "global/io/iodevice.h"
-
+#include "ipaintprovider.h"
+#include "types/color.h"
 #include "types/geometry.h"
 #include "types/pixmap.h"
-#include "types/color.h"
-#include "ipaintprovider.h"
 
 namespace muse::draw {
 struct IImageProvider {

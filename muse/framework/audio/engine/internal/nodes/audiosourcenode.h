@@ -22,10 +22,9 @@
 
 #pragma once
 
-#include "audionode.h"
-
 #include "audio/common/audiotypes.h"
 #include "audio/common/timeposition.h"
+#include "audionode.h"
 
 namespace muse::audio {
 struct SourceTag {

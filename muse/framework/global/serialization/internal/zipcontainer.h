@@ -23,8 +23,8 @@
 #define MUSE_GLOBAL_ZIPCONTAINER_H
 
 #include <ctime>
-#include <string>
 #include <span>
+#include <string>
 
 #include "io/iodevice.h"
 

@@ -28,7 +28,6 @@
 #include "dom/realizedharmony.h"
 #include "dom/stafftype.h"
 #include "dom/tuplet.h"
-
 #include "types/types.h"
 
 using namespace mu::engraving;

@@ -23,18 +23,18 @@
 
 #include <algorithm>
 #include <vector>
+
+#include "../midishared/midifile.h"
+#include "engraving/dom/durationtype.h"
+#include "engraving/dom/sig.h"
 #include "importmidi_chord.h"
 #include "importmidi_inner.h"
 #include "importmidi_meter.h"
-#include "importmidi_tuplet.h"
-#include "importmidi_quant.h"
-#include "importmidi_voice.h"
 #include "importmidi_operations.h"
+#include "importmidi_quant.h"
+#include "importmidi_tuplet.h"
 #include "importmidi_tuplet_voice.h"
-#include "../midishared/midifile.h"
-
-#include "engraving/dom/sig.h"
-#include "engraving/dom/durationtype.h"
+#include "importmidi_voice.h"
 
 using namespace mu::engraving;
 

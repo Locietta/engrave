@@ -21,15 +21,13 @@
  */
 #include "paint.h"
 
-#include "draw/painter.h"
-#include "dom/score.h"
-#include "dom/page.h"
-#include "dom/engravingitem.h"
-
-#include "tdraw.h"
 #include "debugpaint.h"
-
+#include "dom/engravingitem.h"
+#include "dom/page.h"
+#include "dom/score.h"
+#include "draw/painter.h"
 #include "log.h"
+#include "tdraw.h"
 
 using namespace muse::draw;
 using namespace mu::engraving;

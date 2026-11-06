@@ -21,18 +21,13 @@
  */
 #include "readstyle.h"
 
-#include "types/constants.h"
-
+#include "dom/masterscore.h"
+#include "log.h"
+#include "readchordlisthook.h"
+#include "rw/xmlreader.h"
 #include "style/defaultstyle.h"
 #include "style/style.h"
-
-#include "rw/xmlreader.h"
-
-#include "dom/masterscore.h"
-
-#include "readchordlisthook.h"
-
-#include "log.h"
+#include "types/constants.h"
 
 using namespace mu;
 using namespace muse;

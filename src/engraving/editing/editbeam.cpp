@@ -28,10 +28,8 @@
 #include "../dom/segment.h"
 #include "../dom/select.h"
 #include "../dom/utils.h"
-
-#include "navigation.h"
-
 #include "log.h"
+#include "navigation.h"
 
 using namespace mu::engraving;
 

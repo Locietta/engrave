@@ -22,9 +22,8 @@
 
 #pragma once
 
-#include "spanner.h"
-
 #include "draw/types/painterpath.h"
+#include "spanner.h"
 
 namespace mu::engraving {
 //---------------------------------------------------------

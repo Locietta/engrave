@@ -22,9 +22,8 @@
 
 #pragma once
 
-#include "slurtie.h"
-
 #include "global/allocator.h"
+#include "slurtie.h"
 
 namespace mu::engraving {
 //---------------------------------------------------------

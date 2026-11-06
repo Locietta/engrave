@@ -25,9 +25,8 @@
 #include "global/types/bytearray.h"
 #include "global/types/datetime.h"
 #include "global/types/retval.h"
-
-#include "path.h"
 #include "ioenums.h"
+#include "path.h"
 
 namespace muse::io {
 struct IFileSystem {

@@ -27,18 +27,15 @@
 
 #include "system.h"
 
-#include "iengravingconfiguration.h" // IWYU pragma: keep
-
-#include "style/style.h"
-
 #include "../editing/navigation.h"
-
 #include "beam.h"
 #include "box.h"
 #include "bracket.h"
 #include "bracketitem.h"
 #include "chordrest.h"
 #include "factory.h"
+#include "iengravingconfiguration.h" // IWYU pragma: keep
+#include "log.h"
 #include "measure.h"
 #include "mscore.h"
 #include "page.h"
@@ -50,11 +47,10 @@
 #include "spanner.h"
 #include "staff.h"
 #include "staffvisibilityindicator.h"
+#include "style/style.h"
 #include "system.h"
 #include "systemdivider.h"
 #include "systemlockindicator.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

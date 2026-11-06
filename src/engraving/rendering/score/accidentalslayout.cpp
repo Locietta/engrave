@@ -19,21 +19,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "log.h"
+#include "accidentalslayout.h"
+
 #include <algorithm>
 #include <cfloat>
 
-#include "accidentalslayout.h"
-#include "layoutcontext.h"
 #include "../paddingtable.h"
-#include "shape.h"
-#include "tlayout.h"
-
 #include "dom/accidental.h"
 #include "dom/chord.h"
 #include "dom/ledgerline.h"
 #include "dom/note.h"
 #include "dom/score.h"
+#include "layoutcontext.h"
+#include "log.h"
+#include "shape.h"
+#include "tlayout.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;

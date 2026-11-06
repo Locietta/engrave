@@ -22,11 +22,9 @@
 
 #include "barline.h"
 
-#include "translation.h"
-
 #include "../types/symnames.h"
-
 #include "articulation.h"
+#include "log.h"
 #include "marker.h"
 #include "masterscore.h"
 #include "measure.h"
@@ -39,8 +37,7 @@
 #include "stafflines.h"
 #include "stafftype.h"
 #include "system.h"
-
-#include "log.h"
+#include "translation.h"
 
 using namespace mu;
 using namespace muse;

@@ -22,9 +22,8 @@
 
 #include "sticking.h"
 
-#include "segment.h"
-
 #include "log.h"
+#include "segment.h"
 
 using namespace mu;
 

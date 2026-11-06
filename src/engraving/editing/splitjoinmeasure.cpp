@@ -22,6 +22,7 @@
 
 #include "splitjoinmeasure.h"
 
+#include "addremoveelement.h"
 #include "dom/chordrest.h"
 #include "dom/factory.h"
 #include "dom/masterscore.h"
@@ -33,8 +34,6 @@
 #include "dom/staff.h"
 #include "dom/stafftypechange.h"
 #include "dom/timesig.h"
-
-#include "addremoveelement.h"
 #include "editspanner.h"
 #include "transaction/transaction.h"
 

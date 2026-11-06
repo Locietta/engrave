@@ -22,12 +22,11 @@
 
 #include "systemlockindicator.h"
 
-#include "rendering/iscorerenderer.h"
-
 #include "measure.h"
 #include "measurebase.h"
 #include "page.h"
 #include "rangelock.h"
+#include "rendering/iscorerenderer.h"
 #include "system.h"
 
 namespace mu::engraving {

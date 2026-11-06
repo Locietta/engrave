@@ -18,9 +18,8 @@
 
 #include <gtest/gtest.h>
 
-#include <engrave/engrave.h>
-
 #include "engrave/src/api/sniff.h"
+#include <engrave/engrave.h>
 
 namespace {
 

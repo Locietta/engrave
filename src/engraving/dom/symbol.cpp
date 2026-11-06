@@ -22,17 +22,13 @@
 
 #include "symbol.h"
 
-#include "score.h"
-
 #include "draw/fontmetrics.h"
 #include "iengravingfont.h"
-
-#include "types/symnames.h"
-
 #include "image.h"
-#include "staff.h"
-
 #include "log.h"
+#include "score.h"
+#include "staff.h"
+#include "types/symnames.h"
 
 using namespace mu;
 using namespace muse::draw;

@@ -20,19 +20,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "../offlinecancellation.h"
 #include "flacencoder.h"
 
 #include <algorithm>
 #include <vector>
 
-#include "FLAC++/encoder.h"
-
 #include "../dsp/audiomathutils.h"
-
-#include "global/io/iodevice.h"
+#include "../offlinecancellation.h"
+#include "FLAC++/encoder.h"
 #include "audio/common/audioerrors.h"
-
+#include "global/io/iodevice.h"
 #include "log.h"
 
 namespace muse::audio::encode {

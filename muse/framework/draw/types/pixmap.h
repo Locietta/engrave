@@ -22,9 +22,8 @@
 #ifndef MUSE_DRAW_PIXMAP_H
 #define MUSE_DRAW_PIXMAP_H
 
-#include "global/types/bytearray.h"
-
 #include "geometry.h"
+#include "global/types/bytearray.h"
 
 namespace muse::draw {
 struct Pixmap {

@@ -22,19 +22,6 @@
 
 #include "singlelayout.h"
 
-#include "draw/fontmetrics.h"
-
-#include "types/types.h"
-#include "types/typesconv.h"
-#include "types/symnames.h"
-
-#include "dom/dummyparent.h"
-
-#include "dom/factory.h"
-
-#include "dom/engravingitem.h"
-#include "dom/score.h"
-
 #include "dom/accidental.h"
 #include "dom/actionicon.h"
 #include "dom/ambitus.h"
@@ -47,8 +34,11 @@
 #include "dom/capo.h"
 #include "dom/chordline.h"
 #include "dom/clef.h"
+#include "dom/dummyparent.h"
 #include "dom/dynamic.h"
+#include "dom/engravingitem.h"
 #include "dom/expression.h"
+#include "dom/factory.h"
 #include "dom/fermata.h"
 #include "dom/fingering.h"
 #include "dom/fret.h"
@@ -77,6 +67,7 @@
 #include "dom/playcounttext.h"
 #include "dom/playtechannotation.h"
 #include "dom/rehearsalmark.h"
+#include "dom/score.h"
 #include "dom/slur.h"
 #include "dom/soundflag.h"
 #include "dom/spacer.h"
@@ -97,19 +88,20 @@
 #include "dom/tremolosinglechord.h"
 #include "dom/tremolotwochord.h"
 #include "dom/trill.h"
+#include "dom/utils.h"
 #include "dom/vibrato.h"
 #include "dom/volta.h"
 #include "dom/whammybar.h"
-
-#include "dom/utils.h"
-
-#include "rendering/score/tlayout.h"
-#include "rendering/score/textlayout.h"
-#include "rendering/score/tremololayout.h"
+#include "draw/fontmetrics.h"
+#include "log.h"
 #include "rendering/score/chordlayout.h"
 #include "rendering/score/slurtielayout.h"
-
-#include "log.h"
+#include "rendering/score/textlayout.h"
+#include "rendering/score/tlayout.h"
+#include "rendering/score/tremololayout.h"
+#include "types/symnames.h"
+#include "types/types.h"
+#include "types/typesconv.h"
 
 using namespace muse;
 using namespace muse::draw;

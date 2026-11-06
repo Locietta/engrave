@@ -22,10 +22,10 @@
 
 #pragma once
 
-#include "pitchspelling.h"
-#include "../types/types.h"
-
 #include <array>
+
+#include "../types/types.h"
+#include "pitchspelling.h"
 
 namespace mu::engraving {
 struct XmlWriter;

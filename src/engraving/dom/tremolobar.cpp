@@ -23,10 +23,8 @@
 #include "tremolobar.h"
 
 #include "draw/types/pen.h"
-
-#include "score.h"
-
 #include "log.h"
+#include "score.h"
 
 using namespace mu;
 using namespace mu::engraving;

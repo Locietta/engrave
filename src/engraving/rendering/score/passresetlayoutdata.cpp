@@ -22,7 +22,6 @@
 #include "passresetlayoutdata.h"
 
 #include "dom/score.h"
-
 #include "layoutcontext.h"
 
 using namespace mu::engraving;

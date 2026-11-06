@@ -2,6 +2,7 @@
 #pragma once
 
 #include <span>
+
 #include "iodevice.h"
 
 namespace muse::io {

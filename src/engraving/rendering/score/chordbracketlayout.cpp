@@ -25,14 +25,13 @@
 #include <algorithm>
 #include <vector>
 
+#include "chordlayout.h"
 #include "dom/chord.h"
 #include "dom/chordbracket.h"
 #include "dom/engravingitem.h"
 #include "dom/note.h"
 #include "dom/part.h"
 #include "dom/segment.h"
-
-#include "chordlayout.h"
 #include "horizontalspacing.h"
 #include "tlayout.h"
 

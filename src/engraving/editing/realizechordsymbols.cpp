@@ -24,8 +24,6 @@
 
 #include <vector>
 
-#include "style/style.h"
-
 #include "../dom/chord.h"
 #include "../dom/factory.h"
 #include "../dom/harmony.h"
@@ -42,8 +40,8 @@
 #include "../dom/tie.h"
 #include "../dom/tuplet.h"
 #include "../dom/utils.h"
-
 #include "log.h"
+#include "style/style.h"
 
 using namespace mu;
 using namespace mu::engraving;

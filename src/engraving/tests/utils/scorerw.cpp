@@ -22,17 +22,14 @@
 
 #include "scorerw.h"
 
+#include "engraving/compat/mscxcompat.h"
+#include "engraving/compat/scoreaccess.h"
+#include "engraving/dom/factory.h"
+#include "engraving/infrastructure/localfileinfoprovider.h"
+#include "engraving/rw/rwregister.h"
+#include "engraving/rw/write/twrite.h"
 #include "global/io/buffer.h"
 #include "global/io/file.h"
-
-#include "engraving/compat/scoreaccess.h"
-#include "engraving/compat/mscxcompat.h"
-#include "engraving/infrastructure/localfileinfoprovider.h"
-#include "engraving/rw/write/twrite.h"
-#include "engraving/rw/rwregister.h"
-#include "engraving/dom/factory.h"
-#include "engraving/rw/rwregister.h"
-
 #include "log.h"
 
 using namespace mu;

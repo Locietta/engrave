@@ -26,17 +26,6 @@
 #include <iterator>
 #include <tuple>
 
-#include "translation.h"
-
-#include "editmeasures.h"
-#include "editnote.h"
-#include "inserttime.h"
-#include "regroup.h"
-#include "transaction/transaction.h"
-#include "transpose.h"
-
-#include "../infrastructure/messagebox.h"
-
 #include "../dom/accidental.h"
 #include "../dom/chord.h"
 #include "../dom/chordline.h"
@@ -64,10 +53,16 @@
 #include "../dom/tremolotwochord.h"
 #include "../dom/tuplet.h"
 #include "../dom/utils.h"
-
-#include "navigation.h"
-
+#include "../infrastructure/messagebox.h"
+#include "editmeasures.h"
+#include "editnote.h"
+#include "inserttime.h"
 #include "log.h"
+#include "navigation.h"
+#include "regroup.h"
+#include "transaction/transaction.h"
+#include "translation.h"
+#include "transpose.h"
 
 using namespace muse;
 using namespace mu;

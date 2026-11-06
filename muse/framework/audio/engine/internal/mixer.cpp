@@ -19,16 +19,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "offlinecancellation.h"
 #include "mixer.h"
 
 #include <sstream>
 
 #include "audio/common/audioerrors.h"
-
-#include "nodes/signalnode.h"
-
 #include "log.h"
+#include "nodes/signalnode.h"
+#include "offlinecancellation.h"
 
 using namespace muse;
 using namespace muse::audio;

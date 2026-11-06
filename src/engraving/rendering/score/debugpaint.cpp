@@ -25,17 +25,15 @@
 #include "iengravingcontextconfiguration.h" // IWYU pragma: keep
 
 //#include "accessibility/accessibleitem.h"
+#include "dom/measure.h"
+#include "dom/measurebase.h"
+#include "dom/note.h"
 #include "dom/page.h"
 #include "dom/score.h"
-#include "dom/system.h"
-#include "dom/measurebase.h"
-#include "dom/measure.h"
-#include "dom/note.h"
 #include "dom/segment.h"
-
-#include "tdraw.h"
-
+#include "dom/system.h"
 #include "log.h"
+#include "tdraw.h"
 
 using namespace muse::draw;
 using namespace mu::engraving;

@@ -21,8 +21,8 @@
  */
 #include "json.h"
 
-#include <cmath>
 #include <cassert>
+#include <cmath>
 
 #define PICOJSON_USE_LOCALE 1
 #define PICOJSON_ASSERT assert

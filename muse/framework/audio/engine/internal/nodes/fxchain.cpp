@@ -21,8 +21,8 @@
  */
 
 #include "fxchain.h"
-#include "fxnode.h"
 
+#include "fxnode.h"
 #include "log.h"
 
 using namespace muse;

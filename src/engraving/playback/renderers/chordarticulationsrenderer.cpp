@@ -22,14 +22,13 @@
 
 #include "chordarticulationsrenderer.h"
 
-#include "bendsrenderer.h"
-#include "noterenderer.h"
-#include "gracechordcontext.h"
-#include "ornamentsrenderer.h"
-#include "tremolorenderer.h"
 #include "arpeggiorenderer.h"
-
+#include "bendsrenderer.h"
+#include "gracechordcontext.h"
+#include "noterenderer.h"
+#include "ornamentsrenderer.h"
 #include "playback/utils/expressionutils.h"
+#include "tremolorenderer.h"
 
 using namespace mu::engraving;
 using namespace muse;

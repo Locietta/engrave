@@ -20,19 +20,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
 #include "notearticulationsparser.h"
 
+#include "dom/laissezvib.h"
 #include "dom/measure.h"
 #include "dom/note.h"
 #include "dom/spanner.h"
-#include "dom/laissezvib.h"
-
-#include "playback/utils/arrangementutils.h"
-#include "playback/utils/expressionutils.h"
-
 #include "internal/spannersmetaparser.h"
 #include "internal/symbolsmetaparser.h"
+#include "log.h"
+#include "playback/utils/arrangementutils.h"
+#include "playback/utils/expressionutils.h"
 
 using namespace mu::engraving;
 using namespace muse;

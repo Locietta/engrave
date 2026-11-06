@@ -24,7 +24,6 @@
 #include <iomanip>
 
 #include "global/stringutils.h"
-
 #include "log.h"
 
 using namespace muse;

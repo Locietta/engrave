@@ -1,8 +1,9 @@
 #include "partialtie.h"
+
 #include "chord.h"
 #include "measure.h"
-#include "score.h"
 #include "note.h"
+#include "score.h"
 #include "staff.h"
 
 namespace mu::engraving {

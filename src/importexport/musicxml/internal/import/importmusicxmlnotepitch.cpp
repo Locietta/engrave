@@ -22,14 +22,11 @@
 
 #include "importmusicxmlnotepitch.h"
 
+#include "../shared/musicxmlsupport.h"
 #include "draw/types/color.h"
-
 #include "engraving/dom/factory.h"
 #include "engraving/dom/score.h"
-
-#include "../shared/musicxmlsupport.h"
 #include "importmusicxmllogger.h"
-
 #include "log.h"
 
 using namespace mu::engraving;

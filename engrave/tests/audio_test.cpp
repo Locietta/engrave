@@ -10,11 +10,6 @@
 // choice reach the renderer, the reverb switch changes the mix, options are
 // validated, and D4 holds: a second render in this process equals a fresh one.
 
-#include "output_fixture.h"
-
-#include <stdexcept>
-#include <engrave/engrave.h>
-
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -24,11 +19,15 @@
 #include <memory>
 #include <optional>
 #include <span>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
 
 #include <gtest/gtest.h>
+
+#include "output_fixture.h"
+#include <engrave/engrave.h>
 
 namespace music::test::detail {
 

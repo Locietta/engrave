@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include "engravingitem.h"
 #include "draw/types/font.h"
+#include "engravingitem.h"
 
 namespace mu::engraving {
 struct Factory;

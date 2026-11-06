@@ -22,9 +22,8 @@
 
 #pragma once
 
-#include "engravingitem.h"
-
 #include "../editing/elementeditdata.h"
+#include "engravingitem.h"
 
 namespace mu::engraving {
 struct Factory;

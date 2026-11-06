@@ -1,15 +1,12 @@
 #include "gpconverter.h"
 
-#include "engraving/dom/pitchspelling.h"
-#include "translation.h"
-
-#include "gpdommodel.h"
-
+#include "../guitarprodrumset.h"
+#include "../utils.h"
 #include "engraving/dom/arpeggio.h"
 #include "engraving/dom/bend.h"
 #include "engraving/dom/box.h"
 #include "engraving/dom/bracketitem.h"
-#include "engraving/editing/editstaffbrackets.h"
+#include "engraving/dom/capo.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/chordline.h"
 #include "engraving/dom/clef.h"
@@ -21,8 +18,8 @@
 #include "engraving/dom/fingering.h"
 #include "engraving/dom/fret.h"
 #include "engraving/dom/glissando.h"
-#include "engraving/dom/guitarbend.h"
 #include "engraving/dom/gradualtempochange.h"
+#include "engraving/dom/guitarbend.h"
 #include "engraving/dom/hammeronpulloff.h"
 #include "engraving/dom/harmony.h"
 #include "engraving/dom/instrchange.h"
@@ -35,6 +32,7 @@
 #include "engraving/dom/note.h"
 #include "engraving/dom/ottava.h"
 #include "engraving/dom/part.h"
+#include "engraving/dom/pitchspelling.h"
 #include "engraving/dom/rehearsalmark.h"
 #include "engraving/dom/rest.h"
 #include "engraving/dom/score.h"
@@ -42,6 +40,7 @@
 #include "engraving/dom/spanner.h"
 #include "engraving/dom/staff.h"
 #include "engraving/dom/stafftext.h"
+#include "engraving/dom/stringtunings.h"
 #include "engraving/dom/tapping.h"
 #include "engraving/dom/tempotext.h"
 #include "engraving/dom/text.h"
@@ -51,16 +50,12 @@
 #include "engraving/dom/tripletfeel.h"
 #include "engraving/dom/tuplet.h"
 #include "engraving/dom/volta.h"
-#include "engraving/dom/capo.h"
-#include "engraving/dom/stringtunings.h"
-#include "engraving/types/symid.h"
-
 #include "engraving/editing/editchord.h"
-
-#include "../utils.h"
-#include "../guitarprodrumset.h"
-
+#include "engraving/editing/editstaffbrackets.h"
+#include "engraving/types/symid.h"
+#include "gpdommodel.h"
 #include "log.h"
+#include "translation.h"
 
 using namespace mu::engraving;
 

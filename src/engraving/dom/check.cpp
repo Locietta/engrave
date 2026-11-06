@@ -22,8 +22,10 @@
 
 #include "chordrest.h"
 #include "durationtype.h"
+#include "engravingerrors.h"
 #include "factory.h"
 #include "keysig.h"
+#include "log.h"
 #include "masterscore.h"
 #include "measure.h"
 #include "rest.h"
@@ -32,10 +34,6 @@
 #include "staff.h"
 #include "tuplet.h"
 #include "utils.h"
-
-#include "engravingerrors.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace muse;

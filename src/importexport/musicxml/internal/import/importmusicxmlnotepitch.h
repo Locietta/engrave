@@ -22,9 +22,8 @@
 
 #pragma once
 
-#include "serialization/xmlstreamreader.h"
-
 #include "engraving/dom/accidental.h"
+#include "serialization/xmlstreamreader.h"
 
 namespace mu::iex::musicxml {
 struct MusicXmlLogger;

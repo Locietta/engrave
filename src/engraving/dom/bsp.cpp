@@ -20,9 +20,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "bsp.h"
+
 #include <cmath>
 
-#include "bsp.h"
 #include "engravingitem.h"
 
 using namespace mu;

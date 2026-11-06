@@ -20,7 +20,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
 #include "clonevoice.h"
 
 #include "../dom/beam.h"
@@ -38,7 +37,7 @@
 #include "../dom/tiemap.h"
 #include "../dom/tremolotwochord.h"
 #include "../dom/tupletmap.h"
-
+#include "log.h"
 #include "transpose.h"
 
 using namespace mu::engraving;

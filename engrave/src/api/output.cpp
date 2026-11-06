@@ -2,8 +2,6 @@
 // handle resolver and the page drawing through the A2 renderer in
 // engrave/src/render/, with A2's options and limits.
 
-#include <engrave/document.h>
-
 #include <format>
 #include <limits>
 #include <string>
@@ -14,10 +12,10 @@
 #include "engrave/src/render/score_render.h"
 #include "engrave/src/score/export_options.h"
 #include "engrave/src/score/score_positions.h"
-
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/score.h"
 #include "engraving/engravingproject.h"
+#include <engrave/document.h>
 
 namespace engrave {
 namespace {

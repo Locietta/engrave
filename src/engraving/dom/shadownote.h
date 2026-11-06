@@ -22,11 +22,10 @@
 
 #pragma once
 
-#include "engravingitem.h"
-
+#include "../types/types.h"
 #include "accidental.h"
 #include "durationtype.h"
-#include "../types/types.h"
+#include "engravingitem.h"
 
 namespace mu::engraving {
 //---------------------------------------------------------

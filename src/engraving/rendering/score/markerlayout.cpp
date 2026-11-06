@@ -20,15 +20,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
 #include "markerlayout.h"
-#include "layoutcontext.h"
-#include "textlayout.h"
-#include "autoplace.h"
 
 #include "../dom/barline.h"
 #include "../dom/marker.h"
 #include "../dom/measure.h"
+#include "autoplace.h"
+#include "layoutcontext.h"
+#include "log.h"
+#include "textlayout.h"
 
 using namespace mu::engraving::rendering::score;
 

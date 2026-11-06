@@ -24,9 +24,8 @@
 
 #include <vector>
 
-#include "iengravingfontsprovider.h"
-
 #include "engravingfont.h"
+#include "iengravingfontsprovider.h"
 
 namespace mu::engraving {
 struct EngravingFont;

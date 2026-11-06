@@ -22,11 +22,10 @@
 
 #include "letring.h"
 
+#include "log.h"
 #include "score.h"
 #include "system.h"
 #include "text.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

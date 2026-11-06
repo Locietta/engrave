@@ -20,6 +20,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "importmusicxmlpass1.h"
+
+#include "../shared/musicxmlsupport.h"
+#include "../shared/musicxmltypes.h"
 #include "engraving/dom/box.h"
 #include "engraving/dom/bracketitem.h"
 #include "engraving/dom/factory.h"
@@ -37,20 +41,12 @@
 #include "engraving/engravingerrors.h"
 #include "engraving/rendering/iscorerenderer.h"
 #include "engraving/rendering/score/tlayout.h"
-
 #include "engraving/style/style.h"
 #include "engraving/style/textstyle.h"
-
 #include "engraving/types/symnames.h"
-
+#include "importexport/musicxml/imusicxmlconfiguration.h"
 #include "importmusicxmllogger.h"
 #include "importmusicxmlnoteduration.h"
-#include "importmusicxmlpass1.h"
-#include "../shared/musicxmltypes.h"
-#include "../shared/musicxmlsupport.h"
-
-#include "importexport/musicxml/imusicxmlconfiguration.h"
-
 #include "log.h"
 
 using namespace mu;

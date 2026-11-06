@@ -23,13 +23,13 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <ctime>
 #include <cstring>
+#include <ctime>
+
 #include <zlib.h>
 
 #include "global/io/dir.h"
 #include "global/io/writebudget.h"
-
 #include "log.h"
 
 // Zip standard version for archives handled by this API

@@ -28,16 +28,13 @@
 #include <memory>
 #include <stdexcept>
 
-#include "importptb.h"
-#include "internal/guitarprodrumset.h"
-#include "utils.h"
-
 #include "engraving/dom/arpeggio.h"
 #include "engraving/dom/articulation.h"
 #include "engraving/dom/barline.h"
 #include "engraving/dom/bend.h"
 #include "engraving/dom/box.h"
 #include "engraving/dom/bracket.h"
+#include "engraving/dom/capo.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/chordline.h"
 #include "engraving/dom/clef.h"
@@ -65,6 +62,7 @@
 #include "engraving/dom/stafftext.h"
 #include "engraving/dom/stafftype.h"
 #include "engraving/dom/stringdata.h"
+#include "engraving/dom/stringtunings.h"
 #include "engraving/dom/tapping.h"
 #include "engraving/dom/tempotext.h"
 #include "engraving/dom/text.h"
@@ -73,14 +71,13 @@
 #include "engraving/dom/timesig.h"
 #include "engraving/dom/tuplet.h"
 #include "engraving/dom/volta.h"
-#include "engraving/dom/stringtunings.h"
-#include "engraving/dom/capo.h"
+#include "engraving/editing/editchord.h"
 #include "engraving/rw/xmlwriter.h"
 #include "engraving/types/symid.h"
-
-#include "engraving/editing/editchord.h"
-
+#include "importptb.h"
+#include "internal/guitarprodrumset.h"
 #include "log.h"
+#include "utils.h"
 
 using namespace muse;
 using namespace muse::io;

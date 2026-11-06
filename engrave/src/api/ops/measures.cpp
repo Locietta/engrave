@@ -7,6 +7,8 @@
 #include <optional>
 #include <string>
 
+#include "engrave/src/api/batch.h"
+#include "engrave/src/api/value_codec.h"
 #include "engraving/dom/clef.h"
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/factory.h"
@@ -25,9 +27,6 @@
 #include "engraving/editing/transaction/transaction.h"
 #include "engraving/editing/transaction/undostack.h"
 #include "engraving/types/typesconv.h"
-
-#include "engrave/src/api/batch.h"
-#include "engrave/src/api/value_codec.h"
 
 namespace engrave::api {
 namespace {

@@ -20,15 +20,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <climits>
-
 #include "connector.h"
+
+#include <climits>
 
 #include "engravingitem.h"
 #include "engravingobject.h"
-#include "score.h"
-
 #include "log.h"
+#include "score.h"
 
 using namespace mu;
 using namespace mu::engraving;

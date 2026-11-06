@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include <engraving/types/types.h>
 #include "../guitarbendimporttypes.h"
+#include <engraving/types/types.h>
 
 namespace mu::iex::guitarpro {
 struct BendDataContextSplitChord {

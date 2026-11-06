@@ -24,17 +24,15 @@
 
 #include <cmath>
 
-#include "draw/types/transform.h"
-
 #include "../editing/elementeditdata.h"
-#include "types/typesconv.h"
-
+#include "draw/types/transform.h"
 #include "dynamic.h"
 #include "measure.h"
 #include "score.h"
 #include "segment.h"
 #include "system.h"
 #include "text.h"
+#include "types/typesconv.h"
 
 using namespace mu;
 using namespace muse::draw;

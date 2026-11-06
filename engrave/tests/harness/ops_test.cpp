@@ -18,23 +18,21 @@
 #include <memory>
 #include <set>
 #include <span>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
 
-#include "engrave/tests/harness/harness.h"
-
-#include "engrave/src/api/state.h"
 #include "engrave/src/api/handles.h"
-
-#include "engraving/dom/masterscore.h"
+#include "engrave/src/api/state.h"
+#include "engrave/tests/harness/harness.h"
 #include "engraving/dom/chordline.h"
+#include "engraving/dom/masterscore.h"
 #include "engraving/editing/editproperty.h"
-#include "engraving/style/style.h"
 #include "engraving/editing/editstyle.h"
-#include <stdexcept>
 #include "engraving/editing/transaction/undostack.h"
+#include "engraving/style/style.h"
 
 namespace {
 

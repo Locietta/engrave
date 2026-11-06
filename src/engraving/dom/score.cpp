@@ -30,30 +30,6 @@
 #include <cmath>
 #include <map>
 
-#include "containers.h"
-
-#include "iengravingconfiguration.h"        // IWYU pragma: keep
-#include "iengravingcontextconfiguration.h" // IWYU pragma: keep
-
-#include "editing/addremoveelement.h"
-#include "editing/editclef.h"
-#include "editing/editkeysig.h"
-#include "editing/editstavesharing.h"
-#include "editing/splitjoinmeasure.h"
-#include "editing/transaction/transaction.h"
-#include "editing/transaction/undostack.h"
-#include "editing/transpose.h"
-#include "editing/editstaffbrackets.h"
-
-#include "rendering/iscorerenderer.h"
-
-#include "style/style.h"
-#include "style/defaultstyle.h"
-
-#include "iengravingfont.h"
-#include "types/translatablestring.h"
-#include "types/typesconv.h"
-
 #include "anchors.h"
 #include "beam.h"
 #include "box.h"
@@ -61,19 +37,33 @@
 #include "capo.h"
 #include "chord.h"
 #include "clef.h"
+#include "containers.h"
 #include "dummyparent.h"
+#include "editing/addremoveelement.h"
+#include "editing/editclef.h"
+#include "editing/editkeysig.h"
+#include "editing/editstaffbrackets.h"
+#include "editing/editstavesharing.h"
+#include "editing/splitjoinmeasure.h"
+#include "editing/transaction/transaction.h"
+#include "editing/transaction/undostack.h"
+#include "editing/transpose.h"
 #include "excerpt.h"
 #include "factory.h"
+#include "fret.h"
 #include "glissando.h"
 #include "guitarbend.h"
-#include "fret.h"
 #include "harmony.h"
+#include "iengravingconfiguration.h"        // IWYU pragma: keep
+#include "iengravingcontextconfiguration.h" // IWYU pragma: keep
+#include "iengravingfont.h"
 #include "imageStore.h"
 #include "instrchange.h"
 #include "instrtemplate.h"
 #include "key.h"
 #include "keysig.h"
 #include "linkedobjects.h"
+#include "log.h"
 #include "lyrics.h"
 #include "masterscore.h"
 #include "measure.h"
@@ -86,6 +76,7 @@
 #include "partialtie.h"
 #include "pitchspelling.h"
 #include "rehearsalmark.h"
+#include "rendering/iscorerenderer.h"
 #include "repeatlist.h"
 #include "rest.h"
 #include "rootitem.h"
@@ -98,6 +89,8 @@
 #include "staff.h"
 #include "stafftextbase.h"
 #include "stafftype.h"
+#include "style/defaultstyle.h"
+#include "style/style.h"
 #include "synthesizerstate.h"
 #include "system.h"
 #include "systemdivider.h"
@@ -108,10 +101,10 @@
 #include "tiemap.h"
 #include "timesig.h"
 #include "tuplet.h"
+#include "types/translatablestring.h"
+#include "types/typesconv.h"
 #include "utils.h"
 #include "volta.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace muse;

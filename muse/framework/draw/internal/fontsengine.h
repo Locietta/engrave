@@ -21,14 +21,12 @@
  */
 #pragma once
 
-#include <vector>
 #include <functional>
-
-#include "ifontsengine.h"
-
-#include "ifontsdatabase.h"
+#include <vector>
 
 #include "fontrendercache.h"
+#include "ifontsdatabase.h"
+#include "ifontsengine.h"
 
 namespace muse::draw {
 struct IFontFace;

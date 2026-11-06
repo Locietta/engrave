@@ -27,19 +27,17 @@
 
 #include "clef.h"
 
-#include "translation.h"
-
 #include "../editing/editclef.h"
 #include "../editing/editproperty.h"
 #include "../editing/transaction/transaction.h"
 #include "../types/typesconv.h"
-
 #include "ambitus.h"
 #include "factory.h"
 #include "measure.h"
 #include "score.h"
 #include "segment.h"
 #include "staff.h"
+#include "translation.h"
 
 using namespace mu;
 using namespace mu::engraving;

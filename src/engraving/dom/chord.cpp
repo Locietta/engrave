@@ -25,19 +25,17 @@
 #include <cmath>
 #include <vector>
 
-#include "containers.h"
-
 #include "../editing/addremoveelement.h"
 #include "../editing/editchord.h"
 #include "../editing/editnote.h"
 #include "../editing/navigation.h"
-
 #include "accidental.h"
 #include "arpeggio.h"
-#include "chordbracket.h"
 #include "articulation.h"
 #include "beam.h"
+#include "chordbracket.h"
 #include "chordline.h"
+#include "containers.h"
 #include "dom/parenthesis.h"
 #include "drumset.h"
 #include "factory.h"
@@ -45,6 +43,7 @@
 #include "hook.h"
 #include "key.h"
 #include "ledgerline.h"
+#include "log.h"
 #include "measure.h"
 #include "mscore.h"
 #include "note.h"
@@ -68,8 +67,6 @@
 #include "trill.h"
 #include "tuplet.h"
 #include "utils.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

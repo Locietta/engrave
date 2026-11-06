@@ -22,9 +22,8 @@
 
 #pragma once
 
-#include "global/types/string.h"
-
 #include "../types/propertyvalue.h"
+#include "global/types/string.h"
 
 namespace mu::engraving {
 //------------------------------------------------------------------------

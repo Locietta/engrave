@@ -21,15 +21,15 @@
  */
 
 #include "measurenumberlayout.h"
-#include "measurelayout.h"
-#include "tlayout.h"
-#include "textlayout.h"
 
 #include "dom/measure.h"
 #include "dom/score.h"
 #include "dom/segment.h"
 #include "dom/staff.h"
 #include "dom/system.h"
+#include "measurelayout.h"
+#include "textlayout.h"
+#include "tlayout.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #pragma once
 #include "internal/audioengineconfiguration.h"
+#include "internal/audiofactory.h"
+#include "internal/fx/fxresolver.h"
 #include "internal/synthesizers/soundfontrepository.h"
 #include "internal/synthesizers/synthresolver.h"
-#include "internal/fx/fxresolver.h"
-#include "internal/audiofactory.h"
 
 namespace muse::midi {
 struct IMidiOutPort;

@@ -24,9 +24,8 @@
 
 #include <vector>
 
-#include "engravingitem.h"
-
 #include "draw/types/font.h"
+#include "engravingitem.h"
 
 namespace muse::io {
 struct PathT;

@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include "types/string.h"
 #include "../types/types.h"
+#include "types/string.h"
 
 namespace mu::engraving {
 struct MidiNote;

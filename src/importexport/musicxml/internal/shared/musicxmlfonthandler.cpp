@@ -24,10 +24,10 @@
  MusicXML font handling support.
  */
 
-#include "log.h"
 #include "musicxmlfonthandler.h"
 
 #include "engraving/rw/xmlwriter.h"
+#include "log.h"
 
 using namespace mu::engraving;
 

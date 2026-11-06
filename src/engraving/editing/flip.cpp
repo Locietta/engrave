@@ -43,7 +43,6 @@
 #include "../dom/tremolotwochord.h"
 #include "../dom/trill.h"
 #include "../dom/tuplet.h"
-
 #include "log.h"
 
 using namespace mu::engraving;

@@ -23,11 +23,9 @@
 #include "editautomationpoints.h"
 
 #include "engraving/automation/internal/scoreautomationcontroller.h"
-
 #include "engraving/dom/measure.h"
 #include "engraving/dom/repeatlist.h"
 #include "engraving/dom/staff.h"
-
 #include "log.h"
 
 using namespace mu::engraving;

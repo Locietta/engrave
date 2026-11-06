@@ -22,10 +22,9 @@
 
 #include "shadownote.h"
 
-#include "draw/types/pen.h"
-
 #include "accidental.h"
 #include "articulation.h"
+#include "draw/types/pen.h"
 #include "hook.h"
 #include "measure.h"
 #include "rest.h"

@@ -23,7 +23,6 @@
 #include "audiofactory.h"
 
 #include "audio/common/audioerrors.h"
-
 #include "nodes/eventaudionode.h"
 
 using namespace muse;

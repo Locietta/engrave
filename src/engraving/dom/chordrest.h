@@ -25,7 +25,6 @@
 #include <functional>
 
 #include "../types/types.h"
-
 #include "durationelement.h"
 #include "fermata.h"
 

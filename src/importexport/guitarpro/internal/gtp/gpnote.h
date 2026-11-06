@@ -1,13 +1,12 @@
 #ifndef MU_IMPORTEXPORT_GPNOTE_H
 #define MU_IMPORTEXPORT_GPNOTE_H
 
-#include <unordered_set>
-#include <memory>
 #include <bitset>
-
-#include <global/types/string.h>
+#include <memory>
+#include <unordered_set>
 
 #include "inoteproperty.h"
+#include <global/types/string.h>
 
 namespace mu::iex::guitarpro {
 struct GPNote {

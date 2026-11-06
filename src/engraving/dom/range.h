@@ -25,10 +25,9 @@
 #include <list>
 #include <vector>
 
-#include "global/allocator.h"
-
 #include "../types/fraction.h"
 #include "../types/types.h"
+#include "global/allocator.h"
 
 namespace mu::engraving {
 struct EngravingItem;

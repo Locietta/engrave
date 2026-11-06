@@ -21,9 +21,8 @@
  */
 #pragma once
 
-#include "engraving/types/types.h"
-
 #include "articulation.h"
+#include "engraving/types/types.h"
 #include "slur.h"
 #include "textbase.h"
 

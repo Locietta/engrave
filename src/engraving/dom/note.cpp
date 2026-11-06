@@ -29,11 +29,6 @@
 
 #include <cassert>
 
-#include "translation.h"
-
-#include "iengravingconfiguration.h" // IWYU pragma: keep
-#include "iengravingfont.h"
-
 #include "../editing/addremoveelement.h"
 #include "../editing/editchord.h"
 #include "../editing/editnote.h"
@@ -41,10 +36,6 @@
 #include "../editing/noteinput.h"
 #include "../editing/transaction/transaction.h"
 #include "../editing/transpose.h"
-#include "types/typesconv.h"
-
-#include "rendering/score/horizontalspacing.h"
-
 #include "accidental.h"
 #include "actionicon.h"
 #include "articulation.h"
@@ -58,8 +49,11 @@
 #include "fingering.h"
 #include "glissando.h"
 #include "guitarbend.h"
+#include "iengravingconfiguration.h" // IWYU pragma: keep
+#include "iengravingfont.h"
 #include "laissezvib.h"
 #include "linkedobjects.h"
+#include "log.h"
 #include "measure.h"
 #include "notedot.h"
 #include "noteline.h"
@@ -67,6 +61,7 @@
 #include "part.h"
 #include "partialtie.h"
 #include "pitchspelling.h"
+#include "rendering/score/horizontalspacing.h"
 #include "score.h"
 #include "segment.h"
 #include "spanner.h"
@@ -74,10 +69,10 @@
 #include "stafftype.h"
 #include "stringdata.h"
 #include "tie.h"
+#include "translation.h"
+#include "types/typesconv.h"
 #include "utils.h"
 #include "volta.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace muse::draw;

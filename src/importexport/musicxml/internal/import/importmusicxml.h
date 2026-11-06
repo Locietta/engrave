@@ -22,9 +22,9 @@
 
 #pragma once
 
+#include "engraving/engravingerrors.h"
 #include "types/bytearray.h"
 #include "types/string.h"
-#include "engraving/engravingerrors.h"
 
 namespace mu::engraving {
 struct MasterScore;

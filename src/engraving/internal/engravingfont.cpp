@@ -21,18 +21,15 @@
  */
 #include "engravingfont.h"
 
-#include "engraving/dom/mscore.h"
-#include "serialization/json.h"
-#include "io/file.h"
-#include "draw/painter.h"
-#include "types/symnames.h"
-
-#include "dom/mscore.h"
 #include "../style/styledef.h"
-
-#include "smufl.h"
-
+#include "dom/mscore.h"
+#include "draw/painter.h"
+#include "engraving/dom/mscore.h"
+#include "io/file.h"
 #include "log.h"
+#include "serialization/json.h"
+#include "smufl.h"
+#include "types/symnames.h"
 
 using namespace mu;
 using namespace muse;

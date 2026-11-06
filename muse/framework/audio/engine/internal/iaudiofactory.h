@@ -22,9 +22,9 @@
 
 #pragma once
 
+#include "../isynthesizer.h"
 #include "global/types/retval.h"
 #include "mpe/events.h"
-#include "../isynthesizer.h"
 #include "nodes/audiosourcenode.h"
 #include "nodes/fxchain.h"
 

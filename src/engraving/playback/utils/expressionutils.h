@@ -23,9 +23,8 @@
 #ifndef MU_ENGRAVING_DYNAMICUTILS_H
 #define MU_ENGRAVING_DYNAMICUTILS_H
 
-#include "mpe/mpetypes.h"
-
 #include "../types/types.h"
+#include "mpe/mpetypes.h"
 
 namespace mu::engraving {
 constexpr muse::mpe::dynamic_level_t natural_dynamic_level = muse::mpe::dynamic_level_from_type(muse::mpe::DynamicType::NATURAL);

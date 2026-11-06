@@ -21,10 +21,9 @@
  */
 #pragma once
 
-#include "layoutcontext.h"
-
 #include "dom/instrumentname.h"
 #include "dom/sharedpart.h"
+#include "layoutcontext.h"
 
 namespace mu::engraving {
 struct Bracket;

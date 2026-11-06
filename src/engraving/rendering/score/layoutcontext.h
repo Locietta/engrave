@@ -22,21 +22,18 @@
 
 #pragma once
 
-#include <vector>
 #include <set>
 #include <unordered_set>
+#include <vector>
 
+#include "../../dom/mscore.h"
+#include "../../iengravingfont.h"
+#include "../../style/style.h"
 #include "../../types/fraction.h"
 #include "../../types/types.h"
-
-#include "../../style/style.h"
-#include "../../iengravingfont.h"
-#include "../../dom/mscore.h"
-
 #include "../layoutoptions.h"
 
 #ifdef MUE_ENABLE_ENGRAVING_RENDER_DEBUG
-#include "logstream.h"
 #include "logstream.h"
 #define LAYOUT_CALL_CLEAR mu::engraving::rendering::dev::LayoutDebug::instance()->call_clear
 #define LAYOUT_CALL_BEGIN(name) mu::engraving::rendering::dev::LayoutDebug::CallBegin(name)

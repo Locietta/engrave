@@ -22,20 +22,18 @@
 
 #include "ambitus.h"
 
-#include "translation.h"
-
 #include "accidental.h"
 #include "chord.h"
 #include "factory.h"
+#include "log.h"
 #include "measure.h"
 #include "note.h"
 #include "score.h"
 #include "segment.h"
 #include "staff.h"
 #include "system.h"
+#include "translation.h"
 #include "utils.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

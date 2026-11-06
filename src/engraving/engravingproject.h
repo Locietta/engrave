@@ -23,13 +23,12 @@
 
 #include <memory>
 
+#include "engravingservices.h"
 #include "global/types/ret.h"
+#include "infrastructure/ifileinfoprovider.h"
 #include "infrastructure/mscreader.h"
 #include "infrastructure/mscwriter.h"
-#include "infrastructure/ifileinfoprovider.h"
 #include "types/types.h"
-
-#include "engravingservices.h"
 
 //! NOTE In addition to the score itself, the mscz file also stores other data,
 //! such as synthesizer, mixer settings, omr, etc.

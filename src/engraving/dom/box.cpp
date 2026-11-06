@@ -24,14 +24,14 @@
 
 #include <cmath>
 
-#include "../editing/elementeditdata.h"
 #include "../editing/editfretboarddiagram.h"
-
+#include "../editing/elementeditdata.h"
 #include "actionicon.h"
 #include "factory.h"
 #include "fret.h"
 #include "harmony.h"
 #include "layoutbreak.h"
+#include "log.h"
 #include "masterscore.h"
 #include "measure.h"
 #include "mscore.h"
@@ -39,8 +39,6 @@
 #include "stafftext.h"
 #include "system.h"
 #include "text.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

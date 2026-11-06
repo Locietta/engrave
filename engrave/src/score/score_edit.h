@@ -3,8 +3,8 @@
 #pragma once
 
 #include <cstddef>
-#include <string>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace mu::engraving {

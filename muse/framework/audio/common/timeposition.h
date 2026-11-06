@@ -21,9 +21,8 @@
  */
 
 #pragma once
-#include "global/asserts.h"
-
 #include "audiotypes.h"
+#include "global/asserts.h"
 
 namespace muse::audio {
 struct TimePosition {

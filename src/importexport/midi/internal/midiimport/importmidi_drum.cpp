@@ -24,15 +24,14 @@
 #include <set>
 #include <vector>
 
-#include "importmidi_inner.h"
-#include "importmidi_chord.h"
-#include "importmidi_operations.h"
 #include "../midishared/midifile.h"
-
 #include "engraving/dom/drumset.h"
-#include "engraving/dom/staff.h"
 #include "engraving/dom/score.h"
+#include "engraving/dom/staff.h"
 #include "engraving/editing/editstaffbrackets.h"
+#include "importmidi_chord.h"
+#include "importmidi_inner.h"
+#include "importmidi_operations.h"
 
 namespace mu::iex::midi { namespace MidiDrum {
 #ifndef NDEBUG

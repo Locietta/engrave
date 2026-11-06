@@ -21,10 +21,9 @@
  */
 #pragma once
 
-#include "global/types/number.h"
-
 #include "engraving/types/bps.h"
 #include "engraving/types/constants.h"
+#include "global/types/number.h"
 
 namespace mu::engraving {
 //! NOTE: AutomationPoint values are normalized [0, 1] - Tempo has no such native unit,

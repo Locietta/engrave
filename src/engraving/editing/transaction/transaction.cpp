@@ -23,11 +23,9 @@
 #include "transaction.h"
 
 #include "../../dom/masterscore.h"
-
+#include "log.h"
 #include "undoablecommand.h"
 #include "undostack.h"
-
-#include "log.h"
 
 using namespace mu::engraving;
 

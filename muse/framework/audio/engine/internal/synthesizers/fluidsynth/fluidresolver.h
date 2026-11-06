@@ -25,12 +25,11 @@
 #include <optional>
 #include <unordered_map>
 
-#include "../../../isynthresolver.h"
+#include "fluidsynth.h"
 
 #include "../../../iaudioengineconfiguration.h"
 #include "../../../isoundfontrepository.h"
-
-#include "fluidsynth.h"
+#include "../../../isynthresolver.h"
 
 namespace muse::audio::synth {
 struct FluidResolver : ISynthResolver::IResolver {

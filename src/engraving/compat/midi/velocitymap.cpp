@@ -27,8 +27,8 @@
 
 #include "velocitymap.h"
 
-#include <cmath>
 #include <cassert>
+#include <cmath>
 
 #include "containers.h"
 

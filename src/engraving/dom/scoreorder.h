@@ -24,8 +24,8 @@
 
 #include <map>
 
-#include "types/translatablestring.h"
 #include "../types/types.h"
+#include "types/translatablestring.h"
 
 namespace mu::engraving {
 struct XmlWriter;

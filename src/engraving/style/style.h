@@ -25,11 +25,9 @@
 #include <array>
 #include <cassert>
 
-#include "global/io/iodevice.h"
-
-#include "../types/spatium.h"
 #include "../types/propertyvalue.h"
-
+#include "../types/spatium.h"
+#include "global/io/iodevice.h"
 #include "styledef.h"
 
 namespace mu::engraving::compat {

@@ -21,13 +21,13 @@
  */
 #pragma once
 
-#include <string>
 #include <cstdint>
-#include <vector>
 #include <map>
+#include <string>
+#include <vector>
 
-#include "types/retval.h"
 #include "midievent.h"
+#include "types/retval.h"
 
 namespace muse::midi {
 using track_t = int32_t;

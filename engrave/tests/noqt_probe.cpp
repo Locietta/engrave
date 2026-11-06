@@ -1,11 +1,12 @@
-#include "engrave/src/runtime/engine_context.h"
-#include "engrave/src/runtime/noqt_runtime.h"
-#include "engraving/engravingproject.h"
-#include "engraving/dom/masterscore.h"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <iterator>
+
+#include "engrave/src/runtime/engine_context.h"
+#include "engrave/src/runtime/noqt_runtime.h"
+#include "engraving/dom/masterscore.h"
+#include "engraving/engravingproject.h"
 
 // Imports a MusicXML file, lays it out and exports MusicXML and MIDI through the
 // engine context, without Qt or a desktop install.

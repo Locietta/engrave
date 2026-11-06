@@ -22,11 +22,10 @@
 
 #include "stafftextbase.h"
 
+#include "log.h"
 #include "score.h"
 #include "segment.h"
 #include "staff.h"
-
-#include "log.h"
 
 using namespace mu::engraving;
 

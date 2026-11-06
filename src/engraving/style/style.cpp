@@ -22,22 +22,18 @@
 
 #include "style.h"
 
-#include "iengravingfontsprovider.h"
-
-#include "types/constants.h"
 #include "compat/pageformat.h"
-#include "rw/compat/readchordlisthook.h"
-#include "rw/compat/compatutils.h"
-#include "rw/xmlreader.h"
-#include "rw/xmlwriter.h"
-#include "types/typesconv.h"
-
+#include "defaultstyle.h"
 #include "dom/mscore.h"
 #include "dom/pedal.h"
-
-#include "defaultstyle.h"
-
+#include "iengravingfontsprovider.h"
 #include "log.h"
+#include "rw/compat/compatutils.h"
+#include "rw/compat/readchordlisthook.h"
+#include "rw/xmlreader.h"
+#include "rw/xmlwriter.h"
+#include "types/constants.h"
+#include "types/typesconv.h"
 
 using namespace mu;
 using namespace muse::io;

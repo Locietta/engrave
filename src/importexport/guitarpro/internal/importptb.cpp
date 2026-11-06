@@ -20,11 +20,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "importptb.h"
-#include "assert.h"
 
 #include <cmath>
 #include <stdexcept>
 
+#include "assert.h"
 #include "engraving/dom/articulation.h"
 #include "engraving/dom/bend.h"
 #include "engraving/dom/box.h"
@@ -45,9 +45,7 @@
 #include "engraving/dom/tie.h"
 #include "engraving/dom/timesig.h"
 #include "engraving/dom/tuplet.h"
-
 #include "engraving/types/symid.h"
-
 #include "log.h"
 
 using namespace mu::engraving;

@@ -22,9 +22,8 @@
 
 #pragma once
 
-#include "global/containers.h"
-
 #include "engraving/types/types.h"
+#include "global/containers.h"
 
 namespace mu::engraving {
 static constexpr size_t voices = 4;

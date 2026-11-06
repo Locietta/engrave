@@ -20,11 +20,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "logger.h"
 #include "eidregister.h"
-#include "log.h"
 
 #include "dom/mscore.h"
+#include "log.h"
+#include "logger.h"
 
 using namespace mu::engraving;
 

@@ -21,23 +21,20 @@
  */
 
 #include "soundtrackwriter.h"
-#include "../offlinetiming.h"
-#include "../offlinecancellation.h"
 
 #include <algorithm>
 #include <cstdint>
 
-#include "global/defer.h"
-
+#include "../offlinecancellation.h"
+#include "../offlinetiming.h"
+#include "aacencoder.h"
 #include "audio/common/audioerrors.h"
-
+#include "flacencoder.h"
+#include "global/defer.h"
+#include "log.h"
 #include "mp3encoder.h"
 #include "oggencoder.h"
-#include "flacencoder.h"
 #include "wavencoder.h"
-#include "aacencoder.h"
-
-#include "log.h"
 
 using namespace muse;
 using namespace muse::audio;

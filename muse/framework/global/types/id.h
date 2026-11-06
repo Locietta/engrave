@@ -22,9 +22,9 @@
 #ifndef MUSE_GLOBAL_ID_H
 #define MUSE_GLOBAL_ID_H
 
+#include <algorithm>
 #include <cstdint>
 #include <vector>
-#include <algorithm>
 
 #include "global/logstream.h"
 

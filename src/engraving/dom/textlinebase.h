@@ -24,7 +24,6 @@
 #define MU_ENGRAVING_TEXTLINEBASE_H
 
 #include "../types/types.h"
-
 #include "line.h"
 #include "property.h"
 

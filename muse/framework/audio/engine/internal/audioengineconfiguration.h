@@ -22,7 +22,6 @@
 #pragma once
 
 #include "../iaudioengineconfiguration.h"
-
 #include "audio/common/audiotypes.h"
 
 namespace muse::audio::engine {

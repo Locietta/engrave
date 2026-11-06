@@ -21,12 +21,12 @@
  */
 
 #include "durationtype.h"
+
+#include "log.h"
+#include "measure.h"
 #include "mscore.h"
 #include "note.h"
 #include "sig.h"
-#include "measure.h"
-
-#include "log.h"
 
 using namespace mu;
 

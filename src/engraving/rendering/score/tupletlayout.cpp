@@ -19,22 +19,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "log.h"
 #include "tupletlayout.h"
 
-#include "dom/chordrest.h"
-#include "dom/tuplet.h"
-#include "dom/text.h"
-#include "dom/factory.h"
-#include "dom/stafftype.h"
+#include "autoplace.h"
 #include "dom/chord.h"
+#include "dom/chordrest.h"
+#include "dom/factory.h"
+#include "dom/measure.h"
 #include "dom/note.h"
+#include "dom/stafftype.h"
 #include "dom/stem.h"
 #include "dom/system.h"
-#include "dom/measure.h"
-
+#include "dom/text.h"
+#include "dom/tuplet.h"
+#include "log.h"
 #include "tlayout.h"
-#include "autoplace.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;

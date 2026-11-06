@@ -22,9 +22,8 @@
 
 #pragma once
 
-#include "transaction/undoablecommand.h"
-
 #include "../dom/measure.h"
+#include "transaction/undoablecommand.h"
 
 namespace mu::engraving {
 struct InsertRemoveMeasures : UndoableCommand {

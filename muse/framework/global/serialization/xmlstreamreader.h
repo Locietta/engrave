@@ -22,8 +22,8 @@
 #ifndef MUSE_GLOBAL_XMLSTREAMREADER_H
 #define MUSE_GLOBAL_XMLSTREAMREADER_H
 
-#include <vector>
 #include <map>
+#include <vector>
 
 #include "io/iodevice.h"
 #include "types/bytearray.h"

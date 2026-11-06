@@ -22,22 +22,18 @@
 
 #include "image.h"
 
-#include "io/file.h"
-#include "io/fileinfo.h"
-
-#include "draw/iimageprovider.h" // IWYU pragma: keep
-#include "draw/types/pixmap.h"
-#include "draw/svgrenderer.h"
-
 #include "../editing/editdata.h"
 #include "../editing/elementeditdata.h"
-
+#include "draw/iimageprovider.h" // IWYU pragma: keep
+#include "draw/svgrenderer.h"
+#include "draw/types/pixmap.h"
 #include "imageStore.h"
+#include "io/file.h"
+#include "io/fileinfo.h"
+#include "log.h"
 #include "masterscore.h"
 #include "mscore.h"
 #include "score.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace muse::io;

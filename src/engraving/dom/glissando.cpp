@@ -31,13 +31,12 @@ NICE-TO-HAVE TODO:
 
 #include "glissando.h"
 
-#include <cmath>
 #include <algorithm>
-
-#include "types/typesconv.h"
+#include <cmath>
 
 #include "chord.h"
 #include "harppedaldiagram.h"
+#include "log.h"
 #include "measure.h"
 #include "note.h"
 #include "part.h"
@@ -45,9 +44,8 @@ NICE-TO-HAVE TODO:
 #include "segment.h"
 #include "staff.h"
 #include "system.h"
+#include "types/typesconv.h"
 #include "utils.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

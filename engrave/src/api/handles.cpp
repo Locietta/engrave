@@ -10,9 +10,9 @@
 #include <unordered_set>
 #include <variant>
 
-#include "engraving/dom/engravingitem.h"
 #include "engraving/dom/beam.h"
 #include "engraving/dom/chord.h"
+#include "engraving/dom/engravingitem.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/page.h"

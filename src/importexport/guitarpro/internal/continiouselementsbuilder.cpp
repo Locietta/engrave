@@ -19,17 +19,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "log.h"
 #include "continiouselementsbuilder.h"
 
-#include "engraving/dom/trill.h"
-#include "engraving/dom/score.h"
-#include "engraving/dom/ottava.h"
 #include "engraving/dom/chordrest.h"
-#include "engraving/dom/hairpin.h"
-#include "engraving/dom/textline.h"
-#include "engraving/dom/vibrato.h"
 #include "engraving/dom/factory.h"
+#include "engraving/dom/hairpin.h"
+#include "engraving/dom/ottava.h"
+#include "engraving/dom/score.h"
+#include "engraving/dom/textline.h"
+#include "engraving/dom/trill.h"
+#include "engraving/dom/vibrato.h"
+#include "log.h"
 
 using namespace mu::engraving;
 

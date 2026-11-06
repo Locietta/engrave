@@ -23,9 +23,8 @@
 #ifndef MU_ENGRAVING_FINGERING_H
 #define MU_ENGRAVING_FINGERING_H
 
-#include "textbase.h"
-
 #include "../types/types.h"
+#include "textbase.h"
 
 namespace mu::engraving {
 struct Note;

@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "engrave/src/api/batch.h"
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/factory.h"
 #include "engraving/dom/instrtemplate.h"
@@ -19,8 +20,6 @@
 #include "engraving/dom/stafftype.h"
 #include "engraving/editing/editexcerpt.h"
 #include "engraving/editing/editpart.h"
-
-#include "engrave/src/api/batch.h"
 
 namespace engrave::api {
 namespace {

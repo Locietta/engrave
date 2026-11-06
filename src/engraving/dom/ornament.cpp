@@ -24,6 +24,10 @@
 
 #include "accidental.h"
 #include "chord.h"
+#include "editing/editchord.h"
+#include "editing/editparentheses.h"
+#include "editing/transaction/transaction.h"
+#include "editing/transpose.h"
 #include "engravingitem.h"
 #include "factory.h"
 #include "key.h"
@@ -32,11 +36,6 @@
 #include "shape.h"
 #include "staff.h"
 #include "utils.h"
-
-#include "editing/editchord.h"
-#include "editing/editparentheses.h"
-#include "editing/transaction/transaction.h"
-#include "editing/transpose.h"
 
 using namespace mu::engraving;
 

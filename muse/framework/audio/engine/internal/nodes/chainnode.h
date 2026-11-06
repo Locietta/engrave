@@ -22,10 +22,9 @@
 
 #pragma once
 
-#include "audionode.h"
-
 #include <vector>
 
+#include "audionode.h"
 #include "global/containers.h"
 
 namespace muse::audio {

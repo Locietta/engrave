@@ -3,11 +3,10 @@
 
 #include <memory>
 
-#include "global/types/string.h"
 #include "draw/types/geometry.h"
-
-#include "types/symid.h"
+#include "global/types/string.h"
 #include "style/styledef.h"
+#include "types/symid.h"
 
 namespace muse::draw {
 struct Painter;

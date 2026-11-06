@@ -27,37 +27,31 @@
  Definition of Score class.
 */
 
-#include <set>
 #include <memory>
 #include <optional>
-
-#include "global/types/ret.h"
-
-#include "../engravingservices.h"
+#include <set>
 
 #include "../automation/automationtypes_fwd.h"
-#include "../types/constants.h"
-
+#include "../editing/cmd.h"
+#include "../engravingservices.h"
 #include "../rendering/layoutoptions.h"
 #include "../rendering/paddingtable.h"
-
-#include "../style/style.h"
 #include "../style/pagestyle.h"
-
-#include "../editing/cmd.h"
-
+#include "../style/style.h"
+#include "../types/constants.h"
 #include "chordlist.h"
 #include "dummyparent.h"
+#include "global/types/ret.h"
 #include "guitarbend.h"
 #include "input.h"
 #include "mscore.h"
 #include "property.h"
+#include "rangelock.h"
 #include "scoreorder.h"
 #include "segment.h"
 #include "select.h"
 #include "spannermap.h"
 #include "synthesizerstate.h"
-#include "rangelock.h"
 #include "tuplet.h"
 
 namespace mu::engraving {

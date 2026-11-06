@@ -24,10 +24,9 @@
 
 #include <map>
 
+#include "../types/types.h"
 #include "global/allocator.h"
 #include "global/types/string.h"
-
-#include "../types/types.h"
 
 namespace muse::io {
 struct IODevice;

@@ -31,7 +31,6 @@
 #include "global/io/file.h"
 #include "global/io/fileinfo.h"
 #include "global/stringutils.h"
-
 #include "log.h"
 
 using namespace muse::draw;

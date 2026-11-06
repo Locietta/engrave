@@ -24,16 +24,13 @@
 
 #include <map>
 
-#include "defer.h"
-
-#include "iengravingconfiguration.h" // IWYU pragma: keep
-
 #include "chord.h"
+#include "defer.h"
+#include "iengravingconfiguration.h" // IWYU pragma: keep
 #include "note.h"
 #include "part.h"
 #include "segment.h"
 #include "staff.h"
-
 #include "types/types.h"
 
 using namespace mu;

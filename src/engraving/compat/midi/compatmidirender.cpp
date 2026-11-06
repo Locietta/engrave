@@ -1,10 +1,7 @@
-#include "log.h"
 #include "compatmidirender.h"
 
 #include <cmath>
 #include <tuple>
-
-#include "global/realfn.h"
 
 #include "dom/arpeggio.h"
 #include "dom/articulation.h"
@@ -28,17 +25,17 @@
 #include "dom/swing.h"
 #include "dom/synthesizerstate.h"
 #include "dom/tie.h"
-
-#include "types/bps.h"
 #include "dom/tremolosinglechord.h"
 #include "dom/tremolotwochord.h"
 #include "dom/trill.h"
 #include "dom/utils.h"
 #include "dom/volta.h"
-#include "editing/navigation.h"
-#include "types/constants.h"
-
 #include "easeinout.h"
+#include "editing/navigation.h"
+#include "global/realfn.h"
+#include "log.h"
+#include "types/bps.h"
+#include "types/constants.h"
 
 namespace mu::engraving {
 static int slide_ticks(const Chord *chord);

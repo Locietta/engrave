@@ -22,9 +22,9 @@
 
 #include "spannerfilter.h"
 
-#include "dom/spanner.h"
 #include "dom/pedal.h"
 #include "dom/segment.h"
+#include "dom/spanner.h"
 
 using namespace mu;
 using namespace mu::engraving;

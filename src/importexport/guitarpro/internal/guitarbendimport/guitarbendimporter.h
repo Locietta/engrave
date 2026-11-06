@@ -21,9 +21,9 @@
  */
 #pragma once
 
+#include "bendbuilder.h"
 #include "benddatacollector.h"
 #include "divedatacollector.h"
-#include "bendbuilder.h"
 
 namespace mu::engraving {
 struct Note;

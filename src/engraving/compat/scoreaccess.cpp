@@ -20,8 +20,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "scoreaccess.h"
-#include "style/defaultstyle.h"
+
 #include "dom/masterscore.h"
+#include "style/defaultstyle.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::compat;

@@ -20,7 +20,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
 #include "masklayout.h"
 
 #include "dom/barline.h"
@@ -31,14 +30,15 @@
 #include "dom/measure.h"
 #include "dom/measurenumber.h"
 #include "dom/note.h"
+#include "dom/page.h"
 #include "dom/parenthesis.h"
 #include "dom/score.h"
 #include "dom/segment.h"
 #include "dom/staff.h"
 #include "dom/stafflines.h"
 #include "dom/system.h"
-#include "dom/page.h"
 #include "dom/textlinebase.h"
+#include "log.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;

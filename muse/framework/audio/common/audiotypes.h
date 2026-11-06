@@ -22,24 +22,22 @@
 
 #pragma once
 
-#include <map>
-#include <variant>
-#include <set>
-#include <string>
 #include <cmath>
+#include <map>
+#include <set>
 #include <sstream>
+#include <string>
 #include <tuple>
+#include <variant>
 #include <vector>
 
-#include "global/types/number.h"
-#include "global/types/secs.h"
-#include "global/types/ratio.h"
-#include "global/types/string.h"
-#include "global/io/iodevice.h"
-
-#include "mpe/events.h"
-
 #include "automatablevalue.h"
+#include "global/io/iodevice.h"
+#include "global/types/number.h"
+#include "global/types/ratio.h"
+#include "global/types/secs.h"
+#include "global/types/string.h"
+#include "mpe/events.h"
 
 // Forward-declared audioplugins aliases; audio must not depend on that module.
 namespace muse::audioplugins {

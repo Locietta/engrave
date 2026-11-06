@@ -21,37 +21,34 @@
  */
 #include "beamlayout.h"
 
-#include <unordered_map>
 #include <set>
+#include <unordered_map>
 
+#include "beamtremololayout.h"
+#include "chordlayout.h"
 #include "containers.h"
-
 #include "dom/beam.h"
-#include "dom/drumset.h"
-#include "dom/part.h"
-#include "dom/tremolotwochord.h"
-#include "dom/tremolosinglechord.h"
 #include "dom/chord.h"
+#include "dom/drumset.h"
 #include "dom/factory.h"
 #include "dom/measure.h"
+#include "dom/note.h"
+#include "dom/part.h"
 #include "dom/rest.h"
 #include "dom/score.h"
 #include "dom/segment.h"
 #include "dom/staff.h"
 #include "dom/system.h"
 #include "dom/timesig.h"
+#include "dom/tremolosinglechord.h"
+#include "dom/tremolotwochord.h"
 #include "dom/tuplet.h"
 #include "dom/utils.h"
-#include "dom/note.h"
-
 #include "layoutcontext.h"
-#include "tlayout.h"
-#include "chordlayout.h"
-#include "beamtremololayout.h"
-#include "tremololayout.h"
-#include "restlayout.h"
-
 #include "log.h"
+#include "restlayout.h"
+#include "tlayout.h"
+#include "tremololayout.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;

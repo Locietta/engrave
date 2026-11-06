@@ -22,8 +22,8 @@
 #ifndef IMPORTMIDI_BEAT_H
 #define IMPORTMIDI_BEAT_H
 
-#include <set>
 #include <map>
+#include <set>
 
 namespace mu::engraving {
 struct TimeSigMap;

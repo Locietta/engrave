@@ -22,12 +22,12 @@
 #ifndef MU_ENGRAVING_IMIMEDATA_H
 #define MU_ENGRAVING_IMIMEDATA_H
 
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
 
-#include "types/bytearray.h"
 #include "draw/types/pixmap.h"
+#include "types/bytearray.h"
 
 namespace mu::engraving {
 struct IMimeData {

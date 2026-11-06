@@ -19,24 +19,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "log.h"
 #include "lyricslayout.h"
 
-#include "dom/factory.h"
-#include "dom/repeatlist.h"
-#include "style/styledef.h"
-
 #include "dom/chordrest.h"
+#include "dom/factory.h"
 #include "dom/lyrics.h"
 #include "dom/measure.h"
+#include "dom/repeatlist.h"
 #include "dom/score.h"
 #include "dom/segment.h"
 #include "dom/staff.h"
 #include "dom/stafftype.h"
 #include "dom/system.h"
-
-#include "tlayout.h"
+#include "log.h"
+#include "style/styledef.h"
 #include "textlayout.h"
+#include "tlayout.h"
 
 using namespace mu;
 using namespace mu::engraving;

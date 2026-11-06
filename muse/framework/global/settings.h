@@ -24,8 +24,8 @@
 
 #include <string>
 
-#include "types/val.h"
 #include "io/path.h"
+#include "types/val.h"
 
 //! NOTE We are gradually abandoning Qt in non-GUI classes.
 //! This settings interface is almost independent of Qt,

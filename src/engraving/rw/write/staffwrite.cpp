@@ -21,12 +21,11 @@
  */
 #include "staffwrite.h"
 
+#include "dom/measure.h"
 #include "dom/score.h"
 #include "dom/staff.h"
-#include "dom/measure.h"
-
-#include "twrite.h"
 #include "measurewrite.h"
+#include "twrite.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::write;

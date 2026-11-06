@@ -21,8 +21,9 @@
  */
 #pragma once
 
-#include "global/asserts.h"
 #include <string>
+
+#include "global/asserts.h"
 
 namespace mu::engraving {
 #define DECLARE_CLASSOF(Type)                                                     \

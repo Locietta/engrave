@@ -23,10 +23,9 @@
 #ifndef MU_ENGRAVING_OTTAVA_H
 #define MU_ENGRAVING_OTTAVA_H
 
-#include "types/translatablestring.h"
-
-#include "textlinebase.h"
 #include "property.h"
+#include "textlinebase.h"
+#include "types/translatablestring.h"
 
 namespace mu::engraving {
 //---------------------------------------------------------

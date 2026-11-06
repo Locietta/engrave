@@ -28,7 +28,6 @@
 #include "dom/score.h"
 #include "dom/segment.h"
 #include "dom/staff.h"
-
 #include "tlayout.h"
 
 using namespace mu::engraving;

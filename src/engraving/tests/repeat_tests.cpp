@@ -25,10 +25,8 @@
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/repeatlist.h"
-
-#include "utils/scorerw.h"
-
 #include "log.h"
+#include "utils/scorerw.h"
 
 using namespace mu::engraving;
 

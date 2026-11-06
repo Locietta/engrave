@@ -24,11 +24,8 @@
  MusicXML support.
  */
 
-#include "log.h"
 #include "musicxmlsupport.h"
-#include "global/serialization/xmlstreamreader.h"
 
-#include "translation.h"
 #include "engraving/dom/accidental.h"
 #include "engraving/dom/chordlist.h"
 #include "engraving/dom/harmony.h"
@@ -36,6 +33,9 @@
 #include "engraving/dom/staff.h"
 #include "engraving/types/symnames.h"
 #include "engraving/types/types.h"
+#include "global/serialization/xmlstreamreader.h"
+#include "log.h"
+#include "translation.h"
 
 using namespace muse;
 using namespace mu::engraving;

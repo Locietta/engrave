@@ -23,11 +23,12 @@
 #ifndef MUSE_GLOBAL_LOG_H
 #define MUSE_GLOBAL_LOG_H
 
-#include <cstdlib> // IWYU pragma: export
 #include <cassert> // IWYU pragma: export
+#include <cstdlib> // IWYU pragma: export
 
-#include "profiler.h"                            // IWYU pragma: export
 #include "thirdparty/kors_logger/src/log_base.h" // IWYU pragma: export
+
+#include "profiler.h" // IWYU pragma: export
 
 // The logger's generic macros collide with Ret::Code enumerators.
 #undef NOT_IMPLEMENTED

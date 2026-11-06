@@ -22,72 +22,57 @@
 
 #pragma once
 
-#include "layoutcontext.h"
-
 #include "../../dom/accidental.h"
 #include "../../dom/actionicon.h"
 #include "../../dom/ambitus.h"
+#include "../../dom/anchors.h"
 #include "../../dom/arpeggio.h"
 #include "../../dom/articulation.h"
-
 #include "../../dom/barline.h"
 #include "../../dom/bend.h"
 #include "../../dom/box.h"
 #include "../../dom/bracket.h"
 #include "../../dom/breath.h"
-
+#include "../../dom/capo.h"
+#include "../../dom/chord.h"
 #include "../../dom/chordbracket.h"
 #include "../../dom/chordline.h"
 #include "../../dom/clef.h"
-#include "../../dom/capo.h"
-#include "../../dom/chord.h"
-
 #include "../../dom/deadslapped.h"
 #include "../../dom/dynamic.h"
-
 #include "../../dom/expression.h"
-
 #include "../../dom/fermata.h"
 #include "../../dom/figuredbass.h"
 #include "../../dom/fingering.h"
 #include "../../dom/fret.h"
-
 #include "../../dom/guitarbend.h"
-
-#include "../../dom/harppedaldiagram.h"
-#include "../../dom/harmony.h"
 #include "../../dom/hairpin.h"
+#include "../../dom/harmony.h"
+#include "../../dom/harppedaldiagram.h"
 #include "../../dom/hook.h"
-
 #include "../../dom/image.h"
 #include "../../dom/instrchange.h"
 #include "../../dom/instrumentname.h"
-
 #include "../../dom/jump.h"
-
 #include "../../dom/keysig.h"
-
 #include "../../dom/laissezvib.h"
 #include "../../dom/layoutbreak.h"
-
 #include "../../dom/marker.h"
 #include "../../dom/measurebase.h"
 #include "../../dom/measurenumber.h"
 #include "../../dom/measurerepeat.h"
 #include "../../dom/mmrest.h"
 #include "../../dom/mmrestrange.h"
-
 #include "../../dom/note.h"
 #include "../../dom/notedot.h"
-
+#include "../../dom/ornament.h"
 #include "../../dom/pagelockindicator.h"
 #include "../../dom/parenthesis.h"
 #include "../../dom/playcounttext.h"
 #include "../../dom/playtechannotation.h"
-
 #include "../../dom/rehearsalmark.h"
 #include "../../dom/rest.h"
-
+#include "../../dom/soundflag.h"
 #include "../../dom/staffstate.h"
 #include "../../dom/stafftext.h"
 #include "../../dom/stafftype.h"
@@ -98,21 +83,17 @@
 #include "../../dom/sticking.h"
 #include "../../dom/systemdivider.h"
 #include "../../dom/systemtext.h"
-#include "../../dom/soundflag.h"
-
 #include "../../dom/tabdurationsymbol.h"
 #include "../../dom/tapping.h"
-#include "../../dom/textbase.h"
 #include "../../dom/tempotext.h"
 #include "../../dom/text.h"
+#include "../../dom/textbase.h"
 #include "../../dom/timesig.h"
-#include "../../dom/anchors.h"
 #include "../../dom/tremolobar.h"
-#include "../../dom/tripletfeel.h"
 #include "../../dom/trill.h"
+#include "../../dom/tripletfeel.h"
 #include "../../dom/tuplet.h"
-
-#include "../../dom/ornament.h"
+#include "layoutcontext.h"
 
 namespace mu::engraving {
 struct EngravingItem;

@@ -24,11 +24,10 @@
 
 #include <array>
 
-#include "draw/types/font.h"
-
-#include "stafflabel.h"
 #include "../style/styledef.h"
 #include "../types/types.h"
+#include "draw/types/font.h"
+#include "stafflabel.h"
 
 namespace mu::engraving {
 struct Chord;

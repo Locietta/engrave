@@ -11,12 +11,13 @@
 #include "global/stringutils.h"
 
 #if defined(TEST_HAS_ENGRAVING)
+#include <gmock/gmock.h>
+
 #include "engrave/src/runtime/engine_context.h"
 #include "engraving/dom/mscore.h"
-#include "utils/scorerw.h"
-#include "mocks/engravingconfigurationmock.h"
 #include "engraving/engravingservices.h"
-#include <gmock/gmock.h>
+#include "mocks/engravingconfigurationmock.h"
+#include "utils/scorerw.h"
 #endif
 
 namespace music::test {

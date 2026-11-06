@@ -21,13 +21,12 @@
  */
 #pragma once
 
+#include <cstdint>
 #include <memory>
 
+#include "../types/fontstypes.h"
 #include "global/io/iodevice.h"
 #include "global/io/path.h"
-#include <cstdint>
-
-#include "../types/fontstypes.h"
 
 namespace muse::draw {
 struct IFontsDatabase {

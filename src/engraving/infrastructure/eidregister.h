@@ -23,13 +23,13 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <unordered_map>
 #include <shared_mutex>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include "eid.h"
 #include "../types/types.h"
+#include "eid.h"
 
 namespace mu::engraving {
 struct EngravingObject;

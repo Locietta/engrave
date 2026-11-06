@@ -19,8 +19,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "mnxexporter.h"
-
 #include <algorithm>
 #include <optional>
 #include <vector>
@@ -30,8 +28,9 @@
 #include "engraving/dom/part.h"
 #include "engraving/dom/score.h"
 #include "engraving/dom/staff.h"
-#include "log.h"
 #include "internal/shared/mnxtypesconv.h"
+#include "log.h"
+#include "mnxexporter.h"
 
 using namespace mu::engraving;
 

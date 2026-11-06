@@ -1,8 +1,9 @@
-#include "test_environment.h"
-
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
 #include <iostream>
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
+#include "test_environment.h"
 
 GTEST_API_ int main(int argc, char **argv) {
     try {

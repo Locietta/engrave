@@ -23,7 +23,6 @@
 #pragma once
 
 #include "mpe/events.h"
-
 #include "renderingcontext.h"
 
 namespace mu::engraving {

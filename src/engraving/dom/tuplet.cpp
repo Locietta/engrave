@@ -23,19 +23,17 @@
 #include "tuplet.h"
 
 #include "../editing/elementeditdata.h"
-#include "style/textstyle.h"
-
 #include "beam.h"
 #include "chord.h"
 #include "engravingitem.h"
 #include "factory.h"
+#include "log.h"
 #include "measure.h"
 #include "note.h"
 #include "rest.h"
 #include "score.h"
+#include "style/textstyle.h"
 #include "text.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

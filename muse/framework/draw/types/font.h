@@ -22,8 +22,8 @@
 #ifndef MUSE_DRAW_FONT_H
 #define MUSE_DRAW_FONT_H
 
-#include "global/types/string.h"
 #include "global/types/flags.h"
+#include "global/types/string.h"
 
 namespace muse::draw {
 struct Font {

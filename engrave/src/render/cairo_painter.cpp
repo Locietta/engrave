@@ -25,14 +25,13 @@
 #include <utility>
 #include <vector>
 
-#include <cairo/cairo.h>
 #include <cairo/cairo-ft.h>
-
+#include <cairo/cairo.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-#include <hb.h>
 #include <hb-ft.h>
+#include <hb.h>
 
 #include "draw/internal/fontfaceutils.h"
 #include "draw/internal/ifontsdatabase.h"

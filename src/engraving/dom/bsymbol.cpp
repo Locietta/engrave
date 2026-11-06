@@ -25,14 +25,12 @@
 #include <cmath>
 
 #include "containers.h"
-
+#include "log.h"
 #include "measure.h"
 #include "page.h"
 #include "score.h"
 #include "segment.h"
 #include "system.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

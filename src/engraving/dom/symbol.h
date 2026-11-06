@@ -25,11 +25,9 @@
 
 #include <memory>
 
-#include "draw/types/font.h"
-
 #include "../iengravingfontsprovider.h"
-
 #include "bsymbol.h"
+#include "draw/types/font.h"
 
 namespace mu::engraving {
 struct Segment;

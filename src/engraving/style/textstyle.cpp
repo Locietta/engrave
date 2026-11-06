@@ -22,7 +22,6 @@
 #include "textstyle.h"
 
 #include "dom/property.h"
-
 #include "log.h"
 
 using namespace mu;

@@ -22,30 +22,25 @@
 
 #include "fret.h"
 
-#include "translation.h"
-
-#include "io/file.h"
-
 #include "../editing/addremoveelement.h"
 #include "../editing/editfretboarddiagram.h"
-
 #include "anchors.h"
 #include "chord.h"
 #include "factory.h"
 #include "harmony.h"
+#include "io/file.h"
+#include "log.h"
 #include "measure.h"
 #include "note.h"
 #include "pitchspelling.h"
+#include "rw/harmonytodiagramreader.h"
+#include "rw/read460/tread.h"
 #include "score.h"
 #include "segment.h"
 #include "staff.h"
 #include "stringdata.h"
 #include "system.h"
-
-#include "rw/harmonytodiagramreader.h"
-#include "rw/read460/tread.h"
-
-#include "log.h"
+#include "translation.h"
 
 using namespace mu;
 using namespace muse::draw;

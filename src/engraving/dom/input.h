@@ -25,13 +25,12 @@
 
 #include <set>
 
+#include "../types/types.h"
 #include "accidental.h"
 #include "chord.h"
 #include "durationtype.h"
 #include "mscore.h"
 #include "noteval.h"
-
-#include "../types/types.h"
 
 namespace mu::engraving {
 struct ChordRest;

@@ -24,8 +24,6 @@
 
 #include <vector>
 
-#include "global/containers.h"
-
 #include "../dom/engravingitem.h"
 #include "../dom/layoutbreak.h"
 #include "../dom/measure.h"
@@ -33,9 +31,8 @@
 #include "../dom/segment.h"
 #include "../dom/select.h"
 #include "../dom/spacer.h"
-
 #include "editsystemlocks.h"
-
+#include "global/containers.h"
 #include "log.h"
 
 using namespace mu;

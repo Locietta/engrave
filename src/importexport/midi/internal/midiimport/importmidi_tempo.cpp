@@ -24,17 +24,16 @@
 #include <cmath>
 #include <map>
 
-#include "importmidi_inner.h"
-#include "importmidi_beat.h"
+#include "engraving/dom/factory.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/tempotext.h"
-#include "engraving/dom/factory.h"
 #include "engraving/types/constants.h"
-#include "importmidi_operations.h"
-
-#include "global/realfn.h"
 #include "global/log.h"
+#include "global/realfn.h"
+#include "importmidi_beat.h"
+#include "importmidi_inner.h"
+#include "importmidi_operations.h"
 
 using namespace mu::engraving;
 

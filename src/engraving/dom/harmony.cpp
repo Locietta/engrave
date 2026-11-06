@@ -22,34 +22,29 @@
 
 #include "harmony.h"
 
-#include "containers.h"
-#include "translation.h"
-
-#include "draw/fontmetrics.h"
-
-#include "iengravingconfiguration.h" // IWYU pragma: keep
-
-#include "../editing/transpose.h"
 #include "../editing/transaction/transaction.h"
 #include "../editing/transaction/undostack.h"
+#include "../editing/transpose.h"
 #include "../rendering/iscorerenderer.h"
-
 #include "chordlist.h"
+#include "containers.h"
+#include "draw/fontmetrics.h"
 #include "fret.h"
+#include "iengravingconfiguration.h" // IWYU pragma: keep
 #include "linkedobjects.h"
+#include "log.h"
 #include "measure.h"
 #include "mscore.h"
-#include "part.h"
 #include "parenthesis.h"
+#include "part.h"
 #include "pitchspelling.h"
 #include "repeatlist.h"
 #include "score.h"
 #include "segment.h"
 #include "staff.h"
 #include "textbase.h"
+#include "translation.h"
 #include "utils.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace muse::draw;

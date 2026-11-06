@@ -21,8 +21,8 @@
  */
 #pragma once
 
-#include "styledef.h"
 #include "../types/types.h"
+#include "styledef.h"
 
 namespace mu::engraving {
 struct OffsetSids {

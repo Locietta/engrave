@@ -24,10 +24,9 @@
 #include <set>
 #include <vector>
 
-#include "engraving/types/types.h"
-
-#include "event.h"
 #include "compatmidirenderinternal.h"
+#include "engraving/types/types.h"
+#include "event.h"
 
 namespace mu::engraving {
 struct Chord;

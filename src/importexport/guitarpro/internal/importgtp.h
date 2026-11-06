@@ -25,19 +25,17 @@
 #include <map>
 #include <vector>
 
-#include "io/iodevice.h"
-#include "types/bytearray.h"
-#include "types/string.h"
-
+#include "continiouselementsbuilder.h"
 #include "engraving/dom/measurebase.h"
 #include "engraving/dom/stringdata.h"
 #include "engraving/engravingerrors.h"
 #include "engraving/iengravingconfiguration.h"
 #include "engraving/types/types.h"
-
-#include "continiouselementsbuilder.h"
 #include "gtp/igpdombuilder.h"
 #include "guitarbendimport/guitarbendimporter.h"
+#include "io/iodevice.h"
+#include "types/bytearray.h"
+#include "types/string.h"
 
 namespace mu::engraving {
 struct Chord;

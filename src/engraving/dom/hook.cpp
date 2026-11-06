@@ -22,11 +22,9 @@
 
 #include "hook.h"
 
-#include "style/style.h"
-
 #include "chord.h"
-
 #include "log.h"
+#include "style/style.h"
 
 using namespace mu;
 using namespace mu::engraving;

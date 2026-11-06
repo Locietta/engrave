@@ -25,16 +25,14 @@
 #include "../editing/textedit.h"
 #include "../editing/transaction/transaction.h"
 #include "../types/typesconv.h"
-
 #include "expression.h"
 #include "hairpin.h"
+#include "log.h"
 #include "measure.h"
 #include "score.h"
 #include "segment.h"
 #include "staff.h"
 #include "system.h"
-
-#include "log.h"
 
 using namespace muse::draw;
 using namespace mu::engraving;

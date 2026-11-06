@@ -22,9 +22,8 @@
 
 #include "bagpembell.h"
 
-#include "types/typesconv.h"
-
 #include "log.h"
+#include "types/typesconv.h"
 
 using namespace mu;
 using namespace mu::engraving;

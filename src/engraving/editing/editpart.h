@@ -22,13 +22,12 @@
 
 #pragma once
 
-#include "transaction/undoablecommand.h"
-
 #include "../compat/midi/midipatch.h"
 #include "../dom/drumset.h"
 #include "../dom/instrument.h"
 #include "../dom/part.h"
 #include "../dom/score.h"
+#include "transaction/undoablecommand.h"
 
 namespace mu::engraving {
 struct InsertPart : UndoableCommand {

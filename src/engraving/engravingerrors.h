@@ -24,9 +24,8 @@
 #define MU_ENGRAVING_ENGRAVINGERRORS_H
 
 #include "io/path.h"
-#include "types/ret.h"
-
 #include "translation.h"
+#include "types/ret.h"
 
 namespace mu::engraving {
 enum class Err {

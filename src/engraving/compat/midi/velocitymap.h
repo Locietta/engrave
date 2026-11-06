@@ -25,9 +25,8 @@
 
 #include <map>
 
-#include "global/allocator.h"
-
 #include "../../types/types.h"
+#include "global/allocator.h"
 
 /**
  \file

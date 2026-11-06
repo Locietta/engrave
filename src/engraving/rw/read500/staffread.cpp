@@ -24,11 +24,9 @@
 #include "dom/factory.h"
 #include "dom/measure.h"
 #include "dom/score.h"
-
+#include "log.h"
 #include "measureread.h"
 #include "tread.h"
-
-#include "log.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::read500;

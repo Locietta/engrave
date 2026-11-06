@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-only
-#include "global/io/buffer.h"
-#include "global/serialization/zipreader.h"
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <iterator>
-#include <nlohmann/json.hpp>
 #include <stdexcept>
+
+#include <nlohmann/json.hpp>
+
+#include "global/io/buffer.h"
+#include "global/serialization/zipreader.h"
 
 int main(int argc, char **argv) {
     try {

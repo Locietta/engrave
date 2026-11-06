@@ -27,7 +27,6 @@
 #include <vector>
 
 #include "global/types/string.h"
-
 #include "importexport/midi/internal/midishared/generalmidi.h"
 
 // The MIDI importer is compiled both by the Qt application and by the Qt-free
@@ -44,12 +43,11 @@
 #define Q_UNUSED(value) (void) (value)
 #endif
 
+#include "engraving/types/types.h"
 #include "importmidi_chord.h"
 #include "importmidi_fraction.h"
-#include "importmidi_tuplet.h"
 #include "importmidi_operation.h"
-
-#include "engraving/types/types.h"
+#include "importmidi_tuplet.h"
 
 // ---------------------------------------------------------------------------------------
 // These inner classes definitions are used in cpp files only

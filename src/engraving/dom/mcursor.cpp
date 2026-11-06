@@ -22,23 +22,21 @@
 
 #include "mcursor.h"
 
-#include "compat/scoreaccess.h"
-
 #include "chord.h"
+#include "compat/scoreaccess.h"
 #include "durationtype.h"
 #include "factory.h"
 #include "instrtemplate.h"
 #include "keysig.h"
+#include "log.h"
 #include "masterscore.h"
 #include "measure.h"
 #include "note.h"
 #include "part.h"
 #include "segment.h"
+#include "sig.h"
 #include "staff.h"
 #include "timesig.h"
-#include "sig.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

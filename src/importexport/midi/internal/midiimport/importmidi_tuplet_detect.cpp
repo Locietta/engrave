@@ -20,15 +20,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "importmidi_tuplet_detect.h"
-#include "importmidi_tuplet.h"
-#include "importmidi_meter.h"
-#include "importmidi_chord.h"
-#include "importmidi_quant.h"
-#include "importmidi_inner.h"
-#include "importmidi_operations.h"
 
 #include <algorithm>
 #include <set>
+
+#include "importmidi_chord.h"
+#include "importmidi_inner.h"
+#include "importmidi_meter.h"
+#include "importmidi_operations.h"
+#include "importmidi_quant.h"
+#include "importmidi_tuplet.h"
 
 namespace mu::iex::midi { namespace MidiTuplet {
 bool is_tuplet_allowed(const TupletInfo &tuplet_info) {

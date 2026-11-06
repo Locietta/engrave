@@ -21,10 +21,10 @@
  */
 #include "textline.h"
 
+#include "../editing/editproperty.h"
 #include "score.h"
 #include "system.h"
 #include "text.h"
-#include "../editing/editproperty.h"
 
 using namespace mu;
 

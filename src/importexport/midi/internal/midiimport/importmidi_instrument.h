@@ -24,7 +24,6 @@
 #include <vector>
 
 #include "global/types/string.h"
-
 #include "internal/midishared/generalmidi.h"
 
 namespace mu::engraving {

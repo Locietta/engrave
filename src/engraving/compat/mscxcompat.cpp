@@ -21,14 +21,11 @@
  */
 #include "mscxcompat.h"
 
-#include "io/file.h"
-#include "io/buffer.h"
-
-#include "engraving/engravingerrors.h"
 #include "../rw/mscloader.h"
-
+#include "engraving/engravingerrors.h"
 #include "infrastructure/localfileinfoprovider.h"
-
+#include "io/buffer.h"
+#include "io/file.h"
 #include "log.h"
 
 using namespace muse;

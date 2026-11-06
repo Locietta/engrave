@@ -24,9 +24,8 @@
 #include <map>
 
 #include "containers.h"
-
-#include "engraving/dom/select.h"
 #include "engraving/dom/score.h"
+#include "engraving/dom/select.h"
 
 namespace mu::engraving::write {
 struct WriteRange {

@@ -35,15 +35,12 @@
 #include "undostack.h"
 
 #include "containers.h"
-
 #include "dom/box.h"
 #include "dom/select.h"
-
 #include "editing/editproperty.h"
 #include "editing/editstyle.h"
 #include "editing/textedit.h"
 #include "editing/transaction/undoablecommand.h"
-
 #include "log.h"
 
 #define LOG_UNDO() \

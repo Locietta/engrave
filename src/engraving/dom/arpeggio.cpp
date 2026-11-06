@@ -24,9 +24,9 @@
 
 #include "../editing/elementeditdata.h"
 #include "../types/typesconv.h"
-
 #include "accidental.h"
 #include "chord.h"
+#include "log.h"
 #include "note.h"
 #include "page.h"
 #include "part.h"
@@ -34,8 +34,6 @@
 #include "score.h"
 #include "segment.h"
 #include "staff.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

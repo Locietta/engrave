@@ -13,19 +13,20 @@
 // success, 2 for a returned error (printed as "error: Code: message") and 3 for
 // an exception.
 
-#include <engrave/engrave.h>
-#include <nlohmann/json.hpp>
-
 #include <algorithm>
-#include <sstream>
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <vector>
+
+#include <nlohmann/json.hpp>
+
+#include <engrave/engrave.h>
 
 #ifdef _WIN32
 #include <process.h>

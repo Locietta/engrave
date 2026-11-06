@@ -23,33 +23,22 @@
 
 #include <charconv>
 #include <limits>
-#include <stdexcept>
-
 #include <set>
+#include <stdexcept>
 
 #include "../../iengravingconfiguration.h" // IWYU pragma: keep
 #include "../../iengravingfont.h"
-#include "../../types/typesconv.h"
-#include "../../types/symnames.h"
-#include "../../style/textstyle.h"
 #include "../../infrastructure/rtti.h"
-
-#include "dom/measure.h"
-#include "dom/score.h"
-#include "dom/masterscore.h"
-#include "dom/factory.h"
-#include "dom/linkedobjects.h"
-#include "dom/mscore.h"
-#include "dom/staff.h"
-#include "dom/part.h"
-#include "dom/utils.h"
-
+#include "../../style/textstyle.h"
+#include "../../types/symnames.h"
+#include "../../types/typesconv.h"
+#include "../xmlwriter.h"
+#include "connectorinfowriter.h"
 #include "dom/accidental.h"
 #include "dom/actionicon.h"
 #include "dom/ambitus.h"
 #include "dom/arpeggio.h"
 #include "dom/articulation.h"
-
 #include "dom/bagpembell.h"
 #include "dom/barline.h"
 #include "dom/beam.h"
@@ -57,62 +46,57 @@
 #include "dom/box.h"
 #include "dom/bracket.h"
 #include "dom/breath.h"
-
+#include "dom/bsymbol.h"
+#include "dom/capo.h"
 #include "dom/chord.h"
 #include "dom/chordbracket.h"
 #include "dom/chordline.h"
 #include "dom/chordrest.h"
 #include "dom/clef.h"
-#include "dom/capo.h"
-
 #include "dom/drumset.h"
 #include "dom/dynamic.h"
 #include "dom/expression.h"
+#include "dom/factory.h"
 #include "dom/fermata.h"
 #include "dom/figuredbass.h"
 #include "dom/fingering.h"
 #include "dom/fret.h"
-
 #include "dom/glissando.h"
 #include "dom/gradualtempochange.h"
 #include "dom/groups.h"
 #include "dom/guitarbend.h"
-
 #include "dom/hairpin.h"
 #include "dom/hammeronpulloff.h"
-#include "dom/harmony.h"
 #include "dom/harmonicmark.h"
+#include "dom/harmony.h"
 #include "dom/harppedaldiagram.h"
 #include "dom/hook.h"
-
 #include "dom/image.h"
 #include "dom/imageStore.h"
-#include "dom/instrument.h"
 #include "dom/instrchange.h"
-
+#include "dom/instrument.h"
 #include "dom/jump.h"
-
 #include "dom/keysig.h"
-
 #include "dom/laissezvib.h"
 #include "dom/layoutbreak.h"
 #include "dom/ledgerline.h"
 #include "dom/letring.h"
+#include "dom/linkedobjects.h"
 #include "dom/location.h"
 #include "dom/lyrics.h"
-
 #include "dom/marker.h"
+#include "dom/masterscore.h"
+#include "dom/measure.h"
 #include "dom/measurenumber.h"
 #include "dom/measurerepeat.h"
 #include "dom/mmrest.h"
 #include "dom/mmrestrange.h"
-
+#include "dom/mscore.h"
 #include "dom/note.h"
 #include "dom/notedot.h"
 #include "dom/noteline.h"
 #include "dom/ornament.h"
 #include "dom/ottava.h"
-
 #include "dom/page.h"
 #include "dom/palmmute.h"
 #include "dom/parenthesis.h"
@@ -122,16 +106,17 @@
 #include "dom/pickscrape.h"
 #include "dom/playcounttext.h"
 #include "dom/playtechannotation.h"
-
 #include "dom/rasgueado.h"
 #include "dom/rehearsalmark.h"
 #include "dom/rest.h"
-
-#include "dom/sig.h"
+#include "dom/score.h"
 #include "dom/segment.h"
 #include "dom/sharedpart.h"
+#include "dom/sig.h"
 #include "dom/slur.h"
+#include "dom/soundflag.h"
 #include "dom/spacer.h"
+#include "dom/staff.h"
 #include "dom/staffstate.h"
 #include "dom/stafftext.h"
 #include "dom/stafftype.h"
@@ -143,12 +128,9 @@
 #include "dom/stringdata.h"
 #include "dom/stringtunings.h"
 #include "dom/symbol.h"
-#include "dom/bsymbol.h"
 #include "dom/system.h"
 #include "dom/systemdivider.h"
 #include "dom/systemtext.h"
-#include "dom/soundflag.h"
-
 #include "dom/tapping.h"
 #include "dom/tempotext.h"
 #include "dom/text.h"
@@ -157,25 +139,19 @@
 #include "dom/textlinebase.h"
 #include "dom/tie.h"
 #include "dom/timesig.h"
+#include "dom/tremolobar.h"
 #include "dom/tremolosinglechord.h"
 #include "dom/tremolotwochord.h"
-#include "dom/tremolobar.h"
 #include "dom/trill.h"
 #include "dom/tuplet.h"
-
+#include "dom/utils.h"
 #include "dom/vibrato.h"
 #include "dom/volta.h"
-
 #include "dom/whammybar.h"
-
 #include "editing/transpose.h"
-
-#include "../xmlwriter.h"
+#include "log.h"
 #include "types/types.h"
 #include "writecontext.h"
-#include "connectorinfowriter.h"
-
-#include "log.h"
 
 using namespace muse;
 using namespace mu::engraving;

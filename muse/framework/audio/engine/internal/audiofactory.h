@@ -22,10 +22,9 @@
 
 #pragma once
 
-#include "iaudiofactory.h"
-
-#include "../isynthresolver.h"
 #include "../ifxresolver.h"
+#include "../isynthresolver.h"
+#include "iaudiofactory.h"
 
 namespace muse::audio::engine {
 struct AudioFactory : IAudioFactory {

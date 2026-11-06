@@ -22,7 +22,6 @@
 #include "filestream.h"
 
 #include "ioretcodes.h"
-
 #include "log.h"
 
 using namespace muse;

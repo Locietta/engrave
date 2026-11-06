@@ -31,7 +31,6 @@
 #include "../dom/note.h"
 #include "../dom/score.h"
 #include "../dom/select.h"
-
 #include "log.h"
 
 using namespace mu::engraving;

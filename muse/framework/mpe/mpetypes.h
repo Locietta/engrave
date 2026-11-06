@@ -22,19 +22,18 @@
 
 #pragma once
 
-#include <stdint.h>
-#include <math.h>
 #include <algorithm>
+#include <map>
+#include <math.h>
+#include <stdint.h>
 #include <unordered_map>
 #include <unordered_set>
-#include <map>
 #include <vector>
 
+#include "soundid.h"
+#include "types/number.h"
 #include "types/sharedhashmap.h"
 #include "types/sharedmap.h"
-#include "types/number.h"
-
-#include "soundid.h"
 
 #ifdef C
 #undef C

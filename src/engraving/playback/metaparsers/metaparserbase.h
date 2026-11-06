@@ -25,7 +25,6 @@
 
 #include "global/asserts.h"
 #include "mpe/mpetypes.h"
-
 #include "playback/renderingcontext.h"
 
 namespace mu::engraving {

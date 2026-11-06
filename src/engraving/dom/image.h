@@ -22,9 +22,8 @@
 
 #pragma once
 
-#include "draw/types/pixmap.h"
-
 #include "bsymbol.h"
+#include "draw/types/pixmap.h"
 
 namespace muse::draw {
 struct IImageProvider;

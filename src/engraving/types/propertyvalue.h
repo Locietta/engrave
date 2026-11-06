@@ -21,14 +21,13 @@
  */
 #pragma once
 
-#include <memory>
 #include <cassert>
+#include <memory>
 
-#include "global/types/string.h"
-#include "global/logstream.h"
-
-#include "../types/types.h"
 #include "../types/symid.h"
+#include "../types/types.h"
+#include "global/logstream.h"
+#include "global/types/string.h"
 
 namespace mu::engraving {
 struct Groups;

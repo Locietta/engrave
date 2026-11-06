@@ -20,7 +20,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
 #include "editspanner.h"
 
 #include "../dom/chord.h"
@@ -32,6 +31,7 @@
 #include "../dom/spanner.h"
 #include "../dom/textlinebase.h"
 #include "../dom/tie.h"
+#include "log.h"
 
 using namespace mu::engraving;
 

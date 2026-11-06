@@ -20,8 +20,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <cassert>
 #include "painterpath.h"
+
+#include <cassert>
 
 #include "log.h"
 

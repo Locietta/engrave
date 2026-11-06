@@ -20,8 +20,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <gtest/gtest.h>
 #include <map>
+
+#include <gtest/gtest.h>
 
 #include "mpe/events.h"
 #include "mpe/tests/utils/articulationutils.h"

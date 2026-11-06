@@ -22,8 +22,8 @@
 #pragma once
 
 #include <cstdint>
-#include <string>
 #include <map>
+#include <string>
 
 #include "global/types/bytearray.h"
 

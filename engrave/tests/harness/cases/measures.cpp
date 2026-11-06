@@ -13,8 +13,8 @@
 #include <string>
 #include <vector>
 
+#include "engrave/src/api/handles.h"
 #include "engrave/tests/harness/harness.h"
-
 #include "engraving/dom/clef.h"
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/keysig.h"
@@ -28,8 +28,6 @@
 #include "engraving/dom/staff.h"
 #include "engraving/dom/timesig.h"
 #include "engraving/types/typesconv.h"
-
-#include "engrave/src/api/handles.h"
 
 namespace engrave::harness { namespace {
 

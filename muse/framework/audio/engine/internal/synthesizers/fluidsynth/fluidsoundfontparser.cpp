@@ -23,10 +23,10 @@
 #include "fluidsoundfontparser.h"
 
 #include <fluidsynth.h>
-#include "sfloader/fluid_sfont.h"
-#include "sfloader/fluid_defsfont.h"
 
 #include "defer.h"
+#include "sfloader/fluid_defsfont.h"
+#include "sfloader/fluid_sfont.h"
 
 using namespace muse;
 using namespace muse::audio::synth;

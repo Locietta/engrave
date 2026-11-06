@@ -26,12 +26,12 @@
 
 #include "types/brush.h"
 #include "types/drawtypes.h"
-#include "types/geometry.h"
 #include "types/font.h"
+#include "types/geometry.h"
+#include "types/painterpath.h"
 #include "types/pen.h"
 #include "types/pixmap.h"
 #include "types/transform.h"
-#include "types/painterpath.h"
 
 namespace muse::draw {
 struct Painter;

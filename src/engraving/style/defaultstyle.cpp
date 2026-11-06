@@ -22,7 +22,6 @@
 #include "defaultstyle.h"
 
 #include "io/file.h"
-
 #include "log.h"
 
 using namespace mu;

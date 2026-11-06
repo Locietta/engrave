@@ -20,7 +20,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
 #include "chordarticulationsparser.h"
 
 #include "dom/arpeggio.h"
@@ -30,20 +29,19 @@
 #include "dom/score.h"
 #include "dom/segment.h"
 #include "dom/spanner.h"
+#include "dom/tapping.h"
 #include "dom/tremolosinglechord.h"
 #include "dom/tremolotwochord.h"
-#include "dom/tapping.h"
-
-#include "playback/utils/arrangementutils.h"
-#include "playback/filters/spannerfilter.h"
-
+#include "internal/annotationsmetaparser.h"
+#include "internal/arpeggiometaparser.h"
+#include "internal/chordlinemetaparser.h"
+#include "internal/gracenotesmetaparser.h"
 #include "internal/spannersmetaparser.h"
 #include "internal/symbolsmetaparser.h"
-#include "internal/annotationsmetaparser.h"
 #include "internal/tremolometaparser.h"
-#include "internal/arpeggiometaparser.h"
-#include "internal/gracenotesmetaparser.h"
-#include "internal/chordlinemetaparser.h"
+#include "log.h"
+#include "playback/filters/spannerfilter.h"
+#include "playback/utils/arrangementutils.h"
 
 using namespace mu::engraving;
 using namespace muse;

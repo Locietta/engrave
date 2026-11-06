@@ -25,14 +25,12 @@
  render score into event list
 */
 
-#include "compatmidirender.h"
 #include "compatmidirenderinternal.h"
 
 #include <cmath>
 
 #include "compat/midi/event.h"
-#include "types/constants.h"
-
+#include "compatmidirender.h"
 #include "dom/accidental.h"
 #include "dom/arpeggio.h"
 #include "dom/articulation.h"
@@ -64,8 +62,8 @@
 #include "dom/utils.h"
 #include "dom/vibrato.h"
 #include "dom/volta.h"
-
 #include "log.h"
+#include "types/constants.h"
 
 namespace mu::engraving {
 static PitchWheelSpecs g_wheel_spec;

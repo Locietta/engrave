@@ -23,13 +23,12 @@
 #pragma once
 
 #include <set>
-#include <vector>
 #include <utility>
-
-#include "global/types/ret.h"
-#include "draw/types/geometry.h"
+#include <vector>
 
 #include "../types/types.h"
+#include "draw/types/geometry.h"
+#include "global/types/ret.h"
 
 namespace mu::engraving {
 struct Chord;

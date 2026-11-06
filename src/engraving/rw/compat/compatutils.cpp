@@ -52,19 +52,15 @@
 #include "dom/stem.h"
 #include "dom/tempotext.h"
 #include "dom/textline.h"
-
 #include "editing/editchord.h"
 #include "editing/editkeysig.h"
 #include "editing/transaction/transaction.h"
 #include "editing/transpose.h"
-
+#include "log.h"
 #include "style/defaultstyle.h"
 #include "style/styledef.h"
 #include "style/textstyle.h"
-
 #include "types/string.h"
-
-#include "log.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::compat;

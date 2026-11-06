@@ -22,9 +22,9 @@
 
 #pragma once
 
-#include "chainnode.h"
 #include "audio/engine/ifxprocessor.h"
 #include "audio/engine/iplayhead.h"
+#include "chainnode.h"
 
 namespace muse::audio {
 struct FxChainTag {

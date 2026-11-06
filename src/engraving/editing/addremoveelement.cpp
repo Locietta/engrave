@@ -22,8 +22,6 @@
 
 #include "addremoveelement.h"
 
-#include "containers.h"
-
 #include "../dom/arpeggio.h"
 #include "../dom/chord.h"
 #include "../dom/engravingitem.h"
@@ -39,6 +37,7 @@
 #include "../dom/tie.h"
 #include "../dom/tremolotwochord.h"
 #include "../dom/tuplet.h"
+#include "containers.h"
 
 using namespace mu::engraving;
 

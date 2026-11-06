@@ -24,9 +24,8 @@
 
 #include <vector>
 
-#include "../../types/types.h"
 #include "../../dom/beam.h"
-
+#include "../../types/types.h"
 #include "layoutcontext.h"
 
 namespace mu::engraving {

@@ -6,8 +6,8 @@
 #include <optional>
 #include <vector>
 
-#include <engrave/edit.h>
 #include <engrave/audio.h>
+#include <engrave/edit.h>
 #include <engrave/error.h>
 #include <engrave/handle.h>
 #include <engrave/output.h>

@@ -22,14 +22,14 @@
 #ifndef MUSE_DRAW_GEOMETRY_H
 #define MUSE_DRAW_GEOMETRY_H
 
-#include <vector>
-#include <cmath>
 #include <cassert>
-#include <string>
+#include <cmath>
 #include <sstream>
+#include <string>
+#include <vector>
 
-#include "global/realfn.h"
 #include "global/logstream.h"
+#include "global/realfn.h"
 #include "global/types/number.h"
 
 namespace muse {

@@ -20,15 +20,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "importgtp.h"
-
 #include <algorithm>
 #include <stdexcept>
-
-#include "serialization/xmldom.h"
-
-#include "gtp/gp6dombuilder.h"
-#include "gtp/gpconverter.h"
 
 #include "engraving/dom/arpeggio.h"
 #include "engraving/dom/articulation.h"
@@ -66,6 +59,7 @@
 #include "engraving/dom/stafftext.h"
 #include "engraving/dom/stafftype.h"
 #include "engraving/dom/stringdata.h"
+#include "engraving/dom/stringtunings.h"
 #include "engraving/dom/tempotext.h"
 #include "engraving/dom/text.h"
 #include "engraving/dom/textline.h"
@@ -74,11 +68,12 @@
 #include "engraving/dom/tremolobar.h"
 #include "engraving/dom/tuplet.h"
 #include "engraving/dom/volta.h"
-#include "engraving/dom/stringtunings.h"
-
 #include "engraving/types/symid.h"
-
+#include "gtp/gp6dombuilder.h"
+#include "gtp/gpconverter.h"
+#include "importgtp.h"
 #include "log.h"
+#include "serialization/xmldom.h"
 
 using namespace mu;
 using namespace muse;

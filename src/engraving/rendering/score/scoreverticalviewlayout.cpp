@@ -22,21 +22,17 @@
 #include "scoreverticalviewlayout.h"
 
 #include "containers.h"
-
-#include "dom/score.h"
-#include "dom/system.h"
 #include "dom/bracket.h"
 #include "dom/layoutbreak.h"
 #include "dom/page.h"
-
-#include "passresetlayoutdata.h"
-#include "passlayoutindependentitems.h"
-
-#include "measurelayout.h"
-#include "systemlayout.h"
-#include "pagelayout.h"
-
+#include "dom/score.h"
+#include "dom/system.h"
 #include "log.h"
+#include "measurelayout.h"
+#include "pagelayout.h"
+#include "passlayoutindependentitems.h"
+#include "passresetlayoutdata.h"
+#include "systemlayout.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;

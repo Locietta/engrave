@@ -22,7 +22,6 @@
 #pragma once
 
 #include "../ifontprovider.h"
-
 #include "ifontsdatabase.h"
 #include "ifontsengine.h"
 

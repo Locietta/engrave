@@ -22,8 +22,8 @@
 #ifndef MUSE_GLOBAL_REALFN_H
 #define MUSE_GLOBAL_REALFN_H
 
-#include <cmath>
 #include <algorithm>
+#include <cmath>
 #include <vector>
 
 namespace muse {

@@ -22,12 +22,11 @@
 
 #include "chordtextlinebase.h"
 
+#include "../types/types.h"
 #include "chordrest.h"
 #include "measure.h"
-#include "segment.h"
 #include "score.h"
-
-#include "../types/types.h"
+#include "segment.h"
 
 using namespace mu;
 using namespace mu::engraving;

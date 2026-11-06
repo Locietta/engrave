@@ -21,14 +21,13 @@
  */
 #pragma once
 
-#include <cstdint>
 #include <cmath>
+#include <cstdint>
 #include <limits>
 #include <numeric>
 
-#include "global/types/string.h"
-
 #include "constants.h"
+#include "global/types/string.h"
 
 // everything contained in .h file for performance reasons
 

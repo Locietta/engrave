@@ -28,12 +28,9 @@
 #include "dom/swing.h"
 #include "dom/tremolosinglechord.h"
 #include "dom/tremolotwochord.h"
-
 #include "glissandosrenderer.h"
-
 #include "playback/metaparsers/chordarticulationsparser.h"
 #include "playback/metaparsers/notearticulationsparser.h"
-
 #include "playback/utils/repeatutils.h"
 
 using namespace mu::engraving;

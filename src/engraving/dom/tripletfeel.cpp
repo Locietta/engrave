@@ -22,10 +22,9 @@
 
 #include "tripletfeel.h"
 
+#include "score.h"
 #include "types/string.h"
 #include "types/translatablestring.h"
-
-#include "score.h"
 
 namespace mu::engraving {
 static const ElementStyle triplet_feel_style{{Sid::SUB_TITLE_FONT_SIZE, Pid::FONT_SIZE}, // TODO: add styles

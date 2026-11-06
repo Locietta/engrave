@@ -1,19 +1,18 @@
 // Evidence cases of SetProperty, ResetProperty and SetStyle.
 
+#include "engraving/dom/property.h"
+
 #include <format>
 #include <string>
 
+#include "engrave/src/api/pid_support.h"
+#include "engrave/src/api/value_codec.h"
 #include "engrave/tests/harness/harness.h"
-
 #include "engraving/dom/engravingitem.h"
 #include "engraving/dom/engravingobject.h"
 #include "engraving/dom/excerpt.h"
 #include "engraving/dom/masterscore.h"
-#include "engraving/dom/property.h"
 #include "engraving/style/style.h"
-
-#include "engrave/src/api/pid_support.h"
-#include "engrave/src/api/value_codec.h"
 
 namespace engrave::harness { namespace {
 

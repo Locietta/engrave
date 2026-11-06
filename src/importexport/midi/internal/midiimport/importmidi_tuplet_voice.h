@@ -22,9 +22,9 @@
 #ifndef IMPORTMIDI_TUPLET_VOICE_H
 #define IMPORTMIDI_TUPLET_VOICE_H
 
-#include <vector>
-#include <map>
 #include <list>
+#include <map>
+#include <vector>
 
 namespace mu::iex::midi {
 struct ReducedFraction;

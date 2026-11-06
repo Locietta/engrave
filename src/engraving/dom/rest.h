@@ -22,9 +22,8 @@
 
 #pragma once
 
-#include "containers.h"
-
 #include "chordrest.h"
+#include "containers.h"
 #include "notedot.h"
 
 namespace mu::engraving {

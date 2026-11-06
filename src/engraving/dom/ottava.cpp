@@ -22,16 +22,14 @@
 
 #include "ottava.h"
 
-#include "types/translatablestring.h"
-
 #include "chordrest.h"
+#include "log.h"
 #include "measure.h"
 #include "score.h"
 #include "staff.h"
 #include "system.h"
 #include "text.h"
-
-#include "log.h"
+#include "types/translatablestring.h"
 
 using namespace mu::engraving;
 

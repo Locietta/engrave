@@ -39,8 +39,8 @@
 #include "../dom/excerpt.h"
 #include "../dom/expression.h"
 #include "../dom/factory.h"
-#include "../dom/fingering.h"
 #include "../dom/figuredbass.h"
+#include "../dom/fingering.h"
 #include "../dom/fret.h"
 #include "../dom/glissando.h"
 #include "../dom/guitarbend.h"
@@ -97,9 +97,7 @@
 #include "../dom/utils.h"
 #include "../dom/volta.h"
 #include "../infrastructure/messagebox.h"
-
 #include "addremoveelement.h"
-#include "editstaffbrackets.h"
 #include "editchord.h"
 #include "editclef.h"
 #include "editkeysig.h"
@@ -112,18 +110,18 @@
 #include "editscoreproperties.h"
 #include "editspanner.h"
 #include "editstaff.h"
+#include "editstaffbrackets.h"
 #include "editstyle.h"
 #include "editsystemlocks.h"
 #include "edittimesig.h"
 #include "edittremolo.h"
 #include "inserttime.h"
+#include "log.h"
 #include "navigation.h"
 #include "splitjoinmeasure.h"
 #include "transaction/transaction.h"
 #include "transaction/undostack.h"
 #include "transpose.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

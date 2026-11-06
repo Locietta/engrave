@@ -23,21 +23,19 @@
 
 #include <algorithm>
 
+#include "../utils.h"
+#include "global/log.h"
 #include <engraving/dom/chord.h>
-#include <engraving/dom/guitarbend.h>
 #include <engraving/dom/factory.h>
+#include <engraving/dom/guitarbend.h>
 #include <engraving/dom/measure.h>
 #include <engraving/dom/note.h>
-#include <engraving/dom/score.h>
 #include <engraving/dom/part.h>
+#include <engraving/dom/score.h>
 #include <engraving/dom/staff.h>
 #include <engraving/dom/stringdata.h>
 #include <engraving/dom/tie.h>
 #include <engraving/dom/tuplet.h>
-
-#include "../utils.h"
-
-#include "global/log.h"
 
 using namespace mu::engraving;
 

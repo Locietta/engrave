@@ -22,15 +22,12 @@
 
 #include "ornamentsrenderer.h"
 
-#include "realfn.h"
-
 #include "dom/ornament.h"
 #include "dom/utils.h"
-
+#include "noterenderer.h"
 #include "playback/metaparsers/notearticulationsparser.h"
 #include "playback/utils/expressionutils.h"
-
-#include "noterenderer.h"
+#include "realfn.h"
 
 using namespace mu::engraving;
 using namespace muse;

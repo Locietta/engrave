@@ -27,6 +27,8 @@
 #include "excerpt.h"
 #include "factory.h"
 #include "linkedobjects.h"
+#include "log.h"
+#include "marker.h"
 #include "measure.h"
 #include "measurerepeat.h"
 #include "note.h"
@@ -34,18 +36,14 @@
 #include "score.h"
 #include "segment.h"
 #include "slur.h"
+#include "spacer.h"
 #include "staff.h"
 #include "tie.h"
-#include "spacer.h"
-#include "marker.h"
-#include "volta.h"
-
 #include "tremolosinglechord.h"
 #include "tremolotwochord.h"
 #include "tuplet.h"
 #include "utils.h"
-
-#include "log.h"
+#include "volta.h"
 
 using namespace mu;
 using namespace mu::engraving;

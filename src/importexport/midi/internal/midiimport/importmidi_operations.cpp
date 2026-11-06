@@ -22,9 +22,8 @@
 #include "importmidi_operations.h"
 
 #include "io/file.h"
-#include "serialization/xmlstreamreader.h"
-
 #include "log.h"
+#include "serialization/xmlstreamreader.h"
 
 namespace mu::iex::midi {
 MidiOperations::Data midi_import_operations;

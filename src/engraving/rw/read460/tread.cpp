@@ -22,14 +22,7 @@
 
 #include "tread.h"
 
-#include "iengravingconfiguration.h" // IWYU pragma: keep
-
-#include "../../types/typesconv.h"
-#include "../../types/symnames.h"
-#include "../../infrastructure/rtti.h"
-
 #include "../../compat/midi/event.h"
-
 #include "../../dom/accidental.h"
 #include "../../dom/actionicon.h"
 #include "../../dom/ambitus.h"
@@ -137,17 +130,18 @@
 #include "../../dom/vibrato.h"
 #include "../../dom/volta.h"
 #include "../../dom/whammybar.h"
-
 #include "../../editing/editstaffbrackets.h"
-
-#include "../xmlreader.h"
-#include "../read500/tread.h"
+#include "../../infrastructure/rtti.h"
+#include "../../types/symnames.h"
+#include "../../types/typesconv.h"
 #include "../compat/compatutils.h"
 #include "../compat/tremolocompat.h"
-#include "readcontext.h"
+#include "../read500/tread.h"
+#include "../xmlreader.h"
 #include "connectorinforeader.h"
-
+#include "iengravingconfiguration.h" // IWYU pragma: keep
 #include "log.h"
+#include "readcontext.h"
 
 using namespace muse::draw;
 using namespace mu::engraving;

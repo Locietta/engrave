@@ -23,9 +23,8 @@
 #ifndef MU_ENGRAVING_INSTRCHANGE_H
 #define MU_ENGRAVING_INSTRCHANGE_H
 
-#include "textbase.h"
-
 #include "instrument.h"
+#include "textbase.h"
 
 namespace mu::engraving {
 struct Clef;

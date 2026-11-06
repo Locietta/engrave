@@ -20,8 +20,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "note.h"
 #include "noteline.h"
+
+#include "note.h"
 #include "text.h"
 
 namespace mu::engraving {

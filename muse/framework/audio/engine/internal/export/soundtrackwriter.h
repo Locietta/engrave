@@ -22,16 +22,13 @@
 
 #pragma once
 #include <atomic>
-
-#include "global/types/ret.h"
-
-#include <vector>
 #include <functional>
+#include <vector>
 
-#include "audio/common/audiotypes.h"
 #include "../nodes/audionode.h"
-
 #include "abstractaudioencoder.h"
+#include "audio/common/audiotypes.h"
+#include "global/types/ret.h"
 
 namespace muse::io {
 struct IODevice;

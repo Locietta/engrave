@@ -20,13 +20,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
 #include "stafftext.h"
 
-#include "soundflag.h"
-#include "segment.h"
-#include "score.h"
 #include "../editing/addremoveelement.h"
+#include "log.h"
+#include "score.h"
+#include "segment.h"
+#include "soundflag.h"
 
 using namespace mu::engraving;
 

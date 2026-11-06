@@ -22,20 +22,17 @@
 
 #include "keysig.h"
 
-#include "types/typesconv.h"
-
-#include "masterscore.h"
-#include "measure.h"
-#include "score.h"
-#include "segment.h"
-#include "staff.h"
-#include "part.h"
-
 #include "editing/editkeysig.h"
 #include "editing/transaction/transaction.h"
 #include "editing/transpose.h"
-
 #include "log.h"
+#include "masterscore.h"
+#include "measure.h"
+#include "part.h"
+#include "score.h"
+#include "segment.h"
+#include "staff.h"
+#include "types/typesconv.h"
 
 using namespace mu;
 using namespace mu::engraving;

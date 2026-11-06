@@ -24,11 +24,10 @@
 #define MU_ENGRAVING_INOUTDATA_H
 
 #include <map>
-#include <vector>
 #include <optional>
+#include <vector>
 
 #include "linksindexer.h"
-
 #include "write/writecontext.h"
 
 namespace mu::engraving {

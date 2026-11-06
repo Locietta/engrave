@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #include "mnx.h"
-#include "importexport/mnx/internal/import/mnximporter.h"
-#include "engraving/engravingproject.h"
-#include "engraving/dom/masterscore.h"
-#include "engraving/dom/part.h"
-#include "engraving/dom/instrument.h"
-#include "engraving/dom/mscore.h"
-#include "engraving/infrastructure/localfileinfoprovider.h"
+
 #include "engrave/src/runtime/engine_context.h"
+#include "engraving/dom/instrument.h"
+#include "engraving/dom/masterscore.h"
+#include "engraving/dom/mscore.h"
+#include "engraving/dom/part.h"
+#include "engraving/engravingproject.h"
+#include "engraving/infrastructure/localfileinfoprovider.h"
+#include "importexport/mnx/internal/import/mnximporter.h"
 
 namespace engrave {
 music::ScoreProject open_mnx(music::EngineContext &context, const std::string &bytes) {

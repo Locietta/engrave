@@ -19,13 +19,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "log.h"
 #include "benddataprocessorsplitchord.h"
 
 #include "benddatacontextsplitchord.h"
+#include "log.h"
 #include <engraving/dom/chord.h>
-#include <engraving/dom/guitarbend.h>
 #include <engraving/dom/factory.h>
+#include <engraving/dom/guitarbend.h>
 #include <engraving/dom/measure.h>
 #include <engraving/dom/note.h>
 #include <engraving/dom/score.h>

@@ -21,12 +21,10 @@
  */
 #include "verticalgapdata.h"
 
-#include "realfn.h"
-
 #include "dom/spacer.h"
 #include "dom/staff.h"
 #include "dom/system.h"
-
+#include "realfn.h"
 #include "style/style.h"
 
 using namespace mu::engraving;

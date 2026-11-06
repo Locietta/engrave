@@ -23,12 +23,11 @@
 
 #include <vector>
 
-#include "layoutcontext.h"
-
 #include "../../dom/measure.h"
 #include "../../dom/segment.h"
 #include "../../dom/sharedpart.h"
 #include "../../types/types.h"
+#include "layoutcontext.h"
 
 namespace mu::engraving {
 struct BarLine;

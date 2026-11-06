@@ -21,16 +21,14 @@
  */
 #include "engravingproject.h"
 
+#include "dom/masterscore.h"
+#include "dom/part.h"
 #include "global/allocator.h"
-
+#include "log.h"
 #include "rw/inoutdata.h"
 #include "rw/mscloader.h"
 #include "rw/mscsaver.h"
 #include "style/defaultstyle.h"
-#include "dom/masterscore.h"
-#include "dom/part.h"
-
-#include "log.h"
 
 using namespace muse;
 using namespace mu;

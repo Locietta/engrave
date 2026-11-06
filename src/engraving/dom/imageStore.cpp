@@ -22,12 +22,10 @@
 
 #include "imageStore.h"
 
-#include "io/path.h"
-
 #include "image.h"
-#include "score.h"
-
+#include "io/path.h"
 #include "log.h"
+#include "score.h"
 
 using namespace mu;
 using namespace muse;

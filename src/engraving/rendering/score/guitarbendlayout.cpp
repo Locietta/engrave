@@ -20,10 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "tlayout.h"
-#include "textlayout.h"
 #include "guitarbendlayout.h"
-#include "guitardivelayout.h"
 
 #include "../../dom/chord.h"
 #include "../../dom/guitarbend.h"
@@ -33,6 +30,9 @@
 #include "../../dom/segment.h"
 #include "../../dom/staff.h"
 #include "../../dom/system.h"
+#include "guitardivelayout.h"
+#include "textlayout.h"
+#include "tlayout.h"
 
 using namespace mu::engraving;
 using namespace muse::draw;

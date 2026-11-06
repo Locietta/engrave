@@ -23,10 +23,9 @@
 #define MUSE_IO_DIR_H
 
 #include "global/types/retval.h"
-
-#include "path.h"
-#include "ioenums.h"
 #include "ifilesystem.h"
+#include "ioenums.h"
+#include "path.h"
 
 namespace muse::io {
 struct Dir {

@@ -22,10 +22,6 @@
 
 #include "editslashnotation.h"
 
-#include "noteinput.h"
-
-#include "containers.h"
-
 #include "../dom/chord.h"
 #include "../dom/durationtype.h"
 #include "../dom/input.h"
@@ -38,6 +34,8 @@
 #include "../dom/select.h"
 #include "../dom/staff.h"
 #include "../dom/stafftype.h"
+#include "containers.h"
+#include "noteinput.h"
 
 using namespace mu::engraving;
 

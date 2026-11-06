@@ -20,10 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
 #include "transpose.h"
-
-#include "iengravingconfiguration.h" // IWYU pragma: keep
 
 #include "../dom/factory.h"
 #include "../dom/fret.h"
@@ -36,11 +33,11 @@
 #include "../dom/segment.h"
 #include "../dom/staff.h"
 #include "../dom/utils.h"
-#include "../dom/utils.h"
-
 #include "editenharmonicspelling.h"
 #include "editfretboarddiagram.h"
 #include "editkeysig.h"
+#include "iengravingconfiguration.h" // IWYU pragma: keep
+#include "log.h"
 #include "transaction/transaction.h"
 
 using namespace mu::engraving;

@@ -21,9 +21,8 @@
  */
 #include "propertyvalue.h"
 
-#include "realfn.h"
-
 #include "log.h"
+#include "realfn.h"
 
 using namespace mu::engraving;
 

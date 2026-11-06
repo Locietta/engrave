@@ -20,10 +20,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
 #include "editnote.h"
-#include "editchord.h"
-#include "noteinput.h"
 
 #include <algorithm>
 #include <set>
@@ -42,8 +39,10 @@
 #include "dom/staff.h"
 #include "dom/stringdata.h"
 #include "dom/utils.h"
-
+#include "editchord.h"
 #include "editing/transaction/transaction.h"
+#include "log.h"
+#include "noteinput.h"
 
 using namespace mu::engraving;
 

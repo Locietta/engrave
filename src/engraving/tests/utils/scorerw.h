@@ -25,11 +25,10 @@
 
 #include <functional>
 
+#include "engraving/dom/masterscore.h"
+#include "engraving/engravingerrors.h"
 #include "types/bytearray.h"
 #include "types/string.h"
-
-#include "engraving/engravingerrors.h"
-#include "engraving/dom/masterscore.h"
 
 namespace mu::engraving {
 struct ScoreRW {

@@ -22,6 +22,7 @@
 
 #include "gradualtempochange.h"
 
+#include "log.h"
 #include "measure.h"
 #include "rehearsalmark.h"
 #include "score.h"
@@ -30,10 +31,7 @@
 #include "system.h"
 #include "tempotext.h"
 #include "text.h"
-
 #include "types/typesconv.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

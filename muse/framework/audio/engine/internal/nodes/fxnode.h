@@ -22,9 +22,9 @@
 
 #pragma once
 
-#include "audionode.h"
 #include "../../ifxprocessor.h"
 #include "../../iplayhead.h"
+#include "audionode.h"
 
 namespace muse::audio {
 struct FxTag {

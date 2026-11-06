@@ -22,7 +22,6 @@
 #include "fontsdatabase.h"
 
 #include "global/io/file.h"
-
 #include "log.h"
 
 using namespace muse;

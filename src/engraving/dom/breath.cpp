@@ -22,15 +22,13 @@
 
 #include "breath.h"
 
-#include "types/symnames.h"
-
+#include "log.h"
 #include "measure.h"
 #include "score.h"
 #include "segment.h"
 #include "staff.h"
 #include "system.h"
-
-#include "log.h"
+#include "types/symnames.h"
 
 using namespace mu;
 using namespace mu::engraving;

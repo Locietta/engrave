@@ -24,7 +24,6 @@
 #define MU_ENGRAVING_FILTERBASE_H
 
 #include "global/asserts.h"
-
 #include "playback/renderingcontext.h"
 
 namespace mu::engraving {

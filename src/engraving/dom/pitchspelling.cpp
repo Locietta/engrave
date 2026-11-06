@@ -26,12 +26,10 @@
 
 #include "pitchspelling.h"
 
+#include "key.h"
+#include "log.h"
 #include "translation.h"
 #include "types/typesconv.h"
-
-#include "key.h"
-
-#include "log.h"
 
 namespace mu::engraving {
 //---------------------------------------------------------

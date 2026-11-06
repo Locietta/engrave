@@ -22,13 +22,12 @@
 
 #pragma once
 
-#include "engravingitem.h"
-
-#include "durationtype.h"
-#include "draw/types/painterpath.h"
 #include "../types/types.h"
 #include "beam.h"
 #include "chord.h"
+#include "draw/types/painterpath.h"
+#include "durationtype.h"
+#include "engravingitem.h"
 
 namespace mu::engraving {
 struct Chord;

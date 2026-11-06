@@ -22,15 +22,15 @@
 #ifndef MUSE_GLOBAL_STRING_H
 #define MUSE_GLOBAL_STRING_H
 
-#include <memory>
 #include <cstring>
-#include <vector>
+#include <memory>
+#include <regex>
 #include <string>
 #include <string_view>
-#include <regex>
+#include <vector>
 
-#include "containers.h"
 #include "bytearray.h"
+#include "containers.h"
 #include "global/logstream.h"
 
 // Protect Char::NULL from the C null-pointer macro.

@@ -1,17 +1,17 @@
-#include "engrave/src/runtime/engine_context.h"
-#include "engrave/src/runtime/noqt_runtime.h"
 #include "engrave/src/audio/score_audio.h"
-
-#include "engraving/engravingproject.h"
-#include "engraving/dom/masterscore.h"
-#include "global/io/buffer.h"
-#include "global/serialization/zipwriter.h"
 
 #include <fstream>
 #include <iostream>
 #include <iterator>
 #include <stdexcept>
 #include <string>
+
+#include "engrave/src/runtime/engine_context.h"
+#include "engrave/src/runtime/noqt_runtime.h"
+#include "engraving/dom/masterscore.h"
+#include "engraving/engravingproject.h"
+#include "global/io/buffer.h"
+#include "global/serialization/zipwriter.h"
 
 namespace {
 void expect(bool value, const char *message) {

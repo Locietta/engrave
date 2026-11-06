@@ -23,7 +23,6 @@
 #pragma once
 
 #include "engravingitem.h"
-
 #include "groups.h"
 
 namespace mu::engraving {

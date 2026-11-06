@@ -1,24 +1,24 @@
+#include "engrave/src/score/score_edit.h"
+
+#include <cstddef>
+#include <future>
+#include <iostream>
+#include <map>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
 #include "engrave/src/runtime/engine_context.h"
 #include "engrave/src/runtime/noqt_runtime.h"
-#include "engrave/src/score/score_edit.h"
 #include "engrave/src/score/score_excerpts.h"
 #include "engrave/src/score/score_query.h"
-
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/mscore.h"
 #include "engraving/dom/part.h"
 #include "engraving/editing/transaction/undostack.h"
 #include "engraving/engravingproject.h"
-
-#include <cstddef>
-#include <iostream>
-#include <future>
-#include <map>
-#include <optional>
-#include <stdexcept>
-#include <string>
-#include <vector>
 
 namespace {
 using music::NoteView;

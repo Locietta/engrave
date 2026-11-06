@@ -24,19 +24,17 @@
 
 #include "../editing/editpagelocks.h"
 #include "../editing/editsystemlocks.h"
-
 #include "actionicon.h"
 #include "box.h"
 #include "factory.h"
 #include "layoutbreak.h"
+#include "log.h"
 #include "measure.h"
 #include "page.h"
 #include "score.h"
 #include "staff.h"
 #include "stafftypechange.h"
 #include "system.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

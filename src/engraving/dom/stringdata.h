@@ -23,8 +23,8 @@
 #pragma once
 
 #include <cstddef>
-#include <vector>
 #include <map>
+#include <vector>
 
 #include "../types/fraction.h"
 #include "../types/types.h"

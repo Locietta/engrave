@@ -22,14 +22,12 @@
 
 #include "textlinebase.h"
 
-#include "rendering/iscorerenderer.h"
-
 #include "factory.h"
+#include "log.h"
+#include "rendering/iscorerenderer.h"
 #include "score.h"
 #include "system.h"
 #include "text.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

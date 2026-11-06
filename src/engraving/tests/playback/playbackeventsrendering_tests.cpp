@@ -20,21 +20,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <gtest/gtest.h>
 #include <memory>
 
-#include "mpe/tests/utils/articulationutils.h"
+#include <gtest/gtest.h>
 
-#include "engraving/dom/note.h"
 #include "engraving/dom/measure.h"
+#include "engraving/dom/note.h"
+#include "engraving/dom/ornament.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/segment.h"
-#include "engraving/dom/ornament.h"
 #include "engraving/dom/tremolosinglechord.h"
 #include "engraving/dom/tremolotwochord.h"
-
 #include "engraving/playback/playbackeventsrenderer.h"
-
+#include "mpe/tests/utils/articulationutils.h"
 #include "utils/scorerw.h"
 
 using namespace mu::engraving;

@@ -23,9 +23,8 @@
 #ifndef MU_ENGRAVING_HOOK_H
 #define MU_ENGRAVING_HOOK_H
 
-#include "symbol.h"
-
 #include "global/allocator.h"
+#include "symbol.h"
 
 namespace mu::engraving {
 struct Chord;

@@ -20,23 +20,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
-#include "global/translation.h"
+#include "importmusicxml.h"
 
-#include "global/io/file.h"
-#include "global/serialization/zipreader.h"
-#include "global/serialization/xmlstreamreader.h"
-
-#include "engraving/types/types.h"
 #include "engraving/dom/masterscore.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/score.h"
 #include "engraving/engravingerrors.h"
-
-#include "importmusicxml.h"
+#include "engraving/types/types.h"
+#include "global/io/file.h"
+#include "global/serialization/xmlstreamreader.h"
+#include "global/serialization/zipreader.h"
+#include "global/translation.h"
 #include "importmusicxmllogger.h"
 #include "importmusicxmlpass1.h"
 #include "importmusicxmlpass2.h"
+#include "log.h"
 #include "musicxmlvalidation.h"
 
 using namespace muse;

@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-only
 // Existing upstream project examples retain the repository GPL-3.0-only licence.
-#include <gtest/gtest.h>
-#include <engrave/engrave.h>
-#include "engrave/src/api/state.h"
-#include "engrave/src/score/score_semantic.h"
+#include <cstdio>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
-#include <cstdio>
+
+#include <gtest/gtest.h>
+
+#include "engrave/src/api/state.h"
+#include "engrave/src/score/score_semantic.h"
+#include <engrave/engrave.h>
 
 namespace {
 std::unique_ptr<engrave::Engine> engine;

@@ -25,11 +25,9 @@
 #include <string>
 #include <utility>
 
-#include "serialization/json.h"
-
-#include "log.h"
-
 #include "internal/articulationstringutils.h"
+#include "log.h"
+#include "serialization/json.h"
 
 using namespace muse;
 using namespace muse::mpe;

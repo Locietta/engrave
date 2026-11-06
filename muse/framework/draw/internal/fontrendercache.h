@@ -26,7 +26,6 @@
 #include <unordered_map>
 
 #include "global/io/path.h"
-
 #include "types/fontstypes.h"
 
 namespace muse::draw {

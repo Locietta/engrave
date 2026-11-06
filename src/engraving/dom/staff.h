@@ -25,17 +25,14 @@
 #include <map>
 #include <vector>
 
-#include "engravingitem.h"
-
-#include "draw/types/color.h"
-
+#include "../types/types.h"
 #include "cleflist.h"
+#include "draw/types/color.h"
+#include "engravingitem.h"
 #include "groups.h"
 #include "keylist.h"
 #include "mscore.h"
 #include "stafftypelist.h"
-
-#include "../types/types.h"
 
 namespace mu::engraving {
 struct BracketItem;

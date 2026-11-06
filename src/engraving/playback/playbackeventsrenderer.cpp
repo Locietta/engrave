@@ -22,8 +22,6 @@
 
 #include "playbackeventsrenderer.h"
 
-#include "log.h"
-
 #include "dom/chord.h"
 #include "dom/harmony.h"
 #include "dom/measure.h"
@@ -31,17 +29,13 @@
 #include "dom/sig.h"
 #include "dom/staff.h"
 #include "dom/utils.h"
-
-#include "types/bps.h"
-
-#include "utils/arrangementutils.h"
-
+#include "filters/chordfilter.h"
+#include "log.h"
 #include "metaparsers/chordarticulationsparser.h"
 #include "metaparsers/notearticulationsparser.h"
-
 #include "renderers/chordarticulationsrenderer.h"
-
-#include "filters/chordfilter.h"
+#include "types/bps.h"
+#include "utils/arrangementutils.h"
 
 using namespace mu::engraving;
 using namespace muse;

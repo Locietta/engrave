@@ -25,10 +25,9 @@
 
 #include <memory>
 
-#include "global/io/path.h"
 #include "global/io/iodevice.h"
+#include "global/io/path.h"
 #include "global/types/string.h"
-
 #include "types/font.h"
 #include "types/geometry.h"
 

@@ -19,13 +19,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "log.h"
+#include "mnximporter.h"
+
 #include <array>
 #include <exception>
 #include <vector>
-
-#include "mnximporter.h"
-#include "internal/shared/mnxtypesconv.h"
 
 #include "engraving/dom/barline.h"
 #include "engraving/dom/bracketitem.h"
@@ -48,8 +46,9 @@
 #include "engraving/dom/volta.h"
 #include "engraving/editing/editstaffbrackets.h"
 #include "engraving/editing/transaction/transaction.h"
-
 #include "engraving/types/symnames.h"
+#include "internal/shared/mnxtypesconv.h"
+#include "log.h"
 
 using namespace mu::engraving;
 

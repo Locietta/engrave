@@ -7,12 +7,11 @@
 #include <utility>
 #include <vector>
 
-#include "engraving/dom/property.h"
-#include "engraving/style/styledef.h"
-
 #include "engrave/src/api/pid_support.h"
 #include "engrave/src/api/state.h"
 #include "engrave/src/api/value_codec.h"
+#include "engraving/dom/property.h"
+#include "engraving/style/styledef.h"
 
 namespace engrave {
 namespace {

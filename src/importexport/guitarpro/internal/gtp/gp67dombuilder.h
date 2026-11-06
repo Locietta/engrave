@@ -3,9 +3,9 @@
 
 #include <memory>
 
-#include "igpdombuilder.h"
 #include "gpdommodel.h"
 #include "gptrack.h"
+#include "igpdombuilder.h"
 
 namespace mu::iex::guitarpro {
 struct GP67DomBuilder : IGPDomBuilder {

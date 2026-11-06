@@ -21,10 +21,10 @@
  */
 
 #include "spannermap.h"
-#include "spanner.h"
-#include "part.h"
 
 #include "log.h"
+#include "part.h"
+#include "spanner.h"
 
 using namespace mu;
 

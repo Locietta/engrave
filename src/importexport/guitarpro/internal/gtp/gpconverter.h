@@ -2,17 +2,16 @@
 
 #include <unordered_map>
 
-#include "engraving/iengravingconfiguration.h"
-#include "engraving/types/fraction.h"
-
 #include "../continiouselementsbuilder.h"
 #include "../guitarbendimport/guitarbendimporter.h"
+#include "engraving/dom/stringdata.h"
+#include "engraving/iengravingconfiguration.h"
+#include "engraving/types/fraction.h"
 #include "gpbar.h"
 #include "gpbeat.h"
 #include "gpdrumsetresolver.h"
 #include "gpmasterbar.h"
 #include "gpmastertracks.h"
-#include "engraving/dom/stringdata.h"
 
 namespace mu::iex::guitarpro {
 struct GPScore;

@@ -21,10 +21,9 @@
  */
 #include "divedatacollector.h"
 
+#include "diveinfoconverter.h"
 #include <engraving/dom/chord.h>
 #include <engraving/dom/note.h>
-
-#include "diveinfoconverter.h"
 
 using namespace mu::engraving;
 

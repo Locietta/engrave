@@ -20,22 +20,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "tempotext.h"
+
 #include <algorithm>
 #include <cmath>
-
 #include <unordered_map>
 
 #include "containers.h"
-#include "translation.h"
-
-#include "types/typesconv.h"
-#include "types/constants.h"
-
+#include "log.h"
 #include "score.h"
 #include "segment.h"
-#include "tempotext.h"
-
-#include "log.h"
+#include "translation.h"
+#include "types/constants.h"
+#include "types/typesconv.h"
 
 using namespace mu;
 using namespace mu::engraving;

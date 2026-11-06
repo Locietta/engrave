@@ -23,39 +23,33 @@
 
 #include <algorithm>
 
-#include "io/buffer.h"
-
+#include "automation/internal/scoreautomationcontroller.h"
+#include "barline.h"
+#include "clef.h"
 #include "compat/writescorehook.h"
 #include "editing/editautomationpoints.h"
 #include "editing/editkeysig.h"
 #include "editing/editmeasures.h"
 #include "editing/transaction/transaction.h"
 #include "editing/transaction/undostack.h"
-#include "rw/mscloader.h"
-#include "rw/xmlreader.h"
-#include "rw/rwregister.h"
-
-#include "style/defaultstyle.h"
-
 #include "engravingproject.h"
-
-#include "automation/internal/scoreautomationcontroller.h"
-
-#include "barline.h"
 #include "excerpt.h"
 #include "factory.h"
-#include "clef.h"
+#include "io/buffer.h"
 #include "key.h"
 #include "keysig.h"
+#include "linkedobjects.h"
+#include "log.h"
 #include "part.h"
 #include "repeatlist.h"
 #include "rest.h"
+#include "rw/mscloader.h"
+#include "rw/rwregister.h"
+#include "rw/xmlreader.h"
 #include "sig.h"
 #include "staff.h"
+#include "style/defaultstyle.h"
 #include "timesig.h"
-#include "linkedobjects.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace muse::io;

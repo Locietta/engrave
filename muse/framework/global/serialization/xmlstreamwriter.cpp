@@ -21,16 +21,15 @@
  */
 #include "xmlstreamwriter.h"
 
-#include <vector>
 #include <limits>
+#include <vector>
 
 #include <utf8.h>
 
 #include "global/containers.h"
 #include "global/io/writebudget.h"
-#include "textstream.h"
-
 #include "global/log.h"
+#include "textstream.h"
 
 using namespace std::literals;
 using namespace muse;

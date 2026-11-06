@@ -23,7 +23,6 @@
 #define MUSE_GLOBAL_TRANSLATABLESTRING_H
 
 #include "translation.h"
-
 #include "types/string.h"
 
 namespace muse {

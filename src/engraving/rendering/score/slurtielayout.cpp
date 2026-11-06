@@ -19,41 +19,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "log.h"
 #include "slurtielayout.h"
 
-#include "iengravingconfiguration.h" // IWYU pragma: keep
-#include "iengravingfont.h"
-
-#include "dom/slur.h"
+#include "chordlayout.h"
 #include "dom/chord.h"
 #include "dom/clef.h"
-#include "dom/score.h"
-#include "dom/system.h"
-#include "dom/staff.h"
-#include "dom/stafftype.h"
-#include "dom/ledgerline.h"
-#include "dom/note.h"
-#include "dom/hook.h"
-#include "dom/stem.h"
-#include "dom/tremolotwochord.h"
-#include "dom/tie.h"
 #include "dom/engravingitem.h"
-#include "dom/measure.h"
 #include "dom/guitarbend.h"
+#include "dom/hook.h"
 #include "dom/laissezvib.h"
+#include "dom/ledgerline.h"
+#include "dom/measure.h"
+#include "dom/note.h"
 #include "dom/parenthesis.h"
 #include "dom/partialtie.h"
-
-#include "editing/editchord.h"
-
-#include "tlayout.h"
-#include "chordlayout.h"
-#include "stemlayout.h"
-#include "tremololayout.h"
-
+#include "dom/score.h"
+#include "dom/slur.h"
+#include "dom/staff.h"
+#include "dom/stafftype.h"
+#include "dom/stem.h"
+#include "dom/system.h"
+#include "dom/tie.h"
+#include "dom/tremolotwochord.h"
 #include "draw/types/transform.h"
+#include "editing/editchord.h"
 #include "global/stringutils.h"
+#include "iengravingconfiguration.h" // IWYU pragma: keep
+#include "iengravingfont.h"
+#include "log.h"
+#include "stemlayout.h"
+#include "tlayout.h"
+#include "tremololayout.h"
 
 using namespace muse::draw;
 using namespace mu::engraving;

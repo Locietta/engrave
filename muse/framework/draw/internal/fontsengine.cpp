@@ -21,10 +21,9 @@
  */
 #include "fontsengine.h"
 
-#include "ifontface.h"
-#include "fontfaceft.h"
 #include "fontfacedu.h"
-
+#include "fontfaceft.h"
+#include "ifontface.h"
 #include "log.h"
 
 using namespace muse;

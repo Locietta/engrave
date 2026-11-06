@@ -22,8 +22,6 @@
 
 #include "factory.h"
 
-#include "types/typesconv.h"
-
 #include "accidental.h"
 #include "actionicon.h"
 #include "ambitus.h"
@@ -64,6 +62,7 @@
 #include "laissezvib.h"
 #include "layoutbreak.h"
 #include "letring.h"
+#include "log.h"
 #include "lyrics.h"
 #include "marker.h"
 #include "measure.h"
@@ -120,11 +119,10 @@
 #include "trill.h"
 #include "tripletfeel.h"
 #include "tuplet.h"
+#include "types/typesconv.h"
 #include "vibrato.h"
 #include "volta.h"
 #include "whammybar.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

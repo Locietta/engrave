@@ -20,6 +20,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "importmidi.h"
+
 #include <algorithm>
 #include <cstdint>
 #include <exception>
@@ -27,11 +29,7 @@
 #include <string>
 #include <vector>
 
-#include "translation.h"
-
-#include "engraving/engravingerrors.h"
-#include "engraving/rw/xmlwriter.h"
-
+#include "../midishared/midifile.h"
 #include "engraving/dom/articulation.h"
 #include "engraving/dom/barline.h"
 #include "engraving/dom/box.h"
@@ -56,9 +54,8 @@
 #include "engraving/dom/tuplet.h"
 #include "engraving/dom/utils.h"
 #include "engraving/editing/transpose.h"
-
-#include "internal/midishared/generalmidi.h"
-#include "../midishared/midifile.h"
+#include "engraving/engravingerrors.h"
+#include "engraving/rw/xmlwriter.h"
 #include "importmidi_beat.h"
 #include "importmidi_chord.h"
 #include "importmidi_chordname.h"
@@ -80,11 +77,10 @@
 #include "importmidi_tuplet.h"
 #include "importmidi_tuplet_tonotes.h"
 #include "importmidi_voice.h"
-#include "importmidi.h"
-
+#include "internal/midishared/generalmidi.h"
 #include "io/buffer.h"
-
 #include "log.h"
+#include "translation.h"
 
 using namespace mu::engraving;
 

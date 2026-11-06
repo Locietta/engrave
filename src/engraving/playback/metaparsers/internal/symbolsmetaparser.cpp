@@ -20,10 +20,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
 #include "symbolsmetaparser.h"
 
 #include "dom/articulation.h"
+#include "log.h"
 
 using namespace mu::engraving;
 using namespace muse;

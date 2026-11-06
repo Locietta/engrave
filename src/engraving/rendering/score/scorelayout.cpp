@@ -19,22 +19,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "log.h"
 #include "scorelayout.h"
 
-#include "dom/score.h"
 #include "dom/masterscore.h"
-#include "dom/system.h"
 #include "dom/page.h"
-
-#include "layoutcontext.h"
-
-#include "pagelayout.h"
-#include "scorepageviewlayout.h"
-#include "scorehorizontalviewlayout.h"
-#include "scoreverticalviewlayout.h"
-
+#include "dom/score.h"
+#include "dom/system.h"
 #include "dumplayoutdata.h"
+#include "layoutcontext.h"
+#include "log.h"
+#include "pagelayout.h"
+#include "scorehorizontalviewlayout.h"
+#include "scorepageviewlayout.h"
+#include "scoreverticalviewlayout.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;

@@ -22,11 +22,11 @@
 
 #pragma once
 
-#include "transaction/undoablecommand.h"
-#include "../dom/chordline.h"
 #include <optional>
 
+#include "../dom/chordline.h"
 #include "../dom/staff.h"
+#include "transaction/undoablecommand.h"
 
 namespace mu::engraving {
 struct ChangeProperty : UndoableCommand {

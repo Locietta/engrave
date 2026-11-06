@@ -23,6 +23,7 @@
 #pragma once
 
 #include <functional>
+
 #include "../types/types.h"
 
 namespace mu::engraving {

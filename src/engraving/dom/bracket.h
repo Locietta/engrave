@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include "engravingitem.h"
 #include "bracketitem.h"
+#include "engravingitem.h"
 
 namespace mu::engraving {
 struct Factory;

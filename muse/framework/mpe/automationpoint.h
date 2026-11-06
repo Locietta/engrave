@@ -22,15 +22,14 @@
 #pragma once
 
 #include <algorithm>
-#include <variant>
 #include <optional>
 #include <type_traits>
-
-#include "types/sharedmap.h"
-#include "types/number.h"
+#include <variant>
 
 #include "containers.h"
 #include "realfn.h"
+#include "types/number.h"
+#include "types/sharedmap.h"
 
 namespace muse::mpe {
 struct AutomationPoint {

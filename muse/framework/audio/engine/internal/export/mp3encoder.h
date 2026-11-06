@@ -22,11 +22,11 @@
 
 #pragma once
 
-#include "abstractaudioencoder.h"
-
 #include <cstdint>
 #include <memory>
 #include <vector>
+
+#include "abstractaudioencoder.h"
 
 struct LameHandler;
 

@@ -22,16 +22,13 @@
 
 #include "property.h"
 
-#include "translation.h"
-
-#include "types/typesconv.h"
-
 #include "accidental.h"
 #include "bracket.h"
+#include "log.h"
 #include "note.h"
 #include "ottava.h"
-
-#include "log.h"
+#include "translation.h"
+#include "types/typesconv.h"
 
 using namespace mu;
 using namespace mu::engraving;

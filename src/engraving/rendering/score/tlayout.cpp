@@ -19,79 +19,58 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "log.h"
-#include <cfloat>
-
 #include "tlayout.h"
 
-#include "global/realfn.h"
-#include "global/types/number.h"
-#include "draw/fontmetrics.h"
+#include <cfloat>
 
-#include "iengravingconfiguration.h" // IWYU pragma: keep
-#include "iengravingfont.h"
-
-#include "infrastructure/rtti.h"
-#include "infrastructure/ld_access.h"
-
-#include "types/typesconv.h"
-#include "types/symnames.h"
-#include "dom/score.h"
-#include "dom/utils.h"
-
+#include "accidentalslayout.h"
+#include "arpeggiolayout.h"
+#include "autoplace.h"
+#include "beamlayout.h"
+#include "boxlayout.h"
+#include "chordlayout.h"
 #include "dom/accidental.h"
 #include "dom/ambitus.h"
 #include "dom/arpeggio.h"
 #include "dom/articulation.h"
-
 #include "dom/barline.h"
 #include "dom/beam.h"
 #include "dom/bend.h"
 #include "dom/box.h"
 #include "dom/bracket.h"
 #include "dom/breath.h"
-
+#include "dom/capo.h"
 #include "dom/chord.h"
 #include "dom/chordline.h"
 #include "dom/clef.h"
-#include "dom/capo.h"
-
 #include "dom/deadslapped.h"
 #include "dom/dynamic.h"
-
 #include "dom/expression.h"
-
+#include "dom/factory.h"
 #include "dom/fermata.h"
 #include "dom/figuredbass.h"
 #include "dom/fingering.h"
 #include "dom/fret.h"
-
 #include "dom/glissando.h"
 #include "dom/gradualtempochange.h"
 #include "dom/guitarbend.h"
-
 #include "dom/hairpin.h"
 #include "dom/hammeronpulloff.h"
-#include "dom/harppedaldiagram.h"
 #include "dom/harmonicmark.h"
 #include "dom/harmony.h"
+#include "dom/harppedaldiagram.h"
 #include "dom/hook.h"
-
 #include "dom/image.h"
 #include "dom/instrchange.h"
 #include "dom/instrumentname.h"
-
 #include "dom/jump.h"
-
 #include "dom/keysig.h"
-
 #include "dom/layoutbreak.h"
 #include "dom/ledgerline.h"
 #include "dom/letring.h"
 #include "dom/line.h"
 #include "dom/linkedobjects.h"
 #include "dom/lyrics.h"
-
 #include "dom/marker.h"
 #include "dom/measure.h"
 #include "dom/measurebase.h"
@@ -100,14 +79,11 @@
 #include "dom/measurerepeat.h"
 #include "dom/mmrest.h"
 #include "dom/mmrestrange.h"
-
 #include "dom/note.h"
 #include "dom/notedot.h"
 #include "dom/noteline.h"
-
 #include "dom/ornament.h"
 #include "dom/ottava.h"
-
 #include "dom/page.h"
 #include "dom/palmmute.h"
 #include "dom/parenthesis.h"
@@ -115,13 +91,13 @@
 #include "dom/pedal.h"
 #include "dom/pickscrape.h"
 #include "dom/playtechannotation.h"
-
 #include "dom/rasgueado.h"
 #include "dom/rehearsalmark.h"
 #include "dom/rest.h"
-
+#include "dom/score.h"
 #include "dom/shadownote.h"
 #include "dom/slur.h"
+#include "dom/soundflag.h"
 #include "dom/spacer.h"
 #include "dom/staff.h"
 #include "dom/stafflines.h"
@@ -138,53 +114,50 @@
 #include "dom/systemdivider.h"
 #include "dom/systemlockindicator.h"
 #include "dom/systemtext.h"
-#include "dom/soundflag.h"
-
 #include "dom/tapping.h"
 #include "dom/tempotext.h"
 #include "dom/text.h"
 #include "dom/textline.h"
 #include "dom/tie.h"
 #include "dom/timesig.h"
+#include "dom/tremolobar.h"
 #include "dom/tremolosinglechord.h"
 #include "dom/tremolotwochord.h"
-#include "dom/tremolobar.h"
 #include "dom/trill.h"
 #include "dom/tripletfeel.h"
 #include "dom/tuplet.h"
-
+#include "dom/utils.h"
 #include "dom/vibrato.h"
 #include "dom/volta.h"
-
 #include "dom/whammybar.h"
-
-#include "dom/factory.h"
-
+#include "draw/fontmetrics.h"
+#include "dynamicslayout.h"
 #include "editing/editchord.h"
 #include "editing/navigation.h"
-
-#include "accidentalslayout.h"
-#include "arpeggiolayout.h"
-#include "autoplace.h"
-#include "beamlayout.h"
-#include "boxlayout.h"
-#include "chordlayout.h"
-#include "dynamicslayout.h"
+#include "global/realfn.h"
+#include "global/types/number.h"
 #include "guitarbendlayout.h"
-#include "lyricslayout.h"
-#include "masklayout.h"
-#include "slurtielayout.h"
-#include "tremololayout.h"
-#include "tupletlayout.h"
-#include "horizontalspacing.h"
-#include "measurelayout.h"
-#include "tappinglayout.h"
 #include "harmonylayout.h"
+#include "horizontalspacing.h"
+#include "iengravingconfiguration.h" // IWYU pragma: keep
+#include "iengravingfont.h"
+#include "infrastructure/ld_access.h"
+#include "infrastructure/rtti.h"
+#include "log.h"
+#include "lyricslayout.h"
 #include "markerlayout.h"
+#include "masklayout.h"
+#include "measurelayout.h"
 #include "measurenumberlayout.h"
 #include "parenthesislayout.h"
 #include "restlayout.h"
+#include "slurtielayout.h"
+#include "tappinglayout.h"
 #include "textlayout.h"
+#include "tremololayout.h"
+#include "tupletlayout.h"
+#include "types/symnames.h"
+#include "types/typesconv.h"
 
 using namespace muse;
 using namespace muse::draw;

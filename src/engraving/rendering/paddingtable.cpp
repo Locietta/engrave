@@ -21,9 +21,10 @@
  */
 #include "paddingtable.h"
 
+#include "thirdparty/kors_logger/src/log_base.h"
+
 #include "dom/engravingitem.h"
 #include "style/style.h"
-#include "thirdparty/kors_logger/src/log_base.h"
 
 using namespace mu::engraving;
 

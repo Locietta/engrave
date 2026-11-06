@@ -12,6 +12,9 @@
 #include <utility>
 #include <vector>
 
+#include "engrave/src/api/batch.h"
+#include "engrave/src/api/pid_support.h"
+#include "engrave/src/api/value_codec.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/chordrest.h"
 #include "engraving/dom/engravingitem.h"
@@ -29,10 +32,6 @@
 #include "engraving/types/propertyvalue.h"
 #include "engraving/types/types.h"
 #include "engraving/types/typesconv.h"
-
-#include "engrave/src/api/batch.h"
-#include "engrave/src/api/pid_support.h"
-#include "engrave/src/api/value_codec.h"
 
 namespace engrave::api {
 namespace {

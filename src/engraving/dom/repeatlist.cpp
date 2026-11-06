@@ -26,15 +26,14 @@
 #include <set>
 #include <utility> // std::pair
 
+#include "global/log.h"
+#include "global/realfn.h"
 #include "jump.h"
 #include "layoutbreak.h"
 #include "marker.h"
 #include "measure.h"
 #include "score.h"
 #include "volta.h"
-
-#include "global/realfn.h"
-#include "global/log.h"
 
 using namespace mu;
 

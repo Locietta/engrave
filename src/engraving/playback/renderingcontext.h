@@ -21,15 +21,13 @@
  */
 #pragma once
 
-#include "mpe/events.h"
-
 #include "../dom/chord.h"
 #include "../dom/note.h"
 #include "../dom/sig.h"
-
+#include "mpe/events.h"
+#include "playbackcontext.h"
 #include "utils/arrangementutils.h"
 #include "utils/pitchutils.h"
-#include "playbackcontext.h"
 
 namespace mu::engraving {
 struct RenderingContext {

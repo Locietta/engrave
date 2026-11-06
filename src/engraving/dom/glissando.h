@@ -22,10 +22,10 @@
 
 #pragma once
 
+#include "../types/types.h"
 #include "engravingitem.h"
 #include "line.h"
 #include "property.h"
-#include "../types/types.h"
 
 namespace mu::engraving {
 struct Glissando;

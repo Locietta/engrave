@@ -20,12 +20,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <climits>
-
 #include "stavesharinglayout.h"
 
-#include "measurelayout.h"
-#include "systemheaderlayout.h"
+#include <climits>
 
 #include "dom/breath.h"
 #include "dom/chord.h"
@@ -40,6 +37,8 @@
 #include "dom/staff.h"
 #include "dom/system.h"
 #include "dom/timesig.h"
+#include "measurelayout.h"
+#include "systemheaderlayout.h"
 
 using namespace mu::engraving;
 

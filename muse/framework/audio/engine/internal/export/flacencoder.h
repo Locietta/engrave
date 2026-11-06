@@ -22,9 +22,9 @@
 
 #pragma once
 
-#include "abstractaudioencoder.h"
-
 #include <memory>
+
+#include "abstractaudioencoder.h"
 
 namespace muse::io {
 struct IODevice;

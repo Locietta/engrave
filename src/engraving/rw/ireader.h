@@ -24,9 +24,8 @@
 #include <memory>
 #include <variant>
 
-#include "types/ret.h"
-
 #include "../types/types.h"
+#include "types/ret.h"
 #include "xmlreader.h"
 
 namespace mu::engraving {

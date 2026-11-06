@@ -20,10 +20,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #include "sharedpart.h"
-#include "score.h"
-#include "staff.h"
 
 #include <sstream>
+
+#include "score.h"
+#include "staff.h"
 
 namespace mu::engraving {
 std::string dump(const SharedTrackMap &map) {

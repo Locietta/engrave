@@ -27,13 +27,13 @@
 #include <set>
 #include <vector>
 
-#include "importmidi_tuplet.h"
-#include "importmidi_chord.h"
-#include "importmidi_quant.h"
-#include "importmidi_inner.h"
-#include "importmidi_voice.h"
-#include "importmidi_operations.h"
 #include "engraving/dom/mscore.h"
+#include "importmidi_chord.h"
+#include "importmidi_inner.h"
+#include "importmidi_operations.h"
+#include "importmidi_quant.h"
+#include "importmidi_tuplet.h"
+#include "importmidi_voice.h"
 
 namespace mu::iex::midi { namespace MidiTuplet {
 int tuplet_voice_limit() {

@@ -19,19 +19,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include "log.h"
 #include "utils.h"
 
-#include "realfn.h"
 #include "engraving/dom/chord.h"
 #include "engraving/dom/factory.h"
+#include "engraving/dom/measure.h"
 #include "engraving/dom/note.h"
 #include "engraving/dom/parenthesis.h"
 #include "engraving/dom/playcounttext.h"
 #include "engraving/dom/score.h"
-#include "engraving/dom/measure.h"
 #include "engraving/dom/segment.h"
 #include "engraving/style/styledef.h"
+#include "log.h"
+#include "realfn.h"
 
 using namespace mu::engraving;
 

@@ -20,18 +20,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
 #include <memory>
 
-#include "utils/scorerw.h"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include "engraving/dom/guitarbend.h"
 #include "engraving/dom/measure.h"
 #include "engraving/dom/part.h"
-
-#include "engraving/playback/renderingcontext.h"
 #include "engraving/playback/renderers/bendsrenderer.h"
+#include "engraving/playback/renderingcontext.h"
+#include "utils/scorerw.h"
 
 using namespace mu::engraving;
 using namespace muse;

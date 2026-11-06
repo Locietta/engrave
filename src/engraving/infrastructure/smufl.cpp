@@ -21,14 +21,11 @@
  */
 #include "smufl.h"
 
-#include "io/file.h"
-#include "serialization/json.h"
-
-#include "types/symnames.h"
-
 #include "dom/mscore.h"
-
+#include "io/file.h"
 #include "log.h"
+#include "serialization/json.h"
+#include "types/symnames.h"
 
 using namespace mu;
 using namespace muse;

@@ -20,8 +20,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
 #include "selectionfilter.h"
+
+#include "log.h"
 #include "tuplet.h"
 
 using namespace mu::engraving;

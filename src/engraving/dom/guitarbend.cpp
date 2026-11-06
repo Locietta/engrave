@@ -20,21 +20,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "log.h"
-#include "../iengravingconfiguration.h" // IWYU pragma: keep
+#include "guitarbend.h"
 
 #include "../editing/editdata.h"
-#include "../editing/elementeditdata.h"
 #include "../editing/editnote.h"
+#include "../editing/elementeditdata.h"
 #include "../editing/navigation.h"
 #include "../editing/noteinput.h"
 #include "../editing/transaction/transaction.h"
 #include "../editing/transpose.h"
-
+#include "../iengravingconfiguration.h" // IWYU pragma: keep
 #include "accidental.h"
 #include "actionicon.h"
 #include "chord.h"
-#include "guitarbend.h"
+#include "log.h"
 #include "note.h"
 #include "part.h"
 #include "rest.h"

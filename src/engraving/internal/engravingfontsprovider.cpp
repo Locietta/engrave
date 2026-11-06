@@ -23,7 +23,6 @@
 #include "engravingfontsprovider.h"
 
 #include "global/stringutils.h"
-
 #include "io/file.h"
 #include "log.h"
 

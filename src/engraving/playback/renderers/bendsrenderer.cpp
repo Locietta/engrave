@@ -22,14 +22,12 @@
 
 #include "bendsrenderer.h"
 
-#include "noterenderer.h"
+#include "dom/guitarbend.h"
+#include "dom/note.h"
 #include "gracechordcontext.h"
-
+#include "noterenderer.h"
 #include "playback/metaparsers/chordarticulationsparser.h"
 #include "playback/utils/expressionutils.h"
-
-#include "dom/note.h"
-#include "dom/guitarbend.h"
 
 using namespace mu::engraving;
 using namespace muse;

@@ -22,10 +22,9 @@
 
 #pragma once
 
-#include "transaction/undoablecommand.h"
-
 #include "../dom/key.h"
 #include "../dom/keysig.h"
+#include "transaction/undoablecommand.h"
 
 namespace mu::engraving {
 struct Score;

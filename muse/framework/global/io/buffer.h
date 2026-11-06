@@ -22,9 +22,8 @@
 
 #pragma once
 
-#include "iodevice.h"
-
 #include "global/types/bytearray.h"
+#include "iodevice.h"
 
 namespace muse::io {
 struct Buffer : IODevice {

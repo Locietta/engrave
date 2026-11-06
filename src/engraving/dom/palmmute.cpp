@@ -23,14 +23,13 @@
 #include "palmmute.h"
 
 #include "chordrest.h"
+#include "log.h"
 #include "part.h"
 #include "score.h"
 #include "staff.h"
 #include "stafftype.h"
 #include "system.h"
 #include "text.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

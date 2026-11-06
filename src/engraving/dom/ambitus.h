@@ -21,12 +21,10 @@
  */
 #pragma once
 
+#include "../types/types.h"
 #include "accidental.h"
 #include "engravingitem.h"
-
 #include "pitchspelling.h"
-
-#include "../types/types.h"
 
 namespace mu::engraving {
 struct Factory;

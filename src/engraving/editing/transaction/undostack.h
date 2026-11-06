@@ -24,10 +24,9 @@
 
 #include <map>
 
+#include "../../dom/input.h"
 #include "global/containers.h"
 #include "global/types/translatablestring.h"
-
-#include "../../dom/input.h"
 
 namespace mu::engraving {
 struct EngravingObject;

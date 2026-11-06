@@ -28,7 +28,6 @@
 #include <string>
 
 #include "containers.h"
-
 #include "log.h"
 
 using namespace mu::engraving;

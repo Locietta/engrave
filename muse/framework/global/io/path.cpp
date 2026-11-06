@@ -21,8 +21,8 @@
  */
 #include "path.h"
 
-#include "global/stringutils.h"
 #include "fileinfo.h"
+#include "global/stringutils.h"
 
 using namespace muse;
 using namespace muse::io;

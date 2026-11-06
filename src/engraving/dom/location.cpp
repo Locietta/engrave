@@ -20,17 +20,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <climits>
-
 #include "location.h"
+
+#include <climits>
 
 #include "chord.h"
 #include "engravingitem.h"
+#include "log.h"
 #include "measure.h"
 #include "mscore.h"
 #include "note.h"
-
-#include "log.h"
 
 using namespace mu;
 using namespace mu::engraving;

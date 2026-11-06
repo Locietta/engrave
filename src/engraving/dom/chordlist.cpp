@@ -26,19 +26,14 @@
 #include "global/io/buffer.h"
 #include "global/io/file.h"
 #include "global/io/fileinfo.h"
-
-#include "types/constants.h"
-
+#include "log.h"
+#include "mscore.h"
+#include "pitchspelling.h"
 #include "rw/compat/compatutils.h"
 #include "rw/xmlreader.h"
 #include "rw/xmlwriter.h"
-
 #include "style/style.h"
-
-#include "mscore.h"
-#include "pitchspelling.h"
-
-#include "log.h"
+#include "types/constants.h"
 
 using namespace mu;
 using namespace muse;

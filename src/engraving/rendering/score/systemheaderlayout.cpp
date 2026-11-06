@@ -20,12 +20,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <climits>
-
 #include "systemheaderlayout.h"
 
-#include "systemlayout.h"
-#include "tlayout.h"
+#include <climits>
 
 #include "dom/bracket.h"
 #include "dom/factory.h"
@@ -33,6 +30,8 @@
 #include "dom/staff.h"
 #include "dom/system.h"
 #include "style/defaultstyle.h"
+#include "systemlayout.h"
+#include "tlayout.h"
 
 using namespace mu::engraving;
 using namespace mu::engraving::rendering::score;

@@ -25,9 +25,8 @@
 #include <array>
 #include <memory>
 
-#include "../infrastructure/ifileinfoprovider.h"
 #include "../infrastructure/eidregister.h"
-
+#include "../infrastructure/ifileinfoprovider.h"
 #include "instrument.h"
 #include "score.h"
 

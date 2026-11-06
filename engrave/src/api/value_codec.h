@@ -3,10 +3,9 @@
 #include <span>
 #include <string_view>
 
+#include "engraving/types/propertyvalue.h"
 #include <engrave/error.h>
 #include <engrave/value.h>
-
-#include "engraving/types/propertyvalue.h"
 
 // The internal value codec of the API: the one place that knows how a property
 // value type maps to engrave::Value.

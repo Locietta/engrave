@@ -1,4 +1,5 @@
 #include "atomic_file.h"
+
 #include <algorithm>
 #include <random>
 #include <stdexcept>
@@ -8,6 +9,7 @@
 #include <Windows.h>
 #else
 #include <cerrno>
+
 #include <fcntl.h>
 #include <unistd.h>
 #endif

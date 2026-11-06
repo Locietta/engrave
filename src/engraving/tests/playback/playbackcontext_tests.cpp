@@ -20,20 +20,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
-
 #include <cmath>
 
-#include "utils/scorerw.h"
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include "engraving/dom/measure.h"
 #include "engraving/dom/part.h"
 #include "engraving/dom/repeatlist.h"
 #include "engraving/dom/staff.h"
-
 #include "engraving/playback/playbackcontext.h"
 #include "engraving/playback/utils/arrangementutils.h"
+#include "utils/scorerw.h"
 
 using namespace mu::engraving;
 using namespace muse::mpe;

@@ -19,14 +19,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#include <cfloat>
-
 #include "shape.h"
 
-#include "draw/painter.h"
+#include <cfloat>
 
 #include "dom/engravingitem.h"
-
+#include "draw/painter.h"
 #include "log.h"
 
 using namespace mu;
