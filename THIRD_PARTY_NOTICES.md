@@ -24,7 +24,7 @@ build dependencies are explicitly marked as such.
 | **Leland** | `fonts/leland/` | MuseScore BVBA (Martin Keary & Simon Smith) | SIL Open Font License 1.1 | Reserved Font Name: `Leland` |
 | **MScore** | `fonts/mscore/MScore.otf` | Werner Schweer and contributors; derived from Parnassus & LilyPond Emmentaler | GPLv3 or later | Document embedding font exception (LilyPond exception) |
 | **MScore Text** | `fonts/mscore/MScoreText.otf` | Werner Schweer and others | SIL Open Font License 1.1 | Reserved Font Name: `MScore Text` |
-| **MuseJazz** | `fonts/musejazz/` | Abraham Lee / Music Type Foundry | SIL Open Font License 1.1 | Reserved Font Name: `MuseJazz` |
+| **MuseJazz** | `fonts/musejazz/` | Torsten Hämmerle, Abraham Lee / Music Type Foundry | SIL Open Font License 1.1 | Reserved Font Name: `MuseJazz` |
 | **Petaluma** | `fonts/petaluma/` | Steinberg Media Technologies GmbH (Anthony Hughes, Daniel Spreadbury) | SIL Open Font License 1.1 | Reserved Font Name: `Petaluma` |
 | **GNU FreeFont** | `fonts/FreeSans.ttf`, `fonts/FreeSerif*.ttf` | GNU FreeFont Project | GPLv3 or later | Document embedding font exception (GNU FreeFont exception) |
 | **Tablature & Historical** | `fonts/MuseScoreTab*.ttf` | Maurizio M. Gavioli | SIL Open Font License 1.1 | Reserved Font Name: `MScoreTabulature` |
@@ -83,7 +83,7 @@ build dependencies are explicitly marked as such.
 
 #### MuseJazz (`fonts/musejazz/`)
 - **Files**: `MuseJazz.otf`, `MuseJazzText.otf`, `metadata.json`
-- **Notice**: Copyright (C) 2016 Abraham Lee / Music Type Foundry (https://www.musictypefoundry.com/), with Reserved Font Name "MuseJazz".
+- **Notice**: Copyright (C) 2016 Torsten Hämmerle, Abraham Lee / Music Type Foundry (https://www.musictypefoundry.com/), with Reserved Font Name "MuseJazz".
 - **License**: SIL Open Font License, Version 1.1 (`fonts/musejazz/OFL.txt`).
 
 #### Petaluma (`fonts/petaluma/`)

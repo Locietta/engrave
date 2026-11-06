@@ -1,4 +1,4 @@
-Copyright (c) 2014-2016, Grzegorz Pruchniakowski (Gootector) (http://scripts.sil.org/OFL).
+Copyright (c) Grzegorz Pruchniakowski (Gootector) (http://scripts.sil.org/OFL).
 Based on SMuFL 1.18 and Bravura 1.18, designed by Daniel Spreadbury at Steinberg.
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
